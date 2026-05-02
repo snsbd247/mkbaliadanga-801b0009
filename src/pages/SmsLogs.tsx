@@ -87,7 +87,29 @@ export default function SmsLogs() {
     const { data, error } = await q;
     setLoading(false);
     if (error) return toast.error(error.message);
-    setLogs((data as any) ?? []);
+    const rows = (data as any[]) ?? [];
+
+    // Enrich with farmer + office names (sms_logs has no FK so we batch-fetch)
+    const farmerIds = Array.from(new Set(rows.map((r) => r.farmer_id).filter(Boolean)));
+    const officeIds = Array.from(new Set(rows.map((r) => r.office_id).filter(Boolean)));
+    const [farmersRes, officesRes] = await Promise.all([
+      farmerIds.length
+        ? supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", farmerIds)
+        : Promise.resolve({ data: [] as any[] }),
+      officeIds.length
+        ? supabase.from("offices").select("id,name").in("id", officeIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const fmap = new Map<string, any>(((farmersRes as any).data ?? []).map((f: any) => [f.id, f]));
+    const omap = new Map<string, string>(((officesRes as any).data ?? []).map((o: any) => [o.id, o.name]));
+    setLogs(rows.map((r) => {
+      const f = r.farmer_id ? fmap.get(r.farmer_id) : null;
+      return {
+        ...r,
+        farmer_name: f ? (f.name_en || f.name_bn || f.farmer_code) : null,
+        office_name: r.office_id ? omap.get(r.office_id) ?? null : null,
+      };
+    }));
   }
 
   const filtered = useMemo(() => {
