@@ -30,7 +30,10 @@ export function AppLayout() {
         <div className="flex flex-1 flex-col min-w-0">
           <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b bg-card/80 backdrop-blur px-2 sm:px-4 no-print">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <SidebarTrigger className="h-9 w-9 shrink-0 border bg-card shadow-sm hover:bg-accent/10" aria-label="Toggle menu" />
+              <SidebarTrigger
+                aria-label="Toggle menu"
+                className="shrink-0 hover:bg-accent/10 max-md:!h-10 max-md:!w-10 max-md:!p-0 max-md:inline-flex max-md:items-center max-md:justify-center max-md:!rounded-[10px] max-md:border max-md:border-[hsl(var(--border))] max-md:bg-card max-md:shadow-sm max-md:[&_svg]:h-5 max-md:[&_svg]:w-5 md:h-9 md:w-9 md:border md:bg-card md:shadow-sm"
+              />
               <span className="truncate text-sm font-medium text-foreground">
                 {lang === "bn" && brand.company_name_bn ? brand.company_name_bn : brand.company_name}
               </span>
