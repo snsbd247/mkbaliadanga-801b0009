@@ -395,7 +395,8 @@ export default function SmsSettings() {
       supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("offices").select("id,name").order("name"),
       supabase.from("sms_office_settings").select("office_id,enabled,sender_id"),
-      supabase.from("sms_provider_secrets" as any).select("api_token,updated_at").eq("provider", "greenweb").maybeSingle(),
+      // Only fetch presence + timestamp — never pull the token value into the browser.
+      supabase.from("sms_provider_secrets" as any).select("provider,updated_at").eq("provider", "greenweb").maybeSingle(),
     ]);
     if (settingsRes.error) return toast.error(settingsRes.error.message);
     setS(settingsRes.data as any);
