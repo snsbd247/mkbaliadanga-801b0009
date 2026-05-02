@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Building2, Users, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
-  BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock,
+  BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -55,6 +55,7 @@ export function AppSidebar() {
     {
       label: "Accounting",
       items: [
+        { url: "/finance-summary", icon: PieChart, label: "Finance Summary", permKey: "reports" },
         { url: "/accounts", icon: BookText, label: "Chart of Accounts", permKey: "reports" },
         { url: "/ledger", icon: Calculator, label: "General Ledger", permKey: "reports" },
         { url: "/journal-entry", icon: BookKey, label: "Journal Entry", permKey: "reports" },

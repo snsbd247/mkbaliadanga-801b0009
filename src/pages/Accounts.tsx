@@ -24,6 +24,7 @@ import {
   Download, Upload,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { CoaImportDialog } from "./accounts/CoaImportDialog";
 
 type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
 
@@ -277,81 +278,8 @@ export default function Accounts() {
     XLSX.writeFile(wb, "chart-of-accounts_template.xlsx");
   };
 
-  // ---------- Import ----------
-  const handleImport = async (file: File) => {
-    try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-      if (!data.length) return toast.error("File is empty");
-
-      const valid: AccountType[] = ["asset", "liability", "equity", "income", "expense"];
-      const codeMap = new Map<string, string>(); // code -> id (existing)
-      rows.forEach((r) => codeMap.set(r.code, r.id));
-
-      let created = 0, updated = 0, skipped = 0;
-      const errors: string[] = [];
-
-      // Two passes so parents resolve
-      for (let pass = 0; pass < 2; pass++) {
-        for (const [i, raw] of data.entries()) {
-          const code = String(raw.code ?? "").trim();
-          const name = String(raw.name ?? "").trim();
-          const type = String(raw.type ?? "").trim().toLowerCase() as AccountType;
-          const name_bn = String(raw.name_bn ?? "").trim() || null;
-          const parent_code = String(raw.parent_code ?? "").trim();
-          const is_active = !["no", "false", "0"].includes(String(raw.is_active ?? "yes").toLowerCase());
-
-          if (!code || !name || !valid.includes(type)) {
-            if (pass === 0) errors.push(`Row ${i + 2}: invalid code/name/type`);
-            continue;
-          }
-
-          const parent_id = parent_code ? codeMap.get(parent_code) || null : null;
-          if (parent_code && !parent_id && pass === 1) {
-            errors.push(`Row ${i + 2}: parent_code "${parent_code}" not found`);
-            continue;
-          }
-          if (parent_code && !parent_id) continue; // wait for next pass
-
-          const payload = { code, name, name_bn, type, parent_id, is_active };
-          const existingId = codeMap.get(code);
-
-          if (existingId) {
-            if (pass === 0) {
-              const { error } = await supabase.from("accounts").update(payload).eq("id", existingId);
-              if (error) errors.push(`Row ${i + 2}: ${error.message}`);
-              else updated++;
-            }
-          } else {
-            const { data: ins, error } = await supabase.from("accounts").insert(payload).select("id").single();
-            if (error) {
-              if (pass === 1) errors.push(`Row ${i + 2}: ${error.message}`);
-            } else {
-              created++;
-              codeMap.set(code, ins!.id);
-            }
-          }
-        }
-      }
-
-      await load();
-      toast.success(`Imported: ${created} created, ${updated} updated, ${skipped} skipped`);
-      if (errors.length) {
-        console.warn("Import errors:", errors);
-        toast.error(`${errors.length} row(s) had issues — see console`);
-      }
-    } catch (e: any) {
-      toast.error(e.message || "Import failed");
-    }
-  };
-
-  const onFilePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) handleImport(f);
-    e.target.value = "";
-  };
+  // ---------- Import (dialog) ----------
+  const [importOpen, setImportOpen] = useState(false);
 
   // flatten visible rows
   const visible: AccountNode[] = [];
@@ -382,11 +310,8 @@ export default function Accounts() {
             <Button variant="outline" size="sm" onClick={exportXLSX}>
               <Download className="w-4 h-4 mr-1" /> Excel
             </Button>
-            <input id="coa-import-file" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={onFilePicked} />
-            <Button variant="outline" size="sm" asChild>
-              <label htmlFor="coa-import-file" className="cursor-pointer">
-                <Upload className="w-4 h-4 mr-1" /> Import
-              </label>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="w-4 h-4 mr-1" /> Import
             </Button>
             <Button size="sm" onClick={() => openCreate()}>
               <Plus className="w-4 h-4 mr-1" /> Add Account
@@ -584,6 +509,14 @@ export default function Accounts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* COA Import dialog */}
+      <CoaImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        existing={rows.map((r) => ({ id: r.id, code: r.code, name: r.name, type: r.type, parent_id: r.parent_id }))}
+        onImported={load}
+      />
     </div>
   );
 }
