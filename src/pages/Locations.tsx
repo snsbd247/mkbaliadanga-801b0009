@@ -489,8 +489,8 @@ function LevelTab({ level }: { level: Level }) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
-            <Button onClick={saveEdit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}Save</Button>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>{t("cancel")}</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}{t("save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
