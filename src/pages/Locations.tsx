@@ -500,29 +500,30 @@ function LevelTab({ level }: { level: Level }) {
 
 export default function Locations() {
   const { isSuper, rolesLoaded } = useAuth();
-  useEffect(() => { document.title = "Locations"; }, []);
-  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
+  const { t } = useLang();
+  useEffect(() => { document.title = t("locations"); }, [t]);
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">{t("loading" as any) || "Loading…"}</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   return (
     <>
       <PageHeader
-        title="Location Management"
-        description="Manage divisions, districts, upazilas, unions, wards, villages, and mouzas with strict cascading hierarchy."
+        title={t("locations")}
+        description={t("locationsManagementDesc" as any) || "Manage divisions, districts, upazilas, unions, wards, villages, and mouzas with strict cascading hierarchy."}
       />
       <div className="rounded-md border bg-muted/30 p-3 mb-4 text-xs text-muted-foreground flex gap-2">
         <MapPin className="h-4 w-4 mt-0.5 shrink-0"/>
-        <span>Edits preserve existing parent-child relationships. Cascading filters require selecting parents in order. Existing farmers and lands keep their original references.</span>
+        <span>{t("locationsHierarchyNote" as any) || "Edits preserve existing parent-child relationships. Cascading filters require selecting parents in order. Existing farmers and lands keep their original references."}</span>
       </div>
       <Tabs defaultValue="divisions">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="divisions">Divisions</TabsTrigger>
-          <TabsTrigger value="districts">Districts</TabsTrigger>
-          <TabsTrigger value="upazilas">Upazilas</TabsTrigger>
-          <TabsTrigger value="unions">Unions</TabsTrigger>
-          <TabsTrigger value="wards">Wards</TabsTrigger>
-          <TabsTrigger value="villages">Villages</TabsTrigger>
-          <TabsTrigger value="mouzas">Mouzas</TabsTrigger>
+          <TabsTrigger value="divisions">{t("divisions")}</TabsTrigger>
+          <TabsTrigger value="districts">{t("districts")}</TabsTrigger>
+          <TabsTrigger value="upazilas">{t("upazilas")}</TabsTrigger>
+          <TabsTrigger value="unions">{t("unions")}</TabsTrigger>
+          <TabsTrigger value="wards">{t("wards")}</TabsTrigger>
+          <TabsTrigger value="villages">{t("villages")}</TabsTrigger>
+          <TabsTrigger value="mouzas">{t("mouzas")}</TabsTrigger>
         </TabsList>
         <TabsContent value="divisions" className="mt-4"><LevelTab level="divisions"/></TabsContent>
         <TabsContent value="districts" className="mt-4"><LevelTab level="districts"/></TabsContent>
