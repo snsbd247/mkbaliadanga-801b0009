@@ -82,6 +82,7 @@ export function AppSidebar() {
         { url: "/sms-settings", icon: MessageSquare, label: "SMS Settings", superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: "SMS Logs", superOnly: true },
         { url: "/mobile-qa", icon: Smartphone, label: "Mobile QA", superOnly: true },
+        { url: "/locations", icon: MapPin, label: "Locations", superOnly: true },
       ],
     },
   ];
