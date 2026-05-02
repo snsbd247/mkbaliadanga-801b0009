@@ -64,8 +64,21 @@ Deno.serve(async (req) => {
 
     const ip = getIp(req);
 
-    // Rate limit: max 3 OTPs per farmer per 15 minutes
+    // Rate limit per IP: max 10 OTPs per 15 minutes (across all farmers) — defense against scraping
     const windowStart = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { count: ipCount } = await admin
+      .from("farmer_otps")
+      .select("id", { count: "exact", head: true })
+      .eq("ip", ip)
+      .gte("created_at", windowStart);
+
+    if ((ipCount ?? 0) >= 10) {
+      return new Response(JSON.stringify({ error: "Too many requests. Try again later." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Rate limit: max 3 OTPs per farmer per 15 minutes
     const { count } = await admin
       .from("farmer_otps")
       .select("id", { count: "exact", head: true })
