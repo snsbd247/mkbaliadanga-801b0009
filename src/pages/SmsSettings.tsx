@@ -48,13 +48,22 @@ const TEMPLATE_VARS: Record<string, string[]> = {
   tpl_due_reminder: ["{type}", "{due}", "{date}"],
 };
 
-const SAMPLE_VARS: Record<string, Record<string, string>> = {
-  tpl_savings_deposit:    { amount: "1,500.00", balance: "12,750.00" },
-  tpl_savings_withdraw:   { amount: "500.00",   balance: "12,250.00" },
-  tpl_loan_approved:      { amount: "20,000.00", payable: "22,000.00" },
-  tpl_loan_payment:       { amount: "2,000.00",  due: "8,000.00" },
-  tpl_irrigation_payment: { amount: "850.00" },
-  tpl_due_reminder:       { type: "Loan / ঋণ", due: "5,000.00", date: new Date().toISOString().slice(0,10) },
+const DEFAULT_SAMPLE_VARS: Record<string, string> = {
+  amount: "1,500.00",
+  balance: "12,750.00",
+  payable: "22,000.00",
+  due: "8,000.00",
+  type: "Loan / ঋণ",
+  date: new Date().toISOString().slice(0, 10),
+};
+
+const TPL_VAR_MAP: Record<string, string[]> = {
+  tpl_savings_deposit:    ["amount", "balance"],
+  tpl_savings_withdraw:   ["amount", "balance"],
+  tpl_loan_approved:      ["amount", "payable"],
+  tpl_loan_payment:       ["amount", "due"],
+  tpl_irrigation_payment: ["amount"],
+  tpl_due_reminder:       ["type", "due", "date"],
 };
 
 function renderTpl(tpl: string, vars: Record<string, string>): string {
@@ -69,6 +78,7 @@ export default function SmsSettings() {
   const [busy, setBusy] = useState(false);
   const [testMobile, setTestMobile] = useState("");
   const [testMsg, setTestMsg] = useState("পরীক্ষামূলক বার্তা — Smart Irrigation");
+  const [sampleVars, setSampleVars] = useState<Record<string, string>>(DEFAULT_SAMPLE_VARS);
 
   useEffect(() => { document.title = "SMS Settings"; load(); }, []);
 
@@ -183,6 +193,32 @@ export default function SmsSettings() {
             </p>
           </CardHeader>
           <CardContent>
+            {/* Editable sample variables */}
+            <div className="rounded-md border bg-muted/30 p-3 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-xs font-medium">Sample values for preview</Label>
+                <Button type="button" variant="ghost" size="sm"
+                  onClick={() => setSampleVars({ ...DEFAULT_SAMPLE_VARS, date: new Date().toISOString().slice(0,10) })}>
+                  Reset
+                </Button>
+              </div>
+              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                {Object.keys(DEFAULT_SAMPLE_VARS).map((k) => (
+                  <div key={k}>
+                    <Label className="text-[10px] font-mono text-muted-foreground">{`{${k}}`}</Label>
+                    <Input
+                      value={sampleVars[k] ?? ""}
+                      onChange={(e) => setSampleVars({ ...sampleVars, [k]: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Edit values above and watch the preview below update live. These are not saved — only used to render previews.
+              </p>
+            </div>
+
             <Tabs defaultValue="bn">
               <TabsList>
                 <TabsTrigger value="bn">বাংলা (Bangla)</TabsTrigger>
@@ -195,7 +231,10 @@ export default function SmsSettings() {
                     {tplFields.map((f) => {
                       const key = (lang === "en" ? f.key + "_en" : f.key) as keyof Settings;
                       const value = ((s as any)[key] ?? "") as string;
-                      const preview = renderTpl(value, SAMPLE_VARS[f.key] ?? {});
+                      const usedVars = TPL_VAR_MAP[f.key] ?? [];
+                      const subset: Record<string, string> = {};
+                      for (const k of usedVars) subset[k] = sampleVars[k] ?? "";
+                      const preview = renderTpl(value, subset);
                       const vars = TEMPLATE_VARS[f.key] ?? [];
                       return (
                         <div key={String(key)} className="space-y-1.5">
