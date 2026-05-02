@@ -187,7 +187,7 @@ export default function Accounts() {
 
   const save = async () => {
     if (!editing.code || !editing.name || !editing.type) {
-      toast.error("Code, Name এবং Type required");
+      toast.error(t("codeNameTypeRequired"));
       return;
     }
     const payload = {
