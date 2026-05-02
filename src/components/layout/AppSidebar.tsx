@@ -1,7 +1,8 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Building2, Users, MapPin, CalendarDays, Wallet,
-  HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout
+  HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
+  ScanLine, Settings as SettingsIcon,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -9,27 +10,34 @@ import {
 } from "@/components/ui/sidebar";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
+import { useBranding } from "@/lib/branding";
+import { usePermissions } from "@/lib/permissions";
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
-  const { t } = useLang();
-  const { isAdmin, isSuper } = useAuth();
+  const { t, lang } = useLang();
+  const { isSuper } = useAuth();
+  const brand = useBranding();
+  const { can } = usePermissions();
 
   const main = [
-    { url: "/", icon: LayoutDashboard, label: t("dashboard") },
-    { url: "/farmers", icon: Users, label: t("farmers") },
-    { url: "/seasons", icon: CalendarDays, label: t("seasons") },
-    { url: "/savings", icon: Wallet, label: t("savings") },
-    { url: "/loans", icon: HandCoins, label: t("loans") },
-    { url: "/irrigation", icon: Droplets, label: t("irrigation") },
-    { url: "/payments", icon: Receipt, label: t("payments") },
-    { url: "/reports", icon: FileBarChart, label: t("reports") },
-  ];
+    { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" as const },
+    { url: "/farmers", icon: Users, label: t("farmers"), key: "farmers" as const },
+    { url: "/seasons", icon: CalendarDays, label: t("seasons"), key: "seasons" as const },
+    { url: "/savings", icon: Wallet, label: t("savings"), key: "savings" as const },
+    { url: "/loans", icon: HandCoins, label: t("loans"), key: "loans" as const },
+    { url: "/irrigation", icon: Droplets, label: t("irrigation"), key: "irrigation" as const },
+    { url: "/payments", icon: Receipt, label: t("payments"), key: "payments" as const },
+    { url: "/scan", icon: ScanLine, label: t("scanQr"), key: "payments" as const },
+    { url: "/reports", icon: FileBarChart, label: t("reports"), key: "reports" as const },
+  ].filter((x) => can(x.key, "can_view"));
+
   const admin = [
-    ...(isAdmin ? [{ url: "/offices", icon: Building2, label: t("offices") }] : []),
+    ...(can("offices") ? [{ url: "/offices", icon: Building2, label: t("offices") }] : []),
     ...(isSuper ? [{ url: "/users", icon: ShieldCheck, label: t("users") }] : []),
+    ...(isSuper ? [{ url: "/settings", icon: SettingsIcon, label: t("settings") }] : []),
     ...(isSuper ? [{ url: "/audit", icon: ScrollText, label: t("auditLogs") }] : []),
   ];
 
@@ -39,13 +47,19 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
-            <Sprout className="h-5 w-5" />
-          </div>
+          {brand.logo_url ? (
+            <img src={brand.logo_url} alt={brand.company_name} className="h-9 w-9 shrink-0 rounded-md object-cover" />
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
+              <Sprout className="h-5 w-5" />
+            </div>
+          )}
           {!collapsed && (
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-sidebar-foreground leading-tight">{t("appNameShort")}</span>
-              <span className="text-[10px] text-sidebar-foreground/70 leading-tight">{t("appName")}</span>
+            <div className="flex flex-col overflow-hidden">
+              <span className="truncate text-sm font-bold text-sidebar-foreground leading-tight">
+                {lang === "bn" && brand.company_name_bn ? brand.company_name_bn : brand.company_name}
+              </span>
+              <span className="text-[10px] text-sidebar-foreground/70 leading-tight">{t("appNameShort")}</span>
             </div>
           )}
         </div>

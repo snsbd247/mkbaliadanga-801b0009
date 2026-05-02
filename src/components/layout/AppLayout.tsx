@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Languages } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { NotificationBell } from "@/components/NotificationBell";
+import { useBranding } from "@/lib/branding";
 
 export function AppLayout() {
   const { user, loading, signOut, roles } = useAuth();
   const { lang, setLang, t } = useLang();
+  const brand = useBranding();
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center text-muted-foreground">Loading…</div>;
@@ -28,9 +31,12 @@ export function AppLayout() {
           <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-card/80 backdrop-blur px-4 no-print">
             <div className="flex items-center gap-2">
               <SidebarTrigger />
-              <span className="hidden text-sm text-muted-foreground sm:inline">{t("appName")}</span>
+              <span className="hidden text-sm font-medium text-foreground sm:inline">
+                {lang === "bn" && brand.company_name_bn ? brand.company_name_bn : brand.company_name}
+              </span>
             </div>
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1.5">

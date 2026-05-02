@@ -35,6 +35,7 @@ export default function Savings() {
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error("Pick farmer & amount");
     const status = form.type === "withdraw" ? "pending" : "approved";
+    const farmer = farmers.find((x: any) => x.id === form.farmer_id);
     const { error } = await supabase.from("savings_transactions").insert({
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
@@ -42,6 +43,14 @@ export default function Savings() {
     if (error) return toast.error(error.message);
     if (form.type === "deposit") {
       await supabase.from("payments").insert({ farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id });
+    }
+    if (status === "pending") {
+      await supabase.from("notifications").insert({
+        kind: "withdrawal_pending",
+        title: "Withdrawal request",
+        body: `${farmer?.name_en ?? ""} requested ${form.amount}`,
+        link: "/savings",
+      });
     }
     toast.success(t("saved")); setOpen(false); setForm({ farmer_id: "", type: "deposit", amount: 0, note: "" }); load();
   }

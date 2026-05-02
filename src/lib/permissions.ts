@@ -1,0 +1,61 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/auth/AuthProvider";
+
+export type ModuleKey =
+  | "dashboard" | "offices" | "farmers" | "seasons"
+  | "savings" | "loans" | "irrigation" | "payments"
+  | "reports" | "users" | "audit" | "settings";
+
+export const ALL_MODULES: ModuleKey[] = [
+  "dashboard","offices","farmers","seasons","savings","loans",
+  "irrigation","payments","reports","users","audit","settings",
+];
+
+export interface Perm { can_view: boolean; can_add: boolean; can_edit: boolean; can_delete: boolean; }
+
+export const FULL: Perm = { can_view: true, can_add: true, can_edit: true, can_delete: true };
+export const VIEW_ONLY: Perm = { can_view: true, can_add: false, can_edit: false, can_delete: false };
+export const NONE: Perm = { can_view: false, can_add: false, can_edit: false, can_delete: false };
+
+export function usePermissions() {
+  const { user, isSuper, isAdmin } = useAuth();
+  const [map, setMap] = useState<Record<string, Perm>>({});
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_permissions").select("*").eq("user_id", user.id).then(({ data }) => {
+      const m: Record<string, Perm> = {};
+      (data ?? []).forEach((r: any) => {
+        m[r.module] = { can_view: r.can_view, can_add: r.can_add, can_edit: r.can_edit, can_delete: r.can_delete };
+      });
+      setMap(m);
+    });
+  }, [user?.id]);
+
+  function can(module: ModuleKey, action: keyof Perm = "can_view"): boolean {
+    if (isSuper) return true;
+    // Default role baseline: admins get full, staff gets view+add for operational modules
+    const override = map[module];
+    if (override) return override[action];
+    if (isAdmin) return true;
+    // staff defaults
+    const staffDefaults: Record<string, Perm> = {
+      dashboard: VIEW_ONLY,
+      farmers: { can_view: true, can_add: true, can_edit: true, can_delete: false },
+      savings: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+      loans: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+      irrigation: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+      payments: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+      reports: VIEW_ONLY,
+      seasons: VIEW_ONLY,
+      offices: NONE,
+      users: NONE,
+      audit: NONE,
+      settings: NONE,
+    };
+    return (staffDefaults[module] ?? NONE)[action];
+  }
+
+  return { can, perms: map };
+}

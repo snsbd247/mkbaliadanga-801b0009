@@ -37,6 +37,7 @@ export default function Loans() {
   async function save() {
     if (!form.farmer_id || form.principal <= 0) return toast.error("Pick farmer & amount");
     const total = form.interest_enabled ? form.principal * (1 + form.interest_rate / 100) : form.principal;
+    const farmer = farmers.find((x: any) => x.id === form.farmer_id);
     const { error } = await supabase.from("loans").insert({
       farmer_id: form.farmer_id, principal: form.principal, interest_enabled: form.interest_enabled,
       interest_rate: form.interest_enabled ? form.interest_rate : 0, total_payable: total,
@@ -44,6 +45,12 @@ export default function Loans() {
       status: "pending", created_by: user?.id,
     });
     if (error) return toast.error(error.message);
+    await supabase.from("notifications").insert({
+      kind: "loan_pending",
+      title: "Loan approval needed",
+      body: `${farmer?.name_en ?? ""} requested ${form.principal}`,
+      link: "/loans",
+    });
     toast.success(t("saved")); setOpen(false); load();
   }
   async function decide(id: string, status: "approved" | "rejected") {
