@@ -4,7 +4,7 @@ import { LocationPicker, type LocationValue } from "@/components/locations/Locat
 import { useState } from "react";
 
 // --- Mock supabase client used by LocationPicker ---
-type Row = { id: string; name: string; name_bn?: string | null };
+type Row = { id: string; name: string; name_bn?: string | null; [k: string]: any };
 const FIXTURES: Record<string, Row[]> = {
   divisions: [{ id: "div1", name: "Division 1" }, { id: "div2", name: "Division 2" }],
   districts: [{ id: "dis1", name: "District 1" }],
