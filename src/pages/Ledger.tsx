@@ -6,7 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 
 type Account = { id: string; code: string; name: string; type: string };
 type Entry = {
@@ -80,6 +83,36 @@ export default function Ledger() {
       {accountId && (
         <Card>
           <CardContent className="pt-6">
+            <div className="mb-3 flex justify-end gap-2">
+              <Button
+                variant="outline" size="sm"
+                onClick={() => {
+                  const acct = accounts.find((a) => a.id === accountId);
+                  exportTablePDF(
+                    `Ledger - ${acct?.code} ${acct?.name}`,
+                    ["Date", "Description", "Ref", "Debit", "Credit", "Balance"],
+                    withRunning.map((e) => [
+                      fmtDate(e.entry_date), e.description || "-", e.reference_type || "-",
+                      e.debit > 0 ? money(e.debit) : "", e.credit > 0 ? money(e.credit) : "", money(e.balance),
+                    ]),
+                  );
+                }}
+              >
+                <FileDown className="mr-1 h-4 w-4" /> PDF
+              </Button>
+              <Button
+                variant="outline" size="sm"
+                onClick={() => {
+                  const acct = accounts.find((a) => a.id === accountId);
+                  exportExcel(`ledger-${acct?.code}`, "Ledger", withRunning.map((e) => ({
+                    Date: e.entry_date, Description: e.description, Reference: e.reference_type,
+                    Debit: Number(e.debit) || 0, Credit: Number(e.credit) || 0, Balance: e.balance,
+                  })));
+                }}
+              >
+                <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
+              </Button>
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
