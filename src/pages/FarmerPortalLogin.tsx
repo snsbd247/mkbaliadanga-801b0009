@@ -80,7 +80,7 @@ export default function FarmerPortalLogin() {
   async function verifyOtp(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!/^\d{6}$/.test(otp)) { setError("Enter the 6-digit code."); return; }
+    if (!/^\d{6}$/.test(otp)) { setError(t("enterSixDigitError")); return; }
     setBusy(true);
     try {
       const res = await fetch(`${FN_BASE}/farmer-verify-otp`, {
