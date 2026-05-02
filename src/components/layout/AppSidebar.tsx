@@ -94,6 +94,8 @@ export function AppSidebar() {
         { url: "/sms-settings", icon: MessageSquare, label: "SMS Settings", superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: "SMS Logs", superOnly: true },
         { url: "/locations", icon: MapPin, label: "Locations", superOnly: true },
+        { url: "/admin/verification", icon: CheckCircle2, label: "Verification Report" },
+        { url: "/admin/rls-test", icon: ShieldQuestion, label: "RLS Access Test", superOnly: true },
       ],
     },
   ];
