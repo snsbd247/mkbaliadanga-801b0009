@@ -251,3 +251,21 @@ export default function AuthPage() {
     </div>
   );
 }
+
+function StepRow({ label, status, extra }: { label: string; status: StepStatus; extra?: string }) {
+  const Icon = status === "ok" ? CheckCircle2 : status === "fail" ? XCircle : status === "running" ? Loader2 : AlertCircle;
+  const color =
+    status === "ok" ? "text-green-600" :
+    status === "fail" ? "text-destructive" :
+    status === "running" ? "text-primary" :
+    "text-muted-foreground";
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className={`h-3.5 w-3.5 mt-0.5 ${color} ${status === "running" ? "animate-spin" : ""}`} />
+      <div className="flex-1">
+        <div className={color}>{label}</div>
+        {extra && <div className="text-[10px] font-mono text-muted-foreground break-all">{extra}</div>}
+      </div>
+    </div>
+  );
+}
