@@ -249,9 +249,9 @@ export default function Payments() {
 
             {farmerId && (
               <div className="rounded-md bg-muted/40 p-2 text-xs space-y-0.5">
-                <div className="font-semibold uppercase text-[10px] text-muted-foreground">Outstanding dues</div>
-                <div className="flex justify-between"><span>Irrigation</span><span className="font-mono">{money(openIrr.reduce((s, x) => s + Number(x.due_amount || 0), 0))}</span></div>
-                <div className="flex justify-between"><span>Loans</span><span className="font-mono">{money(openLoans.reduce((s, l) => s + (Number(l.total_payable) - (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0)), 0))}</span></div>
+                <div className="font-semibold uppercase text-[10px] text-muted-foreground">{t("outstandingDues")}</div>
+                <div className="flex justify-between"><span>{t("irrigation")}</span><span className="font-mono">{money(openIrr.reduce((s, x) => s + Number(x.due_amount || 0), 0))}</span></div>
+                <div className="flex justify-between"><span>{t("loans")}</span><span className="font-mono">{money(openLoans.reduce((s, l) => s + (Number(l.total_payable) - (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0)), 0))}</span></div>
               </div>
             )}
 
