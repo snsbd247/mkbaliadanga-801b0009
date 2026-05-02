@@ -24,8 +24,24 @@ export default function Irrigation() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, entry_date: new Date().toISOString().slice(0, 10) });
 
+  const [prevDue, setPrevDue] = useState<number>(0);
+
   useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, []);
   useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); }, [form.farmer_id]);
+  useEffect(() => {
+    (async () => {
+      if (!form.farmer_id || !form.land_id) { setPrevDue(0); return; }
+      const { data } = await supabase
+        .from("irrigation_charges")
+        .select("due_amount, season_id")
+        .eq("farmer_id", form.farmer_id)
+        .eq("land_id", form.land_id);
+      const sum = (data ?? [])
+        .filter((r: any) => !form.season_id || r.season_id !== form.season_id)
+        .reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+      setPrevDue(sum);
+    })();
+  }, [form.farmer_id, form.land_id, form.season_id]);
 
   async function load() {
     const [r, f, s] = await Promise.all([
