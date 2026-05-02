@@ -362,6 +362,17 @@ export default function SmsSettings() {
   const [tokenBusy, setTokenBusy] = useState(false);
   const [showToken, setShowToken] = useState(false);
 
+  // Provider "Test connection" diagnostics state
+  const [testConnPhone, setTestConnPhone] = useState<string>("");
+  const [testConnBusy, setTestConnBusy] = useState(false);
+  const [testConnResult, setTestConnResult] = useState<{
+    ok: boolean;
+    request?: { url?: string; to?: string; sender?: string | null; message_length?: number };
+    response?: string;
+    error?: string;
+    tested_at?: string;
+  } | null>(null);
+
   // Manual scheduler state
   const today = new Date().toISOString().slice(0, 10);
   const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
