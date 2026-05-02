@@ -89,8 +89,9 @@ const L = {
   },
 };
 
-function pickLabels(lang: ReceiptTemplate["language"]) {
-  if (lang === "bn") return L.bn;
+function pickLabels(_lang: ReceiptTemplate["language"]) {
+  // jsPDF's built-in fonts don't support Bangla glyphs, so PDFs always render
+  // English labels. The on-screen UI continues to honour the language toggle.
   return L.en;
 }
 
@@ -105,9 +106,11 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   const pageH = doc.internal.pageSize.getHeight();
   const margin = tpl.paper_size === "a6" ? 8 : 12;
   const accent = hexToRgb(tpl.accent_color);
-  const showBoth = tpl.language === "both";
-  const labels = pickLabels(tpl.language === "both" ? "en" : tpl.language);
-  const labelsBn = L.bn;
+  // Bangla cannot be embedded in jsPDF's built-in fonts, so we never render
+  // BN strings in the PDF — the "both" mode falls back to English-only.
+  const showBoth = false;
+  const labels = pickLabels(tpl.language);
+  const labelsBn = L.en;
 
   const align = tpl.header_alignment;
   const headerX = align === "left" ? margin : align === "right" ? pageW - margin : pageW / 2;
@@ -221,12 +224,8 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   // Footer note
   doc.setTextColor(0);
   doc.setFontSize(7);
-  const footer = tpl.language === "bn" ? tpl.footer_note_bn : tpl.footer_note;
+  const footer = tpl.footer_note;
   doc.text(footer, pageW / 2, pageH - margin, { align: "center" });
-  if (showBoth && tpl.footer_note_bn) {
-    doc.setFont("helvetica", "italic");
-    doc.text(tpl.footer_note_bn, pageW / 2, pageH - margin - 3, { align: "center" });
-  }
   return doc;
 }
 
