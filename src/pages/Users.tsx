@@ -22,7 +22,7 @@ const createSchema = z.object({
   email: z.string().trim().email().max(255),
   full_name: z.string().trim().min(1).max(120),
   password: z.string().min(8, "At least 8 characters").max(72),
-  role: z.enum(["super_admin", "admin", "staff"]),
+  role: z.enum(["super_admin", "admin", "committee", "staff"]),
   office_id: z.string().nullable(),
 });
 
@@ -40,7 +40,7 @@ export default function Users() {
 
   const [form, setForm] = useState({
     username: "", email: "", full_name: "", password: "",
-    role: "staff" as "super_admin" | "admin" | "staff", office_id: "",
+    role: "staff" as "super_admin" | "admin" | "committee" | "staff", office_id: "",
   });
 
   useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, []);
@@ -100,7 +100,7 @@ export default function Users() {
     setResetFor(null); setResetPwd("");
   }
 
-  async function setRole(uid: string, role: "super_admin" | "admin" | "staff") {
+  async function setRole(uid: string, role: "super_admin" | "admin" | "committee" | "staff") {
     await supabase.from("user_roles").delete().eq("user_id", uid);
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role });
     if (error) return toast.error(error.message);
@@ -162,6 +162,7 @@ export default function Users() {
                     <SelectContent>
                       <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
                       <SelectItem value="admin">{t("admin")}</SelectItem>
+                      <SelectItem value="committee">Committee</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
                     </SelectContent>
                   </Select>
@@ -205,6 +206,7 @@ export default function Users() {
                     <SelectContent>
                       <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
                       <SelectItem value="admin">{t("admin")}</SelectItem>
+                      <SelectItem value="committee">Committee</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
                     </SelectContent>
                   </Select>

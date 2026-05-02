@@ -20,7 +20,7 @@ const DEFAULT_INTEREST = 8.0;
 
 export default function Loans() {
   const { t } = useLang();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isCommittee, user } = useAuth();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -112,7 +112,7 @@ export default function Loans() {
                 <TableCell className={due > 0 && l.status === "approved" ? "due-text" : ""}>{money(due)}</TableCell>
                 <TableCell><Badge variant={l.status === "approved" ? "default" : l.status === "paid" ? "secondary" : l.status === "pending" ? "outline" : "destructive"}>{t(l.status as any)}</Badge></TableCell>
                 <TableCell className="text-right">
-                  {isAdmin && l.status === "pending" && (<>
+                  {isCommittee && l.status === "pending" && (<>
                     <Button size="icon" variant="ghost" onClick={() => decide(l.id, "approved")}><Check className="h-4 w-4 text-success" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => decide(l.id, "rejected")}><X className="h-4 w-4 text-destructive" /></Button>
                   </>)}

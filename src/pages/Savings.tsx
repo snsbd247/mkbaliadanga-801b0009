@@ -18,7 +18,7 @@ import { useAuth } from "@/auth/AuthProvider";
 
 export default function Savings() {
   const { t } = useLang();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isCommittee, user } = useAuth();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [txns, setTxns] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -96,8 +96,8 @@ export default function Savings() {
           <TabsTrigger value="all">{t("all")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
         </TabsList>
-        <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isAdmin} onDecide={decide} /></TabsContent>
-        <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isAdmin} onDecide={decide} /></TabsContent>
+        <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} onDecide={decide} /></TabsContent>
+        <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} onDecide={decide} /></TabsContent>
       </Tabs>
     </>
   );

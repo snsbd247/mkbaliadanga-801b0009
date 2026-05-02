@@ -15,7 +15,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
 import { useBranding } from "@/lib/branding";
 
 const RECEIPT_KINDS = [
@@ -46,6 +46,8 @@ export default function Cashbook() {
 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [openingCash, setOpeningCash] = useState<number>(() => Number(localStorage.getItem("cb_open") ?? 0));
+  useEffect(() => { localStorage.setItem("cb_open", String(openingCash || 0)); }, [openingCash]);
   const [farmers, setFarmers] = useState<any[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -125,12 +127,13 @@ export default function Cashbook() {
       ...receipts.map(x => ({ date: x.receipt_date, kind: "income", label: KIND_LABEL[x.kind as Kind] ?? x.kind, ref: x.receipt_no, amount: Number(x.amount), note: x.note })),
       ...expenses.map(x => ({ date: x.expense_date, kind: "expense", label: x.head, ref: x.payee ?? "", amount: Number(x.amount), note: x.note })),
     ].sort((a, b) => a.date.localeCompare(b.date));
-    let bal = 0;
-    return rows.map(row => {
+    let bal = Number(openingCash || 0);
+    const out = rows.map(row => {
       bal += row.kind === "income" ? row.amount : -row.amount;
       return { ...row, balance: bal };
     });
-  }, [receipts, expenses]);
+    return out;
+  }, [receipts, expenses, openingCash]);
 
   const totals = useMemo(() => {
     const income = receipts.reduce((s, x) => s + Number(x.amount), 0);
@@ -153,11 +156,11 @@ export default function Cashbook() {
     const irrDue = irrigation.reduce((s, x) => s + Number(x.due_amount || 0), 0);
 
     return {
-      income, expense, cashBalance: income - expense,
+      income, expense, cashBalance: Number(openingCash || 0) + income - expense,
       savBal, loanIssued, loanCollected, loanDue,
       irrCharged, irrCollected, irrDue,
     };
-  }, [receipts, expenses, savings, loans, loanPayments, irrigation]);
+  }, [receipts, expenses, savings, loans, loanPayments, irrigation, openingCash]);
 
   function rangeLabel() {
     if (!from && !to) return "All time";
@@ -221,14 +224,35 @@ export default function Cashbook() {
       />
 
       <Card className="p-4 mb-4">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-4">
           <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
           <div><Label>{t("to")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <div><Label>Opening Cash</Label><Input type="number" value={openingCash || ""} onChange={e => setOpeningCash(+e.target.value)} /></div>
           <div className="self-end text-sm text-muted-foreground">
-            {t("income")}: <span className="font-semibold text-success">{money(totals.income)}</span> ·
-            {" "}{t("expense")}: <span className="font-semibold text-destructive">{money(totals.expense)}</span> ·
-            {" "}{t("balance")}: <span className={`font-bold ${totals.cashBalance < 0 ? "due-text" : "text-success"}`}>{money(totals.cashBalance)}</span>
+            <div>Open: <span className="font-semibold">{money(openingCash)}</span></div>
+            <div>{t("income")}: <span className="font-semibold text-success">{money(totals.income)}</span> · {t("expense")}: <span className="font-semibold text-destructive">{money(totals.expense)}</span></div>
+            <div>Closing: <span className={`font-bold ${totals.cashBalance < 0 ? "due-text" : "text-success"}`}>{money(totals.cashBalance)}</span></div>
           </div>
+        </div>
+        <div className="flex gap-2 mt-3">
+          <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />Print</Button>
+          <Button size="sm" variant="outline" onClick={() => exportAuditReportPDF({
+            brand: { company_name: brand.company_name, address: brand.address ?? "" },
+            range: rangeLabel(),
+            summary: [
+              { label: "Opening Cash", value: Number(openingCash || 0) },
+              { label: "Total Income (Receipts)", value: totals.income },
+              { label: "Total Expense", value: totals.expense },
+              { label: "Closing Cash", value: totals.cashBalance },
+              { label: "Savings Balance", value: totals.savBal },
+              { label: "Loan Issued", value: totals.loanIssued },
+              { label: "Loan Collected", value: totals.loanCollected },
+              { label: "Loan Outstanding Due", value: totals.loanDue },
+              { label: "Irrigation Charged", value: totals.irrCharged },
+              { label: "Irrigation Collected", value: totals.irrCollected },
+              { label: "Irrigation Outstanding Due", value: totals.irrDue },
+            ],
+          })}><FileDown className="h-4 w-4 mr-1" />Audit Report PDF</Button>
         </div>
       </Card>
 
@@ -259,6 +283,14 @@ export default function Cashbook() {
               <TableHead className="text-right">{t("runningBalance")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
+              <TableRow className="bg-muted/40 font-medium">
+                <TableCell>{from || "—"}</TableCell>
+                <TableCell><Badge variant="outline">opening</Badge></TableCell>
+                <TableCell colSpan={2}>Opening Cash Balance</TableCell>
+                <TableCell className="text-right">—</TableCell>
+                <TableCell className="text-right">—</TableCell>
+                <TableCell className="text-right font-semibold">{money(openingCash)}</TableCell>
+              </TableRow>
               {cashbookEntries.map((row, i) => (
                 <TableRow key={i}>
                   <TableCell>{fmtDate(row.date)}</TableCell>
@@ -270,6 +302,12 @@ export default function Cashbook() {
                   <TableCell className={`text-right font-semibold ${row.balance < 0 ? "due-text" : ""}`}>{money(row.balance)}</TableCell>
                 </TableRow>
               ))}
+              <TableRow className="bg-muted/60 font-bold">
+                <TableCell colSpan={4} className="text-right">Closing</TableCell>
+                <TableCell className="text-right text-success">{money(totals.income)}</TableCell>
+                <TableCell className="text-right text-destructive">{money(totals.expense)}</TableCell>
+                <TableCell className={`text-right ${totals.cashBalance < 0 ? "due-text" : ""}`}>{money(totals.cashBalance)}</TableCell>
+              </TableRow>
               {cashbookEntries.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
