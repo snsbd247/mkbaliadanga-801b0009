@@ -30,6 +30,10 @@ import Diagnostics from "./pages/Diagnostics";
 import Accounts from "./pages/Accounts";
 import Ledger from "./pages/Ledger";
 import FinancialReports from "./pages/FinancialReports";
+import JournalEntry from "./pages/JournalEntry";
+import LedgerIntegrity from "./pages/LedgerIntegrity";
+import Approvals from "./pages/Approvals";
+import PeriodClose from "./pages/PeriodClose";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -68,6 +72,10 @@ const App = () => (
                 <Route path="/accounts" element={<Accounts />} />
                 <Route path="/ledger" element={<Ledger />} />
                 <Route path="/financial-reports" element={<FinancialReports />} />
+                <Route path="/journal-entry" element={<JournalEntry />} />
+                <Route path="/ledger-integrity" element={<LedgerIntegrity />} />
+                <Route path="/approvals" element={<Approvals />} />
+                <Route path="/period-close" element={<PeriodClose />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

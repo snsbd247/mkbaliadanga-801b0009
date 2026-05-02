@@ -1,9 +1,9 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Building2, Users, MapPin, CalendarDays, Wallet,
+  LayoutDashboard, Building2, Users, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
-  BookText, Calculator, TrendingUp,
+  BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -14,6 +14,8 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useBranding } from "@/lib/branding";
 import { usePermissions } from "@/lib/permissions";
 
+type Item = { url: string; icon: any; label: string; permKey?: string; superOnly?: boolean };
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -23,31 +25,69 @@ export function AppSidebar() {
   const brand = useBranding();
   const { can } = usePermissions();
 
-  const main = [
-    { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" as const },
-    { url: "/farmers", icon: Users, label: t("farmers"), key: "farmers" as const },
-    { url: "/seasons", icon: CalendarDays, label: t("seasons"), key: "seasons" as const },
-    { url: "/savings", icon: Wallet, label: t("savings"), key: "savings" as const },
-    { url: "/statement", icon: FileText, label: (t as any)("statement") || "Statement", key: "savings" as const },
-    { url: "/loans", icon: HandCoins, label: t("loans"), key: "loans" as const },
-    { url: "/irrigation", icon: Droplets, label: t("irrigation"), key: "irrigation" as const },
-    { url: "/payments", icon: Receipt, label: t("payments"), key: "payments" as const },
-    { url: "/cashbook", icon: BookOpen, label: t("cashbook"), key: "reports" as const },
-    { url: "/scan", icon: ScanLine, label: t("scanQr"), key: "payments" as const },
-    { url: "/reports", icon: FileBarChart, label: t("reports"), key: "reports" as const },
-    { url: "/dues", icon: AlertTriangle, label: "Dues", key: "reports" as const },
-    { url: "/accounts", icon: BookText, label: "Chart of Accounts", key: "reports" as const },
-    { url: "/ledger", icon: Calculator, label: "Ledger", key: "reports" as const },
-    { url: "/financial-reports", icon: TrendingUp, label: "Financial Reports", key: "reports" as const },
-  ].filter((x) => can(x.key, "can_view"));
-
-  const admin = [
-    ...(can("offices") ? [{ url: "/offices", icon: Building2, label: t("offices") }] : []),
-    ...(isSuper ? [{ url: "/users", icon: ShieldCheck, label: t("users") }] : []),
-    ...(isSuper ? [{ url: "/settings", icon: SettingsIcon, label: t("settings") }] : []),
-    ...(isSuper ? [{ url: "/backup", icon: Database, label: "Backup" }] : []),
-    ...(isSuper ? [{ url: "/audit", icon: ScrollText, label: t("auditLogs") }] : []),
+  const groups: { label: string; items: Item[] }[] = [
+    {
+      label: "Main",
+      items: [
+        { url: "/", icon: LayoutDashboard, label: t("dashboard"), permKey: "dashboard" },
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
+        { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
+        { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
+        { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
+        { url: "/irrigation", icon: Droplets, label: t("irrigation"), permKey: "irrigation" },
+        { url: "/statement", icon: FileText, label: (t as any)("statement") || "Statement", permKey: "savings" },
+      ],
+    },
+    {
+      label: "Cash & Payments",
+      items: [
+        { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
+        { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
+        { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "reports" },
+        { url: "/approvals", icon: ClipboardCheck, label: "Approvals", permKey: "payments" },
+      ],
+    },
+    {
+      label: "Accounting",
+      items: [
+        { url: "/accounts", icon: BookText, label: "Chart of Accounts", permKey: "reports" },
+        { url: "/ledger", icon: Calculator, label: "General Ledger", permKey: "reports" },
+        { url: "/journal-entry", icon: BookKey, label: "Journal Entry", permKey: "reports" },
+        { url: "/financial-reports", icon: TrendingUp, label: "Financial Reports", permKey: "reports" },
+        { url: "/period-close", icon: Lock, label: "Period Close", permKey: "reports" },
+        { url: "/ledger-integrity", icon: ShieldAlert, label: "Ledger Integrity", permKey: "reports" },
+      ],
+    },
+    {
+      label: "Reports",
+      items: [
+        { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
+        { url: "/dues", icon: AlertTriangle, label: "Dues", permKey: "reports" },
+      ],
+    },
+    {
+      label: "Admin",
+      items: [
+        { url: "/offices", icon: Building2, label: t("offices"), permKey: "offices" },
+        { url: "/users", icon: ShieldCheck, label: t("users"), superOnly: true },
+        { url: "/settings", icon: SettingsIcon, label: t("settings"), superOnly: true },
+        { url: "/backup", icon: Database, label: "Backup", superOnly: true },
+        { url: "/audit", icon: ScrollText, label: t("auditLogs"), superOnly: true },
+      ],
+    },
   ];
+
+  const filterItems = (items: Item[]) =>
+    items.filter((i) => {
+      if (i.superOnly) return isSuper;
+      if (i.permKey) return can(i.permKey as any, "can_view");
+      return true;
+    });
 
   const isActive = (url: string) => url === "/" ? pathname === "/" : pathname.startsWith(url);
 
@@ -74,43 +114,29 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>{collapsed ? "" : "Main"}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {main.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.label}>
-                    <NavLink to={item.url} end={item.url === "/"}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {admin.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{collapsed ? "" : "Admin"}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {admin.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.label}>
-                      <NavLink to={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {groups.map((g) => {
+          const items = filterItems(g.items);
+          if (items.length === 0) return null;
+          return (
+            <SidebarGroup key={g.label}>
+              <SidebarGroupLabel>{collapsed ? "" : g.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {items.map((item) => (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.label}>
+                        <NavLink to={item.url} end={item.url === "/"}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
     </Sidebar>
   );

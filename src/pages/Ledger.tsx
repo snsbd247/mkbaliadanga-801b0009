@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
-import { getFiscalStartMonth, listFiscalYears, reportFilename } from "@/lib/accounting";
+import { getFiscalStartMonth, listFiscalYears } from "@/lib/accounting";
 
 type Account = { id: string; code: string; name: string; type: string };
 type Office = { id: string; name: string };
@@ -155,17 +155,19 @@ export default function Ledger() {
                   e.credit > 0 ? money(e.credit) : "",
                   ...(showRunning ? [money(e.balance)] : []),
                 ]),
+                { from, to },
               )}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportExcel(
-                reportFilename(reportName, { from, to }), "Ledger",
+                "Ledger", "Ledger",
                 withRunning.map((e) => ({
                   Date: e.entry_date, Account: `${e.account_code ?? ""} ${e.account_name ?? ""}`.trim(),
                   Office: e.office_name, Description: e.description, Reference: e.reference_type,
                   Debit: Number(e.debit) || 0, Credit: Number(e.credit) || 0,
                   ...(showRunning ? { Balance: e.balance } : {}),
                 })),
+                { from, to },
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
               </Button>

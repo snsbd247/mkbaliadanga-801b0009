@@ -83,6 +83,7 @@ export default function AuditLogs() {
               <TableHead>User</TableHead>
               <TableHead>Office</TableHead>
               <TableHead>Diff</TableHead>
+              <TableHead>Ledger</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -103,14 +104,77 @@ export default function AuditLogs() {
                   <TableCell>
                     <DiffDialog log={l} />
                   </TableCell>
+                  <TableCell>
+                    <LedgerLinkButton log={l} />
+                  </TableCell>
                 </TableRow>
               );
             })}
-            {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
     </>
+  );
+}
+
+const ENTITY_TO_REF: Record<string, string> = {
+  savings_transactions: "savings",
+  loans: "loan",
+  loan_payments: "loan_payment",
+  irrigation_charges: "irrigation",
+  expenses: "expense",
+  journal_entries: "journal",
+};
+
+function LedgerLinkButton({ log }: { log: any }) {
+  const refType = ENTITY_TO_REF[log.entity];
+  const refId = log.entity_id;
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<any[]>([]);
+  if (!refType || !refId) return <span className="text-muted-foreground text-xs">—</span>;
+  return (
+    <Dialog open={open} onOpenChange={async (o) => {
+      setOpen(o);
+      if (o && rows.length === 0) {
+        const { data } = await supabase
+          .from("ledger_entries")
+          .select("entry_date,debit,credit,description,account_id,accounts(code,name)")
+          .eq("reference_type", refType).eq("reference_id", refId)
+          .order("entry_date");
+        setRows(data ?? []);
+      }
+    }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">View ledger</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>Ledger entries — {refType}</DialogTitle></DialogHeader>
+        <div className="overflow-auto max-h-[60vh]">
+          <table className="w-full text-xs">
+            <thead><tr className="border-b">
+              <th className="text-left p-2">Date</th>
+              <th className="text-left p-2">Account</th>
+              <th className="text-left p-2">Description</th>
+              <th className="text-right p-2">Debit</th>
+              <th className="text-right p-2">Credit</th>
+            </tr></thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i} className="border-b">
+                  <td className="p-2">{fmtDate(r.entry_date)}</td>
+                  <td className="p-2">{r.accounts?.code} {r.accounts?.name}</td>
+                  <td className="p-2">{r.description ?? "—"}</td>
+                  <td className="p-2 text-right tabular-nums">{Number(r.debit) ? Number(r.debit).toLocaleString() : ""}</td>
+                  <td className="p-2 text-right tabular-nums">{Number(r.credit) ? Number(r.credit).toLocaleString() : ""}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && <tr><td colSpan={5} className="text-center p-4 text-muted-foreground">No ledger entries linked.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

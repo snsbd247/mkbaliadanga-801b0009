@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
-import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange, reportFilename } from "@/lib/accounting";
+import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
 
 type Account = { id: string; code: string; name: string; type: "asset"|"liability"|"income"|"expense"|"equity" };
 type Entry = { id: string; entry_date: string; account_id: string; debit: number; credit: number; description: string | null };
@@ -164,18 +164,20 @@ export default function FinancialReports() {
           <Card><CardContent className="pt-6">
             <div className="mb-3 flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF(
-                `Trial Balance ${from || "open"} to ${to || "today"}`,
+                "Trial Balance",
                 ["Code", "Account", "Type", "Debit", "Credit"],
                 [
                   ...trial.map((r) => [r.code, r.name, r.type, r.raw.debit ? money(r.raw.debit) : "", r.raw.credit ? money(r.raw.credit) : ""]),
                   ["", "Totals", "", money(trialTotals.debit), money(trialTotals.credit)],
                 ],
+                range,
               )}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportExcel(
-                reportFilename("trial-balance", range), `Trial Balance ${from || "open"} to ${to || "today"}`,
+                "Trial Balance", "Trial Balance",
                 trial.map((r) => ({ Code: r.code, Account: r.name, Type: r.type, Debit: r.raw.debit, Credit: r.raw.credit })),
+                range,
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
               </Button>
@@ -213,7 +215,7 @@ export default function FinancialReports() {
         <TabsContent value="pnl">
           <div className="mb-3 flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTablePDF(
-              `Income Statement ${from || "open"} to ${to || "today"}`,
+              "Income Statement",
               ["Section", "Account", "Amount"],
               [
                 ...incomeRows.map((r) => ["Income", r.name, money(r.raw.credit - r.raw.debit)]),
@@ -222,11 +224,12 @@ export default function FinancialReports() {
                 ["", "Total Expense", money(totalExpense)],
                 ["", `Net ${netIncome >= 0 ? "Profit" : "Loss"}`, money(Math.abs(netIncome))],
               ],
+              range,
             )}>
               <FileDown className="mr-1 h-4 w-4" /> PDF
             </Button>
             <Button variant="outline" size="sm" onClick={() => exportExcel(
-              reportFilename("income-statement", range), "P&L",
+              "Income Statement", "P&L",
               [
                 ...incomeRows.map((r) => ({ Section: "Income", Account: r.name, Amount: r.raw.credit - r.raw.debit })),
                 { Section: "", Account: "Total Income", Amount: totalIncome },
@@ -234,6 +237,7 @@ export default function FinancialReports() {
                 { Section: "", Account: "Total Expense", Amount: totalExpense },
                 { Section: "", Account: `Net ${netIncome >= 0 ? "Profit" : "Loss"}`, Amount: netIncome },
               ],
+              range,
             )}>
               <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
             </Button>
@@ -279,7 +283,7 @@ export default function FinancialReports() {
         <TabsContent value="bs">
           <div className="mb-3 flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTablePDF(
-              `Balance Sheet ${from || "open"} to ${to || "today"}`,
+              "Balance Sheet",
               ["Section", "Account", "Amount"],
               [
                 ...assetRows.map((r) => ["Asset", r.name, money(r.raw.debit - r.raw.credit)]),
@@ -289,11 +293,12 @@ export default function FinancialReports() {
                 ...equityRows.map((r) => ["Equity", r.name, money(r.raw.credit - r.raw.debit)]),
                 ["", "Total Liab. + Equity", money(totalLiabilities + totalEquity)],
               ],
+              range,
             )}>
               <FileDown className="mr-1 h-4 w-4" /> PDF
             </Button>
             <Button variant="outline" size="sm" onClick={() => exportExcel(
-              reportFilename("balance-sheet", range), `Balance Sheet ${from || "open"} to ${to || "today"}`,
+              "Balance Sheet", "Balance Sheet",
               [
                 ...assetRows.map((r) => ({ Section: "Asset", Account: r.name, Amount: r.raw.debit - r.raw.credit })),
                 { Section: "", Account: "Total Assets", Amount: totalAssets },
@@ -302,6 +307,7 @@ export default function FinancialReports() {
                 ...equityRows.map((r) => ({ Section: "Equity", Account: r.name, Amount: r.raw.credit - r.raw.debit })),
                 { Section: "", Account: "Total Liab. + Equity", Amount: totalLiabilities + totalEquity },
               ],
+              range,
             )}>
               <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
             </Button>
@@ -343,19 +349,21 @@ export default function FinancialReports() {
           <Card><CardContent className="pt-6">
             <div className="mb-3 flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF(
-                `Cash Book ${from || "open"} to ${to || "today"}`,
+                "Cash Book",
                 ["Date", "Description", "Cash In", "Cash Out"],
                 [
                   ...cashEntries.map((e) => [fmtDate(e.entry_date), e.description || "-", e.debit > 0 ? money(e.debit) : "", e.credit > 0 ? money(e.credit) : ""]),
                   ["", "Totals", money(cashTotal.in), money(cashTotal.out)],
                   ["", "Net Cash", money(cashTotal.in - cashTotal.out), ""],
                 ],
+                range,
               )}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportExcel(
-                reportFilename("cash-book", range), `Cash Book ${from || "open"} to ${to || "today"}`,
+                "Cash Book", "Cash Book",
                 cashEntries.map((e) => ({ Date: e.entry_date, Description: e.description, "Cash In": Number(e.debit) || 0, "Cash Out": Number(e.credit) || 0 })),
+                range,
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
               </Button>

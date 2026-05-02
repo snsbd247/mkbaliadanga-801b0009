@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_periods: {
+        Row: {
+          cash_in: number
+          cash_out: number
+          closed_at: string | null
+          closed_by: string | null
+          closing_balance_snapshot: Json | null
+          created_at: string
+          id: string
+          net_income: number
+          note: string | null
+          office_id: string | null
+          period_end: string
+          period_start: string
+          status: string
+          total_credit: number
+          total_debit: number
+          total_expense: number
+          total_income: number
+          updated_at: string
+        }
+        Insert: {
+          cash_in?: number
+          cash_out?: number
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_balance_snapshot?: Json | null
+          created_at?: string
+          id?: string
+          net_income?: number
+          note?: string | null
+          office_id?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          total_credit?: number
+          total_debit?: number
+          total_expense?: number
+          total_income?: number
+          updated_at?: string
+        }
+        Update: {
+          cash_in?: number
+          cash_out?: number
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_balance_snapshot?: Json | null
+          created_at?: string
+          id?: string
+          net_income?: number
+          note?: string | null
+          office_id?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_credit?: number
+          total_debit?: number
+          total_expense?: number
+          total_income?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_periods_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           code: string
@@ -1304,9 +1375,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      close_accounting_period: {
+        Args: { _from: string; _note?: string; _office?: string; _to: string }
+        Returns: string
+      }
       compute_penalty: {
         Args: { _base: number; _days_overdue: number }
         Returns: number
+      }
+      compute_period_summary: {
+        Args: { _from: string; _office?: string; _to: string }
+        Returns: {
+          account_balances: Json
+          cash_in: number
+          cash_out: number
+          net_income: number
+          total_credit: number
+          total_debit: number
+          total_expense: number
+          total_income: number
+        }[]
       }
       current_user_office: { Args: never; Returns: string }
       email_for_username: { Args: { _username: string }; Returns: string }
@@ -1341,6 +1429,7 @@ export type Database = {
           total_debit: number
         }[]
       }
+      reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
