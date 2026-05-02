@@ -72,6 +72,9 @@ function renderTpl(tpl: string, vars: Record<string, string>): string {
   return out;
 }
 
+type Office = { id: string; name: string };
+type OfficeOverride = { office_id: string; enabled: boolean; sender_id: string | null };
+
 export default function SmsSettings() {
   const { isSuper } = useAuth();
   const [s, setS] = useState<Settings | null>(null);
@@ -79,13 +82,36 @@ export default function SmsSettings() {
   const [testMobile, setTestMobile] = useState("");
   const [testMsg, setTestMsg] = useState("পরীক্ষামূলক বার্তা — Smart Irrigation");
   const [sampleVars, setSampleVars] = useState<Record<string, string>>(DEFAULT_SAMPLE_VARS);
+  const [offices, setOffices] = useState<Office[]>([]);
+  const [overrides, setOverrides] = useState<Record<string, OfficeOverride>>({});
 
   useEffect(() => { document.title = "SMS Settings"; load(); }, []);
 
   async function load() {
-    const { data, error } = await supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle();
-    if (error) return toast.error(error.message);
-    setS(data as any);
+    const [settingsRes, officesRes, overridesRes] = await Promise.all([
+      supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("offices").select("id,name").order("name"),
+      supabase.from("sms_office_settings").select("office_id,enabled,sender_id"),
+    ]);
+    if (settingsRes.error) return toast.error(settingsRes.error.message);
+    setS(settingsRes.data as any);
+    setOffices(((officesRes.data as any) ?? []) as Office[]);
+    const map: Record<string, OfficeOverride> = {};
+    for (const o of ((overridesRes.data as any) ?? []) as OfficeOverride[]) map[o.office_id] = o;
+    setOverrides(map);
+  }
+
+  async function saveOfficeOverride(officeId: string, patch: Partial<OfficeOverride>) {
+    const current = overrides[officeId] ?? { office_id: officeId, enabled: true, sender_id: null };
+    const next: OfficeOverride = { ...current, ...patch, office_id: officeId };
+    setOverrides({ ...overrides, [officeId]: next });
+    const { error } = await supabase
+      .from("sms_office_settings")
+      .upsert(
+        { office_id: officeId, enabled: next.enabled, sender_id: next.sender_id, updated_at: new Date().toISOString() } as any,
+        { onConflict: "office_id" },
+      );
+    if (error) toast.error(error.message);
   }
 
   if (!isSuper) return <Navigate to="/" replace />;
