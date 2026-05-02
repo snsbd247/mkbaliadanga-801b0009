@@ -137,6 +137,72 @@ export default function Dashboard() {
         ))}
       </div>
 
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <h2 className="font-semibold mb-3">Income vs Expense (last 6 months)</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                <Legend />
+                <Bar dataKey="income" fill="hsl(var(--success))" name="Income" />
+                <Bar dataKey="expense" fill="hsl(var(--destructive))" name="Expense" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <h2 className="font-semibold mb-3">Composition</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={composition} dataKey="value" nameKey="name" outerRadius={80} label={(e: any) => e.name}>
+                  {composition.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <h2 className="font-semibold mb-3">Net Savings Movement</h2>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                <Line type="monotone" dataKey="savings" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <h2 className="font-semibold mb-3">Top 5 Dues</h2>
+          {topDues.length === 0 ? <p className="text-sm text-muted-foreground">{t("noData")}</p> : (
+            <div className="divide-y">
+              {topDues.map((d, i) => (
+                <div key={i} className="flex items-center justify-between py-2 text-sm">
+                  <div>
+                    <div className="font-medium">{d.name}</div>
+                    <div className="text-xs text-muted-foreground">{d.code}</div>
+                  </div>
+                  <div className="font-semibold text-destructive">{money(d.due)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <h2 className="font-semibold mb-3">{t("recentTransactions")}</h2>
