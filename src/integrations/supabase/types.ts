@@ -2197,6 +2197,15 @@ export type Database = {
           total_debit: number
         }[]
       }
+      list_collector_users: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          office_id: string
+        }[]
+      }
       reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
       retire_sms_token: { Args: { _id: string }; Returns: undefined }
       sms_enqueue: {
