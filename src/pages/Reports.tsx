@@ -18,6 +18,7 @@ const ALL = "__all__";
 
 export default function Reports() {
   const { t } = useLang();
+  const brand = useBranding();
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [seasons, setSeasons] = useState<any[]>([]);
