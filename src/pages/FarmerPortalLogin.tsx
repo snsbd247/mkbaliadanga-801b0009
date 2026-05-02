@@ -188,6 +188,8 @@ export default function FarmerPortalLogin() {
           </Button>
         </div>
       </div>
+      </div>
+      <SiteFooter />
     </div>
   );
 }
