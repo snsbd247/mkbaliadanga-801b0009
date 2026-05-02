@@ -24,7 +24,7 @@ const REFERENCE_TABLES = ["offices", "seasons", "company_settings", "user_roles"
 type Probe = { table: string; op: "select" | "count"; ok: boolean; status?: number; code?: string; message?: string; rows?: number };
 
 export default function Diagnostics() {
-  const { isSuper, user, officeId } = useAuth();
+  const { isSuper, user, officeId, rolesLoaded } = useAuth();
   const [errors, setErrors] = useState<RlsErrorEntry[]>(getRlsErrors());
   const [probes, setProbes] = useState<Probe[]>([]);
   const [running, setRunning] = useState(false);
