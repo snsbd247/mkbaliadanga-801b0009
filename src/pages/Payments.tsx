@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -16,14 +17,19 @@ import { useAuth } from "@/auth/AuthProvider";
 export default function Payments() {
   const { t } = useLang();
   const { user } = useAuth();
+  const [params] = useSearchParams();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [list, setList] = useState<any[]>([]);
-  const [form, setForm] = useState({ farmer_id: "", kind: "irrigation", amount: 0, method: "cash", note: "", reference_id: "" });
+  const [form, setForm] = useState({ farmer_id: params.get("farmer") ?? "", kind: "irrigation", amount: 0, method: "cash", note: "", reference_id: "" });
   const [openLoans, setOpenLoans] = useState<any[]>([]);
   const [openIrr, setOpenIrr] = useState<any[]>([]);
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); }, []);
   useEffect(() => { if (form.farmer_id) loadDues(); }, [form.farmer_id]);
+  useEffect(() => {
+    const f = params.get("farmer");
+    if (f) setForm((x) => ({ ...x, farmer_id: f }));
+  }, [params]);
 
   async function load() {
     const [f, p] = await Promise.all([
