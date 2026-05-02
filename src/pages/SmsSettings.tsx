@@ -734,6 +734,72 @@ export default function SmsSettings() {
                 Token is stored securely in the database (super-admin only) and used by the SMS sender. Get it from your GreenWeb account dashboard.
               </p>
             </div>
+
+            {/* Provider Test Connection — sends a real one-off SMS via GreenWeb to verify token + sender ID. */}
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <FlaskConical className="h-3.5 w-3.5" />
+                  Test Connection
+                </Label>
+                {testConnResult && (
+                  testConnResult.ok ? (
+                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                      <CheckCircle2 className="h-3 w-3 mr-1" /> Success
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3 mr-1" /> Failed
+                    </Badge>
+                  )
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={testConnPhone}
+                  onChange={(e) => setTestConnPhone(e.target.value)}
+                  placeholder="Office phone (e.g. 01XXXXXXXXX)"
+                  className="flex-1 min-w-[200px]"
+                />
+                <Button type="button" size="sm" onClick={runTestConnection} disabled={testConnBusy || !tokenConfigured}>
+                  <Send className="h-3.5 w-3.5 mr-1" />
+                  {testConnBusy ? "Testing…" : "Send Test SMS"}
+                </Button>
+              </div>
+              {!tokenConfigured && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                  Save a GreenWeb API token first, then run the test.
+                </p>
+              )}
+              {testConnResult && (
+                <div className="mt-2 rounded-md border bg-muted/30 p-2 text-[11px] space-y-1 font-mono break-all">
+                  {testConnResult.request?.url && (
+                    <div><span className="text-muted-foreground">request:</span> {testConnResult.request.url}</div>
+                  )}
+                  {testConnResult.request?.to && (
+                    <div><span className="text-muted-foreground">to:</span> {testConnResult.request.to}
+                      {testConnResult.request.sender ? <> · <span className="text-muted-foreground">sender:</span> {testConnResult.request.sender}</> : null}
+                      {typeof testConnResult.request.message_length === "number" ? <> · <span className="text-muted-foreground">len:</span> {testConnResult.request.message_length}</> : null}
+                    </div>
+                  )}
+                  {testConnResult.response && (
+                    <div><span className="text-muted-foreground">response:</span> {testConnResult.response}</div>
+                  )}
+                  {testConnResult.error && (
+                    <div className="text-destructive"><span className="text-muted-foreground">error:</span> {testConnResult.error}</div>
+                  )}
+                  {testConnResult.tested_at && (
+                    <div className="text-muted-foreground">at: {new Date(testConnResult.tested_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB")}</div>
+                  )}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Sends one real SMS (~1 credit) using the saved API token to verify the GreenWeb connection.
+              </p>
+            </div>
+
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">{L.secretsHint}</div>
           </CardContent>
         </Card>
