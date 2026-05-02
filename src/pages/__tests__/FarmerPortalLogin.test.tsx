@@ -2,21 +2,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import FarmerPortalLogin from "../FarmerPortalLogin";
+import { LanguageProvider } from "@/i18n/LanguageProvider";
 
 vi.mock("@/lib/branding", () => ({
   useBranding: () => ({ company_name: "Test Co", company_name_bn: "টেস্ট", logo_url: null }),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("@/auth/AuthProvider", () => ({
+  useAuth: () => ({
+    user: null, isSuper: false, isAdmin: false, isCommittee: false, rolesLoaded: true, roles: [],
+  }),
+}));
 
 function renderApp() {
   return render(
-    <MemoryRouter initialEntries={["/"]}>
-      <Routes>
-        <Route path="/" element={<FarmerPortalLogin />} />
-        <Route path="/farmer/dashboard" element={<div>FARMER_DASHBOARD</div>} />
-        <Route path="/auth" element={<div>ADMIN_AUTH_PAGE</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <LanguageProvider>
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="/" element={<FarmerPortalLogin />} />
+          <Route path="/farmer/dashboard" element={<div>FARMER_DASHBOARD</div>} />
+          <Route path="/auth" element={<div>ADMIN_AUTH_PAGE</div>} />
+        </Routes>
+      </MemoryRouter>
+    </LanguageProvider>,
   );
 }
 
@@ -86,5 +94,59 @@ describe("FarmerPortalLogin", () => {
     renderApp();
     fireEvent.click(screen.getByRole("button", { name: /Admin Login/i }));
     await waitFor(() => expect(screen.getByText("ADMIN_AUTH_PAGE")).toBeInTheDocument());
+  });
+
+  describe("Keyboard navigation & a11y", () => {
+    it("Admin Login button has accessible aria-label and focus styles", () => {
+      renderApp();
+      const btn = screen.getByRole("button", { name: /Go to Admin Login page/i });
+      expect(btn).toBeInTheDocument();
+      expect(btn).toHaveAttribute("aria-label", "Go to Admin Login page");
+      expect(btn.className).toMatch(/focus-visible:ring-2/);
+      expect(btn.className).toMatch(/focus-visible:ring-ring/);
+    });
+
+    it("Admin Login button is keyboard-focusable and activates with Enter", async () => {
+      renderApp();
+      const btn = screen.getByRole("button", { name: /Go to Admin Login page/i });
+      btn.focus();
+      expect(document.activeElement).toBe(btn);
+      fireEvent.keyDown(btn, { key: "Enter", code: "Enter" });
+      fireEvent.click(btn); // browsers translate Enter on button to click
+      await waitFor(() => expect(screen.getByText("ADMIN_AUTH_PAGE")).toBeInTheDocument());
+    });
+
+    it("Admin Login button activates with Space key", async () => {
+      renderApp();
+      const btn = screen.getByRole("button", { name: /Go to Admin Login page/i });
+      btn.focus();
+      expect(document.activeElement).toBe(btn);
+      fireEvent.keyUp(btn, { key: " ", code: "Space" });
+      fireEvent.click(btn);
+      await waitFor(() => expect(screen.getByText("ADMIN_AUTH_PAGE")).toBeInTheDocument());
+    });
+
+    it("Skip-to-main-content link is present and points at #main-content", () => {
+      renderApp();
+      const skip = screen.getByRole("link", { name: /Skip to main content/i });
+      expect(skip).toBeInTheDocument();
+      expect(skip).toHaveAttribute("href", "#main-content");
+    });
+
+    it("Language toggle exposes ARIA group + pressed state for screen readers", () => {
+      renderApp();
+      expect(screen.getByRole("group", { name: /Language selector/i })).toBeInTheDocument();
+      const enBtn = screen.getByRole("button", { name: /Switch to English/i });
+      const bnBtn = screen.getByRole("button", { name: /বাংলা/i });
+      expect(enBtn).toHaveAttribute("aria-pressed");
+      expect(bnBtn).toHaveAttribute("aria-pressed");
+    });
+
+    it("main landmark exists with id matching the skip link target", () => {
+      renderApp();
+      const main = document.getElementById("main-content");
+      expect(main).not.toBeNull();
+      expect(main?.tagName.toLowerCase()).toBe("main");
+    });
   });
 });
