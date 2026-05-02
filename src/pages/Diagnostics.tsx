@@ -26,6 +26,7 @@ type Probe = { table: string; op: "select" | "count"; ok: boolean; status?: numb
 
 export default function Diagnostics() {
   const { isSuper, user, officeId, rolesLoaded } = useAuth();
+  const { t } = useLang();
   const [errors, setErrors] = useState<RlsErrorEntry[]>(getRlsErrors());
   const [probes, setProbes] = useState<Probe[]>([]);
   const [running, setRunning] = useState(false);
