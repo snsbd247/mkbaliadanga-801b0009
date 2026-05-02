@@ -355,7 +355,6 @@ export const translations = {
     cashOut: "Cash Out",
     netCash: "Net Cash",
     viewCashbook: "View cashbook",
-    viewCashbook: "View cashbook",
     orphans: "Orphans",
     totalLedgerEntries: "Total ledger entries",
     periodCloseStatus: "Period Close Status",
