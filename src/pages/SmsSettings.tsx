@@ -72,6 +72,28 @@ function renderTpl(tpl: string, vars: Record<string, string>): string {
   return out;
 }
 
+const DEFAULT_TEMPLATES: Record<string, string> = {
+  // Bangla
+  tpl_savings_deposit:    "প্রিয় গ্রাহক, আপনার সঞ্চয়ে ৳{amount} জমা হয়েছে। বর্তমান ব্যালেন্স: ৳{balance}। ধন্যবাদ।",
+  tpl_savings_withdraw:   "প্রিয় গ্রাহক, আপনার সঞ্চয় থেকে ৳{amount} উত্তোলন হয়েছে। বর্তমান ব্যালেন্স: ৳{balance}।",
+  tpl_loan_approved:      "অভিনন্দন! আপনার ঋণ ৳{amount} অনুমোদিত হয়েছে। মোট পরিশোধযোগ্য: ৳{payable}।",
+  tpl_loan_payment:       "আপনার ঋণ পরিশোধ ৳{amount} গৃহীত হয়েছে। অবশিষ্ট বকেয়া: ৳{due}। ধন্যবাদ।",
+  tpl_irrigation_payment: "আপনার সেচ ফি ৳{amount} গৃহীত হয়েছে। ধন্যবাদ।",
+  tpl_due_reminder:       "স্মরণিকা: আপনার {type} বকেয়া ৳{due} পরিশোধের তারিখ {date}। অনুগ্রহ করে যথাসময়ে পরিশোধ করুন।",
+  // English
+  tpl_savings_deposit_en:    "Dear member, BDT {amount} has been deposited to your savings. Current balance: BDT {balance}. Thank you.",
+  tpl_savings_withdraw_en:   "Dear member, BDT {amount} has been withdrawn from your savings. Current balance: BDT {balance}.",
+  tpl_loan_approved_en:      "Congratulations! Your loan of BDT {amount} has been approved. Total payable: BDT {payable}.",
+  tpl_loan_payment_en:       "Your loan payment of BDT {amount} has been received. Remaining due: BDT {due}. Thank you.",
+  tpl_irrigation_payment_en: "Your irrigation fee of BDT {amount} has been received. Thank you.",
+  tpl_due_reminder_en:       "Reminder: Your {type} due of BDT {due} is payable on {date}. Please pay on time.",
+};
+
+function findMissingPlaceholders(tpl: string, required: string[]): string[] {
+  const t = tpl ?? "";
+  return required.filter((v) => !t.includes(v));
+}
+
 type Office = { id: string; name: string };
 type OfficeOverride = { office_id: string; enabled: boolean; sender_id: string | null };
 
