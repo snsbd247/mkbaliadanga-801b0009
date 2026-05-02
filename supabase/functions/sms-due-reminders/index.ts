@@ -74,12 +74,15 @@ Deno.serve(async (req) => {
   const summary = { loan: 0, irrigation: 0, skipped_dup: 0, errors: [] as string[] };
 
   // ----- LOAN dues -----
-  const { data: loans, error: lerr } = await admin
+  const loansQ = admin
     .from("loans")
     .select("id, farmer_id, office_id, total_payable, next_due_on, status")
     .in("status", ["approved"])
     .not("next_due_on", "is", null)
+    .gte("next_due_on", fromStr)
     .lte("next_due_on", horizonStr);
+  if (officeFilter) loansQ.eq("office_id", officeFilter);
+  const { data: loans, error: lerr } = await loansQ;
   if (lerr) summary.errors.push("loans:" + lerr.message);
 
   for (const ln of loans ?? []) {
