@@ -130,7 +130,7 @@ export default function FarmerDashboard() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto p-3 sm:p-4 space-y-4">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4 space-y-4">
         {/* Profile */}
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
