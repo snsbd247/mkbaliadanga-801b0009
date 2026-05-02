@@ -14,9 +14,23 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GW_TOKEN = Deno.env.get("GREENWEB_SMS_TOKEN") ?? "";
+const GW_TOKEN_ENV = Deno.env.get("GREENWEB_SMS_TOKEN") ?? "";
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+async function getGreenWebToken(): Promise<string> {
+  // Prefer DB-stored token (configurable from SMS Settings UI), fallback to env secret.
+  try {
+    const { data } = await admin
+      .from("sms_provider_secrets")
+      .select("api_token")
+      .eq("provider", "greenweb")
+      .maybeSingle();
+    const t = (data?.api_token ?? "").toString().trim();
+    if (t) return t;
+  } catch (_) { /* ignore, fallback below */ }
+  return GW_TOKEN_ENV;
+}
 
 function normalizeBdMobile(m: string): string {
   let n = (m || "").replace(/\D/g, "");
@@ -27,9 +41,10 @@ function normalizeBdMobile(m: string): string {
 }
 
 async function sendViaGreenWeb(mobile: string, message: string, senderId?: string | null): Promise<{ ok: boolean; resp: string }> {
-  if (!GW_TOKEN) return { ok: false, resp: "Missing GREENWEB_SMS_TOKEN" };
+  const token = await getGreenWebToken();
+  if (!token) return { ok: false, resp: "Missing GreenWeb API token. Configure it in SMS Settings." };
   const params = new URLSearchParams({
-    token: GW_TOKEN,
+    token,
     to: normalizeBdMobile(mobile),
     message,
   });

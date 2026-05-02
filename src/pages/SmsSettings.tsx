@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Send, Eye, CalendarClock, AlertTriangle, RotateCcw, Wand2, FlaskConical, CheckCircle2, XCircle, Trash2 } from "lucide-react";
+import { MessageSquare, Send, Eye, CalendarClock, AlertTriangle, RotateCcw, Wand2, FlaskConical, CheckCircle2, XCircle, Trash2, KeyRound, Save, Eraser } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -355,6 +355,13 @@ export default function SmsSettings() {
   const [testLog, setTestLog] = useState<TestRecord[]>(() => loadTestLog());
   const [confirmTest, setConfirmTest] = useState<{ key: keyof Settings; baseKey: string; preview: string; label: string } | null>(null);
 
+  // GreenWeb provider token state
+  const [tokenInput, setTokenInput] = useState<string>("");
+  const [tokenConfigured, setTokenConfigured] = useState<boolean>(false);
+  const [tokenUpdatedAt, setTokenUpdatedAt] = useState<string | null>(null);
+  const [tokenBusy, setTokenBusy] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+
   // Manual scheduler state
   const today = new Date().toISOString().slice(0, 10);
   const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
@@ -384,10 +391,11 @@ export default function SmsSettings() {
   }
 
   async function load() {
-    const [settingsRes, officesRes, overridesRes] = await Promise.all([
+    const [settingsRes, officesRes, overridesRes, tokenRes] = await Promise.all([
       supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("offices").select("id,name").order("name"),
       supabase.from("sms_office_settings").select("office_id,enabled,sender_id"),
+      supabase.from("sms_provider_secrets" as any).select("api_token,updated_at").eq("provider", "greenweb").maybeSingle(),
     ]);
     if (settingsRes.error) return toast.error(settingsRes.error.message);
     setS(settingsRes.data as any);
@@ -395,6 +403,38 @@ export default function SmsSettings() {
     const map: Record<string, OfficeOverride> = {};
     for (const o of ((overridesRes.data as any) ?? []) as OfficeOverride[]) map[o.office_id] = o;
     setOverrides(map);
+    const tok = (tokenRes as any)?.data;
+    setTokenConfigured(!!tok?.api_token);
+    setTokenUpdatedAt(tok?.updated_at ?? null);
+    setTokenInput("");
+  }
+
+  async function saveProviderToken() {
+    const value = tokenInput.trim();
+    if (!value) return toast.error("Enter the GreenWeb API token");
+    setTokenBusy(true);
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("sms_provider_secrets" as any)
+      .upsert(
+        { provider: "greenweb", api_token: value, updated_at: new Date().toISOString(), updated_by: u.user?.id ?? null } as any,
+        { onConflict: "provider" },
+      );
+    setTokenBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("GreenWeb API token saved");
+    setTokenInput("");
+    setShowToken(false);
+    await load();
+  }
+
+  async function clearProviderToken() {
+    setTokenBusy(true);
+    const { error } = await supabase.from("sms_provider_secrets" as any).delete().eq("provider", "greenweb");
+    setTokenBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Token cleared");
+    await load();
   }
 
   async function saveOfficeOverride(officeId: string, patch: Partial<OfficeOverride>) {
@@ -585,6 +625,52 @@ export default function SmsSettings() {
                 <Input type="number" min={0} max={30} value={s.reminder_days_before}
                   onChange={(e) => set("reminder_days_before", Math.max(0, Number(e.target.value || 0)))} />
               </div>
+            </div>
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <KeyRound className="h-3.5 w-3.5" />
+                  GreenWeb API Token
+                </Label>
+                {tokenConfigured ? (
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    <CheckCircle2 className="h-3 w-3 mr-1" /> Configured
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive">
+                    <XCircle className="h-3 w-3 mr-1" /> Not set
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  type={showToken ? "text" : "password"}
+                  value={tokenInput}
+                  onChange={(e) => setTokenInput(e.target.value)}
+                  placeholder={tokenConfigured ? "•••••••• (enter new token to replace)" : "Paste GreenWeb API token"}
+                  autoComplete="off"
+                  className="flex-1 min-w-[200px] font-mono text-xs"
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowToken((v) => !v)}>
+                  <Eye className="h-3.5 w-3.5 mr-1" />{showToken ? "Hide" : "Show"}
+                </Button>
+                <Button type="button" size="sm" onClick={saveProviderToken} disabled={tokenBusy || !tokenInput.trim()}>
+                  <Save className="h-3.5 w-3.5 mr-1" />{tokenBusy ? "Saving…" : "Save Token"}
+                </Button>
+                {tokenConfigured && (
+                  <Button type="button" variant="outline" size="sm" onClick={clearProviderToken} disabled={tokenBusy}>
+                    <Eraser className="h-3.5 w-3.5 mr-1" />Clear
+                  </Button>
+                )}
+              </div>
+              {tokenUpdatedAt && (
+                <p className="text-[11px] text-muted-foreground">
+                  Last updated: {new Date(tokenUpdatedAt).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB")}
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Token is stored securely in the database (super-admin only) and used by the SMS sender. Get it from your GreenWeb account dashboard.
+              </p>
             </div>
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">{L.secretsHint}</div>
           </CardContent>
