@@ -25,10 +25,15 @@ export function NotificationBell() {
 
   useEffect(() => {
     load();
-    const ch = supabase
-      .channel("notifications-bell")
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, load)
-      .subscribe();
+    // Unique channel name per mount avoids "cannot add postgres_changes after subscribe()"
+    // when React StrictMode mounts/unmounts the component twice in development.
+    const ch = supabase.channel(`notifications-bell-${Math.random().toString(36).slice(2)}`);
+    ch.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "notifications" },
+      load,
+    );
+    ch.subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user?.id]);
 
