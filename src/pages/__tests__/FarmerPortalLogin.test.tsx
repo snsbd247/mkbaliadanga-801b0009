@@ -177,7 +177,8 @@ describe("FarmerPortalLogin", () => {
       // Move focus elsewhere, then trigger a client-side validation error (too few digits)
       (screen.getByRole("button", { name: /Verify & Continue/i }) as HTMLButtonElement).focus();
       fireEvent.change(otpInput, { target: { value: "12" } });
-      fireEvent.click(screen.getByRole("button", { name: /Verify & Continue/i }));
+      const verifyForm = screen.getByRole("form", { name: /Verify OTP form/i });
+      fireEvent.submit(verifyForm);
       await waitFor(() =>
         expect(screen.getByText(/Enter the 6-digit code/i)).toBeInTheDocument(),
       );
