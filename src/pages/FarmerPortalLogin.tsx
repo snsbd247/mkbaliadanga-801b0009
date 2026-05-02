@@ -254,18 +254,18 @@ export default function FarmerPortalLogin() {
                       className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       onClick={() => { setStep("id"); setOtp(""); setError(null); }}
                       disabled={busy}
-                      aria-label="Change Farmer ID and request a new code"
+                      aria-label={t("changeId")}
                     >
-                      <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Change ID
+                      <ArrowLeft className="h-3 w-3" aria-hidden="true" /> {t("changeId")}
                     </button>
                     <button
                       type="button"
                       className="text-primary hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       onClick={(e) => requestOtp(e as any)}
                       disabled={busy}
-                      aria-label="Resend OTP code"
+                      aria-label={t("resendOtp")}
                     >
-                      Resend OTP
+                      {t("resendOtp")}
                     </button>
                   </div>
                 </form>
