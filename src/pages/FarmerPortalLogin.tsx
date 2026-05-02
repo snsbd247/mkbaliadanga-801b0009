@@ -93,6 +93,10 @@ export default function FarmerPortalLogin() {
   return (
     <div className="min-h-screen bg-gradient-surface flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        <div className="flex justify-between items-center mb-2">
+          <a href="/auth" className="text-xs text-primary underline">Admin Login →</a>
+          <LanguageToggle />
+        </div>
         <div className="mb-6 text-center">
           {brand.logo_url ? (
             <img src={brand.logo_url} alt={brand.company_name} className="mx-auto mb-3 h-14 w-14 rounded-xl object-cover shadow-elegant" />
