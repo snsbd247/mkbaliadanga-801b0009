@@ -93,6 +93,13 @@ export default function Farmers() {
                 </Select>
               </div>
               <div className="col-span-2"><Label>{t("address")}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+              <div className="col-span-2 border-t pt-3 mt-1">
+                <div className="text-xs font-medium text-muted-foreground mb-2">Location (optional — links farmer to managed division/district/etc.)</div>
+                <LocationPicker
+                  value={location}
+                  onChange={(loc) => setForm({ ...form, ...loc })}
+                />
+              </div>
               <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] ?? null)} /></div>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
