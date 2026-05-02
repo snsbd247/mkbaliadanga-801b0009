@@ -78,6 +78,7 @@ export default function SmsSettings() {
   const [busy, setBusy] = useState(false);
   const [testMobile, setTestMobile] = useState("");
   const [testMsg, setTestMsg] = useState("পরীক্ষামূলক বার্তা — Smart Irrigation");
+  const [sampleVars, setSampleVars] = useState<Record<string, string>>(DEFAULT_SAMPLE_VARS);
 
   useEffect(() => { document.title = "SMS Settings"; load(); }, []);
 
