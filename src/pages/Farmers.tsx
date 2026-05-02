@@ -37,7 +37,7 @@ export default function Farmers() {
 
   async function load() {
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
-    if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
+    if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
     const { data } = await qy;
     setList(data ?? []);
   }
@@ -103,7 +103,7 @@ export default function Farmers() {
       <Card>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>{t("farmerCode")}</TableHead><TableHead>{t("farmerName")}</TableHead>
+            <TableHead>{t("farmerCode")}</TableHead><TableHead>{t("memberNo") || "Member No"}</TableHead><TableHead>{t("farmerName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
             <TableHead className="text-right">{t("actions")}</TableHead>
@@ -112,6 +112,7 @@ export default function Farmers() {
             {list.map(f => (
               <TableRow key={f.id} className="cursor-pointer" onClick={() => nav(`/farmers/${f.id}`)}>
                 <TableCell className="font-mono text-xs">{f.farmer_code}</TableCell>
+                <TableCell className="font-mono text-xs">{f.member_no || "—"}</TableCell>
                 <TableCell>
                   <div className="font-medium">{f.name_en}</div>
                   {f.name_bn && <div className="text-xs text-muted-foreground">{f.name_bn}</div>}
@@ -123,7 +124,7 @@ export default function Farmers() {
                 <TableCell className="text-right"><Button size="icon" variant="ghost"><Eye className="h-4 w-4" /></Button></TableCell>
               </TableRow>
             ))}
-            {list.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            {list.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
         <div className="flex items-center justify-between p-3 border-t">
