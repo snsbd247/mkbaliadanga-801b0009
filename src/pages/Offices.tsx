@@ -67,6 +67,20 @@ export default function Offices() {
               </div>
               <div><Label>{t("contact")}</Label><Input value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} /></div>
               <div><Label>{t("address")}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+              <div>
+                <Label>Payment allocation priority</Label>
+                <p className="text-xs text-muted-foreground mb-2">Auto-allocated payments will be applied to dues in this order.</p>
+                <div className="space-y-1">
+                  {form.payment_priority.map((p, i) => (
+                    <div key={p} className="flex items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5">
+                      <span className="text-xs font-mono w-6">{i + 1}.</span>
+                      <span className="flex-1 capitalize">{p}</span>
+                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => movePriority(i, -1)} disabled={i === 0}>↑</Button>
+                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => movePriority(i, 1)} disabled={i === form.payment_priority.length - 1}>↓</Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
           </DialogContent>
