@@ -130,10 +130,12 @@ Deno.serve(async (req) => {
   }
 
   // ----- IRRIGATION dues -----
-  const { data: irr, error: ierr } = await admin
+  const irrQ = admin
     .from("irrigation_charges")
     .select("id, farmer_id, office_id, due_amount, entry_date")
     .gt("due_amount", 0);
+  if (officeFilter) irrQ.eq("office_id", officeFilter);
+  const { data: irr, error: ierr } = await irrQ;
   if (ierr) summary.errors.push("irr:" + ierr.message);
 
   for (const it of irr ?? []) {
