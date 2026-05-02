@@ -364,6 +364,20 @@ export default function SmsSettings() {
               <p className="text-[10px] text-muted-foreground mt-2">
                 Edit values above and watch the preview below update live. These are not saved — only used to render previews.
               </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end border-t pt-3">
+                <div>
+                  <Label className="text-xs font-medium">Test phone number</Label>
+                  <Input
+                    value={tplTestMobile}
+                    onChange={(e) => setTplTestMobile(e.target.value)}
+                    placeholder="017XXXXXXXX"
+                    className="h-8 text-xs max-w-xs"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Used by the <strong>Test</strong> button on each template — sends the rendered preview to this number.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <Tabs defaultValue="bn">
