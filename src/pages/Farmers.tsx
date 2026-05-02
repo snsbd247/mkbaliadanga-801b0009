@@ -319,8 +319,8 @@ export default function Farmers() {
         <div className="flex items-center justify-between p-3 border-t">
           <div className="text-xs text-muted-foreground">Page {page + 1}</div>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</Button>
-            <Button size="sm" variant="outline" disabled={list.length < PAGE} onClick={() => setPage(p => p + 1)}>Next</Button>
+            <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>{t("prev")}</Button>
+            <Button size="sm" variant="outline" disabled={list.length < PAGE} onClick={() => setPage(p => p + 1)}>{t("next")}</Button>
           </div>
         </div>
       </Card>
