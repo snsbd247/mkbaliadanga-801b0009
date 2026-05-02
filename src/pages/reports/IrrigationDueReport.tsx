@@ -105,7 +105,7 @@ export default function IrrigationDueReport() {
     { total: 0, paid: 0, due: 0 },
   ), [filtered]);
 
-  const head = [t("farmerCode"), t("farmer"), t("land"), t("season"), t("total"), t("paid"), t("due")];
+  const head = [t("farmerCode"), t("farmer"), t("land"), t("season"), t("total"), t("paid"), t("dueAmount")];
   const body = filtered.map((r) => [r.farmer_code, r.farmer_name, r.land_label, r.season_label, money(r.total), money(r.paid), money(r.due)]);
 
   return (
@@ -181,7 +181,7 @@ export default function IrrigationDueReport() {
                 <TableHead>{t("season")}</TableHead>
                 <TableHead className="text-right">{t("total")}</TableHead>
                 <TableHead className="text-right">{t("paid")}</TableHead>
-                <TableHead className="text-right">{t("due")}</TableHead>
+                <TableHead className="text-right">{t("dueAmount")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -205,7 +205,7 @@ export default function IrrigationDueReport() {
             <div className="mt-3 flex justify-end gap-6 text-sm">
               <div>{t("total")}: <span className="font-semibold">{money(totals.total)}</span></div>
               <div>{t("paid")}: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
-              <div>{t("due")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
+              <div>{t("dueAmount")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
             </div>
           )}
         </CardContent>
