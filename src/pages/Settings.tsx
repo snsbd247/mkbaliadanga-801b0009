@@ -42,6 +42,9 @@ export default function Settings() {
       mobile: form.mobile,
       address: form.address,
       default_loan_interest: Number(form.default_loan_interest ?? 0),
+      penalty_type: form.penalty_type ?? "flat",
+      penalty_value: Number(form.penalty_value ?? 0),
+      penalty_grace_days: Number(form.penalty_grace_days ?? 30),
       updated_at: new Date().toISOString(),
     }).eq("id", 1);
     setBusy(false);
@@ -85,6 +88,27 @@ export default function Settings() {
               <Label>{t("logo")}</Label>
               <Input type="file" accept="image/*" onChange={e => setLogo(e.target.files?.[0] ?? null)} />
               {form.logo_url && !logo && <img src={form.logo_url} className="mt-2 h-14 w-14 rounded object-cover" alt="logo" />}
+            </div>
+            <div className="sm:col-span-2 border-t pt-4 mt-2">
+              <h3 className="font-semibold mb-2">Irrigation Penalty</h3>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <Label>{t("penaltyType")}</Label>
+                  <select className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={form.penalty_type ?? "flat"} onChange={e => setForm({ ...form, penalty_type: e.target.value })}>
+                    <option value="none">None</option>
+                    <option value="flat">Flat amount</option>
+                    <option value="percent">Percent of due</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>{t("penaltyValue")}</Label>
+                  <Input type="number" step="0.01" value={form.penalty_value ?? 0} onChange={e => setForm({ ...form, penalty_value: e.target.value })} />
+                </div>
+                <div>
+                  <Label>{t("graceDays")}</Label>
+                  <Input type="number" value={form.penalty_grace_days ?? 30} onChange={e => setForm({ ...form, penalty_grace_days: e.target.value })} />
+                </div>
+              </div>
             </div>
           </div>
           <Button onClick={save} disabled={busy}>{busy ? "…" : t("save")}</Button>
