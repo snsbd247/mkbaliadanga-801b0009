@@ -1368,6 +1368,54 @@ export type Database = {
         }
         Relationships: []
       }
+      receipt_settings: {
+        Row: {
+          accent_color: string
+          footer_note: string
+          footer_note_bn: string
+          header_alignment: string
+          id: number
+          language: string
+          paper_size: string
+          show_logo: boolean
+          show_office: boolean
+          show_signature_line: boolean
+          show_token_block: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          accent_color?: string
+          footer_note?: string
+          footer_note_bn?: string
+          header_alignment?: string
+          id?: number
+          language?: string
+          paper_size?: string
+          show_logo?: boolean
+          show_office?: boolean
+          show_signature_line?: boolean
+          show_token_block?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accent_color?: string
+          footer_note?: string
+          footer_note_bn?: string
+          header_alignment?: string
+          id?: number
+          language?: string
+          paper_size?: string
+          show_logo?: boolean
+          show_office?: boolean
+          show_signature_line?: boolean
+          show_token_block?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       receipts: {
         Row: {
           amount: number
