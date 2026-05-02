@@ -26,17 +26,17 @@ function normalizeBdMobile(m: string): string {
   return n;
 }
 
-async function sendViaGreenWeb(mobile: string, message: string): Promise<{ ok: boolean; resp: string }> {
+async function sendViaGreenWeb(mobile: string, message: string, senderId?: string | null): Promise<{ ok: boolean; resp: string }> {
   if (!GW_TOKEN) return { ok: false, resp: "Missing GREENWEB_SMS_TOKEN" };
   const params = new URLSearchParams({
     token: GW_TOKEN,
     to: normalizeBdMobile(mobile),
     message,
   });
+  if (senderId && senderId.trim()) params.set("sender", senderId.trim());
   try {
     const res = await fetch("https://api.greenweb.com.bd/api.php?" + params.toString());
     const text = await res.text();
-    // GreenWeb returns text like "Ok ..." or error message
     const ok = res.ok && /ok/i.test(text) && !/err|invalid|fail/i.test(text);
     return { ok, resp: text.slice(0, 500) };
   } catch (e) {
@@ -44,12 +44,31 @@ async function sendViaGreenWeb(mobile: string, message: string): Promise<{ ok: b
   }
 }
 
+async function resolveSenderId(officeId: string | null): Promise<string | null> {
+  if (officeId) {
+    const { data: o } = await admin.from("sms_office_settings").select("enabled,sender_id").eq("office_id", officeId).maybeSingle();
+    if (o && o.enabled === false) return "__DISABLED__";
+    if (o?.sender_id && o.sender_id.trim()) return o.sender_id;
+  }
+  const { data: g } = await admin.from("sms_settings").select("sender_id").eq("id", 1).maybeSingle();
+  return g?.sender_id ?? null;
+}
+
 async function processLog(id: string) {
   const { data: log, error } = await admin.from("sms_logs").select("*").eq("id", id).maybeSingle();
   if (error || !log) return { ok: false, error: error?.message ?? "log not found" };
   if (log.status === "sent") return { ok: true, skipped: true };
 
-  const r = await sendViaGreenWeb(log.mobile, log.message);
+  const sender = await resolveSenderId(log.office_id ?? null);
+  if (sender === "__DISABLED__") {
+    await admin.from("sms_logs").update({
+      status: "failed",
+      provider_response: "Office SMS disabled",
+    }).eq("id", id);
+    return { ok: false, response: "Office SMS disabled" };
+  }
+
+  const r = await sendViaGreenWeb(log.mobile, log.message, sender);
   await admin.from("sms_logs").update({
     status: r.ok ? "sent" : "failed",
     provider_response: r.resp,
