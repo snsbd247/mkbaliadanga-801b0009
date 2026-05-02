@@ -309,11 +309,8 @@ export default function Accounts() {
             <Button variant="outline" size="sm" onClick={exportXLSX}>
               <Download className="w-4 h-4 mr-1" /> Excel
             </Button>
-            <input id="coa-import-file" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={onFilePicked} />
-            <Button variant="outline" size="sm" asChild>
-              <label htmlFor="coa-import-file" className="cursor-pointer">
-                <Upload className="w-4 h-4 mr-1" /> Import
-              </label>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="w-4 h-4 mr-1" /> Import
             </Button>
             <Button size="sm" onClick={() => openCreate()}>
               <Plus className="w-4 h-4 mr-1" /> Add Account
