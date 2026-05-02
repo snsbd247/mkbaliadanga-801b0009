@@ -488,7 +488,8 @@ export const translations = {
     charged: "Charged",
     preparedBy: "Prepared By",
     checkedBy: "Checked By",
-    approvedBy: "Approved By",
+    // approvedBy already defined above
+
     onlyAdminEdits: "Only Committee/Admins can edit underlying data.",
     refLabel: "Ref",
     openingTagLabel: "opening",
@@ -529,8 +530,8 @@ export const translations = {
     // Dashboard charts
     incomeVsExpense6mo: "Income vs Expense (last 6 months)",
     top5Dues: "Top 5 Dues",
-    composition: "Composition",
-    netSavingsMovement: "Net Savings Movement",
+    // composition + netSavingsMovement already defined above
+
     // Loans
     activeOrPaid: "Active / Paid",
     allLoansApprovalNote: "All loans require committee approval before disbursement is recorded.",
