@@ -426,8 +426,8 @@ function LevelTab({ level }: { level: Level }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Bangla</TableHead>
+                  <TableHead>{t("name")}</TableHead>
+                  <TableHead>{t("bnName")}</TableHead>
                   {directCol && <TableHead>{chain[chain.length - 1].label}</TableHead>}
                   <TableHead className="text-right"></TableHead>
                 </TableRow>
