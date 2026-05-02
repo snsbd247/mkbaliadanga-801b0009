@@ -92,111 +92,187 @@ export default function FarmerPortalLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-surface flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="flex justify-end items-center mb-2">
-          <LanguageToggle />
-        </div>
-        <div className="mb-6 text-center">
-          {brand.logo_url ? (
-            <img src={brand.logo_url} alt={brand.company_name} className="mx-auto mb-3 h-14 w-14 rounded-xl object-cover shadow-elegant" />
-          ) : (
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-elegant">
-              <Sprout className="h-7 w-7" />
-            </div>
-          )}
-          <h1 className="text-2xl font-bold">{brand.company_name_bn || brand.company_name}</h1>
-          <p className="text-sm text-muted-foreground mt-1">Farmer Self-Service Portal</p>
-        </div>
+    <div className="min-h-screen bg-gradient-surface flex flex-col motion-reduce:transition-none">
+      {/* Skip link – visually hidden until focused */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
 
-        <Card className="p-6 shadow-elegant">
-          {step === "id" ? (
-            <>
-              <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-primary" /> Sign in with OTP
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Enter your Farmer ID or Member Number. We'll send a 6-digit code to your registered mobile.
-              </p>
-              <form onSubmit={requestOtp} className="space-y-3">
-                <div>
-                  <Label htmlFor="fid">Farmer ID / Member No.</Label>
-                  <Input
-                    id="fid"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="e.g. 2026-00000123 or M-000123"
-                    autoComplete="off"
-                    autoFocus
-                    disabled={busy}
-                  />
-                </div>
-                {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-                <Button type="submit" className="w-full" disabled={busy}>
-                  {busy ? <><Loader2 className="h-4 w-4 animate-spin" />Sending…</> : <><Smartphone className="h-4 w-4" />Send OTP</>}
-                </Button>
-              </form>
-            </>
-          ) : (
-            <>
-              <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-primary" /> Enter verification code
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                {maskedMobile
-                  ? <>A 6-digit code was sent to <span className="font-medium">{maskedMobile}</span>. Valid for 5 minutes.</>
-                  : <>If your ID is valid, a 6-digit code was sent to your registered mobile.</>}
-              </p>
-              <form onSubmit={verifyOtp} className="space-y-3">
-                <div>
-                  <Label htmlFor="otp">6-digit OTP</Label>
-                  <Input
-                    id="otp"
-                    inputMode="numeric"
-                    pattern="\d{6}"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="••••••"
-                    className="text-center text-2xl tracking-[0.5em] font-mono"
-                    autoFocus
-                    disabled={busy}
-                  />
-                </div>
-                {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-                <Button type="submit" className="w-full" disabled={busy}>
-                  {busy ? <><Loader2 className="h-4 w-4 animate-spin" />Verifying…</> : "Verify & Continue"}
-                </Button>
-                <div className="flex items-center justify-between text-xs">
-                  <button type="button" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-                    onClick={() => { setStep("id"); setOtp(""); setError(null); }} disabled={busy}>
-                    <ArrowLeft className="h-3 w-3" /> Change ID
-                  </button>
-                  <button type="button" className="text-primary hover:underline"
-                    onClick={(e) => requestOtp(e as any)} disabled={busy}>
-                    Resend OTP
-                  </button>
-                </div>
-              </form>
-            </>
-          )}
-        </Card>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 flex items-center justify-center px-4 py-6 sm:py-8 md:py-10 focus:outline-none"
+        aria-labelledby="portal-title"
+      >
+        <div className="w-full max-w-md space-y-4 sm:space-y-5">
+          <div className="flex justify-end items-center">
+            <LanguageToggle />
+          </div>
 
-        <div className="mt-6 mb-2 text-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => nav("/auth")}
-            aria-label="Go to Admin Login page"
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            Admin Login →
-          </Button>
+          <header className="text-center">
+            {brand.logo_url ? (
+              <img
+                src={brand.logo_url}
+                alt={`${brand.company_name} logo`}
+                className="mx-auto mb-3 h-14 w-14 rounded-xl object-cover shadow-elegant"
+              />
+            ) : (
+              <div
+                className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-elegant"
+                aria-hidden="true"
+              >
+                <Sprout className="h-7 w-7" />
+              </div>
+            )}
+            <h1 id="portal-title" className="text-2xl font-bold">
+              {brand.company_name_bn || brand.company_name}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">Farmer Self-Service Portal</p>
+          </header>
+
+          <Card className="p-6 shadow-elegant motion-reduce:shadow-none">
+            {step === "id" ? (
+              <>
+                <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" /> Sign in with OTP
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Enter your Farmer ID or Member Number. We'll send a 6-digit code to your registered mobile.
+                </p>
+                <form onSubmit={requestOtp} className="space-y-3" aria-label="Request OTP form">
+                  <div>
+                    <Label htmlFor="fid">Farmer ID / Member No.</Label>
+                    <Input
+                      id="fid"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="e.g. 2026-00000123 or M-000123"
+                      autoComplete="off"
+                      autoFocus
+                      disabled={busy}
+                      aria-required="true"
+                      aria-invalid={!!error}
+                      aria-describedby={error ? "portal-error" : undefined}
+                    />
+                  </div>
+                  {error && (
+                    <Alert variant="destructive" id="portal-error" role="alert">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button
+                    type="submit"
+                    className="w-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={busy}
+                    aria-busy={busy}
+                  >
+                    {busy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                        Sending…
+                      </>
+                    ) : (
+                      <>
+                        <Smartphone className="h-4 w-4" aria-hidden="true" />
+                        Send OTP
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" /> Enter verification code
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {maskedMobile
+                    ? <>A 6-digit code was sent to <span className="font-medium">{maskedMobile}</span>. Valid for 5 minutes.</>
+                    : <>If your ID is valid, a 6-digit code was sent to your registered mobile.</>}
+                </p>
+                <form onSubmit={verifyOtp} className="space-y-3" aria-label="Verify OTP form">
+                  <div>
+                    <Label htmlFor="otp">6-digit OTP</Label>
+                    <Input
+                      id="otp"
+                      inputMode="numeric"
+                      pattern="\d{6}"
+                      maxLength={6}
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="••••••"
+                      className="text-center text-2xl tracking-[0.5em] font-mono"
+                      autoFocus
+                      disabled={busy}
+                      aria-required="true"
+                      aria-invalid={!!error}
+                      aria-describedby={error ? "portal-error" : undefined}
+                    />
+                  </div>
+                  {error && (
+                    <Alert variant="destructive" id="portal-error" role="alert">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button
+                    type="submit"
+                    className="w-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={busy}
+                    aria-busy={busy}
+                  >
+                    {busy ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                        Verifying…
+                      </>
+                    ) : (
+                      "Verify & Continue"
+                    )}
+                  </Button>
+                  <div className="flex items-center justify-between text-xs">
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={() => { setStep("id"); setOtp(""); setError(null); }}
+                      disabled={busy}
+                      aria-label="Change Farmer ID and request a new code"
+                    >
+                      <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Change ID
+                    </button>
+                    <button
+                      type="button"
+                      className="text-primary hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={(e) => requestOtp(e as any)}
+                      disabled={busy}
+                      aria-label="Resend OTP code"
+                    >
+                      Resend OTP
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </Card>
+
+          <div className="text-center pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => nav("/auth")}
+              aria-label="Go to Admin Login page"
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              Admin Login →
+            </Button>
+          </div>
         </div>
-      </div>
-      </div>
+      </main>
+
       <SiteFooter />
     </div>
   );
 }
+
