@@ -156,7 +156,8 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-surface flex flex-col"><div className="flex-1 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-surface flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-end mb-2">
           <LanguageToggle />
