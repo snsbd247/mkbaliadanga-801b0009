@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
-import { getFiscalStartMonth, listFiscalYears, reportFilename } from "@/lib/accounting";
+import { getFiscalStartMonth, listFiscalYears } from "@/lib/accounting";
 
 type Account = { id: string; code: string; name: string; type: string };
 type Office = { id: string; name: string };

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
-import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange, reportFilename } from "@/lib/accounting";
+import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
 
 type Account = { id: string; code: string; name: string; type: "asset"|"liability"|"income"|"expense"|"equity" };
 type Entry = { id: string; entry_date: string; account_id: string; debit: number; credit: number; description: string | null };
