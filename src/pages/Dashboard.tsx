@@ -121,6 +121,7 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
+      <NoOfficeBanner />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="stat-card">
