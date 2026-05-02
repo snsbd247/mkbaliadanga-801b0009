@@ -1683,6 +1683,8 @@ export type Database = {
           send_on_irrigation_payment: boolean
           send_on_loan_approved: boolean
           send_on_loan_payment: boolean
+          send_on_qr_revoke: boolean
+          send_on_qr_rotate: boolean
           send_on_savings_deposit: boolean
           send_on_savings_withdraw: boolean
           sender_id: string | null
@@ -1694,6 +1696,10 @@ export type Database = {
           tpl_loan_approved_en: string
           tpl_loan_payment: string
           tpl_loan_payment_en: string
+          tpl_qr_revoke: string
+          tpl_qr_revoke_en: string
+          tpl_qr_rotate: string
+          tpl_qr_rotate_en: string
           tpl_savings_deposit: string
           tpl_savings_deposit_en: string
           tpl_savings_withdraw: string
@@ -1711,6 +1717,8 @@ export type Database = {
           send_on_irrigation_payment?: boolean
           send_on_loan_approved?: boolean
           send_on_loan_payment?: boolean
+          send_on_qr_revoke?: boolean
+          send_on_qr_rotate?: boolean
           send_on_savings_deposit?: boolean
           send_on_savings_withdraw?: boolean
           sender_id?: string | null
@@ -1722,6 +1730,10 @@ export type Database = {
           tpl_loan_approved_en?: string
           tpl_loan_payment?: string
           tpl_loan_payment_en?: string
+          tpl_qr_revoke?: string
+          tpl_qr_revoke_en?: string
+          tpl_qr_rotate?: string
+          tpl_qr_rotate_en?: string
           tpl_savings_deposit?: string
           tpl_savings_deposit_en?: string
           tpl_savings_withdraw?: string
@@ -1739,6 +1751,8 @@ export type Database = {
           send_on_irrigation_payment?: boolean
           send_on_loan_approved?: boolean
           send_on_loan_payment?: boolean
+          send_on_qr_revoke?: boolean
+          send_on_qr_rotate?: boolean
           send_on_savings_deposit?: boolean
           send_on_savings_withdraw?: boolean
           sender_id?: string | null
@@ -1750,6 +1764,10 @@ export type Database = {
           tpl_loan_approved_en?: string
           tpl_loan_payment?: string
           tpl_loan_payment_en?: string
+          tpl_qr_revoke?: string
+          tpl_qr_revoke_en?: string
+          tpl_qr_rotate?: string
+          tpl_qr_rotate_en?: string
           tpl_savings_deposit?: string
           tpl_savings_deposit_en?: string
           tpl_savings_withdraw?: string
