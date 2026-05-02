@@ -256,7 +256,9 @@ export default function SmsLogs() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Time</TableHead>
+                      <TableHead>Farmer</TableHead>
                       <TableHead>Mobile</TableHead>
+                      <TableHead>Office</TableHead>
                       <TableHead>Event</TableHead>
                       <TableHead>Message</TableHead>
                       <TableHead>Status</TableHead>
@@ -266,13 +268,15 @@ export default function SmsLogs() {
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Loading…</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Loading…</TableCell></TableRow>
                     ) : filtered.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No SMS logs</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">No SMS logs</TableCell></TableRow>
                     ) : filtered.map((l) => (
                       <TableRow key={l.id}>
                         <TableCell className="whitespace-nowrap">{new Date(l.created_at).toLocaleString()}</TableCell>
+                        <TableCell className="max-w-[160px] truncate" title={l.farmer_name ?? ""}>{l.farmer_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="font-mono text-xs">{l.mobile}</TableCell>
+                        <TableCell className="max-w-[140px] truncate" title={l.office_name ?? ""}>{l.office_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell><Badge variant="outline" className="text-[10px]">{l.event_type ?? "-"}</Badge></TableCell>
                         <TableCell className="max-w-[280px] truncate" title={l.message}>{l.message}</TableCell>
                         <TableCell>{statusBadge(l.status)}</TableCell>
