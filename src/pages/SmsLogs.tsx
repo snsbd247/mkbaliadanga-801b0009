@@ -115,7 +115,12 @@ export default function SmsLogs() {
   const filtered = useMemo(() => {
     if (!farmerSearch.trim()) return logs;
     const q = farmerSearch.trim().toLowerCase();
-    return logs.filter((l) => l.mobile?.toLowerCase().includes(q) || (l.farmer_id ?? "").toLowerCase().includes(q));
+    return logs.filter((l) =>
+      l.mobile?.toLowerCase().includes(q) ||
+      (l.farmer_name ?? "").toLowerCase().includes(q) ||
+      (l.office_name ?? "").toLowerCase().includes(q) ||
+      (l.farmer_id ?? "").toLowerCase().includes(q)
+    );
   }, [logs, farmerSearch]);
 
   if (!allowed) return <Navigate to="/" replace />;
