@@ -485,6 +485,44 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_allocations: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          kind: string
+          office_id: string | null
+          payment_id: string
+          reference_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          kind: string
+          office_id?: string | null
+          payment_id: string
+          reference_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          office_id?: string | null
+          payment_id?: string
+          reference_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -494,6 +532,7 @@ export type Database = {
           created_at: string
           farmer_id: string
           id: string
+          idempotency_key: string | null
           kind: Database["public"]["Enums"]["payment_kind"]
           method: string | null
           note: string | null
@@ -510,6 +549,7 @@ export type Database = {
           created_at?: string
           farmer_id: string
           id?: string
+          idempotency_key?: string | null
           kind: Database["public"]["Enums"]["payment_kind"]
           method?: string | null
           note?: string | null
@@ -526,6 +566,7 @@ export type Database = {
           created_at?: string
           farmer_id?: string
           id?: string
+          idempotency_key?: string | null
           kind?: Database["public"]["Enums"]["payment_kind"]
           method?: string | null
           note?: string | null
