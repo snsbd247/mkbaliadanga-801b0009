@@ -626,6 +626,52 @@ export default function SmsSettings() {
                   onChange={(e) => set("reminder_days_before", Math.max(0, Number(e.target.value || 0)))} />
               </div>
             </div>
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <KeyRound className="h-3.5 w-3.5" />
+                  GreenWeb API Token
+                </Label>
+                {tokenConfigured ? (
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    <CheckCircle2 className="h-3 w-3 mr-1" /> Configured
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive">
+                    <XCircle className="h-3 w-3 mr-1" /> Not set
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  type={showToken ? "text" : "password"}
+                  value={tokenInput}
+                  onChange={(e) => setTokenInput(e.target.value)}
+                  placeholder={tokenConfigured ? "•••••••• (enter new token to replace)" : "Paste GreenWeb API token"}
+                  autoComplete="off"
+                  className="flex-1 min-w-[200px] font-mono text-xs"
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowToken((v) => !v)}>
+                  <Eye className="h-3.5 w-3.5 mr-1" />{showToken ? "Hide" : "Show"}
+                </Button>
+                <Button type="button" size="sm" onClick={saveProviderToken} disabled={tokenBusy || !tokenInput.trim()}>
+                  <Save className="h-3.5 w-3.5 mr-1" />{tokenBusy ? "Saving…" : "Save Token"}
+                </Button>
+                {tokenConfigured && (
+                  <Button type="button" variant="outline" size="sm" onClick={clearProviderToken} disabled={tokenBusy}>
+                    <Eraser className="h-3.5 w-3.5 mr-1" />Clear
+                  </Button>
+                )}
+              </div>
+              {tokenUpdatedAt && (
+                <p className="text-[11px] text-muted-foreground">
+                  Last updated: {new Date(tokenUpdatedAt).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB")}
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Token is stored securely in the database (super-admin only) and used by the SMS sender. Get it from your GreenWeb account dashboard.
+              </p>
+            </div>
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">{L.secretsHint}</div>
           </CardContent>
         </Card>
