@@ -37,7 +37,7 @@ export default function Farmers() {
 
   async function load() {
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
-    if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
+    if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
     const { data } = await qy;
     setList(data ?? []);
   }
