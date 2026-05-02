@@ -38,6 +38,12 @@ async function fireSend(logId: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Parse optional manual override body: { from?: "YYYY-MM-DD", to?: "YYYY-MM-DD", days_ahead?: number, office_id?: string }
+  let body: any = {};
+  if (req.method === "POST") {
+    try { body = await req.json(); } catch (_) { body = {}; }
+  }
+
   const { data: settings } = await admin.from("sms_settings").select("*").eq("id", 1).maybeSingle();
   if (!settings || !settings.enabled || !settings.send_on_due_reminder) {
     return new Response(JSON.stringify({ skipped: "due reminders disabled" }), {
@@ -46,11 +52,24 @@ Deno.serve(async (req) => {
   }
   const lang = settings.language === "en" ? "en" : "bn";
   const tpl = lang === "en" ? settings.tpl_due_reminder_en : settings.tpl_due_reminder;
-  const daysAhead = settings.reminder_days_before ?? 3;
 
   const today = new Date();
-  const horizon = new Date(today.getTime() + daysAhead * 86400000);
-  const horizonStr = horizon.toISOString().slice(0, 10);
+  const todayStr = today.toISOString().slice(0, 10);
+
+  // Determine window
+  let fromStr = todayStr;
+  let horizonStr: string;
+  if (body.from && /^\d{4}-\d{2}-\d{2}$/.test(body.from)) fromStr = body.from;
+  if (body.to && /^\d{4}-\d{2}-\d{2}$/.test(body.to)) {
+    horizonStr = body.to;
+  } else {
+    const daysAhead = Number.isFinite(Number(body.days_ahead))
+      ? Math.max(0, Math.min(60, Number(body.days_ahead)))
+      : (settings.reminder_days_before ?? 3);
+    const horizon = new Date(today.getTime() + daysAhead * 86400000);
+    horizonStr = horizon.toISOString().slice(0, 10);
+  }
+  const officeFilter: string | null = typeof body.office_id === "string" && body.office_id ? body.office_id : null;
 
   const summary = { loan: 0, irrigation: 0, skipped_dup: 0, errors: [] as string[] };
 
