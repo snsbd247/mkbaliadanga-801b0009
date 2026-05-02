@@ -24,6 +24,7 @@ import {
   Download, Upload,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { CoaImportDialog } from "./accounts/CoaImportDialog";
 
 type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
 
@@ -508,6 +509,14 @@ export default function Accounts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* COA Import dialog */}
+      <CoaImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        existing={rows.map((r) => ({ id: r.id, code: r.code, name: r.name, type: r.type, parent_id: r.parent_id }))}
+        onImported={load}
+      />
     </div>
   );
 }
