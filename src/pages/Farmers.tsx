@@ -51,7 +51,9 @@ export default function Farmers() {
   }
 
   async function save() {
-    if (!form.name_en) return toast.error("English name required");
+    if (!form.name_en?.trim()) return toast.error("English name required");
+    if (form.mobile && !/^\+?\d[\d\s-]{6,20}$/.test(form.mobile)) return toast.error("Invalid mobile number");
+    if (form.nid && !/^\d{10,17}$/.test(form.nid.replace(/\D/g, ""))) return toast.error("Invalid NID (10–17 digits)");
     let photo_url: string | undefined;
     if (photo) {
       const ext = photo.name.split(".").pop();
@@ -64,6 +66,16 @@ export default function Farmers() {
     const { data, error } = await supabase.from("farmers").insert(payload).select().single();
     if (error) return toast.error(error.message);
     if (data) await supabase.from("shares").insert({ farmer_id: data.id, balance: 0 });
+    toast.success("Farmer added");
+    setOpen(false);
+    setPhoto(null);
+    setForm({
+      name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
+      village: "", post_office: "", upazila: "", district: "", division: "", address: "",
+      office_id: officeId ?? "", status: "active",
+      division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, mouza_id: null,
+    });
+    load();
   }
 
   async function remove(id: string) {

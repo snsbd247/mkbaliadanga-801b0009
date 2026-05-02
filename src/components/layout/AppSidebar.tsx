@@ -5,7 +5,7 @@ import {
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
   BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, MessageSquare, MessagesSquare, MapPin,
-  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard,
+  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, CheckCircle2, ShieldQuestion,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -94,6 +94,8 @@ export function AppSidebar() {
         { url: "/sms-settings", icon: MessageSquare, label: "SMS Settings", superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: "SMS Logs", superOnly: true },
         { url: "/locations", icon: MapPin, label: "Locations", superOnly: true },
+        { url: "/admin/verification", icon: CheckCircle2, label: "Verification Report" },
+        { url: "/admin/rls-test", icon: ShieldQuestion, label: "RLS Access Test", superOnly: true },
       ],
     },
   ];
