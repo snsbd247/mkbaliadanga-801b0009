@@ -371,8 +371,23 @@ export default function Accounts() {
             <Button variant="outline" size="sm" onClick={expandAll}>Expand All</Button>
             <Button variant="outline" size="sm" onClick={collapseAll}>Collapse All</Button>
             <Button variant="outline" size="sm" onClick={recalc}>
-              <RefreshCw className="w-4 h-4 mr-1" /> Recalculate Balances
+              <RefreshCw className="w-4 h-4 mr-1" /> Recalculate
             </Button>
+            <Button variant="outline" size="sm" onClick={downloadTemplate}>
+              <Download className="w-4 h-4 mr-1" /> Template
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportCSV}>
+              <Download className="w-4 h-4 mr-1" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportXLSX}>
+              <Download className="w-4 h-4 mr-1" /> Excel
+            </Button>
+            <label>
+              <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={onFilePicked} />
+              <Button variant="outline" size="sm" asChild>
+                <span className="cursor-pointer"><Upload className="w-4 h-4 mr-1" /> Import</span>
+              </Button>
+            </label>
             <Button size="sm" onClick={() => openCreate()}>
               <Plus className="w-4 h-4 mr-1" /> Add Account
             </Button>
