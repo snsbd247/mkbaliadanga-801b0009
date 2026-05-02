@@ -1320,6 +1320,8 @@ export type Database = {
           config: Json
           enabled: boolean
           id: number
+          language: string
+          reminder_days_before: number
           send_on_due_reminder: boolean
           send_on_irrigation_payment: boolean
           send_on_loan_approved: boolean
@@ -1328,11 +1330,17 @@ export type Database = {
           send_on_savings_withdraw: boolean
           sender_id: string | null
           tpl_due_reminder: string
+          tpl_due_reminder_en: string
           tpl_irrigation_payment: string
+          tpl_irrigation_payment_en: string
           tpl_loan_approved: string
+          tpl_loan_approved_en: string
           tpl_loan_payment: string
+          tpl_loan_payment_en: string
           tpl_savings_deposit: string
+          tpl_savings_deposit_en: string
           tpl_savings_withdraw: string
+          tpl_savings_withdraw_en: string
           updated_at: string
         }
         Insert: {
@@ -1340,6 +1348,8 @@ export type Database = {
           config?: Json
           enabled?: boolean
           id?: number
+          language?: string
+          reminder_days_before?: number
           send_on_due_reminder?: boolean
           send_on_irrigation_payment?: boolean
           send_on_loan_approved?: boolean
@@ -1348,11 +1358,17 @@ export type Database = {
           send_on_savings_withdraw?: boolean
           sender_id?: string | null
           tpl_due_reminder?: string
+          tpl_due_reminder_en?: string
           tpl_irrigation_payment?: string
+          tpl_irrigation_payment_en?: string
           tpl_loan_approved?: string
+          tpl_loan_approved_en?: string
           tpl_loan_payment?: string
+          tpl_loan_payment_en?: string
           tpl_savings_deposit?: string
+          tpl_savings_deposit_en?: string
           tpl_savings_withdraw?: string
+          tpl_savings_withdraw_en?: string
           updated_at?: string
         }
         Update: {
@@ -1360,6 +1376,8 @@ export type Database = {
           config?: Json
           enabled?: boolean
           id?: number
+          language?: string
+          reminder_days_before?: number
           send_on_due_reminder?: boolean
           send_on_irrigation_payment?: boolean
           send_on_loan_approved?: boolean
@@ -1368,11 +1386,17 @@ export type Database = {
           send_on_savings_withdraw?: boolean
           sender_id?: string | null
           tpl_due_reminder?: string
+          tpl_due_reminder_en?: string
           tpl_irrigation_payment?: string
+          tpl_irrigation_payment_en?: string
           tpl_loan_approved?: string
+          tpl_loan_approved_en?: string
           tpl_loan_payment?: string
+          tpl_loan_payment_en?: string
           tpl_savings_deposit?: string
+          tpl_savings_deposit_en?: string
           tpl_savings_withdraw?: string
+          tpl_savings_withdraw_en?: string
           updated_at?: string
         }
         Relationships: []

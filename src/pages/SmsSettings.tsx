@@ -9,12 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { MessageSquare, Send } from "lucide-react";
 
 type Settings = {
   enabled: boolean;
   sender_id: string | null;
+  language: string;
+  reminder_days_before: number;
   send_on_savings_deposit: boolean;
   send_on_savings_withdraw: boolean;
   send_on_loan_approved: boolean;
@@ -27,15 +30,21 @@ type Settings = {
   tpl_loan_payment: string;
   tpl_irrigation_payment: string;
   tpl_due_reminder: string;
+  tpl_savings_deposit_en: string;
+  tpl_savings_withdraw_en: string;
+  tpl_loan_approved_en: string;
+  tpl_loan_payment_en: string;
+  tpl_irrigation_payment_en: string;
+  tpl_due_reminder_en: string;
 };
 
-const TEMPLATE_VARS: Record<keyof Settings | string, string[]> = {
+const TEMPLATE_VARS: Record<string, string[]> = {
   tpl_savings_deposit: ["{amount}", "{balance}"],
   tpl_savings_withdraw: ["{amount}", "{balance}"],
   tpl_loan_approved: ["{amount}", "{payable}"],
   tpl_loan_payment: ["{amount}", "{due}"],
   tpl_irrigation_payment: ["{amount}"],
-  tpl_due_reminder: ["{type}", "{due}"],
+  tpl_due_reminder: ["{type}", "{due}", "{date}"],
 };
 
 export default function SmsSettings() {
@@ -106,8 +115,27 @@ export default function SmsSettings() {
               <Label>Sender ID (optional)</Label>
               <Input value={s.sender_id ?? ""} onChange={(e) => set("sender_id", e.target.value)} placeholder="e.g. SmartIrri" />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>Default Language</Label>
+                <Select value={s.language} onValueChange={(v) => set("language", v)}>
+                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bn">Bangla (বাংলা)</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">Used for due reminders.</p>
+              </div>
+              <div>
+                <Label>Reminder days before due</Label>
+                <Input type="number" min={0} max={30} value={s.reminder_days_before}
+                  onChange={(e) => set("reminder_days_before", Math.max(0, Number(e.target.value || 0)))} />
+              </div>
+            </div>
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
               API token is stored securely as <code>GREENWEB_SMS_TOKEN</code> in backend secrets and never exposed in the frontend.
+              Reminders run daily and are sent only once per due event.
             </div>
           </CardContent>
         </Card>
@@ -148,6 +176,29 @@ export default function SmsSettings() {
                 />
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader><CardTitle className="text-base">Message Templates (English)</CardTitle></CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {tplFields.map((f) => {
+              const enKey = (f.key + "_en") as keyof Settings;
+              return (
+                <div key={enKey}>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-sm">{f.label}</Label>
+                    <span className="text-[10px] text-muted-foreground">vars: {TEMPLATE_VARS[f.key]?.join(", ")}</span>
+                  </div>
+                  <Textarea
+                    value={(s as any)[enKey] ?? ""}
+                    onChange={(e) => set(enKey, e.target.value as any)}
+                    rows={3}
+                    className="text-sm"
+                  />
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
