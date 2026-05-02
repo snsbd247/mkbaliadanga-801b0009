@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Send, Eye } from "lucide-react";
+import { MessageSquare, Send, Eye, CalendarClock } from "lucide-react";
 
 type Settings = {
   enabled: boolean;
@@ -84,6 +84,14 @@ export default function SmsSettings() {
   const [sampleVars, setSampleVars] = useState<Record<string, string>>(DEFAULT_SAMPLE_VARS);
   const [offices, setOffices] = useState<Office[]>([]);
   const [overrides, setOverrides] = useState<Record<string, OfficeOverride>>({});
+  // Manual scheduler state
+  const today = new Date().toISOString().slice(0, 10);
+  const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const [schedFrom, setSchedFrom] = useState<string>(today);
+  const [schedTo, setSchedTo] = useState<string>(in7);
+  const [schedOffice, setSchedOffice] = useState<string>("__all__");
+  const [schedBusy, setSchedBusy] = useState(false);
+  const [schedResult, setSchedResult] = useState<any>(null);
 
   useEffect(() => { document.title = "SMS Settings"; load(); }, []);
 
@@ -135,6 +143,21 @@ export default function SmsSettings() {
     if (error) return toast.error(error.message);
     if ((data as any)?.ok) toast.success("Sent ✓");
     else toast.error("Failed: " + ((data as any)?.response ?? "unknown"));
+  }
+
+  async function runManualReminders() {
+    if (!schedFrom || !schedTo) return toast.error("Pick both dates");
+    if (schedFrom > schedTo) return toast.error("From date must be before To date");
+    setSchedBusy(true);
+    setSchedResult(null);
+    const payload: Record<string, unknown> = { from: schedFrom, to: schedTo };
+    if (schedOffice !== "__all__") payload.office_id = schedOffice;
+    const { data, error } = await supabase.functions.invoke("sms-due-reminders", { body: payload });
+    setSchedBusy(false);
+    if (error) return toast.error(error.message);
+    setSchedResult(data);
+    if ((data as any)?.skipped) toast.warning(String((data as any).skipped));
+    else toast.success(`Queued: ${(data as any)?.loan ?? 0} loan, ${(data as any)?.irrigation ?? 0} irrigation`);
   }
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS({ ...s!, [k]: v });
@@ -352,6 +375,62 @@ export default function SmsSettings() {
                 </TabsContent>
               ))}
             </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><CalendarClock className="h-4 w-4"/>Manual Due Reminder Scheduler</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Trigger reminder SMS for loans/irrigation dues falling within a custom date window. Duplicate reminders for the same item are skipped automatically.
+            </p>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-4 sm:items-end">
+            <div>
+              <Label>From date</Label>
+              <Input type="date" value={schedFrom} onChange={(e) => setSchedFrom(e.target.value)} />
+            </div>
+            <div>
+              <Label>To date</Label>
+              <Input type="date" value={schedTo} onChange={(e) => setSchedTo(e.target.value)} />
+            </div>
+            <div>
+              <Label>Office</Label>
+              <Select value={schedOffice} onValueChange={setSchedOffice}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All offices</SelectItem>
+                  {offices.map((o) => (<SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setSchedFrom(today); setSchedTo(today); }}>Today</Button>
+              <Button variant="outline" size="sm" onClick={() => { setSchedFrom(today); setSchedTo(new Date(Date.now()+86400000).toISOString().slice(0,10)); }}>+1d</Button>
+              <Button variant="outline" size="sm" onClick={() => { setSchedFrom(today); setSchedTo(new Date(Date.now()+3*86400000).toISOString().slice(0,10)); }}>+3d</Button>
+              <Button variant="outline" size="sm" onClick={() => { setSchedFrom(today); setSchedTo(in7); }}>+7d</Button>
+            </div>
+            <Button onClick={runManualReminders} disabled={schedBusy} className="sm:col-span-4 sm:w-auto">
+              {schedBusy ? "Running…" : "Run Reminders Now"}
+            </Button>
+            {schedResult && (
+              <div className="sm:col-span-4 rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+                {schedResult.skipped ? (
+                  <div className="text-amber-700 dark:text-amber-400">{String(schedResult.skipped)}</div>
+                ) : (
+                  <>
+                    <div>Window: <span className="font-mono">{schedResult.window?.from} → {schedResult.window?.to}</span></div>
+                    <div>Loan reminders queued: <strong>{schedResult.loan ?? 0}</strong></div>
+                    <div>Irrigation reminders queued: <strong>{schedResult.irrigation ?? 0}</strong></div>
+                    <div>Skipped (already sent): <strong>{schedResult.skipped_dup ?? 0}</strong></div>
+                    <div>Retried stuck messages: <strong>{schedResult.retried ?? 0}</strong></div>
+                    {Array.isArray(schedResult.errors) && schedResult.errors.length > 0 && (
+                      <div className="text-destructive">Errors: {schedResult.errors.join("; ")}</div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
