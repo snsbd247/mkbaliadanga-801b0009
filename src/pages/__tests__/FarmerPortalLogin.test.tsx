@@ -30,7 +30,7 @@ describe("FarmerPortalLogin", () => {
 
   it("shows non-revealing error and stays on step 'id' when OTP request returns 429", async () => {
     // @ts-ignore
-    global.fetch.mockResolvedValueOnce({
+    (global.fetch as any).mockResolvedValueOnce({
       ok: false, status: 429,
       json: async () => ({ error: "Too many OTP requests. Try again later." }),
     });
