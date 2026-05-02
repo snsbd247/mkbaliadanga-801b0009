@@ -650,7 +650,14 @@ export default function SmsSettings() {
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   placeholder={tokenConfigured ? "•••••••• (enter new token to replace)" : "Paste GreenWeb API token"}
+                  // Block browser/password-manager autofill — never pre-fill the token on revisit.
+                  name="greenweb-api-token-no-autofill"
+                  id="greenweb-api-token-no-autofill"
                   autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
+                  spellCheck={false}
                   className="flex-1 min-w-[200px] font-mono text-xs"
                 />
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowToken((v) => !v)}>
