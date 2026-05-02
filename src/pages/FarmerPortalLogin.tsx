@@ -64,14 +64,14 @@ export default function FarmerPortalLogin() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data?.error || "Could not send code. Try again.");
+        setError(data?.error || t("couldNotSendCode"));
         return;
       }
       setMaskedMobile(data?.mobile_masked ?? null);
       setStep("otp");
-      toast.success(data?.mobile_masked ? `Code sent to ${data.mobile_masked}` : "If your ID is valid, a code has been sent.");
+      toast.success(data?.mobile_masked ? t("codeSentToast").replace("{mobile}", data.mobile_masked) : t("codeSentGenericToast"));
     } catch {
-      setError("Network error. Please try again.");
+      setError(t("networkErrorRetry"));
     } finally {
       setBusy(false);
     }
