@@ -183,8 +183,14 @@ export default function FarmerPortalLogin() {
           )}
         </Card>
 
-        <div className="mt-6 text-center">
-          <Button variant="outline" size="sm" onClick={() => nav("/auth")}>
+        <div className="mt-6 mb-2 text-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => nav("/auth")}
+            aria-label="Go to Admin Login page"
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             Admin Login →
           </Button>
         </div>
