@@ -200,7 +200,7 @@ export default function Dashboard() {
           </div>
         </Card>
         <Card className="p-5">
-          <h2 className="font-semibold mb-3">Composition</h2>
+          <h2 className="font-semibold mb-3">{t("composition")}</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
