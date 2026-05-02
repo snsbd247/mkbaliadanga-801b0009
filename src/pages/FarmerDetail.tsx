@@ -233,6 +233,38 @@ export default function FarmerDetail() {
             {irr.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
           </Table></Card>
         </TabsContent>
+
+        <TabsContent value="payments">
+          <Card><Table>
+            <TableHeader><TableRow>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead>{t("type")}</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead className="text-right">{t("amount")}</TableHead>
+              <TableHead>Office</TableHead>
+              <TableHead className="text-right">Receipt</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {payments.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>{fmtDate(p.created_at)}</TableCell>
+                  <TableCell><Badge variant="secondary">{p.kind}</Badge></TableCell>
+                  <TableCell>{p.method ?? "cash"}</TableCell>
+                  <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="outline" onClick={() => reprintReceipt(p)}>
+                      <FileDown className="h-3 w-3 mr-1" />Download
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {payments.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table></Card>
+        </TabsContent>
       </Tabs>
     </>
   );
