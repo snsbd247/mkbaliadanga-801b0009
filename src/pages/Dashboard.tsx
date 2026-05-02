@@ -29,6 +29,8 @@ function NoOfficeBanner() {
 
 export default function Dashboard() {
   const { t } = useLang();
+  const { isSuper, officeId } = useAuth();
+  const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
@@ -37,6 +39,12 @@ export default function Dashboard() {
   const [composition, setComposition] = useState<any[]>([]);
 
   useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, []);
+
+  useEffect(() => {
+    if (!officeId) { setOfficeName(""); return; }
+    supabase.from("offices").select("name").eq("id", officeId).maybeSingle()
+      .then(({ data }) => setOfficeName((data as any)?.name ?? ""));
+  }, [officeId]);
 
   const sum = (rows: any[], f: string) => rows.reduce((a, r) => a + Number(r[f] || 0), 0);
 
