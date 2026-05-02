@@ -169,7 +169,30 @@ export default function SmsSettings() {
     else toast.error("Failed: " + ((data as any)?.response ?? "unknown"));
   }
 
-  async function runManualReminders() {
+  async function sendTemplateTest(key: keyof Settings, baseKey: string) {
+    if (!tplTestMobile.trim()) return toast.error("Enter a phone number above to test");
+    const tpl = ((s as any)[key] ?? "") as string;
+    if (!tpl.trim()) return toast.error("Template is empty");
+    const usedVars = TPL_VAR_MAP[baseKey] ?? [];
+    const subset: Record<string, string> = {};
+    for (const k of usedVars) subset[k] = sampleVars[k] ?? "";
+    const rendered = renderTpl(tpl, subset);
+    setTplTestBusy(String(key));
+    const { data, error } = await supabase.functions.invoke("send-sms", {
+      body: { mobile: tplTestMobile.trim(), message: rendered, event_type: "manual_template_test" },
+    });
+    setTplTestBusy(null);
+    if (error) return toast.error(error.message);
+    if ((data as any)?.ok) toast.success("Test SMS sent ✓");
+    else toast.error("Failed: " + ((data as any)?.response ?? "unknown"));
+  }
+
+  function resetTemplate(key: keyof Settings) {
+    const def = DEFAULT_TEMPLATES[String(key)];
+    if (def === undefined) return;
+    set(key, def as any);
+    toast.success("Reset to default — remember to Save");
+  }
     if (!schedFrom || !schedTo) return toast.error("Pick both dates");
     if (schedFrom > schedTo) return toast.error("From date must be before To date");
     setSchedBusy(true);
