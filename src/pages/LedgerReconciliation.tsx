@@ -81,6 +81,23 @@ export default function LedgerReconciliation() {
     } finally { setLoading(false); }
   }
 
+  async function openDetail(referenceType: string, referenceId: string) {
+    setDetail({ reference_type: referenceType, reference_id: referenceId, source_exists: false, source: null, source_amount: null, ledger_entries: [], ledger_debit: 0, ledger_credit: 0, diff: 0 });
+    setDetailLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Please sign in"); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ledger-reconcile-monthly`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ mode: "detail", reference_type: referenceType, reference_id: referenceId }),
+      });
+      const j = await res.json();
+      if (!res.ok) { toast.error(j?.error || "Failed to load detail"); setDetail(null); return; }
+      setDetail(j.detail);
+    } finally { setDetailLoading(false); }
+  }
+
   function exportCsv() {
     if (!report) return;
     const headersEn = ["Code", "Account", "Type", "Opening Balance", "Period Debit", "Period Credit", "Closing Balance"];
