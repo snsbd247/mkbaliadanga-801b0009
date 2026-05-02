@@ -196,7 +196,7 @@ export default function Diagnostics() {
           <Card className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                লগইন user: <span className="font-mono">{user?.email}</span> · office: <span className="font-mono">{officeId || "(none / super_admin)"}</span>
+                {t("loggedInUser")}: <span className="font-mono">{user?.email}</span> · {t("office")}: <span className="font-mono">{officeId || "(none / super_admin)"}</span>
               </div>
               <Button onClick={runIsolationTest} disabled={isoBusy}>
                 {isoBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
