@@ -24,3 +24,9 @@ verify_jwt = false
 [functions.ledger-check]
 verify_jwt = false
 
+[functions.qr-rotate-scheduled]
+verify_jwt = false
+
+[functions.ledger-reconcile-monthly]
+verify_jwt = false
+
