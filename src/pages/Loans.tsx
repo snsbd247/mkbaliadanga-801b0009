@@ -238,7 +238,7 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </FragmentRow>
           );
         })}
         {rows.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
