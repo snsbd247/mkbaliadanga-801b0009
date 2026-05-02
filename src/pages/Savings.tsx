@@ -142,7 +142,7 @@ function TxnTable({ rows, t, isAdmin, onDecide, onPrint, profiles, historyMode }
         <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
         <TableHead>{t("type")}</TableHead><TableHead>{t("amount")}</TableHead>
         <TableHead>{t("status")}</TableHead>
-        <TableHead>Approved By</TableHead>
+        <TableHead>{t("approvedBy")}</TableHead>
         <TableHead className="text-right">{t("actions")}</TableHead>
       </TableRow></TableHeader>
       <TableBody>
