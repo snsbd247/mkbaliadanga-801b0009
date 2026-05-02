@@ -39,10 +39,20 @@ export default function Payments() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
+  const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
+  const [autoAmount, setAutoAmount] = useState<number>(0);
 
-  useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); }, []);
+  useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
   useEffect(() => { if (farmerId) loadDues(); else { setOpenLoans([]); setOpenIrr([]); } }, [farmerId]);
   useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
+
+  async function loadPriority() {
+    if (!user) return;
+    const { data: prof } = await supabase.from("profiles").select("office_id").eq("id", user.id).maybeSingle();
+    if (!prof?.office_id) return;
+    const { data: off } = await supabase.from("offices").select("payment_priority").eq("id", prof.office_id).maybeSingle();
+    if (off?.payment_priority?.length) setPriority(off.payment_priority as string[]);
+  }
 
   async function checkRole() {
     if (!user) return;
