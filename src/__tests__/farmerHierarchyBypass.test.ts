@@ -113,7 +113,7 @@ describe("Direct API bypass — hierarchy enforcement", () => {
       division_id: "div1",
       district_id: "dis2", // dis2 belongs to div2, NOT div1
     };
-    const { error } = await supabase.from("farmers").insert(payload).select().single();
+    const { error } = await (supabase as any).from("farmers").insert(payload).select().single();
     expect(calls).toHaveLength(1);
     expect(error).toBeTruthy();
     expect(parseLocationDbError(error.message)).toBe("district");
@@ -125,7 +125,7 @@ describe("Direct API bypass — hierarchy enforcement", () => {
       division_id: "div1", district_id: "dis1", upazila_id: "upa1",
       ward_id: "war1", // union_id intentionally missing
     };
-    const { error } = await supabase.from("farmers").insert(payload).select().single();
+    const { error } = await (supabase as any).from("farmers").insert(payload).select().single();
     expect(error).toBeTruthy();
     expect(parseLocationDbError(error.message)).toBe("union");
   });
@@ -137,7 +137,7 @@ describe("Direct API bypass — hierarchy enforcement", () => {
       union_id: "uni1", ward_id: "war1",
       village_id: "vil-other", // not under war1
     };
-    const { error } = await supabase.from("farmers").insert(payload).select().single();
+    const { error } = await (supabase as any).from("farmers").insert(payload).select().single();
     expect(error).toBeTruthy();
     expect(parseLocationDbError(error.message)).toBe("village");
   });
@@ -149,7 +149,7 @@ describe("Direct API bypass — hierarchy enforcement", () => {
       union_id: "uni-other",
       mouza_id: "mou1", // mou1 belongs to uni1
     };
-    const { error } = await supabase.from("farmers").insert(payload).select().single();
+    const { error } = await (supabase as any).from("farmers").insert(payload).select().single();
     expect(error).toBeTruthy();
     expect(parseLocationDbError(error.message)).toBe("mouza");
   });
@@ -160,7 +160,7 @@ describe("Direct API bypass — hierarchy enforcement", () => {
       division_id: "div1", district_id: "dis1", upazila_id: "upa1",
       union_id: "uni1", ward_id: "war1", village_id: "vil1", mouza_id: "mou1",
     };
-    const { data, error } = await supabase.from("farmers").insert(payload).select().single();
+    const { data, error } = await (supabase as any).from("farmers").insert(payload).select().single();
     expect(error).toBeNull();
     expect(data).toMatchObject({ name_en: "Valid" });
   });
