@@ -395,7 +395,8 @@ export default function SmsSettings() {
       supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("offices").select("id,name").order("name"),
       supabase.from("sms_office_settings").select("office_id,enabled,sender_id"),
-      supabase.from("sms_provider_secrets" as any).select("api_token,updated_at").eq("provider", "greenweb").maybeSingle(),
+      // Only fetch presence + timestamp — never pull the token value into the browser.
+      supabase.from("sms_provider_secrets" as any).select("provider,updated_at").eq("provider", "greenweb").maybeSingle(),
     ]);
     if (settingsRes.error) return toast.error(settingsRes.error.message);
     setS(settingsRes.data as any);
@@ -404,9 +405,10 @@ export default function SmsSettings() {
     for (const o of ((overridesRes.data as any) ?? []) as OfficeOverride[]) map[o.office_id] = o;
     setOverrides(map);
     const tok = (tokenRes as any)?.data;
-    setTokenConfigured(!!tok?.api_token);
+    setTokenConfigured(!!tok?.provider);
     setTokenUpdatedAt(tok?.updated_at ?? null);
     setTokenInput("");
+    setShowToken(false);
   }
 
   async function saveProviderToken() {
@@ -648,7 +650,14 @@ export default function SmsSettings() {
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   placeholder={tokenConfigured ? "•••••••• (enter new token to replace)" : "Paste GreenWeb API token"}
+                  // Block browser/password-manager autofill — never pre-fill the token on revisit.
+                  name="greenweb-api-token-no-autofill"
+                  id="greenweb-api-token-no-autofill"
                   autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
+                  spellCheck={false}
                   className="flex-1 min-w-[200px] font-mono text-xs"
                 />
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowToken((v) => !v)}>
