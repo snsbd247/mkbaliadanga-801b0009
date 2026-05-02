@@ -90,18 +90,18 @@ export default function Users() {
     if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "create", ...parsed.data });
     if (!ok) return;
-    toast.success("User created");
+    toast.success(t("userCreated"));
     setCreateOpen(false);
     setForm({ username: "", email: "", full_name: "", password: "", role: "staff", office_id: "" });
     load();
   }
 
   async function deleteUser(u: any) {
-    if (u.id === me?.id) return toast.error("You cannot delete yourself");
+    if (u.id === me?.id) return toast.error(t("cannotDeleteSelf"));
     if (!confirm(`Delete ${u.username || u.email}? This cannot be undone.`)) return;
     const ok = await callAdmin({ action: "delete", user_id: u.id });
     if (!ok) return;
-    toast.success("User deleted");
+    toast.success(t("userDeleted"));
     load();
   }
 
@@ -112,7 +112,7 @@ export default function Users() {
     if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "reset_password", user_id: resetFor.id, password: resetPwd });
     if (!ok) return;
-    toast.success("Password updated");
+    toast.success(t("passwordUpdated"));
     setResetFor(null); setResetPwd("");
   }
 
@@ -157,7 +157,7 @@ export default function Users() {
 
   return (
     <>
-      <PageHeader title={t("users")} description="Only Super Admins can create or remove users." actions={
+      <PageHeader title={t("users")} description={t("onlySuperAdminUsers")} actions={
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-1" />New user</Button>

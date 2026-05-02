@@ -42,7 +42,7 @@ export default function Savings() {
     setProfiles(map);
   }
   async function save() {
-    if (!form.farmer_id || form.amount <= 0) return toast.error("Pick farmer & amount");
+    if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
     const status = form.type === "withdraw" ? "pending" : "approved";
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
     const { error } = await supabase.from("savings_transactions").insert({

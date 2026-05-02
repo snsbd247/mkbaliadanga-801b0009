@@ -15,15 +15,14 @@ interface Stat { label: string; value: string; icon: any; tone?: "default" | "da
 
 function NoOfficeBanner() {
   const { rolesLoaded, officeId, isSuper, isAdmin, roles } = useAuth();
+  const { t } = useLang();
   if (!rolesLoaded || isSuper) return null;
   const isAssignableRole = isAdmin || roles.includes("staff") || roles.includes("committee");
   if (!isAssignableRole || officeId) return null;
   return (
     <Alert className="mb-4 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30">
       <AlertTriangle className="h-4 w-4 text-amber-600" />
-      <AlertDescription>
-        Your account is not assigned to any office. You won't see office-scoped data until a Super Admin assigns you on the Users page.
-      </AlertDescription>
+      <AlertDescription>{t("noOfficeAssigned")}</AlertDescription>
     </Alert>
   );
 }
@@ -130,10 +129,10 @@ export default function Dashboard() {
     setTrend(months);
 
     setComposition([
-      { name: "Savings", value: Math.max(0, totalSavings) },
-      { name: "Shares", value: Math.max(0, sum(sharesData, "balance")) },
-      { name: "Loan O/S", value: Math.max(0, totalLoan) },
-      { name: "Irr Due", value: Math.max(0, sum(irrData, "due_amount")) },
+      { name: t("savings"), value: Math.max(0, totalSavings) },
+      { name: t("sharesShort"), value: Math.max(0, sum(sharesData, "balance")) },
+      { name: t("loanOutstanding"), value: Math.max(0, totalLoan) },
+      { name: t("irrigationDueShort"), value: Math.max(0, sum(irrData, "due_amount")) },
     ]);
 
     const dueMap = new Map<string, { name: string; code: string; due: number }>();
@@ -201,7 +200,7 @@ export default function Dashboard() {
           </div>
         </Card>
         <Card className="p-5">
-          <h2 className="font-semibold mb-3">Composition</h2>
+          <h2 className="font-semibold mb-3">{t("composition")}</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -217,7 +216,7 @@ export default function Dashboard() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
-          <h2 className="font-semibold mb-3">Net Savings Movement</h2>
+          <h2 className="font-semibold mb-3">{t("netSavingsMovement")}</h2>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trend}>
