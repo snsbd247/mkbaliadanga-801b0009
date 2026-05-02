@@ -38,6 +38,7 @@ import FinanceSummary from "./pages/FinanceSummary";
 import MobileQA from "./pages/MobileQA";
 import SmsSettings from "./pages/SmsSettings";
 import SmsLogs from "./pages/SmsLogs";
+import Locations from "./pages/Locations";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,7 @@ const App = () => (
                 <Route path="/mobile-qa" element={<MobileQA />} />
                 <Route path="/sms-settings" element={<SmsSettings />} />
                 <Route path="/sms-logs" element={<SmsLogs />} />
+                <Route path="/locations" element={<Locations />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

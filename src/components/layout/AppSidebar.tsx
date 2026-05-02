@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Building2, Users, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
-  BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, Smartphone, MessageSquare, MessagesSquare,
+  BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, Smartphone, MessageSquare, MessagesSquare, MapPin,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -82,6 +82,7 @@ export function AppSidebar() {
         { url: "/sms-settings", icon: MessageSquare, label: "SMS Settings", superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: "SMS Logs", superOnly: true },
         { url: "/mobile-qa", icon: Smartphone, label: "Mobile QA", superOnly: true },
+        { url: "/locations", icon: MapPin, label: "Locations", superOnly: true },
       ],
     },
   ];

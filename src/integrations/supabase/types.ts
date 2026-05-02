@@ -222,6 +222,77 @@ export type Database = {
         }
         Relationships: []
       }
+      districts: {
+        Row: {
+          code: string | null
+          created_at: string
+          division_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          division_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          division_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "districts_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      divisions: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
@@ -270,13 +341,16 @@ export type Database = {
           created_at: string
           created_by: string | null
           district: string | null
+          district_id: string | null
           division: string | null
+          division_id: string | null
           farmer_code: string
           father_name: string | null
           id: string
           member_no: string | null
           mobile: string | null
           mother_name: string | null
+          mouza_id: string | null
           name_bn: string | null
           name_en: string
           nid: string | null
@@ -284,22 +358,28 @@ export type Database = {
           photo_url: string | null
           post_office: string | null
           status: string
+          union_id: string | null
           upazila: string | null
+          upazila_id: string | null
           updated_at: string
           village: string | null
+          ward_id: string | null
         }
         Insert: {
           address?: string | null
           created_at?: string
           created_by?: string | null
           district?: string | null
+          district_id?: string | null
           division?: string | null
+          division_id?: string | null
           farmer_code: string
           father_name?: string | null
           id?: string
           member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
+          mouza_id?: string | null
           name_bn?: string | null
           name_en: string
           nid?: string | null
@@ -307,22 +387,28 @@ export type Database = {
           photo_url?: string | null
           post_office?: string | null
           status?: string
+          union_id?: string | null
           upazila?: string | null
+          upazila_id?: string | null
           updated_at?: string
           village?: string | null
+          ward_id?: string | null
         }
         Update: {
           address?: string | null
           created_at?: string
           created_by?: string | null
           district?: string | null
+          district_id?: string | null
           division?: string | null
+          division_id?: string | null
           farmer_code?: string
           father_name?: string | null
           id?: string
           member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
+          mouza_id?: string | null
           name_bn?: string | null
           name_en?: string
           nid?: string | null
@@ -330,16 +416,61 @@ export type Database = {
           photo_url?: string | null
           post_office?: string | null
           status?: string
+          union_id?: string | null
           upazila?: string | null
+          upazila_id?: string | null
           updated_at?: string
           village?: string | null
+          ward_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "farmers_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmers_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmers_mouza_id_fkey"
+            columns: ["mouza_id"]
+            isOneToOne: false
+            referencedRelation: "mouzas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "farmers_office_id_fkey"
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmers_union_id_fkey"
+            columns: ["union_id"]
+            isOneToOne: false
+            referencedRelation: "unions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmers_upazila_id_fkey"
+            columns: ["upazila_id"]
+            isOneToOne: false
+            referencedRelation: "upazilas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmers_ward_id_fkey"
+            columns: ["ward_id"]
+            isOneToOne: false
+            referencedRelation: "wards"
             referencedColumns: ["id"]
           },
         ]
@@ -613,6 +744,7 @@ export type Database = {
           id: string
           land_size: number
           mouza: string | null
+          mouza_id: string | null
           office_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"]
         }
@@ -624,6 +756,7 @@ export type Database = {
           id?: string
           land_size?: number
           mouza?: string | null
+          mouza_id?: string | null
           office_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
@@ -635,6 +768,7 @@ export type Database = {
           id?: string
           land_size?: number
           mouza?: string | null
+          mouza_id?: string | null
           office_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
@@ -651,6 +785,13 @@ export type Database = {
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_mouza_id_fkey"
+            columns: ["mouza_id"]
+            isOneToOne: false
+            referencedRelation: "mouzas"
             referencedColumns: ["id"]
           },
         ]
@@ -817,6 +958,60 @@ export type Database = {
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mouzas: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          jl_no: string | null
+          name: string
+          name_bn: string | null
+          union_id: string | null
+          updated_at: string
+          ward_id: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          jl_no?: string | null
+          name: string
+          name_bn?: string | null
+          union_id?: string | null
+          updated_at?: string
+          ward_id?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          jl_no?: string | null
+          name?: string
+          name_bn?: string | null
+          union_id?: string | null
+          updated_at?: string
+          ward_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mouzas_union_id_fkey"
+            columns: ["union_id"]
+            isOneToOne: false
+            referencedRelation: "unions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mouzas_ward_id_fkey"
+            columns: ["ward_id"]
+            isOneToOne: false
+            referencedRelation: "wards"
             referencedColumns: ["id"]
           },
         ]
@@ -1428,6 +1623,88 @@ export type Database = {
         }
         Relationships: []
       }
+      unions: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          upazila_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          upazila_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          upazila_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unions_upazila_id_fkey"
+            columns: ["upazila_id"]
+            isOneToOne: false
+            referencedRelation: "upazilas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upazilas: {
+        Row: {
+          code: string | null
+          created_at: string
+          district_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          district_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          district_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upazilas_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           can_add: boolean
@@ -1475,6 +1752,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wards: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          union_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          union_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          union_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wards_union_id_fkey"
+            columns: ["union_id"]
+            isOneToOne: false
+            referencedRelation: "unions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

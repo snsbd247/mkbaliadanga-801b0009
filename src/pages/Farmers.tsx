@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Eye, Search, Upload } from "lucide-react";
+import { LocationPicker, LocationValue } from "@/components/locations/LocationPicker";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
@@ -30,7 +31,13 @@ export default function Farmers() {
     name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
     village: "", post_office: "", upazila: "", district: "", division: "", address: "",
     office_id: officeId ?? "", status: "active",
+    division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, mouza_id: null,
   });
+  const location: LocationValue = {
+    division_id: form.division_id, district_id: form.district_id,
+    upazila_id: form.upazila_id, union_id: form.union_id,
+    ward_id: form.ward_id, mouza_id: form.mouza_id,
+  };
 
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page]);
   useEffect(() => { setForm((f: any) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
@@ -86,6 +93,13 @@ export default function Farmers() {
                 </Select>
               </div>
               <div className="col-span-2"><Label>{t("address")}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+              <div className="col-span-2 border-t pt-3 mt-1">
+                <div className="text-xs font-medium text-muted-foreground mb-2">Location (optional — links farmer to managed division/district/etc.)</div>
+                <LocationPicker
+                  value={location}
+                  onChange={(loc) => setForm({ ...form, ...loc })}
+                />
+              </div>
               <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] ?? null)} /></div>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
