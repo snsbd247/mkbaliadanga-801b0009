@@ -226,6 +226,10 @@ export const translations = {
     settings: "সেটিংস", payNow: "পেমেন্ট করুন",
     selectFarmer: "কৃষক নির্বাচন করুন", paymentSuccess: "পেমেন্ট রেকর্ড হয়েছে",
     saved: "সংরক্ষিত", issueLoan: "ঋণ ইস্যু", addEntry: "এন্ট্রি যোগ",
+    scanQr: "কিউআর স্ক্যান", qrCode: "কিউআর কোড",
+    branding: "ব্র্যান্ডিং", companyName: "প্রতিষ্ঠানের নাম", logo: "লোগো",
+    permissions: "অনুমতি", canView: "দেখা", canAdd: "যোগ", canEdit: "সম্পাদনা", canDelete: "মুছুন",
+    notifications: "বিজ্ঞপ্তি", username: "ইউজারনেম", module: "মডিউল",
   },
 } as const;
 
