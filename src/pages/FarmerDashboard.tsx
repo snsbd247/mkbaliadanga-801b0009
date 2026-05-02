@@ -264,6 +264,7 @@ export default function FarmerDashboard() {
           Session is valid for 2 hours. Sign out when finished on a shared device.
         </p>
       </main>
+      <SiteFooter />
     </div>
   );
 }
