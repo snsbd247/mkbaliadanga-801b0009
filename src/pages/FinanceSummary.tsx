@@ -15,11 +15,13 @@ import {
 } from "lucide-react";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type AccountRow = { id: string; code: string; name: string; type: "asset" | "liability" | "equity" | "income" | "expense" };
 type LedgerRow = { account_id: string; debit: number; credit: number };
 
 export default function FinanceSummary() {
+  const { t } = useLang();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [fyMonth, setFyMonth] = useState(7);
@@ -132,36 +134,36 @@ export default function FinanceSummary() {
 
   // ------- Exports -------
   const summaryRows = () => [
-    { Section: "Trial Balance", Metric: "Total Debit", Amount: trial.totalDebit },
-    { Section: "Trial Balance", Metric: "Total Credit", Amount: trial.totalCredit },
-    { Section: "Trial Balance", Metric: "Balanced", Amount: trial.balanced ? "Yes" : "No" },
-    { Section: "P&L", Metric: "Total Income", Amount: pl.income },
-    { Section: "P&L", Metric: "Total Expense", Amount: pl.expense },
-    { Section: "P&L", Metric: "Net Income", Amount: pl.net },
-    { Section: "Cash Book", Metric: "Cash In", Amount: cash.in },
-    { Section: "Cash Book", Metric: "Cash Out", Amount: cash.out },
-    { Section: "Cash Book", Metric: "Net Cash", Amount: cash.net },
+    { Section: t("trialBalance"), Metric: t("totalDebit"), Amount: trial.totalDebit },
+    { Section: t("trialBalance"), Metric: t("totalCredit"), Amount: trial.totalCredit },
+    { Section: t("trialBalance"), Metric: t("balanced"), Amount: trial.balanced ? "Yes" : "No" },
+    { Section: t("profitLoss"), Metric: t("income"), Amount: pl.income },
+    { Section: t("profitLoss"), Metric: t("expense"), Amount: pl.expense },
+    { Section: t("profitLoss"), Metric: t("net"), Amount: pl.net },
+    { Section: t("cashBook"), Metric: t("cashIn"), Amount: cash.in },
+    { Section: t("cashBook"), Metric: t("cashOut"), Amount: cash.out },
+    { Section: t("cashBook"), Metric: t("netCash"), Amount: cash.net },
   ];
 
   const exportPDF = () => {
     exportTablePDF(
-      "Finance Summary",
-      ["Section", "Metric", "Amount"],
+      t("financeSummary"),
+      [t("financeSummary"), t("name"), t("amount")],
       summaryRows().map((r) => [r.Section, r.Metric, typeof r.Amount === "number" ? money(r.Amount) : String(r.Amount)]),
       { from, to },
     );
   };
-  const exportXLSX = () => exportExcel("Finance Summary", "Summary", summaryRows(), { from, to });
+  const exportXLSX = () => exportExcel(t("financeSummary"), "Summary", summaryRows(), { from, to });
 
   return (
     <div className="container mx-auto p-4 space-y-4">
       <PageHeader
-        title="Finance Summary"
-        description="One-page snapshot of Trial Balance, P&L, Cash Book and period status"
+        title={t("financeSummary")}
+        description={t("financeSummaryDesc")}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-              <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+              <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> {t("refresh")}
             </Button>
             <Button variant="outline" size="sm" onClick={exportPDF}>
               <FileDown className="mr-1 h-4 w-4" /> PDF
@@ -177,19 +179,19 @@ export default function FinanceSummary() {
       <Card>
         <CardContent className="pt-6 space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => presetMonth(-1)}>Last Month</Button>
-            <Button variant="outline" size="sm" onClick={() => presetMonth(0)}>This Month</Button>
-            <Button variant="outline" size="sm" onClick={presetQuarter}>This Quarter</Button>
+            <Button variant="outline" size="sm" onClick={() => presetMonth(-1)}>{t("lastMonth")}</Button>
+            <Button variant="outline" size="sm" onClick={() => presetMonth(0)}>{t("thisMonth")}</Button>
+            <Button variant="outline" size="sm" onClick={presetQuarter}>{t("thisQuarter")}</Button>
             {fyOptions.slice(0, 2).map((fy, i) => (
-              <Button key={fy.label} variant="outline" size="sm" onClick={() => presetFY(i)}>FY {fy.label}</Button>
+              <Button key={fy.label} variant="outline" size="sm" onClick={() => presetFY(i)}>{t("fyPrefix")} {fy.label}</Button>
             ))}
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <div><Label>From</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-            <div><Label>To</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+            <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+            <div><Label>{t("to")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
             <div className="flex items-end">
               {isInsideClosed && (
-                <Badge variant="secondary" className="gap-1"><Lock className="h-3 w-3" /> Closed period (read-only)</Badge>
+                <Badge variant="secondary" className="gap-1"><Lock className="h-3 w-3" /> {t("closedPeriodReadOnly")}</Badge>
               )}
             </div>
           </div>
@@ -199,43 +201,43 @@ export default function FinanceSummary() {
       {/* KPI cards */}
       <div className="grid gap-3 md:grid-cols-3">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Trial Balance</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{t("trialBalance")}</CardTitle></CardHeader>
           <CardContent className="space-y-1">
-            <div className="flex justify-between text-sm"><span>Total Debit</span><span className="tabular-nums">{money(trial.totalDebit)}</span></div>
-            <div className="flex justify-between text-sm"><span>Total Credit</span><span className="tabular-nums">{money(trial.totalCredit)}</span></div>
+            <div className="flex justify-between text-sm"><span>{t("totalDebit")}</span><span className="tabular-nums">{money(trial.totalDebit)}</span></div>
+            <div className="flex justify-between text-sm"><span>{t("totalCredit")}</span><span className="tabular-nums">{money(trial.totalCredit)}</span></div>
             <div className="flex justify-between text-sm pt-1 border-t">
-              <span>Status</span>
+              <span>{t("status")}</span>
               {trial.balanced
-                ? <Badge variant="secondary">Balanced</Badge>
-                : <Badge variant="destructive">Off by {money(Math.abs(trial.totalDebit - trial.totalCredit))}</Badge>}
+                ? <Badge variant="secondary">{t("balanced")}</Badge>
+                : <Badge variant="destructive">{t("offBy")} {money(Math.abs(trial.totalDebit - trial.totalCredit))}</Badge>}
             </div>
-            <Link to="/financial-reports" className="text-xs text-primary inline-flex items-center gap-1 pt-1">View report <ArrowRight className="h-3 w-3" /></Link>
+            <Link to="/financial-reports" className="text-xs text-primary inline-flex items-center gap-1 pt-1">{t("viewReport")} <ArrowRight className="h-3 w-3" /></Link>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Profit & Loss</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{t("profitLoss")}</CardTitle></CardHeader>
           <CardContent className="space-y-1">
-            <div className="flex justify-between text-sm"><span>Income</span><span className="tabular-nums text-primary">{money(pl.income)}</span></div>
-            <div className="flex justify-between text-sm"><span>Expense</span><span className="tabular-nums">{money(pl.expense)}</span></div>
+            <div className="flex justify-between text-sm"><span>{t("income")}</span><span className="tabular-nums text-primary">{money(pl.income)}</span></div>
+            <div className="flex justify-between text-sm"><span>{t("expense")}</span><span className="tabular-nums">{money(pl.expense)}</span></div>
             <div className="flex justify-between text-sm pt-1 border-t font-semibold">
-              <span>Net</span>
+              <span>{t("net")}</span>
               <span className={`tabular-nums ${pl.net >= 0 ? "text-primary" : "text-destructive"}`}>{money(pl.net)}</span>
             </div>
-            <Link to="/financial-reports" className="text-xs text-primary inline-flex items-center gap-1 pt-1">View report <ArrowRight className="h-3 w-3" /></Link>
+            <Link to="/financial-reports" className="text-xs text-primary inline-flex items-center gap-1 pt-1">{t("viewReport")} <ArrowRight className="h-3 w-3" /></Link>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Cash Book</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">{t("cashBook")}</CardTitle></CardHeader>
           <CardContent className="space-y-1">
-            <div className="flex justify-between text-sm"><span>Cash In</span><span className="tabular-nums text-primary">{money(cash.in)}</span></div>
-            <div className="flex justify-between text-sm"><span>Cash Out</span><span className="tabular-nums">{money(cash.out)}</span></div>
+            <div className="flex justify-between text-sm"><span>{t("cashIn")}</span><span className="tabular-nums text-primary">{money(cash.in)}</span></div>
+            <div className="flex justify-between text-sm"><span>{t("cashOut")}</span><span className="tabular-nums">{money(cash.out)}</span></div>
             <div className="flex justify-between text-sm pt-1 border-t font-semibold">
-              <span>Net Cash</span>
+              <span>{t("netCash")}</span>
               <span className={`tabular-nums ${cash.net >= 0 ? "text-primary" : "text-destructive"}`}>{money(cash.net)}</span>
             </div>
-            <Link to="/cashbook" className="text-xs text-primary inline-flex items-center gap-1 pt-1">View cashbook <ArrowRight className="h-3 w-3" /></Link>
+            <Link to="/cashbook" className="text-xs text-primary inline-flex items-center gap-1 pt-1">{t("viewCashbook")} <ArrowRight className="h-3 w-3" /></Link>
           </CardContent>
         </Card>
       </div>
@@ -245,42 +247,42 @@ export default function FinanceSummary() {
         <Card>
           <CardHeader className="pb-2 flex-row items-center justify-between">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4" /> Ledger Integrity
+              <ShieldAlert className="h-4 w-4" /> {t("ledgerIntegrity")}
             </CardTitle>
-            <Link to="/ledger-integrity"><Button size="sm" variant="outline">Open</Button></Link>
+            <Link to="/ledger-integrity"><Button size="sm" variant="outline">{t("open")}</Button></Link>
           </CardHeader>
           <CardContent className="grid grid-cols-3 gap-3 text-sm">
-            <Stat label="Unbalanced" value={integrity?.unbalanced ?? 0} bad={(integrity?.unbalanced ?? 0) > 0} />
-            <Stat label="Orphans" value={integrity?.orphan ?? 0} bad={(integrity?.orphan ?? 0) > 0} />
-            <Stat label="No account" value={integrity?.missing_account ?? 0} bad={(integrity?.missing_account ?? 0) > 0} />
-            <div className="col-span-3 text-xs text-muted-foreground">Total ledger entries: {integrity?.total_entries ?? 0}</div>
+            <Stat label={t("unbalanced")} value={integrity?.unbalanced ?? 0} bad={(integrity?.unbalanced ?? 0) > 0} />
+            <Stat label={t("orphans")} value={integrity?.orphan ?? 0} bad={(integrity?.orphan ?? 0) > 0} />
+            <Stat label={t("noAccount")} value={integrity?.missing_account ?? 0} bad={(integrity?.missing_account ?? 0) > 0} />
+            <div className="col-span-3 text-xs text-muted-foreground">{t("totalLedgerEntries")}: {integrity?.total_entries ?? 0}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2 flex-row items-center justify-between">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Lock className="h-4 w-4" /> Period Close Status
+              <Lock className="h-4 w-4" /> {t("periodCloseStatus")}
             </CardTitle>
-            <Link to="/period-close"><Button size="sm" variant="outline">Manage</Button></Link>
+            <Link to="/period-close"><Button size="sm" variant="outline">{t("manage")}</Button></Link>
           </CardHeader>
           <CardContent>
             {periods.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No periods recorded yet.</p>
+              <p className="text-sm text-muted-foreground">{t("noPeriodsRecorded")}</p>
             ) : (
               <div className="space-y-2">
                 {lastPeriod && (
                   <div className="text-sm">
-                    Last closed: <span className="font-medium">{fmtDate(lastPeriod.period_start)} → {fmtDate(lastPeriod.period_end)}</span>
-                    <span className="text-muted-foreground"> · Net {money(lastPeriod.net_income)}</span>
+                    {t("lastClosed")}: <span className="font-medium">{fmtDate(lastPeriod.period_start)} → {fmtDate(lastPeriod.period_end)}</span>
+                    <span className="text-muted-foreground"> · {t("net")} {money(lastPeriod.net_income)}</span>
                   </div>
                 )}
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Period</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Net</TableHead>
+                      <TableHead>{t("period")}</TableHead>
+                      <TableHead>{t("status")}</TableHead>
+                      <TableHead className="text-right">{t("net")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

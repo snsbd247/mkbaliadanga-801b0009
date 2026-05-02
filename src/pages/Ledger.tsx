@@ -11,6 +11,7 @@ import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears } from "@/lib/accounting";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Account = { id: string; code: string; name: string; type: string };
 type Office = { id: string; name: string };
@@ -24,6 +25,7 @@ type Entry = {
 const REF_TYPES = ["all", "savings", "loan", "loan_payment", "irrigation", "expense", "journal"];
 
 export default function Ledger() {
+  const { t } = useLang();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [accountId, setAccountId] = useState<string>("all");
@@ -116,15 +118,15 @@ export default function Ledger() {
 
   return (
     <div className="container mx-auto p-4 space-y-4">
-      <PageHeader title="Ledger" description="Filter ledger entries by account, office, date and reference" />
+      <PageHeader title={t("ledger")} description={t("ledgerDesc")} />
       <Card>
         <CardContent className="grid gap-3 pt-6 md:grid-cols-3 lg:grid-cols-6">
           <div className="lg:col-span-2">
-            <Label>Account</Label>
+            <Label>{t("account")}</Label>
             <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All accounts</SelectItem>
+                <SelectItem value="all">{t("allAccounts")}</SelectItem>
                 {accounts.map((a) => (
                   <SelectItem key={a.id} value={a.id}>{a.code} — {a.name}</SelectItem>
                 ))}
@@ -132,17 +134,17 @@ export default function Ledger() {
             </Select>
           </div>
           <div>
-            <Label>Office</Label>
+            <Label>{t("office")}</Label>
             <Select value={officeId} onValueChange={setOfficeId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All offices</SelectItem>
+                <SelectItem value="all">{t("allOffices")}</SelectItem>
                 {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>Reference</Label>
+            <Label>{t("reference")}</Label>
             <Select value={refType} onValueChange={setRefType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -151,28 +153,28 @@ export default function Ledger() {
             </Select>
           </div>
           <div>
-            <Label>Fiscal year</Label>
+            <Label>{t("fiscalYear")}</Label>
             <Select onValueChange={(v) => {
               const fy = fyOptions.find((f) => String(f.startYear) === v);
               if (fy) { setFrom(fy.range.from); setTo(fy.range.to); }
             }}>
-              <SelectTrigger><SelectValue placeholder="Select FY" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("selectFY")} /></SelectTrigger>
               <SelectContent>
-                {fyOptions.map((f) => <SelectItem key={f.startYear} value={String(f.startYear)}>FY {f.label}</SelectItem>)}
+                {fyOptions.map((f) => <SelectItem key={f.startYear} value={String(f.startYear)}>{t("fyPrefix")} {f.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>From</Label>
+            <Label>{t("from")}</Label>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div>
-            <Label>To</Label>
+            <Label>{t("to")}</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <div className="lg:col-span-2">
-            <Label>Farmer search (name / code / member / mobile)</Label>
-            <Input placeholder="Type to filter by farmer…" value={farmerSearch} onChange={(e) => setFarmerSearch(e.target.value)} />
+            <Label>{t("farmerSearchLabel")}</Label>
+            <Input placeholder={t("farmerSearchPh")} value={farmerSearch} onChange={(e) => setFarmerSearch(e.target.value)} />
           </div>
         </CardContent>
       </Card>
@@ -180,7 +182,7 @@ export default function Ledger() {
       <Card>
         <CardContent className="pt-6">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{entries.length} entries</p>
+            <p className="text-sm text-muted-foreground">{entries.length} {t("entriesCount")}</p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF(
                 "Ledger",
@@ -216,14 +218,14 @@ export default function Ledger() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Office</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Ref</TableHead>
-                <TableHead className="text-right">Debit</TableHead>
-                <TableHead className="text-right">Credit</TableHead>
-                {showRunning && <TableHead className="text-right">Balance</TableHead>}
+                <TableHead>{t("date")}</TableHead>
+                <TableHead>{t("account")}</TableHead>
+                <TableHead>{t("office")}</TableHead>
+                <TableHead>{t("description")}</TableHead>
+                <TableHead>{t("reference")}</TableHead>
+                <TableHead className="text-right">{t("debit")}</TableHead>
+                <TableHead className="text-right">{t("credit")}</TableHead>
+                {showRunning && <TableHead className="text-right">{t("balance")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -240,16 +242,16 @@ export default function Ledger() {
                 </TableRow>
               ))}
               {!entries.length && (
-                <TableRow><TableCell colSpan={showRunning ? 8 : 7} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
+                <TableRow><TableCell colSpan={showRunning ? 8 : 7} className="text-center text-muted-foreground">{t("noEntries")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
           {entries.length > 0 && (
             <div className="mt-3 flex justify-end gap-6 text-sm">
-              <div>Total Debit: <span className="font-semibold">{money(totals.debit)}</span></div>
-              <div>Total Credit: <span className="font-semibold">{money(totals.credit)}</span></div>
+              <div>{t("totalDebit")}: <span className="font-semibold">{money(totals.debit)}</span></div>
+              <div>{t("totalCredit")}: <span className="font-semibold">{money(totals.credit)}</span></div>
               <div className={Math.abs(totals.debit - totals.credit) < 0.01 ? "text-primary" : "text-destructive"}>
-                {Math.abs(totals.debit - totals.credit) < 0.01 ? "✅ Balanced" : `Diff: ${money(Math.abs(totals.debit - totals.credit))}`}
+                {Math.abs(totals.debit - totals.credit) < 0.01 ? `✅ ${t("balanced")}` : `${t("diffLabel")}: ${money(Math.abs(totals.debit - totals.credit))}`}
               </div>
             </div>
           )}
