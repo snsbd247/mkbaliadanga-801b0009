@@ -73,7 +73,7 @@ export default function Farmers() {
       name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
       village: "", post_office: "", upazila: "", district: "", division: "", address: "",
       office_id: officeId ?? "", status: "active",
-      division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, mouza_id: null,
+      division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, village_id: null, mouza_id: null,
     });
     load();
   }
