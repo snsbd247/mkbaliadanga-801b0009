@@ -109,10 +109,7 @@ const App = () => (
                 <Route path="/admin/qr-rotation" element={<QrRotation />} />
                 <Route path="/admin/bulk-cards" element={<BulkCards />} />
                 <Route path="/admin/receipt-template" element={<ReceiptTemplate />} />
-                <Route path="/admin/verification" element={<Verification />} />
-                <Route path="/admin/rls-test" element={<RlsTest />} />
                 <Route path="/admin/role-matrix" element={<RoleMatrix />} />
-                <Route path="/admin/demo-reset" element={<DemoReset />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
