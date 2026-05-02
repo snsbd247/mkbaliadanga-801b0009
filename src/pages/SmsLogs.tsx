@@ -14,7 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { RefreshCw, Send, Megaphone, Bell, Eye, Loader2 } from "lucide-react";
+import { RefreshCw, Send, Megaphone, Bell, Eye, Loader2, FileDown, FileSpreadsheet } from "lucide-react";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 
 type Log = {
   id: string;
