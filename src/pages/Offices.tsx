@@ -19,7 +19,7 @@ export default function Offices() {
   const [list, setList] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", registration_no: "", established_on: "", contact: "", address: "" });
+  const [form, setForm] = useState<{ name: string; registration_no: string; established_on: string; contact: string; address: string; payment_priority: string[] }>({ name: "", registration_no: "", established_on: "", contact: "", address: "", payment_priority: ["irrigation", "loan", "savings"] });
 
   useEffect(() => { document.title = `${t("offices")} — ${t("appName")}`; load(); }, []);
 
