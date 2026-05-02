@@ -12,7 +12,7 @@ interface CreateBody {
   email: string;
   password: string;
   full_name?: string;
-  role: "super_admin" | "admin" | "staff";
+  role: "super_admin" | "admin" | "committee" | "staff";
   office_id?: string | null;
 }
 interface DeleteBody { action: "delete"; user_id: string; }
