@@ -332,6 +332,10 @@ export const translations = {
     uniqueViolation: "ইউনিক কনস্ট্রেইন্ট লঙ্ঘন — ডুপ্লিকেট ভ্যালু।",
     fkInvalid: "Foreign key reference ইনভ্যালিড।",
     checkConstraintFail: "CHECK constraint বা trigger validation ফেইল।",
+    loggedInUser: "লগইন ইউজার",
+    crossOfficeIsolationRule: "ক্রস-অফিস আইসোলেশন নিয়ম",
+    crossOfficeIsolationDesc: "Non-super user লগইন করলে প্রতিটি টেবিলে শুধু একটিই office_id দেখা উচিত (তার নিজের)। Super admin সব অফিস দেখতে পারে। Test করতে: একজন admin/staff role এর user দিয়ে লগইন করে এই পেজ চালান।",
+    integrityScanDesc: "Savings, loans, irrigation, payments এবং ledger references-এ orphan / null farmer_id scan করা হবে।",
   },
 } as const;
 
