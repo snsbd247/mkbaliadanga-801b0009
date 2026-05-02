@@ -21,11 +21,11 @@ import { z } from "zod";
 function passwordPolicyIssues(pw: string, role: string): string[] {
   const issues: string[] = [];
   const minLen = role === "super_admin" ? 12 : 10;
-  if (pw.length < minLen) issues.push(`At least ${minLen} characters`);
-  if (!/[a-z]/.test(pw)) issues.push("A lowercase letter");
-  if (!/[A-Z]/.test(pw)) issues.push("An uppercase letter");
-  if (!/[0-9]/.test(pw)) issues.push("A digit");
-  if (!/[^A-Za-z0-9]/.test(pw)) issues.push("A symbol (e.g. !@#$)");
+  if (pw.length < minLen) issues.push(`__pwAtLeast__${minLen}`);
+  if (!/[a-z]/.test(pw)) issues.push("__pwLowercase__");
+  if (!/[A-Z]/.test(pw)) issues.push("__pwUppercase__");
+  if (!/[0-9]/.test(pw)) issues.push("__pwDigit__");
+  if (!/[^A-Za-z0-9]/.test(pw)) issues.push("__pwSymbol__");
   return issues;
 }
 
@@ -74,7 +74,7 @@ export default function Users() {
     const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
     setBusy(false);
     if (error || data?.error) {
-      toast.error(data?.error ?? error?.message ?? "Failed");
+      toast.error(data?.error ?? error?.message ?? t("failedGeneric"));
       return null;
     }
     return data;
@@ -84,7 +84,7 @@ export default function Users() {
     const parsed = createSchema.safeParse({ ...form, office_id: form.office_id || null });
     if (!parsed.success) {
       const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-      return toast.error(first ?? "Validation failed");
+      return toast.error(first ?? t("validationFailed"));
     }
     const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role);
     if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
@@ -98,7 +98,7 @@ export default function Users() {
 
   async function deleteUser(u: any) {
     if (u.id === me?.id) return toast.error(t("cannotDeleteSelf"));
-    if (!confirm(`Delete ${u.username || u.email}? This cannot be undone.`)) return;
+    if (!confirm(t("deleteUserConfirm").replace("{who}", u.username || u.email))) return;
     const ok = await callAdmin({ action: "delete", user_id: u.id });
     if (!ok) return;
     toast.success(t("userDeleted"));

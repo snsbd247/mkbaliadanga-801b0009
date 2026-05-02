@@ -94,8 +94,8 @@ export default function Cashbook() {
   }
 
   async function saveReceipt() {
-    if (r.amount <= 0) return toast.error("Amount must be > 0");
-    if (!r.kind) return toast.error("Pick a kind");
+    if (r.amount <= 0) return toast.error(t("amountMustBePositive"));
+    if (!r.kind) return toast.error(t("pickAKind"));
     const { error } = await supabase.from("receipts").insert({
       kind: r.kind, farmer_id: r.farmer_id || null,
       amount: r.amount, method: r.method, note: r.note,
@@ -109,7 +109,7 @@ export default function Cashbook() {
   }
 
   async function saveExpense() {
-    if (e.amount <= 0 || !e.head) return toast.error("Head & amount required");
+    if (e.amount <= 0 || !e.head) return toast.error(t("headAndAmountRequired"));
     const { error } = await supabase.from("expenses").insert({
       head: e.head, payee: e.payee, amount: e.amount, method: e.method,
       note: e.note, expense_date: e.expense_date, created_by: user?.id,
@@ -163,7 +163,7 @@ export default function Cashbook() {
   }, [receipts, expenses, savings, loans, loanPayments, irrigation, openingCash]);
 
   function rangeLabel() {
-    if (!from && !to) return "All time";
+    if (!from && !to) return t("allTimeLabel");
     return `${from || "…"} → ${to || "…"}`;
   }
 

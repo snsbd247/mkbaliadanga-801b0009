@@ -8,9 +8,8 @@ import { money, fmtDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { useAuth } from "@/auth/AuthProvider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
+import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
 
