@@ -32,12 +32,12 @@ export default function Farmers() {
     name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
     village: "", post_office: "", upazila: "", district: "", division: "", address: "",
     office_id: officeId ?? "", status: "active",
-    division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, mouza_id: null,
+    division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, village_id: null, mouza_id: null,
   });
   const location: LocationValue = {
     division_id: form.division_id, district_id: form.district_id,
     upazila_id: form.upazila_id, union_id: form.union_id,
-    ward_id: form.ward_id, mouza_id: form.mouza_id,
+    ward_id: form.ward_id, village_id: form.village_id, mouza_id: form.mouza_id,
   };
 
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page]);
@@ -73,7 +73,7 @@ export default function Farmers() {
       name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
       village: "", post_office: "", upazila: "", district: "", division: "", address: "",
       office_id: officeId ?? "", status: "active",
-      division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, mouza_id: null,
+      division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, village_id: null, mouza_id: null,
     });
     load();
   }

@@ -432,6 +432,7 @@ export type Database = {
           upazila_id: string | null
           updated_at: string
           village: string | null
+          village_id: string | null
           ward_id: string | null
         }
         Insert: {
@@ -461,6 +462,7 @@ export type Database = {
           upazila_id?: string | null
           updated_at?: string
           village?: string | null
+          village_id?: string | null
           ward_id?: string | null
         }
         Update: {
@@ -490,6 +492,7 @@ export type Database = {
           upazila_id?: string | null
           updated_at?: string
           village?: string | null
+          village_id?: string | null
           ward_id?: string | null
         }
         Relationships: [
@@ -533,6 +536,13 @@ export type Database = {
             columns: ["upazila_id"]
             isOneToOne: false
             referencedRelation: "upazilas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmers_village_id_fkey"
+            columns: ["village_id"]
+            isOneToOne: false
+            referencedRelation: "villages"
             referencedColumns: ["id"]
           },
           {
