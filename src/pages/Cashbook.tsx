@@ -224,14 +224,35 @@ export default function Cashbook() {
       />
 
       <Card className="p-4 mb-4">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-4">
           <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
           <div><Label>{t("to")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <div><Label>Opening Cash</Label><Input type="number" value={openingCash || ""} onChange={e => setOpeningCash(+e.target.value)} /></div>
           <div className="self-end text-sm text-muted-foreground">
-            {t("income")}: <span className="font-semibold text-success">{money(totals.income)}</span> ·
-            {" "}{t("expense")}: <span className="font-semibold text-destructive">{money(totals.expense)}</span> ·
-            {" "}{t("balance")}: <span className={`font-bold ${totals.cashBalance < 0 ? "due-text" : "text-success"}`}>{money(totals.cashBalance)}</span>
+            <div>Open: <span className="font-semibold">{money(openingCash)}</span></div>
+            <div>{t("income")}: <span className="font-semibold text-success">{money(totals.income)}</span> · {t("expense")}: <span className="font-semibold text-destructive">{money(totals.expense)}</span></div>
+            <div>Closing: <span className={`font-bold ${totals.cashBalance < 0 ? "due-text" : "text-success"}`}>{money(totals.cashBalance)}</span></div>
           </div>
+        </div>
+        <div className="flex gap-2 mt-3">
+          <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />Print</Button>
+          <Button size="sm" variant="outline" onClick={() => exportAuditReportPDF({
+            brand: { company_name: brand.company_name, address: brand.address ?? "" },
+            range: rangeLabel(),
+            summary: [
+              { label: "Opening Cash", value: Number(openingCash || 0) },
+              { label: "Total Income (Receipts)", value: totals.income },
+              { label: "Total Expense", value: totals.expense },
+              { label: "Closing Cash", value: totals.cashBalance },
+              { label: "Savings Balance", value: totals.savBal },
+              { label: "Loan Issued", value: totals.loanIssued },
+              { label: "Loan Collected", value: totals.loanCollected },
+              { label: "Loan Outstanding Due", value: totals.loanDue },
+              { label: "Irrigation Charged", value: totals.irrCharged },
+              { label: "Irrigation Collected", value: totals.irrCollected },
+              { label: "Irrigation Outstanding Due", value: totals.irrDue },
+            ],
+          })}><FileDown className="h-4 w-4 mr-1" />Audit Report PDF</Button>
         </div>
       </Card>
 
