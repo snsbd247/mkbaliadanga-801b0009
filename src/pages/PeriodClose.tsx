@@ -18,6 +18,7 @@ import { Lock, Unlock, RefreshCw, FileDown, Eye } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Period = {
   id: string;
@@ -42,6 +43,7 @@ type Office = { id: string; name: string };
 const NONE = "__none__";
 
 export default function PeriodClose() {
+  const { t } = useLang();
   const { isSuper } = useAuth();
   const [periods, setPeriods] = useState<Period[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
@@ -88,7 +90,7 @@ export default function PeriodClose() {
   };
 
   const runPreview = async () => {
-    if (!from || !to) { toast.error("Period start and end required"); return; }
+    if (!from || !to) { toast.error(t("periodStartEndRequired")); return; }
     setBusy(true);
     const { data, error } = await supabase.rpc("compute_period_summary", {
       _from: from, _to: to, _office: officeId === NONE ? null : officeId,
@@ -99,7 +101,7 @@ export default function PeriodClose() {
   };
 
   const closePeriod = async () => {
-    if (!from || !to) { toast.error("Period start and end required"); return; }
+    if (!from || !to) { toast.error(t("periodStartEndRequired")); return; }
     setBusy(true);
     const { error } = await supabase.rpc("close_accounting_period", {
       _from: from, _to: to,
@@ -108,81 +110,81 @@ export default function PeriodClose() {
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Period closed");
+    toast.success(t("periodClosedToast"));
     setNote("");
     setPreview(null);
     await load();
   };
 
   const reopen = async (id: string) => {
-    if (!isSuper) { toast.error("Only super admin can reopen"); return; }
+    if (!isSuper) { toast.error(t("onlySuperReopen")); return; }
     const { error } = await supabase.rpc("reopen_accounting_period", { _id: id });
     if (error) { toast.error(error.message); return; }
-    toast.success("Period reopened");
+    toast.success(t("periodReopenedToast"));
     await load();
   };
 
   return (
     <div className="container mx-auto p-4 space-y-4">
       <PageHeader
-        title="Period Close"
-        description="Close accounting periods and store retained summary for fast historical reporting"
+        title={t("periodClose")}
+        description={t("periodCloseDesc")}
       />
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">New period close</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">{t("newPeriodClose")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => presetMonth(-1)}>Last Month</Button>
-            <Button variant="outline" size="sm" onClick={() => presetMonth(0)}>This Month</Button>
-            <Button variant="outline" size="sm" onClick={presetQuarter}>This Quarter</Button>
+            <Button variant="outline" size="sm" onClick={() => presetMonth(-1)}>{t("lastMonth")}</Button>
+            <Button variant="outline" size="sm" onClick={() => presetMonth(0)}>{t("thisMonth")}</Button>
+            <Button variant="outline" size="sm" onClick={presetQuarter}>{t("thisQuarter")}</Button>
             {fyOptions.slice(0, 2).map((fy, i) => (
-              <Button key={fy.label} variant="outline" size="sm" onClick={() => presetFY(i)}>FY {fy.label}</Button>
+              <Button key={fy.label} variant="outline" size="sm" onClick={() => presetFY(i)}>{t("fyPrefix")} {fy.label}</Button>
             ))}
           </div>
           <div className="grid gap-3 md:grid-cols-4">
             <div>
-              <Label>From</Label>
+              <Label>{t("from")}</Label>
               <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
             <div>
-              <Label>To</Label>
+              <Label>{t("to")}</Label>
               <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
             <div>
-              <Label>Office (optional)</Label>
+              <Label>{t("officeOptional")}</Label>
               <Select value={officeId} onValueChange={setOfficeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE}>— Global (all offices) —</SelectItem>
+                  <SelectItem value={NONE}>{t("globalAllOffices")}</SelectItem>
                   {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="md:col-span-1 flex items-end gap-2">
               <Button variant="outline" onClick={runPreview} disabled={busy}>
-                <RefreshCw className="mr-1 h-4 w-4" /> Preview
+                <RefreshCw className="mr-1 h-4 w-4" /> {t("previewLabel")}
               </Button>
             </div>
           </div>
           <div>
-            <Label>Note</Label>
-            <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g., FY 2025-26 month-end close" rows={2} />
+            <Label>{t("note")}</Label>
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("notePlaceholder")} rows={2} />
           </div>
 
           {preview && (
             <Card className="bg-muted/40">
               <CardContent className="pt-6 grid gap-2 md:grid-cols-4 text-sm">
-                <Stat label="Total Debit" value={preview.total_debit} />
-                <Stat label="Total Credit" value={preview.total_credit} />
-                <Stat label="Total Income" value={preview.total_income} positive />
-                <Stat label="Total Expense" value={preview.total_expense} />
-                <Stat label="Net Income" value={preview.net_income} positive={preview.net_income >= 0} />
-                <Stat label="Cash In" value={preview.cash_in} positive />
-                <Stat label="Cash Out" value={preview.cash_out} />
+                <Stat label={t("totalDebit")} value={preview.total_debit} />
+                <Stat label={t("totalCredit")} value={preview.total_credit} />
+                <Stat label={`${t("total")} ${t("income")}`} value={preview.total_income} positive />
+                <Stat label={`${t("total")} ${t("expense")}`} value={preview.total_expense} />
+                <Stat label={t("netIncome")} value={preview.net_income} positive={preview.net_income >= 0} />
+                <Stat label={t("cashIn")} value={preview.cash_in} positive />
+                <Stat label={t("cashOut")} value={preview.cash_out} />
                 <div className="md:col-span-1 flex items-center justify-end">
                   <Button onClick={closePeriod} disabled={busy}>
-                    <Lock className="mr-1 h-4 w-4" /> Close period
+                    <Lock className="mr-1 h-4 w-4" /> {t("closePeriod")}
                   </Button>
                 </div>
               </CardContent>
@@ -192,30 +194,30 @@ export default function PeriodClose() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">Closed periods</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">{t("closedPeriods")}</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Period</TableHead>
-                <TableHead>Office</TableHead>
-                <TableHead className="text-right">Income</TableHead>
-                <TableHead className="text-right">Expense</TableHead>
-                <TableHead className="text-right">Net</TableHead>
-                <TableHead className="text-right">Cash In</TableHead>
-                <TableHead className="text-right">Cash Out</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("period")}</TableHead>
+                <TableHead>{t("office")}</TableHead>
+                <TableHead className="text-right">{t("income")}</TableHead>
+                <TableHead className="text-right">{t("expense")}</TableHead>
+                <TableHead className="text-right">{t("net")}</TableHead>
+                <TableHead className="text-right">{t("cashIn")}</TableHead>
+                <TableHead className="text-right">{t("cashOut")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {periods.length === 0 && (
-                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">No periods yet</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">{t("noPeriodsYet")}</TableCell></TableRow>
               )}
               {periods.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{fmtDate(p.period_start)} → {fmtDate(p.period_end)}</TableCell>
-                  <TableCell>{p.office_id ? officeMap[p.office_id] || "—" : <span className="text-muted-foreground">Global</span>}</TableCell>
+                  <TableCell>{p.office_id ? officeMap[p.office_id] || "—" : <span className="text-muted-foreground">{t("global")}</span>}</TableCell>
                   <TableCell className="text-right tabular-nums">{money(p.total_income)}</TableCell>
                   <TableCell className="text-right tabular-nums">{money(p.total_expense)}</TableCell>
                   <TableCell className={`text-right tabular-nums font-semibold ${p.net_income >= 0 ? "text-primary" : "text-destructive"}`}>{money(p.net_income)}</TableCell>
@@ -223,15 +225,15 @@ export default function PeriodClose() {
                   <TableCell className="text-right tabular-nums">{money(p.cash_out)}</TableCell>
                   <TableCell>
                     <Badge variant={p.status === "closed" ? "secondary" : "outline"}>
-                      {p.status === "closed" ? "Closed" : "Open"}
+                      {p.status === "closed" ? t("closedStatus") : t("openStatus")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <SnapshotDialog period={p} />
+                      <SnapshotDialog period={p} t={t} />
                       <Button
                         size="icon" variant="ghost" className="h-8 w-8"
-                        title="Export snapshot PDF"
+                        title={t("exportSnapshotPDF")}
                         onClick={() => exportSnapshotPDF(p)}
                       >
                         <FileDown className="h-4 w-4" />
@@ -239,7 +241,7 @@ export default function PeriodClose() {
                       {isSuper && p.status === "closed" && (
                         <Button
                           size="icon" variant="ghost" className="h-8 w-8"
-                          title="Reopen period"
+                          title={t("reopenPeriod")}
                           onClick={() => reopen(p.id)}
                         >
                           <Unlock className="h-4 w-4" />
@@ -266,29 +268,29 @@ function Stat({ label, value, positive }: { label: string; value: number; positi
   );
 }
 
-function SnapshotDialog({ period }: { period: Period }) {
+function SnapshotDialog({ period, t }: { period: Period; t: (k: any) => string }) {
   const snap = (period.closing_balance_snapshot as any[]) || [];
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-8 w-8" title="View snapshot">
+        <Button size="icon" variant="ghost" className="h-8 w-8" title={t("viewSnapshot")}>
           <Eye className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Snapshot — {fmtDate(period.period_start)} → {fmtDate(period.period_end)}</DialogTitle>
+          <DialogTitle>{t("snapshotTitle")} — {fmtDate(period.period_start)} → {fmtDate(period.period_end)}</DialogTitle>
         </DialogHeader>
         <div className="overflow-auto max-h-[60vh]">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Debit</TableHead>
-                <TableHead className="text-right">Credit</TableHead>
-                <TableHead className="text-right">Closing</TableHead>
+                <TableHead>{t("code")}</TableHead>
+                <TableHead>{t("account")}</TableHead>
+                <TableHead>{t("typeLabel")}</TableHead>
+                <TableHead className="text-right">{t("debitWord")}</TableHead>
+                <TableHead className="text-right">{t("creditWord")}</TableHead>
+                <TableHead className="text-right">{t("closingWord")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -302,7 +304,7 @@ function SnapshotDialog({ period }: { period: Period }) {
                   <TableCell className="text-right tabular-nums font-medium">{money(Number(r.closing) || 0)}</TableCell>
                 </TableRow>
               ))}
-              {snap.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No snapshot rows</TableCell></TableRow>}
+              {snap.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noSnapshotRows")}</TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>
