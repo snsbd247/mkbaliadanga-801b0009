@@ -211,6 +211,7 @@ export default function FarmerPortalLogin() {
                     <Label htmlFor="otp">6-digit OTP</Label>
                     <Input
                       id="otp"
+                      ref={otpInputRef}
                       inputMode="numeric"
                       pattern="\d{6}"
                       maxLength={6}
@@ -226,7 +227,7 @@ export default function FarmerPortalLogin() {
                     />
                   </div>
                   {error && (
-                    <Alert variant="destructive" id="portal-error" role="alert">
+                    <Alert variant="destructive" id="portal-error" role="alert" aria-live="assertive" aria-atomic="true">
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
