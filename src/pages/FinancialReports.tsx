@@ -108,24 +108,24 @@ export default function FinancialReports() {
 
   return (
     <div className="container mx-auto p-4 space-y-4">
-      <PageHeader title="Financial Reports" description="Trial Balance, Income Statement, Balance Sheet, Cash Book" />
+      <PageHeader title={t("financialReports")} description={t("financialReportsDesc")} />
 
       <Card>
         <CardContent className="grid gap-3 pt-6 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Label>Fiscal Year</Label>
+            <Label>{t("fiscalYear")}</Label>
             <Select onValueChange={(v) => {
               const fy = fyOptions.find((f) => String(f.startYear) === v);
               if (fy) { setFrom(fy.range.from); setTo(fy.range.to); }
             }}>
-              <SelectTrigger><SelectValue placeholder="Select FY" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("selectFY")} /></SelectTrigger>
               <SelectContent>
-                {fyOptions.map((f) => <SelectItem key={f.startYear} value={String(f.startYear)}>FY {f.label}</SelectItem>)}
+                {fyOptions.map((f) => <SelectItem key={f.startYear} value={String(f.startYear)}>{t("fyPrefix")} {f.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>Quick period</Label>
+            <Label>{t("quickPeriod")}</Label>
             <Select onValueChange={(v) => {
               const now = new Date();
               if (v === "this-month") { const r = monthRange(now.getFullYear(), now.getMonth() + 1); setFrom(r.from); setTo(r.to); }
@@ -134,32 +134,32 @@ export default function FinancialReports() {
               else if (v === "ytd") { setFrom(`${now.getFullYear()}-01-01`); setTo(new Date().toISOString().slice(0, 10)); }
               else if (v === "all") { setFrom(""); setTo(""); }
             }}>
-              <SelectTrigger><SelectValue placeholder="Select period" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("selectPeriod")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="this-month">This month</SelectItem>
-                <SelectItem value="last-month">Last month</SelectItem>
-                <SelectItem value="q1">Q1</SelectItem>
-                <SelectItem value="q2">Q2</SelectItem>
-                <SelectItem value="q3">Q3</SelectItem>
-                <SelectItem value="q4">Q4</SelectItem>
-                <SelectItem value="ytd">Year-to-date</SelectItem>
-                <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="this-month">{t("thisMonth")}</SelectItem>
+                <SelectItem value="last-month">{t("lastMonth")}</SelectItem>
+                <SelectItem value="q1">{t("q1")}</SelectItem>
+                <SelectItem value="q2">{t("q2")}</SelectItem>
+                <SelectItem value="q3">{t("q3")}</SelectItem>
+                <SelectItem value="q4">{t("q4")}</SelectItem>
+                <SelectItem value="ytd">{t("yearToDate")}</SelectItem>
+                <SelectItem value="all">{t("allTime")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div><Label>From</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div><Label>To</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div><Label>{t("to")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
         </CardContent>
       </Card>
 
-      <p className="text-xs text-muted-foreground">Period: {from || "open"} → {to || "today"}</p>
+      <p className="text-xs text-muted-foreground">{t("periodLabel")}: {from || t("openLower")} → {to || t("today")}</p>
 
       <Tabs defaultValue="trial">
         <TabsList>
-          <TabsTrigger value="trial">Trial Balance</TabsTrigger>
-          <TabsTrigger value="pnl">Income Statement</TabsTrigger>
-          <TabsTrigger value="bs">Balance Sheet</TabsTrigger>
-          <TabsTrigger value="cash">Cash Book</TabsTrigger>
+          <TabsTrigger value="trial">{t("trialBalance")}</TabsTrigger>
+          <TabsTrigger value="pnl">{t("incomeStatement")}</TabsTrigger>
+          <TabsTrigger value="bs">{t("balanceSheet")}</TabsTrigger>
+          <TabsTrigger value="cash">{t("cashBookTab")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="trial">
