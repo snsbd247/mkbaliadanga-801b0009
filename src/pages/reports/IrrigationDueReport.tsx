@@ -12,6 +12,7 @@ import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Row = {
   farmer_id: string;
@@ -27,6 +28,7 @@ type Row = {
 };
 
 export default function IrrigationDueReport() {
+  const { t } = useLang();
   const { isSuper } = useAuth();
   const [offices, setOffices] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
@@ -103,36 +105,36 @@ export default function IrrigationDueReport() {
     { total: 0, paid: 0, due: 0 },
   ), [filtered]);
 
-  const head = ["Farmer Code", "Farmer", "Land", "Season", "Total", "Paid", "Due"];
+  const head = [t("farmerCode"), t("farmer"), t("land"), t("season"), t("total"), t("paid"), t("due")];
   const body = filtered.map((r) => [r.farmer_code, r.farmer_name, r.land_label, r.season_label, money(r.total), money(r.paid), money(r.due)]);
 
   return (
     <div className="container mx-auto p-4 space-y-4">
       <PageHeader
-        title="Irrigation Due Report"
-        description="Outstanding irrigation charges per farmer, per land, per season."
+        title={t("irrigationDueReport")}
+        description={t("irrigationDueReportDesc")}
       />
 
       <Card>
         <CardContent className="grid gap-3 pt-6 md:grid-cols-2 lg:grid-cols-5">
           {isSuper && (
             <div>
-              <Label>Office</Label>
+              <Label>{t("office")}</Label>
               <Select value={officeId} onValueChange={setOfficeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All offices</SelectItem>
+                  <SelectItem value="all">{t("allOffices")}</SelectItem>
                   {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           )}
           <div>
-            <Label>Season</Label>
+            <Label>{t("season")}</Label>
             <Select value={seasonId} onValueChange={setSeasonId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All seasons</SelectItem>
+                <SelectItem value="all">{t("allSeasons")}</SelectItem>
                 {seasons.map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.name ?? s.type} {s.year}</SelectItem>
                 ))}
@@ -140,12 +142,12 @@ export default function IrrigationDueReport() {
             </Select>
           </div>
           <div className="lg:col-span-2">
-            <Label>Search farmer / land</Label>
-            <Input placeholder="Name, code or land…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Label>{t("searchFarmerLand")}</Label>
+            <Input placeholder={t("searchFarmerLandPh")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="flex items-end gap-2">
             <Switch checked={onlyDue} onCheckedChange={setOnlyDue} id="onlydue" />
-            <Label htmlFor="onlydue">Only with due</Label>
+            <Label htmlFor="onlydue">{t("onlyWithDue")}</Label>
           </div>
         </CardContent>
       </Card>
@@ -153,7 +155,7 @@ export default function IrrigationDueReport() {
       <Card>
         <CardContent className="pt-6">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{filtered.length} rows {loading && "(loading…)"}</p>
+            <p className="text-sm text-muted-foreground">{filtered.length} {t("rows")} {loading && `(${t("loading")})`}</p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body)}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
@@ -173,13 +175,13 @@ export default function IrrigationDueReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Farmer</TableHead>
-                <TableHead>Land</TableHead>
-                <TableHead>Season</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Paid</TableHead>
-                <TableHead className="text-right">Due</TableHead>
+                <TableHead>{t("code")}</TableHead>
+                <TableHead>{t("farmer")}</TableHead>
+                <TableHead>{t("land")}</TableHead>
+                <TableHead>{t("season")}</TableHead>
+                <TableHead className="text-right">{t("total")}</TableHead>
+                <TableHead className="text-right">{t("paid")}</TableHead>
+                <TableHead className="text-right">{t("due")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -195,15 +197,15 @@ export default function IrrigationDueReport() {
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
           {filtered.length > 0 && (
             <div className="mt-3 flex justify-end gap-6 text-sm">
-              <div>Total: <span className="font-semibold">{money(totals.total)}</span></div>
-              <div>Paid: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
-              <div>Due: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
+              <div>{t("total")}: <span className="font-semibold">{money(totals.total)}</span></div>
+              <div>{t("paid")}: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
+              <div>{t("due")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
             </div>
           )}
         </CardContent>
