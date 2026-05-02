@@ -32,19 +32,25 @@ const PaySchema = z.object({
 
 const fmt = (n: number) => new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export default function ScanPayment() {
   const { t } = useLang();
   const { user } = useAuth();
   const [scanning, setScanning] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [resolved, setResolved] = useState<Resolved | null>(null);
+  const [scannedToken, setScannedToken] = useState<string>("");
   const [manualToken, setManualToken] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [kind, setKind] = useState<"loan" | "savings" | "irrigation" | "other">("loan");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
-  const [done, setDone] = useState<{ paymentId: string } | null>(null);
+  const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; farmer: string } | null>(null);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-scan-payment";
