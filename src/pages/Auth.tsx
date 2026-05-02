@@ -123,9 +123,6 @@ export default function AuthPage() {
             </div>
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
           </form>
-          <p className="mt-4 text-xs text-center text-muted-foreground">
-            Accounts are created by your Super Admin.
-          </p>
         </Card>
 
         {/* Troubleshooting panel */}
