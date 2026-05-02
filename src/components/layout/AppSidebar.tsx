@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Building2, Users, MapPin, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
-  ScanLine, Settings as SettingsIcon, BookOpen,
+  ScanLine, Settings as SettingsIcon, BookOpen, FileText,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
