@@ -39,7 +39,7 @@ interface Props {
  * All fields are optional at submit-time (existing records without locations stay valid),
  * but the chain is enforced — you cannot pick a child without its ancestors.
  */
-export function LocationPicker({ value, onChange, className }: Props) {
+export function LocationPicker({ value, onChange, className, errorLevel = null, errorMessage = null, labels }: Props) {
   const [divisions, setDivisions] = useState<Row[]>([]);
   const [districts, setDistricts] = useState<Row[]>([]);
   const [upazilas, setUpazilas] = useState<Row[]>([]);
