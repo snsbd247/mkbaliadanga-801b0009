@@ -6,7 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 
 type Account = { id: string; code: string; name: string; type: "asset"|"liability"|"income"|"expense"|"equity" };
 type Entry = { id: string; entry_date: string; account_id: string; debit: number; credit: number; description: string | null };
