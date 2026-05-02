@@ -355,12 +355,28 @@ export default function SmsSettings() {
   const [testLog, setTestLog] = useState<TestRecord[]>(() => loadTestLog());
   const [confirmTest, setConfirmTest] = useState<{ key: keyof Settings; baseKey: string; preview: string; label: string } | null>(null);
 
-  // GreenWeb provider token state
+  // GreenWeb provider token state — supports rotation (active/staged/retired)
+  type ProviderTokenRow = {
+    id: string;
+    provider: string;
+    status: "active" | "staged" | "retired";
+    expires_at: string | null;
+    activated_at: string | null;
+    updated_at: string;
+    updated_by: string | null;
+    label: string | null;
+  };
+  type SecretAuditRow = { id: string; action: string; created_at: string; user_id: string | null; meta: any };
+  const TOKEN_REGEX = /^[A-Za-z0-9]{20,80}$/;
   const [tokenInput, setTokenInput] = useState<string>("");
-  const [tokenConfigured, setTokenConfigured] = useState<boolean>(false);
-  const [tokenUpdatedAt, setTokenUpdatedAt] = useState<string | null>(null);
+  const [tokenLabel, setTokenLabel] = useState<string>("");
+  const [tokenExpiry, setTokenExpiry] = useState<string>(""); // yyyy-mm-dd
+  const [tokenError, setTokenError] = useState<string>("");
+  const [tokens, setTokens] = useState<ProviderTokenRow[]>([]);
+  const [tokenAudit, setTokenAudit] = useState<SecretAuditRow[]>([]);
   const [tokenBusy, setTokenBusy] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  const [confirmTestOpen, setConfirmTestOpen] = useState(false);
 
   // Provider "Test connection" diagnostics state
   const [testConnPhone, setTestConnPhone] = useState<string>("");
@@ -372,6 +388,10 @@ export default function SmsSettings() {
     error?: string;
     tested_at?: string;
   } | null>(null);
+
+  const activeToken = useMemo(() => tokens.find((t) => t.status === "active") ?? null, [tokens]);
+  const stagedTokens = useMemo(() => tokens.filter((t) => t.status === "staged"), [tokens]);
+  const tokenConfigured = !!activeToken;
 
   // Manual scheduler state
   const today = new Date().toISOString().slice(0, 10);
