@@ -177,6 +177,7 @@ function CascadeFilters({
 }
 
 function LevelTab({ level }: { level: Level }) {
+  const { t } = useLang();
   const chain = CHAIN[level];
   const directCol = DIRECT_PARENT_COL[level];
   const optionalCol = OPTIONAL_PARENT_COL[level];
