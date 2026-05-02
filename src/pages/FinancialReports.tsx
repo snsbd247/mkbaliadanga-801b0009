@@ -246,7 +246,7 @@ export default function FinancialReports() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
-              <CardHeader><CardTitle className="text-lg">Income</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">{t("income")}</CardTitle></CardHeader>
               <CardContent>
                 <Table><TableBody>
                   {incomeRows.map((r) => (
@@ -255,12 +255,12 @@ export default function FinancialReports() {
                       <TableCell className="text-right">{money(r.raw.credit - r.raw.debit)}</TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="font-semibold"><TableCell>Total Income</TableCell><TableCell className="text-right">{money(totalIncome)}</TableCell></TableRow>
+                  <TableRow className="font-semibold"><TableCell>{t("totalIncome")}</TableCell><TableCell className="text-right">{money(totalIncome)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle className="text-lg">Expense</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">{t("expense")}</CardTitle></CardHeader>
               <CardContent>
                 <Table><TableBody>
                   {expenseRows.map((r) => (
@@ -269,14 +269,14 @@ export default function FinancialReports() {
                       <TableCell className="text-right">{money(r.raw.debit - r.raw.credit)}</TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="font-semibold"><TableCell>Total Expense</TableCell><TableCell className="text-right">{money(totalExpense)}</TableCell></TableRow>
+                  <TableRow className="font-semibold"><TableCell>{t("totalExpense")}</TableCell><TableCell className="text-right">{money(totalExpense)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
           </div>
           <Card className="mt-4">
             <CardContent className="pt-6 flex justify-between text-lg font-semibold">
-              <span>Net {netIncome >= 0 ? "Profit" : "Loss"}</span>
+              <span>{netIncome >= 0 ? t("netProfit") : t("netLoss")}</span>
               <span className={netIncome >= 0 ? "text-primary" : "text-destructive"}>{money(Math.abs(netIncome))}</span>
             </CardContent>
           </Card>
