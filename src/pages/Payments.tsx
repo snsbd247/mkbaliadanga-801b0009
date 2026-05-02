@@ -255,6 +255,17 @@ export default function Payments() {
               </div>
             )}
 
+            {farmerId && (
+              <div className="rounded-md border border-dashed p-2 space-y-2">
+                <div className="text-[10px] uppercase font-semibold text-muted-foreground">Auto-allocate (priority: {priority.join(" → ")})</div>
+                <div className="flex gap-2">
+                  <Input type="number" min="0" placeholder="Total amount" value={autoAmount || ""} onChange={(e) => setAutoAmount(+e.target.value)} />
+                  <Button type="button" variant="secondary" onClick={autoAllocate}>Apply</Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Configurable per office in Settings → Offices.</p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Allocations</Label>
