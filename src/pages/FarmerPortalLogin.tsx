@@ -159,6 +159,7 @@ export default function FarmerPortalLogin() {
                     <Label htmlFor="fid">Farmer ID / Member No.</Label>
                     <Input
                       id="fid"
+                      ref={idInputRef}
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       placeholder="e.g. 2026-00000123 or M-000123"
@@ -171,7 +172,7 @@ export default function FarmerPortalLogin() {
                     />
                   </div>
                   {error && (
-                    <Alert variant="destructive" id="portal-error" role="alert">
+                    <Alert variant="destructive" id="portal-error" role="alert" aria-live="assertive" aria-atomic="true">
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
