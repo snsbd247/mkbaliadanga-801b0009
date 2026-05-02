@@ -239,7 +239,7 @@ export const translations = {
     operations: "Operations",
     cashAndPayments: "Cash & Payments",
     accounting: "Accounting",
-    admin: "Admin",
+    adminGroup: "Admin",
     financeSummary: "Finance Summary",
     chartOfAccounts: "Chart of Accounts",
     generalLedger: "General Ledger",
