@@ -422,12 +422,23 @@ export default function SmsSettings() {
   }
 
   async function load() {
-    const [settingsRes, officesRes, overridesRes, tokenRes] = await Promise.all([
+    const [settingsRes, officesRes, overridesRes, tokensRes, auditRes] = await Promise.all([
       supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("offices").select("id,name").order("name"),
       supabase.from("sms_office_settings").select("office_id,enabled,sender_id"),
-      // Only fetch presence + timestamp — never pull the token value into the browser.
-      supabase.from("sms_provider_secrets" as any).select("provider,updated_at").eq("provider", "greenweb").maybeSingle(),
+      // Lifecycle metadata only — never select api_token to avoid leaking secrets to the browser.
+      supabase
+        .from("sms_provider_secrets" as any)
+        .select("id,provider,status,expires_at,activated_at,updated_at,updated_by,label")
+        .eq("provider", "greenweb")
+        .order("status", { ascending: true })
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("audit_logs")
+        .select("id,action,created_at,user_id,meta")
+        .eq("entity", "sms_provider_secrets")
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
     if (settingsRes.error) return toast.error(settingsRes.error.message);
     setS(settingsRes.data as any);
@@ -435,38 +446,72 @@ export default function SmsSettings() {
     const map: Record<string, OfficeOverride> = {};
     for (const o of ((overridesRes.data as any) ?? []) as OfficeOverride[]) map[o.office_id] = o;
     setOverrides(map);
-    const tok = (tokenRes as any)?.data;
-    setTokenConfigured(!!tok?.provider);
-    setTokenUpdatedAt(tok?.updated_at ?? null);
+    setTokens(((tokensRes as any)?.data ?? []) as ProviderTokenRow[]);
+    setTokenAudit(((auditRes as any)?.data ?? []) as SecretAuditRow[]);
     setTokenInput("");
+    setTokenLabel("");
+    setTokenExpiry("");
+    setTokenError("");
     setShowToken(false);
+  }
+
+  function validateTokenInput(value: string): string {
+    const v = value.trim();
+    if (!v) return "Enter the GreenWeb API token";
+    if (!TOKEN_REGEX.test(v)) return "Token must be 20–80 alphanumeric characters (A–Z, a–z, 0–9). No spaces or symbols.";
+    return "";
   }
 
   async function saveProviderToken() {
     const value = tokenInput.trim();
-    if (!value) return toast.error("Enter the GreenWeb API token");
+    const err = validateTokenInput(value);
+    if (err) { setTokenError(err); return toast.error(err); }
+    setTokenError("");
     setTokenBusy(true);
     const { data: u } = await supabase.auth.getUser();
+    const expiresAtIso = tokenExpiry ? new Date(tokenExpiry + "T23:59:59").toISOString() : null;
+    // New tokens always land as "staged" (disabled). Click Activate to switch.
     const { error } = await supabase
       .from("sms_provider_secrets" as any)
-      .upsert(
-        { provider: "greenweb", api_token: value, updated_at: new Date().toISOString(), updated_by: u.user?.id ?? null } as any,
-        { onConflict: "provider" },
-      );
+      .insert({
+        provider: "greenweb",
+        api_token: value,
+        status: "staged",
+        expires_at: expiresAtIso,
+        label: tokenLabel.trim() || null,
+        updated_by: u.user?.id ?? null,
+      } as any);
     setTokenBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("GreenWeb API token saved");
-    setTokenInput("");
-    setShowToken(false);
+    toast.success("Token saved as staged. Click Activate to switch over.");
     await load();
   }
 
-  async function clearProviderToken() {
+  async function activateToken(id: string) {
     setTokenBusy(true);
-    const { error } = await supabase.from("sms_provider_secrets" as any).delete().eq("provider", "greenweb");
+    const { error } = await supabase.rpc("activate_sms_token" as any, { _id: id } as any);
     setTokenBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Token cleared");
+    toast.success("Token activated");
+    await load();
+  }
+
+  async function retireToken(id: string) {
+    setTokenBusy(true);
+    const { error } = await supabase.rpc("retire_sms_token" as any, { _id: id } as any);
+    setTokenBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Token retired");
+    await load();
+  }
+
+  async function deleteToken(id: string) {
+    if (!confirm("Permanently delete this token row? Use Retire instead if you want to keep an audit trail.")) return;
+    setTokenBusy(true);
+    const { error } = await supabase.from("sms_provider_secrets" as any).delete().eq("id", id);
+    setTokenBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Token deleted");
     await load();
   }
 
