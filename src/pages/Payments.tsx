@@ -61,8 +61,8 @@ export default function Payments() {
     const path = `${user?.id}/${paymentId}.${ext}`;
     const { error } = await supabase.storage.from("payment-receipts").upload(path, receiptFile, { upsert: true });
     if (error) { toast.error("Receipt upload failed: " + error.message); return null; }
-    const { data } = supabase.storage.from("payment-receipts").createSignedUrl(path, 60 * 60 * 24 * 365);
-    return (await data)?.signedUrl ?? path;
+    const { data } = await supabase.storage.from("payment-receipts").createSignedUrl(path, 60 * 60 * 24 * 365);
+    return data?.signedUrl ?? path;
   }
 
   async function pay() {
