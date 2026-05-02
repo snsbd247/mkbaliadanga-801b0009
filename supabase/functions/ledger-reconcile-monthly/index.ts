@@ -1,11 +1,9 @@
 // Monthly ledger reconciliation report.
-// Returns per-account opening / debit / credit / closing for the month, plus mismatches:
-//  - Unbalanced reference groups within the month (debit ≠ credit for the same reference).
-//  - Orphan ledger references (source row no longer exists).
-//  - Source-vs-ledger discrepancies for loan_payments / savings_transactions / irrigation_charges / expenses
-//    (sum of source amounts vs sum of ledger postings for that reference type within month).
+// Modes:
+//  - default (no `mode` or `mode: "report"`): per-account opening / debit / credit / closing for the month + mismatches list
+//  - `mode: "detail"`: side-by-side ledger entries vs source row for a single (reference_type, reference_id)
 //
-// Auth: requires admin or super_admin.
+// Auth: requires admin / super_admin / committee.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -28,9 +26,69 @@ function err(status: number, msg: string) {
 function monthBounds(year: number, month: number) {
   const start = new Date(Date.UTC(year, month - 1, 1));
   const end = new Date(Date.UTC(year, month, 1));
-  const startStr = start.toISOString().slice(0, 10);
-  const endStr = end.toISOString().slice(0, 10);
-  return { startStr, endStr };
+  return { startStr: start.toISOString().slice(0, 10), endStr: end.toISOString().slice(0, 10) };
+}
+
+// Map reference_type → source table + the column that represents the canonical amount.
+const SOURCE_TABLES: Record<string, { table: string; amountField: string; dateField: string }> = {
+  savings: { table: "savings_transactions", amountField: "amount", dateField: "txn_date" },
+  loan: { table: "loans", amountField: "principal", dateField: "issued_on" },
+  loan_payment: { table: "loan_payments", amountField: "amount", dateField: "paid_on" },
+  irrigation: { table: "irrigation_charges", amountField: "paid_amount", dateField: "entry_date" },
+  expense: { table: "expenses", amountField: "amount", dateField: "expense_date" },
+  journal: { table: "journal_entries", amountField: "", dateField: "entry_date" },
+};
+
+async function fetchDetail(referenceType: string, referenceId: string) {
+  // Ledger entries for this ref
+  const { data: ledger } = await admin
+    .from("ledger_entries")
+    .select("id, entry_date, account_id, debit, credit, description, office_id, created_at")
+    .eq("reference_type", referenceType).eq("reference_id", referenceId)
+    .order("entry_date", { ascending: true });
+
+  // Resolve account names
+  const accountIds = Array.from(new Set((ledger ?? []).map((l: any) => l.account_id).filter(Boolean)));
+  const { data: accts } = accountIds.length
+    ? await admin.from("accounts").select("id, code, name, type").in("id", accountIds)
+    : { data: [] as any[] };
+  const acctMap = new Map((accts ?? []).map((a: any) => [a.id, a]));
+
+  const ledgerEntries = (ledger ?? []).map((l: any) => ({
+    id: l.id, entry_date: l.entry_date, debit: Number(l.debit) || 0, credit: Number(l.credit) || 0,
+    description: l.description, office_id: l.office_id,
+    account_code: acctMap.get(l.account_id)?.code ?? null,
+    account_name: acctMap.get(l.account_id)?.name ?? null,
+    account_type: acctMap.get(l.account_id)?.type ?? null,
+  }));
+  const ledgerDebit = ledgerEntries.reduce((a, r) => a + r.debit, 0);
+  const ledgerCredit = ledgerEntries.reduce((a, r) => a + r.credit, 0);
+
+  // Source row
+  let source: any = null;
+  let sourceExists = false;
+  let sourceAmount: number | null = null;
+  const cfg = SOURCE_TABLES[referenceType];
+  if (cfg) {
+    const { data } = await admin.from(cfg.table as any).select("*").eq("id", referenceId).maybeSingle();
+    if (data) {
+      sourceExists = true;
+      source = data;
+      if (cfg.amountField) sourceAmount = Number((data as any)[cfg.amountField] ?? 0);
+    }
+  }
+
+  return {
+    reference_type: referenceType,
+    reference_id: referenceId,
+    source_exists: sourceExists,
+    source,
+    source_amount: sourceAmount,
+    ledger_entries: ledgerEntries,
+    ledger_debit: ledgerDebit,
+    ledger_credit: ledgerCredit,
+    diff: Math.round((ledgerDebit - ledgerCredit) * 100) / 100,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -47,6 +105,18 @@ Deno.serve(async (req) => {
     if (!isAllowed) return err(403, "Forbidden");
 
     const body = await req.json().catch(() => ({}));
+    const mode = body?.mode === "detail" ? "detail" : "report";
+
+    if (mode === "detail") {
+      const referenceType = String(body?.reference_type ?? "");
+      const referenceId = String(body?.reference_id ?? "");
+      if (!referenceType || !referenceId) return err(400, "reference_type and reference_id required");
+      const detail = await fetchDetail(referenceType, referenceId);
+      return new Response(JSON.stringify({ ok: true, detail }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const year = Number(body?.year);
     const month = Number(body?.month);
     const officeId: string | null = body?.office_id || null;
@@ -55,11 +125,9 @@ Deno.serve(async (req) => {
 
     const { startStr, endStr } = monthBounds(year, month);
 
-    // Accounts
     const { data: accts } = await admin.from("accounts").select("id, code, name, name_bn, type").order("code");
     const accounts = (accts ?? []) as any[];
 
-    // Helper: aggregate ledger entries with optional date filter & office filter
     async function aggregate(beforeOrEqual: string | null, fromInclusive: string | null) {
       let q = admin.from("ledger_entries").select("account_id, debit, credit").limit(50000);
       if (officeId) q = q.eq("office_id", officeId);
@@ -77,9 +145,7 @@ Deno.serve(async (req) => {
       return map;
     }
 
-    // Opening: everything strictly before startStr
     const opening = await aggregate(startStr, null);
-    // Period totals: from startStr (inclusive) up to endStr (exclusive)
     let periodQ = admin.from("ledger_entries")
       .select("account_id, debit, credit, reference_type, reference_id")
       .gte("entry_date", startStr).lt("entry_date", endStr).limit(50000);
@@ -110,30 +176,22 @@ Deno.serve(async (req) => {
     const accountsOut = accounts.map((a) => {
       const o = opening.get(a.id) ?? { d: 0, c: 0 };
       const p = period.get(a.id) ?? { d: 0, c: 0 };
-      // For asset/expense accounts, normal balance is debit - credit; income/liability/equity is credit - debit.
       const sign = (a.type === "asset" || a.type === "expense") ? 1 : -1;
       const opening_balance = sign * (o.d - o.c);
-      const period_debit = p.d;
-      const period_credit = p.c;
       const closing_balance = sign * ((o.d + p.d) - (o.c + p.c));
       return {
         account_id: a.id, code: a.code, name: a.name, name_bn: a.name_bn, type: a.type,
-        opening_balance, period_debit, period_credit, closing_balance,
+        opening_balance, period_debit: p.d, period_credit: p.c, closing_balance,
       };
     });
 
-    // Mismatches
     const mismatches: any[] = [];
-
-    // 1. Unbalanced reference groups in this month
     for (const [, v] of refSums) {
       const diff = Math.abs(v.d - v.c);
       if (diff > 0.01) {
         mismatches.push({ kind: "unbalanced_ref", reference_type: v.type, reference_id: v.id, debit: v.d, credit: v.c, diff });
       }
     }
-
-    // 2. Orphan refs across the whole DB but flag those touched this month
     const { data: orphans } = await admin.rpc("ledger_orphan_refs");
     const monthRefKeys = new Set(Array.from(refSums.values()).map((v) => `${v.type}::${v.id}`));
     for (const o of (orphans ?? []) as any[]) {
