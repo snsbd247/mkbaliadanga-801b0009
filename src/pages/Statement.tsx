@@ -19,6 +19,7 @@ type Row = { date: string; particulars: string; deposit: number; withdraw: numbe
 export default function Statement() {
   const { t: tt } = useLang();
   const t = tt as unknown as (k: string) => string;
+  const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [farmerId, setFarmerId] = useState<string>("");
   const [year, setYear] = useState<number>(new Date().getFullYear());
