@@ -12,11 +12,13 @@ import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Account = { id: string; code: string; name: string; type: "asset"|"liability"|"income"|"expense"|"equity" };
 type Entry = { id: string; entry_date: string; account_id: string; debit: number; credit: number; description: string | null };
 
 export default function FinancialReports() {
+  const { t } = useLang();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [from, setFrom] = useState<string>("");
