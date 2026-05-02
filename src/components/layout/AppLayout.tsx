@@ -94,18 +94,9 @@ export function AppLayout() {
           <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-6 animate-fade-in overflow-x-hidden">
             <Outlet />
           </main>
-          <AppFooter />
+          <SiteFooter />
         </div>
       </div>
     </SidebarProvider>
-  );
-}
-
-function AppFooter() {
-  const year = new Date().getFullYear();
-  return (
-    <footer className="mt-auto border-t bg-muted/40 px-3 py-2 text-center text-[11px] sm:text-xs text-muted-foreground no-print">
-      © 2025-{year} All rights reserved by Mohammadkhani Irrigation Project. Developed By Sync &amp; Solutions IT
-    </footer>
   );
 }
