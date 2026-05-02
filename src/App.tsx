@@ -21,6 +21,7 @@ import Users from "./pages/Users";
 import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import Scan from "./pages/Scan";
+import Cashbook from "./pages/Cashbook";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
                 <Route path="/users" element={<Users />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/scan" element={<Scan />} />
+                <Route path="/cashbook" element={<Cashbook />} />
                 <Route path="/audit" element={<AuditLogs />} />
               </Route>
               <Route path="*" element={<NotFound />} />

@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { exportFarmerReportPDF } from "@/lib/exports";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
+import { LandRelations } from "@/components/LandRelations";
+import { SavingsStatement } from "@/components/SavingsStatement";
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -115,7 +117,9 @@ export default function FarmerDetail() {
       <Tabs defaultValue="lands">
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
+          <TabsTrigger value="relations">{t("landRelations")}</TabsTrigger>
           <TabsTrigger value="savings">{t("savings")}</TabsTrigger>
+          <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           <TabsTrigger value="loans">{t("loans")}</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
         </TabsList>
@@ -163,12 +167,20 @@ export default function FarmerDetail() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="relations">
+          <LandRelations farmerId={farmer.id} />
+        </TabsContent>
+
         <TabsContent value="savings">
           <Card><Table>
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
             <TableBody>{savings.map(s => <TableRow key={s.id}><TableCell>{fmtDate(s.txn_date)}</TableCell><TableCell>{t(s.type as any)}</TableCell><TableCell>{money(s.amount)}</TableCell><TableCell><Badge>{t(s.status as any)}</Badge></TableCell></TableRow>)}
             {savings.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
           </Table></Card>
+        </TabsContent>
+
+        <TabsContent value="statement">
+          <SavingsStatement farmer={farmer} />
         </TabsContent>
 
         <TabsContent value="loans">

@@ -9,6 +9,9 @@ export interface CompanyBranding {
   mobile?: string | null;
   address?: string | null;
   default_loan_interest?: number | null;
+  penalty_type?: "flat" | "percent" | "none" | null;
+  penalty_value?: number | null;
+  penalty_grace_days?: number | null;
 }
 
 const DEFAULTS: CompanyBranding = {

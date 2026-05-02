@@ -66,6 +66,9 @@ export type Database = {
           id: number
           logo_url: string | null
           mobile: string | null
+          penalty_grace_days: number
+          penalty_type: string
+          penalty_value: number
           updated_at: string
         }
         Insert: {
@@ -77,6 +80,9 @@ export type Database = {
           id?: number
           logo_url?: string | null
           mobile?: string | null
+          penalty_grace_days?: number
+          penalty_type?: string
+          penalty_value?: number
           updated_at?: string
         }
         Update: {
@@ -88,6 +94,51 @@ export type Database = {
           id?: number
           logo_url?: string | null
           mobile?: string | null
+          penalty_grace_days?: number
+          penalty_type?: string
+          penalty_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          expense_date: string
+          head: string
+          id: string
+          method: string | null
+          note: string | null
+          office_id: string | null
+          payee: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          expense_date?: string
+          head: string
+          id?: string
+          method?: string | null
+          note?: string | null
+          office_id?: string | null
+          payee?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          expense_date?: string
+          head?: string
+          id?: string
+          method?: string | null
+          note?: string | null
+          office_id?: string | null
+          payee?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -102,6 +153,7 @@ export type Database = {
           farmer_code: string
           father_name: string | null
           id: string
+          member_no: string | null
           mobile: string | null
           mother_name: string | null
           name_bn: string | null
@@ -124,6 +176,7 @@ export type Database = {
           farmer_code: string
           father_name?: string | null
           id?: string
+          member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
           name_bn?: string | null
@@ -146,6 +199,7 @@ export type Database = {
           farmer_code?: string
           father_name?: string | null
           id?: string
+          member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
           name_bn?: string | null
@@ -186,6 +240,8 @@ export type Database = {
           office_id: string | null
           other_charge: number
           paid_amount: number
+          penalty_amount: number
+          previous_due_brought: number
           quantity: number
           season_id: string
           total: number
@@ -206,6 +262,8 @@ export type Database = {
           office_id?: string | null
           other_charge?: number
           paid_amount?: number
+          penalty_amount?: number
+          previous_due_brought?: number
           quantity?: number
           season_id: string
           total?: number
@@ -226,6 +284,8 @@ export type Database = {
           office_id?: string | null
           other_charge?: number
           paid_amount?: number
+          penalty_amount?: number
+          previous_due_brought?: number
           quantity?: number
           season_id?: string
           total?: number
@@ -257,6 +317,84 @@ export type Database = {
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      land_relations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          land_id: string
+          note: string | null
+          office_id: string | null
+          owner_farmer_id: string
+          share_percentage: number
+          sharecropper_farmer_id: string | null
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          land_id: string
+          note?: string | null
+          office_id?: string | null
+          owner_farmer_id: string
+          share_percentage?: number
+          sharecropper_farmer_id?: string | null
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          land_id?: string
+          note?: string | null
+          office_id?: string | null
+          owner_farmer_id?: string
+          share_percentage?: number
+          sharecropper_farmer_id?: string | null
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_relations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_relations_owner_farmer_id_fkey"
+            columns: ["owner_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "land_relations_owner_farmer_id_fkey"
+            columns: ["owner_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_relations_sharecropper_farmer_id_fkey"
+            columns: ["sharecropper_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "land_relations_sharecropper_farmer_id_fkey"
+            columns: ["sharecropper_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
         ]
@@ -633,6 +771,69 @@ export type Database = {
           },
         ]
       }
+      receipts: {
+        Row: {
+          amount: number
+          collected_by: string | null
+          created_at: string
+          farmer_id: string | null
+          id: string
+          kind: Database["public"]["Enums"]["receipt_kind"]
+          method: string | null
+          note: string | null
+          office_id: string | null
+          receipt_date: string
+          receipt_no: string | null
+          reference_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          collected_by?: string | null
+          created_at?: string
+          farmer_id?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["receipt_kind"]
+          method?: string | null
+          note?: string | null
+          office_id?: string | null
+          receipt_date?: string
+          receipt_no?: string | null
+          reference_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          collected_by?: string | null
+          created_at?: string
+          farmer_id?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["receipt_kind"]
+          method?: string | null
+          note?: string | null
+          office_id?: string | null
+          receipt_date?: string
+          receipt_no?: string | null
+          reference_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "receipts_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       savings_transactions: {
         Row: {
           amount: number
@@ -683,6 +884,48 @@ export type Database = {
           },
           {
             foreignKeyName: "savings_transactions_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      savings_yearly_opening: {
+        Row: {
+          created_at: string
+          farmer_id: string
+          id: string
+          office_id: string | null
+          opening_balance: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          farmer_id: string
+          id?: string
+          office_id?: string | null
+          opening_balance?: number
+          year: number
+        }
+        Update: {
+          created_at?: string
+          farmer_id?: string
+          id?: string
+          office_id?: string | null
+          opening_balance?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_yearly_opening_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "savings_yearly_opening_farmer_id_fkey"
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
@@ -838,6 +1081,17 @@ export type Database = {
       owner_type: "owner" | "borgadar"
       payment_kind: "loan" | "savings" | "irrigation"
       payment_status: "pending" | "approved" | "rejected"
+      receipt_kind:
+        | "irrigation"
+        | "bigha_rent"
+        | "pond"
+        | "crop_sale"
+        | "scrap"
+        | "loan_taken"
+        | "donation"
+        | "savings_deposit"
+        | "share"
+        | "other"
       savings_txn_type: "deposit" | "withdraw"
       season_type: "aman" | "boro" | "iri" | "other"
     }
@@ -975,6 +1229,18 @@ export const Constants = {
       owner_type: ["owner", "borgadar"],
       payment_kind: ["loan", "savings", "irrigation"],
       payment_status: ["pending", "approved", "rejected"],
+      receipt_kind: [
+        "irrigation",
+        "bigha_rent",
+        "pond",
+        "crop_sale",
+        "scrap",
+        "loan_taken",
+        "donation",
+        "savings_deposit",
+        "share",
+        "other",
+      ],
       savings_txn_type: ["deposit", "withdraw"],
       season_type: ["aman", "boro", "iri", "other"],
     },

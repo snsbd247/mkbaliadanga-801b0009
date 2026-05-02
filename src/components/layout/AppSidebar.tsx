@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Building2, Users, MapPin, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
-  ScanLine, Settings as SettingsIcon,
+  ScanLine, Settings as SettingsIcon, BookOpen,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -30,6 +30,7 @@ export function AppSidebar() {
     { url: "/loans", icon: HandCoins, label: t("loans"), key: "loans" as const },
     { url: "/irrigation", icon: Droplets, label: t("irrigation"), key: "irrigation" as const },
     { url: "/payments", icon: Receipt, label: t("payments"), key: "payments" as const },
+    { url: "/cashbook", icon: BookOpen, label: t("cashbook"), key: "reports" as const },
     { url: "/scan", icon: ScanLine, label: t("scanQr"), key: "payments" as const },
     { url: "/reports", icon: FileBarChart, label: t("reports"), key: "reports" as const },
   ].filter((x) => can(x.key, "can_view"));
