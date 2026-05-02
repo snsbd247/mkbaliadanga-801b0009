@@ -187,12 +187,12 @@ export default function FarmerPortalLogin() {
                     {busy ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                        Sending…
+                        {t("sending")}
                       </>
                     ) : (
                       <>
                         <Smartphone className="h-4 w-4" aria-hidden="true" />
-                        Send OTP
+                        {t("sendOtp")}
                       </>
                     )}
                   </Button>
