@@ -90,6 +90,7 @@ export function AppSidebar() {
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: "QR Rotation", superOnly: true },
         { url: "/admin/bulk-cards", icon: IdCard, label: "Bulk Cards", permKey: "farmers" },
+        { url: "/admin/receipt-template", icon: Receipt, label: "Receipt Template", superOnly: true },
         { url: "/sms-settings", icon: MessageSquare, label: "SMS Settings", superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: "SMS Logs", superOnly: true },
         { url: "/locations", icon: MapPin, label: "Locations", superOnly: true },
