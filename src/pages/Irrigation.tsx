@@ -68,7 +68,6 @@ export default function Irrigation() {
 
   // Inline validation
   const errors: Record<string, string> = {};
-  if (form.farmer_id === "" && open) {} // no-op
   if (open) {
     if (!form.farmer_id) errors.farmer_id = "Select a farmer";
     if (!form.land_id) errors.land_id = "Select a land";
