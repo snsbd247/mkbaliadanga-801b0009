@@ -49,6 +49,8 @@ import BulkCards from "./pages/BulkCards";
 import ReceiptTemplate from "./pages/ReceiptTemplate";
 import Verification from "./pages/admin/Verification";
 import RlsTest from "./pages/admin/RlsTest";
+import RoleMatrix from "./pages/admin/RoleMatrix";
+import DemoReset from "./pages/admin/DemoReset";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -107,6 +109,8 @@ const App = () => (
                 <Route path="/admin/receipt-template" element={<ReceiptTemplate />} />
                 <Route path="/admin/verification" element={<Verification />} />
                 <Route path="/admin/rls-test" element={<RlsTest />} />
+                <Route path="/admin/role-matrix" element={<RoleMatrix />} />
+                <Route path="/admin/demo-reset" element={<DemoReset />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
