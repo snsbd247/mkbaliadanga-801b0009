@@ -92,7 +92,8 @@ export default function FarmerPortalLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-surface flex flex-col"><div className="flex-1 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-surface flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-between items-center mb-2">
           <a href="/auth" className="text-xs text-primary underline">Admin Login →</a>
