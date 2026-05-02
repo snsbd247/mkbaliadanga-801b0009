@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 // Strong password rules — enforced client-side; HIBP checked server-side.
 const MIN_LEN = 10;
