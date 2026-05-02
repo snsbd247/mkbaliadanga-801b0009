@@ -181,8 +181,8 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
           const isOpen = expanded === l.id;
           const hasPayments = (l.loan_payments ?? []).length > 0;
           return (
-            <>
-              <TableRow key={l.id}>
+            <FragmentRow key={l.id}>
+              <TableRow>
                 <TableCell>
                   {hasPayments && (
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setExpanded(isOpen ? null : l.id)}>
