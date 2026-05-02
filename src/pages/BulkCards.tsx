@@ -227,22 +227,12 @@ export default function BulkCards() {
         </div>
       </Card>
 
-      {/* Hidden container that mounts QR SVGs for the selected farmers so the PDF generator can serialize them. */}
+      {/* Hidden container that mounts a QRCodeSVG per selected farmer so the PDF generator can serialize them. */}
       <div ref={qrHostRef} className="absolute -left-[9999px] top-0" aria-hidden>
         {Object.entries(tokens).map(([fid, t]) => (
-          <QRCodeSVG key={fid} value={t.token} size={128} level="M" includeMargin={false}
-            // QRCodeSVG doesn't forward unknown props; render in an svg wrapper with marker
-          />
-        ))}
-        {/* Markers for cardPdf to find each QR by farmer id */}
-        {Object.entries(tokens).map(([fid, t]) => (
-          <svg key={`m-${fid}`} data-token-id={fid} width="128" height="128" xmlns="http://www.w3.org/2000/svg">
-            <foreignObject width="128" height="128">
-              <div xmlns="http://www.w3.org/1999/xhtml">
-                <QRCodeSVG value={t.token} size={128} level="M" includeMargin={false} />
-              </div>
-            </foreignObject>
-          </svg>
+          <div key={fid} data-fid={fid}>
+            <QRCodeSVG value={t.token} size={128} level="M" includeMargin={false} />
+          </div>
         ))}
       </div>
     </>
