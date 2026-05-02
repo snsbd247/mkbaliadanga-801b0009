@@ -27,21 +27,21 @@ export function AppLayout() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-surface">
         <AppSidebar />
-        <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-card/80 backdrop-blur px-4 no-print">
-            <div className="flex items-center gap-2">
+        <div className="flex flex-1 flex-col min-w-0">
+          <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b bg-card/80 backdrop-blur px-2 sm:px-4 no-print">
+            <div className="flex items-center gap-2 min-w-0">
               <SidebarTrigger />
-              <span className="hidden text-sm font-medium text-foreground sm:inline">
+              <span className="hidden truncate text-sm font-medium text-foreground sm:inline">
                 {lang === "bn" && brand.company_name_bn ? brand.company_name_bn : brand.company_name}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1.5">
+                  <Button variant="outline" size="sm" className="gap-1.5 px-2 sm:px-3">
                     <Languages className="h-4 w-4" />
-                    {lang === "en" ? "EN" : "বাং"}
+                    <span className="hidden xs:inline">{lang === "en" ? "EN" : "বাং"}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -52,10 +52,10 @@ export function AppLayout() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 rounded-md border bg-card px-2 py-1 text-sm hover:bg-accent/10">
-                    <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary text-primary-foreground text-xs">{initial}</AvatarFallback></Avatar>
-                    <div className="hidden text-left sm:block">
-                      <div className="text-xs font-medium leading-tight">{user.email}</div>
+                  <button className="flex items-center gap-2 rounded-md border bg-card px-2 py-1 text-sm hover:bg-accent/10 max-w-[180px] sm:max-w-[260px]">
+                    <Avatar className="h-7 w-7 shrink-0"><AvatarFallback className="bg-primary text-primary-foreground text-xs">{initial}</AvatarFallback></Avatar>
+                    <div className="hidden text-left sm:block min-w-0">
+                      <div className="text-xs font-medium leading-tight truncate">{user.email}</div>
                       <div className="text-[10px] text-muted-foreground leading-tight">{roleLabel}</div>
                     </div>
                   </button>
@@ -66,7 +66,7 @@ export function AppLayout() {
               </DropdownMenu>
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-6 animate-fade-in">
+          <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-6 animate-fade-in overflow-x-hidden">
             <Outlet />
           </main>
         </div>
