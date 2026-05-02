@@ -127,12 +127,13 @@ export default function Cashbook() {
       ...receipts.map(x => ({ date: x.receipt_date, kind: "income", label: KIND_LABEL[x.kind as Kind] ?? x.kind, ref: x.receipt_no, amount: Number(x.amount), note: x.note })),
       ...expenses.map(x => ({ date: x.expense_date, kind: "expense", label: x.head, ref: x.payee ?? "", amount: Number(x.amount), note: x.note })),
     ].sort((a, b) => a.date.localeCompare(b.date));
-    let bal = 0;
-    return rows.map(row => {
+    let bal = Number(openingCash || 0);
+    const out = rows.map(row => {
       bal += row.kind === "income" ? row.amount : -row.amount;
       return { ...row, balance: bal };
     });
-  }, [receipts, expenses]);
+    return out;
+  }, [receipts, expenses, openingCash]);
 
   const totals = useMemo(() => {
     const income = receipts.reduce((s, x) => s + Number(x.amount), 0);
