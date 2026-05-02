@@ -1,0 +1,126 @@
+// GreenWeb Bulk SMS sender. Accepts:
+//   { log_id: uuid }                              -> send queued log entry
+//   { mobile, message, event_type?, farmer_id? } -> ad-hoc single send
+//   { mobiles: string[], message }               -> bulk send (announcement)
+//   { retry: true, ids?: uuid[] }                -> retry failed/queued
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const GW_TOKEN = Deno.env.get("GREENWEB_SMS_TOKEN") ?? "";
+
+const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+function normalizeBdMobile(m: string): string {
+  let n = (m || "").replace(/\D/g, "");
+  if (n.startsWith("880")) return n;
+  if (n.startsWith("0")) return "88" + n;
+  if (n.length === 10 && n.startsWith("1")) return "880" + n;
+  return n;
+}
+
+async function sendViaGreenWeb(mobile: string, message: string): Promise<{ ok: boolean; resp: string }> {
+  if (!GW_TOKEN) return { ok: false, resp: "Missing GREENWEB_SMS_TOKEN" };
+  const params = new URLSearchParams({
+    token: GW_TOKEN,
+    to: normalizeBdMobile(mobile),
+    message,
+  });
+  try {
+    const res = await fetch("https://api.greenweb.com.bd/api.php?" + params.toString());
+    const text = await res.text();
+    // GreenWeb returns text like "Ok ..." or error message
+    const ok = res.ok && /ok/i.test(text) && !/err|invalid|fail/i.test(text);
+    return { ok, resp: text.slice(0, 500) };
+  } catch (e) {
+    return { ok: false, resp: String(e).slice(0, 500) };
+  }
+}
+
+async function processLog(id: string) {
+  const { data: log, error } = await admin.from("sms_logs").select("*").eq("id", id).maybeSingle();
+  if (error || !log) return { ok: false, error: error?.message ?? "log not found" };
+  if (log.status === "sent") return { ok: true, skipped: true };
+
+  const r = await sendViaGreenWeb(log.mobile, log.message);
+  await admin.from("sms_logs").update({
+    status: r.ok ? "sent" : "failed",
+    provider_response: r.resp,
+    sent_at: r.ok ? new Date().toISOString() : null,
+    retry_count: (log.retry_count ?? 0) + (log.status === "queued" ? 0 : 1),
+  }).eq("id", id);
+  return { ok: r.ok, response: r.resp };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const body = await req.json().catch(() => ({}));
+
+    // Retry mode (manual)
+    if (body.retry === true) {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claims } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
+      if (!claims?.claims?.sub) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      const ids: string[] = Array.isArray(body.ids) && body.ids.length
+        ? body.ids
+        : (await admin.from("sms_logs").select("id").in("status", ["failed", "queued"]).order("created_at", { ascending: true }).limit(50)).data?.map((r: any) => r.id) ?? [];
+      const results = [];
+      for (const id of ids) results.push({ id, ...(await processLog(id)) });
+      return new Response(JSON.stringify({ processed: results.length, results }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Bulk send (announcement)
+    if (Array.isArray(body.mobiles) && body.mobiles.length > 0 && typeof body.message === "string") {
+      const authHeader = req.headers.get("Authorization");
+      let createdBy: string | null = null;
+      if (authHeader) {
+        const { data } = await admin.auth.getUser(authHeader.replace("Bearer ", ""));
+        createdBy = data.user?.id ?? null;
+      }
+      const inserts = body.mobiles
+        .filter((m: string) => m && m.trim().length >= 6)
+        .map((m: string) => ({ mobile: m.trim(), message: body.message, status: "queued", event_type: "bulk", created_by: createdBy }));
+      if (!inserts.length) return new Response(JSON.stringify({ error: "no valid mobiles" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: logs, error: ie } = await admin.from("sms_logs").insert(inserts).select("id");
+      if (ie) return new Response(JSON.stringify({ error: ie.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const results = [];
+      for (const l of logs ?? []) results.push({ id: l.id, ...(await processLog(l.id)) });
+      return new Response(JSON.stringify({ queued: inserts.length, results }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Trigger-fired (log_id) or ad-hoc (mobile+message)
+    let logId: string | null = body.log_id ?? null;
+    if (!logId && body.mobile && body.message) {
+      const { data, error: ie } = await admin.from("sms_logs").insert({
+        mobile: String(body.mobile).trim(),
+        message: String(body.message),
+        status: "queued",
+        event_type: body.event_type ?? "manual",
+        farmer_id: body.farmer_id ?? null,
+      }).select("id").single();
+      if (ie) return new Response(JSON.stringify({ error: ie.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      logId = data.id;
+    }
+    if (!logId) {
+      return new Response(JSON.stringify({ error: "log_id or mobile+message required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const result = await processLog(logId);
+    return new Response(JSON.stringify({ id: logId, ...result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+});
