@@ -1755,6 +1755,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_provider_secrets: {
+        Row: {
+          api_token: string
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          api_token: string
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          api_token?: string
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       sms_settings: {
         Row: {
           api_key_set: boolean
@@ -2126,6 +2147,7 @@ export type Database = {
         Args: { _exclude_season: string; _farmer: string; _land: string }
         Returns: number
       }
+      get_sms_provider_token: { Args: { _provider?: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
