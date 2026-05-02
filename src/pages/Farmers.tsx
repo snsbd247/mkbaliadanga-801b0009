@@ -102,14 +102,14 @@ export default function Farmers() {
     setCreateErr(null);
     if (!commonValidate(form)) return;
     const v = validateLocationChain(pickLocation(form));
-    if (!v.ok) { setCreateErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
+    if (v.ok === false) { setCreateErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
 
     let photo_url: string | undefined;
     if (photo) {
       photo_url = await uploadPhoto(photo);
-      if (photo === null) return;
+      if (!photo_url) return;
     }
-    const payload = { ...form, ...(photo_url ? { photo_url } : {}), office_id: form.office_id || null };
+    const payload: any = { ...form, ...(photo_url ? { photo_url } : {}), office_id: form.office_id || null };
     const { data, error } = await supabase.from("farmers").insert(payload).select().single();
     if (error) {
       const lvl = parseLocationDbError(error.message);
@@ -139,7 +139,7 @@ export default function Farmers() {
     setEditErr(null);
     if (!commonValidate(editForm)) return;
     const v = validateLocationChain(pickLocation(editForm));
-    if (!v.ok) { setEditErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
+    if (v.ok === false) { setEditErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
 
     setSaving(true);
     let photo_url: string | undefined;
