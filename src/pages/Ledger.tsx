@@ -218,14 +218,14 @@ export default function Ledger() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Office</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Ref</TableHead>
-                <TableHead className="text-right">Debit</TableHead>
-                <TableHead className="text-right">Credit</TableHead>
-                {showRunning && <TableHead className="text-right">Balance</TableHead>}
+                <TableHead>{t("date")}</TableHead>
+                <TableHead>{t("account")}</TableHead>
+                <TableHead>{t("office")}</TableHead>
+                <TableHead>{t("description")}</TableHead>
+                <TableHead>{t("reference")}</TableHead>
+                <TableHead className="text-right">{t("debit")}</TableHead>
+                <TableHead className="text-right">{t("credit")}</TableHead>
+                {showRunning && <TableHead className="text-right">{t("balance")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -242,16 +242,16 @@ export default function Ledger() {
                 </TableRow>
               ))}
               {!entries.length && (
-                <TableRow><TableCell colSpan={showRunning ? 8 : 7} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
+                <TableRow><TableCell colSpan={showRunning ? 8 : 7} className="text-center text-muted-foreground">{t("noEntries")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
           {entries.length > 0 && (
             <div className="mt-3 flex justify-end gap-6 text-sm">
-              <div>Total Debit: <span className="font-semibold">{money(totals.debit)}</span></div>
-              <div>Total Credit: <span className="font-semibold">{money(totals.credit)}</span></div>
+              <div>{t("totalDebit")}: <span className="font-semibold">{money(totals.debit)}</span></div>
+              <div>{t("totalCredit")}: <span className="font-semibold">{money(totals.credit)}</span></div>
               <div className={Math.abs(totals.debit - totals.credit) < 0.01 ? "text-primary" : "text-destructive"}>
-                {Math.abs(totals.debit - totals.credit) < 0.01 ? "✅ Balanced" : `Diff: ${money(Math.abs(totals.debit - totals.credit))}`}
+                {Math.abs(totals.debit - totals.credit) < 0.01 ? `✅ ${t("balanced")}` : `${t("diffLabel")}: ${money(Math.abs(totals.debit - totals.credit))}`}
               </div>
             </div>
           )}
