@@ -12,15 +12,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Printer, FileDown } from "lucide-react";
+import { Plus, Printer, FileDown, Receipt } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { exportFarmerReportPDF } from "@/lib/exports";
+import { QRCodeSVG } from "qrcode.react";
+import { useNavigate } from "react-router-dom";
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
   const { t, lang } = useLang();
+  const nav = useNavigate();
   const [farmer, setFarmer] = useState<any>(null);
   const [lands, setLands] = useState<any[]>([]);
   const [savings, setSavings] = useState<any[]>([]);
@@ -70,6 +73,7 @@ export default function FarmerDetail() {
       <PageHeader title={lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}
         description={`${farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
+          <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
           <Button onClick={() => exportFarmerReportPDF(farmer, { lands, savings, loans, irr, savingsBal, loanDue, irrDue, share: share?.balance ?? 0 })}>
             <FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}
