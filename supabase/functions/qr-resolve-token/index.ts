@@ -45,7 +45,13 @@ Deno.serve(async (req) => {
     const { data: tok } = await admin
       .from("qr_tokens").select("farmer_id, revoked")
       .eq("token", token).maybeSingle();
-    if (!tok || tok.revoked) return err(404, "Token not recognized");
+    if (!tok) return err(404, "Token not recognized");
+    if (tok.revoked) {
+      return new Response(
+        JSON.stringify({ error: "This card has been revoked. Please request a new card." }),
+        { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const { data: farmer } = await admin
       .from("farmers")
