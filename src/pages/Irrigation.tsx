@@ -173,7 +173,11 @@ export default function Irrigation() {
               </div>
               <div className="col-span-2 rounded-md bg-muted p-2 text-sm flex justify-between"><span>{t("total")}</span><span className="font-bold">{money(total + prevDue)}</span></div>
             </div>
-            <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
+            <DialogFooter>
+              {hasErrors && <span className="text-xs text-destructive mr-auto self-center">Please fix {Object.keys(errors).length} error(s)</span>}
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
+              <Button onClick={save} disabled={hasErrors}>{t("save")}</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       } />
