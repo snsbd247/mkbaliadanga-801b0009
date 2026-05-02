@@ -43,16 +43,42 @@ export default function FarmerDetail() {
   useEffect(() => { document.title = `${farmer?.name_en ?? ""} — ${t("farmers")}`; }, [farmer, t]);
 
   async function loadAll() {
-    const [f, l, s, ln, ir, sh] = await Promise.all([
+    const [f, l, s, ln, ir, sh, pm] = await Promise.all([
       supabase.from("farmers").select("*, offices(name)").eq("id", id!).maybeSingle(),
       supabase.from("lands").select("*").eq("farmer_id", id!).order("created_at"),
       supabase.from("savings_transactions").select("*").eq("farmer_id", id!).order("txn_date", { ascending: false }),
       supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).order("issued_on", { ascending: false }),
       supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no)").eq("farmer_id", id!).order("entry_date", { ascending: false }),
       supabase.from("shares").select("balance").eq("farmer_id", id!).maybeSingle(),
+      supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, offices(name)").eq("farmer_id", id!).order("created_at", { ascending: false }).limit(200),
     ]);
     setFarmer(f.data); setLands(l.data ?? []); setSavings(s.data ?? []);
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
+    setPayments(pm.data ?? []);
+  }
+
+  function reprintReceipt(p: any) {
+    if (!farmer) return;
+    downloadPaymentReceiptPdf({
+      receipt_no: String(p.id).slice(0, 8).toUpperCase(),
+      payment_id: p.id,
+      paid_at: p.created_at,
+      farmer_name: farmer.name_en,
+      farmer_code: farmer.farmer_code,
+      member_no: farmer.member_no ?? null,
+      mobile_masked: farmer.mobile ? farmer.mobile.replace(/^(\d{3})\d+(\d{2})$/, "$1***$2") : null,
+      village: farmer.village ?? null,
+      token_masked: maskToken("re-print"),
+      token_status: "active",
+      kind: p.kind,
+      amount: Number(p.amount),
+      method: p.method ?? "cash",
+      note: p.note ?? null,
+      idempotency_key: p.idempotency_key ?? "",
+      office_name: p.offices?.name ?? null,
+      company_name: brand.company_name,
+      company_name_bn: brand.company_name_bn,
+    });
   }
 
   async function addLand() {
