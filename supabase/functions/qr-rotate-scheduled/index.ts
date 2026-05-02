@@ -143,6 +143,7 @@ Deno.serve(async (req) => {
       });
 
       rotated.push({ farmer_id: row.farmer_id, old: row.id, new: ins.id });
+      await notify(row.farmer_id, "rotate");
     }
 
     // 2. Sweep tokens whose expires_at has passed → mark revoked.
@@ -163,6 +164,7 @@ Deno.serve(async (req) => {
         entity_id: row.farmer_id,
         new_values: { token_id: row.id, reason: "grace_window_expired" },
       });
+      await notify(row.farmer_id, "revoke");
     }
 
     const summary = { rotated: rotated.length, revoked: revokedCount, ran_at: now.toISOString() };
