@@ -49,13 +49,22 @@ export default function FarmerCard() {
         .eq("id", id).maybeSingle();
       if (error || !f) { toast.error("Farmer not found"); return; }
 
-      const res = await fetch(`${FN}/farmer-card-token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ farmer_id: id, rotate }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) { toast.error(j?.error || "Could not get token"); return; }
+      let j: any = {};
+      try {
+        const res = await fetch(`${FN}/farmer-card-token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ farmer_id: id, rotate }),
+        });
+        j = await res.json().catch(() => ({}));
+        if (!res.ok || j?.fallback || j?.ok === false) {
+          toast.error(j?.error || j?.message || "Could not get token");
+          if (!j?.token) return;
+        }
+      } catch (e: any) {
+        toast.error(e?.message || "Network error");
+        return;
+      }
 
       setData({
         company_name: brand.company_name,
