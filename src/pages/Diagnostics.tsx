@@ -119,8 +119,8 @@ export default function Diagnostics() {
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-muted-foreground">
-                {errors.length === 0 ? "এখনো কোনো RLS error capture হয়নি।" :
-                  `${errors.length} টি সাম্প্রতিক error · ${Object.entries(errorStats).map(([k, v]) => `${k}:${v}`).join(" · ")}`}
+                {errors.length === 0 ? t("noRlsErrorsCaptured") :
+                  t("recentErrorsSummary").replace("{count}", String(errors.length)).replace("{stats}", Object.entries(errorStats).map(([k, v]) => `${k}:${v}`).join(" · "))}
               </div>
               <Button variant="outline" size="sm" onClick={() => { clearRlsErrors(); setErrors([]); }}>
                 <Trash2 className="h-4 w-4 mr-1" />Clear
