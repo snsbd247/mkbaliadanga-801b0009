@@ -78,6 +78,11 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("farmer-card-token error", e);
-    return err(500, "Server error");
+    // Return 200 + fallback signal so the client SDK / fetch caller can read
+    // the body and show a friendly message instead of a blank screen.
+    return new Response(
+      JSON.stringify({ ok: false, error: "SERVICE_FAILED", fallback: true, message: String((e as any)?.message ?? e) }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
