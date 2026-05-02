@@ -19,7 +19,7 @@ export default function Offices() {
   const [list, setList] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", registration_no: "", established_on: "", contact: "", address: "" });
+  const [form, setForm] = useState<{ name: string; registration_no: string; established_on: string; contact: string; address: string; payment_priority: string[] }>({ name: "", registration_no: "", established_on: "", contact: "", address: "", payment_priority: ["irrigation", "loan", "savings"] });
 
   useEffect(() => { document.title = `${t("offices")} — ${t("appName")}`; load(); }, []);
 
@@ -27,8 +27,15 @@ export default function Offices() {
     const { data } = await supabase.from("offices").select("*").order("name");
     setList(data ?? []);
   }
-  function openNew() { setEditing(null); setForm({ name: "", registration_no: "", established_on: "", contact: "", address: "" }); setOpen(true); }
-  function openEdit(o: any) { setEditing(o); setForm({ name: o.name, registration_no: o.registration_no ?? "", established_on: o.established_on ?? "", contact: o.contact ?? "", address: o.address ?? "" }); setOpen(true); }
+  function openNew() { setEditing(null); setForm({ name: "", registration_no: "", established_on: "", contact: "", address: "", payment_priority: ["irrigation", "loan", "savings"] }); setOpen(true); }
+  function openEdit(o: any) { setEditing(o); setForm({ name: o.name, registration_no: o.registration_no ?? "", established_on: o.established_on ?? "", contact: o.contact ?? "", address: o.address ?? "", payment_priority: (o.payment_priority?.length ? o.payment_priority : ["irrigation", "loan", "savings"]) }); setOpen(true); }
+  function movePriority(idx: number, dir: -1 | 1) {
+    const arr = [...form.payment_priority];
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    setForm({ ...form, payment_priority: arr });
+  }
   async function save() {
     if (!form.name) return toast.error("Name required");
     const payload = { ...form, established_on: form.established_on || null };
@@ -60,6 +67,20 @@ export default function Offices() {
               </div>
               <div><Label>{t("contact")}</Label><Input value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} /></div>
               <div><Label>{t("address")}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+              <div>
+                <Label>Payment allocation priority</Label>
+                <p className="text-xs text-muted-foreground mb-2">Auto-allocated payments will be applied to dues in this order.</p>
+                <div className="space-y-1">
+                  {form.payment_priority.map((p, i) => (
+                    <div key={p} className="flex items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5">
+                      <span className="text-xs font-mono w-6">{i + 1}.</span>
+                      <span className="flex-1 capitalize">{p}</span>
+                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => movePriority(i, -1)} disabled={i === 0}>↑</Button>
+                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => movePriority(i, 1)} disabled={i === form.payment_priority.length - 1}>↓</Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
           </DialogContent>

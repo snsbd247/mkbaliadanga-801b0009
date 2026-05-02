@@ -66,8 +66,24 @@ export default function Irrigation() {
 
   const total = +form.base_charge + +form.canal_charge + +form.maintenance_charge + +form.other_charge;
 
+  // Inline validation
+  const errors: Record<string, string> = {};
+  if (open) {
+    if (!form.farmer_id) errors.farmer_id = "Select a farmer";
+    if (!form.land_id) errors.land_id = "Select a land";
+    if (!form.season_id) errors.season_id = "Select a season";
+    if (!(Number(form.rate) > 0)) errors.rate = "Rate must be greater than 0";
+    if (!(Number(form.quantity) > 0)) errors.quantity = "Quantity must be greater than 0";
+    if (Number(form.canal_charge) < 0) errors.canal_charge = "Cannot be negative";
+    if (Number(form.maintenance_charge) < 0) errors.maintenance_charge = "Cannot be negative";
+    if (Number(form.other_charge) < 0) errors.other_charge = "Cannot be negative";
+    if (Number(form.paid_amount) < 0) errors.paid_amount = "Cannot be negative";
+    if (Number(form.paid_amount) > total + prevDue) errors.paid_amount = "Paid cannot exceed total";
+  }
+  const hasErrors = Object.keys(errors).length > 0;
+
   async function save() {
-    if (!form.farmer_id || !form.land_id || !form.season_id) return toast.error("All fields required");
+    if (hasErrors) return toast.error("Please fix the highlighted errors");
     const { error } = await supabase.from("irrigation_charges").insert({
       farmer_id: form.farmer_id, land_id: form.land_id, season_id: form.season_id,
       basis: form.basis as any, quantity: form.quantity,
@@ -118,13 +134,37 @@ export default function Irrigation() {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>{form.basis === "per_size" ? `${t("quantity")} (auto = land size)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label><Input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} /></div>
-              <div><Label>Rate / unit</Label><Input type="number" step="0.01" value={form.rate} onChange={e => setForm({ ...form, rate: +e.target.value })} /></div>
+              <div>
+                <Label>{form.basis === "per_size" ? `${t("quantity")} (auto = land size)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label>
+                <Input type="number" step="0.01" min="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} aria-invalid={!!errors.quantity} className={errors.quantity ? "border-destructive" : ""} />
+                {errors.quantity && <p className="text-xs text-destructive mt-1">{errors.quantity}</p>}
+              </div>
+              <div>
+                <Label>Rate / unit</Label>
+                <Input type="number" step="0.01" min="0.01" value={form.rate} onChange={e => setForm({ ...form, rate: +e.target.value })} aria-invalid={!!errors.rate} className={errors.rate ? "border-destructive" : ""} />
+                {errors.rate && <p className="text-xs text-destructive mt-1">{errors.rate}</p>}
+              </div>
               <div className="col-span-2"><Label>{t("baseCharge")} (= rate × qty)</Label><Input type="number" value={form.base_charge} readOnly className="bg-muted" /></div>
-              <div><Label>{t("canalCharge")}</Label><Input type="number" value={form.canal_charge} onChange={e => setForm({ ...form, canal_charge: +e.target.value })} /></div>
-              <div><Label>{t("maintenanceCharge")}</Label><Input type="number" value={form.maintenance_charge} onChange={e => setForm({ ...form, maintenance_charge: +e.target.value })} /></div>
-              <div><Label>{t("otherCharge")}</Label><Input type="number" value={form.other_charge} onChange={e => setForm({ ...form, other_charge: +e.target.value })} /></div>
-              <div><Label>{t("paidAmount")}</Label><Input type="number" value={form.paid_amount} onChange={e => setForm({ ...form, paid_amount: +e.target.value })} /></div>
+              <div>
+                <Label>{t("canalCharge")}</Label>
+                <Input type="number" min="0" value={form.canal_charge} onChange={e => setForm({ ...form, canal_charge: +e.target.value })} className={errors.canal_charge ? "border-destructive" : ""} />
+                {errors.canal_charge && <p className="text-xs text-destructive mt-1">{errors.canal_charge}</p>}
+              </div>
+              <div>
+                <Label>{t("maintenanceCharge")}</Label>
+                <Input type="number" min="0" value={form.maintenance_charge} onChange={e => setForm({ ...form, maintenance_charge: +e.target.value })} className={errors.maintenance_charge ? "border-destructive" : ""} />
+                {errors.maintenance_charge && <p className="text-xs text-destructive mt-1">{errors.maintenance_charge}</p>}
+              </div>
+              <div>
+                <Label>{t("otherCharge")}</Label>
+                <Input type="number" min="0" value={form.other_charge} onChange={e => setForm({ ...form, other_charge: +e.target.value })} className={errors.other_charge ? "border-destructive" : ""} />
+                {errors.other_charge && <p className="text-xs text-destructive mt-1">{errors.other_charge}</p>}
+              </div>
+              <div>
+                <Label>{t("paidAmount")}</Label>
+                <Input type="number" min="0" value={form.paid_amount} onChange={e => setForm({ ...form, paid_amount: +e.target.value })} className={errors.paid_amount ? "border-destructive" : ""} />
+                {errors.paid_amount && <p className="text-xs text-destructive mt-1">{errors.paid_amount}</p>}
+              </div>
               <div><Label>{t("date")}</Label><Input type="date" value={form.entry_date} onChange={e => setForm({ ...form, entry_date: e.target.value })} /></div>
               <div className="col-span-2 rounded-md border border-dashed p-2 text-sm flex justify-between">
                 <span className="text-muted-foreground">{t("previousDue") || "Previous due (auto)"}</span>
@@ -132,7 +172,11 @@ export default function Irrigation() {
               </div>
               <div className="col-span-2 rounded-md bg-muted p-2 text-sm flex justify-between"><span>{t("total")}</span><span className="font-bold">{money(total + prevDue)}</span></div>
             </div>
-            <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
+            <DialogFooter>
+              {hasErrors && <span className="text-xs text-destructive mr-auto self-center">Please fix {Object.keys(errors).length} error(s)</span>}
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
+              <Button onClick={save} disabled={hasErrors}>{t("save")}</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       } />

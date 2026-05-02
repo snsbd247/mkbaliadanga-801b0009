@@ -39,10 +39,20 @@ export default function Payments() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
+  const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
+  const [autoAmount, setAutoAmount] = useState<number>(0);
 
-  useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); }, []);
+  useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
   useEffect(() => { if (farmerId) loadDues(); else { setOpenLoans([]); setOpenIrr([]); } }, [farmerId]);
   useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
+
+  async function loadPriority() {
+    if (!user) return;
+    const { data: prof } = await supabase.from("profiles").select("office_id").eq("id", user.id).maybeSingle();
+    if (!prof?.office_id) return;
+    const { data: off } = await supabase.from("offices").select("payment_priority").eq("id", prof.office_id).maybeSingle();
+    if (off?.payment_priority?.length) setPriority(off.payment_priority as string[]);
+  }
 
   async function checkRole() {
     if (!user) return;
@@ -173,6 +183,55 @@ export default function Payments() {
     setAllocs(prev => prev.map((a, idx) => idx === i ? { ...a, ...patch } : a));
   }
 
+  function autoAllocate() {
+    const amt = Number(autoAmount);
+    if (!farmerId) return toast.error("Pick a farmer");
+    if (!(amt > 0)) return toast.error("Enter amount to auto-allocate");
+
+    // Build queue per priority with oldest-first dues
+    const queues: Record<string, { reference_id: string; due: number }[]> = {
+      irrigation: [...openIrr]
+        .sort((a, b) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime())
+        .map(i => ({ reference_id: i.id, due: Number(i.due_amount || 0) }))
+        .filter(x => x.due > 0),
+      loan: [...openLoans]
+        .map(l => {
+          const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+          return { reference_id: l.id, due: Math.max(0, Number(l.total_payable || 0) - paid), issued_on: l.issued_on };
+        })
+        .filter(x => x.due > 0)
+        .sort((a, b) => new Date(a.issued_on).getTime() - new Date(b.issued_on).getTime()),
+      savings: [], // savings = deposit, no "due"; consumes remainder
+    };
+
+    let remaining = amt;
+    const out: Allocation[] = [];
+    for (const kind of priority) {
+      if (remaining <= 0) break;
+      if (kind === "savings") {
+        out.push({ kind: "savings", reference_id: "", amount: +remaining.toFixed(2) });
+        remaining = 0;
+        break;
+      }
+      const q = queues[kind] ?? [];
+      for (const item of q) {
+        if (remaining <= 0) break;
+        const take = Math.min(remaining, item.due);
+        if (take > 0) {
+          out.push({ kind: kind as any, reference_id: item.reference_id, amount: +take.toFixed(2) });
+          remaining -= take;
+        }
+      }
+    }
+    if (remaining > 0) {
+      // Surplus → savings deposit
+      out.push({ kind: "savings", reference_id: "", amount: +remaining.toFixed(2) });
+    }
+    if (!out.length) return toast.error("No outstanding dues to allocate");
+    setAllocs(out);
+    toast.success(`Allocated to ${out.length} target(s) using office priority: ${priority.join(" → ")}`);
+  }
+
   return (
     <>
       <PageHeader title={t("payments")} description="Unified payment — splits across loan, savings & irrigation in one entry" />
@@ -193,6 +252,17 @@ export default function Payments() {
                 <div className="font-semibold uppercase text-[10px] text-muted-foreground">Outstanding dues</div>
                 <div className="flex justify-between"><span>Irrigation</span><span className="font-mono">{money(openIrr.reduce((s, x) => s + Number(x.due_amount || 0), 0))}</span></div>
                 <div className="flex justify-between"><span>Loans</span><span className="font-mono">{money(openLoans.reduce((s, l) => s + (Number(l.total_payable) - (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0)), 0))}</span></div>
+              </div>
+            )}
+
+            {farmerId && (
+              <div className="rounded-md border border-dashed p-2 space-y-2">
+                <div className="text-[10px] uppercase font-semibold text-muted-foreground">Auto-allocate (priority: {priority.join(" → ")})</div>
+                <div className="flex gap-2">
+                  <Input type="number" min="0" placeholder="Total amount" value={autoAmount || ""} onChange={(e) => setAutoAmount(+e.target.value)} />
+                  <Button type="button" variant="secondary" onClick={autoAllocate}>Apply</Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Configurable per office in Settings → Offices.</p>
               </div>
             )}
 

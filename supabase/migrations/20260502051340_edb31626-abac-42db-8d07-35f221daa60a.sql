@@ -1,0 +1,1 @@
+ALTER TABLE public.offices ADD COLUMN IF NOT EXISTS payment_priority text[] NOT NULL DEFAULT ARRAY['irrigation','loan','savings']::text[];

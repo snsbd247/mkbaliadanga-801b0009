@@ -167,13 +167,21 @@ export default function Reports() {
   }, [irr, loanPayments, savings, payments]);
 
   // --- Irrigation Arrears (per charge with due > 0, aged) ---
+  // Age is computed as the difference (in whole days) between today and entry_date,
+  // using UTC date-only arithmetic so the bucket does not flip with the user's
+  // timezone or daylight-saving transitions.
   const arrears = useMemo(() => {
-    const today = Date.now();
+    const now = new Date();
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     return irr
       .filter((r: any) => Number(r.due_amount || 0) > 0)
       .map((r: any) => {
-        const days = Math.max(0, Math.floor((today - new Date(r.entry_date).getTime()) / 86400000));
-        const bucket = days <= 30 ? "0-30" : days <= 60 ? "30-60" : days <= 90 ? "60-90" : "90+";
+        // entry_date is a postgres DATE serialized as 'YYYY-MM-DD'
+        const ds = String(r.entry_date || "").slice(0, 10);
+        const [y, m, d] = ds.split("-").map(Number);
+        const entryUTC = Number.isFinite(y) ? Date.UTC(y, (m || 1) - 1, d || 1) : NaN;
+        const days = Number.isFinite(entryUTC) ? Math.max(0, Math.round((todayUTC - entryUTC) / 86400000)) : 0;
+        const bucket = days <= 30 ? "0-30" : days <= 60 ? "31-60" : days <= 90 ? "61-90" : "90+";
         return {
           date: r.entry_date,
           code: r.farmers?.farmer_code ?? "—",
@@ -183,6 +191,7 @@ export default function Reports() {
           total: Number(r.total || 0),
           paid: Number(r.paid_amount || 0),
           due: Number(r.due_amount || 0),
+          office_id: r.office_id,
           days, bucket,
         };
       })
@@ -454,8 +463,11 @@ export default function Reports() {
             onXlsx={() => exportExcel("irrigation-arrears", "Arrears",
               arrears.map(r => ({ Date: r.date, Code: r.code, Farmer: r.name, Season: r.season, Dag: r.dag, Total: r.total, Paid: r.paid, Due: r.due, AgeDays: r.days, Bucket: r.bucket })))}
           />
+          <p className="text-xs text-muted-foreground mb-2">
+            Filters above (date range, office, farmer, season) apply to this report. Aging buckets are computed in UTC from <span className="font-mono">entry_date</span>.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
-            {(["0-30", "30-60", "60-90", "90+"] as const).map(b => {
+            {(["0-30", "31-60", "61-90", "90+"] as const).map(b => {
               const sum = arrears.filter(r => r.bucket === b).reduce((a, r) => a + r.due, 0);
               return (
                 <Card key={b} className="p-3"><div className="text-xs uppercase text-muted-foreground">{b} days</div><div className="text-lg font-bold">{money(sum)}</div></Card>
