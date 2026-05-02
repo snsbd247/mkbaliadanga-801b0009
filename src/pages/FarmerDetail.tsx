@@ -152,6 +152,7 @@ export default function FarmerDetail() {
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           <TabsTrigger value="loans">{t("loans")}</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lands">
