@@ -44,6 +44,42 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          company_name: string
+          company_name_bn: string | null
+          default_loan_interest: number
+          email: string | null
+          id: number
+          logo_url: string | null
+          mobile: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string
+          company_name_bn?: string | null
+          default_loan_interest?: number
+          email?: string | null
+          id?: number
+          logo_url?: string | null
+          mobile?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_name?: string
+          company_name_bn?: string | null
+          default_loan_interest?: number
+          email?: string | null
+          id?: number
+          logo_url?: string | null
+          mobile?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       farmers: {
         Row: {
           address: string | null
@@ -338,6 +374,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          link: string | null
+          read: boolean
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          link?: string | null
+          read?: boolean
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          read?: boolean
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       offices: {
         Row: {
           address: string | null
@@ -424,6 +493,7 @@ export type Database = {
           language_pref: string
           office_id: string | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           created_at?: string
@@ -433,6 +503,7 @@ export type Database = {
           language_pref?: string
           office_id?: string | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           created_at?: string
@@ -442,6 +513,7 @@ export type Database = {
           language_pref?: string
           office_id?: string | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: [
           {
@@ -553,6 +625,36 @@ export type Database = {
           },
         ]
       }
+      user_permissions: {
+        Row: {
+          can_add: boolean
+          can_delete: boolean
+          can_edit: boolean
+          can_view: boolean
+          id: string
+          module: string
+          user_id: string
+        }
+        Insert: {
+          can_add?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          id?: string
+          module: string
+          user_id: string
+        }
+        Update: {
+          can_add?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          id?: string
+          module?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -577,6 +679,7 @@ export type Database = {
     }
     Functions: {
       current_user_office: { Args: never; Returns: string }
+      email_for_username: { Args: { _username: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
