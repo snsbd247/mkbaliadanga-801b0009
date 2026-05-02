@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
 import { Navigate } from "react-router-dom";
@@ -7,11 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { RefreshCw, Send, Megaphone } from "lucide-react";
+import { RefreshCw, Send, Megaphone, Bell } from "lucide-react";
 
 type Log = {
   id: string;
@@ -23,35 +25,80 @@ type Log = {
   retry_count: number;
   sent_at: string | null;
   created_at: string;
+  farmer_id: string | null;
+  office_id: string | null;
 };
+type Office = { id: string; name: string };
+
+const EVENT_TYPES = [
+  "all",
+  "savings_deposit",
+  "savings_withdraw",
+  "loan_approved",
+  "loan_payment",
+  "irrigation_payment",
+  "due_reminder_loan",
+  "due_reminder_irrigation",
+  "bulk",
+  "manual",
+];
 
 export default function SmsLogs() {
   const { isAdmin, isSuper } = useAuth();
   const allowed = isAdmin || isSuper;
   const [logs, setLogs] = useState<Log[]>([]);
+  const [offices, setOffices] = useState<Office[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [bulkMobiles, setBulkMobiles] = useState("");
-  const [bulkMessage, setBulkMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { document.title = "SMS Logs"; if (allowed) load(); }, [allowed, statusFilter]);
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [eventFilter, setEventFilter] = useState<string>("all");
+  const [officeFilter, setOfficeFilter] = useState<string>("all");
+  const [farmerSearch, setFarmerSearch] = useState<string>(""); // mobile or farmer code text match
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+
+  // Bulk
+  const [bulkMobiles, setBulkMobiles] = useState("");
+  const [bulkMessage, setBulkMessage] = useState("");
+
+  useEffect(() => {
+    document.title = "SMS Logs";
+    if (!allowed) return;
+    supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data as any) ?? []));
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowed, statusFilter, eventFilter, officeFilter, fromDate, toDate]);
 
   async function load() {
     setLoading(true);
-    let q = supabase.from("sms_logs").select("*").order("created_at", { ascending: false }).limit(200);
+    let q = supabase.from("sms_logs").select("*").order("created_at", { ascending: false }).limit(300);
     if (statusFilter !== "all") q = q.eq("status", statusFilter);
+    if (eventFilter !== "all") q = q.eq("event_type", eventFilter);
+    if (officeFilter !== "all") q = q.eq("office_id", officeFilter);
+    if (fromDate) q = q.gte("created_at", new Date(fromDate).toISOString());
+    if (toDate) {
+      const end = new Date(toDate); end.setHours(23, 59, 59, 999);
+      q = q.lte("created_at", end.toISOString());
+    }
     const { data, error } = await q;
     setLoading(false);
     if (error) return toast.error(error.message);
     setLogs((data as any) ?? []);
   }
 
+  const filtered = useMemo(() => {
+    if (!farmerSearch.trim()) return logs;
+    const q = farmerSearch.trim().toLowerCase();
+    return logs.filter((l) => l.mobile?.toLowerCase().includes(q) || (l.farmer_id ?? "").toLowerCase().includes(q));
+  }, [logs, farmerSearch]);
+
   if (!allowed) return <Navigate to="/" replace />;
 
   async function retryOne(id: string) {
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke("send-sms", { body: { retry: true, ids: [id] } });
+    const { error } = await supabase.functions.invoke("send-sms", { body: { retry: true, ids: [id] } });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Retried");
@@ -64,6 +111,16 @@ export default function SmsLogs() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Retry batch sent");
+    load();
+  }
+
+  async function runDueReminders() {
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke("sms-due-reminders", { body: { source: "manual" } });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    const r = data as any;
+    toast.success(`Reminders queued — loan: ${r?.loan ?? 0}, irrigation: ${r?.irrigation ?? 0}, dedup-skipped: ${r?.skipped_dup ?? 0}`);
     load();
   }
 
@@ -86,14 +143,20 @@ export default function SmsLogs() {
     return <Badge variant="secondary">queued</Badge>;
   };
 
+  function clearFilters() {
+    setStatusFilter("all"); setEventFilter("all"); setOfficeFilter("all");
+    setFarmerSearch(""); setFromDate(""); setToDate("");
+  }
+
   return (
     <>
       <PageHeader
         title="SMS Logs"
-        description="Delivery history and bulk announcements"
+        description="Delivery history, due reminders, and bulk announcements"
         actions={
           <div className="btn-group-responsive">
             <Button variant="outline" size="sm" onClick={load}><RefreshCw className="mr-1 h-4 w-4"/>Refresh</Button>
+            <Button variant="outline" size="sm" onClick={runDueReminders} disabled={busy}><Bell className="mr-1 h-4 w-4"/>Run Reminders</Button>
             <Button size="sm" onClick={retryAllFailed} disabled={busy}><Send className="mr-1 h-4 w-4"/>Retry failed</Button>
           </div>
         }
@@ -106,13 +169,57 @@ export default function SmsLogs() {
         </TabsList>
 
         <TabsContent value="logs" className="mt-4 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {["all", "sent", "failed", "queued"].map((s) => (
-              <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)}>
-                {s}
-              </Button>
-            ))}
-          </div>
+          <Card>
+            <CardContent className="p-3 sm:p-4">
+              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                <div>
+                  <Label className="text-xs">Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      {["all","sent","failed","queued"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Event</Label>
+                  <Select value={eventFilter} onValueChange={setEventFilter}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      {EVENT_TYPES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Office</Label>
+                  <Select value={officeFilter} onValueChange={setOfficeFilter}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All offices</SelectItem>
+                      {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">From</Label>
+                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">To</Label>
+                  <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Mobile / Farmer</Label>
+                  <Input placeholder="search…" value={farmerSearch} onChange={(e) => setFarmerSearch(e.target.value)} />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                <span>{filtered.length} record{filtered.length === 1 ? "" : "s"}</span>
+                <Button variant="ghost" size="sm" onClick={clearFilters}>Clear filters</Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardContent className="p-0">
               <div className="table-responsive">
@@ -131,9 +238,9 @@ export default function SmsLogs() {
                   <TableBody>
                     {loading ? (
                       <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Loading…</TableCell></TableRow>
-                    ) : logs.length === 0 ? (
+                    ) : filtered.length === 0 ? (
                       <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No SMS logs</TableCell></TableRow>
-                    ) : logs.map((l) => (
+                    ) : filtered.map((l) => (
                       <TableRow key={l.id}>
                         <TableCell className="whitespace-nowrap">{new Date(l.created_at).toLocaleString()}</TableCell>
                         <TableCell className="font-mono text-xs">{l.mobile}</TableCell>
@@ -160,7 +267,7 @@ export default function SmsLogs() {
             <CardHeader><CardTitle className="text-base">Bulk Announcement</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <label className="text-sm font-medium">Mobile numbers</label>
+                <Label className="text-sm font-medium">Mobile numbers</Label>
                 <Textarea
                   rows={4}
                   placeholder="017XXXXXXXX, 018XXXXXXXX  (or one per line)"
@@ -170,7 +277,7 @@ export default function SmsLogs() {
                 <p className="text-xs text-muted-foreground mt-1">Comma, space, or newline separated.</p>
               </div>
               <div>
-                <label className="text-sm font-medium">Message</label>
+                <Label className="text-sm font-medium">Message</Label>
                 <Textarea rows={4} value={bulkMessage} onChange={(e) => setBulkMessage(e.target.value)} placeholder="Announcement text…" />
               </div>
               <Button onClick={sendBulk} disabled={busy} className="w-full sm:w-auto">
