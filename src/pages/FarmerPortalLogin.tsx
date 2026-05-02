@@ -54,7 +54,7 @@ export default function FarmerPortalLogin() {
     e.preventDefault();
     setError(null);
     const id = identifier.trim();
-    if (!id || id.length < 3) { setError("Please enter your Farmer ID or Member No."); return; }
+    if (!id || id.length < 3) { setError(t("enterFarmerIdError")); return; }
     setBusy(true);
     try {
       const res = await fetch(`${FN_BASE}/farmer-request-otp`, {
