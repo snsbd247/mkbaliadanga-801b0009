@@ -224,12 +224,8 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   // Footer note
   doc.setTextColor(0);
   doc.setFontSize(7);
-  const footer = tpl.language === "bn" ? tpl.footer_note_bn : tpl.footer_note;
+  const footer = tpl.footer_note;
   doc.text(footer, pageW / 2, pageH - margin, { align: "center" });
-  if (showBoth && tpl.footer_note_bn) {
-    doc.setFont("helvetica", "italic");
-    doc.text(tpl.footer_note_bn, pageW / 2, pageH - margin - 3, { align: "center" });
-  }
   return doc;
 }
 
