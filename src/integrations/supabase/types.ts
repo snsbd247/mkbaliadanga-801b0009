@@ -404,6 +404,45 @@ export type Database = {
         }
         Relationships: []
       }
+      farmer_rejections: {
+        Row: {
+          attempted: Json
+          created_at: string
+          error_message: string
+          failed_level: string
+          farmer_id: string | null
+          id: string
+          office_id: string | null
+          operation: string
+          reason: string
+          user_id: string | null
+        }
+        Insert: {
+          attempted: Json
+          created_at?: string
+          error_message: string
+          failed_level: string
+          farmer_id?: string | null
+          id?: string
+          office_id?: string | null
+          operation: string
+          reason: string
+          user_id?: string | null
+        }
+        Update: {
+          attempted?: Json
+          created_at?: string
+          error_message?: string
+          failed_level?: string
+          farmer_id?: string | null
+          id?: string
+          office_id?: string | null
+          operation?: string
+          reason?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       farmers: {
         Row: {
           address: string | null
@@ -2270,6 +2309,19 @@ export type Database = {
           id: string
           office_id: string
         }[]
+      }
+      log_farmer_rejection: {
+        Args: {
+          _attempted: Json
+          _error_message: string
+          _failed_level: string
+          _farmer_id: string
+          _office_id: string
+          _operation: string
+          _reason: string
+          _user_id: string
+        }
+        Returns: undefined
       }
       reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
       retire_sms_token: { Args: { _id: string }; Returns: undefined }
