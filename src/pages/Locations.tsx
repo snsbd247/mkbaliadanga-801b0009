@@ -59,7 +59,7 @@ function LevelTab({ level }: { level: Level }) {
     if (parent.col && !parentId) return toast.error(`Pick a ${parent.label}`);
     const payload: any = { name: name.trim(), name_bn: nameBn.trim() || null };
     if (parent.col) payload[parent.col] = parentId;
-    const { error } = await supabase.from(level).insert(payload);
+    const { error } = await (supabase.from as any)(level).insert(payload);
     if (error) return toast.error(error.message);
     toast.success("Added");
     setName(""); setNameBn("");
