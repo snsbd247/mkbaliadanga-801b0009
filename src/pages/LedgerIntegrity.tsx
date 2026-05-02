@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { money } from "@/lib/format";
+import { useLang } from "@/i18n/LanguageProvider";
 import { RefreshCw, ShieldAlert, ShieldCheck, ExternalLink } from "lucide-react";
 
 const REF_TO_PATH: Record<string, string> = {
@@ -19,6 +20,7 @@ const REF_TO_PATH: Record<string, string> = {
 };
 
 export default function LedgerIntegrity() {
+  const { t } = useLang();
   const [unbalanced, setUnbalanced] = useState<any[]>([]);
   const [orphans, setOrphans] = useState<any[]>([]);
   const [missingAccts, setMissingAccts] = useState<any[]>([]);
@@ -50,12 +52,12 @@ export default function LedgerIntegrity() {
   return (
     <div className="container mx-auto p-4 space-y-4">
       <PageHeader
-        title="Ledger Integrity Check"
-        description="Unbalanced postings, orphan references, and missing accounts"
+        title={t("ledgerIntegrityCheck")}
+        description={t("ledgerIntegrityDesc")}
         actions={
           <Button onClick={runCheck} disabled={loading} size="sm">
             <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Run Integrity Check
+            {t("runIntegrityCheck")}
           </Button>
         }
       />
@@ -69,18 +71,18 @@ export default function LedgerIntegrity() {
               : <ShieldAlert className={`h-8 w-8 ${totalIssues > 0 ? "text-destructive" : "text-muted-foreground"}`} />}
             <div>
               <div className="font-semibold">
-                {loading ? "Running checks…" : allClear ? "All checks passed" : `${totalIssues} issue(s) found`}
+                {loading ? t("runningChecks") : allClear ? t("allChecksPassed") : `${totalIssues} ${t("issuesFound")}`}
               </div>
               <div className="text-xs text-muted-foreground">
-                {summary?.total_entries ?? 0} ledger entries scanned
-                {lastRun && ` · last run ${lastRun.toLocaleTimeString()}`}
+                {summary?.total_entries ?? 0} {t("ledgerEntriesScanned")}
+                {lastRun && ` · ${t("lastRun")} ${lastRun.toLocaleTimeString()}`}
               </div>
             </div>
           </div>
           <div className="flex gap-2">
-            <Stat label="Unbalanced" value={unbalanced.length} />
-            <Stat label="Orphan" value={orphans.length} />
-            <Stat label="No account" value={missingAccts.length} />
+            <Stat label={t("unbalanced")} value={unbalanced.length} />
+            <Stat label={t("orphan")} value={orphans.length} />
+            <Stat label={t("noAccount")} value={missingAccts.length} />
           </div>
         </CardContent>
       </Card>
@@ -89,21 +91,21 @@ export default function LedgerIntegrity() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            Unbalanced postings <Badge variant={unbalanced.length === 0 ? "secondary" : "destructive"}>{unbalanced.length}</Badge>
+            {t("unbalancedPostings")} <Badge variant={unbalanced.length === 0 ? "secondary" : "destructive"}>{unbalanced.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {unbalanced.length === 0 ? (
-            <p className="text-sm text-primary">✅ All references are balanced.</p>
+            <p className="text-sm text-primary">✅ {t("allReferencesBalanced")}</p>
           ) : (
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Reference Type</TableHead>
-                <TableHead>Reference ID</TableHead>
-                <TableHead className="text-right">Debit</TableHead>
-                <TableHead className="text-right">Credit</TableHead>
-                <TableHead className="text-right">Diff</TableHead>
-                <TableHead className="text-right">Fix</TableHead>
+                <TableHead>{t("referenceType")}</TableHead>
+                <TableHead>{t("referenceId")}</TableHead>
+                <TableHead className="text-right">{t("debit")}</TableHead>
+                <TableHead className="text-right">{t("credit")}</TableHead>
+                <TableHead className="text-right">{t("diff")}</TableHead>
+                <TableHead className="text-right">{t("fix")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {unbalanced.map((r, i) => (
@@ -128,19 +130,19 @@ export default function LedgerIntegrity() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            Orphan references <Badge variant={orphans.length === 0 ? "secondary" : "destructive"}>{orphans.length}</Badge>
+            {t("orphanReferences")} <Badge variant={orphans.length === 0 ? "secondary" : "destructive"}>{orphans.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {orphans.length === 0 ? (
-            <p className="text-sm text-primary">✅ Every ledger entry points to an existing source row.</p>
+            <p className="text-sm text-primary">✅ {t("everyEntryHasSource")}</p>
           ) : (
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Reference Type</TableHead>
-                <TableHead>Reference ID</TableHead>
-                <TableHead className="text-right">Entries</TableHead>
-                <TableHead className="text-right">Fix</TableHead>
+                <TableHead>{t("referenceType")}</TableHead>
+                <TableHead>{t("referenceId")}</TableHead>
+                <TableHead className="text-right">{t("entries")}</TableHead>
+                <TableHead className="text-right">{t("fix")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {orphans.map((r, i) => (
@@ -150,7 +152,7 @@ export default function LedgerIntegrity() {
                     <TableCell className="text-right">{r.entry_count}</TableCell>
                     <TableCell className="text-right">
                       <Link to={`/ledger?ref=${r.reference_id}`}>
-                        <Button size="sm" variant="ghost" className="h-7"><ExternalLink className="h-3 w-3 mr-1" />Open ledger</Button>
+                        <Button size="sm" variant="ghost" className="h-7"><ExternalLink className="h-3 w-3 mr-1" />{t("openLedger")}</Button>
                       </Link>
                     </TableCell>
                   </TableRow>
@@ -165,16 +167,16 @@ export default function LedgerIntegrity() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            Missing account links <Badge variant={missingAccts.length === 0 ? "secondary" : "destructive"}>{missingAccts.length}</Badge>
+            {t("missingAccountLinks")} <Badge variant={missingAccts.length === 0 ? "secondary" : "destructive"}>{missingAccts.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {missingAccts.length === 0 ? (
-            <p className="text-sm text-primary">✅ All entries reference an existing account.</p>
+            <p className="text-sm text-primary">✅ {t("allEntriesHaveAccount")}</p>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-destructive">{missingAccts.length} entries have no account_id.</p>
-              <Link to="/accounts"><Button size="sm" variant="outline">Open Chart of Accounts</Button></Link>
+              <p className="text-sm text-destructive">{missingAccts.length} {t("entriesWithoutAccountId")}</p>
+              <Link to="/accounts"><Button size="sm" variant="outline">{t("openChartOfAccounts")}</Button></Link>
             </div>
           )}
         </CardContent>
