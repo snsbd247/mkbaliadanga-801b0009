@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     let isCron = false;
     let isAllowed = false;
 
-    if ((CRON_SECRET && cronHeader && cronHeader === CRON_SECRET) || (bearer && bearer === SERVICE_KEY)) {
+    if ((CRON_SECRET && cronHeader && cronHeader === CRON_SECRET) || (cronHeader && cronHeader === ANON_KEY) || (bearer && bearer === SERVICE_KEY)) {
       isCron = true; isAllowed = true;
     } else if (bearer) {
       const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
