@@ -66,8 +66,25 @@ export default function Irrigation() {
 
   const total = +form.base_charge + +form.canal_charge + +form.maintenance_charge + +form.other_charge;
 
+  // Inline validation
+  const errors: Record<string, string> = {};
+  if (form.farmer_id === "" && open) {} // no-op
+  if (open) {
+    if (!form.farmer_id) errors.farmer_id = "Select a farmer";
+    if (!form.land_id) errors.land_id = "Select a land";
+    if (!form.season_id) errors.season_id = "Select a season";
+    if (!(Number(form.rate) > 0)) errors.rate = "Rate must be greater than 0";
+    if (!(Number(form.quantity) > 0)) errors.quantity = "Quantity must be greater than 0";
+    if (Number(form.canal_charge) < 0) errors.canal_charge = "Cannot be negative";
+    if (Number(form.maintenance_charge) < 0) errors.maintenance_charge = "Cannot be negative";
+    if (Number(form.other_charge) < 0) errors.other_charge = "Cannot be negative";
+    if (Number(form.paid_amount) < 0) errors.paid_amount = "Cannot be negative";
+    if (Number(form.paid_amount) > total + prevDue) errors.paid_amount = "Paid cannot exceed total";
+  }
+  const hasErrors = Object.keys(errors).length > 0;
+
   async function save() {
-    if (!form.farmer_id || !form.land_id || !form.season_id) return toast.error("All fields required");
+    if (hasErrors) return toast.error("Please fix the highlighted errors");
     const { error } = await supabase.from("irrigation_charges").insert({
       farmer_id: form.farmer_id, land_id: form.land_id, season_id: form.season_id,
       basis: form.basis as any, quantity: form.quantity,
