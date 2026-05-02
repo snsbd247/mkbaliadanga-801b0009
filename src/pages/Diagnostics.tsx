@@ -82,6 +82,19 @@ export default function Diagnostics() {
     setIsoBusy(false);
   }
 
+  async function runIntegrityScan() {
+    setScanBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("data-integrity-scan", { body: {} });
+      if (error) throw error;
+      setScan(data?.report ?? null);
+    } catch (e: any) {
+      setScan({ error: e?.message ?? String(e) });
+    } finally {
+      setScanBusy(false);
+    }
+  }
+
   const errorStats = useMemo(() => {
     const byCode: Record<string, number> = {};
     errors.forEach(e => { const k = e.code || `HTTP ${e.status}`; byCode[k] = (byCode[k] || 0) + 1; });
