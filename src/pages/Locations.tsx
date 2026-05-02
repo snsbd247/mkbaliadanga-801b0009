@@ -94,6 +94,7 @@ function CascadeFilters({
   onChange: (v: Chain) => void;
   showLeafFilter?: boolean;
 }) {
+  const { t } = useLang();
   const chain = CHAIN[level];
   const [opts, setOpts] = useState<Record<string, Row[]>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
