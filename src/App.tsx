@@ -54,6 +54,7 @@ import DemoReset from "./pages/admin/DemoReset";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
 import NotFound from "./pages/NotFound.tsx";
+import { RequirePerm } from "./components/auth/RequirePerm";
 
 const queryClient = new QueryClient();
 
@@ -89,23 +90,23 @@ const App = () => (
                 <Route path="/users" element={<Users />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/scan" element={<Scan />} />
-                <Route path="/cashbook" element={<Cashbook />} />
+                <Route path="/cashbook" element={<RequirePerm module="cashbook"><Cashbook /></RequirePerm>} />
                 <Route path="/statement" element={<Statement />} />
                 <Route path="/dues" element={<Dues />} />
                 <Route path="/backup" element={<Backup />} />
                 <Route path="/audit" element={<AuditLogs />} />
                 <Route path="/diagnostics" element={<Diagnostics />} />
-                <Route path="/accounts" element={<Accounts />} />
-                <Route path="/ledger" element={<Ledger />} />
-                <Route path="/financial-reports" element={<FinancialReports />} />
-                <Route path="/journal-entry" element={<JournalEntry />} />
-                <Route path="/ledger-integrity" element={<LedgerIntegrity />} />
-                <Route path="/approvals" element={<Approvals />} />
-                <Route path="/period-close" element={<PeriodClose />} />
-                <Route path="/finance-summary" element={<FinanceSummary />} />
+                <Route path="/accounts" element={<RequirePerm module="accounting"><Accounts /></RequirePerm>} />
+                <Route path="/ledger" element={<RequirePerm module="accounting"><Ledger /></RequirePerm>} />
+                <Route path="/financial-reports" element={<RequirePerm module="accounting"><FinancialReports /></RequirePerm>} />
+                <Route path="/journal-entry" element={<RequirePerm module="accounting" action="can_add"><JournalEntry /></RequirePerm>} />
+                <Route path="/ledger-integrity" element={<RequirePerm module="accounting"><LedgerIntegrity /></RequirePerm>} />
+                <Route path="/approvals" element={<RequirePerm module="approvals"><Approvals /></RequirePerm>} />
+                <Route path="/period-close" element={<RequirePerm module="accounting" action="can_edit"><PeriodClose /></RequirePerm>} />
+                <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
                 
                 <Route path="/sms-settings" element={<SmsSettings />} />
-                <Route path="/sms-logs" element={<SmsLogs />} />
+                <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />
                 <Route path="/locations" element={<Locations />} />
                 <Route path="/admin/reconciliation" element={<LedgerReconciliation />} />
                 <Route path="/admin/qr-rotation" element={<QrRotation />} />

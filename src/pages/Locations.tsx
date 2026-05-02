@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Trash2, MapPin } from "lucide-react";
 
-type Level = "divisions" | "districts" | "upazilas" | "unions" | "wards" | "mouzas";
+type Level = "divisions" | "districts" | "upazilas" | "unions" | "wards" | "villages" | "mouzas";
 type Row = any;
 
 const PARENT: Record<Level, { table?: Level; col?: string; label?: string }> = {
@@ -22,6 +22,7 @@ const PARENT: Record<Level, { table?: Level; col?: string; label?: string }> = {
   upazilas: { table: "districts", col: "district_id", label: "District" },
   unions:   { table: "upazilas",  col: "upazila_id",  label: "Upazila" },
   wards:    { table: "unions",    col: "union_id",    label: "Union" },
+  villages: { table: "unions",    col: "union_id",    label: "Union" },
   mouzas:   { table: "unions",    col: "union_id",    label: "Union" },
 };
 
@@ -181,6 +182,7 @@ export default function Locations() {
           <TabsTrigger value="upazilas">Upazilas</TabsTrigger>
           <TabsTrigger value="unions">Unions</TabsTrigger>
           <TabsTrigger value="wards">Wards</TabsTrigger>
+          <TabsTrigger value="villages">Villages</TabsTrigger>
           <TabsTrigger value="mouzas">Mouzas</TabsTrigger>
         </TabsList>
         <TabsContent value="divisions" className="mt-4"><LevelTab level="divisions"/></TabsContent>
@@ -188,6 +190,7 @@ export default function Locations() {
         <TabsContent value="upazilas"  className="mt-4"><LevelTab level="upazilas"/></TabsContent>
         <TabsContent value="unions"    className="mt-4"><LevelTab level="unions"/></TabsContent>
         <TabsContent value="wards"     className="mt-4"><LevelTab level="wards"/></TabsContent>
+        <TabsContent value="villages"  className="mt-4"><LevelTab level="villages"/></TabsContent>
         <TabsContent value="mouzas"    className="mt-4"><LevelTab level="mouzas"/></TabsContent>
       </Tabs>
     </>
