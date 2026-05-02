@@ -338,7 +338,7 @@ function isValidPhone(p: string): boolean {
 }
 
 export default function SmsSettings() {
-  const { isSuper } = useAuth();
+  const { isSuper, rolesLoaded } = useAuth();
   const { lang } = useLang();
   const L = I[lang === "bn" ? "bn" : "en"];
 
