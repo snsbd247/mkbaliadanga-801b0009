@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useAuth } from "@/auth/AuthProvider";
 import { toast } from "sonner";
 
