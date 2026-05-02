@@ -287,7 +287,7 @@ export default function Reports() {
 
   return (
     <>
-      <PageHeader title={t("reports")} description="Filter by date range, office and farmer; export to Excel or PDF" />
+      <PageHeader title={t("reports")} description={t("reportsFilterDesc")} />
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-5">
           <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
