@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
   for (const r of stuck ?? []) await fireSend(r.id);
 
   return new Response(
-    JSON.stringify({ ok: true, ...summary, retried: stuck?.length ?? 0 }),
+    JSON.stringify({ ok: true, window: { from: fromStr, to: horizonStr }, office_id: officeFilter, ...summary, retried: stuck?.length ?? 0 }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 });
