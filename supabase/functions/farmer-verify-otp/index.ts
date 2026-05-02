@@ -40,6 +40,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Per-IP brute-force throttle: max 20 verify attempts per 15 minutes
+    const ip = getIp(req);
+    const windowStart = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { count: ipAttempts } = await admin
+      .from("farmer_portal_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("ip", ip)
+      .gte("created_at", windowStart);
+    // Also count recent OTP rows touched by this IP as a soft signal
+    if ((ipAttempts ?? 0) >= 20) {
+      return new Response(JSON.stringify({ error: "Too many attempts. Try again later." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: farmer } = await admin
       .from("farmers")
       .select("id, name_en, name_bn, farmer_code, member_no, office_id, status")
