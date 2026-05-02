@@ -129,10 +129,10 @@ export default function Dashboard() {
     setTrend(months);
 
     setComposition([
-      { name: "Savings", value: Math.max(0, totalSavings) },
-      { name: "Shares", value: Math.max(0, sum(sharesData, "balance")) },
-      { name: "Loan O/S", value: Math.max(0, totalLoan) },
-      { name: "Irr Due", value: Math.max(0, sum(irrData, "due_amount")) },
+      { name: t("savings"), value: Math.max(0, totalSavings) },
+      { name: t("sharesShort"), value: Math.max(0, sum(sharesData, "balance")) },
+      { name: t("loanOutstanding"), value: Math.max(0, totalLoan) },
+      { name: t("irrigationDueShort"), value: Math.max(0, sum(irrData, "due_amount")) },
     ]);
 
     const dueMap = new Map<string, { name: string; code: string; due: number }>();
