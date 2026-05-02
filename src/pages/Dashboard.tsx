@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle } from "lucide-react";
+import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ export default function Dashboard() {
       supabase.from("shares").select("balance"),
       supabase.from("loans").select("principal,total_payable,status"),
       supabase.from("irrigation_charges").select("total,paid_amount,due_amount"),
-      supabase.from("payments").select("amount,kind,created_at,farmer_id,farmers(name_en,farmer_code)").order("created_at", { ascending: false }).limit(8),
+      supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").order("created_at", { ascending: false }).limit(8),
       supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").eq("status", "pending").eq("type", "withdraw"),
       supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").eq("status", "pending"),
     ]);
@@ -90,7 +90,15 @@ export default function Dashboard() {
               {recent.map((p, i) => (
                 <div key={i} className="flex items-center justify-between py-2.5 text-sm">
                   <div>
-                    <div className="font-medium">{p.farmers?.name_en} <span className="text-xs text-muted-foreground">({p.farmers?.farmer_code})</span></div>
+                    <div className="font-medium flex items-center gap-2">
+                      {p.farmers?.name_en} <span className="text-xs text-muted-foreground">({p.farmers?.farmer_code})</span>
+                      {p.receipt_url && (
+                        <a href={p.receipt_url} target="_blank" rel="noreferrer" title="View receipt" className="text-primary hover:text-primary/70">
+                          <FileText className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      {p.status === "pending" && <Badge variant="secondary" className="text-[10px]">pending</Badge>}
+                    </div>
                     <div className="text-xs text-muted-foreground">{p.kind} • {fmtDate(p.created_at)}</div>
                   </div>
                   <div className="font-semibold text-success">{money(p.amount)}</div>
