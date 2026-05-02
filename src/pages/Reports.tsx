@@ -88,12 +88,52 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="irrigation">
-          <ExportBar onPdf={() => exportTablePDF("Irrigation Report", ["Date", "Farmer", "Season", "Dag", "Total", "Paid", "Due"], irr.map(r => [fmtDate(r.entry_date), `${r.farmers?.farmer_code} ${r.farmers?.name_en}`, r.seasons?.name, r.lands?.dag_no, r.total, r.paid_amount, r.due_amount]))}
-            onXlsx={() => exportExcel("irrigation-report", "Irrigation", irr.map(r => ({ Date: r.entry_date, Farmer: r.farmers?.name_en, Code: r.farmers?.farmer_code, Season: r.seasons?.name, Dag: r.lands?.dag_no, Total: r.total, Paid: r.paid_amount, Due: r.due_amount })))} />
-          <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead><TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead></TableRow></TableHeader>
-            <TableBody>{irr.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.entry_date)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.seasons?.name}</TableCell><TableCell>{r.lands?.dag_no}</TableCell><TableCell>{money(r.total)}</TableCell><TableCell>{money(r.paid_amount)}</TableCell><TableCell className={r.due_amount > 0 ? "due-text" : ""}>{money(r.due_amount)}</TableCell></TableRow>)}</TableBody>
-          </Table></Card>
+          <Tabs defaultValue="detail">
+            <TabsList>
+              <TabsTrigger value="detail">Detail (per farmer/land)</TabsTrigger>
+              <TabsTrigger value="daily">Daily summary</TabsTrigger>
+              <TabsTrigger value="monthly">Monthly summary</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="detail">
+              <ExportBar onPdf={() => exportTablePDF("Irrigation Detail", ["Date", "Farmer", "Season", "Dag", "Base", "Canal", "Maint.", "Other", "Total", "Paid", "Due"], irr.map(r => [fmtDate(r.entry_date), `${r.farmers?.farmer_code} ${r.farmers?.name_en}`, r.seasons?.name, r.lands?.dag_no, r.base_charge, r.canal_charge, r.maintenance_charge, r.other_charge, r.total, r.paid_amount, r.due_amount]))}
+                onXlsx={() => exportExcel("irrigation-detail", "Irrigation", irr.map(r => ({ Date: r.entry_date, Farmer: r.farmers?.name_en, Code: r.farmers?.farmer_code, Season: r.seasons?.name, Dag: r.lands?.dag_no, Mouza: r.lands?.mouza, Size: r.lands?.land_size, Base: r.base_charge, Canal: r.canal_charge, Maintenance: r.maintenance_charge, Other: r.other_charge, Total: r.total, Paid: r.paid_amount, Due: r.due_amount })))} />
+              <Card className="overflow-x-auto"><Table>
+                <TableHeader><TableRow>
+                  <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
+                  <TableHead className="text-right">Base</TableHead><TableHead className="text-right">Canal</TableHead><TableHead className="text-right">Maint.</TableHead><TableHead className="text-right">Other</TableHead>
+                  <TableHead className="text-right">{t("total")}</TableHead><TableHead className="text-right">{t("paidAmount")}</TableHead><TableHead className="text-right">{t("dueAmount")}</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>{irr.map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{fmtDate(r.entry_date)}</TableCell>
+                    <TableCell>{r.farmers?.name_en} <span className="text-xs text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
+                    <TableCell>{r.seasons?.name}</TableCell>
+                    <TableCell>{r.lands?.dag_no}</TableCell>
+                    <TableCell className="text-right">{money(r.base_charge)}</TableCell>
+                    <TableCell className="text-right">{money(r.canal_charge)}</TableCell>
+                    <TableCell className="text-right">{money(r.maintenance_charge)}</TableCell>
+                    <TableCell className="text-right">{money(r.other_charge)}</TableCell>
+                    <TableCell className="text-right font-medium">{money(r.total)}</TableCell>
+                    <TableCell className="text-right text-success">{money(r.paid_amount)}</TableCell>
+                    <TableCell className={`text-right ${r.due_amount > 0 ? "due-text" : ""}`}>{money(r.due_amount)}</TableCell>
+                  </TableRow>
+                ))}</TableBody>
+              </Table></Card>
+            </TabsContent>
+
+            <TabsContent value="daily">
+              <ExportBar onPdf={() => exportTablePDF("Daily Irrigation Summary", ["Date", "Entries", "Base", "Canal", "Maint.", "Other", "Total", "Paid", "Due"], daily.map(g => [g.period, g.count, g.base, g.canal, g.maintenance, g.other, g.total, g.paid, g.due]))}
+                onXlsx={() => exportExcel("irrigation-daily", "Daily", daily.map(g => ({ Date: g.period, Entries: g.count, Base: g.base, Canal: g.canal, Maintenance: g.maintenance, Other: g.other, Total: g.total, Paid: g.paid, Due: g.due })))} />
+              <SummaryTable rows={daily} label="Date" />
+            </TabsContent>
+
+            <TabsContent value="monthly">
+              <ExportBar onPdf={() => exportTablePDF("Monthly Irrigation Summary", ["Month", "Entries", "Base", "Canal", "Maint.", "Other", "Total", "Paid", "Due"], monthly.map(g => [g.period, g.count, g.base, g.canal, g.maintenance, g.other, g.total, g.paid, g.due]))}
+                onXlsx={() => exportExcel("irrigation-monthly", "Monthly", monthly.map(g => ({ Month: g.period, Entries: g.count, Base: g.base, Canal: g.canal, Maintenance: g.maintenance, Other: g.other, Total: g.total, Paid: g.paid, Due: g.due })))} />
+              <SummaryTable rows={monthly} label="Month" />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="loan">
