@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 type StepStatus = "idle" | "running" | "ok" | "fail";
 interface DebugInfo {
