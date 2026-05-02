@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Languages } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { NotificationBell } from "@/components/NotificationBell";
+import { useBranding } from "@/lib/branding";
 
 export function AppLayout() {
   const { user, loading, signOut, roles } = useAuth();
