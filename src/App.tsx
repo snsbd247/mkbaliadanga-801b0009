@@ -7,6 +7,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Offices from "./pages/Offices";
 import Farmers from "./pages/Farmers";
@@ -39,6 +40,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/offices" element={<Offices />} />
