@@ -119,9 +119,9 @@ export default function Settings() {
         <div className="flex items-center justify-between">
           <div>
             <div className="font-semibold">RLS Diagnostics</div>
-            <div className="text-sm text-muted-foreground">Backend permission, RLS health check ও office isolation যাচাই করুন।</div>
+            <div className="text-sm text-muted-foreground">{t("rlsDiagnosticsDesc")}</div>
           </div>
-          <a href="/diagnostics" className="text-sm font-medium text-primary hover:underline">Open →</a>
+          <a href="/diagnostics" className="text-sm font-medium text-primary hover:underline">{t("open")} →</a>
         </div>
       </Card>
     </>
