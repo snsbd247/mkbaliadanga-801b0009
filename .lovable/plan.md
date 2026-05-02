@@ -1,102 +1,111 @@
+# Plan: Audit Export, Receipts, QR Rotation, Reconciliation
 
-## Goal
-Ship 5 enhancements on top of the existing Farmer Portal / QR / CRUD work — without touching any unrelated module.
-
----
-
-## 1. Admin: Revoke Farmer QR Token
-
-**UI (`src/pages/FarmerCard.tsx`)**
-- Add a "Revoke active token" button (admin / super_admin only) next to the existing card actions.
-- Confirm with `AlertDialog`. On success, immediately re-issue is optional via existing "Generate new token" flow.
-
-**Edge function (new): `supabase/functions/farmer-card-revoke/index.ts`**
-- Auth: JWT validated in-code; require role `admin` or `super_admin` via `user_roles`.
-- Action: `UPDATE qr_tokens SET revoked = true WHERE farmer_id = $1 AND revoked = false`.
-- Writes an `audit_logs` row: `entity='qr_tokens', action='revoke', meta={farmer_id, count}`.
-
-**Block further scans**
-- Update `qr-resolve-token`: already filters `revoked = false`. Add explicit 410 Gone response with `{ error: 'token_revoked' }` when token row exists but `revoked = true`, so the scanner shows a clear message.
+Four focused enhancements that build on existing modules without breaking them.
 
 ---
 
-## 2. Selectable Membership Card Templates
+## 1. AuditLogs CSV — Localized Headers & Consistent Names
 
-**New: `src/components/card/templates/`**
-- `ClassicTemplate.tsx` (current look — green gradient, sans-serif)
-- `MinimalTemplate.tsx` (white, mono-ish, minimal)
-- `BilingualTemplate.tsx` (BN-prominent, larger Noto Serif Bengali heading)
+**File**: `src/pages/AuditLogs.tsx`
 
-Each exports the same props (`{ farmer, qrDataUrl }`) and renders inside the existing CR80 frame.
-
-**`src/pages/FarmerCard.tsx`**
-- Template selector (`Select`) persisted in `localStorage` per-user.
-- Live preview swaps to chosen template.
-
-**`src/components/card/cardPdf.ts`**
-- Accept `templateId` param. Render the chosen React template into an offscreen node, then `html2canvas` → `jsPDF` (already in stack) so PDF matches what the user sees. Keep CR80 dimensions.
-
----
-
-## 3. Scan Payment: Dedupe + Clear Feedback
-
-**Frontend (`src/pages/ScanPayment.tsx`)**
-- Generate a deterministic `idempotency_key`: `sha256(token + farmer_id + amount + kind + window_minute)` where `window_minute = floor(Date.now() / 60_000)`.
-- Send as `Idempotency-Key` header AND `idempotency_key` column in `payments` insert.
-- Disable submit button while pending; show `<Alert variant="success">` (receipt no, amount, farmer) on success and `<Alert variant="destructive">` on failure with translated error.
-
-**DB (migration)**
-- Add `UNIQUE INDEX payments_idem_key_uniq ON payments(idempotency_key) WHERE idempotency_key IS NOT NULL;` (column already exists).
-- On unique-violation insert, surface `409 duplicate_payment` from the existing payment edge path (or catch `23505` client-side and show "Payment already recorded in the last minute").
+- Detect current language from `i18n` (existing `useTranslation` hook).
+- Add bilingual header map:
+  ```
+  date | তারিখ
+  action | কার্যক্রম
+  entity | বিষয়
+  office | অফিস
+  farmer_code | কৃষক কোড
+  farmer_name | কৃষকের নাম
+  user | ব্যবহারকারী
+  details | বিবরণ
+  ```
+- Pre-fetch maps for offices (`id → name`) and farmers (`id → {code, name_en, name_bn}`) for rows currently displayed, then build the CSV from those maps so names are consistent (no raw UUIDs).
+- UTF-8 BOM prefix so Excel renders Bangla correctly.
 
 ---
 
-## 4. Audit Logs: Filter + Export
+## 2. PDF Receipt After Successful Scan Payment
 
-**New page: `src/pages/AuditLogs.tsx`** (admin / super_admin only, route `/admin/audit-logs`)
-- Filters: office (select), farmer (search by code/name → resolves to `entity_id`), entity (`qr_tokens | payments | farmers | loans | savings_transactions | irrigation_charges`), action, date range.
-- Server-side query against `audit_logs` with RLS already in place (super_admin only). For admin without super_admin we'll relax via a new policy: `is_admin_or_super` can read own office.
-- Table view + CSV export (client-side, current filtered set, capped at 5000 rows, paginated fetch).
-- Sidebar entry under Admin section.
+**Files**:
+- New: `src/lib/paymentReceiptPdf.ts` (jsPDF — already a dependency)
+- Edit: `src/pages/ScanPayment.tsx`
 
-**Migration**
-- Add policy: `admin read office audit` → `is_admin_or_super(auth.uid()) AND (office_id = current_user_office() OR has_role(auth.uid(),'super_admin'))`.
-
----
-
-## 5. E2E Tests: RBAC for delete + ledger consistency
-
-**Playwright (`e2e/rbac-delete.spec.ts`)**
-Uses test users seeded via existing auth flow (env: `E2E_STAFF_EMAIL`, `E2E_COMMITTEE_EMAIL`, `E2E_SUPER_EMAIL`, shared password).
-- staff login → loan delete button hidden / API returns 403 (RLS).
-- committee login → delete loan + delete savings succeed.
-- After each delete, query `ledger_entries` via a small read-only edge fn `ledger-check` (or direct supabase-js with anon + RLS) and assert: no rows remain with `(reference_type, reference_id) = (deleted_ref)`; sum(debit) == sum(credit) globally for affected office.
-
-**Helper edge fn (new): `supabase/functions/ledger-check/index.ts`**
-- Validates JWT, returns `{ orphan: [...], unbalanced: [...] }` using existing `ledger_orphan_refs()` and `ledger_unbalanced_refs()` SQL functions.
+After a successful payment insert:
+- Build a receipt object: `{ receipt_no (payment.id short), date, farmer (code+name), token (masked, e.g. `mkc_…last4`), token_status: 'active', kind, amount, method, collected_by, idempotency_key }`.
+- Auto-generate PDF (A5) and offer **Download Receipt** button on the success card.
+- Reuse the existing success/failure UI; do not change submission logic.
 
 ---
 
-## Files
+## 3. Scheduled QR Token Rotation (Admin)
 
-**New**
-- `supabase/functions/farmer-card-revoke/index.ts`
-- `supabase/functions/ledger-check/index.ts`
-- `supabase/migrations/<ts>_payments_idem_unique_audit_policy.sql`
-- `src/components/card/templates/{Classic,Minimal,Bilingual}Template.tsx`
-- `src/pages/AuditLogs.tsx`
-- `e2e/rbac-delete.spec.ts`
+**DB migration**:
+- New table `qr_rotation_settings` (single row id=1):
+  - `enabled boolean`, `interval_days int default 90`, `grace_hours int default 24`, `last_run_at timestamptz`, `updated_by uuid`.
+  - RLS: read for authenticated; manage by super_admin.
+- Add `expires_at timestamptz` and `rotated_from uuid` (nullable) to `qr_tokens` for safe overlap.
+
+**New edge function**: `qr-rotate-scheduled` (service role)
+- For every farmer with an active token older than `interval_days`:
+  1. Issue a new token (reuse logic from `farmer-card-token`).
+  2. Set old token `expires_at = now() + grace_hours` (do not revoke immediately — allows in-flight cards to keep working briefly).
+  3. After grace window, mark expired tokens `revoked = true`.
+- Log each rotation in `audit_logs` (`entity='qr_tokens'`, `action='rotate'|'revoke'`).
+
+**Update `qr-resolve-token`**: treat tokens with `expires_at < now()` OR `revoked = true` as `410 Gone`.
+
+**Cron**: schedule `qr-rotate-scheduled` daily via `pg_cron + pg_net` (using `supabase--insert`, not migration, since it embeds the anon key).
+
+**Admin UI**: New section in `src/pages/Settings.tsx` (or new `/admin/qr-rotation`) with toggle, interval, grace-hours, "Run now" button (calls function), and last-run timestamp.
+
+---
+
+## 4. Monthly Ledger Reconciliation Report
+
+**New edge function**: `ledger-reconcile-monthly`
+- Inputs: `{ year, month, office_id? }`
+- Computes per office:
+  - Opening balance per account (sum of ledger before month start).
+  - Period debits/credits per account.
+  - Closing balance.
+  - Mismatches: unbalanced refs (`ledger_unbalanced_refs`) within month, orphan refs (`ledger_orphan_refs`), and any reference whose source-table sum (loans/payments/savings/irrigation/expenses) ≠ posted ledger sum.
+- Returns JSON with `accounts[]`, `mismatches[]`, `summary {total_debit,total_credit,diff}`.
+
+**New page**: `src/pages/LedgerReconciliation.tsx` (route `/admin/reconciliation`, admin/super_admin only)
+- Filters: month picker, office select.
+- Table of accounts with opening/debit/credit/closing.
+- Highlighted mismatches panel (red badges).
+- Export buttons:
+  - **CSV** — bilingual headers, BOM, includes mismatches as second section.
+  - **PDF** — using jsPDF autotable: header (office, period), summary, accounts table, mismatches table.
+
+Add link in admin sidebar.
+
+---
+
+## Technical Notes
+
+- All edge functions: service-role client, CORS headers from `@supabase/supabase-js/cors`, Zod validation, JWT check for admin endpoints.
+- No changes to existing trigger logic — reconciliation is read-only.
+- Reuse `jsPDF` (already used by `cardPdf.ts`); add `jspdf-autotable` if not present.
+- Audit logging continues via existing `audit_trigger` for new table writes.
+
+## Files Touched
+
+**Created**
+- `src/lib/paymentReceiptPdf.ts`
+- `src/pages/LedgerReconciliation.tsx`
+- `supabase/functions/qr-rotate-scheduled/index.ts`
+- `supabase/functions/ledger-reconcile-monthly/index.ts`
+- 2 migrations (qr_rotation_settings + qr_tokens columns)
 
 **Edited**
-- `src/pages/FarmerCard.tsx` (revoke button + template picker)
-- `src/components/card/cardPdf.ts` (template-aware render)
-- `src/pages/ScanPayment.tsx` (idempotency + feedback)
-- `supabase/functions/qr-resolve-token/index.ts` (410 on revoked)
-- `src/App.tsx` + `src/components/layout/AppSidebar.tsx` (audit logs route)
+- `src/pages/AuditLogs.tsx` (CSV localization)
+- `src/pages/ScanPayment.tsx` (receipt button)
+- `src/pages/Settings.tsx` (QR rotation admin panel)
+- `src/App.tsx` (new route + sidebar link)
+- `supabase/functions/qr-resolve-token/index.ts` (expires_at check)
+- `supabase/config.toml` (function entries)
 
-## Out of scope
-- Re-architecting payments table or ledger triggers
-- Adding new roles
-- Rewriting existing Vitest suites
-
-Approve to proceed.
+Awaiting approval to proceed.
