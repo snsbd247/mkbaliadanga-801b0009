@@ -143,11 +143,14 @@ describe("Direct API bypass — hierarchy enforcement", () => {
   });
 
   it("rejects mouza whose union does not match the submitted union_id", async () => {
+    // uni1 is a valid union under upa1; mou1's recorded union is uni1.
+    // Submitting union_id="uni1" but mouza_id="mou-other" (whose union differs)
+    // should fail at the mouza level.
     const payload: AttemptShape = {
       name_en: "Wrong Mouza Union",
       division_id: "div1", district_id: "dis1", upazila_id: "upa1",
-      union_id: "uni-other",
-      mouza_id: "mou1", // mou1 belongs to uni1
+      union_id: "uni1",
+      mouza_id: "mou-other", // not registered under uni1
     };
     const { error } = await (supabase as any).from("farmers").insert(payload).select().single();
     expect(error).toBeTruthy();
