@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -181,7 +181,7 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
           const isOpen = expanded === l.id;
           const hasPayments = (l.loan_payments ?? []).length > 0;
           return (
-            <FragmentRow key={l.id}>
+            <Fragment key={l.id}>
               <TableRow>
                 <TableCell>
                   {hasPayments && (
@@ -238,7 +238,7 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
                   </TableCell>
                 </TableRow>
               )}
-            </FragmentRow>
+            </Fragment>
           );
         })}
         {rows.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
