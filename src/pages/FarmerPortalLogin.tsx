@@ -144,7 +144,7 @@ export default function FarmerPortalLogin() {
             <h1 id="portal-title" className="text-2xl font-bold">
               {brand.company_name_bn || brand.company_name}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">Farmer Self-Service Portal</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("farmerSelfServicePortal")}</p>
           </header>
 
           <Card className="p-6 shadow-elegant motion-reduce:shadow-none">
