@@ -5,11 +5,13 @@ import { useAuth } from "@/auth/AuthProvider";
 export type ModuleKey =
   | "dashboard" | "offices" | "farmers" | "seasons"
   | "savings" | "loans" | "irrigation" | "payments"
-  | "reports" | "users" | "audit" | "settings";
+  | "reports" | "users" | "audit" | "settings"
+  | "accounting" | "cashbook" | "approvals" | "sms" | "locations";
 
 export const ALL_MODULES: ModuleKey[] = [
   "dashboard","offices","farmers","seasons","savings","loans",
   "irrigation","payments","reports","users","audit","settings",
+  "accounting","cashbook","approvals","sms","locations",
 ];
 
 export interface Perm { can_view: boolean; can_add: boolean; can_edit: boolean; can_delete: boolean; }
@@ -28,7 +30,10 @@ const HARDCODED_STAFF: Record<string, Perm> = {
   payments: { can_view: true, can_add: true, can_edit: false, can_delete: false },
   reports: VIEW_ONLY,
   seasons: VIEW_ONLY,
+  cashbook: VIEW_ONLY,
+  approvals: VIEW_ONLY,
   offices: NONE, users: NONE, audit: NONE, settings: NONE,
+  accounting: NONE, sms: NONE, locations: NONE,
 };
 
 export function usePermissions() {
