@@ -278,10 +278,10 @@ export default function FarmerPortalLogin() {
               variant="outline"
               size="sm"
               onClick={() => nav("/auth")}
-              aria-label="Go to Admin Login page"
+              aria-label={t("adminLoginArrow")}
               className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              Admin Login →
+              {t("adminLoginArrow")}
             </Button>
           </div>
         </div>
