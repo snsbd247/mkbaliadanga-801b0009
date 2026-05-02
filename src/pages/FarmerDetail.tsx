@@ -34,8 +34,10 @@ export default function FarmerDetail() {
   const [loans, setLoans] = useState<any[]>([]);
   const [irr, setIrr] = useState<any[]>([]);
   const [share, setShare] = useState<any>(null);
+  const [payments, setPayments] = useState<any[]>([]);
   const [openLand, setOpenLand] = useState(false);
   const [land, setLand] = useState({ mouza: "", dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+  const brand = useBranding();
 
   useEffect(() => { if (id) loadAll(); }, [id]);
   useEffect(() => { document.title = `${farmer?.name_en ?? ""} — ${t("farmers")}`; }, [farmer, t]);
