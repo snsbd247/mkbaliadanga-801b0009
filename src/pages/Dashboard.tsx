@@ -29,7 +29,7 @@ function NoOfficeBanner() {
 
 export default function Dashboard() {
   const { t } = useLang();
-  const { isSuper, officeId } = useAuth();
+  const { isSuper, isAdmin, officeId } = useAuth();
   const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
