@@ -155,6 +155,7 @@ export default function Ledger() {
                   e.credit > 0 ? money(e.credit) : "",
                   ...(showRunning ? [money(e.balance)] : []),
                 ]),
+                { from, to },
               )}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
