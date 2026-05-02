@@ -306,9 +306,61 @@ export default function SmsLogs() {
                   <Input placeholder="search…" value={farmerSearch} onChange={(e) => setFarmerSearch(e.target.value)} />
                 </div>
               </div>
-              <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>{filtered.length} record{filtered.length === 1 ? "" : "s"}</span>
-                <Button variant="ghost" size="sm" onClick={clearFilters}>Clear filters</Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!filtered.length}
+                    onClick={() =>
+                      exportTablePDF(
+                        "SMS Logs",
+                        ["Time", "Farmer", "Mobile", "Office", "Event", "Message", "Status", "Retries"],
+                        filtered.map((l) => [
+                          new Date(l.created_at).toLocaleString(),
+                          l.farmer_name ?? "—",
+                          l.mobile,
+                          l.office_name ?? "—",
+                          l.event_type ?? "-",
+                          l.message,
+                          l.status,
+                          l.retry_count,
+                        ]),
+                        { from: fromDate || undefined, to: toDate || undefined },
+                      )
+                    }
+                  >
+                    <FileDown className="mr-1 h-4 w-4" />PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!filtered.length}
+                    onClick={() =>
+                      exportExcel(
+                        "sms-logs",
+                        "SMS Logs",
+                        filtered.map((l) => ({
+                          Time: new Date(l.created_at).toLocaleString(),
+                          Farmer: l.farmer_name ?? "",
+                          Mobile: l.mobile,
+                          Office: l.office_name ?? "",
+                          Event: l.event_type ?? "",
+                          Message: l.message,
+                          Status: l.status,
+                          Retries: l.retry_count,
+                          "Sent At": l.sent_at ? new Date(l.sent_at).toLocaleString() : "",
+                          "Provider Response": l.provider_response ?? "",
+                        })),
+                        { from: fromDate || undefined, to: toDate || undefined },
+                      )
+                    }
+                  >
+                    <FileSpreadsheet className="mr-1 h-4 w-4" />Excel
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>Clear filters</Button>
+                </div>
               </div>
             </CardContent>
           </Card>
