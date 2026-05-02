@@ -15,7 +15,8 @@ import { Printer, FileSpreadsheet, FileDown } from "lucide-react";
 type Row = { date: string; particulars: string; deposit: number; withdraw: number; balance: number };
 
 export default function Statement() {
-  const { t } = useLang();
+  const { t: tt } = useLang();
+  const t = tt as unknown as (k: string) => string;
   const [farmers, setFarmers] = useState<any[]>([]);
   const [farmerId, setFarmerId] = useState<string>("");
   const [year, setYear] = useState<number>(new Date().getFullYear());
