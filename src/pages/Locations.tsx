@@ -46,7 +46,7 @@ function LevelTab({ level }: { level: Level }) {
 
   async function load() {
     setLoading(true);
-    let q = supabase.from(level).select("*").order("name").limit(500);
+    let q: any = (supabase.from as any)(level).select("*").order("name").limit(500);
     if (parent.col && parentFilter !== "__all__") q = q.eq(parent.col, parentFilter);
     const { data, error } = await q;
     setLoading(false);
