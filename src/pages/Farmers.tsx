@@ -124,7 +124,7 @@ export default function Farmers() {
                 <TableCell className="text-right"><Button size="icon" variant="ghost"><Eye className="h-4 w-4" /></Button></TableCell>
               </TableRow>
             ))}
-            {list.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            {list.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
         <div className="flex items-center justify-between p-3 border-t">
