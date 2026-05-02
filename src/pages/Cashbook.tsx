@@ -283,6 +283,14 @@ export default function Cashbook() {
               <TableHead className="text-right">{t("runningBalance")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
+              <TableRow className="bg-muted/40 font-medium">
+                <TableCell>{from || "—"}</TableCell>
+                <TableCell><Badge variant="outline">opening</Badge></TableCell>
+                <TableCell colSpan={2}>Opening Cash Balance</TableCell>
+                <TableCell className="text-right">—</TableCell>
+                <TableCell className="text-right">—</TableCell>
+                <TableCell className="text-right font-semibold">{money(openingCash)}</TableCell>
+              </TableRow>
               {cashbookEntries.map((row, i) => (
                 <TableRow key={i}>
                   <TableCell>{fmtDate(row.date)}</TableCell>
@@ -294,6 +302,12 @@ export default function Cashbook() {
                   <TableCell className={`text-right font-semibold ${row.balance < 0 ? "due-text" : ""}`}>{money(row.balance)}</TableCell>
                 </TableRow>
               ))}
+              <TableRow className="bg-muted/60 font-bold">
+                <TableCell colSpan={4} className="text-right">Closing</TableCell>
+                <TableCell className="text-right text-success">{money(totals.income)}</TableCell>
+                <TableCell className="text-right text-destructive">{money(totals.expense)}</TableCell>
+                <TableCell className={`text-right ${totals.cashBalance < 0 ? "due-text" : ""}`}>{money(totals.cashBalance)}</TableCell>
+              </TableRow>
               {cashbookEntries.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
