@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Building2, Users, MapPin, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
+  BookText, Calculator, TrendingUp,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -35,6 +36,9 @@ export function AppSidebar() {
     { url: "/scan", icon: ScanLine, label: t("scanQr"), key: "payments" as const },
     { url: "/reports", icon: FileBarChart, label: t("reports"), key: "reports" as const },
     { url: "/dues", icon: AlertTriangle, label: "Dues", key: "reports" as const },
+    { url: "/accounts", icon: BookText, label: "Chart of Accounts", key: "reports" as const },
+    { url: "/ledger", icon: Calculator, label: "Ledger", key: "reports" as const },
+    { url: "/financial-reports", icon: TrendingUp, label: "Financial Reports", key: "reports" as const },
   ].filter((x) => can(x.key, "can_view"));
 
   const admin = [
