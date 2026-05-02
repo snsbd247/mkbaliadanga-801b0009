@@ -119,30 +119,62 @@ export default function AuditLogs() {
     });
   }, [list, search, profiles]);
 
-  function exportCsv() {
+  async function exportCsv() {
     const rows = filtered;
     if (rows.length === 0) { toast.error("Nothing to export"); return; }
-    const header = ["timestamp", "action", "entity", "entity_id", "user", "office", "old_values", "new_values"];
-    const csv = [header.join(",")].concat(
-      rows.map((l) => {
-        const u = profiles[l.user_id];
-        const o = offices[l.office_id];
-        const cells = [
-          new Date(l.created_at).toISOString(),
-          l.action ?? "",
-          l.entity ?? "",
-          l.entity_id ?? "",
-          u?.full_name ?? u?.username ?? l.user_id ?? "",
-          o?.name ?? "",
-          JSON.stringify(l.old_values ?? null),
-          JSON.stringify(l.new_values ?? null),
-        ];
-        return cells.map((c) => {
-          const s = String(c).replace(/"/g, '""');
-          return /[",\n]/.test(s) ? `"${s}"` : s;
-        }).join(",");
-      })
-    ).join("\n");
+
+    // Prefetch farmer names for any entity_id that maps to a farmer-related entity.
+    const farmerEntities = new Set(["farmers", "qr_tokens"]);
+    const farmerIds = Array.from(new Set(
+      rows.filter((r) => farmerEntities.has(r.entity)).map((r) => r.entity_id).filter(Boolean),
+    ));
+    const farmerMap: Record<string, { code?: string; name_en?: string; name_bn?: string }> = {};
+    if (farmerIds.length > 0) {
+      const { data: fs } = await supabase
+        .from("farmers")
+        .select("id, farmer_code, name_en, name_bn")
+        .in("id", farmerIds);
+      for (const f of fs ?? []) {
+        farmerMap[(f as any).id] = { code: (f as any).farmer_code, name_en: (f as any).name_en, name_bn: (f as any).name_bn };
+      }
+    }
+
+    // Bilingual headers (EN / BN). Bangla strings are placed in row 2 so Excel splits cleanly.
+    const headersEn = ["Date/Time", "Action", "Entity", "Office", "Farmer Code", "Farmer Name", "User", "Entity ID", "Old Values", "New Values"];
+    const headersBn = ["তারিখ/সময়", "কার্যক্রম", "বিষয়", "অফিস", "কৃষক কোড", "কৃষকের নাম", "ব্যবহারকারী", "রেকর্ড আইডি", "পুরাতন তথ্য", "নতুন তথ্য"];
+
+    const escape = (v: any) => {
+      const s = String(v ?? "").replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+
+    const lines: string[] = [
+      headersEn.map(escape).join(","),
+      headersBn.map(escape).join(","),
+    ];
+
+    for (const l of rows) {
+      const u = profiles[l.user_id];
+      const o = offices[l.office_id];
+      const f = farmerMap[l.entity_id];
+      const farmerName = f ? (f.name_bn ? `${f.name_en ?? ""} / ${f.name_bn}` : (f.name_en ?? "")) : "";
+      const cells = [
+        new Date(l.created_at).toISOString(),
+        l.action ?? "",
+        l.entity ?? "",
+        o?.name ?? "",
+        f?.code ?? "",
+        farmerName,
+        u?.full_name ?? u?.username ?? (l.user_id ? l.user_id.slice(0, 8) : "system"),
+        l.entity_id ?? "",
+        JSON.stringify(l.old_values ?? null),
+        JSON.stringify(l.new_values ?? null),
+      ];
+      lines.push(cells.map(escape).join(","));
+    }
+
+    const csv = lines.join("\n");
+    // UTF-8 BOM ensures Excel renders Bangla & headers correctly
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
