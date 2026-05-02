@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Download, FileDown, RefreshCw, AlertTriangle } from "lucide-react";
+import { Loader2, Download, FileDown, RefreshCw, AlertTriangle, Search } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface AccountRow {
   account_id: string; code: string; name: string; name_bn?: string | null; type: string;
@@ -33,6 +34,16 @@ interface Report {
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 
+interface DetailEntry {
+  id: string; entry_date: string; debit: number; credit: number;
+  description: string | null; account_code: string | null; account_name: string | null; account_type: string | null;
+}
+interface Detail {
+  reference_type: string; reference_id: string;
+  source_exists: boolean; source: any | null; source_amount: number | null;
+  ledger_entries: DetailEntry[]; ledger_debit: number; ledger_credit: number; diff: number;
+}
+
 export default function LedgerReconciliation() {
   const { isSuper } = useAuth();
   const today = new Date();
@@ -42,6 +53,8 @@ export default function LedgerReconciliation() {
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     document.title = "Monthly Ledger Reconciliation";
@@ -66,6 +79,23 @@ export default function LedgerReconciliation() {
       if (!res.ok) { toast.error(j?.error || "Failed"); return; }
       setReport(j);
     } finally { setLoading(false); }
+  }
+
+  async function openDetail(referenceType: string, referenceId: string) {
+    setDetail({ reference_type: referenceType, reference_id: referenceId, source_exists: false, source: null, source_amount: null, ledger_entries: [], ledger_debit: 0, ledger_credit: 0, diff: 0 });
+    setDetailLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Please sign in"); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ledger-reconcile-monthly`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ mode: "detail", reference_type: referenceType, reference_id: referenceId }),
+      });
+      const j = await res.json();
+      if (!res.ok) { toast.error(j?.error || "Failed to load detail"); setDetail(null); return; }
+      setDetail(j.detail);
+    } finally { setDetailLoading(false); }
   }
 
   function exportCsv() {
@@ -288,26 +318,111 @@ export default function LedgerReconciliation() {
                       <th className="text-right p-2">Credit</th>
                       <th className="text-right p-2">Diff</th>
                       <th className="text-right p-2">Entries</th>
+                      <th className="p-2"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {report.mismatches.map((m, i) => (
-                      <tr key={i} className="border-b">
+                      <tr key={i} className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => openDetail(m.reference_type, m.reference_id)}>
                         <td className="p-2"><Badge variant="destructive">{m.kind}</Badge></td>
                         <td className="p-2 font-mono">{m.reference_type}/{m.reference_id.slice(0, 8)}…</td>
                         <td className="p-2 text-right tabular-nums">{m.debit != null ? fmt(m.debit) : "—"}</td>
                         <td className="p-2 text-right tabular-nums">{m.credit != null ? fmt(m.credit) : "—"}</td>
                         <td className="p-2 text-right tabular-nums">{m.diff != null ? fmt(m.diff) : "—"}</td>
                         <td className="p-2 text-right tabular-nums">{m.entry_count ?? "—"}</td>
+                        <td className="p-2 text-right"><Search className="h-3 w-3 inline text-muted-foreground" /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              <div className="text-xs text-muted-foreground mt-2">Click a row to see ledger entries vs the source record side-by-side.</div>
             </Card>
           )}
         </>
       )}
+
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Reconciliation drill-down</DialogTitle>
+          </DialogHeader>
+          {detailLoading || !detail ? (
+            <div className="py-10 text-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />Loading…</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div><div className="text-xs text-muted-foreground">Reference</div><div className="font-mono">{detail.reference_type}</div></div>
+                <div className="md:col-span-3"><div className="text-xs text-muted-foreground">ID</div><div className="font-mono text-xs">{detail.reference_id}</div></div>
+                <div><div className="text-xs text-muted-foreground">Ledger Debit</div><div className="font-mono font-semibold">{fmt(detail.ledger_debit)}</div></div>
+                <div><div className="text-xs text-muted-foreground">Ledger Credit</div><div className="font-mono font-semibold">{fmt(detail.ledger_credit)}</div></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Source amount</div>
+                  <div className="font-mono font-semibold">{detail.source_amount != null ? fmt(detail.source_amount) : "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Source row</div>
+                  <div className={`font-semibold ${detail.source_exists ? "text-success" : "text-destructive"}`}>
+                    {detail.source_exists ? "Exists" : "Missing (orphan)"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card className="p-3">
+                  <div className="font-semibold text-sm mb-2">Ledger entries ({detail.ledger_entries.length})</div>
+                  <div className="overflow-auto max-h-80">
+                    <table className="w-full text-xs">
+                      <thead className="border-b sticky top-0 bg-card">
+                        <tr>
+                          <th className="text-left p-1">Date</th>
+                          <th className="text-left p-1">Account</th>
+                          <th className="text-right p-1">Debit</th>
+                          <th className="text-right p-1">Credit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detail.ledger_entries.length === 0 && (
+                          <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">No ledger entries</td></tr>
+                        )}
+                        {detail.ledger_entries.map((e) => (
+                          <tr key={e.id} className="border-b">
+                            <td className="p-1">{e.entry_date}</td>
+                            <td className="p-1">
+                              <span className="font-mono text-[10px]">{e.account_code}</span> {e.account_name}
+                            </td>
+                            <td className="p-1 text-right tabular-nums">{e.debit > 0 ? fmt(e.debit) : ""}</td>
+                            <td className="p-1 text-right tabular-nums">{e.credit > 0 ? fmt(e.credit) : ""}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+                <Card className="p-3">
+                  <div className="font-semibold text-sm mb-2">Source record</div>
+                  {!detail.source_exists ? (
+                    <Alert variant="destructive"><AlertDescription>Source row no longer exists — this is an orphan ledger reference.</AlertDescription></Alert>
+                  ) : (
+                    <div className="overflow-auto max-h-80">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          {Object.entries(detail.source ?? {}).map(([k, v]) => (
+                            <tr key={k} className="border-b">
+                              <td className="p-1 font-mono text-muted-foreground">{k}</td>
+                              <td className="p-1 break-all">{v == null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

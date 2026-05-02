@@ -21,6 +21,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { LandRelations } from "@/components/LandRelations";
 import { SavingsStatement } from "@/components/SavingsStatement";
+import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
+import { useBranding } from "@/lib/branding";
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -32,23 +34,51 @@ export default function FarmerDetail() {
   const [loans, setLoans] = useState<any[]>([]);
   const [irr, setIrr] = useState<any[]>([]);
   const [share, setShare] = useState<any>(null);
+  const [payments, setPayments] = useState<any[]>([]);
   const [openLand, setOpenLand] = useState(false);
   const [land, setLand] = useState({ mouza: "", dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+  const brand = useBranding();
 
   useEffect(() => { if (id) loadAll(); }, [id]);
   useEffect(() => { document.title = `${farmer?.name_en ?? ""} — ${t("farmers")}`; }, [farmer, t]);
 
   async function loadAll() {
-    const [f, l, s, ln, ir, sh] = await Promise.all([
+    const [f, l, s, ln, ir, sh, pm] = await Promise.all([
       supabase.from("farmers").select("*, offices(name)").eq("id", id!).maybeSingle(),
       supabase.from("lands").select("*").eq("farmer_id", id!).order("created_at"),
       supabase.from("savings_transactions").select("*").eq("farmer_id", id!).order("txn_date", { ascending: false }),
       supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).order("issued_on", { ascending: false }),
       supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no)").eq("farmer_id", id!).order("entry_date", { ascending: false }),
       supabase.from("shares").select("balance").eq("farmer_id", id!).maybeSingle(),
+      supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, offices(name)").eq("farmer_id", id!).order("created_at", { ascending: false }).limit(200),
     ]);
     setFarmer(f.data); setLands(l.data ?? []); setSavings(s.data ?? []);
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
+    setPayments(pm.data ?? []);
+  }
+
+  function reprintReceipt(p: any) {
+    if (!farmer) return;
+    downloadPaymentReceiptPdf({
+      receipt_no: String(p.id).slice(0, 8).toUpperCase(),
+      payment_id: p.id,
+      paid_at: p.created_at,
+      farmer_name: farmer.name_en,
+      farmer_code: farmer.farmer_code,
+      member_no: farmer.member_no ?? null,
+      mobile_masked: farmer.mobile ? farmer.mobile.replace(/^(\d{3})\d+(\d{2})$/, "$1***$2") : null,
+      village: farmer.village ?? null,
+      token_masked: maskToken("re-print"),
+      token_status: "active",
+      kind: p.kind,
+      amount: Number(p.amount),
+      method: p.method ?? "cash",
+      note: p.note ?? null,
+      idempotency_key: p.idempotency_key ?? "",
+      office_name: p.offices?.name ?? null,
+      company_name: brand.company_name,
+      company_name_bn: brand.company_name_bn,
+    });
   }
 
   async function addLand() {
@@ -122,6 +152,7 @@ export default function FarmerDetail() {
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           <TabsTrigger value="loans">{t("loans")}</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lands">
@@ -200,6 +231,38 @@ export default function FarmerDetail() {
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead><TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead></TableRow></TableHeader>
             <TableBody>{irr.map(i => <TableRow key={i.id}><TableCell>{fmtDate(i.entry_date)}</TableCell><TableCell>{i.seasons?.name}</TableCell><TableCell>{i.lands?.dag_no}</TableCell><TableCell>{money(i.total)}</TableCell><TableCell>{money(i.paid_amount)}</TableCell><TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell></TableRow>)}
             {irr.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
+          </Table></Card>
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <Card><Table>
+            <TableHeader><TableRow>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead>{t("type")}</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead className="text-right">{t("amount")}</TableHead>
+              <TableHead>Office</TableHead>
+              <TableHead className="text-right">Receipt</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {payments.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell>{fmtDate(p.created_at)}</TableCell>
+                  <TableCell><Badge variant="secondary">{p.kind}</Badge></TableCell>
+                  <TableCell>{p.method ?? "cash"}</TableCell>
+                  <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="outline" onClick={() => reprintReceipt(p)}>
+                      <FileDown className="h-3 w-3 mr-1" />Download
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {payments.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>
+              )}
+            </TableBody>
           </Table></Card>
         </TabsContent>
       </Tabs>
