@@ -34,16 +34,25 @@ export default function FarmerDashboard() {
   const [data, setData] = useState<PortalData | null>(null);
 
   const token = useMemo(() => localStorage.getItem("farmer_portal_token") ?? "", []);
+  const expiresAt = useMemo(() => localStorage.getItem("farmer_portal_expires") ?? "", []);
 
-  function logout() {
+  function logout(reason?: string) {
     localStorage.removeItem("farmer_portal_token");
     localStorage.removeItem("farmer_portal_expires");
     localStorage.removeItem("farmer_portal_name");
+    if (reason) toast.error(reason);
     nav("/", { replace: true });
+  }
+
+  function isExpired(): boolean {
+    if (!expiresAt) return false;
+    const t = Date.parse(expiresAt);
+    return Number.isFinite(t) && t < Date.now();
   }
 
   async function load() {
     if (!token) { nav("/", { replace: true }); return; }
+    if (isExpired()) { logout("Session expired. Please sign in again."); return; }
     setLoading(true);
     setError(null);
     try {
