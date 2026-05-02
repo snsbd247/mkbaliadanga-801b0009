@@ -113,57 +113,77 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
   const fromVal = (v: string) => (v === NONE ? null : v);
 
   const renderSelect = (
-    label: string,
+    level: PickerLevel,
+    fallbackLabel: string,
     list: Row[],
     selected: string | null | undefined,
     enabled: boolean,
     isLoading: boolean,
     onPick: (v: string | null) => void,
     parentLabel?: string,
-  ) => (
-    <div>
-      <Label className="text-xs">{label}</Label>
-      <Select value={toVal(selected)} disabled={!enabled || isLoading} onValueChange={(v) => onPick(fromVal(v))}>
-        <SelectTrigger>
-          {isLoading ? (
-            <span className="flex items-center text-sm text-muted-foreground"><Loader2 className="h-3 w-3 mr-1 animate-spin"/>Loading…</span>
-          ) : (
-            <SelectValue placeholder={enabled ? "—" : `Select ${parentLabel} first`} />
-          )}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={NONE}>—</SelectItem>
-          {list.map((d) => (
-            <SelectItem key={d.id} value={d.id}>
-              {d.name}{d.name_bn ? ` (${d.name_bn})` : ""}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
+  ) => {
+    const isErr = errorLevel === level;
+    const label = labels?.[level] ?? fallbackLabel;
+    return (
+      <div data-level={level}>
+        <Label className={"text-xs " + (isErr ? "text-destructive" : "")}>{label}{isErr ? " *" : ""}</Label>
+        <Select value={toVal(selected)} disabled={!enabled || isLoading} onValueChange={(v) => onPick(fromVal(v))}>
+          <SelectTrigger
+            aria-invalid={isErr || undefined}
+            aria-describedby={isErr ? `loc-err-${level}` : undefined}
+            className={isErr ? "border-destructive ring-2 ring-destructive/40 focus:ring-destructive" : ""}
+            data-testid={`loc-select-${level}`}
+          >
+            {isLoading ? (
+              <span className="flex items-center text-sm text-muted-foreground"><Loader2 className="h-3 w-3 mr-1 animate-spin"/>Loading…</span>
+            ) : (
+              <SelectValue placeholder={enabled ? "—" : `Select ${parentLabel} first`} />
+            )}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>—</SelectItem>
+            {list.map((d) => (
+              <SelectItem key={d.id} value={d.id}>
+                {d.name}{d.name_bn ? ` (${d.name_bn})` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {isErr && errorMessage && (
+          <p
+            id={`loc-err-${level}`}
+            role="alert"
+            data-testid={`loc-err-${level}`}
+            className="mt-1 text-xs text-destructive"
+          >
+            {errorMessage}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 " + (className ?? "")}>
-      {renderSelect("Division", divisions, value.division_id, true, loading.div,
+      {renderSelect("division", "Division", divisions, value.division_id, true, loading.div,
         (v) => set({ division_id: v, district_id: null, upazila_id: null, union_id: null, ward_id: null, village_id: null, mouza_id: null }))}
 
-      {renderSelect("District", districts, value.district_id, !!value.division_id, loading.dis,
+      {renderSelect("district", "District", districts, value.district_id, !!value.division_id, loading.dis,
         (v) => set({ district_id: v, upazila_id: null, union_id: null, ward_id: null, village_id: null, mouza_id: null }), "Division")}
 
-      {renderSelect("Upazila", upazilas, value.upazila_id, !!value.district_id, loading.upa,
+      {renderSelect("upazila", "Upazila", upazilas, value.upazila_id, !!value.district_id, loading.upa,
         (v) => set({ upazila_id: v, union_id: null, ward_id: null, village_id: null, mouza_id: null }), "District")}
 
-      {renderSelect("Union", unions, value.union_id, !!value.upazila_id, loading.uni,
+      {renderSelect("union", "Union", unions, value.union_id, !!value.upazila_id, loading.uni,
         (v) => set({ union_id: v, ward_id: null, village_id: null, mouza_id: null }), "Upazila")}
 
-      {renderSelect("Ward", wards, value.ward_id, !!value.union_id, loading.war,
+      {renderSelect("ward", "Ward", wards, value.ward_id, !!value.union_id, loading.war,
         (v) => set({ ward_id: v, village_id: null, mouza_id: null }), "Union")}
 
-      {renderSelect("Village", villages, value.village_id, !!value.ward_id, loading.vil,
+      {renderSelect("village", "Village", villages, value.village_id, !!value.ward_id, loading.vil,
         (v) => set({ village_id: v, mouza_id: null }), "Ward")}
 
-      {renderSelect("Mouza", mouzas, value.mouza_id, !!value.village_id, loading.mou,
+      {renderSelect("mouza", "Mouza", mouzas, value.mouza_id, !!value.village_id, loading.mou,
         (v) => set({ mouza_id: v }), "Village")}
     </div>
   );
