@@ -465,17 +465,12 @@ export const translations = {
     // Cashbook KIND labels (savings_deposit/share/other) — others reuse existing keys
     savingsDeposit: "Savings Deposit",
     share: "Share",
-    other: "Other",
     // Cashbook validation/audit
     amountMustBePositive: "Amount must be > 0",
     pickAKind: "Pick a kind",
     headAndAmountRequired: "Head & amount required",
     nameRequired: "Name required",
     allTimeLabel: "All time",
-    openingCash: "Opening Cash",
-    openingCashBalance: "Opening cash balance",
-    closing: "Closing",
-    auditReportPdf: "Audit Report (PDF)",
     totalIncomeReceipts: "Total Income (Receipts)",
     totalExpenseAll: "Total Expense",
     closingCash: "Closing Cash",
