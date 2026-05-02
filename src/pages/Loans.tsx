@@ -68,6 +68,7 @@ export default function Loans() {
     if (error) return toast.error(error.message);
     toast.success(t("saved")); load();
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function remove(id: string) {
     if (!window.confirm("Delete this loan? Linked payments and ledger entries will be removed. This cannot be undone.")) return;
     const { error } = await supabase.from("loans").delete().eq("id", id);
