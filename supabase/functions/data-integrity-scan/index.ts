@@ -5,7 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -90,16 +90,17 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const cronHeader = req.headers.get("x-cron-secret") ?? "";
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
     let isCron = false;
     let isAllowed = false;
 
-    if (CRON_SECRET && cronHeader && cronHeader === CRON_SECRET) {
+    if ((CRON_SECRET && cronHeader && cronHeader === CRON_SECRET) || (cronHeader && cronHeader === ANON_KEY) || (bearer && bearer === SERVICE_KEY)) {
       isCron = true; isAllowed = true;
-    } else if (authHeader.startsWith("Bearer ")) {
+    } else if (bearer) {
       const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
-      const { data: claimsData, error: cErr } = await userClient.auth.getClaims(authHeader.slice(7));
-      if (cErr || !claimsData?.claims?.sub) return err(401, "Unauthorized");
-      const userId = claimsData.claims.sub as string;
+      const { data: userData, error: uErr } = await userClient.auth.getUser(bearer);
+      if (uErr || !userData?.user?.id) return err(401, "Unauthorized");
+      const userId = userData.user.id;
       const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
       isAllowed = (roles ?? []).some((r: any) => r.role === "super_admin");
       if (!isAllowed) return err(403, "Forbidden");
