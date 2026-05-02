@@ -8,6 +8,7 @@ interface AuthCtx {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  rolesLoaded: boolean;
   roles: AppRole[];
   officeId: string | null;
   isSuper: boolean;
