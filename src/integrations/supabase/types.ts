@@ -14,16 +14,588 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity: string | null
+          entity_id: string | null
+          id: string
+          meta: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          meta?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          meta?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      farmers: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          district: string | null
+          division: string | null
+          farmer_code: string
+          father_name: string | null
+          id: string
+          mobile: string | null
+          mother_name: string | null
+          name_bn: string | null
+          name_en: string
+          nid: string | null
+          office_id: string | null
+          photo_url: string | null
+          post_office: string | null
+          status: string
+          upazila: string | null
+          updated_at: string
+          village: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          district?: string | null
+          division?: string | null
+          farmer_code: string
+          father_name?: string | null
+          id?: string
+          mobile?: string | null
+          mother_name?: string | null
+          name_bn?: string | null
+          name_en: string
+          nid?: string | null
+          office_id?: string | null
+          photo_url?: string | null
+          post_office?: string | null
+          status?: string
+          upazila?: string | null
+          updated_at?: string
+          village?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          district?: string | null
+          division?: string | null
+          farmer_code?: string
+          father_name?: string | null
+          id?: string
+          mobile?: string | null
+          mother_name?: string | null
+          name_bn?: string | null
+          name_en?: string
+          nid?: string | null
+          office_id?: string | null
+          photo_url?: string | null
+          post_office?: string | null
+          status?: string
+          upazila?: string | null
+          updated_at?: string
+          village?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmers_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      irrigation_charges: {
+        Row: {
+          base_charge: number
+          basis: Database["public"]["Enums"]["irrigation_basis"]
+          canal_charge: number
+          created_at: string
+          created_by: string | null
+          due_amount: number
+          entry_date: string
+          farmer_id: string
+          id: string
+          land_id: string
+          maintenance_charge: number
+          note: string | null
+          other_charge: number
+          paid_amount: number
+          quantity: number
+          season_id: string
+          total: number
+        }
+        Insert: {
+          base_charge?: number
+          basis?: Database["public"]["Enums"]["irrigation_basis"]
+          canal_charge?: number
+          created_at?: string
+          created_by?: string | null
+          due_amount?: number
+          entry_date?: string
+          farmer_id: string
+          id?: string
+          land_id: string
+          maintenance_charge?: number
+          note?: string | null
+          other_charge?: number
+          paid_amount?: number
+          quantity?: number
+          season_id: string
+          total?: number
+        }
+        Update: {
+          base_charge?: number
+          basis?: Database["public"]["Enums"]["irrigation_basis"]
+          canal_charge?: number
+          created_at?: string
+          created_by?: string | null
+          due_amount?: number
+          entry_date?: string
+          farmer_id?: string
+          id?: string
+          land_id?: string
+          maintenance_charge?: number
+          note?: string | null
+          other_charge?: number
+          paid_amount?: number
+          quantity?: number
+          season_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "irrigation_charges_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_charges_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_charges_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lands: {
+        Row: {
+          created_at: string
+          dag_no: string | null
+          farmer_id: string
+          field_type: Database["public"]["Enums"]["field_type"]
+          id: string
+          land_size: number
+          mouza: string | null
+          owner_type: Database["public"]["Enums"]["owner_type"]
+        }
+        Insert: {
+          created_at?: string
+          dag_no?: string | null
+          farmer_id: string
+          field_type?: Database["public"]["Enums"]["field_type"]
+          id?: string
+          land_size?: number
+          mouza?: string | null
+          owner_type?: Database["public"]["Enums"]["owner_type"]
+        }
+        Update: {
+          created_at?: string
+          dag_no?: string | null
+          farmer_id?: string
+          field_type?: Database["public"]["Enums"]["field_type"]
+          id?: string
+          land_size?: number
+          mouza?: string | null
+          owner_type?: Database["public"]["Enums"]["owner_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lands_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_payments: {
+        Row: {
+          amount: number
+          collected_by: string | null
+          created_at: string
+          id: string
+          loan_id: string
+          paid_on: string
+        }
+        Insert: {
+          amount: number
+          collected_by?: string | null
+          created_at?: string
+          id?: string
+          loan_id: string
+          paid_on?: string
+        }
+        Update: {
+          amount?: number
+          collected_by?: string | null
+          created_at?: string
+          id?: string
+          loan_id?: string
+          paid_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_payments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loans: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          farmer_id: string
+          id: string
+          interest_enabled: boolean
+          interest_rate: number
+          issued_on: string
+          next_due_on: string | null
+          note: string | null
+          principal: number
+          status: Database["public"]["Enums"]["loan_status"]
+          total_payable: number
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          farmer_id: string
+          id?: string
+          interest_enabled?: boolean
+          interest_rate?: number
+          issued_on?: string
+          next_due_on?: string | null
+          note?: string | null
+          principal: number
+          status?: Database["public"]["Enums"]["loan_status"]
+          total_payable?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          farmer_id?: string
+          id?: string
+          interest_enabled?: boolean
+          interest_rate?: number
+          issued_on?: string
+          next_due_on?: string | null
+          note?: string | null
+          principal?: number
+          status?: Database["public"]["Enums"]["loan_status"]
+          total_payable?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offices: {
+        Row: {
+          address: string | null
+          contact: string | null
+          created_at: string
+          established_on: string | null
+          id: string
+          name: string
+          registration_no: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact?: string | null
+          created_at?: string
+          established_on?: string | null
+          id?: string
+          name: string
+          registration_no?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact?: string | null
+          created_at?: string
+          established_on?: string | null
+          id?: string
+          name?: string
+          registration_no?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          collected_by: string | null
+          created_at: string
+          farmer_id: string
+          id: string
+          kind: Database["public"]["Enums"]["payment_kind"]
+          method: string | null
+          note: string | null
+          reference_id: string | null
+        }
+        Insert: {
+          amount: number
+          collected_by?: string | null
+          created_at?: string
+          farmer_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["payment_kind"]
+          method?: string | null
+          note?: string | null
+          reference_id?: string | null
+        }
+        Update: {
+          amount?: number
+          collected_by?: string | null
+          created_at?: string
+          farmer_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["payment_kind"]
+          method?: string | null
+          note?: string | null
+          reference_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          language_pref: string
+          office_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          language_pref?: string
+          office_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          language_pref?: string
+          office_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      savings_transactions: {
+        Row: {
+          amount: number
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          farmer_id: string
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["approval_status"]
+          txn_date: string
+          type: Database["public"]["Enums"]["savings_txn_type"]
+        }
+        Insert: {
+          amount: number
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          farmer_id: string
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          txn_date?: string
+          type: Database["public"]["Enums"]["savings_txn_type"]
+        }
+        Update: {
+          amount?: number
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          farmer_id?: string
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          txn_date?: string
+          type?: Database["public"]["Enums"]["savings_txn_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_transactions_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          type: Database["public"]["Enums"]["season_type"]
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          type: Database["public"]["Enums"]["season_type"]
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          type?: Database["public"]["Enums"]["season_type"]
+          year?: number
+        }
+        Relationships: []
+      }
+      shares: {
+        Row: {
+          balance: number
+          farmer_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          farmer_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          farmer_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shares_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: true
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_user_office: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_or_super: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "admin" | "staff"
+      approval_status: "pending" | "approved" | "rejected"
+      field_type: "high_land" | "medium_land" | "low_land" | "other"
+      irrigation_basis: "per_size" | "per_day" | "per_hour"
+      loan_status: "pending" | "approved" | "paid" | "rejected"
+      owner_type: "owner" | "borgadar"
+      payment_kind: "loan" | "savings" | "irrigation"
+      savings_txn_type: "deposit" | "withdraw"
+      season_type: "aman" | "boro" | "iri" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +722,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "admin", "staff"],
+      approval_status: ["pending", "approved", "rejected"],
+      field_type: ["high_land", "medium_land", "low_land", "other"],
+      irrigation_basis: ["per_size", "per_day", "per_hour"],
+      loan_status: ["pending", "approved", "paid", "rejected"],
+      owner_type: ["owner", "borgadar"],
+      payment_kind: ["loan", "savings", "irrigation"],
+      savings_txn_type: ["deposit", "withdraw"],
+      season_type: ["aman", "boro", "iri", "other"],
+    },
   },
 } as const
