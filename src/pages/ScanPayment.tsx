@@ -56,6 +56,31 @@ export default function ScanPayment() {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; method: string; note: string | null; idemKey: string; paidAt: string } | null>(null);
   const brand = useBranding();
+  const tpl = useReceiptTemplate();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  function buildReceiptPayload(): PaymentReceiptData | null {
+    if (!done || !resolved) return null;
+    return {
+      receipt_no: done.paymentId.slice(0, 8).toUpperCase(),
+      payment_id: done.paymentId,
+      paid_at: done.paidAt,
+      farmer_name: resolved.farmer.name,
+      farmer_code: resolved.farmer.farmer_code,
+      member_no: resolved.farmer.member_no,
+      mobile_masked: resolved.farmer.mobile_masked ?? null,
+      village: resolved.farmer.village ?? null,
+      token_masked: maskToken(scannedToken),
+      token_status: "active",
+      kind: done.kind,
+      amount: done.amount,
+      method: done.method,
+      note: done.note,
+      idempotency_key: done.idemKey,
+      company_name: brand.company_name,
+      company_name_bn: brand.company_name_bn,
+    };
+  }
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-scan-payment";
