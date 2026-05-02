@@ -172,3 +172,117 @@ export function exportAuditReportPDF(opts: {
 
   doc.save(`audit-report.pdf`);
 }
+
+// ---------- Combined Farmer Statement (Loans + Savings + Irrigation) ----------
+export function exportFarmerCombinedStatementPDF(opts: {
+  brand: { company_name: string; address?: string; mobile?: string };
+  farmer: { name_en: string; name_bn?: string; farmer_code?: string; member_no?: string; mobile?: string; village?: string };
+  range: { from: string; to: string };
+  opening_savings: number;
+  savings: Array<{ txn_date: string; type: string; amount: number; note?: string | null }>;
+  irrigation: Array<{ entry_date: string; season?: string; dag?: string; total: number; paid_amount: number; due_amount: number }>;
+  loans: Array<{ issued_on: string; principal: number; interest_rate: number; total_payable: number; status: string; paid: number; due: number }>;
+}) {
+  const doc = new jsPDF();
+  doc.setFontSize(15); doc.setFont(undefined, "bold");
+  doc.text(opts.brand.company_name, 105, 14, { align: "center" });
+  doc.setFontSize(10); doc.setFont(undefined, "normal");
+  if (opts.brand.address) doc.text(opts.brand.address, 105, 20, { align: "center" });
+  doc.setFontSize(13); doc.setFont(undefined, "bold");
+  doc.text("Farmer Statement", 105, 28, { align: "center" });
+  doc.setFontSize(9); doc.setFont(undefined, "normal");
+  doc.text(`Period: ${opts.range.from || "—"}  to  ${opts.range.to || "—"}`, 105, 33, { align: "center" });
+
+  // Member block
+  autoTable(doc, {
+    startY: 38,
+    theme: "plain",
+    body: [[
+      `Member: ${opts.farmer.name_en}${opts.farmer.name_bn ? " (" + opts.farmer.name_bn + ")" : ""}`,
+      `Code: ${opts.farmer.member_no || opts.farmer.farmer_code || "—"}`,
+      `Mobile: ${opts.farmer.mobile || "—"}`,
+      `Village: ${opts.farmer.village || "—"}`,
+    ]],
+    styles: { fontSize: 9 },
+  });
+
+  // Savings ledger w/ running balance
+  let bal = Number(opts.opening_savings || 0);
+  const savRows: any[] = [["—", "Opening Balance", "", "", money(bal)]];
+  let totDep = 0, totWd = 0;
+  for (const s of opts.savings) {
+    const dep = s.type === "deposit" ? Number(s.amount) : 0;
+    const wd = s.type === "withdraw" ? Number(s.amount) : 0;
+    bal = bal + dep - wd;
+    totDep += dep; totWd += wd;
+    savRows.push([fmtDate(s.txn_date), s.note || s.type, dep ? money(dep) : "—", wd ? money(wd) : "—", money(bal)]);
+  }
+  savRows.push(["", "Totals", money(totDep), money(totWd), money(bal)]);
+
+  let y = (doc as any).lastAutoTable.finalY + 4;
+  doc.setFont(undefined, "bold"); doc.text("Savings", 14, y); doc.setFont(undefined, "normal");
+  autoTable(doc, {
+    startY: y + 2,
+    head: [["Date", "Particulars", "Deposit", "Withdraw", "Balance"]],
+    body: savRows,
+    theme: "striped",
+    styles: { fontSize: 8 },
+  });
+
+  // Irrigation
+  y = (doc as any).lastAutoTable.finalY + 4;
+  doc.setFont(undefined, "bold"); doc.text("Irrigation Charges", 14, y); doc.setFont(undefined, "normal");
+  const irrTotals = opts.irrigation.reduce((a, r) => ({
+    total: a.total + Number(r.total || 0),
+    paid: a.paid + Number(r.paid_amount || 0),
+    due: a.due + Number(r.due_amount || 0),
+  }), { total: 0, paid: 0, due: 0 });
+  autoTable(doc, {
+    startY: y + 2,
+    head: [["Date", "Season", "Dag", "Total", "Paid", "Due"]],
+    body: [
+      ...opts.irrigation.map(r => [fmtDate(r.entry_date), r.season || "—", r.dag || "—", money(r.total), money(r.paid_amount), money(r.due_amount)]),
+      ["", "", "Totals", money(irrTotals.total), money(irrTotals.paid), money(irrTotals.due)],
+    ],
+    theme: "striped",
+    styles: { fontSize: 8 },
+  });
+
+  // Loans
+  y = (doc as any).lastAutoTable.finalY + 4;
+  doc.setFont(undefined, "bold"); doc.text("Loans", 14, y); doc.setFont(undefined, "normal");
+  const loanTotals = opts.loans.reduce((a, r) => ({
+    principal: a.principal + Number(r.principal || 0),
+    payable: a.payable + Number(r.total_payable || 0),
+    paid: a.paid + Number(r.paid || 0),
+    due: a.due + Number(r.due || 0),
+  }), { principal: 0, payable: 0, paid: 0, due: 0 });
+  autoTable(doc, {
+    startY: y + 2,
+    head: [["Issued", "Principal", "Rate %", "Payable", "Paid", "Due", "Status"]],
+    body: [
+      ...opts.loans.map(l => [fmtDate(l.issued_on), money(l.principal), l.interest_rate, money(l.total_payable), money(l.paid), money(l.due), l.status]),
+      ["Totals", money(loanTotals.principal), "", money(loanTotals.payable), money(loanTotals.paid), money(loanTotals.due), ""],
+    ],
+    theme: "striped",
+    styles: { fontSize: 8 },
+  });
+
+  // Grand summary
+  y = (doc as any).lastAutoTable.finalY + 4;
+  doc.setFont(undefined, "bold"); doc.text("Summary", 14, y); doc.setFont(undefined, "normal");
+  autoTable(doc, {
+    startY: y + 2,
+    head: [["Metric", "Amount"]],
+    body: [
+      ["Savings closing balance", money(bal)],
+      ["Irrigation total due", money(irrTotals.due)],
+      ["Loan total due", money(loanTotals.due)],
+      ["Net liability (Irr + Loan due − Savings)", money(irrTotals.due + loanTotals.due - bal)],
+    ],
+    theme: "grid",
+    styles: { fontSize: 9 },
+  });
+
+  doc.save(`statement-${(opts.farmer.member_no || opts.farmer.farmer_code || "member")}.pdf`);
+}
