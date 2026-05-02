@@ -141,7 +141,7 @@ export default function Diagnostics() {
                     <TableCell className="font-mono text-xs">{e.code || "—"}</TableCell>
                     <TableCell className="text-xs">
                       <div>{e.message}</div>
-                      {e.policyHint && <div className="text-amber-600 dark:text-amber-400 mt-1">💡 {e.policyHint}</div>}
+                      {e.policyHint && <div className="text-amber-600 dark:text-amber-400 mt-1">💡 {t(e.policyHint as any)}</div>}
                     </TableCell>
                   </TableRow>
                 ))}
