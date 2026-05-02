@@ -176,45 +176,68 @@ export default function SmsSettings() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle className="text-base">Message Templates (Bangla)</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            {tplFields.map((f) => (
-              <div key={f.key}>
-                <div className="flex items-center justify-between mb-1">
-                  <Label className="text-sm">{f.label}</Label>
-                  <span className="text-[10px] text-muted-foreground">vars: {TEMPLATE_VARS[f.key]?.join(", ")}</span>
-                </div>
-                <Textarea
-                  value={(s as any)[f.key] ?? ""}
-                  onChange={(e) => set(f.key, e.target.value as any)}
-                  rows={3}
-                  className="text-sm"
-                />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+          <CardHeader>
+            <CardTitle className="text-base">Message Templates</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Toggle Bangla / English. Live preview shows the message with sample values substituted for placeholders.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="bn">
+              <TabsList>
+                <TabsTrigger value="bn">বাংলা (Bangla)</TabsTrigger>
+                <TabsTrigger value="en">English</TabsTrigger>
+              </TabsList>
 
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle className="text-base">Message Templates (English)</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            {tplFields.map((f) => {
-              const enKey = (f.key + "_en") as keyof Settings;
-              return (
-                <div key={enKey}>
-                  <div className="flex items-center justify-between mb-1">
-                    <Label className="text-sm">{f.label}</Label>
-                    <span className="text-[10px] text-muted-foreground">vars: {TEMPLATE_VARS[f.key]?.join(", ")}</span>
+              {(["bn", "en"] as const).map((lang) => (
+                <TabsContent key={lang} value={lang} className="mt-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {tplFields.map((f) => {
+                      const key = (lang === "en" ? f.key + "_en" : f.key) as keyof Settings;
+                      const value = ((s as any)[key] ?? "") as string;
+                      const preview = renderTpl(value, SAMPLE_VARS[f.key] ?? {});
+                      const vars = TEMPLATE_VARS[f.key] ?? [];
+                      return (
+                        <div key={String(key)} className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm">{f.label}</Label>
+                            <div className="flex flex-wrap gap-1">
+                              {vars.map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  onClick={() => set(key, ((value ?? "") + " " + v) as any)}
+                                  className="text-[10px] rounded bg-muted px-1.5 py-0.5 hover:bg-accent transition-colors font-mono"
+                                  title="Click to insert at end"
+                                >
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <Textarea
+                            value={value}
+                            onChange={(e) => set(key, e.target.value as any)}
+                            rows={3}
+                            className="text-sm"
+                            dir={lang === "bn" ? "auto" : "ltr"}
+                          />
+                          <div className="rounded-md border bg-muted/30 px-2.5 py-1.5">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
+                              <Eye className="h-3 w-3"/> Preview
+                              <span className="ml-auto">{preview.length} chars</span>
+                            </div>
+                            <p className="text-xs whitespace-pre-wrap break-words">
+                              {preview || <span className="italic text-muted-foreground">empty template</span>}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <Textarea
-                    value={(s as any)[enKey] ?? ""}
-                    onChange={(e) => set(enKey, e.target.value as any)}
-                    rows={3}
-                    className="text-sm"
-                  />
-                </div>
-              );
-            })}
+                </TabsContent>
+              ))}
+            </Tabs>
           </CardContent>
         </Card>
 
