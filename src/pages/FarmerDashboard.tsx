@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useBranding } from "@/lib/branding";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { toast } from "sonner";
 
 const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
@@ -83,22 +84,28 @@ export default function FarmerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-surface">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col bg-gradient-surface">
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+        <SiteFooter />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-surface p-4">
-        <Card className="max-w-md w-full p-6">
-          <Alert variant="destructive"><AlertDescription>{error || "No data."}</AlertDescription></Alert>
-          <div className="mt-4 flex gap-2">
-            <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />Retry</Button>
-            <Button onClick={() => logout()} className="flex-1">Sign out</Button>
-          </div>
-        </Card>
+      <div className="min-h-screen flex flex-col bg-gradient-surface">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full p-6">
+            <Alert variant="destructive"><AlertDescription>{error || "No data."}</AlertDescription></Alert>
+            <div className="mt-4 flex gap-2">
+              <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />Retry</Button>
+              <Button onClick={() => logout()} className="flex-1">Sign out</Button>
+            </div>
+          </Card>
+        </div>
+        <SiteFooter />
       </div>
     );
   }
@@ -106,7 +113,7 @@ export default function FarmerDashboard() {
   const f = data.farmer;
 
   return (
-    <div className="min-h-screen bg-gradient-surface">
+    <div className="min-h-screen flex flex-col bg-gradient-surface">
       <header className="sticky top-0 z-10 border-b bg-card/80 backdrop-blur">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -123,7 +130,7 @@ export default function FarmerDashboard() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto p-3 sm:p-4 space-y-4">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4 space-y-4">
         {/* Profile */}
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
@@ -257,6 +264,7 @@ export default function FarmerDashboard() {
           Session is valid for 2 hours. Sign out when finished on a shared device.
         </p>
       </main>
+      <SiteFooter />
     </div>
   );
 }

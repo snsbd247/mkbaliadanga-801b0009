@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useBranding } from "@/lib/branding";
+import { SiteFooter } from "./SiteFooter";
 
 export function AppLayout() {
   const { user, loading, signOut, roles } = useAuth();
@@ -94,6 +95,7 @@ export function AppLayout() {
           <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-6 animate-fade-in overflow-x-hidden">
             <Outlet />
           </main>
+          <SiteFooter />
         </div>
       </div>
     </SidebarProvider>

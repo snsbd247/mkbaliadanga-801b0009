@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 // Strong password rules — enforced client-side; HIBP checked server-side.
 const MIN_LEN = 10;
@@ -84,7 +85,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-surface p-4">
+    <div className="min-h-screen bg-gradient-surface flex flex-col"><div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-end mb-2">
           <LanguageToggle />
@@ -142,6 +143,8 @@ export default function ResetPassword() {
           </p>
         </Card>
       </div>
+      </div>
+      <SiteFooter />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useAuth } from "@/auth/AuthProvider";
 import { toast } from "sonner";
 
@@ -91,7 +92,7 @@ export default function FarmerPortalLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-surface flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-surface flex flex-col"><div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-between items-center mb-2">
           <a href="/auth" className="text-xs text-primary underline">Admin Login →</a>
@@ -188,6 +189,8 @@ export default function FarmerPortalLogin() {
           </Button>
         </div>
       </div>
+      </div>
+      <SiteFooter />
     </div>
   );
 }

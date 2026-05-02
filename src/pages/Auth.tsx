@@ -14,6 +14,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 type StepStatus = "idle" | "running" | "ok" | "fail";
 interface DebugInfo {
@@ -155,7 +156,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-surface p-4">
+    <div className="min-h-screen bg-gradient-surface flex flex-col"><div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-end mb-2">
           <LanguageToggle />
@@ -252,6 +253,8 @@ export default function AuthPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
+      <SiteFooter />
     </div>
   );
 }
