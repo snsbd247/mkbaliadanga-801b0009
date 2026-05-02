@@ -91,9 +91,16 @@ export default function ScanPayment() {
         body: JSON.stringify({ token: token.trim() }),
       });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) { setErrMsg(j?.error || "Could not resolve token"); return; }
+      if (!res.ok) {
+        if (res.status === 410) {
+          setErrMsg("This card has been revoked. Please ask the office to issue a new one.");
+        } else {
+          setErrMsg(j?.error || "Could not resolve token");
+        }
+        return;
+      }
       setResolved(j);
-      // Pre-select the largest due bucket
+      setScannedToken(token.trim());
       const s = j.summary || {};
       if ((s.loan_due ?? 0) > 0) setKind("loan");
       else if ((s.irrigation_due ?? 0) > 0) setKind("irrigation");
@@ -112,6 +119,12 @@ export default function ScanPayment() {
 
     setSubmitting(true);
     try {
+      // Deterministic per-minute idempotency key – blocks accidental double-taps
+      // and re-scans of the same QR for the same amount/kind within the minute.
+      const windowMinute = Math.floor(Date.now() / 60_000);
+      const idemRaw = `${scannedToken}|${resolved.farmer.id}|${parsed.data.kind}|${parsed.data.amount}|${windowMinute}`;
+      const idemKey = await sha256Hex(idemRaw);
+
       const payload: any = {
         farmer_id: resolved.farmer.id,
         kind: parsed.data.kind === "other" ? "savings" : parsed.data.kind,
@@ -121,16 +134,33 @@ export default function ScanPayment() {
         collected_by: user?.id,
         status: "approved",
         office_id: resolved.farmer.office_id ?? null,
+        idempotency_key: idemKey,
       };
       const { data: ins, error } = await supabase.from("payments").insert(payload).select("id").single();
-      if (error) { setErrMsg(error.message); return; }
-      setDone({ paymentId: ins!.id });
+      if (error) {
+        if ((error as any).code === "23505" || /duplicate/i.test(error.message)) {
+          setErrMsg(
+            "Duplicate payment blocked: an identical payment was already recorded in the last minute."
+          );
+        } else {
+          setErrMsg(error.message);
+        }
+        return;
+      }
+      setDone({
+        paymentId: ins!.id,
+        amount: parsed.data.amount,
+        kind: parsed.data.kind,
+        farmer: resolved.farmer.name,
+      });
       toast.success("Payment recorded — SMS notification queued");
+    } catch (e: any) {
+      setErrMsg(e?.message ?? "Network error");
     } finally { setSubmitting(false); }
   }
 
   function reset() {
-    setResolved(null); setDone(null); setAmount(""); setNote(""); setErrMsg(null);
+    setResolved(null); setDone(null); setAmount(""); setNote(""); setErrMsg(null); setScannedToken("");
   }
 
   return (
