@@ -22,6 +22,7 @@ export default function Settings() {
   useEffect(() => { document.title = `${t("settings")} — ${t("appName")}`; }, [t]);
   useEffect(() => { setForm(brand); }, [brand.company_name]);
 
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   async function save() {
