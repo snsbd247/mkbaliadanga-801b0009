@@ -305,7 +305,7 @@ export default function Cashbook() {
                 </TableRow>
               ))}
               <TableRow className="bg-muted/60 font-bold">
-                <TableCell colSpan={4} className="text-right">Closing</TableCell>
+                <TableCell colSpan={4} className="text-right">{t("closing")}</TableCell>
                 <TableCell className="text-right text-success">{money(totals.income)}</TableCell>
                 <TableCell className="text-right text-destructive">{money(totals.expense)}</TableCell>
                 <TableCell className={`text-right ${totals.cashBalance < 0 ? "due-text" : ""}`}>{money(totals.cashBalance)}</TableCell>
