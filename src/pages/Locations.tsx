@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Trash2, MapPin, Pencil, Loader2, Search } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Level = "divisions" | "districts" | "upazilas" | "unions" | "wards" | "villages" | "mouzas";
 type Row = any;
