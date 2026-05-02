@@ -38,6 +38,7 @@ export default function Diagnostics() {
     return () => window.removeEventListener("rls-errors-changed", h);
   }, []);
 
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   async function runHealthCheck() {
