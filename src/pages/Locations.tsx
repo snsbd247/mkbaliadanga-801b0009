@@ -68,7 +68,7 @@ function LevelTab({ level }: { level: Level }) {
 
   async function remove(id: string) {
     if (!confirm("Delete this entry? Existing farmers/lands referencing it will keep their address text but lose the link.")) return;
-    const { error } = await supabase.from(level).delete().eq("id", id);
+    const { error } = await (supabase.from as any)(level).delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Deleted"); load();
   }
