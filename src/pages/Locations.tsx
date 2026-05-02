@@ -369,11 +369,11 @@ function LevelTab({ level }: { level: Level }) {
       {/* Filter bar */}
       {chain.length > 0 && (
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Filter</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">{t("filter")}</CardTitle></CardHeader>
           <CardContent>
             <CascadeFilters level={level} value={filter} onChange={setFilter} />
             {Object.keys(filter).length > 0 && (
-              <Button size="sm" variant="ghost" className="mt-2" onClick={() => setFilter({})}>Clear filters</Button>
+              <Button size="sm" variant="ghost" className="mt-2" onClick={() => setFilter({})}>{t("clearFilters")}</Button>
             )}
           </CardContent>
         </Card>
