@@ -101,7 +101,7 @@ export default function Users() {
     if (!confirm(`Delete ${u.username || u.email}? This cannot be undone.`)) return;
     const ok = await callAdmin({ action: "delete", user_id: u.id });
     if (!ok) return;
-    toast.success("User deleted");
+    toast.success(t("userDeleted"));
     load();
   }
 
