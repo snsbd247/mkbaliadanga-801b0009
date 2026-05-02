@@ -21,6 +21,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { LandRelations } from "@/components/LandRelations";
 import { SavingsStatement } from "@/components/SavingsStatement";
+import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
+import { useBranding } from "@/lib/branding";
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
