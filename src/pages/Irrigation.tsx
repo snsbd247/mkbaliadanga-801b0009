@@ -118,8 +118,9 @@ export default function Irrigation() {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>{t("quantity")}</Label><Input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} /></div>
-              <div><Label>{t("baseCharge")}</Label><Input type="number" value={form.base_charge} onChange={e => setForm({ ...form, base_charge: +e.target.value })} /></div>
+              <div><Label>{form.basis === "per_size" ? `${t("quantity")} (auto = land size)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label><Input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} /></div>
+              <div><Label>Rate / unit</Label><Input type="number" step="0.01" value={form.rate} onChange={e => setForm({ ...form, rate: +e.target.value })} /></div>
+              <div className="col-span-2"><Label>{t("baseCharge")} (= rate × qty)</Label><Input type="number" value={form.base_charge} readOnly className="bg-muted" /></div>
               <div><Label>{t("canalCharge")}</Label><Input type="number" value={form.canal_charge} onChange={e => setForm({ ...form, canal_charge: +e.target.value })} /></div>
               <div><Label>{t("maintenanceCharge")}</Label><Input type="number" value={form.maintenance_charge} onChange={e => setForm({ ...form, maintenance_charge: +e.target.value })} /></div>
               <div><Label>{t("otherCharge")}</Label><Input type="number" value={form.other_charge} onChange={e => setForm({ ...form, other_charge: +e.target.value })} /></div>
