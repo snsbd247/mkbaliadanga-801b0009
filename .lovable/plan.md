@@ -1,91 +1,110 @@
-# Smart Irrigation & Cooperative Management System — MVP Plan
+# Plan: CRUD audit + Membership Card + QR Scan Payment
 
-A production-style web app for cooperative-based irrigation and farmer management, with role-based access, bilingual UI (English/Bangla), and full accounting modules.
+Scope is locked by your answers: **audit-then-fill** for CRUD, **add new routes only**, **tabs only** for farmer portal, **opaque token** for QR.
 
-## Tech Stack
-- React + Vite + TypeScript + Tailwind + shadcn/ui (already set up)
-- **Lovable Cloud** (Supabase) for: Postgres database, Auth (email/password), Storage (farmer images), Row-Level Security, Edge Functions if needed
-- React Router for routing, TanStack Query for data, react-hook-form + zod for forms
-- jsPDF + xlsx for PDF/Excel exports
-- i18n via lightweight context (English + Bangla)
+## 1. CRUD audit (fill gaps only — no churn on working pages)
 
-## Roles & Security
-- `app_role` enum: `super_admin`, `admin`, `staff`
-- Separate `user_roles` table + `has_role()` security definer function (avoids RLS recursion)
-- Each user linked to an `office_id` via a `profiles` table
-- RLS policies: super_admin sees all; admin/staff scoped to their office; staff write-only on collections, no approvals
+I will read each list page and report what is missing. Likely findings (to confirm by reading the files, not assumed):
 
-## Database Schema (high level)
-```text
-profiles (id → auth.users, full_name, office_id, language_pref)
-user_roles (user_id, role)
-offices (id, name, registration_no, established_on, contact, address)
-seasons (id, year, type[Aman|Boro|Iri|Other], default_rate_config)
-farmers (id, farmer_code "YYYY-00000001", name_en, name_bn, father, mother,
-         nid, mobile, village, post, upazila, district, division, address,
-         photo_url, office_id, status[active|inactive], created_by)
-lands (id, farmer_id, mouza, dag_no, land_size, owner_type, field_type)
-savings_transactions (id, farmer_id, type[deposit|withdraw], amount,
-                      status[pending|approved|rejected], approved_by, txn_date)
-shares (id, farmer_id, balance)
-loans (id, farmer_id, principal, interest_enabled, interest_rate,
-       total_payable, issued_on, next_due_on, status[pending|approved|paid])
-loan_payments (id, loan_id, amount, paid_on)
-irrigation_charges (id, farmer_id, land_id, season_id, basis[size|day|hour],
-                    quantity, base_charge, canal_charge, maintenance_charge,
-                    other_charge, total, paid_amount, due_amount, entry_date)
-payments (id, farmer_id, kind[loan|savings|irrigation], reference_id,
-          amount, method, collected_by, created_at)
-audit_logs (id, user_id, action, entity, entity_id, meta, created_at)
+| Module | View | Edit | Delete |
+|---|---|---|---|
+| Farmers (`/farmers` + `/farmers/:id`) | exists | likely exists | check |
+| Loans (`/loans`) | tbd | tbd | tbd |
+| Savings (`/savings`) | tbd | tbd | tbd |
+| Ledger Entries (`/ledger`) | tbd | tbd | tbd (super-admin only by RLS) |
+
+For any genuine gap I'll add: a confirm-delete dialog (using existing `AlertDialog`), an inline edit dialog reusing the same form as create, and a view dialog for read-only details. No soft-delete column exists today on these tables, so delete = hard delete (matches current behavior). Existing RLS already enforces who can edit/delete.
+
+## 2. Membership Card system
+
+**New route** `/farmers/:id/card` (under existing `AppLayout`, so it inherits auth + sidebar). I'm using `/farmers/...` not `/admin/farmer/...` to match the rest of the admin routes you already have — keeps URLs consistent.
+
+**Card layout** (CR80, 85.6 × 54 mm, both sides on one printable A4 sheet):
+
 ```
-- Auto farmer code via DB trigger using a per-year sequence
-- Indexes on farmer_id, office_id, season_id, dates
-- All tables RLS-enabled with office-scoped policies
+┌──────────────── FRONT ────────────────┐  ┌──────────────── BACK ─────────────────┐
+│ [logo]   COMPANY NAME (bn / en)        │  │  Address: village, union, upazila…    │
+│                                        │  │  Mobile:  017xx-xxxxxx                │
+│              ┌────────┐                │  │                                       │
+│              │ photo  │   Name         │  │              ┌──────────┐             │
+│              └────────┘   ID:  …       │  │              │   QR     │             │
+│                           Member: M-…  │  │              └──────────┘             │
+│                           Issued: …    │  │  Scan to pay • do not share          │
+└────────────────────────────────────────┘  └────────────────────────────────────────┘
+```
 
-## Modules / Pages
-1. **Auth**: Login, password reset (Lovable Cloud auth)
-2. **Layout**: Sidebar navigation + topbar with language toggle (EN/BN), user menu, office indicator
-3. **Dashboard**: Summary cards (Total/Active Farmers, Savings, Shares, Loans, Irrigation Collection, Today's Collection, Total Due), Recent Transactions list, Pending Approvals list
-4. **Offices** (super_admin only): CRUD
-5. **Users & Roles** (super_admin/admin): invite users, assign role + office
-6. **Farmers**: List with search/filter/pagination, Create/Edit form (bilingual fields, image upload), Detail page (tabs: Info, Lands, Savings, Loans, Irrigation, Full Report)
-7. **Lands**: nested under farmer detail — add multiple lands
-8. **Seasons**: CRUD, link default irrigation rates
-9. **Savings**: Deposit form, Withdraw request, Approval queue, ledger per farmer, daily/monthly reports
-10. **Loans**: Issue loan (with global default interest fallback + per-loan override), approval flow, collection page, status tracking, due highlighting
-11. **Irrigation**: Entry per land/season with basis (size/day/hour), itemized charges with auto total, per-farmer/per-land due tracking
-12. **Unified Payment**: Single screen → pick farmer → choose Loan/Savings/Irrigation → auto-update balances, write to `payments` + module-specific table
-13. **Reports**: Farmer-wise full report (printable), Irrigation report (season/land), Loan report, Savings report. Filters: date range, office, farmer. Export PDF + Excel.
-14. **Notifications** (in-app): badge for pending withdrawals & loan approvals
-15. **Audit Logs** (super_admin): table view
+**Export**:
+- Print-friendly view via a dedicated print stylesheet (`@page { size: 90mm 56mm; }` and `@media print` to hide chrome).
+- PDF via existing `jspdf` (already in deps) — render at exact mm dimensions, embed photo + QR as data URLs.
 
-## Bilingual Support
-- `LanguageProvider` context, translations dictionary (`en` / `bn`)
-- Toggle in topbar, persisted to profile
-- Farmer fields stored bilingually (name_en, name_bn) and rendered per active language
+**QR contents**: just the opaque token string (e.g. `mkc_<32 hex>`). No URL, no PII.
 
-## Design System
-- Professional cooperative/agriculture feel: deep green primary, gold accent, neutral surfaces
-- HSL semantic tokens in `index.css` + tailwind extensions; no hard-coded colors in components
-- Dues highlighted with destructive token; status badges with semantic variants
-- Card-based dashboard, clean tables with shadcn DataTable patterns
+## 3. QR token table + edge function
 
-## Implementation Order
-1. Enable Lovable Cloud, set up auth, schema, RLS, seed data
-2. Design system + sidebar layout + i18n + auth pages
-3. Offices, Users, Farmers, Lands
-4. Seasons, Irrigation
-5. Savings, Loans
-6. Unified Payments
-7. Dashboard wiring
-8. Reports + PDF/Excel export
-9. Notifications, audit logs, polish
+New table `qr_tokens`:
 
-## Scope Notes (MVP)
-- Email/password auth only (no Google for now — can add later)
-- Audit logs: basic write-on-mutation, viewable list
-- Reports: clean printable HTML + jsPDF; Excel via SheetJS
-- Realistic seed data for ~20 farmers, 2 offices, 2 seasons
+- `farmer_id uuid not null`
+- `token text not null unique` (32-byte hex, prefixed `mkc_`)
+- `revoked boolean default false`
+- `created_at timestamptz default now()`
+- `created_by uuid`
 
-## Confirmation Needed
-This is a large build (~30–50 files, schema + many UI screens). I'll execute it in the order above, committing working slices. Approve to proceed and I'll start by enabling Lovable Cloud and laying down the schema + design system.
+RLS: deny-all to client; only edge functions (service role) read/write. Card page calls a new edge function `farmer-card-token` that returns the current token for a farmer (creates one if none, rotates if `?rotate=1`).
+
+Scan endpoint: `qr-resolve-token` — takes `{ token }`, returns `{ farmer: {id, name, mobile_masked, dues}}`. Validates token, checks not revoked, logs lookup to `audit_logs`.
+
+## 4. QR Scan Payment flow
+
+**New route** `/scan-payment` (admin/staff) under `AppLayout`.
+
+Flow:
+1. Page opens camera using existing `html5-qrcode` (already in deps — same lib used by `/scan`).
+2. On scan → POST token to `qr-resolve-token` → receive farmer summary.
+3. Render a small "Collect payment" form (reuse the same insert path as the existing Payments page). Fields: amount (>0), kind (loan / savings / irrigation / other), note.
+4. Submit → INSERT into `payments` (existing table, existing triggers handle ledger + SMS automatically). Server-side validation: amount > 0, farmer exists, token valid.
+5. Show success toast + receipt link.
+
+No new payments logic — reuses the existing `payments` table and its triggers, which already post to ledger and trigger SMS. So we don't risk breaking accounting.
+
+## 5. Routes added
+
+New, additive only — nothing existing moves:
+
+- `/farmers/:id/card` — Membership Card view (admin/staff)
+- `/scan-payment` — QR scanner + payment form (admin/staff)
+
+## 6. Security
+
+- QR carries an opaque token, never raw farmer UUID.
+- `qr_tokens` table has RLS deny-all; only service-role edge functions touch it.
+- Scan + card endpoints require an authenticated admin/staff session (verified via `getClaims` with the user's JWT).
+- `audit_logs` row written on token issue, scan, and payment collection.
+- Inputs validated with Zod in both edge functions.
+
+## 7. Files I'll change / add
+
+**New**:
+- `supabase/migrations/<ts>_qr_tokens.sql` — table + RLS
+- `supabase/functions/farmer-card-token/index.ts`
+- `supabase/functions/qr-resolve-token/index.ts`
+- `src/pages/FarmerCard.tsx`
+- `src/pages/ScanPayment.tsx`
+- `src/components/card/MembershipCard.tsx` (the printable card itself)
+- `src/components/card/cardPdf.ts` (jsPDF export)
+
+**Edited**:
+- `src/App.tsx` — register the two new routes
+- `src/pages/Farmers.tsx` / `FarmerDetail.tsx` — add a "Print Card" button (only if missing)
+- `src/components/layout/AppSidebar.tsx` — add a "Scan Payment" link
+- `supabase/config.toml` — register the two new functions with `verify_jwt = false` (we validate in code so we can return clean JSON 401s)
+
+CRUD gap-fills are listed only after I read each page and confirm what's actually missing — I won't touch a page that already has working View/Edit/Delete.
+
+## What this plan deliberately does NOT do
+
+- No move of existing routes under `/admin/*` (you chose "add new routes only").
+- No new `/farmer/ledger`, `/farmer/loan`, `/farmer/savings` pages (you chose "tabs only").
+- No soft-delete migration on existing tables — they don't have one today, adding it would be a schema change with cascade implications.
+- No rate limiting on the new endpoints (per project guidance — backend rate-limiting primitives aren't in place; the existing OTP throttling pattern can be added later if desired).
+
+After approval I'll execute in this order: migration → edge functions → card UI → scan UI → CRUD audit + gap fixes → tests.

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Check, X, Printer, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Check, X, Printer, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -67,6 +67,13 @@ export default function Loans() {
     const { error } = await supabase.from("loans").update({ status, approved_by: user?.id, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("saved")); load();
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async function remove(id: string) {
+    if (!window.confirm("Delete this loan? Linked payments and ledger entries will be removed. This cannot be undone.")) return;
+    const { error } = await supabase.from("loans").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); load();
   }
 
   function printLoanReceipt(loan: any, payment?: any) {

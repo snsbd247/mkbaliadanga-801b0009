@@ -1,0 +1,88 @@
+import { QRCodeSVG } from "qrcode.react";
+import { User } from "lucide-react";
+
+export interface CardData {
+  company_name: string;
+  company_name_bn?: string;
+  logo_url?: string | null;
+  farmer: {
+    name: string;
+    name_en?: string;
+    farmer_code?: string;
+    member_no?: string;
+    mobile?: string;
+    village?: string;
+    address?: string;
+    photo_url?: string | null;
+  };
+  token: string;
+  issued_at: string;
+}
+
+/** Standard CR80 card: 85.6mm × 54mm. We render it in mm via inline width/height + a wrapper. */
+export function MembershipCard({ data }: { data: CardData }) {
+  const f = data.farmer;
+  const issued = new Date(data.issued_at).toLocaleDateString();
+
+  return (
+    <div className="flex flex-wrap gap-4 print:gap-2" data-testid="membership-card">
+      {/* FRONT */}
+      <div
+        className="bg-white text-gray-900 rounded-lg shadow-elegant overflow-hidden border print:shadow-none"
+        style={{ width: "85.6mm", height: "54mm" }}
+      >
+        <div className="h-full flex flex-col p-2">
+          <div className="flex items-center gap-2 border-b pb-1">
+            {data.logo_url ? (
+              <img src={data.logo_url} alt="" className="h-6 w-6 rounded object-cover" crossOrigin="anonymous" />
+            ) : (
+              <div className="h-6 w-6 rounded bg-emerald-600" />
+            )}
+            <div className="text-[9px] leading-tight font-semibold truncate">
+              {data.company_name_bn || data.company_name}
+              <div className="text-[7px] font-normal text-gray-500 truncate">Member ID Card</div>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center gap-2 mt-1">
+            <div className="h-16 w-12 shrink-0 rounded border bg-gray-50 overflow-hidden flex items-center justify-center">
+              {f.photo_url ? (
+                <img src={f.photo_url} alt="" className="h-full w-full object-cover" crossOrigin="anonymous" />
+              ) : (
+                <User className="h-6 w-6 text-gray-300" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1 text-[9px] leading-tight space-y-0.5">
+              <div className="font-bold text-[11px] truncate">{f.name}</div>
+              {f.name_en && f.name_en !== f.name && <div className="text-gray-500 truncate">{f.name_en}</div>}
+              <div><span className="text-gray-500">ID:</span> <span className="font-mono">{f.farmer_code || "—"}</span></div>
+              {f.member_no && <div><span className="text-gray-500">Member:</span> <span className="font-mono">{f.member_no}</span></div>}
+              <div><span className="text-gray-500">Issued:</span> {issued}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* BACK */}
+      <div
+        className="bg-white text-gray-900 rounded-lg shadow-elegant overflow-hidden border print:shadow-none"
+        style={{ width: "85.6mm", height: "54mm" }}
+      >
+        <div className="h-full flex p-2 gap-2">
+          <div className="flex-1 min-w-0 text-[8px] leading-tight space-y-1">
+            <div className="font-semibold text-[9px] border-b pb-0.5">Contact</div>
+            {f.village && <div><span className="text-gray-500">Village:</span> {f.village}</div>}
+            {f.address && <div className="line-clamp-3"><span className="text-gray-500">Address:</span> {f.address}</div>}
+            {f.mobile && <div><span className="text-gray-500">Mobile:</span> <span className="font-mono">{f.mobile}</span></div>}
+            <div className="pt-1 text-[7px] text-gray-500">If found, please return to the issuing office.</div>
+          </div>
+          <div className="flex flex-col items-center justify-center shrink-0">
+            <div className="bg-white p-0.5 border rounded">
+              <QRCodeSVG value={data.token} size={90} level="M" includeMargin={false} />
+            </div>
+            <div className="text-[6px] text-gray-500 mt-0.5">Scan to pay</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
