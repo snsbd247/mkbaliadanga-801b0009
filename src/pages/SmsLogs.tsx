@@ -168,6 +168,54 @@ export default function SmsLogs() {
     load();
   }
 
+  async function openDetails(l: Log) {
+    let kind: "loan" | "irrigation" | null = null;
+    if (l.reference_type === "loan" || l.event_type === "due_reminder_loan") kind = "loan";
+    else if (l.reference_type === "irrigation" || l.event_type === "due_reminder_irrigation") kind = "irrigation";
+
+    setDrawer({ log: l, loading: true, kind, record: null, paid: 0, due: 0 });
+
+    if (!kind || !l.reference_id) {
+      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: "No underlying reference recorded for this SMS." });
+      return;
+    }
+
+    try {
+      const farmerPromise = l.farmer_id
+        ? supabase.from("farmers").select("id,name_en,name_bn,farmer_code,mobile,village").eq("id", l.farmer_id).maybeSingle()
+        : Promise.resolve({ data: null } as any);
+
+      if (kind === "loan") {
+        const [loanRes, paySumRes, farmerRes] = await Promise.all([
+          supabase.from("loans").select("*").eq("id", l.reference_id).maybeSingle(),
+          supabase.from("loan_payments").select("amount,paid_on,status").eq("loan_id", l.reference_id).eq("status", "approved"),
+          farmerPromise,
+        ]);
+        if (loanRes.error || !loanRes.data) {
+          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: loanRes.error?.message ?? "Loan not found (may be deleted)." });
+          return;
+        }
+        const paid = (paySumRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
+        const due = Math.max(0, Number(loanRes.data.total_payable || 0) - paid);
+        setDrawer({ log: l, loading: false, kind, record: loanRes.data, paid, due, payments: paySumRes.data ?? [], farmer: (farmerRes as any).data });
+      } else {
+        const [irrRes, farmerRes] = await Promise.all([
+          supabase.from("irrigation_charges").select("*").eq("id", l.reference_id).maybeSingle(),
+          farmerPromise,
+        ]);
+        if (irrRes.error || !irrRes.data) {
+          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: irrRes.error?.message ?? "Irrigation charge not found (may be deleted)." });
+          return;
+        }
+        const paid = Number(irrRes.data.paid_amount || 0);
+        const due = Number(irrRes.data.due_amount || 0);
+        setDrawer({ log: l, loading: false, kind, record: irrRes.data, paid, due, farmer: (farmerRes as any).data });
+      }
+    } catch (e: any) {
+      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: e?.message ?? "Failed to load details" });
+    }
+  }
+
   async function sendBulk() {
     const mobiles = bulkMobiles.split(/[\s,;\n]+/).map((m) => m.trim()).filter(Boolean);
     if (!mobiles.length) return toast.error("Enter at least one mobile");
