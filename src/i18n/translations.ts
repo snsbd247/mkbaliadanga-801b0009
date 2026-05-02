@@ -335,7 +335,6 @@ export const translations = {
     entriesWithoutAccountId: "entries have no account_id.",
     openLedger: "Open ledger",
     openChartOfAccounts: "Open Chart of Accounts",
-    financeSummary: "Finance Summary",
     financeSummaryDesc: "One-page snapshot of Trial Balance, P&L, Cash Book and period status",
     refresh: "Refresh",
     lastMonth: "Last Month",
