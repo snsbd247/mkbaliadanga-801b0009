@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
-import { money, fmtDate } from "./format";
+import { money, moneyPdf, fmtDate } from "./format";
 
 export function exportFarmerReportPDF(farmer: any, ctx: any) {
   const doc = new jsPDF();
@@ -16,10 +16,10 @@ export function exportFarmerReportPDF(farmer: any, ctx: any) {
   autoTable(doc, {
     startY: 48, head: [["Summary", "Amount"]],
     body: [
-      ["Savings Balance", money(ctx.savingsBal)],
-      ["Share Balance", money(ctx.share)],
-      ["Loan Due", money(ctx.loanDue)],
-      ["Irrigation Due", money(ctx.irrDue)],
+      ["Savings Balance", moneyPdf(ctx.savingsBal)],
+      ["Share Balance", moneyPdf(ctx.share)],
+      ["Loan Due", moneyPdf(ctx.loanDue)],
+      ["Irrigation Due", moneyPdf(ctx.irrDue)],
     ],
   });
 
@@ -36,7 +36,7 @@ export function exportFarmerReportPDF(farmer: any, ctx: any) {
   autoTable(doc, {
     startY: y + 2,
     head: [["Date", "Season", "Total", "Paid", "Due"]],
-    body: ctx.irr.map((i: any) => [fmtDate(i.entry_date), i.seasons?.name ?? "-", money(i.total), money(i.paid_amount), money(i.due_amount)]),
+    body: ctx.irr.map((i: any) => [fmtDate(i.entry_date), i.seasons?.name ?? "-", moneyPdf(i.total), moneyPdf(i.paid_amount), moneyPdf(i.due_amount)]),
   });
 
   y = (doc as any).lastAutoTable.finalY + 6;
@@ -44,7 +44,7 @@ export function exportFarmerReportPDF(farmer: any, ctx: any) {
   autoTable(doc, {
     startY: y + 2,
     head: [["Issued", "Principal", "Rate %", "Payable", "Status"]],
-    body: ctx.loans.map((l: any) => [fmtDate(l.issued_on), money(l.principal), l.interest_rate, money(l.total_payable), l.status]),
+    body: ctx.loans.map((l: any) => [fmtDate(l.issued_on), moneyPdf(l.principal), l.interest_rate, moneyPdf(l.total_payable), l.status]),
   });
 
   doc.save(`farmer-${farmer.farmer_code}.pdf`);
@@ -132,8 +132,8 @@ export function exportPaymentReceiptPDF(opts: {
   autoTable(doc, {
     startY: 62,
     head: [["Allocation", "Amount (BDT)"]],
-    body: opts.allocations.map(a => [a.kind.toUpperCase(), money(a.amount)]),
-    foot: [["TOTAL", money(opts.amount)]],
+    body: opts.allocations.map(a => [a.kind.toUpperCase(), moneyPdf(a.amount)]),
+    foot: [["TOTAL", moneyPdf(opts.amount)]],
     theme: "grid",
     styles: { fontSize: 9 },
     headStyles: { fillColor: [30, 110, 70] },
@@ -174,7 +174,7 @@ export function exportAuditReportPDF(opts: {
 
   autoTable(doc, {
     startY: 38, head: [["Summary", "Amount"]],
-    body: opts.summary.map(s => [s.label, money(s.value)]),
+    body: opts.summary.map(s => [s.label, moneyPdf(s.value)]),
     theme: "striped",
   });
 
@@ -184,7 +184,7 @@ export function exportAuditReportPDF(opts: {
     autoTable(doc, {
       startY: y + 2,
       head: [["Office", "Income", "Expense", "Loan Issued", "Loan Coll.", "Irr Coll.", "Sav. Bal"]],
-      body: opts.byOffice.map(o => [o.office, money(o.income), money(o.expense), money(o.loanIssued), money(o.loanCollected), money(o.irrCollected), money(o.savBal)]),
+      body: opts.byOffice.map(o => [o.office, moneyPdf(o.income), moneyPdf(o.expense), moneyPdf(o.loanIssued), moneyPdf(o.loanCollected), moneyPdf(o.irrCollected), moneyPdf(o.savBal)]),
     });
     y = (doc as any).lastAutoTable.finalY + 6;
   }
@@ -193,7 +193,7 @@ export function exportAuditReportPDF(opts: {
     autoTable(doc, {
       startY: y + 2,
       head: [["Season", "Charged", "Collected", "Due"]],
-      body: opts.bySeason.map(s => [s.season, money(s.charged), money(s.collected), money(s.due)]),
+      body: opts.bySeason.map(s => [s.season, moneyPdf(s.charged), moneyPdf(s.collected), moneyPdf(s.due)]),
     });
     y = (doc as any).lastAutoTable.finalY + 6;
   }
@@ -241,16 +241,16 @@ export function exportFarmerCombinedStatementPDF(opts: {
 
   // Savings ledger w/ running balance
   let bal = Number(opts.opening_savings || 0);
-  const savRows: any[] = [["—", "Opening Balance", "", "", money(bal)]];
+  const savRows: any[] = [["—", "Opening Balance", "", "", moneyPdf(bal)]];
   let totDep = 0, totWd = 0;
   for (const s of opts.savings) {
     const dep = s.type === "deposit" ? Number(s.amount) : 0;
     const wd = s.type === "withdraw" ? Number(s.amount) : 0;
     bal = bal + dep - wd;
     totDep += dep; totWd += wd;
-    savRows.push([fmtDate(s.txn_date), s.note || s.type, dep ? money(dep) : "—", wd ? money(wd) : "—", money(bal)]);
+    savRows.push([fmtDate(s.txn_date), s.note || s.type, dep ? moneyPdf(dep) : "—", wd ? moneyPdf(wd) : "—", moneyPdf(bal)]);
   }
-  savRows.push(["", "Totals", money(totDep), money(totWd), money(bal)]);
+  savRows.push(["", "Totals", moneyPdf(totDep), moneyPdf(totWd), moneyPdf(bal)]);
 
   let y = (doc as any).lastAutoTable.finalY + 4;
   doc.setFont(undefined, "bold"); doc.text("Savings", 14, y); doc.setFont(undefined, "normal");
@@ -274,8 +274,8 @@ export function exportFarmerCombinedStatementPDF(opts: {
     startY: y + 2,
     head: [["Date", "Season", "Dag", "Total", "Paid", "Due"]],
     body: [
-      ...opts.irrigation.map(r => [fmtDate(r.entry_date), r.season || "—", r.dag || "—", money(r.total), money(r.paid_amount), money(r.due_amount)]),
-      ["", "", "Totals", money(irrTotals.total), money(irrTotals.paid), money(irrTotals.due)],
+      ...opts.irrigation.map(r => [fmtDate(r.entry_date), r.season || "—", r.dag || "—", moneyPdf(r.total), moneyPdf(r.paid_amount), moneyPdf(r.due_amount)]),
+      ["", "", "Totals", moneyPdf(irrTotals.total), moneyPdf(irrTotals.paid), moneyPdf(irrTotals.due)],
     ],
     theme: "striped",
     styles: { fontSize: 8 },
@@ -294,8 +294,8 @@ export function exportFarmerCombinedStatementPDF(opts: {
     startY: y + 2,
     head: [["Issued", "Principal", "Rate %", "Payable", "Paid", "Due", "Status"]],
     body: [
-      ...opts.loans.map(l => [fmtDate(l.issued_on), money(l.principal), l.interest_rate, money(l.total_payable), money(l.paid), money(l.due), l.status]),
-      ["Totals", money(loanTotals.principal), "", money(loanTotals.payable), money(loanTotals.paid), money(loanTotals.due), ""],
+      ...opts.loans.map(l => [fmtDate(l.issued_on), moneyPdf(l.principal), l.interest_rate, moneyPdf(l.total_payable), moneyPdf(l.paid), moneyPdf(l.due), l.status]),
+      ["Totals", moneyPdf(loanTotals.principal), "", moneyPdf(loanTotals.payable), moneyPdf(loanTotals.paid), moneyPdf(loanTotals.due), ""],
     ],
     theme: "striped",
     styles: { fontSize: 8 },
@@ -308,10 +308,10 @@ export function exportFarmerCombinedStatementPDF(opts: {
     startY: y + 2,
     head: [["Metric", "Amount"]],
     body: [
-      ["Savings closing balance", money(bal)],
-      ["Irrigation total due", money(irrTotals.due)],
-      ["Loan total due", money(loanTotals.due)],
-      ["Net liability (Irr + Loan due − Savings)", money(irrTotals.due + loanTotals.due - bal)],
+      ["Savings closing balance", moneyPdf(bal)],
+      ["Irrigation total due", moneyPdf(irrTotals.due)],
+      ["Loan total due", moneyPdf(loanTotals.due)],
+      ["Net liability (Irr + Loan due − Savings)", moneyPdf(irrTotals.due + loanTotals.due - bal)],
     ],
     theme: "grid",
     styles: { fontSize: 9 },
