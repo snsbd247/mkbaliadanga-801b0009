@@ -74,6 +74,11 @@ export default function Dashboard() {
     const irrCollection = sum(irrData, "paid_amount");
     const totalDue = sum(irrData, "due_amount") + sum(loansData.filter(l => l.status === "approved"), "total_payable");
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
+    const monthStart = today.slice(0, 7) + "-01";
+    const { data: monthPayAll } = await supabase
+      .from("payments").select("amount,created_at").gte("created_at", monthStart);
+    const monthCollect = sum(monthPayAll ?? [], "amount");
+    const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
     setStats([
       { label: t("totalFarmers"), value: String(farmersData.length), icon: Users },
@@ -83,7 +88,9 @@ export default function Dashboard() {
       { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins },
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success" },
+      { label: "This Month Collection", value: money(monthCollect), icon: CalendarClock },
       { label: t("totalDue"), value: money(totalDue), icon: AlertTriangle, tone: "danger" },
+      { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
     ]);
     setRecent(paymentsData);
     setPending([
