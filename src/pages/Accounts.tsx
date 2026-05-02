@@ -21,7 +21,9 @@ import {
 import { toast } from "sonner";
 import {
   ChevronRight, ChevronDown, BookOpen, Plus, Pencil, Trash2, RefreshCw,
+  Download, Upload,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 
 type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
 
@@ -220,6 +222,137 @@ export default function Accounts() {
     toast.success("Balances recalculated");
   };
 
+  // ---------- CSV / Excel Export ----------
+  const exportRows = () =>
+    rows.map((r) => {
+      const parent = r.parent_id ? rows.find((x) => x.id === r.parent_id) : null;
+      return {
+        code: r.code,
+        name: r.name,
+        name_bn: r.name_bn || "",
+        type: r.type,
+        parent_code: parent?.code || "",
+        is_active: r.is_active ? "yes" : "no",
+      };
+    });
+
+  const downloadBlob = (data: BlobPart, filename: string, mime: string) => {
+    const blob = new Blob([data], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCSV = () => {
+    const data = exportRows();
+    const headers = ["code", "name", "name_bn", "type", "parent_code", "is_active"];
+    const csv = [
+      headers.join(","),
+      ...data.map((r) =>
+        headers.map((h) => {
+          const v = String((r as any)[h] ?? "").replace(/"/g, '""');
+          return /[,"\n]/.test(v) ? `"${v}"` : v;
+        }).join(",")
+      ),
+    ].join("\n");
+    downloadBlob("\uFEFF" + csv, `chart-of-accounts_${new Date().toISOString().slice(0,10)}.csv`, "text/csv;charset=utf-8");
+  };
+
+  const exportXLSX = () => {
+    const ws = XLSX.utils.json_to_sheet(exportRows());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Accounts");
+    XLSX.writeFile(wb, `chart-of-accounts_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
+  const downloadTemplate = () => {
+    const sample = [
+      { code: "1000", name: "Assets", name_bn: "সম্পদ", type: "asset", parent_code: "", is_active: "yes" },
+      { code: "1100", name: "Cash", name_bn: "নগদ", type: "asset", parent_code: "1000", is_active: "yes" },
+    ];
+    const ws = XLSX.utils.json_to_sheet(sample);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "chart-of-accounts_template.xlsx");
+  };
+
+  // ---------- Import ----------
+  const handleImport = async (file: File) => {
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      if (!data.length) return toast.error("File is empty");
+
+      const valid: AccountType[] = ["asset", "liability", "equity", "income", "expense"];
+      const codeMap = new Map<string, string>(); // code -> id (existing)
+      rows.forEach((r) => codeMap.set(r.code, r.id));
+
+      let created = 0, updated = 0, skipped = 0;
+      const errors: string[] = [];
+
+      // Two passes so parents resolve
+      for (let pass = 0; pass < 2; pass++) {
+        for (const [i, raw] of data.entries()) {
+          const code = String(raw.code ?? "").trim();
+          const name = String(raw.name ?? "").trim();
+          const type = String(raw.type ?? "").trim().toLowerCase() as AccountType;
+          const name_bn = String(raw.name_bn ?? "").trim() || null;
+          const parent_code = String(raw.parent_code ?? "").trim();
+          const is_active = !["no", "false", "0"].includes(String(raw.is_active ?? "yes").toLowerCase());
+
+          if (!code || !name || !valid.includes(type)) {
+            if (pass === 0) errors.push(`Row ${i + 2}: invalid code/name/type`);
+            continue;
+          }
+
+          const parent_id = parent_code ? codeMap.get(parent_code) || null : null;
+          if (parent_code && !parent_id && pass === 1) {
+            errors.push(`Row ${i + 2}: parent_code "${parent_code}" not found`);
+            continue;
+          }
+          if (parent_code && !parent_id) continue; // wait for next pass
+
+          const payload = { code, name, name_bn, type, parent_id, is_active };
+          const existingId = codeMap.get(code);
+
+          if (existingId) {
+            if (pass === 0) {
+              const { error } = await supabase.from("accounts").update(payload).eq("id", existingId);
+              if (error) errors.push(`Row ${i + 2}: ${error.message}`);
+              else updated++;
+            }
+          } else {
+            const { data: ins, error } = await supabase.from("accounts").insert(payload).select("id").single();
+            if (error) {
+              if (pass === 1) errors.push(`Row ${i + 2}: ${error.message}`);
+            } else {
+              created++;
+              codeMap.set(code, ins!.id);
+            }
+          }
+        }
+      }
+
+      await load();
+      toast.success(`Imported: ${created} created, ${updated} updated, ${skipped} skipped`);
+      if (errors.length) {
+        console.warn("Import errors:", errors);
+        toast.error(`${errors.length} row(s) had issues — see console`);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Import failed");
+    }
+  };
+
+  const onFilePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) handleImport(f);
+    e.target.value = "";
+  };
+
   // flatten visible rows
   const visible: AccountNode[] = [];
   const walk = (n: AccountNode) => {
@@ -238,7 +371,22 @@ export default function Accounts() {
             <Button variant="outline" size="sm" onClick={expandAll}>Expand All</Button>
             <Button variant="outline" size="sm" onClick={collapseAll}>Collapse All</Button>
             <Button variant="outline" size="sm" onClick={recalc}>
-              <RefreshCw className="w-4 h-4 mr-1" /> Recalculate Balances
+              <RefreshCw className="w-4 h-4 mr-1" /> Recalculate
+            </Button>
+            <Button variant="outline" size="sm" onClick={downloadTemplate}>
+              <Download className="w-4 h-4 mr-1" /> Template
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportCSV}>
+              <Download className="w-4 h-4 mr-1" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportXLSX}>
+              <Download className="w-4 h-4 mr-1" /> Excel
+            </Button>
+            <input id="coa-import-file" type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={onFilePicked} />
+            <Button variant="outline" size="sm" asChild>
+              <label htmlFor="coa-import-file" className="cursor-pointer">
+                <Upload className="w-4 h-4 mr-1" /> Import
+              </label>
             </Button>
             <Button size="sm" onClick={() => openCreate()}>
               <Plus className="w-4 h-4 mr-1" /> Add Account
