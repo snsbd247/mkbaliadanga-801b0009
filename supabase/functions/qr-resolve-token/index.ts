@@ -43,12 +43,13 @@ Deno.serve(async (req) => {
     if (!/^mkc_[0-9a-f]{32}$/i.test(token)) return err(400, "Invalid token format");
 
     const { data: tok } = await admin
-      .from("qr_tokens").select("farmer_id, revoked")
+      .from("qr_tokens").select("farmer_id, revoked, expires_at")
       .eq("token", token).maybeSingle();
     if (!tok) return err(404, "Token not recognized");
-    if (tok.revoked) {
+    const expired = tok.expires_at && new Date(tok.expires_at).getTime() < Date.now();
+    if (tok.revoked || expired) {
       return new Response(
-        JSON.stringify({ error: "This card has been revoked. Please request a new card." }),
+        JSON.stringify({ error: "This card has been revoked or expired. Please request a new card." }),
         { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
