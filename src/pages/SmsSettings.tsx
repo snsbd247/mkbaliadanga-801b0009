@@ -15,6 +15,8 @@ import { MessageSquare, Send } from "lucide-react";
 type Settings = {
   enabled: boolean;
   sender_id: string | null;
+  language: string;
+  reminder_days_before: number;
   send_on_savings_deposit: boolean;
   send_on_savings_withdraw: boolean;
   send_on_loan_approved: boolean;
@@ -27,15 +29,21 @@ type Settings = {
   tpl_loan_payment: string;
   tpl_irrigation_payment: string;
   tpl_due_reminder: string;
+  tpl_savings_deposit_en: string;
+  tpl_savings_withdraw_en: string;
+  tpl_loan_approved_en: string;
+  tpl_loan_payment_en: string;
+  tpl_irrigation_payment_en: string;
+  tpl_due_reminder_en: string;
 };
 
-const TEMPLATE_VARS: Record<keyof Settings | string, string[]> = {
+const TEMPLATE_VARS: Record<string, string[]> = {
   tpl_savings_deposit: ["{amount}", "{balance}"],
   tpl_savings_withdraw: ["{amount}", "{balance}"],
   tpl_loan_approved: ["{amount}", "{payable}"],
   tpl_loan_payment: ["{amount}", "{due}"],
   tpl_irrigation_payment: ["{amount}"],
-  tpl_due_reminder: ["{type}", "{due}"],
+  tpl_due_reminder: ["{type}", "{due}", "{date}"],
 };
 
 export default function SmsSettings() {
