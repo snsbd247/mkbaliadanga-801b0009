@@ -1,110 +1,102 @@
-# Plan: CRUD audit + Membership Card + QR Scan Payment
 
-Scope is locked by your answers: **audit-then-fill** for CRUD, **add new routes only**, **tabs only** for farmer portal, **opaque token** for QR.
+## Goal
+Ship 5 enhancements on top of the existing Farmer Portal / QR / CRUD work — without touching any unrelated module.
 
-## 1. CRUD audit (fill gaps only — no churn on working pages)
+---
 
-I will read each list page and report what is missing. Likely findings (to confirm by reading the files, not assumed):
+## 1. Admin: Revoke Farmer QR Token
 
-| Module | View | Edit | Delete |
-|---|---|---|---|
-| Farmers (`/farmers` + `/farmers/:id`) | exists | likely exists | check |
-| Loans (`/loans`) | tbd | tbd | tbd |
-| Savings (`/savings`) | tbd | tbd | tbd |
-| Ledger Entries (`/ledger`) | tbd | tbd | tbd (super-admin only by RLS) |
+**UI (`src/pages/FarmerCard.tsx`)**
+- Add a "Revoke active token" button (admin / super_admin only) next to the existing card actions.
+- Confirm with `AlertDialog`. On success, immediately re-issue is optional via existing "Generate new token" flow.
 
-For any genuine gap I'll add: a confirm-delete dialog (using existing `AlertDialog`), an inline edit dialog reusing the same form as create, and a view dialog for read-only details. No soft-delete column exists today on these tables, so delete = hard delete (matches current behavior). Existing RLS already enforces who can edit/delete.
+**Edge function (new): `supabase/functions/farmer-card-revoke/index.ts`**
+- Auth: JWT validated in-code; require role `admin` or `super_admin` via `user_roles`.
+- Action: `UPDATE qr_tokens SET revoked = true WHERE farmer_id = $1 AND revoked = false`.
+- Writes an `audit_logs` row: `entity='qr_tokens', action='revoke', meta={farmer_id, count}`.
 
-## 2. Membership Card system
+**Block further scans**
+- Update `qr-resolve-token`: already filters `revoked = false`. Add explicit 410 Gone response with `{ error: 'token_revoked' }` when token row exists but `revoked = true`, so the scanner shows a clear message.
 
-**New route** `/farmers/:id/card` (under existing `AppLayout`, so it inherits auth + sidebar). I'm using `/farmers/...` not `/admin/farmer/...` to match the rest of the admin routes you already have — keeps URLs consistent.
+---
 
-**Card layout** (CR80, 85.6 × 54 mm, both sides on one printable A4 sheet):
+## 2. Selectable Membership Card Templates
 
-```
-┌──────────────── FRONT ────────────────┐  ┌──────────────── BACK ─────────────────┐
-│ [logo]   COMPANY NAME (bn / en)        │  │  Address: village, union, upazila…    │
-│                                        │  │  Mobile:  017xx-xxxxxx                │
-│              ┌────────┐                │  │                                       │
-│              │ photo  │   Name         │  │              ┌──────────┐             │
-│              └────────┘   ID:  …       │  │              │   QR     │             │
-│                           Member: M-…  │  │              └──────────┘             │
-│                           Issued: …    │  │  Scan to pay • do not share          │
-└────────────────────────────────────────┘  └────────────────────────────────────────┘
-```
+**New: `src/components/card/templates/`**
+- `ClassicTemplate.tsx` (current look — green gradient, sans-serif)
+- `MinimalTemplate.tsx` (white, mono-ish, minimal)
+- `BilingualTemplate.tsx` (BN-prominent, larger Noto Serif Bengali heading)
 
-**Export**:
-- Print-friendly view via a dedicated print stylesheet (`@page { size: 90mm 56mm; }` and `@media print` to hide chrome).
-- PDF via existing `jspdf` (already in deps) — render at exact mm dimensions, embed photo + QR as data URLs.
+Each exports the same props (`{ farmer, qrDataUrl }`) and renders inside the existing CR80 frame.
 
-**QR contents**: just the opaque token string (e.g. `mkc_<32 hex>`). No URL, no PII.
+**`src/pages/FarmerCard.tsx`**
+- Template selector (`Select`) persisted in `localStorage` per-user.
+- Live preview swaps to chosen template.
 
-## 3. QR token table + edge function
+**`src/components/card/cardPdf.ts`**
+- Accept `templateId` param. Render the chosen React template into an offscreen node, then `html2canvas` → `jsPDF` (already in stack) so PDF matches what the user sees. Keep CR80 dimensions.
 
-New table `qr_tokens`:
+---
 
-- `farmer_id uuid not null`
-- `token text not null unique` (32-byte hex, prefixed `mkc_`)
-- `revoked boolean default false`
-- `created_at timestamptz default now()`
-- `created_by uuid`
+## 3. Scan Payment: Dedupe + Clear Feedback
 
-RLS: deny-all to client; only edge functions (service role) read/write. Card page calls a new edge function `farmer-card-token` that returns the current token for a farmer (creates one if none, rotates if `?rotate=1`).
+**Frontend (`src/pages/ScanPayment.tsx`)**
+- Generate a deterministic `idempotency_key`: `sha256(token + farmer_id + amount + kind + window_minute)` where `window_minute = floor(Date.now() / 60_000)`.
+- Send as `Idempotency-Key` header AND `idempotency_key` column in `payments` insert.
+- Disable submit button while pending; show `<Alert variant="success">` (receipt no, amount, farmer) on success and `<Alert variant="destructive">` on failure with translated error.
 
-Scan endpoint: `qr-resolve-token` — takes `{ token }`, returns `{ farmer: {id, name, mobile_masked, dues}}`. Validates token, checks not revoked, logs lookup to `audit_logs`.
+**DB (migration)**
+- Add `UNIQUE INDEX payments_idem_key_uniq ON payments(idempotency_key) WHERE idempotency_key IS NOT NULL;` (column already exists).
+- On unique-violation insert, surface `409 duplicate_payment` from the existing payment edge path (or catch `23505` client-side and show "Payment already recorded in the last minute").
 
-## 4. QR Scan Payment flow
+---
 
-**New route** `/scan-payment` (admin/staff) under `AppLayout`.
+## 4. Audit Logs: Filter + Export
 
-Flow:
-1. Page opens camera using existing `html5-qrcode` (already in deps — same lib used by `/scan`).
-2. On scan → POST token to `qr-resolve-token` → receive farmer summary.
-3. Render a small "Collect payment" form (reuse the same insert path as the existing Payments page). Fields: amount (>0), kind (loan / savings / irrigation / other), note.
-4. Submit → INSERT into `payments` (existing table, existing triggers handle ledger + SMS automatically). Server-side validation: amount > 0, farmer exists, token valid.
-5. Show success toast + receipt link.
+**New page: `src/pages/AuditLogs.tsx`** (admin / super_admin only, route `/admin/audit-logs`)
+- Filters: office (select), farmer (search by code/name → resolves to `entity_id`), entity (`qr_tokens | payments | farmers | loans | savings_transactions | irrigation_charges`), action, date range.
+- Server-side query against `audit_logs` with RLS already in place (super_admin only). For admin without super_admin we'll relax via a new policy: `is_admin_or_super` can read own office.
+- Table view + CSV export (client-side, current filtered set, capped at 5000 rows, paginated fetch).
+- Sidebar entry under Admin section.
 
-No new payments logic — reuses the existing `payments` table and its triggers, which already post to ledger and trigger SMS. So we don't risk breaking accounting.
+**Migration**
+- Add policy: `admin read office audit` → `is_admin_or_super(auth.uid()) AND (office_id = current_user_office() OR has_role(auth.uid(),'super_admin'))`.
 
-## 5. Routes added
+---
 
-New, additive only — nothing existing moves:
+## 5. E2E Tests: RBAC for delete + ledger consistency
 
-- `/farmers/:id/card` — Membership Card view (admin/staff)
-- `/scan-payment` — QR scanner + payment form (admin/staff)
+**Playwright (`e2e/rbac-delete.spec.ts`)**
+Uses test users seeded via existing auth flow (env: `E2E_STAFF_EMAIL`, `E2E_COMMITTEE_EMAIL`, `E2E_SUPER_EMAIL`, shared password).
+- staff login → loan delete button hidden / API returns 403 (RLS).
+- committee login → delete loan + delete savings succeed.
+- After each delete, query `ledger_entries` via a small read-only edge fn `ledger-check` (or direct supabase-js with anon + RLS) and assert: no rows remain with `(reference_type, reference_id) = (deleted_ref)`; sum(debit) == sum(credit) globally for affected office.
 
-## 6. Security
+**Helper edge fn (new): `supabase/functions/ledger-check/index.ts`**
+- Validates JWT, returns `{ orphan: [...], unbalanced: [...] }` using existing `ledger_orphan_refs()` and `ledger_unbalanced_refs()` SQL functions.
 
-- QR carries an opaque token, never raw farmer UUID.
-- `qr_tokens` table has RLS deny-all; only service-role edge functions touch it.
-- Scan + card endpoints require an authenticated admin/staff session (verified via `getClaims` with the user's JWT).
-- `audit_logs` row written on token issue, scan, and payment collection.
-- Inputs validated with Zod in both edge functions.
+---
 
-## 7. Files I'll change / add
+## Files
 
-**New**:
-- `supabase/migrations/<ts>_qr_tokens.sql` — table + RLS
-- `supabase/functions/farmer-card-token/index.ts`
-- `supabase/functions/qr-resolve-token/index.ts`
-- `src/pages/FarmerCard.tsx`
-- `src/pages/ScanPayment.tsx`
-- `src/components/card/MembershipCard.tsx` (the printable card itself)
-- `src/components/card/cardPdf.ts` (jsPDF export)
+**New**
+- `supabase/functions/farmer-card-revoke/index.ts`
+- `supabase/functions/ledger-check/index.ts`
+- `supabase/migrations/<ts>_payments_idem_unique_audit_policy.sql`
+- `src/components/card/templates/{Classic,Minimal,Bilingual}Template.tsx`
+- `src/pages/AuditLogs.tsx`
+- `e2e/rbac-delete.spec.ts`
 
-**Edited**:
-- `src/App.tsx` — register the two new routes
-- `src/pages/Farmers.tsx` / `FarmerDetail.tsx` — add a "Print Card" button (only if missing)
-- `src/components/layout/AppSidebar.tsx` — add a "Scan Payment" link
-- `supabase/config.toml` — register the two new functions with `verify_jwt = false` (we validate in code so we can return clean JSON 401s)
+**Edited**
+- `src/pages/FarmerCard.tsx` (revoke button + template picker)
+- `src/components/card/cardPdf.ts` (template-aware render)
+- `src/pages/ScanPayment.tsx` (idempotency + feedback)
+- `supabase/functions/qr-resolve-token/index.ts` (410 on revoked)
+- `src/App.tsx` + `src/components/layout/AppSidebar.tsx` (audit logs route)
 
-CRUD gap-fills are listed only after I read each page and confirm what's actually missing — I won't touch a page that already has working View/Edit/Delete.
+## Out of scope
+- Re-architecting payments table or ledger triggers
+- Adding new roles
+- Rewriting existing Vitest suites
 
-## What this plan deliberately does NOT do
-
-- No move of existing routes under `/admin/*` (you chose "add new routes only").
-- No new `/farmer/ledger`, `/farmer/loan`, `/farmer/savings` pages (you chose "tabs only").
-- No soft-delete migration on existing tables — they don't have one today, adding it would be a schema change with cascade implications.
-- No rate limiting on the new endpoints (per project guidance — backend rate-limiting primitives aren't in place; the existing OTP throttling pattern can be added later if desired).
-
-After approval I'll execute in this order: migration → edge functions → card UI → scan UI → CRUD audit + gap fixes → tests.
+Approve to proceed.
