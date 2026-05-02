@@ -13,6 +13,7 @@ import { ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type DecisionTarget = {
   table: "savings_transactions" | "loan_payments" | "loans";
@@ -23,6 +24,7 @@ type DecisionTarget = {
 
 export default function Approvals() {
   const { isCommittee } = useAuth();
+  const { t } = useLang();
   const [savings, setSavings] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
@@ -46,14 +48,21 @@ export default function Approvals() {
 
   useEffect(() => { reload(); }, []);
 
-  const askDecision = (table: DecisionTarget["table"], id: string, status: "approved" | "rejected", label: string) => {
+  const askDecision = (table: NonNullable<DecisionTarget>["table"], id: string, status: "approved" | "rejected", label: string) => {
     setComment(""); setDecision({ table, id, status, label });
   };
+
+  const labelWithdrawal = (amount: number, name?: string) =>
+    t("withdrawalLabel").replace("{amount}", money(amount)).replace("{name}", name ?? "");
+  const labelLoan = (amount: number, name?: string) =>
+    t("loanLabel").replace("{amount}", money(amount)).replace("{name}", name ?? "");
+  const labelPayment = (amount: number) =>
+    t("paymentLabel").replace("{amount}", money(amount));
 
   const confirmDecision = async () => {
     if (!decision) return;
     if (decision.status === "rejected" && !comment.trim()) {
-      return toast.error("A reason is required for rejections");
+      return toast.error(t("rejectionReasonRequired"));
     }
     setBusy(true);
     const { data: u } = await supabase.auth.getUser();
@@ -61,7 +70,6 @@ export default function Approvals() {
       status: decision.status,
       approved_by: u.user?.id,
     };
-    // savings_transactions has `note`; loans / loan_payments use `approval_note`
     if (decision.table === "savings_transactions") {
       if (comment.trim()) patch.note = comment.trim();
     } else {
@@ -71,7 +79,8 @@ export default function Approvals() {
     const { error } = await supabase.from(decision.table).update(patch).eq("id", decision.id);
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`Marked ${decision.status}`);
+    const statusLabel = decision.status === "approved" ? t("approved") : t("rejected");
+    toast.success(t("markedAs").replace("{status}", statusLabel));
     setDecision(null);
     reload();
   };
@@ -79,12 +88,10 @@ export default function Approvals() {
   if (!isCommittee) {
     return (
       <div className="container mx-auto p-4">
-        <PageHeader title="Approvals" />
+        <PageHeader title={t("approvals")} />
         <Alert variant="destructive">
           <ShieldAlert className="h-4 w-4" />
-          <AlertDescription>
-            Only Super Admin or Committee members can approve or reject. Ask an administrator for the right role.
-          </AlertDescription>
+          <AlertDescription>{t("onlyCommitteeApprove")}</AlertDescription>
         </Alert>
       </div>
     );
@@ -92,21 +99,21 @@ export default function Approvals() {
 
   return (
     <div className="container mx-auto p-4 space-y-4">
-      <PageHeader title="Approvals" description="Approve or reject pending savings withdrawals, loan disbursements, and loan repayments. Decisions are recorded in the audit log." />
+      <PageHeader title={t("approvals")} description={t("approvalsDesc")} />
 
       <Tabs defaultValue="savings">
         <TabsList>
-          <TabsTrigger value="savings">Savings withdrawals ({savings.length})</TabsTrigger>
-          <TabsTrigger value="loans">Loan disbursements ({loans.length})</TabsTrigger>
-          <TabsTrigger value="payments">Loan payments ({payments.length})</TabsTrigger>
+          <TabsTrigger value="savings">{t("savingsWithdrawals")} ({savings.length})</TabsTrigger>
+          <TabsTrigger value="loans">{t("loanDisbursements")} ({loans.length})</TabsTrigger>
+          <TabsTrigger value="payments">{t("loanPayments")} ({payments.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="savings">
           <Card><CardContent className="pt-6">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Date</TableHead><TableHead>Farmer</TableHead>
-                <TableHead className="text-right">Amount</TableHead><TableHead></TableHead>
+                <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
+                <TableHead className="text-right">{t("amount")}</TableHead><TableHead></TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {savings.map((r) => (
@@ -115,12 +122,12 @@ export default function Approvals() {
                     <TableCell>{r.farmers?.farmer_code} — {r.farmers?.name_en}</TableCell>
                     <TableCell className="text-right">{money(r.amount)}</TableCell>
                     <TableCell className="flex gap-2 justify-end">
-                      <Button size="sm" onClick={() => askDecision("savings_transactions", r.id, "approved", `Withdrawal ${money(r.amount)} for ${r.farmers?.name_en}`)}>Approve</Button>
-                      <Button size="sm" variant="outline" onClick={() => askDecision("savings_transactions", r.id, "rejected", `Withdrawal ${money(r.amount)} for ${r.farmers?.name_en}`)}>Reject</Button>
+                      <Button size="sm" onClick={() => askDecision("savings_transactions", r.id, "approved", labelWithdrawal(r.amount, r.farmers?.name_en))}>{t("approve")}</Button>
+                      <Button size="sm" variant="outline" onClick={() => askDecision("savings_transactions", r.id, "rejected", labelWithdrawal(r.amount, r.farmers?.name_en))}>{t("reject")}</Button>
                     </TableCell>
                   </TableRow>
                 ))}
-                {!savings.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No pending withdrawals</TableCell></TableRow>}
+                {!savings.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("noPendingWithdrawals")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </CardContent></Card>
@@ -130,9 +137,9 @@ export default function Approvals() {
           <Card><CardContent className="pt-6">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Issued</TableHead><TableHead>Farmer</TableHead>
-                <TableHead className="text-right">Principal</TableHead>
-                <TableHead className="text-right">Total Payable</TableHead><TableHead></TableHead>
+                <TableHead>{t("issued")}</TableHead><TableHead>{t("farmerName")}</TableHead>
+                <TableHead className="text-right">{t("principal")}</TableHead>
+                <TableHead className="text-right">{t("totalPayable")}</TableHead><TableHead></TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {loans.map((r) => (
@@ -142,12 +149,12 @@ export default function Approvals() {
                     <TableCell className="text-right">{money(r.principal)}</TableCell>
                     <TableCell className="text-right">{money(r.total_payable)}</TableCell>
                     <TableCell className="flex gap-2 justify-end">
-                      <Button size="sm" onClick={() => askDecision("loans", r.id, "approved", `Loan ${money(r.principal)} for ${r.farmers?.name_en}`)}>Approve</Button>
-                      <Button size="sm" variant="outline" onClick={() => askDecision("loans", r.id, "rejected", `Loan ${money(r.principal)} for ${r.farmers?.name_en}`)}>Reject</Button>
+                      <Button size="sm" onClick={() => askDecision("loans", r.id, "approved", labelLoan(r.principal, r.farmers?.name_en))}>{t("approve")}</Button>
+                      <Button size="sm" variant="outline" onClick={() => askDecision("loans", r.id, "rejected", labelLoan(r.principal, r.farmers?.name_en))}>{t("reject")}</Button>
                     </TableCell>
                   </TableRow>
                 ))}
-                {!loans.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No pending loans</TableCell></TableRow>}
+                {!loans.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{t("noPendingLoans")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </CardContent></Card>
@@ -157,8 +164,8 @@ export default function Approvals() {
           <Card><CardContent className="pt-6">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Date</TableHead><TableHead>Farmer</TableHead>
-                <TableHead className="text-right">Amount</TableHead><TableHead></TableHead>
+                <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
+                <TableHead className="text-right">{t("amount")}</TableHead><TableHead></TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {payments.map((r) => (
@@ -167,12 +174,12 @@ export default function Approvals() {
                     <TableCell>{r.loans?.farmers?.farmer_code} — {r.loans?.farmers?.name_en}</TableCell>
                     <TableCell className="text-right">{money(r.amount)}</TableCell>
                     <TableCell className="flex gap-2 justify-end">
-                      <Button size="sm" onClick={() => askDecision("loan_payments", r.id, "approved", `Payment ${money(r.amount)}`)}>Approve</Button>
-                      <Button size="sm" variant="outline" onClick={() => askDecision("loan_payments", r.id, "rejected", `Payment ${money(r.amount)}`)}>Reject</Button>
+                      <Button size="sm" onClick={() => askDecision("loan_payments", r.id, "approved", labelPayment(r.amount))}>{t("approve")}</Button>
+                      <Button size="sm" variant="outline" onClick={() => askDecision("loan_payments", r.id, "rejected", labelPayment(r.amount))}>{t("reject")}</Button>
                     </TableCell>
                   </TableRow>
                 ))}
-                {!payments.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No pending payments</TableCell></TableRow>}
+                {!payments.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("noPendingPayments")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </CardContent></Card>
@@ -183,29 +190,27 @@ export default function Approvals() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {decision?.status === "approved" ? "Approve" : "Reject"} — {decision?.label}
+              {(decision?.status === "approved" ? t("approve") : t("reject"))} — {decision?.label}
             </DialogTitle>
-            <DialogDescription>
-              This decision will be recorded in the audit log along with your user ID and timestamp.
-            </DialogDescription>
+            <DialogDescription>{t("decisionAuditNote")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>Comment {decision?.status === "rejected" && <span className="text-destructive">*</span>}</Label>
+            <Label>{t("comment")} {decision?.status === "rejected" && <span className="text-destructive">*</span>}</Label>
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder={decision?.status === "rejected" ? "Reason for rejection (required)…" : "Optional note for the audit log"}
+              placeholder={decision?.status === "rejected" ? t("rejectionReasonPh") : t("optionalAuditNotePh")}
               rows={4}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDecision(null)} disabled={busy}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDecision(null)} disabled={busy}>{t("cancel")}</Button>
             <Button
               variant={decision?.status === "rejected" ? "destructive" : "default"}
               onClick={confirmDecision}
               disabled={busy}
             >
-              Confirm {decision?.status}
+              {t("confirm")} {decision?.status === "approved" ? t("approve") : t("reject")}
             </Button>
           </DialogFooter>
         </DialogContent>
