@@ -96,14 +96,14 @@ const App = () => (
                 <Route path="/backup" element={<Backup />} />
                 <Route path="/audit" element={<AuditLogs />} />
                 <Route path="/diagnostics" element={<Diagnostics />} />
-                <Route path="/accounts" element={<Accounts />} />
-                <Route path="/ledger" element={<Ledger />} />
-                <Route path="/financial-reports" element={<FinancialReports />} />
-                <Route path="/journal-entry" element={<JournalEntry />} />
-                <Route path="/ledger-integrity" element={<LedgerIntegrity />} />
-                <Route path="/approvals" element={<Approvals />} />
-                <Route path="/period-close" element={<PeriodClose />} />
-                <Route path="/finance-summary" element={<FinanceSummary />} />
+                <Route path="/accounts" element={<RequirePerm module="accounting"><Accounts /></RequirePerm>} />
+                <Route path="/ledger" element={<RequirePerm module="accounting"><Ledger /></RequirePerm>} />
+                <Route path="/financial-reports" element={<RequirePerm module="accounting"><FinancialReports /></RequirePerm>} />
+                <Route path="/journal-entry" element={<RequirePerm module="accounting" action="can_add"><JournalEntry /></RequirePerm>} />
+                <Route path="/ledger-integrity" element={<RequirePerm module="accounting"><LedgerIntegrity /></RequirePerm>} />
+                <Route path="/approvals" element={<RequirePerm module="approvals"><Approvals /></RequirePerm>} />
+                <Route path="/period-close" element={<RequirePerm module="accounting" action="can_edit"><PeriodClose /></RequirePerm>} />
+                <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
                 
                 <Route path="/sms-settings" element={<SmsSettings />} />
                 <Route path="/sms-logs" element={<SmsLogs />} />
