@@ -140,12 +140,29 @@ Deno.serve(async (req) => {
       const safeRequestUrl = "https://api.greenweb.com.bd/api.php?" + params.toString();
 
       const r = await sendViaGreenWeb(mobile, message, sender);
+      const tested_at = new Date().toISOString();
+
+      // Persist last test result to sms_settings.config.last_test (no token bytes)
+      try {
+        const { data: cur } = await admin.from("sms_settings").select("config").eq("id", 1).maybeSingle();
+        const cfg = (cur?.config ?? {}) as Record<string, unknown>;
+        cfg["last_test"] = {
+          ok: r.ok,
+          tested_at,
+          mobile: normalized,
+          sender: sender ?? null,
+          response: r.resp.slice(0, 200),
+          tested_by: uid,
+        };
+        await admin.from("sms_settings").update({ config: cfg }).eq("id", 1);
+      } catch (_) { /* non-fatal */ }
+
       return new Response(JSON.stringify({
         ok: r.ok,
         request: { url: safeRequestUrl, to: normalized, sender: sender ?? null, message_length: message.length },
         response: r.resp,
         provider: "greenweb",
-        tested_at: new Date().toISOString(),
+        tested_at,
       }), { status: r.ok ? 200 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
