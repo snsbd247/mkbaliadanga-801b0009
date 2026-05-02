@@ -34,6 +34,16 @@ interface Report {
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 
+interface DetailEntry {
+  id: string; entry_date: string; debit: number; credit: number;
+  description: string | null; account_code: string | null; account_name: string | null; account_type: string | null;
+}
+interface Detail {
+  reference_type: string; reference_id: string;
+  source_exists: boolean; source: any | null; source_amount: number | null;
+  ledger_entries: DetailEntry[]; ledger_debit: number; ledger_credit: number; diff: number;
+}
+
 export default function LedgerReconciliation() {
   const { isSuper } = useAuth();
   const today = new Date();
@@ -43,6 +53,8 @@ export default function LedgerReconciliation() {
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     document.title = "Monthly Ledger Reconciliation";
