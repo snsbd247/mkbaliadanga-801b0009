@@ -17,11 +17,23 @@ import { ShieldCheck, Plus, Trash2, KeyRound } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { z } from "zod";
 
+// Stronger password policy. Super admins must use a longer, mixed password.
+function passwordPolicyIssues(pw: string, role: string): string[] {
+  const issues: string[] = [];
+  const minLen = role === "super_admin" ? 12 : 10;
+  if (pw.length < minLen) issues.push(`At least ${minLen} characters`);
+  if (!/[a-z]/.test(pw)) issues.push("A lowercase letter");
+  if (!/[A-Z]/.test(pw)) issues.push("An uppercase letter");
+  if (!/[0-9]/.test(pw)) issues.push("A digit");
+  if (!/[^A-Za-z0-9]/.test(pw)) issues.push("A symbol (e.g. !@#$)");
+  return issues;
+}
+
 const createSchema = z.object({
   username: z.string().trim().regex(/^[a-zA-Z0-9_.-]{3,30}$/, "3–30 chars; letters, digits, . _ -"),
   email: z.string().trim().email().max(255),
   full_name: z.string().trim().min(1).max(120),
-  password: z.string().min(8, "At least 8 characters").max(72),
+  password: z.string().min(10, "At least 10 characters").max(72),
   role: z.enum(["super_admin", "admin", "committee", "staff"]),
   office_id: z.string().nullable(),
 });
@@ -74,6 +86,8 @@ export default function Users() {
       const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
       return toast.error(first ?? "Validation failed");
     }
+    const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role);
+    if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "create", ...parsed.data });
     if (!ok) return;
     toast.success("User created");
@@ -93,7 +107,9 @@ export default function Users() {
 
   async function resetPassword() {
     if (!resetFor) return;
-    if (resetPwd.length < 8) return toast.error("Password must be at least 8 characters");
+    const role = (resetFor.roles?.[0] as string) ?? "staff";
+    const policy = passwordPolicyIssues(resetPwd, role);
+    if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "reset_password", user_id: resetFor.id, password: resetPwd });
     if (!ok) return;
     toast.success("Password updated");
