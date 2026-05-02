@@ -44,7 +44,7 @@ export default function Payments() {
   async function checkRole() {
     if (!user) return;
     const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-    setIsAdmin((data ?? []).some((r: any) => r.role === "admin" || r.role === "super_admin"));
+    setIsAdmin((data ?? []).some((r: any) => r.role === "committee" || r.role === "super_admin"));
   }
 
   async function load() {
