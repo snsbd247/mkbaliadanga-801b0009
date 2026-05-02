@@ -15,7 +15,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
 import { useBranding } from "@/lib/branding";
 
 const RECEIPT_KINDS = [
@@ -46,6 +46,8 @@ export default function Cashbook() {
 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [openingCash, setOpeningCash] = useState<number>(() => Number(localStorage.getItem("cb_open") ?? 0));
+  useEffect(() => { localStorage.setItem("cb_open", String(openingCash || 0)); }, [openingCash]);
   const [farmers, setFarmers] = useState<any[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
