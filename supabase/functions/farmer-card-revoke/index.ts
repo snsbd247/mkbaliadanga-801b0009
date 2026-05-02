@@ -63,6 +63,34 @@ Deno.serve(async (req) => {
       new_values: { revoked_count: (revoked ?? []).length },
     });
 
+    // Notify farmer via SMS (best-effort)
+    try {
+      const { data: smsSet } = await admin
+        .from("sms_settings")
+        .select("enabled, language, send_on_qr_revoke, tpl_qr_revoke, tpl_qr_revoke_en")
+        .eq("id", 1).maybeSingle();
+      if (smsSet?.enabled && smsSet?.send_on_qr_revoke) {
+        const { data: f } = await admin.from("farmers").select("mobile").eq("id", farmerId).maybeSingle();
+        if (f?.mobile) {
+          const lang = (smsSet.language ?? "bn") as string;
+          const message = (lang === "en" ? smsSet.tpl_qr_revoke_en : smsSet.tpl_qr_revoke) ?? smsSet.tpl_qr_revoke ?? "";
+          const { data: log } = await admin.from("sms_logs").insert({
+            mobile: f.mobile, message, status: "queued",
+            event_type: "qr_revoke", farmer_id: farmerId,
+            reference_type: "qr_tokens", reference_id: farmerId,
+            office_id: farmer.office_id, created_by: userId,
+          }).select("id").single();
+          if (log?.id) {
+            await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
+              body: JSON.stringify({ log_id: log.id }),
+            }).catch(() => {});
+          }
+        }
+      }
+    } catch (e) { console.warn("SMS notify failed", e); }
+
     return new Response(JSON.stringify({ ok: true, revoked: (revoked ?? []).length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
