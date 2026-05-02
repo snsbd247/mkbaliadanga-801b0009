@@ -463,6 +463,9 @@ export default function Reports() {
             onXlsx={() => exportExcel("irrigation-arrears", "Arrears",
               arrears.map(r => ({ Date: r.date, Code: r.code, Farmer: r.name, Season: r.season, Dag: r.dag, Total: r.total, Paid: r.paid, Due: r.due, AgeDays: r.days, Bucket: r.bucket })))}
           />
+          <p className="text-xs text-muted-foreground mb-2">
+            Filters above (date range, office, farmer, season) apply to this report. Aging buckets are computed in UTC from <span className="font-mono">entry_date</span>.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
             {(["0-30", "31-60", "61-90", "90+"] as const).map(b => {
               const sum = arrears.filter(r => r.bucket === b).reduce((a, r) => a + r.due, 0);
