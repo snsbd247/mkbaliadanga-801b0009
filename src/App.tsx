@@ -51,6 +51,7 @@ import Verification from "./pages/admin/Verification";
 import RlsTest from "./pages/admin/RlsTest";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import DemoReset from "./pages/admin/DemoReset";
+import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
