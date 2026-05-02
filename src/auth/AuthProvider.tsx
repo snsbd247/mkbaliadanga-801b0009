@@ -12,6 +12,7 @@ interface AuthCtx {
   officeId: string | null;
   isSuper: boolean;
   isAdmin: boolean; // admin or super
+  isCommittee: boolean; // committee or super
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
