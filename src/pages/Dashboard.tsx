@@ -216,7 +216,7 @@ export default function Dashboard() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
-          <h2 className="font-semibold mb-3">Net Savings Movement</h2>
+          <h2 className="font-semibold mb-3">{t("netSavingsMovement")}</h2>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trend}>
