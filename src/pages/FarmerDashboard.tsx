@@ -95,14 +95,17 @@ export default function FarmerDashboard() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-surface p-4">
-        <Card className="max-w-md w-full p-6">
-          <Alert variant="destructive"><AlertDescription>{error || "No data."}</AlertDescription></Alert>
-          <div className="mt-4 flex gap-2">
-            <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />Retry</Button>
-            <Button onClick={() => logout()} className="flex-1">Sign out</Button>
-          </div>
-        </Card>
+      <div className="min-h-screen flex flex-col bg-gradient-surface">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full p-6">
+            <Alert variant="destructive"><AlertDescription>{error || "No data."}</AlertDescription></Alert>
+            <div className="mt-4 flex gap-2">
+              <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />Retry</Button>
+              <Button onClick={() => logout()} className="flex-1">Sign out</Button>
+            </div>
+          </Card>
+        </div>
+        <SiteFooter />
       </div>
     );
   }
