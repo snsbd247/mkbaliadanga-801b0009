@@ -109,11 +109,48 @@ export default function FinancialReports() {
       <PageHeader title="Financial Reports" description="Trial Balance, Income Statement, Balance Sheet, Cash Book" />
 
       <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2">
+        <CardContent className="grid gap-3 pt-6 md:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <Label>Fiscal Year</Label>
+            <Select onValueChange={(v) => {
+              const fy = fyOptions.find((f) => String(f.startYear) === v);
+              if (fy) { setFrom(fy.range.from); setTo(fy.range.to); }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Select FY" /></SelectTrigger>
+              <SelectContent>
+                {fyOptions.map((f) => <SelectItem key={f.startYear} value={String(f.startYear)}>FY {f.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Quick period</Label>
+            <Select onValueChange={(v) => {
+              const now = new Date();
+              if (v === "this-month") { const r = monthRange(now.getFullYear(), now.getMonth() + 1); setFrom(r.from); setTo(r.to); }
+              else if (v === "last-month") { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); const r = monthRange(d.getFullYear(), d.getMonth() + 1); setFrom(r.from); setTo(r.to); }
+              else if (v.startsWith("q")) { const r = quarterRange(now.getFullYear(), Number(v.slice(1))); setFrom(r.from); setTo(r.to); }
+              else if (v === "ytd") { setFrom(`${now.getFullYear()}-01-01`); setTo(new Date().toISOString().slice(0, 10)); }
+              else if (v === "all") { setFrom(""); setTo(""); }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Select period" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="this-month">This month</SelectItem>
+                <SelectItem value="last-month">Last month</SelectItem>
+                <SelectItem value="q1">Q1</SelectItem>
+                <SelectItem value="q2">Q2</SelectItem>
+                <SelectItem value="q3">Q3</SelectItem>
+                <SelectItem value="q4">Q4</SelectItem>
+                <SelectItem value="ytd">Year-to-date</SelectItem>
+                <SelectItem value="all">All time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label>From</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label>To</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
         </CardContent>
       </Card>
+
+      <p className="text-xs text-muted-foreground">Period: {from || "open"} → {to || "today"}</p>
 
       <Tabs defaultValue="trial">
         <TabsList>
