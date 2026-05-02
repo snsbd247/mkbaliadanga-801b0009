@@ -294,26 +294,20 @@ export default function ScanPayment() {
               <div className="text-xs text-muted-foreground">SMS notification has been queued.</div>
               <div className="flex gap-2 justify-center flex-wrap">
                 <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const payload = buildReceiptPayload();
+                    if (payload) setPreviewUrl(previewPaymentReceiptPdf(payload, { ...tpl, logo_url: brand.logo_url ?? null }));
+                  }}
+                >
+                  <Eye className="h-4 w-4" />Preview
+                </Button>
+                <Button
                   variant="outline"
-                  onClick={() => downloadPaymentReceiptPdf({
-                    receipt_no: done.paymentId.slice(0, 8).toUpperCase(),
-                    payment_id: done.paymentId,
-                    paid_at: done.paidAt,
-                    farmer_name: resolved.farmer.name,
-                    farmer_code: resolved.farmer.farmer_code,
-                    member_no: resolved.farmer.member_no,
-                    mobile_masked: resolved.farmer.mobile_masked ?? null,
-                    village: resolved.farmer.village ?? null,
-                    token_masked: maskToken(scannedToken),
-                    token_status: "active",
-                    kind: done.kind,
-                    amount: done.amount,
-                    method: done.method,
-                    note: done.note,
-                    idempotency_key: done.idemKey,
-                    company_name: brand.company_name,
-                    company_name_bn: brand.company_name_bn,
-                  })}
+                  onClick={() => {
+                    const payload = buildReceiptPayload();
+                    if (payload) downloadPaymentReceiptPdf(payload, { ...tpl, logo_url: brand.logo_url ?? null });
+                  }}
                 >
                   <FileDown className="h-4 w-4" />Download Receipt
                 </Button>
@@ -323,6 +317,15 @@ export default function ScanPayment() {
           )}
         </Card>
       </div>
+
+      <Dialog open={!!previewUrl} onOpenChange={(o) => !o && setPreviewUrl(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Receipt preview</DialogTitle></DialogHeader>
+          {previewUrl && (
+            <iframe src={previewUrl} title="Receipt preview" className="w-full h-[70vh] border rounded-md bg-white" />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
