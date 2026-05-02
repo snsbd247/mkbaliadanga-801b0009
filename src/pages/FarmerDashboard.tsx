@@ -113,7 +113,7 @@ export default function FarmerDashboard() {
   const f = data.farmer;
 
   return (
-    <div className="min-h-screen bg-gradient-surface">
+    <div className="min-h-screen flex flex-col bg-gradient-surface">
       <header className="sticky top-0 z-10 border-b bg-card/80 backdrop-blur">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
