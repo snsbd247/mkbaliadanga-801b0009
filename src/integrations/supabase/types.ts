@@ -1314,6 +1314,33 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_office_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          office_id: string
+          sender_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          office_id: string
+          sender_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          office_id?: string
+          sender_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sms_settings: {
         Row: {
           api_key_set: boolean
