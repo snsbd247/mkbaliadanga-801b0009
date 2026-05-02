@@ -135,13 +135,37 @@ export default function Irrigation() {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>{form.basis === "per_size" ? `${t("quantity")} (auto = land size)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label><Input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} /></div>
-              <div><Label>Rate / unit</Label><Input type="number" step="0.01" value={form.rate} onChange={e => setForm({ ...form, rate: +e.target.value })} /></div>
+              <div>
+                <Label>{form.basis === "per_size" ? `${t("quantity")} (auto = land size)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label>
+                <Input type="number" step="0.01" min="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} aria-invalid={!!errors.quantity} className={errors.quantity ? "border-destructive" : ""} />
+                {errors.quantity && <p className="text-xs text-destructive mt-1">{errors.quantity}</p>}
+              </div>
+              <div>
+                <Label>Rate / unit</Label>
+                <Input type="number" step="0.01" min="0.01" value={form.rate} onChange={e => setForm({ ...form, rate: +e.target.value })} aria-invalid={!!errors.rate} className={errors.rate ? "border-destructive" : ""} />
+                {errors.rate && <p className="text-xs text-destructive mt-1">{errors.rate}</p>}
+              </div>
               <div className="col-span-2"><Label>{t("baseCharge")} (= rate × qty)</Label><Input type="number" value={form.base_charge} readOnly className="bg-muted" /></div>
-              <div><Label>{t("canalCharge")}</Label><Input type="number" value={form.canal_charge} onChange={e => setForm({ ...form, canal_charge: +e.target.value })} /></div>
-              <div><Label>{t("maintenanceCharge")}</Label><Input type="number" value={form.maintenance_charge} onChange={e => setForm({ ...form, maintenance_charge: +e.target.value })} /></div>
-              <div><Label>{t("otherCharge")}</Label><Input type="number" value={form.other_charge} onChange={e => setForm({ ...form, other_charge: +e.target.value })} /></div>
-              <div><Label>{t("paidAmount")}</Label><Input type="number" value={form.paid_amount} onChange={e => setForm({ ...form, paid_amount: +e.target.value })} /></div>
+              <div>
+                <Label>{t("canalCharge")}</Label>
+                <Input type="number" min="0" value={form.canal_charge} onChange={e => setForm({ ...form, canal_charge: +e.target.value })} className={errors.canal_charge ? "border-destructive" : ""} />
+                {errors.canal_charge && <p className="text-xs text-destructive mt-1">{errors.canal_charge}</p>}
+              </div>
+              <div>
+                <Label>{t("maintenanceCharge")}</Label>
+                <Input type="number" min="0" value={form.maintenance_charge} onChange={e => setForm({ ...form, maintenance_charge: +e.target.value })} className={errors.maintenance_charge ? "border-destructive" : ""} />
+                {errors.maintenance_charge && <p className="text-xs text-destructive mt-1">{errors.maintenance_charge}</p>}
+              </div>
+              <div>
+                <Label>{t("otherCharge")}</Label>
+                <Input type="number" min="0" value={form.other_charge} onChange={e => setForm({ ...form, other_charge: +e.target.value })} className={errors.other_charge ? "border-destructive" : ""} />
+                {errors.other_charge && <p className="text-xs text-destructive mt-1">{errors.other_charge}</p>}
+              </div>
+              <div>
+                <Label>{t("paidAmount")}</Label>
+                <Input type="number" min="0" value={form.paid_amount} onChange={e => setForm({ ...form, paid_amount: +e.target.value })} className={errors.paid_amount ? "border-destructive" : ""} />
+                {errors.paid_amount && <p className="text-xs text-destructive mt-1">{errors.paid_amount}</p>}
+              </div>
               <div><Label>{t("date")}</Label><Input type="date" value={form.entry_date} onChange={e => setForm({ ...form, entry_date: e.target.value })} /></div>
               <div className="col-span-2 rounded-md border border-dashed p-2 text-sm flex justify-between">
                 <span className="text-muted-foreground">{t("previousDue") || "Previous due (auto)"}</span>
