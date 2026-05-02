@@ -27,6 +27,8 @@ type Log = {
   created_at: string;
   farmer_id: string | null;
   office_id: string | null;
+  farmer_name?: string | null;
+  office_name?: string | null;
 };
 type Office = { id: string; name: string };
 
@@ -85,13 +87,40 @@ export default function SmsLogs() {
     const { data, error } = await q;
     setLoading(false);
     if (error) return toast.error(error.message);
-    setLogs((data as any) ?? []);
+    const rows = (data as any[]) ?? [];
+
+    // Enrich with farmer + office names (sms_logs has no FK so we batch-fetch)
+    const farmerIds = Array.from(new Set(rows.map((r) => r.farmer_id).filter(Boolean)));
+    const officeIds = Array.from(new Set(rows.map((r) => r.office_id).filter(Boolean)));
+    const [farmersRes, officesRes] = await Promise.all([
+      farmerIds.length
+        ? supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", farmerIds)
+        : Promise.resolve({ data: [] as any[] }),
+      officeIds.length
+        ? supabase.from("offices").select("id,name").in("id", officeIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const fmap = new Map<string, any>(((farmersRes as any).data ?? []).map((f: any) => [f.id, f]));
+    const omap = new Map<string, string>(((officesRes as any).data ?? []).map((o: any) => [o.id, o.name]));
+    setLogs(rows.map((r) => {
+      const f = r.farmer_id ? fmap.get(r.farmer_id) : null;
+      return {
+        ...r,
+        farmer_name: f ? (f.name_en || f.name_bn || f.farmer_code) : null,
+        office_name: r.office_id ? omap.get(r.office_id) ?? null : null,
+      };
+    }));
   }
 
   const filtered = useMemo(() => {
     if (!farmerSearch.trim()) return logs;
     const q = farmerSearch.trim().toLowerCase();
-    return logs.filter((l) => l.mobile?.toLowerCase().includes(q) || (l.farmer_id ?? "").toLowerCase().includes(q));
+    return logs.filter((l) =>
+      l.mobile?.toLowerCase().includes(q) ||
+      (l.farmer_name ?? "").toLowerCase().includes(q) ||
+      (l.office_name ?? "").toLowerCase().includes(q) ||
+      (l.farmer_id ?? "").toLowerCase().includes(q)
+    );
   }, [logs, farmerSearch]);
 
   if (!allowed) return <Navigate to="/" replace />;
@@ -227,7 +256,9 @@ export default function SmsLogs() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Time</TableHead>
+                      <TableHead>Farmer</TableHead>
                       <TableHead>Mobile</TableHead>
+                      <TableHead>Office</TableHead>
                       <TableHead>Event</TableHead>
                       <TableHead>Message</TableHead>
                       <TableHead>Status</TableHead>
@@ -237,13 +268,15 @@ export default function SmsLogs() {
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Loading…</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Loading…</TableCell></TableRow>
                     ) : filtered.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No SMS logs</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">No SMS logs</TableCell></TableRow>
                     ) : filtered.map((l) => (
                       <TableRow key={l.id}>
                         <TableCell className="whitespace-nowrap">{new Date(l.created_at).toLocaleString()}</TableCell>
+                        <TableCell className="max-w-[160px] truncate" title={l.farmer_name ?? ""}>{l.farmer_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="font-mono text-xs">{l.mobile}</TableCell>
+                        <TableCell className="max-w-[140px] truncate" title={l.office_name ?? ""}>{l.office_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell><Badge variant="outline" className="text-[10px]">{l.event_type ?? "-"}</Badge></TableCell>
                         <TableCell className="max-w-[280px] truncate" title={l.message}>{l.message}</TableCell>
                         <TableCell>{statusBadge(l.status)}</TableCell>
