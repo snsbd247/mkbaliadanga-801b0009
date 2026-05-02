@@ -22,6 +22,7 @@ import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import Scan from "./pages/Scan";
 import Cashbook from "./pages/Cashbook";
+import Statement from "./pages/Statement";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
