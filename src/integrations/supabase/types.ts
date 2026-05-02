@@ -1061,8 +1061,16 @@ export type Database = {
         Args: { _username: string }
         Returns: string
       }
+      compute_penalty: {
+        Args: { _base: number; _days_overdue: number }
+        Returns: number
+      }
       current_user_office: { Args: never; Returns: string }
       email_for_username: { Args: { _username: string }; Returns: string }
+      get_previous_due: {
+        Args: { _exclude_season: string; _farmer: string; _land: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
