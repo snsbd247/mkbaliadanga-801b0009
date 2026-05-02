@@ -27,6 +27,8 @@ type Log = {
   created_at: string;
   farmer_id: string | null;
   office_id: string | null;
+  farmer_name?: string | null;
+  office_name?: string | null;
 };
 type Office = { id: string; name: string };
 
