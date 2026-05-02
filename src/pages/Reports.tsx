@@ -25,7 +25,7 @@ export default function Reports() {
   useEffect(() => { document.title = `${t("reports")} — ${t("appName")}`; supabase.from("seasons").select("*").then(r => setSeasons(r.data ?? [])); load(); }, [from, to, seasonId]);
 
   async function load() {
-    let irrQ = supabase.from("irrigation_charges").select("entry_date,total,paid_amount,due_amount,farmers(name_en,farmer_code),seasons(name),lands(dag_no)").order("entry_date", { ascending: false });
+    let irrQ = supabase.from("irrigation_charges").select("entry_date,base_charge,canal_charge,maintenance_charge,other_charge,total,paid_amount,due_amount,farmers(name_en,farmer_code),seasons(name,year,type),lands(dag_no,mouza,land_size)").order("entry_date", { ascending: false });
     if (from) irrQ = irrQ.gte("entry_date", from);
     if (to) irrQ = irrQ.lte("entry_date", to);
     if (seasonId) irrQ = irrQ.eq("season_id", seasonId);
@@ -42,6 +42,27 @@ export default function Reports() {
     if (to) svQ = svQ.lte("txn_date", to);
     setSavings((await svQ).data ?? []);
   }
+
+  // Group irrigation by period (daily / monthly)
+  function groupBy(period: "day" | "month") {
+    const map = new Map<string, { period: string; base: number; canal: number; maintenance: number; other: number; total: number; paid: number; due: number; count: number }>();
+    for (const r of irr) {
+      const key = period === "day" ? r.entry_date : (r.entry_date ?? "").slice(0, 7);
+      if (!map.has(key)) map.set(key, { period: key, base: 0, canal: 0, maintenance: 0, other: 0, total: 0, paid: 0, due: 0, count: 0 });
+      const g = map.get(key)!;
+      g.base += Number(r.base_charge || 0);
+      g.canal += Number(r.canal_charge || 0);
+      g.maintenance += Number(r.maintenance_charge || 0);
+      g.other += Number(r.other_charge || 0);
+      g.total += Number(r.total || 0);
+      g.paid += Number(r.paid_amount || 0);
+      g.due += Number(r.due_amount || 0);
+      g.count += 1;
+    }
+    return Array.from(map.values()).sort((a, b) => b.period.localeCompare(a.period));
+  }
+  const daily = groupBy("day");
+  const monthly = groupBy("month");
 
   return (
     <>
