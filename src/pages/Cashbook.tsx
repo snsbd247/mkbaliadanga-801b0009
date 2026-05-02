@@ -288,7 +288,7 @@ export default function Cashbook() {
               <TableRow className="bg-muted/40 font-medium">
                 <TableCell>{from || "—"}</TableCell>
                 <TableCell><Badge variant="outline">opening</Badge></TableCell>
-                <TableCell colSpan={2}>Opening Cash Balance</TableCell>
+                <TableCell colSpan={2}>{t("openingCashBalance")}</TableCell>
                 <TableCell className="text-right">—</TableCell>
                 <TableCell className="text-right">—</TableCell>
                 <TableCell className="text-right font-semibold">{money(openingCash)}</TableCell>
