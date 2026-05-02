@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { CoaImportDialog } from "./accounts/CoaImportDialog";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
 
@@ -70,6 +71,7 @@ const money = (n: number) =>
 
 export default function Accounts() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [rows, setRows] = useState<Account[]>([]);
   const [sums, setSums] = useState<Record<string, { debit: number; credit: number }>>({});
   const [loading, setLoading] = useState(true);
@@ -185,7 +187,7 @@ export default function Accounts() {
 
   const save = async () => {
     if (!editing.code || !editing.name || !editing.type) {
-      toast.error("Code, Name এবং Type required");
+      toast.error(t("codeNameTypeRequired"));
       return;
     }
     const payload = {
@@ -463,7 +465,7 @@ export default function Accounts() {
               />
             </div>
             <div className="col-span-2">
-              <Label>বাংলা নাম</Label>
+              <Label>{t("bnName")}</Label>
               <Input
                 value={editing.name_bn || ""}
                 onChange={(e) => setEditing({ ...editing, name_bn: e.target.value })}

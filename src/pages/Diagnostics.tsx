@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getRlsErrors, clearRlsErrors, RlsErrorEntry } from "@/lib/rlsLogger";
 import { Loader2, RefreshCw, Trash2, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { fmtDate } from "@/lib/format";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const OPERATIONAL_TABLES = [
   "farmers", "loans", "loan_payments", "savings_transactions",
@@ -25,6 +26,7 @@ type Probe = { table: string; op: "select" | "count"; ok: boolean; status?: numb
 
 export default function Diagnostics() {
   const { isSuper, user, officeId, rolesLoaded } = useAuth();
+  const { t } = useLang();
   const [errors, setErrors] = useState<RlsErrorEntry[]>(getRlsErrors());
   const [probes, setProbes] = useState<Probe[]>([]);
   const [running, setRunning] = useState(false);
@@ -76,8 +78,8 @@ export default function Diagnostics() {
     // 3. Verdict: super admin should see >=2 offices' data when present
     const visibleOfficeSets = Object.values(result.tables).map((v: any) => (v.offices_visible || []).length);
     result.verdict = visibleOfficeSets.some(n => n >= 2)
-      ? "super_admin সব office এর ডাটা দেখতে পাচ্ছে — isolation policy super_admin bypass সঠিক।"
-      : "শুধুমাত্র এক office এর ডাটা দৃশ্যমান (অথবা ডাটা নেই অন্য office-এ)।";
+      ? t("superAdminAllOfficesOk")
+      : t("onlyOneOfficeVisible");
     setIso(result);
     setIsoBusy(false);
   }
@@ -117,8 +119,8 @@ export default function Diagnostics() {
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-muted-foreground">
-                {errors.length === 0 ? "এখনো কোনো RLS error capture হয়নি।" :
-                  `${errors.length} টি সাম্প্রতিক error · ${Object.entries(errorStats).map(([k, v]) => `${k}:${v}`).join(" · ")}`}
+                {errors.length === 0 ? t("noRlsErrorsCaptured") :
+                  t("recentErrorsSummary").replace("{count}", String(errors.length)).replace("{stats}", Object.entries(errorStats).map(([k, v]) => `${k}:${v}`).join(" · "))}
               </div>
               <Button variant="outline" size="sm" onClick={() => { clearRlsErrors(); setErrors([]); }}>
                 <Trash2 className="h-4 w-4 mr-1" />Clear
@@ -139,11 +141,11 @@ export default function Diagnostics() {
                     <TableCell className="font-mono text-xs">{e.code || "—"}</TableCell>
                     <TableCell className="text-xs">
                       <div>{e.message}</div>
-                      {e.policyHint && <div className="text-amber-600 dark:text-amber-400 mt-1">💡 {e.policyHint}</div>}
+                      {e.policyHint && <div className="text-amber-600 dark:text-amber-400 mt-1">💡 {t(e.policyHint as any)}</div>}
                     </TableCell>
                   </TableRow>
                 ))}
-                {errors.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">কোনো error নেই।</TableCell></TableRow>}
+                {errors.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noErrors")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
@@ -152,7 +154,7 @@ export default function Diagnostics() {
         <TabsContent value="health">
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-muted-foreground">প্রতিটা টেবিলে SELECT permission test করা হবে।</div>
+              <div className="text-sm text-muted-foreground">{t("rlsHealthCheckDesc")}</div>
               <Button onClick={runHealthCheck} disabled={running}>
                 {running ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
                 Run health check
@@ -194,7 +196,7 @@ export default function Diagnostics() {
           <Card className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                লগইন user: <span className="font-mono">{user?.email}</span> · office: <span className="font-mono">{officeId || "(none / super_admin)"}</span>
+                {t("loggedInUser")}: <span className="font-mono">{user?.email}</span> · {t("office")}: <span className="font-mono">{officeId || "(none / super_admin)"}</span>
               </div>
               <Button onClick={runIsolationTest} disabled={isoBusy}>
                 {isoBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
@@ -233,10 +235,9 @@ export default function Diagnostics() {
                   </TableBody>
                 </Table>
                 <Alert>
-                  <AlertTitle>Cross-office isolation নিয়ম</AlertTitle>
+                  <AlertTitle>{t("crossOfficeIsolationRule")}</AlertTitle>
                   <AlertDescription className="text-xs">
-                    Non-super user যখন লগইন করবে, প্রতিটা টেবিলে শুধু একটা office_id দেখা উচিত (তার নিজের)। Super admin সব office দেখতে পারে।
-                    Test করতে চাইলে: একজন admin/staff role এর user দিয়ে লগইন করে এই পেজ চালান।
+                    {t("crossOfficeIsolationDesc")}
                   </AlertDescription>
                 </Alert>
               </>
@@ -248,7 +249,7 @@ export default function Diagnostics() {
           <Card className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Savings, loans, irrigation, payments এবং ledger references এ orphan / null farmer_id scan করা হবে।
+                {t("integrityScanDesc")}
               </div>
               <Button onClick={runIntegrityScan} disabled={scanBusy}>
                 {scanBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
