@@ -251,7 +251,13 @@ export default function ScanPayment() {
           {done && (
             <div className="text-center py-8 space-y-3">
               <CheckCircle2 className="h-12 w-12 text-primary mx-auto" />
-              <div className="font-semibold">Payment recorded</div>
+              <div className="font-semibold text-lg">Payment recorded</div>
+              <div className="text-sm">
+                <div><span className="text-muted-foreground">Farmer:</span> {done.farmer}</div>
+                <div><span className="text-muted-foreground">Type:</span> {done.kind}</div>
+                <div><span className="text-muted-foreground">Amount:</span> <span className="font-mono font-semibold">৳ {fmt(done.amount)}</span></div>
+                <div className="text-xs text-muted-foreground mt-2 font-mono">Ref: {done.paymentId.slice(0, 8)}…</div>
+              </div>
               <div className="text-xs text-muted-foreground">SMS notification has been queued.</div>
               <Button onClick={reset} variant="outline">Scan another</Button>
             </div>
