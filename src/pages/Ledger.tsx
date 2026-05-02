@@ -11,6 +11,7 @@ import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears } from "@/lib/accounting";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Account = { id: string; code: string; name: string; type: string };
 type Office = { id: string; name: string };
