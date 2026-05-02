@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sprout, Loader2, ShieldCheck, ArrowLeft, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,18 @@ export default function FarmerPortalLogin() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [maskedMobile, setMaskedMobile] = useState<string | null>(null);
+  const otpInputRef = useRef<HTMLInputElement>(null);
+  const idInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus the OTP input whenever a validation/server error appears on the OTP step.
+  useEffect(() => {
+    if (step === "otp" && error) {
+      otpInputRef.current?.focus();
+      otpInputRef.current?.select?.();
+    } else if (step === "id" && error) {
+      idInputRef.current?.focus();
+    }
+  }, [error, step]);
 
   // If an admin/staff user is signed in, send them to the admin dashboard, not the farmer portal.
   useEffect(() => {
@@ -147,6 +159,7 @@ export default function FarmerPortalLogin() {
                     <Label htmlFor="fid">Farmer ID / Member No.</Label>
                     <Input
                       id="fid"
+                      ref={idInputRef}
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       placeholder="e.g. 2026-00000123 or M-000123"
@@ -159,7 +172,7 @@ export default function FarmerPortalLogin() {
                     />
                   </div>
                   {error && (
-                    <Alert variant="destructive" id="portal-error" role="alert">
+                    <Alert variant="destructive" id="portal-error" role="alert" aria-live="assertive" aria-atomic="true">
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
@@ -198,6 +211,7 @@ export default function FarmerPortalLogin() {
                     <Label htmlFor="otp">6-digit OTP</Label>
                     <Input
                       id="otp"
+                      ref={otpInputRef}
                       inputMode="numeric"
                       pattern="\d{6}"
                       maxLength={6}
@@ -213,7 +227,7 @@ export default function FarmerPortalLogin() {
                     />
                   </div>
                   {error && (
-                    <Alert variant="destructive" id="portal-error" role="alert">
+                    <Alert variant="destructive" id="portal-error" role="alert" aria-live="assertive" aria-atomic="true">
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
