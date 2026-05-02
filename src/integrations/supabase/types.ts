@@ -1757,20 +1757,35 @@ export type Database = {
       }
       sms_provider_secrets: {
         Row: {
+          activated_at: string | null
           api_token: string
+          expires_at: string | null
+          id: string
+          label: string | null
           provider: string
+          status: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          activated_at?: string | null
           api_token: string
+          expires_at?: string | null
+          id?: string
+          label?: string | null
           provider: string
+          status?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          activated_at?: string | null
           api_token?: string
+          expires_at?: string | null
+          id?: string
+          label?: string | null
           provider?: string
+          status?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -2119,6 +2134,7 @@ export type Database = {
       _sms_format_bdt: { Args: { _n: number }; Returns: string }
       _sms_render: { Args: { _tpl: string; _vars: Json }; Returns: string }
       _sms_savings_balance: { Args: { _farmer: string }; Returns: number }
+      activate_sms_token: { Args: { _id: string }; Returns: undefined }
       close_accounting_period: {
         Args: { _from: string; _note?: string; _office?: string; _to: string }
         Returns: string
@@ -2147,6 +2163,7 @@ export type Database = {
         Args: { _exclude_season: string; _farmer: string; _land: string }
         Returns: number
       }
+      get_sms_provider_status: { Args: { _provider?: string }; Returns: Json }
       get_sms_provider_token: { Args: { _provider?: string }; Returns: string }
       has_role: {
         Args: {
@@ -2181,6 +2198,7 @@ export type Database = {
         }[]
       }
       reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
+      retire_sms_token: { Args: { _id: string }; Returns: undefined }
       sms_enqueue: {
         Args: {
           _event: string
