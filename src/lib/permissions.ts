@@ -18,9 +18,23 @@ export const FULL: Perm = { can_view: true, can_add: true, can_edit: true, can_d
 export const VIEW_ONLY: Perm = { can_view: true, can_add: false, can_edit: false, can_delete: false };
 export const NONE: Perm = { can_view: false, can_add: false, can_edit: false, can_delete: false };
 
+// Hardcoded fallback if DB role_permissions can't be read
+const HARDCODED_STAFF: Record<string, Perm> = {
+  dashboard: VIEW_ONLY,
+  farmers: { can_view: true, can_add: true, can_edit: true, can_delete: false },
+  savings: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+  loans: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+  irrigation: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+  payments: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+  reports: VIEW_ONLY,
+  seasons: VIEW_ONLY,
+  offices: NONE, users: NONE, audit: NONE, settings: NONE,
+};
+
 export function usePermissions() {
-  const { user, isSuper, isAdmin } = useAuth();
-  const [map, setMap] = useState<Record<string, Perm>>({});
+  const { user, isSuper, isAdmin, roles } = useAuth();
+  const [userMap, setUserMap] = useState<Record<string, Perm>>({});
+  const [roleMap, setRoleMap] = useState<Record<string, Record<string, Perm>>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -29,33 +43,32 @@ export function usePermissions() {
       (data ?? []).forEach((r: any) => {
         m[r.module] = { can_view: r.can_view, can_add: r.can_add, can_edit: r.can_edit, can_delete: r.can_delete };
       });
-      setMap(m);
+      setUserMap(m);
+    });
+    supabase.from("role_permissions").select("*").then(({ data }) => {
+      const rm: Record<string, Record<string, Perm>> = {};
+      (data ?? []).forEach((r: any) => {
+        (rm[r.role] ??= {})[r.module] = { can_view: r.can_view, can_add: r.can_add, can_edit: r.can_edit, can_delete: r.can_delete };
+      });
+      setRoleMap(rm);
     });
   }, [user?.id]);
 
   function can(module: ModuleKey, action: keyof Perm = "can_view"): boolean {
     if (isSuper) return true;
-    // Default role baseline: admins get full, staff gets view+add for operational modules
-    const override = map[module];
+    const override = userMap[module];
     if (override) return override[action];
+
+    // Try each user role's defaults
+    for (const role of roles) {
+      const rp = roleMap[role]?.[module];
+      if (rp) return rp[action];
+    }
+
+    // Fallback to hardcoded defaults
     if (isAdmin) return true;
-    // staff defaults
-    const staffDefaults: Record<string, Perm> = {
-      dashboard: VIEW_ONLY,
-      farmers: { can_view: true, can_add: true, can_edit: true, can_delete: false },
-      savings: { can_view: true, can_add: true, can_edit: false, can_delete: false },
-      loans: { can_view: true, can_add: true, can_edit: false, can_delete: false },
-      irrigation: { can_view: true, can_add: true, can_edit: false, can_delete: false },
-      payments: { can_view: true, can_add: true, can_edit: false, can_delete: false },
-      reports: VIEW_ONLY,
-      seasons: VIEW_ONLY,
-      offices: NONE,
-      users: NONE,
-      audit: NONE,
-      settings: NONE,
-    };
-    return (staffDefaults[module] ?? NONE)[action];
+    return (HARDCODED_STAFF[module] ?? NONE)[action];
   }
 
-  return { can, perms: map };
+  return { can, perms: userMap };
 }
