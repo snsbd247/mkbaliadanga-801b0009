@@ -11,3 +11,10 @@ verify_jwt = false
 
 [functions.farmer-portal-data]
 verify_jwt = false
+
+[functions.farmer-card-token]
+verify_jwt = false
+
+[functions.qr-resolve-token]
+verify_jwt = false
+
