@@ -206,6 +206,7 @@ export default function Users() {
                     <SelectContent>
                       <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
                       <SelectItem value="admin">{t("admin")}</SelectItem>
+                      <SelectItem value="committee">Committee</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
                     </SelectContent>
                   </Select>
