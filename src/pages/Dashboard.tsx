@@ -154,6 +154,12 @@ export default function Dashboard() {
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
       <NoOfficeBanner />
+      <div className="mb-3 flex items-center gap-2 text-xs">
+        <Badge variant={isSuper ? "secondary" : "default"}>
+          {isSuper ? "Viewing: All offices" : `Office: ${officeName || "—"}`}
+        </Badge>
+        <span className="text-muted-foreground">All figures below respect office-level access (RLS).</span>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="stat-card">
