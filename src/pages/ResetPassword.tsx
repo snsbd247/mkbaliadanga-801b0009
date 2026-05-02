@@ -143,6 +143,8 @@ export default function ResetPassword() {
           </p>
         </Card>
       </div>
+      </div>
+      <SiteFooter />
     </div>
   );
 }
