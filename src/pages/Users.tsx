@@ -170,7 +170,15 @@ export default function Users() {
                 <div><Label>Username</Label><Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="3–30 chars" /></div>
                 <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
               </div>
-              <div><Label>Password</Label><Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="≥ 8 characters" /></div>
+              <div>
+                <Label>Password</Label>
+                <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={form.role === "super_admin" ? "≥ 12 chars · upper/lower/digit/symbol" : "≥ 10 chars · upper/lower/digit/symbol"} />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {form.role === "super_admin"
+                    ? "Super Admin policy: 12+ characters, mixed case, digit and symbol. Leaked passwords are rejected."
+                    : "10+ characters, mixed case, digit and symbol. Leaked passwords are rejected."}
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Role</Label>
                   <Select value={form.role} onValueChange={v => setForm({ ...form, role: v as any })}>
@@ -292,7 +300,7 @@ export default function Users() {
           <DialogHeader><DialogTitle>Reset password — {resetFor?.username || resetFor?.email}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Label>New password</Label>
-            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder="≥ 8 characters" />
+            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? "≥ 12 chars · upper/lower/digit/symbol" : "≥ 10 chars · upper/lower/digit/symbol"} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetFor(null)}>{t("cancel")}</Button>
