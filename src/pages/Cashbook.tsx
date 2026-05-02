@@ -278,7 +278,7 @@ export default function Cashbook() {
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>{t("description")}</TableHead>
               <TableHead>Ref</TableHead>
               <TableHead className="text-right">{t("income")}</TableHead>
               <TableHead className="text-right">{t("expense")}</TableHead>
