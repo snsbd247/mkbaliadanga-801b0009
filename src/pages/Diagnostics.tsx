@@ -110,6 +110,7 @@ export default function Diagnostics() {
           <TabsTrigger value="errors">Recent Errors {errors.length > 0 && <Badge variant="destructive" className="ml-2">{errors.length}</Badge>}</TabsTrigger>
           <TabsTrigger value="health">RLS Health Check</TabsTrigger>
           <TabsTrigger value="isolation">Office Isolation</TabsTrigger>
+          <TabsTrigger value="integrity">Data Integrity</TabsTrigger>
         </TabsList>
 
         <TabsContent value="errors">
