@@ -66,6 +66,7 @@ export default function SmsLogs() {
   const [offices, setOffices] = useState<Office[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [drawer, setDrawer] = useState<DrawerData | null>(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
