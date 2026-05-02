@@ -10,11 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Camera, X, User, CheckCircle2, FileDown } from "lucide-react";
+import { Loader2, Camera, X, User, CheckCircle2, FileDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
+import { downloadPaymentReceiptPdf, previewPaymentReceiptPdf, maskToken, type PaymentReceiptData } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
+import { useReceiptTemplate } from "@/lib/receiptTemplate";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
