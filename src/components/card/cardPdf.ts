@@ -108,3 +108,76 @@ export async function downloadCardPdf(
 
   doc.save(`farmer-card-${tpl.id}-${data.farmer.farmer_code || data.farmer.member_no || "card"}.pdf`);
 }
+
+/** Render an array of cards into a single multi-page PDF. */
+export async function downloadBulkCardsPdf(
+  items: Array<{ data: CardData; qrSvg?: SVGElement | null }>,
+  templateId: TemplateId = "classic",
+  filename = "farmer-cards.pdf",
+) {
+  const tpl = TEMPLATES[templateId] ?? TEMPLATES.classic;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont(tpl.pdfFont, "normal");
+  const pageW = doc.internal.pageSize.getWidth();
+  const startX = (pageW - CARD_W) / 2;
+
+  for (let i = 0; i < items.length; i++) {
+    const { data, qrSvg } = items[i];
+    if (i > 0) doc.addPage();
+    const frontY = 20;
+    const backY = frontY + CARD_H + 8;
+
+    doc.setDrawColor(...tpl.borderRgb); doc.roundedRect(startX, frontY, CARD_W, CARD_H, 2, 2, "S");
+    doc.setFillColor(...tpl.headerRgb);
+    doc.rect(startX, frontY, CARD_W, 8, "F");
+    doc.setTextColor(...tpl.headerTextRgb);
+    doc.setFontSize(9); doc.setFont(tpl.pdfFont, "bold");
+    const titleSrc = tpl.bnFirst
+      ? (data.company_name_bn || data.company_name)
+      : data.company_name;
+    doc.text(String(titleSrc).slice(0, 36), startX + 3, frontY + 5.5);
+    doc.setTextColor(0);
+
+    if (data.farmer.photo_url) {
+      const pUrl = await imgToDataUrl(data.farmer.photo_url);
+      if (pUrl) doc.addImage(pUrl, "JPEG", startX + 3, frontY + 11, 18, 24);
+      else { doc.setDrawColor(...tpl.borderRgb); doc.rect(startX + 3, frontY + 11, 18, 24); }
+    } else {
+      doc.setDrawColor(...tpl.borderRgb); doc.rect(startX + 3, frontY + 11, 18, 24);
+    }
+
+    doc.setFontSize(10); doc.setFont(tpl.pdfFont, "bold");
+    doc.text(String(data.farmer.name).slice(0, 28), startX + 24, frontY + 16);
+    doc.setFontSize(7); doc.setFont(tpl.pdfFont, "normal");
+    let y = frontY + 21;
+    if (data.farmer.farmer_code) { doc.text(`ID: ${data.farmer.farmer_code}`, startX + 24, y); y += 4; }
+    if (data.farmer.member_no)  { doc.text(`Member: ${data.farmer.member_no}`, startX + 24, y); y += 4; }
+    doc.text(`Issued: ${new Date(data.issued_at).toLocaleDateString()}`, startX + 24, y);
+
+    doc.setDrawColor(...tpl.borderRgb); doc.roundedRect(startX, backY, CARD_W, CARD_H, 2, 2, "S");
+    doc.setFontSize(8); doc.setFont(tpl.pdfFont, "bold");
+    doc.text("Contact", startX + 3, backY + 5);
+    doc.setFontSize(7); doc.setFont(tpl.pdfFont, "normal");
+    let by = backY + 10;
+    if (data.farmer.village) { doc.text(`Village: ${data.farmer.village}`, startX + 3, by); by += 4; }
+    if (data.farmer.address) {
+      const lines = doc.splitTextToSize(`Address: ${data.farmer.address}`, 50);
+      doc.text(lines.slice(0, 3), startX + 3, by); by += Math.min(3, lines.length) * 4;
+    }
+    if (data.farmer.mobile) { doc.text(`Mobile: ${data.farmer.mobile}`, startX + 3, by); }
+
+    if (qrSvg) {
+      const qrUrl = await svgToDataUrl(qrSvg, 256);
+      doc.addImage(qrUrl, "PNG", startX + CARD_W - 28, backY + 12, 24, 24);
+      doc.setFontSize(5); doc.setTextColor(120);
+      doc.text("Scan to pay", startX + CARD_W - 24, backY + 39);
+      doc.setTextColor(0);
+    }
+
+    doc.setFontSize(5); doc.setTextColor(160);
+    doc.text(`Template: ${tpl.label}   Card ${i + 1} / ${items.length}`, startX, backY + CARD_H + 4);
+    doc.setTextColor(0);
+  }
+
+  doc.save(filename);
+}
