@@ -242,10 +242,10 @@ export default function FarmerPortalLogin() {
                     {busy ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                        Verifying…
+                        {t("verifying")}
                       </>
                     ) : (
-                      "Verify & Continue"
+                      t("verifyAndContinue")
                     )}
                   </Button>
                   <div className="flex items-center justify-between text-xs">
