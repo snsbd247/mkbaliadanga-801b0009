@@ -113,7 +113,11 @@ export default function Irrigation() {
               <div><Label>{t("otherCharge")}</Label><Input type="number" value={form.other_charge} onChange={e => setForm({ ...form, other_charge: +e.target.value })} /></div>
               <div><Label>{t("paidAmount")}</Label><Input type="number" value={form.paid_amount} onChange={e => setForm({ ...form, paid_amount: +e.target.value })} /></div>
               <div><Label>{t("date")}</Label><Input type="date" value={form.entry_date} onChange={e => setForm({ ...form, entry_date: e.target.value })} /></div>
-              <div className="col-span-2 rounded-md bg-muted p-2 text-sm flex justify-between"><span>{t("total")}</span><span className="font-bold">{money(total)}</span></div>
+              <div className="col-span-2 rounded-md border border-dashed p-2 text-sm flex justify-between">
+                <span className="text-muted-foreground">{t("previousDue") || "Previous due (auto)"}</span>
+                <span className={prevDue > 0 ? "due-text font-semibold" : "font-semibold"}>{money(prevDue)}</span>
+              </div>
+              <div className="col-span-2 rounded-md bg-muted p-2 text-sm flex justify-between"><span>{t("total")}</span><span className="font-bold">{money(total + prevDue)}</span></div>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
           </DialogContent>
