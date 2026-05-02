@@ -27,8 +27,15 @@ export default function Offices() {
     const { data } = await supabase.from("offices").select("*").order("name");
     setList(data ?? []);
   }
-  function openNew() { setEditing(null); setForm({ name: "", registration_no: "", established_on: "", contact: "", address: "" }); setOpen(true); }
-  function openEdit(o: any) { setEditing(o); setForm({ name: o.name, registration_no: o.registration_no ?? "", established_on: o.established_on ?? "", contact: o.contact ?? "", address: o.address ?? "" }); setOpen(true); }
+  function openNew() { setEditing(null); setForm({ name: "", registration_no: "", established_on: "", contact: "", address: "", payment_priority: ["irrigation", "loan", "savings"] }); setOpen(true); }
+  function openEdit(o: any) { setEditing(o); setForm({ name: o.name, registration_no: o.registration_no ?? "", established_on: o.established_on ?? "", contact: o.contact ?? "", address: o.address ?? "", payment_priority: (o.payment_priority?.length ? o.payment_priority : ["irrigation", "loan", "savings"]) }); setOpen(true); }
+  function movePriority(idx: number, dir: -1 | 1) {
+    const arr = [...form.payment_priority];
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    setForm({ ...form, payment_priority: arr });
+  }
   async function save() {
     if (!form.name) return toast.error("Name required");
     const payload = { ...form, established_on: form.established_on || null };
