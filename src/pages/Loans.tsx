@@ -36,11 +36,11 @@ export default function Loans() {
   }
   async function save() {
     if (!form.farmer_id || form.principal <= 0) return toast.error("Pick farmer & amount");
-    const total = form.interest_enabled ? form.principal * (1 + form.interest_rate / 100) : form.principal;
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
+    // total_payable is recomputed by the database trigger calc_loan_total
     const { error } = await supabase.from("loans").insert({
       farmer_id: form.farmer_id, principal: form.principal, interest_enabled: form.interest_enabled,
-      interest_rate: form.interest_enabled ? form.interest_rate : 0, total_payable: total,
+      interest_rate: form.interest_enabled ? form.interest_rate : 0,
       issued_on: form.issued_on, next_due_on: form.next_due_on || null, note: form.note,
       status: "pending", created_by: user?.id,
     });
