@@ -160,6 +160,8 @@ export default function SmsSettings() {
     else toast.success(`Queued: ${(data as any)?.loan ?? 0} loan, ${(data as any)?.irrigation ?? 0} irrigation`);
   }
 
+  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS({ ...s!, [k]: v });
+
   const tplFields: { key: keyof Settings; label: string }[] = [
     { key: "tpl_savings_deposit", label: "Savings Deposit" },
     { key: "tpl_savings_withdraw", label: "Savings Withdraw" },
