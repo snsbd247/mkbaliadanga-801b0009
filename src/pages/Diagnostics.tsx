@@ -78,8 +78,8 @@ export default function Diagnostics() {
     // 3. Verdict: super admin should see >=2 offices' data when present
     const visibleOfficeSets = Object.values(result.tables).map((v: any) => (v.offices_visible || []).length);
     result.verdict = visibleOfficeSets.some(n => n >= 2)
-      ? "super_admin সব office এর ডাটা দেখতে পাচ্ছে — isolation policy super_admin bypass সঠিক।"
-      : "শুধুমাত্র এক office এর ডাটা দৃশ্যমান (অথবা ডাটা নেই অন্য office-এ)।";
+      ? t("superAdminAllOfficesOk")
+      : t("onlyOneOfficeVisible");
     setIso(result);
     setIsoBusy(false);
   }
