@@ -38,6 +38,7 @@ import FinanceSummary from "./pages/FinanceSummary";
 import MobileQA from "./pages/MobileQA";
 import SmsSettings from "./pages/SmsSettings";
 import SmsLogs from "./pages/SmsLogs";
+import Locations from "./pages/Locations";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
