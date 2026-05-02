@@ -362,6 +362,17 @@ export default function SmsSettings() {
   const [tokenBusy, setTokenBusy] = useState(false);
   const [showToken, setShowToken] = useState(false);
 
+  // Provider "Test connection" diagnostics state
+  const [testConnPhone, setTestConnPhone] = useState<string>("");
+  const [testConnBusy, setTestConnBusy] = useState(false);
+  const [testConnResult, setTestConnResult] = useState<{
+    ok: boolean;
+    request?: { url?: string; to?: string; sender?: string | null; message_length?: number };
+    response?: string;
+    error?: string;
+    tested_at?: string;
+  } | null>(null);
+
   // Manual scheduler state
   const today = new Date().toISOString().slice(0, 10);
   const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
@@ -437,6 +448,48 @@ export default function SmsSettings() {
     if (error) return toast.error(error.message);
     toast.success("Token cleared");
     await load();
+  }
+
+  async function runTestConnection() {
+    const mobile = (testConnPhone || tplTestMobile || testMobile || "").trim();
+    if (!mobile || mobile.replace(/\D/g, "").length < 10) {
+      toast.error("Enter a valid mobile number to test (10–15 digits)");
+      return;
+    }
+    setTestConnBusy(true);
+    setTestConnResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-sms", {
+        body: {
+          test_connection: true,
+          mobile,
+          message: `Smart Irrigation: SMS test ${new Date().toLocaleTimeString()}`,
+        },
+      });
+      if (error) {
+        // supabase-js wraps non-2xx responses; try to surface server JSON
+        const ctx: any = (error as any).context;
+        let parsed: any = null;
+        try { parsed = ctx?.body ? JSON.parse(ctx.body) : null; } catch { /* ignore */ }
+        setTestConnResult({
+          ok: false,
+          error: parsed?.error || error.message,
+          response: parsed?.response,
+          request: parsed?.request,
+          tested_at: parsed?.tested_at,
+        });
+        toast.error(parsed?.error || error.message || "Test failed");
+        return;
+      }
+      setTestConnResult(data as any);
+      if ((data as any)?.ok) toast.success("Test SMS sent — provider responded OK");
+      else toast.error((data as any)?.error || "Provider rejected the test SMS");
+    } catch (e: any) {
+      setTestConnResult({ ok: false, error: String(e?.message || e) });
+      toast.error(String(e?.message || e));
+    } finally {
+      setTestConnBusy(false);
+    }
   }
 
   async function saveOfficeOverride(officeId: string, patch: Partial<OfficeOverride>) {
@@ -681,6 +734,72 @@ export default function SmsSettings() {
                 Token is stored securely in the database (super-admin only) and used by the SMS sender. Get it from your GreenWeb account dashboard.
               </p>
             </div>
+
+            {/* Provider Test Connection — sends a real one-off SMS via GreenWeb to verify token + sender ID. */}
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <FlaskConical className="h-3.5 w-3.5" />
+                  Test Connection
+                </Label>
+                {testConnResult && (
+                  testConnResult.ok ? (
+                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                      <CheckCircle2 className="h-3 w-3 mr-1" /> Success
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3 mr-1" /> Failed
+                    </Badge>
+                  )
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={testConnPhone}
+                  onChange={(e) => setTestConnPhone(e.target.value)}
+                  placeholder="Office phone (e.g. 01XXXXXXXXX)"
+                  className="flex-1 min-w-[200px]"
+                />
+                <Button type="button" size="sm" onClick={runTestConnection} disabled={testConnBusy || !tokenConfigured}>
+                  <Send className="h-3.5 w-3.5 mr-1" />
+                  {testConnBusy ? "Testing…" : "Send Test SMS"}
+                </Button>
+              </div>
+              {!tokenConfigured && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                  Save a GreenWeb API token first, then run the test.
+                </p>
+              )}
+              {testConnResult && (
+                <div className="mt-2 rounded-md border bg-muted/30 p-2 text-[11px] space-y-1 font-mono break-all">
+                  {testConnResult.request?.url && (
+                    <div><span className="text-muted-foreground">request:</span> {testConnResult.request.url}</div>
+                  )}
+                  {testConnResult.request?.to && (
+                    <div><span className="text-muted-foreground">to:</span> {testConnResult.request.to}
+                      {testConnResult.request.sender ? <> · <span className="text-muted-foreground">sender:</span> {testConnResult.request.sender}</> : null}
+                      {typeof testConnResult.request.message_length === "number" ? <> · <span className="text-muted-foreground">len:</span> {testConnResult.request.message_length}</> : null}
+                    </div>
+                  )}
+                  {testConnResult.response && (
+                    <div><span className="text-muted-foreground">response:</span> {testConnResult.response}</div>
+                  )}
+                  {testConnResult.error && (
+                    <div className="text-destructive"><span className="text-muted-foreground">error:</span> {testConnResult.error}</div>
+                  )}
+                  {testConnResult.tested_at && (
+                    <div className="text-muted-foreground">at: {new Date(testConnResult.tested_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB")}</div>
+                  )}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Sends one real SMS (~1 credit) using the saved API token to verify the GreenWeb connection.
+              </p>
+            </div>
+
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">{L.secretsHint}</div>
           </CardContent>
         </Card>
