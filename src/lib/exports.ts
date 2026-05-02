@@ -143,13 +143,13 @@ export function exportPaymentReceiptPDF(opts: {
 
   let y = (doc as any).lastAutoTable.finalY + 6;
   doc.setFontSize(9);
-  doc.text(`Method: ${opts.method ?? "cash"}`, 12, y);
-  if (opts.note) { y += 5; doc.text(`Note: ${opts.note}`, 12, y); }
+  doc.text(`Method / পদ্ধতি: ${opts.method ?? "cash"}`, 12, y);
+  if (opts.note) { y += 5; doc.text(`Note / মন্তব্য: ${opts.note}`, 12, y); }
 
   // Signature lines
   y = Math.max(y + 18, 170);
-  doc.line(15, y, 60, y); doc.text("Collector", 37, y + 4, { align: "center" });
-  doc.line(w - 60, y, w - 15, y); doc.text("Authorized Sig.", w - 37, y + 4, { align: "center" });
+  doc.line(15, y, 60, y); doc.text("Collector / গ্রহীতা", 37, y + 4, { align: "center" });
+  doc.line(w - 60, y, w - 15, y); doc.text("Authorized Sig. / অনুমোদিত", w - 37, y + 4, { align: "center" });
 
   doc.save(`receipt-${opts.receipt_no}.pdf`);
 }
