@@ -182,6 +182,7 @@ export default function Locations() {
           <TabsTrigger value="upazilas">Upazilas</TabsTrigger>
           <TabsTrigger value="unions">Unions</TabsTrigger>
           <TabsTrigger value="wards">Wards</TabsTrigger>
+          <TabsTrigger value="villages">Villages</TabsTrigger>
           <TabsTrigger value="mouzas">Mouzas</TabsTrigger>
         </TabsList>
         <TabsContent value="divisions" className="mt-4"><LevelTab level="divisions"/></TabsContent>
@@ -189,6 +190,7 @@ export default function Locations() {
         <TabsContent value="upazilas"  className="mt-4"><LevelTab level="upazilas"/></TabsContent>
         <TabsContent value="unions"    className="mt-4"><LevelTab level="unions"/></TabsContent>
         <TabsContent value="wards"     className="mt-4"><LevelTab level="wards"/></TabsContent>
+        <TabsContent value="villages"  className="mt-4"><LevelTab level="villages"/></TabsContent>
         <TabsContent value="mouzas"    className="mt-4"><LevelTab level="mouzas"/></TabsContent>
       </Tabs>
     </>
