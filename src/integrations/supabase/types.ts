@@ -598,6 +598,7 @@ export type Database = {
           established_on: string | null
           id: string
           name: string
+          payment_priority: string[]
           registration_no: string | null
           updated_at: string
         }
@@ -608,6 +609,7 @@ export type Database = {
           established_on?: string | null
           id?: string
           name: string
+          payment_priority?: string[]
           registration_no?: string | null
           updated_at?: string
         }
@@ -618,6 +620,7 @@ export type Database = {
           established_on?: string | null
           id?: string
           name?: string
+          payment_priority?: string[]
           registration_no?: string | null
           updated_at?: string
         }
