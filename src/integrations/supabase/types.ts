@@ -21,7 +21,11 @@ export type Database = {
           entity: string | null
           entity_id: string | null
           id: string
+          ip_address: string | null
           meta: Json | null
+          new_values: Json | null
+          office_id: string | null
+          old_values: Json | null
           user_id: string | null
         }
         Insert: {
@@ -30,7 +34,11 @@ export type Database = {
           entity?: string | null
           entity_id?: string | null
           id?: string
+          ip_address?: string | null
           meta?: Json | null
+          new_values?: Json | null
+          office_id?: string | null
+          old_values?: Json | null
           user_id?: string | null
         }
         Update: {
@@ -39,7 +47,11 @@ export type Database = {
           entity?: string | null
           entity_id?: string | null
           id?: string
+          ip_address?: string | null
           meta?: Json | null
+          new_values?: Json | null
+          office_id?: string | null
+          old_values?: Json | null
           user_id?: string | null
         }
         Relationships: []
@@ -171,6 +183,7 @@ export type Database = {
           land_id: string
           maintenance_charge: number
           note: string | null
+          office_id: string | null
           other_charge: number
           paid_amount: number
           quantity: number
@@ -190,6 +203,7 @@ export type Database = {
           land_id: string
           maintenance_charge?: number
           note?: string | null
+          office_id?: string | null
           other_charge?: number
           paid_amount?: number
           quantity?: number
@@ -209,6 +223,7 @@ export type Database = {
           land_id?: string
           maintenance_charge?: number
           note?: string | null
+          office_id?: string | null
           other_charge?: number
           paid_amount?: number
           quantity?: number
@@ -248,6 +263,7 @@ export type Database = {
           id: string
           land_size: number
           mouza: string | null
+          office_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"]
         }
         Insert: {
@@ -258,6 +274,7 @@ export type Database = {
           id?: string
           land_size?: number
           mouza?: string | null
+          office_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
         Update: {
@@ -268,6 +285,7 @@ export type Database = {
           id?: string
           land_size?: number
           mouza?: string | null
+          office_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
         Relationships: [
@@ -287,6 +305,7 @@ export type Database = {
           created_at: string
           id: string
           loan_id: string
+          office_id: string | null
           paid_on: string
         }
         Insert: {
@@ -295,6 +314,7 @@ export type Database = {
           created_at?: string
           id?: string
           loan_id: string
+          office_id?: string | null
           paid_on?: string
         }
         Update: {
@@ -303,6 +323,7 @@ export type Database = {
           created_at?: string
           id?: string
           loan_id?: string
+          office_id?: string | null
           paid_on?: string
         }
         Relationships: [
@@ -327,6 +348,7 @@ export type Database = {
           issued_on: string
           next_due_on: string | null
           note: string | null
+          office_id: string | null
           principal: number
           status: Database["public"]["Enums"]["loan_status"]
           total_payable: number
@@ -343,6 +365,7 @@ export type Database = {
           issued_on?: string
           next_due_on?: string | null
           note?: string | null
+          office_id?: string | null
           principal: number
           status?: Database["public"]["Enums"]["loan_status"]
           total_payable?: number
@@ -359,6 +382,7 @@ export type Database = {
           issued_on?: string
           next_due_on?: string | null
           note?: string | null
+          office_id?: string | null
           principal?: number
           status?: Database["public"]["Enums"]["loan_status"]
           total_payable?: number
@@ -443,6 +467,8 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          approved_at: string | null
+          approved_by: string | null
           collected_by: string | null
           created_at: string
           farmer_id: string
@@ -450,10 +476,15 @@ export type Database = {
           kind: Database["public"]["Enums"]["payment_kind"]
           method: string | null
           note: string | null
+          office_id: string | null
+          receipt_url: string | null
           reference_id: string | null
+          status: Database["public"]["Enums"]["payment_status"]
         }
         Insert: {
           amount: number
+          approved_at?: string | null
+          approved_by?: string | null
           collected_by?: string | null
           created_at?: string
           farmer_id: string
@@ -461,10 +492,15 @@ export type Database = {
           kind: Database["public"]["Enums"]["payment_kind"]
           method?: string | null
           note?: string | null
+          office_id?: string | null
+          receipt_url?: string | null
           reference_id?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
         }
         Update: {
           amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
           collected_by?: string | null
           created_at?: string
           farmer_id?: string
@@ -472,7 +508,10 @@ export type Database = {
           kind?: Database["public"]["Enums"]["payment_kind"]
           method?: string | null
           note?: string | null
+          office_id?: string | null
+          receipt_url?: string | null
           reference_id?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
         }
         Relationships: [
           {
@@ -534,6 +573,7 @@ export type Database = {
           farmer_id: string
           id: string
           note: string | null
+          office_id: string | null
           status: Database["public"]["Enums"]["approval_status"]
           txn_date: string
           type: Database["public"]["Enums"]["savings_txn_type"]
@@ -546,6 +586,7 @@ export type Database = {
           farmer_id: string
           id?: string
           note?: string | null
+          office_id?: string | null
           status?: Database["public"]["Enums"]["approval_status"]
           txn_date?: string
           type: Database["public"]["Enums"]["savings_txn_type"]
@@ -558,6 +599,7 @@ export type Database = {
           farmer_id?: string
           id?: string
           note?: string | null
+          office_id?: string | null
           status?: Database["public"]["Enums"]["approval_status"]
           txn_date?: string
           type?: Database["public"]["Enums"]["savings_txn_type"]
@@ -601,18 +643,21 @@ export type Database = {
           balance: number
           farmer_id: string
           id: string
+          office_id: string | null
           updated_at: string
         }
         Insert: {
           balance?: number
           farmer_id: string
           id?: string
+          office_id?: string | null
           updated_at?: string
         }
         Update: {
           balance?: number
           farmer_id?: string
           id?: string
+          office_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -697,6 +742,7 @@ export type Database = {
       loan_status: "pending" | "approved" | "paid" | "rejected"
       owner_type: "owner" | "borgadar"
       payment_kind: "loan" | "savings" | "irrigation"
+      payment_status: "pending" | "approved" | "rejected"
       savings_txn_type: "deposit" | "withdraw"
       season_type: "aman" | "boro" | "iri" | "other"
     }
@@ -833,6 +879,7 @@ export const Constants = {
       loan_status: ["pending", "approved", "paid", "rejected"],
       owner_type: ["owner", "borgadar"],
       payment_kind: ["loan", "savings", "irrigation"],
+      payment_status: ["pending", "approved", "rejected"],
       savings_txn_type: ["deposit", "withdraw"],
       season_type: ["aman", "boro", "iri", "other"],
     },
