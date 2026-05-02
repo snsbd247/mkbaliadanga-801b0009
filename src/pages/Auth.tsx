@@ -124,48 +124,6 @@ export default function AuthPage() {
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
           </form>
         </Card>
-
-        {/* Troubleshooting panel */}
-        <Card className="mt-4 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <HelpCircle className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">Trouble signing in?</h3>
-          </div>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="wrong-credentials">
-              <AccordionTrigger className="text-sm">"Invalid username or password"</AccordionTrigger>
-              <AccordionContent className="text-xs text-muted-foreground space-y-1">
-                <p>Usernames are case-insensitive but must match exactly (no spaces). Re-type your password — caps lock and Bangla keyboards are common causes.</p>
-                <p>If you still cannot sign in, use <button onClick={() => { setForgotInput(username); setForgotOpen(true); }} className="text-primary underline">Forgot password</button> to receive a reset email.</p>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="wrong-role">
-              <AccordionTrigger className="text-sm">Logged in but pages are empty / "Access denied"</AccordionTrigger>
-              <AccordionContent className="text-xs text-muted-foreground">
-                Your account exists but is missing the role required for that page (Admin, Committee, or Super Admin). Ask your Super Admin to assign the right role under Users → Roles.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="blocked">
-              <AccordionTrigger className="text-sm">"Account blocked" or repeated failures</AccordionTrigger>
-              <AccordionContent className="text-xs text-muted-foreground">
-                Too many wrong attempts can temporarily lock you out. Wait 5–10 minutes, then try again. If your account was disabled by an admin, contact your Super Admin.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="reset-pending">
-              <AccordionTrigger className="text-sm">Password reset email not arriving</AccordionTrigger>
-              <AccordionContent className="text-xs text-muted-foreground space-y-1">
-                <p>Reset links can take 1–2 minutes. Check your spam / promotions folder. The link expires in 1 hour — request a new one if needed.</p>
-                <p>Make sure the email on your profile is correct; if it isn't, only your Super Admin can change it.</p>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="leaked-password">
-              <AccordionTrigger className="text-sm">"Password is in a known breach"</AccordionTrigger>
-              <AccordionContent className="text-xs text-muted-foreground">
-                Leaked-password protection is enabled. The password you tried to set has appeared in a public data breach — pick a different one with at least 10 characters, mixed case, a digit and a symbol.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </Card>
       </div>
 
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
