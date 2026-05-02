@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { useAuth } from "@/auth/AuthProvider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
 
@@ -175,6 +176,12 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {(isSuper || isAdmin) && (
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <SmsProviderStatusCard />
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
