@@ -345,9 +345,16 @@ export default function SmsLogs() {
                         <TableCell>{statusBadge(l.status)}</TableCell>
                         <TableCell>{l.retry_count}</TableCell>
                         <TableCell>
-                          {l.status !== "sent" && (
-                            <Button size="sm" variant="ghost" onClick={() => retryOne(l.id)} disabled={busy}>Retry</Button>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {(l.event_type === "due_reminder_loan" || l.event_type === "due_reminder_irrigation") && (
+                              <Button size="sm" variant="ghost" onClick={() => openDetails(l)} title="View underlying record">
+                                <Eye className="h-4 w-4"/>
+                              </Button>
+                            )}
+                            {l.status !== "sent" && (
+                              <Button size="sm" variant="ghost" onClick={() => retryOne(l.id)} disabled={busy}>Retry</Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
