@@ -1263,6 +1263,120 @@ export type Database = {
           },
         ]
       }
+      sms_logs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_type: string | null
+          farmer_id: string | null
+          id: string
+          message: string
+          mobile: string
+          office_id: string | null
+          provider_response: string | null
+          reference_id: string | null
+          reference_type: string | null
+          retry_count: number
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_type?: string | null
+          farmer_id?: string | null
+          id?: string
+          message: string
+          mobile: string
+          office_id?: string | null
+          provider_response?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_type?: string | null
+          farmer_id?: string | null
+          id?: string
+          message?: string
+          mobile?: string
+          office_id?: string | null
+          provider_response?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          retry_count?: number
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      sms_settings: {
+        Row: {
+          api_key_set: boolean
+          config: Json
+          enabled: boolean
+          id: number
+          send_on_due_reminder: boolean
+          send_on_irrigation_payment: boolean
+          send_on_loan_approved: boolean
+          send_on_loan_payment: boolean
+          send_on_savings_deposit: boolean
+          send_on_savings_withdraw: boolean
+          sender_id: string | null
+          tpl_due_reminder: string
+          tpl_irrigation_payment: string
+          tpl_loan_approved: string
+          tpl_loan_payment: string
+          tpl_savings_deposit: string
+          tpl_savings_withdraw: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_set?: boolean
+          config?: Json
+          enabled?: boolean
+          id?: number
+          send_on_due_reminder?: boolean
+          send_on_irrigation_payment?: boolean
+          send_on_loan_approved?: boolean
+          send_on_loan_payment?: boolean
+          send_on_savings_deposit?: boolean
+          send_on_savings_withdraw?: boolean
+          sender_id?: string | null
+          tpl_due_reminder?: string
+          tpl_irrigation_payment?: string
+          tpl_loan_approved?: string
+          tpl_loan_payment?: string
+          tpl_savings_deposit?: string
+          tpl_savings_withdraw?: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_set?: boolean
+          config?: Json
+          enabled?: boolean
+          id?: number
+          send_on_due_reminder?: boolean
+          send_on_irrigation_payment?: boolean
+          send_on_loan_approved?: boolean
+          send_on_loan_payment?: boolean
+          send_on_savings_deposit?: boolean
+          send_on_savings_withdraw?: boolean
+          sender_id?: string | null
+          tpl_due_reminder?: string
+          tpl_irrigation_payment?: string
+          tpl_loan_approved?: string
+          tpl_loan_payment?: string
+          tpl_savings_deposit?: string
+          tpl_savings_withdraw?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           can_add: boolean
@@ -1375,6 +1489,9 @@ export type Database = {
         }
         Returns: undefined
       }
+      _sms_format_bdt: { Args: { _n: number }; Returns: string }
+      _sms_render: { Args: { _tpl: string; _vars: Json }; Returns: string }
+      _sms_savings_balance: { Args: { _farmer: string }; Returns: number }
       close_accounting_period: {
         Args: { _from: string; _note?: string; _office?: string; _to: string }
         Returns: string
@@ -1435,6 +1552,18 @@ export type Database = {
         }[]
       }
       reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
+      sms_enqueue: {
+        Args: {
+          _event: string
+          _farmer: string
+          _message: string
+          _mobile: string
+          _office: string
+          _ref_id: string
+          _ref_type: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
