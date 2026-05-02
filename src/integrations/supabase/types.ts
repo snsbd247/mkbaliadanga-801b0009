@@ -335,6 +335,75 @@ export type Database = {
         }
         Relationships: []
       }
+      farmer_otps: {
+        Row: {
+          attempts: number
+          created_at: string
+          expires_at: string
+          farmer_id: string
+          id: string
+          ip: string | null
+          mobile_masked: string | null
+          otp_hash: string
+          used: boolean
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          expires_at: string
+          farmer_id: string
+          id?: string
+          ip?: string | null
+          mobile_masked?: string | null
+          otp_hash: string
+          used?: boolean
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          expires_at?: string
+          farmer_id?: string
+          id?: string
+          ip?: string | null
+          mobile_masked?: string | null
+          otp_hash?: string
+          used?: boolean
+        }
+        Relationships: []
+      }
+      farmer_portal_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          farmer_id: string
+          id: string
+          ip: string | null
+          last_used_at: string | null
+          token_hash: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          farmer_id: string
+          id?: string
+          ip?: string | null
+          last_used_at?: string | null
+          token_hash: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          farmer_id?: string
+          id?: string
+          ip?: string | null
+          last_used_at?: string | null
+          token_hash?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       farmers: {
         Row: {
           address: string | null

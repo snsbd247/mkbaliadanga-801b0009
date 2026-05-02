@@ -39,7 +39,7 @@ export function AppSidebar() {
   const { can } = usePermissions();
 
   const menu: ParentItem[] = [
-    { key: "dashboard", icon: LayoutDashboard, label: t("dashboard"), url: "/", permKey: "dashboard" },
+    { key: "dashboard", icon: LayoutDashboard, label: t("dashboard"), url: "/admin", permKey: "dashboard" },
     {
       key: "operations", icon: Briefcase, label: "Operations",
       children: [

@@ -8,6 +8,8 @@ import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import FarmerPortalLogin from "./pages/FarmerPortalLogin";
+import FarmerDashboard from "./pages/FarmerDashboard";
 import Dashboard from "./pages/Dashboard";
 import Offices from "./pages/Offices";
 import Farmers from "./pages/Farmers";
@@ -52,10 +54,13 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<FarmerPortalLogin />} />
+              <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<AppLayout />}>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/admin" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/offices" element={<Offices />} />
                 <Route path="/farmers" element={<Farmers />} />
                 <Route path="/farmers/:id" element={<FarmerDetail />} />
