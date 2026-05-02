@@ -13,7 +13,9 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { Paperclip, Check, X, FileText, Plus, Trash2 } from "lucide-react";
+import { Paperclip, Check, X, FileText, Plus, Trash2, Printer } from "lucide-react";
+import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { useBranding } from "@/lib/branding";
 
 type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
 
@@ -24,6 +26,7 @@ export default function Payments() {
   const { t } = useLang();
   const { user } = useAuth();
   const [params] = useSearchParams();
+  const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [list, setList] = useState<any[]>([]);
   const [farmerId, setFarmerId] = useState(params.get("farmer") ?? "");
@@ -271,12 +274,23 @@ export default function Payments() {
                     ) : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell>
-                    {isAdmin && p.status === "pending" && (
-                      <div className="flex gap-1">
+                    <div className="flex gap-1">
+                      {isAdmin && p.status === "pending" && (<>
                         <Button size="icon" variant="ghost" onClick={() => approvePayment(p)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
-                      </div>
-                    )}
+                      </>)}
+                      <Button size="icon" variant="ghost" title="Print Receipt" onClick={() => exportPaymentReceiptPDF({
+                        brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
+                        receipt_no: p.id.slice(0, 8).toUpperCase(),
+                        date: p.created_at,
+                        farmer: { name_en: p.farmers?.name_en ?? "—", farmer_code: p.farmers?.farmer_code, mobile: p.farmers?.mobile },
+                        amount: Number(p.amount),
+                        method: p.method ?? "cash",
+                        note: p.note ?? "",
+                        allocations: (p.payment_allocations?.length ? p.payment_allocations : [{ kind: p.kind, amount: Number(p.amount) }])
+                          .map((a: any) => ({ kind: a.kind, amount: Number(a.amount) })),
+                      })}><Printer className="h-4 w-4" /></Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
