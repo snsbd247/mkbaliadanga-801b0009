@@ -193,6 +193,32 @@ export default function SmsSettings() {
             </p>
           </CardHeader>
           <CardContent>
+            {/* Editable sample variables */}
+            <div className="rounded-md border bg-muted/30 p-3 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-xs font-medium">Sample values for preview</Label>
+                <Button type="button" variant="ghost" size="sm"
+                  onClick={() => setSampleVars({ ...DEFAULT_SAMPLE_VARS, date: new Date().toISOString().slice(0,10) })}>
+                  Reset
+                </Button>
+              </div>
+              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                {Object.keys(DEFAULT_SAMPLE_VARS).map((k) => (
+                  <div key={k}>
+                    <Label className="text-[10px] font-mono text-muted-foreground">{`{${k}}`}</Label>
+                    <Input
+                      value={sampleVars[k] ?? ""}
+                      onChange={(e) => setSampleVars({ ...sampleVars, [k]: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Edit values above and watch the preview below update live. These are not saved — only used to render previews.
+              </p>
+            </div>
+
             <Tabs defaultValue="bn">
               <TabsList>
                 <TabsTrigger value="bn">বাংলা (Bangla)</TabsTrigger>
@@ -205,7 +231,10 @@ export default function SmsSettings() {
                     {tplFields.map((f) => {
                       const key = (lang === "en" ? f.key + "_en" : f.key) as keyof Settings;
                       const value = ((s as any)[key] ?? "") as string;
-                      const preview = renderTpl(value, SAMPLE_VARS[f.key] ?? {});
+                      const usedVars = TPL_VAR_MAP[f.key] ?? [];
+                      const subset: Record<string, string> = {};
+                      for (const k of usedVars) subset[k] = sampleVars[k] ?? "";
+                      const preview = renderTpl(value, subset);
                       const vars = TEMPLATE_VARS[f.key] ?? [];
                       return (
                         <div key={String(key)} className="space-y-1.5">
