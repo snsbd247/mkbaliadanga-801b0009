@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -7,15 +7,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Eye, Search, Upload, IdCard, Trash2 } from "lucide-react";
+import { Plus, Eye, Search, IdCard, Trash2, Pencil, AlertTriangle } from "lucide-react";
 import { LocationPicker, LocationValue } from "@/components/locations/LocationPicker";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { validateLocationChain, parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
+
+const EMPTY_FORM = {
+  name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
+  village: "", post_office: "", upazila: "", district: "", division: "", address: "",
+  office_id: "", status: "active",
+  division_id: null, district_id: null, upazila_id: null, union_id: null,
+  ward_id: null, village_id: null, mouza_id: null,
+};
+
+type FormState = typeof EMPTY_FORM & Record<string, any>;
+
+function pickLocation(form: FormState): LocationValue {
+  return {
+    division_id: form.division_id, district_id: form.district_id,
+    upazila_id: form.upazila_id, union_id: form.union_id,
+    ward_id: form.ward_id, village_id: form.village_id, mouza_id: form.mouza_id,
+  };
+}
 
 export default function Farmers() {
   const { t } = useLang();
@@ -26,22 +46,22 @@ export default function Farmers() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
   const PAGE = 15;
+
+  // Create
   const [open, setOpen] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
-  const [form, setForm] = useState<any>({
-    name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
-    village: "", post_office: "", upazila: "", district: "", division: "", address: "",
-    office_id: officeId ?? "", status: "active",
-    division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, village_id: null, mouza_id: null,
-  });
-  const location: LocationValue = {
-    division_id: form.division_id, district_id: form.district_id,
-    upazila_id: form.upazila_id, union_id: form.union_id,
-    ward_id: form.ward_id, village_id: form.village_id, mouza_id: form.mouza_id,
-  };
+  const [form, setForm] = useState<FormState>({ ...EMPTY_FORM, office_id: officeId ?? "" });
+  const [createErr, setCreateErr] = useState<{ level: LocationLevel; key: string } | null>(null);
+
+  // Edit
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<FormState | null>(null);
+  const [editPhoto, setEditPhoto] = useState<File | null>(null);
+  const [editErr, setEditErr] = useState<{ level: LocationLevel; key: string } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page]);
-  useEffect(() => { setForm((f: any) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
+  useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
   async function load() {
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
@@ -50,31 +70,95 @@ export default function Farmers() {
     setList(data ?? []);
   }
 
+  function levelLabel(level: LocationLevel) {
+    const map: Record<LocationLevel, string> = {
+      division: t("division"), district: t("district"), upazila: t("upazila"),
+      union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
+    };
+    return map[level];
+  }
+
+  function buildErrMessage(key: string, level: LocationLevel) {
+    const tpl = t(key as any) || "";
+    return tpl.replace("{level}", levelLabel(level));
+  }
+
+  async function uploadPhoto(file: File): Promise<string | undefined> {
+    const ext = file.name.split(".").pop();
+    const path = `farmers/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("farmer-photos").upload(path, file);
+    if (error) { toast.error(error.message); return undefined; }
+    return supabase.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
+  }
+
+  function commonValidate(f: FormState): boolean {
+    if (!f.name_en?.trim()) { toast.error("English name required"); return false; }
+    if (f.mobile && !/^\+?\d[\d\s-]{6,20}$/.test(f.mobile)) { toast.error("Invalid mobile number"); return false; }
+    if (f.nid && !/^\d{10,17}$/.test(f.nid.replace(/\D/g, ""))) { toast.error("Invalid NID (10–17 digits)"); return false; }
+    return true;
+  }
+
   async function save() {
-    if (!form.name_en?.trim()) return toast.error("English name required");
-    if (form.mobile && !/^\+?\d[\d\s-]{6,20}$/.test(form.mobile)) return toast.error("Invalid mobile number");
-    if (form.nid && !/^\d{10,17}$/.test(form.nid.replace(/\D/g, ""))) return toast.error("Invalid NID (10–17 digits)");
+    setCreateErr(null);
+    if (!commonValidate(form)) return;
+    const v = validateLocationChain(pickLocation(form));
+    if (v.ok === false) { setCreateErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
+
     let photo_url: string | undefined;
     if (photo) {
-      const ext = photo.name.split(".").pop();
-      const path = `farmers/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("farmer-photos").upload(path, photo);
-      if (error) return toast.error(error.message);
-      photo_url = supabase.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
+      photo_url = await uploadPhoto(photo);
+      if (!photo_url) return;
     }
-    const payload = { ...form, ...(photo_url ? { photo_url } : {}), office_id: form.office_id || null };
+    const payload: any = { ...form, ...(photo_url ? { photo_url } : {}), office_id: form.office_id || null };
     const { data, error } = await supabase.from("farmers").insert(payload).select().single();
-    if (error) return toast.error(error.message);
+    if (error) {
+      const lvl = parseLocationDbError(error.message);
+      if (lvl) setCreateErr({ level: lvl, key: "locationInvalidMismatch" });
+      else toast.error(error.message);
+      return;
+    }
     if (data) await supabase.from("shares").insert({ farmer_id: data.id, balance: 0 });
     toast.success("Farmer added");
-    setOpen(false);
-    setPhoto(null);
-    setForm({
-      name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
-      village: "", post_office: "", upazila: "", district: "", division: "", address: "",
-      office_id: officeId ?? "", status: "active",
-      division_id: null, district_id: null, upazila_id: null, union_id: null, ward_id: null, village_id: null, mouza_id: null,
+    setOpen(false); setPhoto(null);
+    setForm({ ...EMPTY_FORM, office_id: officeId ?? "" });
+    load();
+  }
+
+  function openEdit(row: any) {
+    setEditErr(null); setEditPhoto(null);
+    setEditForm({
+      ...EMPTY_FORM,
+      ...row,
+      office_id: row.office_id ?? "",
     });
+    setEditOpen(true);
+  }
+
+  async function saveEdit() {
+    if (!editForm) return;
+    setEditErr(null);
+    if (!commonValidate(editForm)) return;
+    const v = validateLocationChain(pickLocation(editForm));
+    if (v.ok === false) { setEditErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
+
+    setSaving(true);
+    let photo_url: string | undefined;
+    if (editPhoto) {
+      photo_url = await uploadPhoto(editPhoto);
+      if (!photo_url) { setSaving(false); return; }
+    }
+    const { id, farmer_code, created_at, updated_at, offices: _o, ...rest } = editForm as any;
+    const payload = { ...rest, ...(photo_url ? { photo_url } : {}), office_id: editForm.office_id || null };
+    const { error } = await supabase.from("farmers").update(payload).eq("id", id);
+    setSaving(false);
+    if (error) {
+      const lvl = parseLocationDbError(error.message);
+      if (lvl) setEditErr({ level: lvl, key: "locationInvalidMismatch" });
+      else toast.error(error.message);
+      return;
+    }
+    toast.success("Farmer updated");
+    setEditOpen(false); setEditForm(null); setEditPhoto(null);
     load();
   }
 
@@ -85,43 +169,76 @@ export default function Farmers() {
     load();
   }
 
+  // ---------- Reusable form fields ----------
+  function FormFields({
+    f, setF, photoFile, setPhotoFile, err,
+  }: {
+    f: FormState;
+    setF: (next: FormState) => void;
+    photoFile: File | null;
+    setPhotoFile: (p: File | null) => void;
+    err: { level: LocationLevel; key: string } | null;
+  }) {
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        <div><Label>{t("nameEn")} *</Label><Input value={f.name_en} onChange={e => setF({ ...f, name_en: e.target.value })} /></div>
+        <div><Label>{t("nameBn")}</Label><Input value={f.name_bn} onChange={e => setF({ ...f, name_bn: e.target.value })} /></div>
+        <div><Label>{t("fatherName")}</Label><Input value={f.father_name} onChange={e => setF({ ...f, father_name: e.target.value })} /></div>
+        <div><Label>{t("motherName")}</Label><Input value={f.mother_name} onChange={e => setF({ ...f, mother_name: e.target.value })} /></div>
+        <div><Label>{t("nid")}</Label><Input value={f.nid} onChange={e => setF({ ...f, nid: e.target.value })} /></div>
+        <div><Label>{t("mobile")}</Label><Input value={f.mobile} onChange={e => setF({ ...f, mobile: e.target.value })} /></div>
+        <div><Label>{t("village")}</Label><Input value={f.village} onChange={e => setF({ ...f, village: e.target.value })} /></div>
+        <div><Label>{t("postOffice")}</Label><Input value={f.post_office} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
+        <div><Label>{t("upazila")}</Label><Input value={f.upazila} onChange={e => setF({ ...f, upazila: e.target.value })} /></div>
+        <div><Label>{t("district")}</Label><Input value={f.district} onChange={e => setF({ ...f, district: e.target.value })} /></div>
+        <div><Label>{t("division")}</Label><Input value={f.division} onChange={e => setF({ ...f, division: e.target.value })} /></div>
+        <div>
+          <Label>{t("office")}</Label>
+          <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })}>
+            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+            <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} onChange={e => setF({ ...f, address: e.target.value })} /></div>
+
+        <div className="col-span-2 border-t pt-3 mt-1">
+          <div className="text-xs font-medium text-muted-foreground mb-2">
+            Location (strict cascading: division → district → upazila → union → ward → village → mouza)
+          </div>
+          {err && (
+            <Alert variant="destructive" className="mb-3" role="alert" aria-live="assertive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>{t("locationInvalidTitle")}</AlertTitle>
+              <AlertDescription data-testid="location-error" data-level={err.level}>
+                <span className="font-semibold">{levelLabel(err.level)}:</span>{" "}
+                {buildErrMessage(err.key, err.level)}
+              </AlertDescription>
+            </Alert>
+          )}
+          <LocationPicker
+            value={pickLocation(f)}
+            onChange={(loc) => setF({ ...f, ...loc })}
+          />
+        </div>
+        <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
+          {photoFile && <div className="text-xs text-muted-foreground mt-1">{photoFile.name}</div>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHeader title={t("farmers")} actions={
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setCreateErr(null); }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle></DialogHeader>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t("nameEn")} *</Label><Input value={form.name_en} onChange={e => setForm({ ...form, name_en: e.target.value })} /></div>
-              <div><Label>{t("nameBn")}</Label><Input value={form.name_bn} onChange={e => setForm({ ...form, name_bn: e.target.value })} /></div>
-              <div><Label>{t("fatherName")}</Label><Input value={form.father_name} onChange={e => setForm({ ...form, father_name: e.target.value })} /></div>
-              <div><Label>{t("motherName")}</Label><Input value={form.mother_name} onChange={e => setForm({ ...form, mother_name: e.target.value })} /></div>
-              <div><Label>{t("nid")}</Label><Input value={form.nid} onChange={e => setForm({ ...form, nid: e.target.value })} /></div>
-              <div><Label>{t("mobile")}</Label><Input value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} /></div>
-              <div><Label>{t("village")}</Label><Input value={form.village} onChange={e => setForm({ ...form, village: e.target.value })} /></div>
-              <div><Label>{t("postOffice")}</Label><Input value={form.post_office} onChange={e => setForm({ ...form, post_office: e.target.value })} /></div>
-              <div><Label>{t("upazila")}</Label><Input value={form.upazila} onChange={e => setForm({ ...form, upazila: e.target.value })} /></div>
-              <div><Label>{t("district")}</Label><Input value={form.district} onChange={e => setForm({ ...form, district: e.target.value })} /></div>
-              <div><Label>{t("division")}</Label><Input value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} /></div>
-              <div>
-                <Label>{t("office")}</Label>
-                <Select value={form.office_id} onValueChange={v => setForm({ ...form, office_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2"><Label>{t("address")}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-              <div className="col-span-2 border-t pt-3 mt-1">
-                <div className="text-xs font-medium text-muted-foreground mb-2">Location (optional — links farmer to managed division/district/etc.)</div>
-                <LocationPicker
-                  value={location}
-                  onChange={(loc) => setForm({ ...form, ...loc })}
-                />
-              </div>
-              <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] ?? null)} /></div>
-            </div>
-            <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
+            <FormFields f={form} setF={setForm} photoFile={photo} setPhotoFile={setPhoto} err={createErr} />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
+              <Button onClick={save}>{t("save")}</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       } />
@@ -157,6 +274,7 @@ export default function Farmers() {
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <Button size="icon" variant="ghost" title="View" onClick={() => nav(`/farmers/${f.id}`)}><Eye className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" title="Edit" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" title="Membership card" onClick={() => nav(`/farmers/${f.id}/card`)}><IdCard className="h-4 w-4" /></Button>
                     {isSuper && (
                       <AlertDialog>
@@ -192,6 +310,20 @@ export default function Farmers() {
           </div>
         </div>
       </Card>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) { setEditForm(null); setEditErr(null); setEditPhoto(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle></DialogHeader>
+          {editForm && (
+            <FormFields f={editForm} setF={setEditForm as any} photoFile={editPhoto} setPhotoFile={setEditPhoto} err={editErr} />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>{t("cancel")}</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving ? "…" : t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
