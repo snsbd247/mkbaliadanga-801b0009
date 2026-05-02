@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { CoaImportDialog } from "./accounts/CoaImportDialog";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
 
