@@ -191,6 +191,7 @@ export default function Statement() {
           <Button variant="outline" size="sm" onClick={() => window.print()} disabled={!farmerId}><Printer className="h-4 w-4 mr-1" />{t("print") || "Print"}</Button>
           <Button variant="outline" size="sm" onClick={exportPDF} disabled={!farmerId}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
           <Button variant="outline" size="sm" onClick={exportXLSX} disabled={!farmerId}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+          <Button size="sm" onClick={exportCombinedPDF} disabled={!farmerId}><FileText className="h-4 w-4 mr-1" />Full Statement PDF (Loans + Savings + Irrigation)</Button>
         </div>
       </Card>
 
