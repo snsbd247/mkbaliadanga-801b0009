@@ -84,6 +84,14 @@ export default function SmsSettings() {
   const [sampleVars, setSampleVars] = useState<Record<string, string>>(DEFAULT_SAMPLE_VARS);
   const [offices, setOffices] = useState<Office[]>([]);
   const [overrides, setOverrides] = useState<Record<string, OfficeOverride>>({});
+  // Manual scheduler state
+  const today = new Date().toISOString().slice(0, 10);
+  const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const [schedFrom, setSchedFrom] = useState<string>(today);
+  const [schedTo, setSchedTo] = useState<string>(in7);
+  const [schedOffice, setSchedOffice] = useState<string>("__all__");
+  const [schedBusy, setSchedBusy] = useState(false);
+  const [schedResult, setSchedResult] = useState<any>(null);
 
   useEffect(() => { document.title = "SMS Settings"; load(); }, []);
 
