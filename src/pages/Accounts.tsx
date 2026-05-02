@@ -71,6 +71,7 @@ const money = (n: number) =>
 
 export default function Accounts() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [rows, setRows] = useState<Account[]>([]);
   const [sums, setSums] = useState<Record<string, { debit: number; credit: number }>>({});
   const [loading, setLoading] = useState(true);
