@@ -156,11 +156,11 @@ export default function Cashbook() {
     const irrDue = irrigation.reduce((s, x) => s + Number(x.due_amount || 0), 0);
 
     return {
-      income, expense, cashBalance: income - expense,
+      income, expense, cashBalance: Number(openingCash || 0) + income - expense,
       savBal, loanIssued, loanCollected, loanDue,
       irrCharged, irrCollected, irrDue,
     };
-  }, [receipts, expenses, savings, loans, loanPayments, irrigation]);
+  }, [receipts, expenses, savings, loans, loanPayments, irrigation, openingCash]);
 
   function rangeLabel() {
     if (!from && !to) return "All time";
