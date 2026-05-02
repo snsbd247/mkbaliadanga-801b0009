@@ -203,6 +203,71 @@ export default function Reports() {
     return Array.from(m.values()).sort((a, b) => b.balance - a.balance);
   }, [savings]);
 
+  // --- Audit aggregations: by Office and by Season ---
+  const byOffice = useMemo(() => {
+    const m = new Map<string, { office: string; income: number; expense: number; loanIssued: number; loanCollected: number; irrCharged: number; irrCollected: number; irrDue: number; savBal: number }>();
+    const officeName = (id: string | null) => offices.find(o => o.id === id)?.name ?? "—";
+    const get = (id: string) => {
+      const k = id ?? "none";
+      if (!m.has(k)) m.set(k, { office: officeName(id), income: 0, expense: 0, loanIssued: 0, loanCollected: 0, irrCharged: 0, irrCollected: 0, irrDue: 0, savBal: 0 });
+      return m.get(k)!;
+    };
+    for (const p of payments) if (p.status === "approved") get(p.office_id).income += Number(p.amount);
+    for (const l of loans) get(l.office_id).loanIssued += Number(l.principal || 0);
+    for (const lp of loanPayments) get(lp.office_id).loanCollected += Number(lp.amount || 0);
+    for (const i of irr) {
+      const g = get(i.office_id);
+      g.irrCharged += Number(i.total || 0);
+      g.irrCollected += Number(i.paid_amount || 0);
+      g.irrDue += Number(i.due_amount || 0);
+    }
+    for (const s of savings) if (s.status === "approved") {
+      const g = get(s.office_id);
+      g.savBal += s.type === "deposit" ? Number(s.amount) : -Number(s.amount);
+    }
+    return Array.from(m.values()).sort((a, b) => b.income - a.income);
+  }, [payments, loans, loanPayments, irr, savings, offices]);
+
+  const bySeason = useMemo(() => {
+    const m = new Map<string, { season: string; charged: number; collected: number; due: number }>();
+    for (const i of irr) {
+      const s = i.seasons ? `${i.seasons.name} ${i.seasons.year}` : "—";
+      const g = m.get(s) ?? { season: s, charged: 0, collected: 0, due: 0 };
+      g.charged += Number(i.total || 0);
+      g.collected += Number(i.paid_amount || 0);
+      g.due += Number(i.due_amount || 0);
+      m.set(s, g);
+    }
+    return Array.from(m.values()).sort((a, b) => b.charged - a.charged);
+  }, [irr]);
+
+  const auditSummary = useMemo(() => {
+    const income = payments.filter(p => p.status === "approved").reduce((s, p) => s + Number(p.amount), 0);
+    const loanIssued = loans.reduce((s, l) => s + Number(l.principal || 0), 0);
+    const loanCollected = loanPayments.reduce((s, lp) => s + Number(lp.amount || 0), 0);
+    const loanDue = loans.filter(l => l.status === "approved").reduce((s, l) => {
+      const paid = (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0);
+      return s + Math.max(0, Number(l.total_payable || 0) - paid);
+    }, 0);
+    const irrCharged = irr.reduce((s, x) => s + Number(x.total || 0), 0);
+    const irrCollected = irr.reduce((s, x) => s + Number(x.paid_amount || 0), 0);
+    const irrDue = irr.reduce((s, x) => s + Number(x.due_amount || 0), 0);
+    const savDep = savings.filter(s => s.status === "approved" && s.type === "deposit").reduce((a, x) => a + Number(x.amount), 0);
+    const savWd = savings.filter(s => s.status === "approved" && s.type === "withdraw").reduce((a, x) => a + Number(x.amount), 0);
+    return [
+      { label: "Total Income (Approved Payments)", value: income },
+      { label: "Loan Issued (Principal)", value: loanIssued },
+      { label: "Loan Collected", value: loanCollected },
+      { label: "Loan Outstanding Due", value: loanDue },
+      { label: "Irrigation Charged", value: irrCharged },
+      { label: "Irrigation Collected", value: irrCollected },
+      { label: "Irrigation Outstanding Due", value: irrDue },
+      { label: "Savings Deposits", value: savDep },
+      { label: "Savings Withdrawals", value: savWd },
+      { label: "Net Savings Balance", value: savDep - savWd },
+    ];
+  }, [payments, loans, loanPayments, irr, savings]);
+
   function filterTitleSuffix() {
     const parts: string[] = [];
     if (from || to) parts.push(`${from || "…"}→${to || "…"}`);
