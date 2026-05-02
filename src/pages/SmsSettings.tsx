@@ -48,13 +48,22 @@ const TEMPLATE_VARS: Record<string, string[]> = {
   tpl_due_reminder: ["{type}", "{due}", "{date}"],
 };
 
-const SAMPLE_VARS: Record<string, Record<string, string>> = {
-  tpl_savings_deposit:    { amount: "1,500.00", balance: "12,750.00" },
-  tpl_savings_withdraw:   { amount: "500.00",   balance: "12,250.00" },
-  tpl_loan_approved:      { amount: "20,000.00", payable: "22,000.00" },
-  tpl_loan_payment:       { amount: "2,000.00",  due: "8,000.00" },
-  tpl_irrigation_payment: { amount: "850.00" },
-  tpl_due_reminder:       { type: "Loan / ঋণ", due: "5,000.00", date: new Date().toISOString().slice(0,10) },
+const DEFAULT_SAMPLE_VARS: Record<string, string> = {
+  amount: "1,500.00",
+  balance: "12,750.00",
+  payable: "22,000.00",
+  due: "8,000.00",
+  type: "Loan / ঋণ",
+  date: new Date().toISOString().slice(0, 10),
+};
+
+const TPL_VAR_MAP: Record<string, string[]> = {
+  tpl_savings_deposit:    ["amount", "balance"],
+  tpl_savings_withdraw:   ["amount", "balance"],
+  tpl_loan_approved:      ["amount", "payable"],
+  tpl_loan_payment:       ["amount", "due"],
+  tpl_irrigation_payment: ["amount"],
+  tpl_due_reminder:       ["type", "due", "date"],
 };
 
 function renderTpl(tpl: string, vars: Record<string, string>): string {
