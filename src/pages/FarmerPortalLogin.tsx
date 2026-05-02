@@ -21,6 +21,7 @@ type Step = "id" | "otp";
 export default function FarmerPortalLogin() {
   const nav = useNavigate();
   const brand = useBranding();
+  const { t } = useLang();
   const { user, isSuper, isAdmin, isCommittee, rolesLoaded, roles } = useAuth();
   const [step, setStep] = useState<Step>("id");
   const [identifier, setIdentifier] = useState("");
