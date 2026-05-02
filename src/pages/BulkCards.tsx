@@ -118,9 +118,11 @@ export default function BulkCards() {
           token: it.token,
           issued_at: it.issued_at,
         };
-        const svg = qrHostRef.current?.querySelector(`svg[data-token-id="${it.farmer_id}"]`) as SVGElement | null;
+        const wrap = qrHostRef.current?.querySelector(`[data-token-id="${it.farmer_id}"]`) as HTMLElement | null;
+        const svg = wrap?.querySelector("svg") as SVGElement | null;
         return { data, qrSvg: svg };
       });
+      // (closing brace replaced below)
       await downloadBulkCardsPdf(cards, templateId, `farmer-cards-${ok.length}-${templateId}.pdf`);
       const skipped = items.length - ok.length;
       toast.success(`Generated ${ok.length} card(s)${skipped ? `, skipped ${skipped}` : ""}.`);
