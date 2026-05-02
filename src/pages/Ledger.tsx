@@ -170,6 +170,10 @@ export default function Ledger() {
             <Label>To</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
+          <div className="lg:col-span-2">
+            <Label>Farmer search (name / code / member / mobile)</Label>
+            <Input placeholder="Type to filter by farmer…" value={farmerSearch} onChange={(e) => setFarmerSearch(e.target.value)} />
+          </div>
         </CardContent>
       </Card>
 
