@@ -249,9 +249,9 @@ export default function Payments() {
 
             {farmerId && (
               <div className="rounded-md bg-muted/40 p-2 text-xs space-y-0.5">
-                <div className="font-semibold uppercase text-[10px] text-muted-foreground">Outstanding dues</div>
-                <div className="flex justify-between"><span>Irrigation</span><span className="font-mono">{money(openIrr.reduce((s, x) => s + Number(x.due_amount || 0), 0))}</span></div>
-                <div className="flex justify-between"><span>Loans</span><span className="font-mono">{money(openLoans.reduce((s, l) => s + (Number(l.total_payable) - (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0)), 0))}</span></div>
+                <div className="font-semibold uppercase text-[10px] text-muted-foreground">{t("outstandingDues")}</div>
+                <div className="flex justify-between"><span>{t("irrigation")}</span><span className="font-mono">{money(openIrr.reduce((s, x) => s + Number(x.due_amount || 0), 0))}</span></div>
+                <div className="flex justify-between"><span>{t("loans")}</span><span className="font-mono">{money(openLoans.reduce((s, l) => s + (Number(l.total_payable) - (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0)), 0))}</span></div>
               </div>
             )}
 
@@ -260,7 +260,7 @@ export default function Payments() {
                 <div className="text-[10px] uppercase font-semibold text-muted-foreground">Auto-allocate (priority: {priority.join(" → ")})</div>
                 <div className="flex gap-2">
                   <Input type="number" min="0" placeholder="Total amount" value={autoAmount || ""} onChange={(e) => setAutoAmount(+e.target.value)} />
-                  <Button type="button" variant="secondary" onClick={autoAllocate}>Apply</Button>
+                  <Button type="button" variant="secondary" onClick={autoAllocate}>{t("apply")}</Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground">Configurable per office in Settings → Offices.</p>
               </div>
@@ -268,7 +268,7 @@ export default function Payments() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Allocations</Label>
+                <Label>{t("allocations")}</Label>
                 <Button type="button" size="sm" variant="ghost" onClick={() => setAllocs([...allocs, { kind: "irrigation", reference_id: "", amount: 0 }])}>
                   <Plus className="h-3.5 w-3.5 mr-1" />Add
                 </Button>
@@ -328,7 +328,7 @@ export default function Payments() {
         <Card className="p-5 lg:col-span-2">
           <h2 className="font-semibold mb-3">{t("recentTransactions")}</h2>
           <Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>Allocations</TableHead><TableHead>{t("amount")}</TableHead><TableHead>Status</TableHead><TableHead>Receipt</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
             <TableBody>
               {list.map(p => (
                 <TableRow key={p.id}>

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Trash2, MapPin, Pencil, Loader2, Search } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Level = "divisions" | "districts" | "upazilas" | "unions" | "wards" | "villages" | "mouzas";
 type Row = any;
@@ -93,6 +94,7 @@ function CascadeFilters({
   onChange: (v: Chain) => void;
   showLeafFilter?: boolean;
 }) {
+  const { t } = useLang();
   const chain = CHAIN[level];
   const [opts, setOpts] = useState<Record<string, Row[]>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
@@ -164,7 +166,7 @@ function CascadeFilters({
                   </SelectItem>
                 ))}
                 {list.length === 0 && parentSelected && !isLoading && (
-                  <div className="px-3 py-2 text-xs text-muted-foreground">No entries</div>
+                  <div className="px-3 py-2 text-xs text-muted-foreground">{t("noEntries")}</div>
                 )}
               </SelectContent>
             </Select>
@@ -176,6 +178,7 @@ function CascadeFilters({
 }
 
 function LevelTab({ level }: { level: Level }) {
+  const { t } = useLang();
   const chain = CHAIN[level];
   const directCol = DIRECT_PARENT_COL[level];
   const optionalCol = OPTIONAL_PARENT_COL[level];
@@ -366,11 +369,11 @@ function LevelTab({ level }: { level: Level }) {
       {/* Filter bar */}
       {chain.length > 0 && (
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Filter</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">{t("filter")}</CardTitle></CardHeader>
           <CardContent>
             <CascadeFilters level={level} value={filter} onChange={setFilter} />
             {Object.keys(filter).length > 0 && (
-              <Button size="sm" variant="ghost" className="mt-2" onClick={() => setFilter({})}>Clear filters</Button>
+              <Button size="sm" variant="ghost" className="mt-2" onClick={() => setFilter({})}>{t("clearFilters")}</Button>
             )}
           </CardContent>
         </Card>
@@ -423,8 +426,8 @@ function LevelTab({ level }: { level: Level }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Bangla</TableHead>
+                  <TableHead>{t("name")}</TableHead>
+                  <TableHead>{t("bnName")}</TableHead>
                   {directCol && <TableHead>{chain[chain.length - 1].label}</TableHead>}
                   <TableHead className="text-right"></TableHead>
                 </TableRow>
@@ -433,7 +436,7 @@ function LevelTab({ level }: { level: Level }) {
                 {loading ? (
                   <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6"><Loader2 className="h-4 w-4 animate-spin inline mr-2"/>Loading…</TableCell></TableRow>
                 ) : visibleRows.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No entries</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">{t("noEntries")}</TableCell></TableRow>
                 ) : visibleRows.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell>{r.name}</TableCell>
@@ -486,8 +489,8 @@ function LevelTab({ level }: { level: Level }) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
-            <Button onClick={saveEdit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}Save</Button>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>{t("cancel")}</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}{t("save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -497,29 +500,30 @@ function LevelTab({ level }: { level: Level }) {
 
 export default function Locations() {
   const { isSuper, rolesLoaded } = useAuth();
-  useEffect(() => { document.title = "Locations"; }, []);
-  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
+  const { t } = useLang();
+  useEffect(() => { document.title = t("locations"); }, [t]);
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">{t("loading" as any) || "Loading…"}</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   return (
     <>
       <PageHeader
-        title="Location Management"
-        description="Manage divisions, districts, upazilas, unions, wards, villages, and mouzas with strict cascading hierarchy."
+        title={t("locations")}
+        description={t("locationsManagementDesc" as any) || "Manage divisions, districts, upazilas, unions, wards, villages, and mouzas with strict cascading hierarchy."}
       />
       <div className="rounded-md border bg-muted/30 p-3 mb-4 text-xs text-muted-foreground flex gap-2">
         <MapPin className="h-4 w-4 mt-0.5 shrink-0"/>
-        <span>Edits preserve existing parent-child relationships. Cascading filters require selecting parents in order. Existing farmers and lands keep their original references.</span>
+        <span>{t("locationsHierarchyNote" as any) || "Edits preserve existing parent-child relationships. Cascading filters require selecting parents in order. Existing farmers and lands keep their original references."}</span>
       </div>
       <Tabs defaultValue="divisions">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="divisions">Divisions</TabsTrigger>
-          <TabsTrigger value="districts">Districts</TabsTrigger>
-          <TabsTrigger value="upazilas">Upazilas</TabsTrigger>
-          <TabsTrigger value="unions">Unions</TabsTrigger>
-          <TabsTrigger value="wards">Wards</TabsTrigger>
-          <TabsTrigger value="villages">Villages</TabsTrigger>
-          <TabsTrigger value="mouzas">Mouzas</TabsTrigger>
+          <TabsTrigger value="divisions">{t("divisions")}</TabsTrigger>
+          <TabsTrigger value="districts">{t("districts")}</TabsTrigger>
+          <TabsTrigger value="upazilas">{t("upazilas")}</TabsTrigger>
+          <TabsTrigger value="unions">{t("unions")}</TabsTrigger>
+          <TabsTrigger value="wards">{t("wards")}</TabsTrigger>
+          <TabsTrigger value="villages">{t("villages")}</TabsTrigger>
+          <TabsTrigger value="mouzas">{t("mouzas")}</TabsTrigger>
         </TabsList>
         <TabsContent value="divisions" className="mt-4"><LevelTab level="divisions"/></TabsContent>
         <TabsContent value="districts" className="mt-4"><LevelTab level="districts"/></TabsContent>

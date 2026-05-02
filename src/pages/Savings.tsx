@@ -114,7 +114,7 @@ export default function Savings() {
               </div>
               <div><Label>{t("amount")}</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: +e.target.value })} /></div>
               <div><Label>{t("note")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
-              <p className="text-xs text-muted-foreground">Withdrawals require committee approval before they affect the savings balance.</p>
+              <p className="text-xs text-muted-foreground">{t("withdrawalsRequireApproval")}</p>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
           </DialogContent>
@@ -125,7 +125,7 @@ export default function Savings() {
         <TabsList>
           <TabsTrigger value="all">{t("all")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
-          <TabsTrigger value="history">Approval history</TabsTrigger>
+          <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
         </TabsList>
         <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} onDecide={decide} onPrint={printReceipt} profiles={profiles} /></TabsContent>
         <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} onDecide={decide} onPrint={printReceipt} profiles={profiles} /></TabsContent>
@@ -142,7 +142,7 @@ function TxnTable({ rows, t, isAdmin, onDecide, onPrint, profiles, historyMode }
         <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
         <TableHead>{t("type")}</TableHead><TableHead>{t("amount")}</TableHead>
         <TableHead>{t("status")}</TableHead>
-        <TableHead>Approved By</TableHead>
+        <TableHead>{t("approvedBy")}</TableHead>
         <TableHead className="text-right">{t("actions")}</TableHead>
       </TableRow></TableHeader>
       <TableBody>
@@ -163,11 +163,11 @@ function TxnTable({ rows, t, isAdmin, onDecide, onPrint, profiles, historyMode }
             </TableCell>
             <TableCell className="text-right">
               {isAdmin && r.status === "pending" && (<>
-                <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "approved")} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "rejected")} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "approved")} title={t("approveAction")}><Check className="h-4 w-4 text-success" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "rejected")} title={t("rejectAction")}><X className="h-4 w-4 text-destructive" /></Button>
               </>)}
               {(r.status === "approved" || historyMode) && (
-                <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title="Print receipt"><Printer className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title={t("printReceipt")}><Printer className="h-4 w-4" /></Button>
               )}
             </TableCell>
           </TableRow>

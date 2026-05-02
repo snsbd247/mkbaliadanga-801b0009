@@ -227,15 +227,15 @@ export default function Cashbook() {
         <div className="grid gap-3 md:grid-cols-4">
           <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
           <div><Label>{t("to")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
-          <div><Label>Opening Cash</Label><Input type="number" value={openingCash || ""} onChange={e => setOpeningCash(+e.target.value)} /></div>
+          <div><Label>{t("openingCash")}</Label><Input type="number" value={openingCash || ""} onChange={e => setOpeningCash(+e.target.value)} /></div>
           <div className="self-end text-sm text-muted-foreground">
-            <div>Open: <span className="font-semibold">{money(openingCash)}</span></div>
+            <div>{t("openingBalance")}: <span className="font-semibold">{money(openingCash)}</span></div>
             <div>{t("income")}: <span className="font-semibold text-success">{money(totals.income)}</span> · {t("expense")}: <span className="font-semibold text-destructive">{money(totals.expense)}</span></div>
-            <div>Closing: <span className={`font-bold ${totals.cashBalance < 0 ? "due-text" : "text-success"}`}>{money(totals.cashBalance)}</span></div>
+            <div>{t("closing")}: <span className={`font-bold ${totals.cashBalance < 0 ? "due-text" : "text-success"}`}>{money(totals.cashBalance)}</span></div>
           </div>
         </div>
         <div className="flex gap-2 mt-3">
-          <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />Print</Button>
+          <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
           <Button size="sm" variant="outline" onClick={() => exportAuditReportPDF({
             brand: { company_name: brand.company_name, address: brand.address ?? "" },
             range: rangeLabel(),
@@ -252,7 +252,7 @@ export default function Cashbook() {
               { label: "Irrigation Collected", value: totals.irrCollected },
               { label: "Irrigation Outstanding Due", value: totals.irrDue },
             ],
-          })}><FileDown className="h-4 w-4 mr-1" />Audit Report PDF</Button>
+          })}><FileDown className="h-4 w-4 mr-1" />{t("auditReportPdf")}</Button>
         </div>
       </Card>
 
@@ -278,7 +278,7 @@ export default function Cashbook() {
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>{t("description")}</TableHead>
               <TableHead>Ref</TableHead>
               <TableHead className="text-right">{t("income")}</TableHead>
               <TableHead className="text-right">{t("expense")}</TableHead>
@@ -288,7 +288,7 @@ export default function Cashbook() {
               <TableRow className="bg-muted/40 font-medium">
                 <TableCell>{from || "—"}</TableCell>
                 <TableCell><Badge variant="outline">opening</Badge></TableCell>
-                <TableCell colSpan={2}>Opening Cash Balance</TableCell>
+                <TableCell colSpan={2}>{t("openingCashBalance")}</TableCell>
                 <TableCell className="text-right">—</TableCell>
                 <TableCell className="text-right">—</TableCell>
                 <TableCell className="text-right font-semibold">{money(openingCash)}</TableCell>
@@ -305,7 +305,7 @@ export default function Cashbook() {
                 </TableRow>
               ))}
               <TableRow className="bg-muted/60 font-bold">
-                <TableCell colSpan={4} className="text-right">Closing</TableCell>
+                <TableCell colSpan={4} className="text-right">{t("closing")}</TableCell>
                 <TableCell className="text-right text-success">{money(totals.income)}</TableCell>
                 <TableCell className="text-right text-destructive">{money(totals.expense)}</TableCell>
                 <TableCell className={`text-right ${totals.cashBalance < 0 ? "due-text" : ""}`}>{money(totals.cashBalance)}</TableCell>
