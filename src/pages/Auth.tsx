@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sprout, Mail } from "lucide-react";
+import { Sprout, Mail, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,20 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
+
+type StepStatus = "idle" | "running" | "ok" | "fail";
+interface DebugInfo {
+  lookup: StepStatus;
+  password: StepStatus;
+  redirect: StepStatus;
+  resolvedEmail?: string;
+  errorCode?: string;
+  errorMessage?: string;
+  errorStatus?: number | string;
+  hint?: string;
+}
+
+const initialDebug: DebugInfo = { lookup: "idle", password: "idle", redirect: "idle" };
 
 export default function AuthPage() {
   const nav = useNavigate();
@@ -24,6 +39,7 @@ export default function AuthPage() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotInput, setForgotInput] = useState("");
   const [forgotBusy, setForgotBusy] = useState(false);
+  const [debug, setDebug] = useState<DebugInfo>(initialDebug);
 
   useEffect(() => { document.title = `${t("login")} — ${brand.company_name}`; }, [t, brand.company_name]);
   useEffect(() => { if (user) nav("/", { replace: true }); }, [user, nav]);
@@ -31,17 +47,80 @@ export default function AuthPage() {
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     const u = username.trim();
-    if (!u || !password) return toast.error("Username and password required");
-    setBusy(true);
-    const { data: emailData, error: lookupErr } = await supabase.rpc("email_for_username", { _username: u });
-    if (lookupErr || !emailData) {
-      setBusy(false);
-      return toast.error("Invalid username or password");
+    if (!u || !password) {
+      setDebug({ ...initialDebug, hint: "Both username and password are required." });
+      return toast.error("Username and password required");
     }
-    const { error } = await supabase.auth.signInWithPassword({ email: emailData as string, password });
+    setBusy(true);
+    const d: DebugInfo = { lookup: "running", password: "idle", redirect: "idle" };
+    setDebug(d);
+
+    // Step 1: resolve username -> email (or accept email directly)
+    let email = u;
+    if (!/@/.test(u)) {
+      const { data, error } = await supabase.rpc("email_for_username", { _username: u });
+      if (error) {
+        setBusy(false);
+        setDebug({
+          ...d, lookup: "fail",
+          errorCode: error.code, errorMessage: error.message,
+          hint: "Username lookup failed at the backend (RPC error). Check that the RPC is callable.",
+        });
+        return toast.error("Username lookup failed");
+      }
+      if (!data) {
+        setBusy(false);
+        setDebug({
+          ...d, lookup: "fail",
+          errorMessage: `No account found for username "${u}"`,
+          hint: "The username does not exist. Check spelling, or use email instead.",
+        });
+        return toast.error(`No account found for "${u}"`);
+      }
+      email = data as string;
+    }
+
+    d.lookup = "ok";
+    d.resolvedEmail = email;
+    d.password = "running";
+    setDebug({ ...d });
+
+    // Step 2: password sign-in
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setBusy(false);
+      const status = (error as any).status;
+      setDebug({
+        ...d, password: "fail",
+        errorCode: (error as any).code ?? "auth_error",
+        errorStatus: status,
+        errorMessage: error.message,
+        hint:
+          /invalid login/i.test(error.message)
+            ? "The password is wrong for this account, or the user is disabled."
+            : /email not confirmed/i.test(error.message)
+            ? "The email address has not been confirmed yet."
+            : "See backend message above.",
+      });
+      return toast.error(error.message || "Invalid password");
+    }
+
+    d.password = "ok";
+    d.redirect = "running";
+    setDebug({ ...d });
+    toast.success(t("welcomeBack"));
+
+    // Step 3: redirect — try immediately, then a fallback hard-redirect on timeout
+    nav("/", { replace: true });
+    setTimeout(() => {
+      // If we are still on /auth after 1.2s, force redirect.
+      if (window.location.pathname === "/auth") {
+        window.location.replace("/");
+      } else {
+        setDebug(prev => ({ ...prev, redirect: "ok" }));
+      }
+    }, 1200);
     setBusy(false);
-    if (error) toast.error("Invalid username or password");
-    else { toast.success(t("welcomeBack")); nav("/", { replace: true }); }
   };
 
   async function sendReset() {
@@ -123,6 +202,31 @@ export default function AuthPage() {
             </div>
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
           </form>
+
+          {(debug.lookup !== "idle" || debug.errorMessage) && (
+            <div className="mt-4 space-y-2">
+              <div className="rounded-md border bg-muted/40 p-3 text-xs space-y-1.5">
+                <div className="font-semibold text-sm mb-1">Sign-in diagnostics</div>
+                <StepRow label="1. Resolve username → email" status={debug.lookup} extra={debug.resolvedEmail} />
+                <StepRow label="2. Verify password" status={debug.password} />
+                <StepRow label="3. Redirect to dashboard" status={debug.redirect} />
+              </div>
+              {debug.errorMessage && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>
+                    Login failed
+                    {debug.errorCode ? ` · ${debug.errorCode}` : ""}
+                    {debug.errorStatus ? ` · HTTP ${debug.errorStatus}` : ""}
+                  </AlertTitle>
+                  <AlertDescription className="space-y-1">
+                    <div className="font-mono text-xs break-words">{debug.errorMessage}</div>
+                    {debug.hint && <div className="text-xs opacity-90">{debug.hint}</div>}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
         </Card>
       </div>
 
@@ -144,6 +248,24 @@ export default function AuthPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function StepRow({ label, status, extra }: { label: string; status: StepStatus; extra?: string }) {
+  const Icon = status === "ok" ? CheckCircle2 : status === "fail" ? XCircle : status === "running" ? Loader2 : AlertCircle;
+  const color =
+    status === "ok" ? "text-green-600" :
+    status === "fail" ? "text-destructive" :
+    status === "running" ? "text-primary" :
+    "text-muted-foreground";
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className={`h-3.5 w-3.5 mt-0.5 ${color} ${status === "running" ? "animate-spin" : ""}`} />
+      <div className="flex-1">
+        <div className={color}>{label}</div>
+        {extra && <div className="text-[10px] font-mono text-muted-foreground break-all">{extra}</div>}
+      </div>
     </div>
   );
 }
