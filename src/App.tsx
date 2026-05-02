@@ -26,6 +26,7 @@ import Cashbook from "./pages/Cashbook";
 import Statement from "./pages/Statement";
 import Dues from "./pages/Dues";
 import Backup from "./pages/Backup";
+import Diagnostics from "./pages/Diagnostics";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/dues" element={<Dues />} />
                 <Route path="/backup" element={<Backup />} />
                 <Route path="/audit" element={<AuditLogs />} />
+                <Route path="/diagnostics" element={<Diagnostics />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

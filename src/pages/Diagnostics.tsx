@@ -87,7 +87,7 @@ export default function Diagnostics() {
 
   return (
     <>
-      <PageHeader title="RLS Diagnostics" subtitle="Super admin only — backend permission, policy এবং office isolation যাচাই" />
+      <PageHeader title="RLS Diagnostics" />
 
       <Tabs defaultValue="errors">
         <TabsList>
