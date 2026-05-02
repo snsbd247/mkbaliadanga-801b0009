@@ -11,12 +11,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
-import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
+import { useBranding } from "@/lib/branding";
 
 const ALL = "__all__";
 
 export default function Reports() {
   const { t } = useLang();
+  const brand = useBranding();
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [seasons, setSeasons] = useState<any[]>([]);
@@ -201,6 +203,71 @@ export default function Reports() {
     return Array.from(m.values()).sort((a, b) => b.balance - a.balance);
   }, [savings]);
 
+  // --- Audit aggregations: by Office and by Season ---
+  const byOffice = useMemo(() => {
+    const m = new Map<string, { office: string; income: number; expense: number; loanIssued: number; loanCollected: number; irrCharged: number; irrCollected: number; irrDue: number; savBal: number }>();
+    const officeName = (id: string | null) => offices.find(o => o.id === id)?.name ?? "—";
+    const get = (id: string) => {
+      const k = id ?? "none";
+      if (!m.has(k)) m.set(k, { office: officeName(id), income: 0, expense: 0, loanIssued: 0, loanCollected: 0, irrCharged: 0, irrCollected: 0, irrDue: 0, savBal: 0 });
+      return m.get(k)!;
+    };
+    for (const p of payments) if (p.status === "approved") get(p.office_id).income += Number(p.amount);
+    for (const l of loans) get(l.office_id).loanIssued += Number(l.principal || 0);
+    for (const lp of loanPayments) get(lp.office_id).loanCollected += Number(lp.amount || 0);
+    for (const i of irr) {
+      const g = get(i.office_id);
+      g.irrCharged += Number(i.total || 0);
+      g.irrCollected += Number(i.paid_amount || 0);
+      g.irrDue += Number(i.due_amount || 0);
+    }
+    for (const s of savings) if (s.status === "approved") {
+      const g = get(s.office_id);
+      g.savBal += s.type === "deposit" ? Number(s.amount) : -Number(s.amount);
+    }
+    return Array.from(m.values()).sort((a, b) => b.income - a.income);
+  }, [payments, loans, loanPayments, irr, savings, offices]);
+
+  const bySeason = useMemo(() => {
+    const m = new Map<string, { season: string; charged: number; collected: number; due: number }>();
+    for (const i of irr) {
+      const s = i.seasons ? `${i.seasons.name} ${i.seasons.year}` : "—";
+      const g = m.get(s) ?? { season: s, charged: 0, collected: 0, due: 0 };
+      g.charged += Number(i.total || 0);
+      g.collected += Number(i.paid_amount || 0);
+      g.due += Number(i.due_amount || 0);
+      m.set(s, g);
+    }
+    return Array.from(m.values()).sort((a, b) => b.charged - a.charged);
+  }, [irr]);
+
+  const auditSummary = useMemo(() => {
+    const income = payments.filter(p => p.status === "approved").reduce((s, p) => s + Number(p.amount), 0);
+    const loanIssued = loans.reduce((s, l) => s + Number(l.principal || 0), 0);
+    const loanCollected = loanPayments.reduce((s, lp) => s + Number(lp.amount || 0), 0);
+    const loanDue = loans.filter(l => l.status === "approved").reduce((s, l) => {
+      const paid = (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0);
+      return s + Math.max(0, Number(l.total_payable || 0) - paid);
+    }, 0);
+    const irrCharged = irr.reduce((s, x) => s + Number(x.total || 0), 0);
+    const irrCollected = irr.reduce((s, x) => s + Number(x.paid_amount || 0), 0);
+    const irrDue = irr.reduce((s, x) => s + Number(x.due_amount || 0), 0);
+    const savDep = savings.filter(s => s.status === "approved" && s.type === "deposit").reduce((a, x) => a + Number(x.amount), 0);
+    const savWd = savings.filter(s => s.status === "approved" && s.type === "withdraw").reduce((a, x) => a + Number(x.amount), 0);
+    return [
+      { label: "Total Income (Approved Payments)", value: income },
+      { label: "Loan Issued (Principal)", value: loanIssued },
+      { label: "Loan Collected", value: loanCollected },
+      { label: "Loan Outstanding Due", value: loanDue },
+      { label: "Irrigation Charged", value: irrCharged },
+      { label: "Irrigation Collected", value: irrCollected },
+      { label: "Irrigation Outstanding Due", value: irrDue },
+      { label: "Savings Deposits", value: savDep },
+      { label: "Savings Withdrawals", value: savWd },
+      { label: "Net Savings Balance", value: savDep - savWd },
+    ];
+  }, [payments, loans, loanPayments, irr, savings]);
+
   function filterTitleSuffix() {
     const parts: string[] = [];
     if (from || to) parts.push(`${from || "…"}→${to || "…"}`);
@@ -253,6 +320,7 @@ export default function Reports() {
           <TabsTrigger value="savings">{t("savingsReport")}</TabsTrigger>
           <TabsTrigger value="balances">Savings Balances</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="audit">Audit (Office/Season)</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monthly">
@@ -461,6 +529,91 @@ export default function Reports() {
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>Kind</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
             <TableBody>{payments.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.created_at)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.kind}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.method}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
           </Table></Card>
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <div className="flex justify-end gap-2 mb-3">
+            <Button size="sm" onClick={() => exportAuditReportPDF({
+              brand: { company_name: brand.company_name, address: brand.address ?? "" },
+              range: filterTitleSuffix() || "All time",
+              summary: auditSummary,
+              byOffice,
+              bySeason,
+            })}><FileDown className="h-4 w-4 mr-1" />Audit Report PDF</Button>
+            <Button size="sm" variant="outline" onClick={() => exportExcel("audit-by-office", "By Office",
+              byOffice.map(o => ({ Office: o.office, Income: o.income, Expense: o.expense, "Loan Issued": o.loanIssued, "Loan Collected": o.loanCollected, "Irrigation Charged": o.irrCharged, "Irrigation Collected": o.irrCollected, "Irrigation Due": o.irrDue, "Savings Balance": o.savBal })))}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" />Office Excel
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => exportExcel("audit-by-season", "By Season",
+              bySeason.map(s => ({ Season: s.season, Charged: s.charged, Collected: s.collected, Due: s.due })))}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" />Season Excel
+            </Button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">Summary {filterTitleSuffix()}</h3>
+              <table className="w-full text-sm">
+                <tbody>
+                  {auditSummary.map((s, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="py-1.5">{s.label}</td>
+                      <td className="py-1.5 text-right font-mono font-semibold">{money(s.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">By Season — Irrigation</h3>
+              <Table>
+                <TableHeader><TableRow><TableHead>Season</TableHead><TableHead className="text-right">Charged</TableHead><TableHead className="text-right">Collected</TableHead><TableHead className="text-right">Due</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {bySeason.map((s, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{s.season}</TableCell>
+                      <TableCell className="text-right">{money(s.charged)}</TableCell>
+                      <TableCell className="text-right text-success">{money(s.collected)}</TableCell>
+                      <TableCell className={`text-right ${s.due > 0 ? "due-text font-semibold" : ""}`}>{money(s.due)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {bySeason.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">No data</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
+
+          <Card className="overflow-x-auto mt-4">
+            <div className="p-3 font-semibold text-sm uppercase text-muted-foreground border-b">By Office</div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Office</TableHead>
+                <TableHead className="text-right">Income</TableHead>
+                <TableHead className="text-right">Loan Issued</TableHead>
+                <TableHead className="text-right">Loan Collected</TableHead>
+                <TableHead className="text-right">Irr Charged</TableHead>
+                <TableHead className="text-right">Irr Collected</TableHead>
+                <TableHead className="text-right">Irr Due</TableHead>
+                <TableHead className="text-right">Savings Balance</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {byOffice.map((o, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{o.office}</TableCell>
+                    <TableCell className="text-right text-success">{money(o.income)}</TableCell>
+                    <TableCell className="text-right">{money(o.loanIssued)}</TableCell>
+                    <TableCell className="text-right text-success">{money(o.loanCollected)}</TableCell>
+                    <TableCell className="text-right">{money(o.irrCharged)}</TableCell>
+                    <TableCell className="text-right text-success">{money(o.irrCollected)}</TableCell>
+                    <TableCell className={`text-right ${o.irrDue > 0 ? "due-text font-semibold" : ""}`}>{money(o.irrDue)}</TableCell>
+                    <TableCell className="text-right font-semibold text-primary">{money(o.savBal)}</TableCell>
+                  </TableRow>
+                ))}
+                {byOffice.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-4">No data</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
         </TabsContent>
       </Tabs>
     </>

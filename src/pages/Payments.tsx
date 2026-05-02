@@ -175,10 +175,11 @@ export default function Payments() {
 
   return (
     <>
-      <PageHeader title={t("payments")} description="Unified payment — split across loan, savings & irrigation in one entry" />
+      <PageHeader title={t("payments")} description="Unified payment — splits across loan, savings & irrigation in one entry" />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-1">
-          <h2 className="font-semibold mb-3">{t("payNow")}</h2>
+          <h2 className="font-semibold mb-1">{t("payNow")}</h2>
+          <p className="text-xs text-muted-foreground mb-3">Approved payments automatically update loan, savings &amp; irrigation ledgers.</p>
           <div className="space-y-3">
             <div><Label>{t("selectFarmer")}</Label>
               <Select value={farmerId} onValueChange={(v) => { setFarmerId(v); setAllocs([{ kind: "irrigation", reference_id: "", amount: 0 }]); }}>
@@ -186,6 +187,14 @@ export default function Payments() {
                 <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+
+            {farmerId && (
+              <div className="rounded-md bg-muted/40 p-2 text-xs space-y-0.5">
+                <div className="font-semibold uppercase text-[10px] text-muted-foreground">Outstanding dues</div>
+                <div className="flex justify-between"><span>Irrigation</span><span className="font-mono">{money(openIrr.reduce((s, x) => s + Number(x.due_amount || 0), 0))}</span></div>
+                <div className="flex justify-between"><span>Loans</span><span className="font-mono">{money(openLoans.reduce((s, l) => s + (Number(l.total_payable) - (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0)), 0))}</span></div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
