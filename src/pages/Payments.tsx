@@ -268,7 +268,7 @@ export default function Payments() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Allocations</Label>
+                <Label>{t("allocations")}</Label>
                 <Button type="button" size="sm" variant="ghost" onClick={() => setAllocs([...allocs, { kind: "irrigation", reference_id: "", amount: 0 }])}>
                   <Plus className="h-3.5 w-3.5 mr-1" />Add
                 </Button>
