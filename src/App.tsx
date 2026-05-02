@@ -35,6 +35,7 @@ import LedgerIntegrity from "./pages/LedgerIntegrity";
 import Approvals from "./pages/Approvals";
 import PeriodClose from "./pages/PeriodClose";
 import FinanceSummary from "./pages/FinanceSummary";
+import MobileQA from "./pages/MobileQA";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => (
                 <Route path="/approvals" element={<Approvals />} />
                 <Route path="/period-close" element={<PeriodClose />} />
                 <Route path="/finance-summary" element={<FinanceSummary />} />
+                <Route path="/mobile-qa" element={<MobileQA />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
