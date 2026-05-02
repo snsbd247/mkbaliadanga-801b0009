@@ -25,6 +25,7 @@ type Entry = {
 const REF_TYPES = ["all", "savings", "loan", "loan_payment", "irrigation", "expense", "journal"];
 
 export default function Ledger() {
+  const { t } = useLang();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [accountId, setAccountId] = useState<string>("all");
