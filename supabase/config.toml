@@ -18,3 +18,9 @@ verify_jwt = false
 [functions.qr-resolve-token]
 verify_jwt = false
 
+[functions.farmer-card-revoke]
+verify_jwt = false
+
+[functions.ledger-check]
+verify_jwt = false
+
