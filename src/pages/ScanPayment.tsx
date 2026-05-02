@@ -10,9 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Camera, X, User, CheckCircle2 } from "lucide-react";
+import { Loader2, Camera, X, User, CheckCircle2, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
+import { useBranding } from "@/lib/branding";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
@@ -50,7 +52,8 @@ export default function ScanPayment() {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
-  const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; farmer: string } | null>(null);
+  const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; method: string; note: string | null; idemKey: string; paidAt: string } | null>(null);
+  const brand = useBranding();
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-scan-payment";
@@ -151,7 +154,10 @@ export default function ScanPayment() {
         paymentId: ins!.id,
         amount: parsed.data.amount,
         kind: parsed.data.kind,
-        farmer: resolved.farmer.name,
+        method: payload.method,
+        note: parsed.data.note ?? null,
+        idemKey,
+        paidAt: new Date().toISOString(),
       });
       toast.success("Payment recorded — SMS notification queued");
     } catch (e: any) {
@@ -248,18 +254,44 @@ export default function ScanPayment() {
             </>
           )}
 
-          {done && (
+          {done && resolved && (
             <div className="text-center py-8 space-y-3">
               <CheckCircle2 className="h-12 w-12 text-primary mx-auto" />
               <div className="font-semibold text-lg">Payment recorded</div>
               <div className="text-sm">
-                <div><span className="text-muted-foreground">Farmer:</span> {done.farmer}</div>
+                <div><span className="text-muted-foreground">Farmer:</span> {resolved.farmer.name}</div>
                 <div><span className="text-muted-foreground">Type:</span> {done.kind}</div>
                 <div><span className="text-muted-foreground">Amount:</span> <span className="font-mono font-semibold">৳ {fmt(done.amount)}</span></div>
                 <div className="text-xs text-muted-foreground mt-2 font-mono">Ref: {done.paymentId.slice(0, 8)}…</div>
               </div>
               <div className="text-xs text-muted-foreground">SMS notification has been queued.</div>
-              <Button onClick={reset} variant="outline">Scan another</Button>
+              <div className="flex gap-2 justify-center flex-wrap">
+                <Button
+                  variant="outline"
+                  onClick={() => downloadPaymentReceiptPdf({
+                    receipt_no: done.paymentId.slice(0, 8).toUpperCase(),
+                    payment_id: done.paymentId,
+                    paid_at: done.paidAt,
+                    farmer_name: resolved.farmer.name,
+                    farmer_code: resolved.farmer.farmer_code,
+                    member_no: resolved.farmer.member_no,
+                    mobile_masked: resolved.farmer.mobile_masked ?? null,
+                    village: resolved.farmer.village ?? null,
+                    token_masked: maskToken(scannedToken),
+                    token_status: "active",
+                    kind: done.kind,
+                    amount: done.amount,
+                    method: done.method,
+                    note: done.note,
+                    idempotency_key: done.idemKey,
+                    company_name: brand.company_name,
+                    company_name_bn: brand.company_name_bn,
+                  })}
+                >
+                  <FileDown className="h-4 w-4" />Download Receipt
+                </Button>
+                <Button onClick={reset}>Scan another</Button>
+              </div>
             </div>
           )}
         </Card>

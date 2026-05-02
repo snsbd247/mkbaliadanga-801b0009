@@ -1302,29 +1302,68 @@ export type Database = {
           },
         ]
       }
+      qr_rotation_settings: {
+        Row: {
+          enabled: boolean
+          grace_hours: number
+          id: number
+          interval_days: number
+          last_run_at: string | null
+          last_run_summary: Json | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          grace_hours?: number
+          id?: number
+          interval_days?: number
+          last_run_at?: string | null
+          last_run_summary?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          grace_hours?: number
+          id?: number
+          interval_days?: number
+          last_run_at?: string | null
+          last_run_summary?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       qr_tokens: {
         Row: {
           created_at: string
           created_by: string | null
+          expires_at: string | null
           farmer_id: string
           id: string
           revoked: boolean
+          rotated_from: string | null
           token: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          expires_at?: string | null
           farmer_id: string
           id?: string
           revoked?: boolean
+          rotated_from?: string | null
           token: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          expires_at?: string | null
           farmer_id?: string
           id?: string
           revoked?: boolean
+          rotated_from?: string | null
           token?: string
         }
         Relationships: []
