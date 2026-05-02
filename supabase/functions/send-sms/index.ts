@@ -19,12 +19,15 @@ const GW_TOKEN_ENV = Deno.env.get("GREENWEB_SMS_TOKEN") ?? "";
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
 async function getGreenWebToken(): Promise<string> {
-  // Prefer DB-stored token (configurable from SMS Settings UI), fallback to env secret.
+  // Prefer the active, non-expired DB-stored token; fallback to env secret.
   try {
+    const nowIso = new Date().toISOString();
     const { data } = await admin
       .from("sms_provider_secrets")
-      .select("api_token")
+      .select("api_token,expires_at")
       .eq("provider", "greenweb")
+      .eq("status", "active")
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
       .maybeSingle();
     const t = (data?.api_token ?? "").toString().trim();
     if (t) return t;
