@@ -723,6 +723,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _lookup_email_by_username: {
+        Args: { _username: string }
+        Returns: string
+      }
       current_user_office: { Args: never; Returns: string }
       email_for_username: { Args: { _username: string }; Returns: string }
       has_role: {
