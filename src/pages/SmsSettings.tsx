@@ -115,8 +115,27 @@ export default function SmsSettings() {
               <Label>Sender ID (optional)</Label>
               <Input value={s.sender_id ?? ""} onChange={(e) => set("sender_id", e.target.value)} placeholder="e.g. SmartIrri" />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>Default Language</Label>
+                <Select value={s.language} onValueChange={(v) => set("language", v)}>
+                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bn">Bangla (বাংলা)</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1">Used for due reminders.</p>
+              </div>
+              <div>
+                <Label>Reminder days before due</Label>
+                <Input type="number" min={0} max={30} value={s.reminder_days_before}
+                  onChange={(e) => set("reminder_days_before", Math.max(0, Number(e.target.value || 0)))} />
+              </div>
+            </div>
             <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
               API token is stored securely as <code>GREENWEB_SMS_TOKEN</code> in backend secrets and never exposed in the frontend.
+              Reminders run daily and are sent only once per due event.
             </div>
           </CardContent>
         </Card>
