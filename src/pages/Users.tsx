@@ -157,7 +157,7 @@ export default function Users() {
 
   return (
     <>
-      <PageHeader title={t("users")} description="Only Super Admins can create or remove users." actions={
+      <PageHeader title={t("users")} description={t("onlySuperAdminUsers")} actions={
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-1" />New user</Button>
