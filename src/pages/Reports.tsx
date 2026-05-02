@@ -320,6 +320,7 @@ export default function Reports() {
           <TabsTrigger value="savings">{t("savingsReport")}</TabsTrigger>
           <TabsTrigger value="balances">Savings Balances</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="audit">Audit (Office/Season)</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monthly">
