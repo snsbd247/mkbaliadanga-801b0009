@@ -390,6 +390,130 @@ export default function SmsLogs() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Sheet open={!!drawer} onOpenChange={(o) => { if (!o) setDrawer(null); }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Reminder Details</SheetTitle>
+            <SheetDescription>
+              {drawer?.kind === "loan" ? "Underlying loan record and computed due." : drawer?.kind === "irrigation" ? "Underlying irrigation charge and computed due." : "SMS log details."}
+            </SheetDescription>
+          </SheetHeader>
+
+          {drawer && (
+            <div className="mt-4 space-y-4 text-sm">
+              {/* SMS info */}
+              <div className="rounded-md border p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">SMS</span>
+                  {statusBadge(drawer.log.status)}
+                </div>
+                <div><span className="text-muted-foreground">Sent to:</span> <span className="font-mono">{drawer.log.mobile}</span></div>
+                <div><span className="text-muted-foreground">Time:</span> {new Date(drawer.log.created_at).toLocaleString()}</div>
+                <div><span className="text-muted-foreground">Event:</span> <Badge variant="outline" className="text-[10px]">{drawer.log.event_type ?? "-"}</Badge></div>
+                <div className="text-xs bg-muted/40 rounded p-2 mt-2 whitespace-pre-wrap break-words">{drawer.log.message}</div>
+                {drawer.log.provider_response && (
+                  <div className="text-xs text-muted-foreground"><span className="font-medium">Provider:</span> {drawer.log.provider_response}</div>
+                )}
+              </div>
+
+              {drawer.loading ? (
+                <div className="flex items-center justify-center py-8 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2"/>Loading record…
+                </div>
+              ) : drawer.error ? (
+                <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-destructive text-xs">
+                  {drawer.error}
+                </div>
+              ) : drawer.record && (
+                <>
+                  {/* Farmer */}
+                  {drawer.farmer && (
+                    <div className="rounded-md border p-3 space-y-1">
+                      <div className="text-xs text-muted-foreground">Farmer</div>
+                      <div className="font-medium">{drawer.farmer.name_en || drawer.farmer.name_bn}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Code: <span className="font-mono">{drawer.farmer.farmer_code}</span>
+                        {drawer.farmer.village ? <> · {drawer.farmer.village}</> : null}
+                      </div>
+                      {drawer.farmer.mobile && <div className="text-xs font-mono">{drawer.farmer.mobile}</div>}
+                    </div>
+                  )}
+
+                  {/* Computed due summary */}
+                  <div className="rounded-md border p-3 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <div className="text-[10px] uppercase text-muted-foreground">Total</div>
+                      <div className="font-semibold">
+                        {drawer.kind === "loan"
+                          ? Number(drawer.record.total_payable || 0).toLocaleString()
+                          : Number(drawer.record.total || 0).toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase text-muted-foreground">Paid</div>
+                      <div className="font-semibold text-success">{drawer.paid.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase text-muted-foreground">Due</div>
+                      <div className="font-semibold text-destructive">{drawer.due.toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {/* Record specifics */}
+                  {drawer.kind === "loan" ? (
+                    <div className="rounded-md border p-3 space-y-1.5">
+                      <div className="text-xs text-muted-foreground mb-1">Loan</div>
+                      <div className="grid grid-cols-2 gap-y-1 text-xs">
+                        <div className="text-muted-foreground">Principal</div><div>{Number(drawer.record.principal || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">Interest rate</div><div>{drawer.record.interest_rate}% {drawer.record.interest_enabled ? "" : "(off)"}</div>
+                        <div className="text-muted-foreground">Total payable</div><div>{Number(drawer.record.total_payable || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">Issued on</div><div>{drawer.record.issued_on}</div>
+                        <div className="text-muted-foreground">Next due on</div><div className="font-medium">{drawer.record.next_due_on ?? "—"}</div>
+                        <div className="text-muted-foreground">Status</div><div><Badge variant="outline" className="text-[10px]">{drawer.record.status}</Badge></div>
+                      </div>
+                      {drawer.payments && drawer.payments.length > 0 && (
+                        <div className="mt-2">
+                          <div className="text-xs text-muted-foreground mb-1">Approved payments ({drawer.payments.length})</div>
+                          <div className="max-h-32 overflow-y-auto text-xs space-y-0.5">
+                            {drawer.payments.map((p, i) => (
+                              <div key={i} className="flex justify-between border-b last:border-0 py-0.5">
+                                <span>{p.paid_on}</span>
+                                <span className="font-mono">{Number(p.amount).toLocaleString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-md border p-3 space-y-1.5">
+                      <div className="text-xs text-muted-foreground mb-1">Irrigation Charge</div>
+                      <div className="grid grid-cols-2 gap-y-1 text-xs">
+                        <div className="text-muted-foreground">Entry date</div><div>{drawer.record.entry_date}</div>
+                        <div className="text-muted-foreground">Basis</div><div>{drawer.record.basis}</div>
+                        <div className="text-muted-foreground">Quantity</div><div>{drawer.record.quantity}</div>
+                        <div className="text-muted-foreground">Base charge</div><div>{Number(drawer.record.base_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">Canal charge</div><div>{Number(drawer.record.canal_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">Maintenance</div><div>{Number(drawer.record.maintenance_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">Other</div><div>{Number(drawer.record.other_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">Penalty</div><div>{Number(drawer.record.penalty_amount || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">Previous due</div><div>{Number(drawer.record.previous_due_brought || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">Total</div><div className="font-medium">{Number(drawer.record.total || 0).toLocaleString()}</div>
+                      </div>
+                      {drawer.record.note && <div className="text-xs text-muted-foreground italic">"{drawer.record.note}"</div>}
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-muted-foreground font-mono break-all">
+                    Ref: {drawer.kind}/{drawer.record.id}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
