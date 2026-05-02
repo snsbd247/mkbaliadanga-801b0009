@@ -1302,6 +1302,33 @@ export type Database = {
           },
         ]
       }
+      qr_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          farmer_id: string
+          id: string
+          revoked: boolean
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          farmer_id: string
+          id?: string
+          revoked?: boolean
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          farmer_id?: string
+          id?: string
+          revoked?: boolean
+          token?: string
+        }
+        Relationships: []
+      }
       receipts: {
         Row: {
           amount: number
