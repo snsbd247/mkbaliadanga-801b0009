@@ -1,0 +1,1 @@
+revoke execute on function public.set_alloc_office_id() from public, anon, authenticated;
