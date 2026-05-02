@@ -106,9 +106,11 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   const pageH = doc.internal.pageSize.getHeight();
   const margin = tpl.paper_size === "a6" ? 8 : 12;
   const accent = hexToRgb(tpl.accent_color);
-  const showBoth = tpl.language === "both";
-  const labels = pickLabels(tpl.language === "both" ? "en" : tpl.language);
-  const labelsBn = L.bn;
+  // Bangla cannot be embedded in jsPDF's built-in fonts, so we never render
+  // BN strings in the PDF — the "both" mode falls back to English-only.
+  const showBoth = false;
+  const labels = pickLabels(tpl.language);
+  const labelsBn = L.en;
 
   const align = tpl.header_alignment;
   const headerX = align === "left" ? margin : align === "right" ? pageW - margin : pageW / 2;
