@@ -114,6 +114,15 @@ export default function Settings() {
           <Button onClick={save} disabled={busy}>{busy ? "…" : t("save")}</Button>
         </div>
       </Card>
+      <Card className="max-w-2xl p-6 mt-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-semibold">RLS Diagnostics</div>
+            <div className="text-sm text-muted-foreground">Backend permission, RLS health check ও office isolation যাচাই করুন।</div>
+          </div>
+          <a href="/diagnostics" className="text-sm font-medium text-primary hover:underline">Open →</a>
+        </div>
+      </Card>
     </>
   );
 }
