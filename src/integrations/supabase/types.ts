@@ -1411,6 +1411,11 @@ export type Database = {
       }
       is_admin_or_super: { Args: { _user_id: string }; Returns: boolean }
       is_committee_or_super: { Args: { _user_id: string }; Returns: boolean }
+      is_date_in_closed_period: {
+        Args: { _date: string; _office: string }
+        Returns: boolean
+      }
+      ledger_integrity_summary: { Args: never; Returns: Json }
       ledger_orphan_refs: {
         Args: never
         Returns: {
