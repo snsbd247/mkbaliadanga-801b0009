@@ -10,6 +10,7 @@ import { useBranding } from "@/lib/branding";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 
 const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
