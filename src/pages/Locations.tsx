@@ -166,7 +166,7 @@ function CascadeFilters({
                   </SelectItem>
                 ))}
                 {list.length === 0 && parentSelected && !isLoading && (
-                  <div className="px-3 py-2 text-xs text-muted-foreground">{useLang().t("noEntries")}</div>
+                  <div className="px-3 py-2 text-xs text-muted-foreground">{t("noEntries")}</div>
                 )}
               </SelectContent>
             </Select>
