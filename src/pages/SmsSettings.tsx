@@ -193,6 +193,8 @@ export default function SmsSettings() {
     set(key, def as any);
     toast.success("Reset to default — remember to Save");
   }
+
+  async function runManualReminders() {
     if (!schedFrom || !schedTo) return toast.error("Pick both dates");
     if (schedFrom > schedTo) return toast.error("From date must be before To date");
     setSchedBusy(true);
