@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Building2, Users, MapPin, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
-  ScanLine, Settings as SettingsIcon, BookOpen,
+  ScanLine, Settings as SettingsIcon, BookOpen, FileText,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -27,6 +27,7 @@ export function AppSidebar() {
     { url: "/farmers", icon: Users, label: t("farmers"), key: "farmers" as const },
     { url: "/seasons", icon: CalendarDays, label: t("seasons"), key: "seasons" as const },
     { url: "/savings", icon: Wallet, label: t("savings"), key: "savings" as const },
+    { url: "/statement", icon: FileText, label: (t as any)("statement") || "Statement", key: "savings" as const },
     { url: "/loans", icon: HandCoins, label: t("loans"), key: "loans" as const },
     { url: "/irrigation", icon: Droplets, label: t("irrigation"), key: "irrigation" as const },
     { url: "/payments", icon: Receipt, label: t("payments"), key: "payments" as const },
