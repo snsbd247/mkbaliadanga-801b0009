@@ -114,7 +114,7 @@ export default function Savings() {
               </div>
               <div><Label>{t("amount")}</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: +e.target.value })} /></div>
               <div><Label>{t("note")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
-              <p className="text-xs text-muted-foreground">Withdrawals require committee approval before they affect the savings balance.</p>
+              <p className="text-xs text-muted-foreground">{t("withdrawalsRequireApproval")}</p>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
           </DialogContent>
