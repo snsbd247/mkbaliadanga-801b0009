@@ -151,20 +151,20 @@ export default function FarmerPortalLogin() {
             {step === "id" ? (
               <>
                 <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" /> Sign in with OTP
+                  <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" /> {t("signInWithOtp")}
                 </h2>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Enter your Farmer ID or Member Number. We'll send a 6-digit code to your registered mobile.
+                  {t("farmerOtpDesc")}
                 </p>
-                <form onSubmit={requestOtp} className="space-y-3" aria-label="Request OTP form">
+                <form onSubmit={requestOtp} className="space-y-3" aria-label={t("signInWithOtp")}>
                   <div>
-                    <Label htmlFor="fid">Farmer ID / Member No.</Label>
+                    <Label htmlFor="fid">{t("farmerIdOrMemberNo")}</Label>
                     <Input
                       id="fid"
                       ref={idInputRef}
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="e.g. 2026-00000123 or M-000123"
+                      placeholder={t("farmerIdPlaceholder")}
                       autoComplete="off"
                       autoFocus
                       disabled={busy}
