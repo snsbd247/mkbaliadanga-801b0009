@@ -81,6 +81,44 @@ Deno.serve(async (req) => {
     const rotated: { farmer_id: string; old: string; new: string }[] = [];
     const expiresAt = new Date(now.getTime() + graceHours * 3600_000).toISOString();
 
+    // Load SMS settings once for rotate/revoke notifications
+    const { data: smsSet } = await admin
+      .from("sms_settings").select("enabled, language, send_on_qr_rotate, send_on_qr_revoke, tpl_qr_rotate, tpl_qr_rotate_en, tpl_qr_revoke, tpl_qr_revoke_en")
+      .eq("id", 1).maybeSingle();
+    const smsEnabled = !!smsSet?.enabled;
+    const lang = (smsSet?.language ?? "bn") as string;
+    function tpl(en: string | null | undefined, bn: string | null | undefined) {
+      const t = (lang === "en" ? en : bn) ?? bn ?? en ?? "";
+      return t.replace("{grace}", String(graceHours));
+    }
+
+    async function notify(farmerId: string, type: "rotate" | "revoke") {
+      if (!smsEnabled) return;
+      if (type === "rotate" && !smsSet?.send_on_qr_rotate) return;
+      if (type === "revoke" && !smsSet?.send_on_qr_revoke) return;
+      const { data: f } = await admin
+        .from("farmers").select("mobile, office_id").eq("id", farmerId).maybeSingle();
+      if (!f?.mobile) return;
+      const message = type === "rotate"
+        ? tpl(smsSet?.tpl_qr_rotate_en, smsSet?.tpl_qr_rotate)
+        : tpl(smsSet?.tpl_qr_revoke_en, smsSet?.tpl_qr_revoke);
+      const { data: log } = await admin.from("sms_logs").insert({
+        mobile: f.mobile, message, status: "queued",
+        event_type: type === "rotate" ? "qr_rotate" : "qr_revoke",
+        farmer_id: farmerId, reference_type: "qr_tokens", reference_id: farmerId,
+        office_id: f.office_id, created_by: actorId,
+      }).select("id").single();
+      if (log?.id) {
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/send-sms`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
+            body: JSON.stringify({ log_id: log.id }),
+          });
+        } catch { /* best-effort */ }
+      }
+    }
+
     // Dedupe by farmer (newest active row per farmer)
     const seen = new Set<string>();
     for (const row of stale ?? []) {
