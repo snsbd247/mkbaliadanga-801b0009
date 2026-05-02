@@ -30,6 +30,8 @@ export default function Diagnostics() {
   const [running, setRunning] = useState(false);
   const [iso, setIso] = useState<any>(null);
   const [isoBusy, setIsoBusy] = useState(false);
+  const [scan, setScan] = useState<any>(null);
+  const [scanBusy, setScanBusy] = useState(false);
 
   useEffect(() => { document.title = "Diagnostics — RLS"; }, []);
   useEffect(() => {
