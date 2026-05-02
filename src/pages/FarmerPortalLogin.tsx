@@ -201,16 +201,16 @@ export default function FarmerPortalLogin() {
             ) : (
               <>
                 <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" /> Enter verification code
+                  <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" /> {t("enterVerificationCode")}
                 </h2>
                 <p className="text-sm text-muted-foreground mb-4">
                   {maskedMobile
-                    ? <>A 6-digit code was sent to <span className="font-medium">{maskedMobile}</span>. Valid for 5 minutes.</>
-                    : <>If your ID is valid, a 6-digit code was sent to your registered mobile.</>}
+                    ? t("codeSentToMobile").replace("{mobile}", maskedMobile)
+                    : t("codeSentIfValid")}
                 </p>
-                <form onSubmit={verifyOtp} className="space-y-3" aria-label="Verify OTP form">
+                <form onSubmit={verifyOtp} className="space-y-3" aria-label={t("enterVerificationCode")}>
                   <div>
-                    <Label htmlFor="otp">6-digit OTP</Label>
+                    <Label htmlFor="otp">{t("sixDigitOtp")}</Label>
                     <Input
                       id="otp"
                       ref={otpInputRef}
