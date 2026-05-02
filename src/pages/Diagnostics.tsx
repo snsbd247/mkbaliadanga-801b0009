@@ -243,6 +243,64 @@ export default function Diagnostics() {
             )}
           </Card>
         </TabsContent>
+
+        <TabsContent value="integrity">
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Savings, loans, irrigation, payments এবং ledger references এ orphan / null farmer_id scan করা হবে।
+              </div>
+              <Button onClick={runIntegrityScan} disabled={scanBusy}>
+                {scanBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                Run integrity scan
+              </Button>
+            </div>
+            {scan?.error && (
+              <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{scan.error}</AlertDescription></Alert>
+            )}
+            {scan && !scan.error && (
+              <>
+                <Alert>
+                  {scan.healthy ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                  <AlertTitle>{scan.healthy ? "All clear" : `${scan.summary.total_issues} issue(s) found`}</AlertTitle>
+                  <AlertDescription className="text-xs">Generated at {fmtDate(scan.generated_at)}</AlertDescription>
+                </Alert>
+                <Table>
+                  <TableHeader><TableRow><TableHead>Check</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {Object.entries(scan.summary).map(([k, v]) => (
+                      <TableRow key={k}>
+                        <TableCell className="font-mono text-xs">{k}</TableCell>
+                        <TableCell className="text-right">
+                          {Number(v) > 0
+                            ? <Badge variant="destructive">{String(v)}</Badge>
+                            : <Badge>{String(v)}</Badge>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {scan.ledger_orphans?.length > 0 && (
+                  <div>
+                    <div className="font-semibold text-sm mb-2">Ledger orphan references</div>
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Reference ID</TableHead><TableHead className="text-right">Entries</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {scan.ledger_orphans.map((o: any, i: number) => (
+                          <TableRow key={i}>
+                            <TableCell><Badge variant="outline">{o.reference_type}</Badge></TableCell>
+                            <TableCell className="font-mono text-xs">{o.reference_id}</TableCell>
+                            <TableCell className="text-right">{o.entry_count}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
+        </TabsContent>
       </Tabs>
     </>
   );
