@@ -90,14 +90,15 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const cronHeader = req.headers.get("x-cron-secret") ?? "";
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
     let isCron = false;
     let isAllowed = false;
 
-    if (CRON_SECRET && cronHeader && cronHeader === CRON_SECRET) {
+    if ((CRON_SECRET && cronHeader && cronHeader === CRON_SECRET) || (bearer && bearer === SERVICE_KEY)) {
       isCron = true; isAllowed = true;
-    } else if (authHeader.startsWith("Bearer ")) {
+    } else if (bearer) {
       const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
-      const { data: claimsData, error: cErr } = await userClient.auth.getClaims(authHeader.slice(7));
+      const { data: claimsData, error: cErr } = await userClient.auth.getClaims(bearer);
       if (cErr || !claimsData?.claims?.sub) return err(401, "Unauthorized");
       const userId = claimsData.claims.sub as string;
       const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
