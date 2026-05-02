@@ -90,7 +90,7 @@ export default function Users() {
     if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "create", ...parsed.data });
     if (!ok) return;
-    toast.success("User created");
+    toast.success(t("userCreated"));
     setCreateOpen(false);
     setForm({ username: "", email: "", full_name: "", password: "", role: "staff", office_id: "" });
     load();
