@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useBranding } from "@/lib/branding";
+import { SiteFooter } from "./SiteFooter";
 
 export function AppLayout() {
   const { user, loading, signOut, roles } = useAuth();
