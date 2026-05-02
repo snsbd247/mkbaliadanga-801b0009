@@ -171,3 +171,35 @@ function ExportBar({ onPdf, onXlsx }: { onPdf: () => void; onXlsx: () => void })
     </div>
   );
 }
+
+function SummaryTable({ rows, label }: { rows: any[]; label: string }) {
+  return (
+    <Card className="overflow-x-auto">
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead>{label}</TableHead><TableHead className="text-right">Entries</TableHead>
+          <TableHead className="text-right">Base</TableHead><TableHead className="text-right">Canal</TableHead>
+          <TableHead className="text-right">Maintenance</TableHead><TableHead className="text-right">Other</TableHead>
+          <TableHead className="text-right">Total</TableHead><TableHead className="text-right">Paid</TableHead>
+          <TableHead className="text-right">Due</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {rows.map((g, i) => (
+            <TableRow key={i}>
+              <TableCell className="font-medium">{g.period}</TableCell>
+              <TableCell className="text-right">{g.count}</TableCell>
+              <TableCell className="text-right">{money(g.base)}</TableCell>
+              <TableCell className="text-right">{money(g.canal)}</TableCell>
+              <TableCell className="text-right">{money(g.maintenance)}</TableCell>
+              <TableCell className="text-right">{money(g.other)}</TableCell>
+              <TableCell className="text-right font-medium">{money(g.total)}</TableCell>
+              <TableCell className="text-right text-success">{money(g.paid)}</TableCell>
+              <TableCell className={`text-right ${g.due > 0 ? "due-text" : ""}`}>{money(g.due)}</TableCell>
+            </TableRow>
+          ))}
+          {rows.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}
