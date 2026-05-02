@@ -172,9 +172,6 @@ export default function AuthPage() {
           )}
           <h1 className="text-2xl font-bold">{lang === "bn" && brand.company_name_bn ? brand.company_name_bn : brand.company_name}</h1>
           <p className="text-sm text-muted-foreground mt-1">Cooperative Management System</p>
-          <button onClick={() => setLang(lang === "en" ? "bn" : "en")} className="mt-2 text-xs text-primary underline">
-            {lang === "en" ? "বাংলা" : "English"}
-          </button>
         </div>
 
         <Card className="p-6 shadow-elegant">
