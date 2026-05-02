@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Building2, Users, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
-  BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart,
+  BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, Smartphone,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -79,6 +79,7 @@ export function AppSidebar() {
         { url: "/settings", icon: SettingsIcon, label: t("settings"), superOnly: true },
         { url: "/backup", icon: Database, label: "Backup", superOnly: true },
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), superOnly: true },
+        { url: "/mobile-qa", icon: Smartphone, label: "Mobile QA", superOnly: true },
       ],
     },
   ];
