@@ -530,6 +530,91 @@ export default function Reports() {
             <TableBody>{payments.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.created_at)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.kind}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.method}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
           </Table></Card>
         </TabsContent>
+
+        <TabsContent value="audit">
+          <div className="flex justify-end gap-2 mb-3">
+            <Button size="sm" onClick={() => exportAuditReportPDF({
+              brand: { company_name: brand.company_name, address: brand.address ?? "" },
+              range: filterTitleSuffix() || "All time",
+              summary: auditSummary,
+              byOffice,
+              bySeason,
+            })}><FileDown className="h-4 w-4 mr-1" />Audit Report PDF</Button>
+            <Button size="sm" variant="outline" onClick={() => exportExcel("audit-by-office", "By Office",
+              byOffice.map(o => ({ Office: o.office, Income: o.income, Expense: o.expense, "Loan Issued": o.loanIssued, "Loan Collected": o.loanCollected, "Irrigation Charged": o.irrCharged, "Irrigation Collected": o.irrCollected, "Irrigation Due": o.irrDue, "Savings Balance": o.savBal })))}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" />Office Excel
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => exportExcel("audit-by-season", "By Season",
+              bySeason.map(s => ({ Season: s.season, Charged: s.charged, Collected: s.collected, Due: s.due })))}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" />Season Excel
+            </Button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">Summary {filterTitleSuffix()}</h3>
+              <table className="w-full text-sm">
+                <tbody>
+                  {auditSummary.map((s, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="py-1.5">{s.label}</td>
+                      <td className="py-1.5 text-right font-mono font-semibold">{money(s.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">By Season — Irrigation</h3>
+              <Table>
+                <TableHeader><TableRow><TableHead>Season</TableHead><TableHead className="text-right">Charged</TableHead><TableHead className="text-right">Collected</TableHead><TableHead className="text-right">Due</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {bySeason.map((s, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{s.season}</TableCell>
+                      <TableCell className="text-right">{money(s.charged)}</TableCell>
+                      <TableCell className="text-right text-success">{money(s.collected)}</TableCell>
+                      <TableCell className={`text-right ${s.due > 0 ? "due-text font-semibold" : ""}`}>{money(s.due)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {bySeason.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">No data</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
+
+          <Card className="overflow-x-auto mt-4">
+            <div className="p-3 font-semibold text-sm uppercase text-muted-foreground border-b">By Office</div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Office</TableHead>
+                <TableHead className="text-right">Income</TableHead>
+                <TableHead className="text-right">Loan Issued</TableHead>
+                <TableHead className="text-right">Loan Collected</TableHead>
+                <TableHead className="text-right">Irr Charged</TableHead>
+                <TableHead className="text-right">Irr Collected</TableHead>
+                <TableHead className="text-right">Irr Due</TableHead>
+                <TableHead className="text-right">Savings Balance</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {byOffice.map((o, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{o.office}</TableCell>
+                    <TableCell className="text-right text-success">{money(o.income)}</TableCell>
+                    <TableCell className="text-right">{money(o.loanIssued)}</TableCell>
+                    <TableCell className="text-right text-success">{money(o.loanCollected)}</TableCell>
+                    <TableCell className="text-right">{money(o.irrCharged)}</TableCell>
+                    <TableCell className="text-right text-success">{money(o.irrCollected)}</TableCell>
+                    <TableCell className={`text-right ${o.irrDue > 0 ? "due-text font-semibold" : ""}`}>{money(o.irrDue)}</TableCell>
+                    <TableCell className="text-right font-semibold text-primary">{money(o.savBal)}</TableCell>
+                  </TableRow>
+                ))}
+                {byOffice.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-4">No data</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
       </Tabs>
     </>
   );
