@@ -99,6 +99,53 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
 
+    // Test connection mode — sends a one-off SMS without persisting a log entry.
+    // Requires authenticated super-admin. Returns request/response details for diagnostics.
+    if (body.test_connection === true) {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: userData } = await admin.auth.getUser(authHeader.replace("Bearer ", ""));
+      const uid = userData.user?.id;
+      if (!uid) {
+        return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: roleRow } = await admin.from("user_roles").select("role").eq("user_id", uid).eq("role", "super_admin").maybeSingle();
+      if (!roleRow) {
+        return new Response(JSON.stringify({ ok: false, error: "Forbidden — super admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const mobile = String(body.mobile ?? "").trim();
+      const message = String(body.message ?? "Test SMS from Smart Irrigation — connection OK.").slice(0, 300);
+      if (!mobile || mobile.replace(/\D/g, "").length < 10) {
+        return new Response(JSON.stringify({ ok: false, error: "Provide a valid mobile number" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const token = await getGreenWebToken();
+      if (!token) {
+        return new Response(JSON.stringify({ ok: false, error: "GreenWeb API token is not configured." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const sender = await resolveSenderId(body.office_id ?? null);
+      if (sender === "__DISABLED__") {
+        return new Response(JSON.stringify({ ok: false, error: "SMS disabled for this office" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const normalized = normalizeBdMobile(mobile);
+      const params = new URLSearchParams({ token: "***", to: normalized, message });
+      if (sender && sender.trim()) params.set("sender", sender.trim());
+      const safeRequestUrl = "https://api.greenweb.com.bd/api.php?" + params.toString();
+
+      const r = await sendViaGreenWeb(mobile, message, sender);
+      return new Response(JSON.stringify({
+        ok: r.ok,
+        request: { url: safeRequestUrl, to: normalized, sender: sender ?? null, message_length: message.length },
+        response: r.resp,
+        provider: "greenweb",
+        tested_at: new Date().toISOString(),
+      }), { status: r.ok ? 200 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Retry mode (manual)
     if (body.retry === true) {
       const authHeader = req.headers.get("Authorization");
