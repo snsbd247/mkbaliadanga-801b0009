@@ -42,7 +42,7 @@ export default function AuthPage() {
   const [debug, setDebug] = useState<DebugInfo>(initialDebug);
 
   useEffect(() => { document.title = `${t("login")} — ${brand.company_name}`; }, [t, brand.company_name]);
-  useEffect(() => { if (user) nav("/", { replace: true }); }, [user, nav]);
+  useEffect(() => { if (user) nav("/admin", { replace: true }); }, [user, nav]);
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,11 +111,11 @@ export default function AuthPage() {
     toast.success(t("welcomeBack"));
 
     // Step 3: redirect — try immediately, then a fallback hard-redirect on timeout
-    nav("/", { replace: true });
+    nav("/admin", { replace: true });
     setTimeout(() => {
       // If we are still on /auth after 1.2s, force redirect.
       if (window.location.pathname === "/auth") {
-        window.location.replace("/");
+        window.location.replace("/admin");
       } else {
         setDebug(prev => ({ ...prev, redirect: "ok" }));
       }
