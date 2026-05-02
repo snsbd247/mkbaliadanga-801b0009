@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Send, Eye, CalendarClock } from "lucide-react";
+import { MessageSquare, Send, Eye, CalendarClock, AlertTriangle, RotateCcw } from "lucide-react";
 
 type Settings = {
   enabled: boolean;
@@ -72,6 +72,28 @@ function renderTpl(tpl: string, vars: Record<string, string>): string {
   return out;
 }
 
+const DEFAULT_TEMPLATES: Record<string, string> = {
+  // Bangla
+  tpl_savings_deposit:    "প্রিয় গ্রাহক, আপনার সঞ্চয়ে ৳{amount} জমা হয়েছে। বর্তমান ব্যালেন্স: ৳{balance}। ধন্যবাদ।",
+  tpl_savings_withdraw:   "প্রিয় গ্রাহক, আপনার সঞ্চয় থেকে ৳{amount} উত্তোলন হয়েছে। বর্তমান ব্যালেন্স: ৳{balance}।",
+  tpl_loan_approved:      "অভিনন্দন! আপনার ঋণ ৳{amount} অনুমোদিত হয়েছে। মোট পরিশোধযোগ্য: ৳{payable}।",
+  tpl_loan_payment:       "আপনার ঋণ পরিশোধ ৳{amount} গৃহীত হয়েছে। অবশিষ্ট বকেয়া: ৳{due}। ধন্যবাদ।",
+  tpl_irrigation_payment: "আপনার সেচ ফি ৳{amount} গৃহীত হয়েছে। ধন্যবাদ।",
+  tpl_due_reminder:       "স্মরণিকা: আপনার {type} বকেয়া ৳{due} পরিশোধের তারিখ {date}। অনুগ্রহ করে যথাসময়ে পরিশোধ করুন।",
+  // English
+  tpl_savings_deposit_en:    "Dear member, BDT {amount} has been deposited to your savings. Current balance: BDT {balance}. Thank you.",
+  tpl_savings_withdraw_en:   "Dear member, BDT {amount} has been withdrawn from your savings. Current balance: BDT {balance}.",
+  tpl_loan_approved_en:      "Congratulations! Your loan of BDT {amount} has been approved. Total payable: BDT {payable}.",
+  tpl_loan_payment_en:       "Your loan payment of BDT {amount} has been received. Remaining due: BDT {due}. Thank you.",
+  tpl_irrigation_payment_en: "Your irrigation fee of BDT {amount} has been received. Thank you.",
+  tpl_due_reminder_en:       "Reminder: Your {type} due of BDT {due} is payable on {date}. Please pay on time.",
+};
+
+function findMissingPlaceholders(tpl: string, required: string[]): string[] {
+  const t = tpl ?? "";
+  return required.filter((v) => !t.includes(v));
+}
+
 type Office = { id: string; name: string };
 type OfficeOverride = { office_id: string; enabled: boolean; sender_id: string | null };
 
@@ -81,6 +103,8 @@ export default function SmsSettings() {
   const [busy, setBusy] = useState(false);
   const [testMobile, setTestMobile] = useState("");
   const [testMsg, setTestMsg] = useState("পরীক্ষামূলক বার্তা — Smart Irrigation");
+  const [tplTestMobile, setTplTestMobile] = useState("");
+  const [tplTestBusy, setTplTestBusy] = useState<string | null>(null);
   const [sampleVars, setSampleVars] = useState<Record<string, string>>(DEFAULT_SAMPLE_VARS);
   const [offices, setOffices] = useState<Office[]>([]);
   const [overrides, setOverrides] = useState<Record<string, OfficeOverride>>({});
@@ -143,6 +167,31 @@ export default function SmsSettings() {
     if (error) return toast.error(error.message);
     if ((data as any)?.ok) toast.success("Sent ✓");
     else toast.error("Failed: " + ((data as any)?.response ?? "unknown"));
+  }
+
+  async function sendTemplateTest(key: keyof Settings, baseKey: string) {
+    if (!tplTestMobile.trim()) return toast.error("Enter a phone number above to test");
+    const tpl = ((s as any)[key] ?? "") as string;
+    if (!tpl.trim()) return toast.error("Template is empty");
+    const usedVars = TPL_VAR_MAP[baseKey] ?? [];
+    const subset: Record<string, string> = {};
+    for (const k of usedVars) subset[k] = sampleVars[k] ?? "";
+    const rendered = renderTpl(tpl, subset);
+    setTplTestBusy(String(key));
+    const { data, error } = await supabase.functions.invoke("send-sms", {
+      body: { mobile: tplTestMobile.trim(), message: rendered, event_type: "manual_template_test" },
+    });
+    setTplTestBusy(null);
+    if (error) return toast.error(error.message);
+    if ((data as any)?.ok) toast.success("Test SMS sent ✓");
+    else toast.error("Failed: " + ((data as any)?.response ?? "unknown"));
+  }
+
+  function resetTemplate(key: keyof Settings) {
+    const def = DEFAULT_TEMPLATES[String(key)];
+    if (def === undefined) return;
+    set(key, def as any);
+    toast.success("Reset to default — remember to Save");
   }
 
   async function runManualReminders() {
@@ -315,6 +364,20 @@ export default function SmsSettings() {
               <p className="text-[10px] text-muted-foreground mt-2">
                 Edit values above and watch the preview below update live. These are not saved — only used to render previews.
               </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end border-t pt-3">
+                <div>
+                  <Label className="text-xs font-medium">Test phone number</Label>
+                  <Input
+                    value={tplTestMobile}
+                    onChange={(e) => setTplTestMobile(e.target.value)}
+                    placeholder="017XXXXXXXX"
+                    className="h-8 text-xs max-w-xs"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Used by the <strong>Test</strong> button on each template — sends the rendered preview to this number.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <Tabs defaultValue="bn">
@@ -334,6 +397,10 @@ export default function SmsSettings() {
                       for (const k of usedVars) subset[k] = sampleVars[k] ?? "";
                       const preview = renderTpl(value, subset);
                       const vars = TEMPLATE_VARS[f.key] ?? [];
+                      const missing = findMissingPlaceholders(value, vars);
+                      const defaultTpl = DEFAULT_TEMPLATES[String(key)] ?? "";
+                      const isDefault = value === defaultTpl;
+                      const testingThis = tplTestBusy === String(key);
                       return (
                         <div key={String(key)} className="space-y-1.5">
                           <div className="flex items-center justify-between">
@@ -359,6 +426,15 @@ export default function SmsSettings() {
                             className="text-sm"
                             dir={lang === "bn" ? "auto" : "ltr"}
                           />
+                          {missing.length > 0 && (
+                            <div className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-2 py-1.5 text-[11px] text-amber-800 dark:text-amber-300">
+                              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              <span>
+                                Missing placeholder{missing.length > 1 ? "s" : ""}:{" "}
+                                <span className="font-mono">{missing.join(", ")}</span>. The message will be sent without this dynamic value.
+                              </span>
+                            </div>
+                          )}
                           <div className="rounded-md border bg-muted/30 px-2.5 py-1.5">
                             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                               <Eye className="h-3 w-3"/> Preview
@@ -367,6 +443,32 @@ export default function SmsSettings() {
                             <p className="text-xs whitespace-pre-wrap break-words">
                               {preview || <span className="italic text-muted-foreground">empty template</span>}
                             </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-0.5">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px]"
+                              onClick={() => resetTemplate(key)}
+                              disabled={isDefault || !defaultTpl}
+                              title={isDefault ? "Already matches the default" : "Restore default wording"}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Reset to default
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              className="h-7 text-[11px]"
+                              onClick={() => sendTemplateTest(key, f.key)}
+                              disabled={testingThis || !tplTestMobile.trim() || !value.trim()}
+                              title={!tplTestMobile.trim() ? "Enter a test phone number above" : "Send rendered preview to test number"}
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              {testingThis ? "Sending…" : "Test send"}
+                            </Button>
                           </div>
                         </div>
                       );
