@@ -28,8 +28,21 @@ type Log = {
   created_at: string;
   farmer_id: string | null;
   office_id: string | null;
+  reference_type: string | null;
+  reference_id: string | null;
   farmer_name?: string | null;
   office_name?: string | null;
+};
+type DrawerData = {
+  log: Log;
+  loading: boolean;
+  kind: "loan" | "irrigation" | null;
+  record: any | null;
+  paid: number;
+  due: number;
+  payments?: any[];
+  farmer?: any | null;
+  error?: string | null;
 };
 type Office = { id: string; name: string };
 
