@@ -134,32 +134,32 @@ export default function FinanceSummary() {
 
   // ------- Exports -------
   const summaryRows = () => [
-    { Section: "Trial Balance", Metric: "Total Debit", Amount: trial.totalDebit },
-    { Section: "Trial Balance", Metric: "Total Credit", Amount: trial.totalCredit },
-    { Section: "Trial Balance", Metric: "Balanced", Amount: trial.balanced ? "Yes" : "No" },
-    { Section: "P&L", Metric: "Total Income", Amount: pl.income },
-    { Section: "P&L", Metric: "Total Expense", Amount: pl.expense },
-    { Section: "P&L", Metric: "Net Income", Amount: pl.net },
-    { Section: "Cash Book", Metric: "Cash In", Amount: cash.in },
-    { Section: "Cash Book", Metric: "Cash Out", Amount: cash.out },
-    { Section: "Cash Book", Metric: "Net Cash", Amount: cash.net },
+    { Section: t("trialBalance"), Metric: t("totalDebit"), Amount: trial.totalDebit },
+    { Section: t("trialBalance"), Metric: t("totalCredit"), Amount: trial.totalCredit },
+    { Section: t("trialBalance"), Metric: t("balanced"), Amount: trial.balanced ? "Yes" : "No" },
+    { Section: t("profitLoss"), Metric: t("income"), Amount: pl.income },
+    { Section: t("profitLoss"), Metric: t("expense"), Amount: pl.expense },
+    { Section: t("profitLoss"), Metric: t("net"), Amount: pl.net },
+    { Section: t("cashBook"), Metric: t("cashIn"), Amount: cash.in },
+    { Section: t("cashBook"), Metric: t("cashOut"), Amount: cash.out },
+    { Section: t("cashBook"), Metric: t("netCash"), Amount: cash.net },
   ];
 
   const exportPDF = () => {
     exportTablePDF(
-      "Finance Summary",
-      ["Section", "Metric", "Amount"],
+      t("financeSummary"),
+      [t("financeSummary"), t("name"), t("amount")],
       summaryRows().map((r) => [r.Section, r.Metric, typeof r.Amount === "number" ? money(r.Amount) : String(r.Amount)]),
       { from, to },
     );
   };
-  const exportXLSX = () => exportExcel("Finance Summary", "Summary", summaryRows(), { from, to });
+  const exportXLSX = () => exportExcel(t("financeSummary"), "Summary", summaryRows(), { from, to });
 
   return (
     <div className="container mx-auto p-4 space-y-4">
       <PageHeader
-        title="Finance Summary"
-        description="One-page snapshot of Trial Balance, P&L, Cash Book and period status"
+        title={t("financeSummary")}
+        description={t("financeSummaryDesc")}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
