@@ -22,12 +22,24 @@ export default function Irrigation() {
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, entry_date: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", rate: 0, quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, entry_date: new Date().toISOString().slice(0, 10) });
 
   const [prevDue, setPrevDue] = useState<number>(0);
 
   useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, []);
-  useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); }, [form.farmer_id]);
+  useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); else setLands([]); }, [form.farmer_id]);
+  // Auto-fill quantity from land size when basis = per_size
+  useEffect(() => {
+    if (form.basis !== "per_size" || !form.land_id) return;
+    const ld = lands.find((l: any) => l.id === form.land_id);
+    if (ld && Number(ld.land_size) > 0) setForm((f: any) => ({ ...f, quantity: Number(ld.land_size) }));
+  }, [form.land_id, form.basis, lands]);
+  // Auto-calc base_charge = rate × quantity whenever rate or qty change
+  useEffect(() => {
+    const calc = +(Number(form.rate || 0) * Number(form.quantity || 0)).toFixed(2);
+    setForm((f: any) => f.base_charge === calc ? f : { ...f, base_charge: calc });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.rate, form.quantity]);
   useEffect(() => {
     (async () => {
       if (!form.farmer_id || !form.land_id) { setPrevDue(0); return; }
@@ -106,8 +118,9 @@ export default function Irrigation() {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>{t("quantity")}</Label><Input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} /></div>
-              <div><Label>{t("baseCharge")}</Label><Input type="number" value={form.base_charge} onChange={e => setForm({ ...form, base_charge: +e.target.value })} /></div>
+              <div><Label>{form.basis === "per_size" ? `${t("quantity")} (auto = land size)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label><Input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} /></div>
+              <div><Label>Rate / unit</Label><Input type="number" step="0.01" value={form.rate} onChange={e => setForm({ ...form, rate: +e.target.value })} /></div>
+              <div className="col-span-2"><Label>{t("baseCharge")} (= rate × qty)</Label><Input type="number" value={form.base_charge} readOnly className="bg-muted" /></div>
               <div><Label>{t("canalCharge")}</Label><Input type="number" value={form.canal_charge} onChange={e => setForm({ ...form, canal_charge: +e.target.value })} /></div>
               <div><Label>{t("maintenanceCharge")}</Label><Input type="number" value={form.maintenance_charge} onChange={e => setForm({ ...form, maintenance_charge: +e.target.value })} /></div>
               <div><Label>{t("otherCharge")}</Label><Input type="number" value={form.other_charge} onChange={e => setForm({ ...form, other_charge: +e.target.value })} /></div>
