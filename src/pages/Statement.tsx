@@ -111,6 +111,54 @@ export default function Statement() {
     );
   }
 
+  async function exportCombinedPDF() {
+    if (!farmerId || !farmer) return toast.error("Pick a member first");
+    const f1 = from || `${year}-01-01`;
+    const t1 = to || `${year}-12-31`;
+    const tid = toast.loading("Building combined statement…");
+    try {
+      const [irrRes, loansRes] = await Promise.all([
+        supabase.from("irrigation_charges")
+          .select("entry_date,total,paid_amount,due_amount,seasons(name,year),lands(dag_no)")
+          .eq("farmer_id", farmerId).gte("entry_date", f1).lte("entry_date", t1)
+          .order("entry_date", { ascending: true }),
+        supabase.from("loans")
+          .select("issued_on,principal,interest_rate,total_payable,status,loan_payments(amount)")
+          .eq("farmer_id", farmerId).gte("issued_on", f1).lte("issued_on", t1)
+          .order("issued_on", { ascending: true }),
+      ]);
+      const irrigation = (irrRes.data ?? []).map((r: any) => ({
+        entry_date: r.entry_date,
+        season: r.seasons ? `${r.seasons.name} ${r.seasons.year}` : "—",
+        dag: r.lands?.dag_no ?? "—",
+        total: Number(r.total || 0),
+        paid_amount: Number(r.paid_amount || 0),
+        due_amount: Number(r.due_amount || 0),
+      }));
+      const loansList = (loansRes.data ?? []).map((l: any) => {
+        const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+        return {
+          issued_on: l.issued_on, principal: Number(l.principal || 0), interest_rate: Number(l.interest_rate || 0),
+          total_payable: Number(l.total_payable || 0), status: l.status, paid,
+          due: Math.max(0, Number(l.total_payable || 0) - paid),
+        };
+      });
+
+      exportFarmerCombinedStatementPDF({
+        brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
+        farmer,
+        range: { from: f1, to: t1 },
+        opening_savings: opening,
+        savings: txns.map((s: any) => ({ txn_date: s.txn_date, type: s.type, amount: Number(s.amount), note: s.note })),
+        irrigation,
+        loans: loansList,
+      });
+      toast.success("Statement generated", { id: tid });
+    } catch (e: any) {
+      toast.error(e?.message || "Failed", { id: tid });
+    }
+  }
+
   return (
     <>
       <PageHeader title={t("statement") || "Member Statement"} />
