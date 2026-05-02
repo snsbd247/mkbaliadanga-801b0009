@@ -163,11 +163,11 @@ function TxnTable({ rows, t, isAdmin, onDecide, onPrint, profiles, historyMode }
             </TableCell>
             <TableCell className="text-right">
               {isAdmin && r.status === "pending" && (<>
-                <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "approved")} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "rejected")} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "approved")} title={t("approveAction")}><Check className="h-4 w-4 text-success" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "rejected")} title={t("rejectAction")}><X className="h-4 w-4 text-destructive" /></Button>
               </>)}
               {(r.status === "approved" || historyMode) && (
-                <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title="Print receipt"><Printer className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title={t("printReceipt")}><Printer className="h-4 w-4" /></Button>
               )}
             </TableCell>
           </TableRow>
