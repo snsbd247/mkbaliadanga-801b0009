@@ -96,6 +96,8 @@ export function AppSidebar() {
         { url: "/locations", icon: MapPin, label: "Locations", superOnly: true },
         { url: "/admin/verification", icon: CheckCircle2, label: "Verification Report" },
         { url: "/admin/rls-test", icon: ShieldQuestion, label: "RLS Access Test", superOnly: true },
+        { url: "/admin/role-matrix", icon: Shield, label: "Role Matrix", superOnly: true },
+        { url: "/admin/demo-reset", icon: RefreshCw, label: "Demo Reset", superOnly: true },
       ],
     },
   ];
