@@ -63,6 +63,14 @@ export default function Farmers() {
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
+  // Scroll the failing dropdown into view when a hierarchy error appears.
+  useEffect(() => {
+    const lvl = createErr?.level ?? editErr?.level;
+    if (!lvl) return;
+    const el = document.querySelector(`[data-level="${lvl}"]`) as HTMLElement | null;
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [createErr, editErr]);
+
   async function load() {
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
@@ -218,6 +226,12 @@ export default function Farmers() {
           <LocationPicker
             value={pickLocation(f)}
             onChange={(loc) => setF({ ...f, ...loc })}
+            errorLevel={err?.level ?? null}
+            errorMessage={err ? buildErrMessage(err.key, err.level) : null}
+            labels={{
+              division: t("division"), district: t("district"), upazila: t("upazila"),
+              union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
+            }}
           />
         </div>
         <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
