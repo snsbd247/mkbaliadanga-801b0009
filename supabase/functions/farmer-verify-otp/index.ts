@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       farmer_id: farmer.id,
       token_hash,
       expires_at,
-      ip: getIp(req),
+      ip,
       user_agent: req.headers.get("user-agent")?.slice(0, 250) ?? null,
     });
     if (sErr) {
