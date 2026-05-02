@@ -47,7 +47,7 @@ export default function FarmerDetail() {
   }
 
   async function addLand() {
-    const { error } = await supabase.from("lands").insert({ ...land, farmer_id: id });
+    const { error } = await supabase.from("lands").insert({ farmer_id: id!, mouza: land.mouza, dag_no: land.dag_no, land_size: land.land_size, owner_type: land.owner_type as any, field_type: land.field_type as any });
     if (error) return toast.error(error.message);
     toast.success(t("saved")); setOpenLand(false);
     setLand({ mouza: "", dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
