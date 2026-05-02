@@ -405,9 +405,10 @@ export default function SmsSettings() {
     for (const o of ((overridesRes.data as any) ?? []) as OfficeOverride[]) map[o.office_id] = o;
     setOverrides(map);
     const tok = (tokenRes as any)?.data;
-    setTokenConfigured(!!tok?.api_token);
+    setTokenConfigured(!!tok?.provider);
     setTokenUpdatedAt(tok?.updated_at ?? null);
     setTokenInput("");
+    setShowToken(false);
   }
 
   async function saveProviderToken() {
