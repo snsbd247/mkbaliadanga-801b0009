@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import FarmerPortalLogin from "../FarmerPortalLogin";
+import { LanguageProvider } from "@/i18n/LanguageProvider";
 
 vi.mock("@/lib/branding", () => ({
   useBranding: () => ({ company_name: "Test Co", company_name_bn: "টেস্ট", logo_url: null }),
@@ -15,13 +16,15 @@ vi.mock("@/auth/AuthProvider", () => ({
 
 function renderApp() {
   return render(
-    <MemoryRouter initialEntries={["/"]}>
-      <Routes>
-        <Route path="/" element={<FarmerPortalLogin />} />
-        <Route path="/farmer/dashboard" element={<div>FARMER_DASHBOARD</div>} />
-        <Route path="/auth" element={<div>ADMIN_AUTH_PAGE</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <LanguageProvider>
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="/" element={<FarmerPortalLogin />} />
+          <Route path="/farmer/dashboard" element={<div>FARMER_DASHBOARD</div>} />
+          <Route path="/auth" element={<div>ADMIN_AUTH_PAGE</div>} />
+        </Routes>
+      </MemoryRouter>
+    </LanguageProvider>,
   );
 }
 
