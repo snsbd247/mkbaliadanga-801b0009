@@ -47,6 +47,8 @@ import LedgerReconciliation from "./pages/LedgerReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
 import ReceiptTemplate from "./pages/ReceiptTemplate";
+import Verification from "./pages/admin/Verification";
+import RlsTest from "./pages/admin/RlsTest";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
