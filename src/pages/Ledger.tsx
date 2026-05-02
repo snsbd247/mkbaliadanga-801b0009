@@ -160,13 +160,14 @@ export default function Ledger() {
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportExcel(
-                reportFilename(reportName, { from, to }), "Ledger",
+                "Ledger", "Ledger",
                 withRunning.map((e) => ({
                   Date: e.entry_date, Account: `${e.account_code ?? ""} ${e.account_name ?? ""}`.trim(),
                   Office: e.office_name, Description: e.description, Reference: e.reference_type,
                   Debit: Number(e.debit) || 0, Credit: Number(e.credit) || 0,
                   ...(showRunning ? { Balance: e.balance } : {}),
                 })),
+                { from, to },
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
               </Button>
