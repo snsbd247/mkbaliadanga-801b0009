@@ -110,6 +110,7 @@ export type Database = {
           company_name_bn: string | null
           default_loan_interest: number
           email: string | null
+          fiscal_year_start_month: number
           id: number
           logo_url: string | null
           mobile: string | null
@@ -124,6 +125,7 @@ export type Database = {
           company_name_bn?: string | null
           default_loan_interest?: number
           email?: string | null
+          fiscal_year_start_month?: number
           id?: number
           logo_url?: string | null
           mobile?: string | null
@@ -138,6 +140,7 @@ export type Database = {
           company_name_bn?: string | null
           default_loan_interest?: number
           email?: string | null
+          fiscal_year_start_month?: number
           id?: number
           logo_url?: string | null
           mobile?: string | null
@@ -368,6 +371,90 @@ export type Database = {
           },
         ]
       }
+      journal_entries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          entry_date: string
+          id: string
+          office_id: string | null
+          posted: boolean
+          posted_at: string | null
+          reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entry_date?: string
+          id?: string
+          office_id?: string | null
+          posted?: boolean
+          posted_at?: string | null
+          reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entry_date?: string
+          id?: string
+          office_id?: string | null
+          posted?: boolean
+          posted_at?: string | null
+          reference?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journal_entry_lines: {
+        Row: {
+          account_id: string
+          credit: number
+          debit: number
+          description: string | null
+          id: string
+          journal_id: string
+          position: number
+        }
+        Insert: {
+          account_id: string
+          credit?: number
+          debit?: number
+          description?: string | null
+          id?: string
+          journal_id: string
+          position?: number
+        }
+        Update: {
+          account_id?: string
+          credit?: number
+          debit?: number
+          description?: string | null
+          id?: string
+          journal_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_lines_journal_id_fkey"
+            columns: ["journal_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       land_relations: {
         Row: {
           created_at: string
@@ -550,30 +637,39 @@ export type Database = {
       loan_payments: {
         Row: {
           amount: number
+          approved_at: string | null
+          approved_by: string | null
           collected_by: string | null
           created_at: string
           id: string
           loan_id: string
           office_id: string | null
           paid_on: string
+          status: Database["public"]["Enums"]["loan_payment_status"]
         }
         Insert: {
           amount: number
+          approved_at?: string | null
+          approved_by?: string | null
           collected_by?: string | null
           created_at?: string
           id?: string
           loan_id: string
           office_id?: string | null
           paid_on?: string
+          status?: Database["public"]["Enums"]["loan_payment_status"]
         }
         Update: {
           amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
           collected_by?: string | null
           created_at?: string
           id?: string
           loan_id?: string
           office_id?: string | null
           paid_on?: string
+          status?: Database["public"]["Enums"]["loan_payment_status"]
         }
         Relationships: [
           {
@@ -1155,6 +1251,34 @@ export type Database = {
         }
         Relationships: []
       }
+      ledger_entries_view: {
+        Row: {
+          account_code: string | null
+          account_id: string | null
+          account_name: string | null
+          account_type: Database["public"]["Enums"]["account_type"] | null
+          created_at: string | null
+          created_by: string | null
+          credit: number | null
+          debit: number | null
+          description: string | null
+          entry_date: string | null
+          id: string | null
+          office_id: string | null
+          office_name: string | null
+          reference_id: string | null
+          reference_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _acct: { Args: { _code: string }; Returns: string }
@@ -1199,6 +1323,24 @@ export type Database = {
       }
       is_admin_or_super: { Args: { _user_id: string }; Returns: boolean }
       is_committee_or_super: { Args: { _user_id: string }; Returns: boolean }
+      ledger_orphan_refs: {
+        Args: never
+        Returns: {
+          entry_count: number
+          reference_id: string
+          reference_type: string
+        }[]
+      }
+      ledger_unbalanced_refs: {
+        Args: never
+        Returns: {
+          diff: number
+          reference_id: string
+          reference_type: string
+          total_credit: number
+          total_debit: number
+        }[]
+      }
     }
     Enums: {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
@@ -1206,6 +1348,7 @@ export type Database = {
       approval_status: "pending" | "approved" | "rejected"
       field_type: "high_land" | "medium_land" | "low_land" | "other"
       irrigation_basis: "per_size" | "per_day" | "per_hour"
+      loan_payment_status: "pending" | "approved" | "rejected"
       loan_status: "pending" | "approved" | "paid" | "rejected"
       owner_type: "owner" | "borgadar"
       payment_kind: "loan" | "savings" | "irrigation"
@@ -1355,6 +1498,7 @@ export const Constants = {
       approval_status: ["pending", "approved", "rejected"],
       field_type: ["high_land", "medium_land", "low_land", "other"],
       irrigation_basis: ["per_size", "per_day", "per_hour"],
+      loan_payment_status: ["pending", "approved", "rejected"],
       loan_status: ["pending", "approved", "paid", "rejected"],
       owner_type: ["owner", "borgadar"],
       payment_kind: ["loan", "savings", "irrigation"],
