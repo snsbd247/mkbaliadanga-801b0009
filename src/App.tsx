@@ -46,6 +46,7 @@ import Locations from "./pages/Locations";
 import LedgerReconciliation from "./pages/LedgerReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
+import ReceiptTemplate from "./pages/ReceiptTemplate";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -101,6 +102,7 @@ const App = () => (
                 <Route path="/admin/reconciliation" element={<LedgerReconciliation />} />
                 <Route path="/admin/qr-rotation" element={<QrRotation />} />
                 <Route path="/admin/bulk-cards" element={<BulkCards />} />
+                <Route path="/admin/receipt-template" element={<ReceiptTemplate />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
