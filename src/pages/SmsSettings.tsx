@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Send, Eye, CalendarClock, AlertTriangle, RotateCcw, Wand2, FlaskConical, CheckCircle2, XCircle, Trash2, KeyRound, Save, Eraser } from "lucide-react";
+import { MessageSquare, Send, Eye, CalendarClock, AlertTriangle, RotateCcw, Wand2, FlaskConical, CheckCircle2, XCircle, Trash2, KeyRound, Save } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -355,12 +355,28 @@ export default function SmsSettings() {
   const [testLog, setTestLog] = useState<TestRecord[]>(() => loadTestLog());
   const [confirmTest, setConfirmTest] = useState<{ key: keyof Settings; baseKey: string; preview: string; label: string } | null>(null);
 
-  // GreenWeb provider token state
+  // GreenWeb provider token state — supports rotation (active/staged/retired)
+  type ProviderTokenRow = {
+    id: string;
+    provider: string;
+    status: "active" | "staged" | "retired";
+    expires_at: string | null;
+    activated_at: string | null;
+    updated_at: string;
+    updated_by: string | null;
+    label: string | null;
+  };
+  type SecretAuditRow = { id: string; action: string; created_at: string; user_id: string | null; meta: any };
+  const TOKEN_REGEX = /^[A-Za-z0-9]{20,80}$/;
   const [tokenInput, setTokenInput] = useState<string>("");
-  const [tokenConfigured, setTokenConfigured] = useState<boolean>(false);
-  const [tokenUpdatedAt, setTokenUpdatedAt] = useState<string | null>(null);
+  const [tokenLabel, setTokenLabel] = useState<string>("");
+  const [tokenExpiry, setTokenExpiry] = useState<string>(""); // yyyy-mm-dd
+  const [tokenError, setTokenError] = useState<string>("");
+  const [tokens, setTokens] = useState<ProviderTokenRow[]>([]);
+  const [tokenAudit, setTokenAudit] = useState<SecretAuditRow[]>([]);
   const [tokenBusy, setTokenBusy] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  const [confirmTestOpen, setConfirmTestOpen] = useState(false);
 
   // Provider "Test connection" diagnostics state
   const [testConnPhone, setTestConnPhone] = useState<string>("");
@@ -372,6 +388,10 @@ export default function SmsSettings() {
     error?: string;
     tested_at?: string;
   } | null>(null);
+
+  const activeToken = useMemo(() => tokens.find((t) => t.status === "active") ?? null, [tokens]);
+  const stagedTokens = useMemo(() => tokens.filter((t) => t.status === "staged"), [tokens]);
+  const tokenConfigured = !!activeToken;
 
   // Manual scheduler state
   const today = new Date().toISOString().slice(0, 10);
@@ -402,12 +422,23 @@ export default function SmsSettings() {
   }
 
   async function load() {
-    const [settingsRes, officesRes, overridesRes, tokenRes] = await Promise.all([
+    const [settingsRes, officesRes, overridesRes, tokensRes, auditRes] = await Promise.all([
       supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("offices").select("id,name").order("name"),
       supabase.from("sms_office_settings").select("office_id,enabled,sender_id"),
-      // Only fetch presence + timestamp — never pull the token value into the browser.
-      supabase.from("sms_provider_secrets" as any).select("provider,updated_at").eq("provider", "greenweb").maybeSingle(),
+      // Lifecycle metadata only — never select api_token to avoid leaking secrets to the browser.
+      supabase
+        .from("sms_provider_secrets" as any)
+        .select("id,provider,status,expires_at,activated_at,updated_at,updated_by,label")
+        .eq("provider", "greenweb")
+        .order("status", { ascending: true })
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("audit_logs")
+        .select("id,action,created_at,user_id,meta")
+        .eq("entity", "sms_provider_secrets")
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
     if (settingsRes.error) return toast.error(settingsRes.error.message);
     setS(settingsRes.data as any);
@@ -415,38 +446,72 @@ export default function SmsSettings() {
     const map: Record<string, OfficeOverride> = {};
     for (const o of ((overridesRes.data as any) ?? []) as OfficeOverride[]) map[o.office_id] = o;
     setOverrides(map);
-    const tok = (tokenRes as any)?.data;
-    setTokenConfigured(!!tok?.provider);
-    setTokenUpdatedAt(tok?.updated_at ?? null);
+    setTokens(((tokensRes as any)?.data ?? []) as ProviderTokenRow[]);
+    setTokenAudit(((auditRes as any)?.data ?? []) as SecretAuditRow[]);
     setTokenInput("");
+    setTokenLabel("");
+    setTokenExpiry("");
+    setTokenError("");
     setShowToken(false);
+  }
+
+  function validateTokenInput(value: string): string {
+    const v = value.trim();
+    if (!v) return "Enter the GreenWeb API token";
+    if (!TOKEN_REGEX.test(v)) return "Token must be 20–80 alphanumeric characters (A–Z, a–z, 0–9). No spaces or symbols.";
+    return "";
   }
 
   async function saveProviderToken() {
     const value = tokenInput.trim();
-    if (!value) return toast.error("Enter the GreenWeb API token");
+    const err = validateTokenInput(value);
+    if (err) { setTokenError(err); return toast.error(err); }
+    setTokenError("");
     setTokenBusy(true);
     const { data: u } = await supabase.auth.getUser();
+    const expiresAtIso = tokenExpiry ? new Date(tokenExpiry + "T23:59:59").toISOString() : null;
+    // New tokens always land as "staged" (disabled). Click Activate to switch.
     const { error } = await supabase
       .from("sms_provider_secrets" as any)
-      .upsert(
-        { provider: "greenweb", api_token: value, updated_at: new Date().toISOString(), updated_by: u.user?.id ?? null } as any,
-        { onConflict: "provider" },
-      );
+      .insert({
+        provider: "greenweb",
+        api_token: value,
+        status: "staged",
+        expires_at: expiresAtIso,
+        label: tokenLabel.trim() || null,
+        updated_by: u.user?.id ?? null,
+      } as any);
     setTokenBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("GreenWeb API token saved");
-    setTokenInput("");
-    setShowToken(false);
+    toast.success("Token saved as staged. Click Activate to switch over.");
     await load();
   }
 
-  async function clearProviderToken() {
+  async function activateToken(id: string) {
     setTokenBusy(true);
-    const { error } = await supabase.from("sms_provider_secrets" as any).delete().eq("provider", "greenweb");
+    const { error } = await supabase.rpc("activate_sms_token" as any, { _id: id } as any);
     setTokenBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Token cleared");
+    toast.success("Token activated");
+    await load();
+  }
+
+  async function retireToken(id: string) {
+    setTokenBusy(true);
+    const { error } = await supabase.rpc("retire_sms_token" as any, { _id: id } as any);
+    setTokenBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Token retired");
+    await load();
+  }
+
+  async function deleteToken(id: string) {
+    if (!confirm("Permanently delete this token row? Use Retire instead if you want to keep an audit trail.")) return;
+    setTokenBusy(true);
+    const { error } = await supabase.from("sms_provider_secrets" as any).delete().eq("id", id);
+    setTokenBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Token deleted");
     await load();
   }
 
@@ -681,58 +746,156 @@ export default function SmsSettings() {
                   onChange={(e) => set("reminder_days_before", Math.max(0, Number(e.target.value || 0)))} />
               </div>
             </div>
-            <div className="rounded-md border p-3 space-y-2">
+            <div className="rounded-md border p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium flex items-center gap-1.5">
                   <KeyRound className="h-3.5 w-3.5" />
-                  GreenWeb API Token
+                  GreenWeb API Tokens
                 </Label>
-                {tokenConfigured ? (
+                {activeToken ? (
                   <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
-                    <CheckCircle2 className="h-3 w-3 mr-1" /> Configured
+                    <CheckCircle2 className="h-3 w-3 mr-1" /> Active token configured
                   </Badge>
                 ) : (
                   <Badge variant="destructive">
-                    <XCircle className="h-3 w-3 mr-1" /> Not set
+                    <XCircle className="h-3 w-3 mr-1" /> No active token
                   </Badge>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Input
-                  type={showToken ? "text" : "password"}
-                  value={tokenInput}
-                  onChange={(e) => setTokenInput(e.target.value)}
-                  placeholder={tokenConfigured ? "•••••••• (enter new token to replace)" : "Paste GreenWeb API token"}
-                  // Block browser/password-manager autofill — never pre-fill the token on revisit.
-                  name="greenweb-api-token-no-autofill"
-                  id="greenweb-api-token-no-autofill"
-                  autoComplete="off"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  data-form-type="other"
-                  spellCheck={false}
-                  className="flex-1 min-w-[200px] font-mono text-xs"
-                />
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowToken((v) => !v)}>
-                  <Eye className="h-3.5 w-3.5 mr-1" />{showToken ? "Hide" : "Show"}
-                </Button>
-                <Button type="button" size="sm" onClick={saveProviderToken} disabled={tokenBusy || !tokenInput.trim()}>
-                  <Save className="h-3.5 w-3.5 mr-1" />{tokenBusy ? "Saving…" : "Save Token"}
-                </Button>
-                {tokenConfigured && (
-                  <Button type="button" variant="outline" size="sm" onClick={clearProviderToken} disabled={tokenBusy}>
-                    <Eraser className="h-3.5 w-3.5 mr-1" />Clear
+
+              {/* Add new token (always staged) */}
+              <div className="space-y-2 rounded-md bg-muted/30 p-2">
+                <div className="text-xs font-medium">Add a new token (saved as staged — does not affect live SMS until activated)</div>
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    type={showToken ? "text" : "password"}
+                    value={tokenInput}
+                    onChange={(e) => { setTokenInput(e.target.value); if (tokenError) setTokenError(""); }}
+                    onBlur={(e) => setTokenError(validateTokenInput(e.target.value))}
+                    placeholder="Paste GreenWeb API token (20–80 alphanumeric)"
+                    name="greenweb-api-token-no-autofill"
+                    id="greenweb-api-token-no-autofill"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    data-form-type="other"
+                    spellCheck={false}
+                    className="flex-1 min-w-[220px] font-mono text-xs"
+                    aria-invalid={!!tokenError}
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowToken((v) => !v)}>
+                    <Eye className="h-3.5 w-3.5 mr-1" />{showToken ? "Hide" : "Show"}
                   </Button>
-                )}
-              </div>
-              {tokenUpdatedAt && (
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    placeholder="Label (e.g. 'Q2 2026 token')"
+                    value={tokenLabel}
+                    onChange={(e) => setTokenLabel(e.target.value)}
+                    className="flex-1 min-w-[180px]"
+                    maxLength={50}
+                  />
+                  <Input
+                    type="date"
+                    value={tokenExpiry}
+                    onChange={(e) => setTokenExpiry(e.target.value)}
+                    min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                    className="w-[180px]"
+                    title="Optional expiry date"
+                  />
+                  <Button type="button" size="sm" onClick={saveProviderToken} disabled={tokenBusy || !tokenInput.trim()}>
+                    <Save className="h-3.5 w-3.5 mr-1" />{tokenBusy ? "Saving…" : "Save as Staged"}
+                  </Button>
+                </div>
+                {tokenError && <p className="text-[11px] text-destructive">{tokenError}</p>}
                 <p className="text-[11px] text-muted-foreground">
-                  Last updated: {new Date(tokenUpdatedAt).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB")}
+                  New tokens are saved disabled. Click <strong>Activate</strong> on a staged row to atomically retire the current active token and switch to the new one.
                 </p>
+              </div>
+
+              {/* Token list */}
+              <div className="rounded-md border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40 text-left">
+                    <tr>
+                      <th className="px-2 py-1.5">Status</th>
+                      <th className="px-2 py-1.5">Label</th>
+                      <th className="px-2 py-1.5">Expires</th>
+                      <th className="px-2 py-1.5">Updated</th>
+                      <th className="px-2 py-1.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tokens.length === 0 && (
+                      <tr><td colSpan={5} className="px-2 py-3 text-center text-muted-foreground">No tokens saved yet.</td></tr>
+                    )}
+                    {tokens.map((t) => {
+                      const expired = !!t.expires_at && new Date(t.expires_at) < new Date();
+                      const daysToExp = t.expires_at ? Math.max(0, Math.ceil((new Date(t.expires_at).getTime() - Date.now()) / 86400000)) : null;
+                      return (
+                        <tr key={t.id} className="border-t">
+                          <td className="px-2 py-1.5">
+                            {t.status === "active" && <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>}
+                            {t.status === "staged" && <Badge variant="secondary">Staged</Badge>}
+                            {t.status === "retired" && <Badge variant="outline" className="text-muted-foreground">Retired</Badge>}
+                            {expired && t.status === "active" && <Badge variant="destructive" className="ml-1">Expired</Badge>}
+                          </td>
+                          <td className="px-2 py-1.5 max-w-[180px] truncate">{t.label || <span className="text-muted-foreground">—</span>}</td>
+                          <td className="px-2 py-1.5">
+                            {t.expires_at
+                              ? <span className={expired ? "text-destructive" : (daysToExp !== null && daysToExp < 14 ? "text-amber-600" : "")}>
+                                  {new Date(t.expires_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB")}
+                                  {daysToExp !== null && !expired && <span className="text-muted-foreground"> · {daysToExp}d</span>}
+                                </span>
+                              : <span className="text-muted-foreground">never</span>}
+                          </td>
+                          <td className="px-2 py-1.5 text-muted-foreground">{new Date(t.updated_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB")}</td>
+                          <td className="px-2 py-1.5 text-right">
+                            <div className="flex justify-end gap-1">
+                              {t.status === "staged" && (
+                                <Button type="button" size="sm" variant="default" disabled={tokenBusy || expired} onClick={() => activateToken(t.id)} className="h-7 px-2 text-xs">
+                                  Activate
+                                </Button>
+                              )}
+                              {t.status === "active" && (
+                                <Button type="button" size="sm" variant="outline" disabled={tokenBusy} onClick={() => retireToken(t.id)} className="h-7 px-2 text-xs">
+                                  Retire
+                                </Button>
+                              )}
+                              <Button type="button" size="sm" variant="ghost" disabled={tokenBusy} onClick={() => deleteToken(t.id)} className="h-7 px-2 text-xs text-destructive hover:text-destructive">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Audit log */}
+              {tokenAudit.length > 0 && (
+                <div className="rounded-md border bg-muted/20 p-2">
+                  <div className="text-xs font-medium mb-1">Recent token changes</div>
+                  <ul className="space-y-0.5 text-[11px] font-mono max-h-40 overflow-auto">
+                    {tokenAudit.map((a) => (
+                      <li key={a.id} className="flex items-center justify-between gap-2">
+                        <span>
+                          <span className="text-muted-foreground">{new Date(a.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB")}</span>
+                          {" · "}
+                          <span className="font-semibold">{a.action.replace("sms_secret.", "")}</span>
+                          {a.meta?.masked_token && <span className="text-muted-foreground"> · {a.meta.masked_token}</span>}
+                          {a.meta?.label && <span className="text-muted-foreground"> · {a.meta.label}</span>}
+                          {a.meta?.status_before && a.meta?.status_after && (
+                            <span className="text-muted-foreground"> · {a.meta.status_before} → {a.meta.status_after}</span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
-              <p className="text-[11px] text-muted-foreground">
-                Token is stored securely in the database (super-admin only) and used by the SMS sender. Get it from your GreenWeb account dashboard.
-              </p>
             </div>
 
             {/* Provider Test Connection — sends a real one-off SMS via GreenWeb to verify token + sender ID. */}
@@ -763,7 +926,11 @@ export default function SmsSettings() {
                   placeholder="Office phone (e.g. 01XXXXXXXXX)"
                   className="flex-1 min-w-[200px]"
                 />
-                <Button type="button" size="sm" onClick={runTestConnection} disabled={testConnBusy || !tokenConfigured}>
+                <Button type="button" size="sm" onClick={() => {
+                  const m = (testConnPhone || "").trim();
+                  if (!m || m.replace(/\D/g, "").length < 10) { toast.error("Enter a valid mobile number to test (10–15 digits)"); return; }
+                  setConfirmTestOpen(true);
+                }} disabled={testConnBusy || !tokenConfigured}>
                   <Send className="h-3.5 w-3.5 mr-1" />
                   {testConnBusy ? "Testing…" : "Send Test SMS"}
                 </Button>
@@ -1205,6 +1372,25 @@ export default function SmsSettings() {
           <AlertDialogFooter>
             <AlertDialogCancel>{L.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={performTemplateTest}>{L.confirm}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmTestOpen} onOpenChange={setConfirmTestOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send a real test SMS?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>This will send <strong>one real SMS (~1 paid credit)</strong> via GreenWeb to the number below using the currently active token.</p>
+                <p className="font-mono text-xs">to: {testConnPhone || "—"}</p>
+                <p className="text-xs text-muted-foreground">No queue entries are created. Only this dialog and the diagnostic panel will reflect the result.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmTestOpen(false); runTestConnection(); }}>Send Test</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

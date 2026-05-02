@@ -19,12 +19,15 @@ const GW_TOKEN_ENV = Deno.env.get("GREENWEB_SMS_TOKEN") ?? "";
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
 async function getGreenWebToken(): Promise<string> {
-  // Prefer DB-stored token (configurable from SMS Settings UI), fallback to env secret.
+  // Prefer the active, non-expired DB-stored token; fallback to env secret.
   try {
+    const nowIso = new Date().toISOString();
     const { data } = await admin
       .from("sms_provider_secrets")
-      .select("api_token")
+      .select("api_token,expires_at")
       .eq("provider", "greenweb")
+      .eq("status", "active")
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
       .maybeSingle();
     const t = (data?.api_token ?? "").toString().trim();
     if (t) return t;
@@ -137,12 +140,29 @@ Deno.serve(async (req) => {
       const safeRequestUrl = "https://api.greenweb.com.bd/api.php?" + params.toString();
 
       const r = await sendViaGreenWeb(mobile, message, sender);
+      const tested_at = new Date().toISOString();
+
+      // Persist last test result to sms_settings.config.last_test (no token bytes)
+      try {
+        const { data: cur } = await admin.from("sms_settings").select("config").eq("id", 1).maybeSingle();
+        const cfg = (cur?.config ?? {}) as Record<string, unknown>;
+        cfg["last_test"] = {
+          ok: r.ok,
+          tested_at,
+          mobile: normalized,
+          sender: sender ?? null,
+          response: r.resp.slice(0, 200),
+          tested_by: uid,
+        };
+        await admin.from("sms_settings").update({ config: cfg }).eq("id", 1);
+      } catch (_) { /* non-fatal */ }
+
       return new Response(JSON.stringify({
         ok: r.ok,
         request: { url: safeRequestUrl, to: normalized, sender: sender ?? null, message_length: message.length },
         response: r.resp,
         provider: "greenweb",
-        tested_at: new Date().toISOString(),
+        tested_at,
       }), { status: r.ok ? 200 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
