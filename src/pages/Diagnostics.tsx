@@ -145,7 +145,7 @@ export default function Diagnostics() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {errors.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">কোনো error নেই।</TableCell></TableRow>}
+                {errors.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noErrors")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
