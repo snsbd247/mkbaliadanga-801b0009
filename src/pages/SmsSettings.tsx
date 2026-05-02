@@ -1375,6 +1375,25 @@ export default function SmsSettings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={confirmTestOpen} onOpenChange={setConfirmTestOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send a real test SMS?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>This will send <strong>one real SMS (~1 paid credit)</strong> via GreenWeb to the number below using the currently active token.</p>
+                <p className="font-mono text-xs">to: {testConnPhone || "—"}</p>
+                <p className="text-xs text-muted-foreground">No queue entries are created. Only this dialog and the diagnostic panel will reflect the result.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmTestOpen(false); runTestConnection(); }}>Send Test</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
