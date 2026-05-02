@@ -90,7 +90,7 @@ const App = () => (
                 <Route path="/users" element={<Users />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/scan" element={<Scan />} />
-                <Route path="/cashbook" element={<Cashbook />} />
+                <Route path="/cashbook" element={<RequirePerm module="cashbook"><Cashbook /></RequirePerm>} />
                 <Route path="/statement" element={<Statement />} />
                 <Route path="/dues" element={<Dues />} />
                 <Route path="/backup" element={<Backup />} />
@@ -106,7 +106,7 @@ const App = () => (
                 <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
                 
                 <Route path="/sms-settings" element={<SmsSettings />} />
-                <Route path="/sms-logs" element={<SmsLogs />} />
+                <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />
                 <Route path="/locations" element={<Locations />} />
                 <Route path="/admin/reconciliation" element={<LedgerReconciliation />} />
                 <Route path="/admin/qr-rotation" element={<QrRotation />} />
