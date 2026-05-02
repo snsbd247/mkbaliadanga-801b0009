@@ -89,8 +89,9 @@ const L = {
   },
 };
 
-function pickLabels(lang: ReceiptTemplate["language"]) {
-  if (lang === "bn") return L.bn;
+function pickLabels(_lang: ReceiptTemplate["language"]) {
+  // jsPDF's built-in fonts don't support Bangla glyphs, so PDFs always render
+  // English labels. The on-screen UI continues to honour the language toggle.
   return L.en;
 }
 
