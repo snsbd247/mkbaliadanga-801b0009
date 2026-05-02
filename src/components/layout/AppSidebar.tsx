@@ -77,6 +77,7 @@ export function AppSidebar() {
       key: "reports", icon: BarChart3, label: "Reports",
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
+        { url: "/reports/irrigation-due", icon: AlertTriangle, label: "Irrigation Due Report", permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: "Dues", permKey: "reports" },
       ],
     },
