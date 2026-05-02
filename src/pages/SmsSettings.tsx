@@ -926,7 +926,11 @@ export default function SmsSettings() {
                   placeholder="Office phone (e.g. 01XXXXXXXXX)"
                   className="flex-1 min-w-[200px]"
                 />
-                <Button type="button" size="sm" onClick={runTestConnection} disabled={testConnBusy || !tokenConfigured}>
+                <Button type="button" size="sm" onClick={() => {
+                  const m = (testConnPhone || "").trim();
+                  if (!m || m.replace(/\D/g, "").length < 10) { toast.error("Enter a valid mobile number to test (10–15 digits)"); return; }
+                  setConfirmTestOpen(true);
+                }} disabled={testConnBusy || !tokenConfigured}>
                   <Send className="h-3.5 w-3.5 mr-1" />
                   {testConnBusy ? "Testing…" : "Send Test SMS"}
                 </Button>
