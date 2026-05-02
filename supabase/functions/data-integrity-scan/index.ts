@@ -98,9 +98,9 @@ Deno.serve(async (req) => {
       isCron = true; isAllowed = true;
     } else if (bearer) {
       const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
-      const { data: claimsData, error: cErr } = await userClient.auth.getClaims(bearer);
-      if (cErr || !claimsData?.claims?.sub) return err(401, "Unauthorized");
-      const userId = claimsData.claims.sub as string;
+      const { data: userData, error: uErr } = await userClient.auth.getUser(bearer);
+      if (uErr || !userData?.user?.id) return err(401, "Unauthorized");
+      const userId = userData.user.id;
       const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
       isAllowed = (roles ?? []).some((r: any) => r.role === "super_admin");
       if (!isAllowed) return err(403, "Forbidden");
