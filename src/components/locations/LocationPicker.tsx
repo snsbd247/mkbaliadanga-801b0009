@@ -18,10 +18,19 @@ type Row = { id: string; name: string; name_bn?: string | null };
 
 const NONE = "__none__";
 
+export type PickerLevel =
+  | "division" | "district" | "upazila" | "union" | "ward" | "village" | "mouza";
+
 interface Props {
   value: LocationValue;
   onChange: (v: LocationValue) => void;
   className?: string;
+  /** Highlight a specific level as invalid (red ring + inline message). */
+  errorLevel?: PickerLevel | null;
+  /** Inline message shown under the highlighted Select. */
+  errorMessage?: string | null;
+  /** Translated labels for each level (BN/EN aware). Falls back to English. */
+  labels?: Partial<Record<PickerLevel, string>>;
 }
 
 /**
