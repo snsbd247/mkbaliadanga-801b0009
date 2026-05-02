@@ -45,7 +45,7 @@ describe("FarmerPortalLogin", () => {
 
   it("advances to OTP step on success and redirects to dashboard after verify", async () => {
     // @ts-ignore
-    global.fetch
+    (global.fetch as any)
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true, mobile_masked: "017****123" }) })
       .mockResolvedValueOnce({
         ok: true, status: 200,
@@ -66,7 +66,7 @@ describe("FarmerPortalLogin", () => {
 
   it("shows generic error on invalid/expired OTP without leaking specifics", async () => {
     // @ts-ignore
-    global.fetch
+    (global.fetch as any)
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true, mobile_masked: "017****123" }) })
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ error: "Invalid or expired code" }) });
     renderApp();
