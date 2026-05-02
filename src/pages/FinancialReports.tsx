@@ -186,8 +186,8 @@ export default function FinancialReports() {
             </div>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Code</TableHead><TableHead>Account</TableHead><TableHead>Type</TableHead>
-                <TableHead className="text-right">Debit</TableHead><TableHead className="text-right">Credit</TableHead>
+                <TableHead>{t("code")}</TableHead><TableHead>{t("account")}</TableHead><TableHead>{t("typeLabel")}</TableHead>
+                <TableHead className="text-right">{t("debitWord")}</TableHead><TableHead className="text-right">{t("creditWord")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {trial.map((r) => (
@@ -200,7 +200,7 @@ export default function FinancialReports() {
                   </TableRow>
                 ))}
                 <TableRow className="font-semibold">
-                  <TableCell colSpan={3}>Totals</TableCell>
+                  <TableCell colSpan={3}>{t("totals")}</TableCell>
                   <TableCell className="text-right">{money(trialTotals.debit)}</TableCell>
                   <TableCell className="text-right">{money(trialTotals.credit)}</TableCell>
                 </TableRow>
@@ -208,8 +208,8 @@ export default function FinancialReports() {
             </Table>
             <p className="mt-2 text-xs font-medium">
               {Math.abs(trialTotals.debit - trialTotals.credit) < 0.01
-                ? <span className="text-primary">✅ Balanced</span>
-                : <span className="text-destructive">⚠ Imbalance: {money(Math.abs(trialTotals.debit - trialTotals.credit))}</span>}
+                ? <span className="text-primary">✅ {t("balanced")}</span>
+                : <span className="text-destructive">⚠ {t("imbalance")}: {money(Math.abs(trialTotals.debit - trialTotals.credit))}</span>}
             </p>
           </CardContent></Card>
         </TabsContent>
