@@ -918,6 +918,7 @@ export type Database = {
       loan_payments: {
         Row: {
           amount: number
+          approval_note: string | null
           approved_at: string | null
           approved_by: string | null
           collected_by: string | null
@@ -930,6 +931,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          approval_note?: string | null
           approved_at?: string | null
           approved_by?: string | null
           collected_by?: string | null
@@ -942,6 +944,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          approval_note?: string | null
           approved_at?: string | null
           approved_by?: string | null
           collected_by?: string | null
@@ -964,6 +967,7 @@ export type Database = {
       }
       loans: {
         Row: {
+          approval_note: string | null
           approved_by: string | null
           created_at: string
           created_by: string | null
@@ -981,6 +985,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_note?: string | null
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
@@ -998,6 +1003,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_note?: string | null
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
