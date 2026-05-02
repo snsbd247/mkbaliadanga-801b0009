@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Building2, Users, MapPin, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
-  ScanLine, Settings as SettingsIcon, BookOpen, FileText,
+  ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -34,12 +34,14 @@ export function AppSidebar() {
     { url: "/cashbook", icon: BookOpen, label: t("cashbook"), key: "reports" as const },
     { url: "/scan", icon: ScanLine, label: t("scanQr"), key: "payments" as const },
     { url: "/reports", icon: FileBarChart, label: t("reports"), key: "reports" as const },
+    { url: "/dues", icon: AlertTriangle, label: "Dues", key: "reports" as const },
   ].filter((x) => can(x.key, "can_view"));
 
   const admin = [
     ...(can("offices") ? [{ url: "/offices", icon: Building2, label: t("offices") }] : []),
     ...(isSuper ? [{ url: "/users", icon: ShieldCheck, label: t("users") }] : []),
     ...(isSuper ? [{ url: "/settings", icon: SettingsIcon, label: t("settings") }] : []),
+    ...(isSuper ? [{ url: "/backup", icon: Database, label: "Backup" }] : []),
     ...(isSuper ? [{ url: "/audit", icon: ScrollText, label: t("auditLogs") }] : []),
   ];
 

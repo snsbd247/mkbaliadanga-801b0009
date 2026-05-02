@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, Al
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
 
@@ -14,6 +15,9 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stat[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
+  const [trend, setTrend] = useState<any[]>([]);
+  const [topDues, setTopDues] = useState<any[]>([]);
+  const [composition, setComposition] = useState<any[]>([]);
 
   useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, []);
 
@@ -61,7 +65,58 @@ export default function Dashboard() {
       ...((pendingW.data ?? []).map((x: any) => ({ ...x, kind: "withdraw" }))),
       ...((pendingL.data ?? []).map((x: any) => ({ ...x, kind: "loan" }))),
     ]);
+
+    // Trend: last 6 months
+    const months: { key: string; label: string; income: number; expense: number; savings: number }[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        label: d.toLocaleString("en", { month: "short" }),
+        income: 0, expense: 0, savings: 0,
+      });
+    }
+    const fromIso = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
+    const [pAll, eAll, sAll] = await Promise.all([
+      supabase.from("payments").select("amount,created_at").gte("created_at", fromIso),
+      supabase.from("expenses").select("amount,expense_date").gte("expense_date", fromIso),
+      supabase.from("savings_transactions").select("type,amount,txn_date,status").eq("status", "approved").gte("txn_date", fromIso),
+    ]);
+    (pAll.data ?? []).forEach((p: any) => {
+      const m = months.find(x => x.key === p.created_at.slice(0, 7)); if (m) m.income += Number(p.amount || 0);
+    });
+    (eAll.data ?? []).forEach((e: any) => {
+      const m = months.find(x => x.key === e.expense_date.slice(0, 7)); if (m) m.expense += Number(e.amount || 0);
+    });
+    (sAll.data ?? []).forEach((s: any) => {
+      const m = months.find(x => x.key === s.txn_date.slice(0, 7));
+      if (!m) return;
+      m.savings += s.type === "deposit" ? Number(s.amount || 0) : -Number(s.amount || 0);
+    });
+    setTrend(months);
+
+    setComposition([
+      { name: "Savings", value: Math.max(0, totalSavings) },
+      { name: "Shares", value: Math.max(0, sum(sharesData, "balance")) },
+      { name: "Loan O/S", value: Math.max(0, totalLoan) },
+      { name: "Irr Due", value: Math.max(0, sum(irrData, "due_amount")) },
+    ]);
+
+    const dueMap = new Map<string, { name: string; code: string; due: number }>();
+    const { data: irrDue } = await supabase
+      .from("irrigation_charges")
+      .select("farmer_id,due_amount,farmers(name_en,farmer_code)")
+      .gt("due_amount", 0);
+    (irrDue ?? []).forEach((r: any) => {
+      const key = r.farmer_id;
+      const cur = dueMap.get(key) ?? { name: r.farmers?.name_en ?? "—", code: r.farmers?.farmer_code ?? "—", due: 0 };
+      cur.due += Number(r.due_amount); dueMap.set(key, cur);
+    });
+    setTopDues(Array.from(dueMap.values()).sort((a, b) => b.due - a.due).slice(0, 5));
   }
+
+  const pieColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--destructive))"];
 
   return (
     <>
@@ -81,6 +136,72 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <h2 className="font-semibold mb-3">Income vs Expense (last 6 months)</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                <Legend />
+                <Bar dataKey="income" fill="hsl(var(--success))" name="Income" />
+                <Bar dataKey="expense" fill="hsl(var(--destructive))" name="Expense" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <h2 className="font-semibold mb-3">Composition</h2>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={composition} dataKey="value" nameKey="name" outerRadius={80} label={(e: any) => e.name}>
+                  {composition.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <h2 className="font-semibold mb-3">Net Savings Movement</h2>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
+                <Line type="monotone" dataKey="savings" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <h2 className="font-semibold mb-3">Top 5 Dues</h2>
+          {topDues.length === 0 ? <p className="text-sm text-muted-foreground">{t("noData")}</p> : (
+            <div className="divide-y">
+              {topDues.map((d, i) => (
+                <div key={i} className="flex items-center justify-between py-2 text-sm">
+                  <div>
+                    <div className="font-medium">{d.name}</div>
+                    <div className="text-xs text-muted-foreground">{d.code}</div>
+                  </div>
+                  <div className="font-semibold text-destructive">{money(d.due)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card className="p-5">

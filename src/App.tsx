@@ -23,6 +23,8 @@ import Settings from "./pages/Settings";
 import Scan from "./pages/Scan";
 import Cashbook from "./pages/Cashbook";
 import Statement from "./pages/Statement";
+import Dues from "./pages/Dues";
+import Backup from "./pages/Backup";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -53,6 +55,8 @@ const App = () => (
                 <Route path="/scan" element={<Scan />} />
                 <Route path="/cashbook" element={<Cashbook />} />
                 <Route path="/statement" element={<Statement />} />
+                <Route path="/dues" element={<Dues />} />
+                <Route path="/backup" element={<Backup />} />
                 <Route path="/audit" element={<AuditLogs />} />
               </Route>
               <Route path="*" element={<NotFound />} />
