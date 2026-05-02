@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Trash2, MapPin } from "lucide-react";
 
-type Level = "divisions" | "districts" | "upazilas" | "unions" | "wards" | "mouzas";
+type Level = "divisions" | "districts" | "upazilas" | "unions" | "wards" | "villages" | "mouzas";
 type Row = any;
 
 const PARENT: Record<Level, { table?: Level; col?: string; label?: string }> = {
@@ -22,6 +22,7 @@ const PARENT: Record<Level, { table?: Level; col?: string; label?: string }> = {
   upazilas: { table: "districts", col: "district_id", label: "District" },
   unions:   { table: "upazilas",  col: "upazila_id",  label: "Upazila" },
   wards:    { table: "unions",    col: "union_id",    label: "Union" },
+  villages: { table: "unions",    col: "union_id",    label: "Union" },
   mouzas:   { table: "unions",    col: "union_id",    label: "Union" },
 };
 
