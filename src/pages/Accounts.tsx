@@ -465,7 +465,7 @@ export default function Accounts() {
               />
             </div>
             <div className="col-span-2">
-              <Label>বাংলা নাম</Label>
+              <Label>{t("bnName")}</Label>
               <Input
                 value={editing.name_bn || ""}
                 onChange={(e) => setEditing({ ...editing, name_bn: e.target.value })}
