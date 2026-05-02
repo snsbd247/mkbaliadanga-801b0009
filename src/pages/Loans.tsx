@@ -46,7 +46,7 @@ export default function Loans() {
     setProfiles(map);
   }
   async function save() {
-    if (!form.farmer_id || form.principal <= 0) return toast.error("Pick farmer & amount");
+    if (!form.farmer_id || form.principal <= 0) return toast.error(t("pickFarmerAndAmount"));
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
     const { error } = await supabase.from("loans").insert({
       farmer_id: form.farmer_id, principal: form.principal, interest_enabled: form.interest_enabled,
