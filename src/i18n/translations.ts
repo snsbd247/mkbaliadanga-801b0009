@@ -211,6 +211,10 @@ export const translations = {
     uniqueViolation: "Unique constraint violation — duplicate value.",
     fkInvalid: "Foreign key reference invalid.",
     checkConstraintFail: "CHECK constraint or trigger validation failed.",
+    loggedInUser: "Logged-in user",
+    crossOfficeIsolationRule: "Cross-office isolation rule",
+    crossOfficeIsolationDesc: "When a non-super user logs in, each table must show only one office_id (their own). Super admin sees every office. To test: log in as an admin/staff user and run this page.",
+    integrityScanDesc: "Will scan savings, loans, irrigation, payments, and ledger references for orphan / null farmer_id rows.",
   },
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
