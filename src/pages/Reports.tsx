@@ -164,6 +164,43 @@ export default function Reports() {
     ];
   }, [irr, loanPayments, savings, payments]);
 
+  // --- Irrigation Arrears (per charge with due > 0, aged) ---
+  const arrears = useMemo(() => {
+    const today = Date.now();
+    return irr
+      .filter((r: any) => Number(r.due_amount || 0) > 0)
+      .map((r: any) => {
+        const days = Math.max(0, Math.floor((today - new Date(r.entry_date).getTime()) / 86400000));
+        const bucket = days <= 30 ? "0-30" : days <= 60 ? "30-60" : days <= 90 ? "60-90" : "90+";
+        return {
+          date: r.entry_date,
+          code: r.farmers?.farmer_code ?? "—",
+          name: r.farmers?.name_en ?? "—",
+          season: r.seasons ? `${r.seasons.name} ${r.seasons.year}` : "—",
+          dag: r.lands?.dag_no ?? "—",
+          total: Number(r.total || 0),
+          paid: Number(r.paid_amount || 0),
+          due: Number(r.due_amount || 0),
+          days, bucket,
+        };
+      })
+      .sort((a, b) => b.due - a.due);
+  }, [irr]);
+
+  // --- Savings Balance per Farmer ---
+  const balances = useMemo(() => {
+    const m = new Map<string, { id: string; name: string; code: string; deposit: number; withdraw: number; balance: number }>();
+    for (const r of savings) {
+      if (r.status !== "approved") continue;
+      const id = r.farmer_id;
+      const cur = m.get(id) ?? { id, name: r.farmers?.name_en ?? "—", code: r.farmers?.farmer_code ?? "—", deposit: 0, withdraw: 0, balance: 0 };
+      if (r.type === "deposit") cur.deposit += Number(r.amount); else cur.withdraw += Number(r.amount);
+      cur.balance = cur.deposit - cur.withdraw;
+      m.set(id, cur);
+    }
+    return Array.from(m.values()).sort((a, b) => b.balance - a.balance);
+  }, [savings]);
+
   function filterTitleSuffix() {
     const parts: string[] = [];
     if (from || to) parts.push(`${from || "…"}→${to || "…"}`);
@@ -338,6 +375,80 @@ export default function Reports() {
           <Card><Table>
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("type")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
             <TableBody>{savings.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.txn_date)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.type}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
+          </Table></Card>
+        </TabsContent>
+
+        <TabsContent value="arrears">
+          <ExportBar
+            onPdf={() => exportTablePDF(`Irrigation Arrears${filterTitleSuffix()}`,
+              ["Date", "Code", "Farmer", "Season", "Dag", "Total", "Paid", "Due", "Age", "Bucket"],
+              arrears.map(r => [fmtDate(r.date), r.code, r.name, r.season, r.dag, r.total, r.paid, r.due, `${r.days}d`, r.bucket]))}
+            onXlsx={() => exportExcel("irrigation-arrears", "Arrears",
+              arrears.map(r => ({ Date: r.date, Code: r.code, Farmer: r.name, Season: r.season, Dag: r.dag, Total: r.total, Paid: r.paid, Due: r.due, AgeDays: r.days, Bucket: r.bucket })))}
+          />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+            {(["0-30", "30-60", "60-90", "90+"] as const).map(b => {
+              const sum = arrears.filter(r => r.bucket === b).reduce((a, r) => a + r.due, 0);
+              return (
+                <Card key={b} className="p-3"><div className="text-xs uppercase text-muted-foreground">{b} days</div><div className="text-lg font-bold">{money(sum)}</div></Card>
+              );
+            })}
+            <Card className="p-3 bg-destructive/5"><div className="text-xs uppercase text-destructive">Total Arrears</div><div className="text-lg font-bold text-destructive">{money(arrears.reduce((a, r) => a + r.due, 0))}</div></Card>
+          </div>
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>{t("date")}</TableHead><TableHead>Code</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
+              <TableHead className="text-right">{t("total")}</TableHead>
+              <TableHead className="text-right">{t("paidAmount")}</TableHead>
+              <TableHead className="text-right">{t("dueAmount")}</TableHead>
+              <TableHead>Age</TableHead><TableHead>Bucket</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>{arrears.map((r, i) => (
+              <TableRow key={i}>
+                <TableCell>{fmtDate(r.date)}</TableCell>
+                <TableCell className="font-mono text-xs">{r.code}</TableCell>
+                <TableCell>{r.name}</TableCell>
+                <TableCell>{r.season}</TableCell>
+                <TableCell>{r.dag}</TableCell>
+                <TableCell className="text-right">{money(r.total)}</TableCell>
+                <TableCell className="text-right text-success">{money(r.paid)}</TableCell>
+                <TableCell className="text-right due-text font-semibold">{money(r.due)}</TableCell>
+                <TableCell>{r.days}d</TableCell>
+                <TableCell>{r.bucket}</TableCell>
+              </TableRow>
+            ))}
+            {arrears.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">No arrears</TableCell></TableRow>}
+            </TableBody>
+          </Table></Card>
+        </TabsContent>
+
+        <TabsContent value="balances">
+          <ExportBar
+            onPdf={() => exportTablePDF(`Savings Balances${filterTitleSuffix()}`,
+              ["Code", "Farmer", "Total Deposit", "Total Withdraw", "Balance"],
+              balances.map(r => [r.code, r.name, r.deposit, r.withdraw, r.balance]))}
+            onXlsx={() => exportExcel("savings-balances", "Balances",
+              balances.map(r => ({ Code: r.code, Farmer: r.name, Deposit: r.deposit, Withdraw: r.withdraw, Balance: r.balance })))}
+          />
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>Code</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead className="text-right">Total Deposit</TableHead>
+              <TableHead className="text-right">Total Withdraw</TableHead>
+              <TableHead className="text-right">{t("balance")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>{balances.map(r => (
+              <TableRow key={r.id}>
+                <TableCell className="font-mono text-xs">{r.code}</TableCell>
+                <TableCell>{r.name}</TableCell>
+                <TableCell className="text-right text-success">{money(r.deposit)}</TableCell>
+                <TableCell className="text-right">{money(r.withdraw)}</TableCell>
+                <TableCell className="text-right font-semibold text-primary">{money(r.balance)}</TableCell>
+              </TableRow>
+            ))}
+            {balances.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
 
