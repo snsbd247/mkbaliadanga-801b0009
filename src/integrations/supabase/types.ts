@@ -2120,6 +2120,7 @@ export type Database = {
         }[]
       }
       current_user_office: { Args: never; Returns: string }
+      data_integrity_scan: { Args: never; Returns: Json }
       email_for_username: { Args: { _username: string }; Returns: string }
       get_previous_due: {
         Args: { _exclude_season: string; _farmer: string; _land: string }
