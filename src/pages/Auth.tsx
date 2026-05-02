@@ -253,6 +253,8 @@ export default function AuthPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
+      <SiteFooter />
     </div>
   );
 }
