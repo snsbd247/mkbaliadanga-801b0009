@@ -249,7 +249,7 @@ export default function Diagnostics() {
           <Card className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Savings, loans, irrigation, payments এবং ledger references এ orphan / null farmer_id scan করা হবে।
+                {t("integrityScanDesc")}
               </div>
               <Button onClick={runIntegrityScan} disabled={scanBusy}>
                 {scanBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
