@@ -235,10 +235,9 @@ export default function Diagnostics() {
                   </TableBody>
                 </Table>
                 <Alert>
-                  <AlertTitle>Cross-office isolation নিয়ম</AlertTitle>
+                  <AlertTitle>{t("crossOfficeIsolationRule")}</AlertTitle>
                   <AlertDescription className="text-xs">
-                    Non-super user যখন লগইন করবে, প্রতিটা টেবিলে শুধু একটা office_id দেখা উচিত (তার নিজের)। Super admin সব office দেখতে পারে।
-                    Test করতে চাইলে: একজন admin/staff role এর user দিয়ে লগইন করে এই পেজ চালান।
+                    {t("crossOfficeIsolationDesc")}
                   </AlertDescription>
                 </Alert>
               </>
