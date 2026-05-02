@@ -97,7 +97,7 @@ export default function Users() {
   }
 
   async function deleteUser(u: any) {
-    if (u.id === me?.id) return toast.error("You cannot delete yourself");
+    if (u.id === me?.id) return toast.error(t("cannotDeleteSelf"));
     if (!confirm(`Delete ${u.username || u.email}? This cannot be undone.`)) return;
     const ok = await callAdmin({ action: "delete", user_id: u.id });
     if (!ok) return;
