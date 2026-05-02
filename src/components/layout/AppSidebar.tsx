@@ -171,7 +171,7 @@ export function AppSidebar() {
                         <SidebarMenuButton
                           tooltip={parent.label}
                           isActive={hasActiveChild && !isOpen}
-                          className="group/parent"
+                          className="group/parent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1"
                         >
                           <parent.icon className="h-4 w-4" />
                           <span>{parent.label}</span>
