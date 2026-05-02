@@ -7,8 +7,25 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { useAuth } from "@/auth/AuthProvider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
+
+function NoOfficeBanner() {
+  const { rolesLoaded, officeId, isSuper, isAdmin, roles } = useAuth();
+  if (!rolesLoaded || isSuper) return null;
+  const isAssignableRole = isAdmin || roles.includes("staff") || roles.includes("committee");
+  if (!isAssignableRole || officeId) return null;
+  return (
+    <Alert className="mb-4 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30">
+      <AlertTriangle className="h-4 w-4 text-amber-600" />
+      <AlertDescription>
+        Your account is not assigned to any office. You won't see office-scoped data until a Super Admin assigns you on the Users page.
+      </AlertDescription>
+    </Alert>
+  );
+}
 
 export default function Dashboard() {
   const { t } = useLang();
@@ -121,6 +138,7 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
+      <NoOfficeBanner />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="stat-card">

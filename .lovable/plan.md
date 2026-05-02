@@ -1,111 +1,78 @@
-# Plan: Audit Export, Receipts, QR Rotation, Reconciliation
+## Overview
 
-Four focused enhancements that build on existing modules without breaking them.
-
----
-
-## 1. AuditLogs CSV — Localized Headers & Consistent Names
-
-**File**: `src/pages/AuditLogs.tsx`
-
-- Detect current language from `i18n` (existing `useTranslation` hook).
-- Add bilingual header map:
-  ```
-  date | তারিখ
-  action | কার্যক্রম
-  entity | বিষয়
-  office | অফিস
-  farmer_code | কৃষক কোড
-  farmer_name | কৃষকের নাম
-  user | ব্যবহারকারী
-  details | বিবরণ
-  ```
-- Pre-fetch maps for offices (`id → name`) and farmers (`id → {code, name_en, name_bn}`) for rows currently displayed, then build the CSV from those maps so names are consistent (no raw UUIDs).
-- UTF-8 BOM prefix so Excel renders Bangla correctly.
+Five separate admin/UX improvements, each shipped in its own scoped change. None requires schema changes — we reuse the existing `user_permissions`, `profiles.office_id`, and `LanguageProvider`.
 
 ---
 
-## 2. PDF Receipt After Successful Scan Payment
+### 1. Non-destructive Demo Reset (with preview)
 
-**Files**:
-- New: `src/lib/paymentReceiptPdf.ts` (jsPDF — already a dependency)
-- Edit: `src/pages/ScanPayment.tsx`
+**New page**: `src/pages/admin/DemoReset.tsx` (Super Admin only)
 
-After a successful payment insert:
-- Build a receipt object: `{ receipt_no (payment.id short), date, farmer (code+name), token (masked, e.g. `mkc_…last4`), token_status: 'active', kind, amount, method, collected_by, idempotency_key }`.
-- Auto-generate PDF (A5) and offer **Download Receipt** button on the success card.
-- Reuse the existing success/failure UI; do not change submission logic.
+- On load, fetch live counts (preview) for tables that will be wiped: `farmers`, `lands`, `loans`, `loan_payments`, `payments`, `savings_transactions`, `irrigation_charges`, `expenses`, `ledger_entries`, `journal_entries`, `payment_allocations`, `receipts`, `notifications`, `audit_logs`.
+- Show a table: *Table | Current rows | After reset (demo count)*.
+- "Reset to demo data" button → confirmation dialog requiring typing `RESET` → calls a new edge function `demo-reset` that runs the same wipe + reseed SQL we used previously, behind a `super_admin` guard.
+- Preserves: locations, offices, accounts, roles, profiles, settings.
+- Route: `/admin/demo-reset`. Sidebar link under Admin.
 
----
-
-## 3. Scheduled QR Token Rotation (Admin)
-
-**DB migration**:
-- New table `qr_rotation_settings` (single row id=1):
-  - `enabled boolean`, `interval_days int default 90`, `grace_hours int default 24`, `last_run_at timestamptz`, `updated_by uuid`.
-  - RLS: read for authenticated; manage by super_admin.
-- Add `expires_at timestamptz` and `rotated_from uuid` (nullable) to `qr_tokens` for safe overlap.
-
-**New edge function**: `qr-rotate-scheduled` (service role)
-- For every farmer with an active token older than `interval_days`:
-  1. Issue a new token (reuse logic from `farmer-card-token`).
-  2. Set old token `expires_at = now() + grace_hours` (do not revoke immediately — allows in-flight cards to keep working briefly).
-  3. After grace window, mark expired tokens `revoked = true`.
-- Log each rotation in `audit_logs` (`entity='qr_tokens'`, `action='rotate'|'revoke'`).
-
-**Update `qr-resolve-token`**: treat tokens with `expires_at < now()` OR `revoked = true` as `410 Gone`.
-
-**Cron**: schedule `qr-rotate-scheduled` daily via `pg_cron + pg_net` (using `supabase--insert`, not migration, since it embeds the anon key).
-
-**Admin UI**: New section in `src/pages/Settings.tsx` (or new `/admin/qr-rotation`) with toggle, interval, grace-hours, "Run now" button (calls function), and last-run timestamp.
+**Edge function**: `supabase/functions/demo-reset/index.ts` — verifies caller is `super_admin`, then runs the wipe+seed via service role.
 
 ---
 
-## 4. Monthly Ledger Reconciliation Report
+### 2. Bangla/English verification + login language toggle
 
-**New edge function**: `ledger-reconcile-monthly`
-- Inputs: `{ year, month, office_id? }`
-- Computes per office:
-  - Opening balance per account (sum of ledger before month start).
-  - Period debits/credits per account.
-  - Closing balance.
-  - Mismatches: unbalanced refs (`ledger_unbalanced_refs`) within month, orphan refs (`ledger_orphan_refs`), and any reference whose source-table sum (loans/payments/savings/irrigation/expenses) ≠ posted ledger sum.
-- Returns JSON with `accounts[]`, `mismatches[]`, `summary {total_debit,total_credit,diff}`.
-
-**New page**: `src/pages/LedgerReconciliation.tsx` (route `/admin/reconciliation`, admin/super_admin only)
-- Filters: month picker, office select.
-- Table of accounts with opening/debit/credit/closing.
-- Highlighted mismatches panel (red badges).
-- Export buttons:
-  - **CSV** — bilingual headers, BOM, includes mismatches as second section.
-  - **PDF** — using jsPDF autotable: header (office, period), summary, accounts table, mismatches table.
-
-Add link in admin sidebar.
+- Audit `src/i18n/translations.ts` and add any missing keys used in nav and forms (sidebar items, common form labels).
+- `Auth.tsx` already imports `useLang` — add a visible **EN / বাংলা** toggle button at the top of the login card (same component as `FarmerPortalLogin`).
+- Add the same toggle to `FarmerPortalLogin` and `ResetPassword`.
+- Add a small `<LanguageToggle />` shared component in `src/components/LanguageToggle.tsx`.
 
 ---
 
-## Technical Notes
+### 3. Role-Permission Matrix screen
 
-- All edge functions: service-role client, CORS headers from `@supabase/supabase-js/cors`, Zod validation, JWT check for admin endpoints.
-- No changes to existing trigger logic — reconciliation is read-only.
-- Reuse `jsPDF` (already used by `cardPdf.ts`); add `jspdf-autotable` if not present.
-- Audit logging continues via existing `audit_trigger` for new table writes.
+**New page**: `src/pages/admin/RoleMatrix.tsx` (Super Admin only).
 
-## Files Touched
+- Grid: rows = `ALL_MODULES`, columns = roles (Super Admin / Admin / Staff) × actions (View/Add/Edit/Delete).
+- Super Admin row is locked (always full).
+- Edits update a new `role_permissions` table (one row per role+module). On save, the existing `usePermissions` hook falls back to these role defaults instead of the hardcoded `staffDefaults` map.
 
-**Created**
-- `src/lib/paymentReceiptPdf.ts`
-- `src/pages/LedgerReconciliation.tsx`
-- `supabase/functions/qr-rotate-scheduled/index.ts`
-- `supabase/functions/ledger-reconcile-monthly/index.ts`
-- 2 migrations (qr_rotation_settings + qr_tokens columns)
+**Migration**: create `public.role_permissions (role app_role, module text, can_view, can_add, can_edit, can_delete, PK(role,module))` with RLS — read by all authenticated, write by super_admin only. Seed with current staff/admin defaults.
 
-**Edited**
-- `src/pages/AuditLogs.tsx` (CSV localization)
-- `src/pages/ScanPayment.tsx` (receipt button)
-- `src/pages/Settings.tsx` (QR rotation admin panel)
-- `src/App.tsx` (new route + sidebar link)
-- `supabase/functions/qr-resolve-token/index.ts` (expires_at check)
-- `supabase/config.toml` (function entries)
+**Code update**: `src/lib/permissions.ts` — load role_permissions once and use them as the fallback before the hardcoded map.
 
-Awaiting approval to proceed.
+Route: `/admin/role-matrix`. Sidebar link under Admin.
+
+---
+
+### 4. Office assignment UI + login verification
+
+- **Users page enhancement**: the create form already has `office_id`; add an inline "Office" dropdown directly in the user list row (not just in dialog) so admins can reassign quickly. Save updates `profiles.office_id` via the existing `admin-users` edge function (add an `update_office` action if missing).
+- **Login verification**: in `AuthProvider.loadProfile`, after roles+office load, if user has `admin` or `staff` role but `office_id` is null, surface a toast on the dashboard ("No office assigned — contact a super admin"). Block writes by relying on existing RLS, but show a clear banner on `Dashboard.tsx`.
+
+---
+
+### 5. Admin login always lands on Admin dashboard
+
+Currently `/` is `FarmerPortalLogin`. After admin signs in via `/auth`, `Auth.tsx` already navigates to `/admin`. The issue is users hitting `/` while already logged in as admin still see the farmer portal.
+
+- In `FarmerPortalLogin`, on mount check `useAuth()`: if `user` exists AND has any admin role (`isAdmin || isCommittee || isSuper`), redirect to `/admin`.
+- In `AppLayout`, if user has no admin role at all (pure farmer), redirect to `/`.
+- Add a small "Admin Login" link on the farmer portal page → `/auth` (probably already there, verify).
+
+---
+
+## Technical details
+
+- **Files added**: `src/pages/admin/DemoReset.tsx`, `src/pages/admin/RoleMatrix.tsx`, `src/components/LanguageToggle.tsx`, `supabase/functions/demo-reset/index.ts`.
+- **Files edited**: `src/App.tsx` (routes), `src/components/layout/AppSidebar.tsx` (links), `src/pages/Auth.tsx` + `FarmerPortalLogin.tsx` + `ResetPassword.tsx` (language toggle), `src/auth/AuthProvider.tsx` (no-office warning state), `src/lib/permissions.ts` (role_permissions fallback), `src/pages/Users.tsx` (inline office dropdown), `src/pages/Dashboard.tsx` (banner), `src/i18n/translations.ts` (missing keys).
+- **DB migration**: add `role_permissions` table + RLS + seed.
+
+## Order of execution
+
+1. Migration (role_permissions)
+2. Edge function (demo-reset)
+3. Shared `LanguageToggle` component
+4. New pages (DemoReset, RoleMatrix)
+5. Wire routes + sidebar
+6. Auth flow tweaks (FarmerPortalLogin redirect, office warning banner)
+7. Users page inline office dropdown
+8. Translations top-up

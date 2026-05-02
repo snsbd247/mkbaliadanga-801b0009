@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBranding } from "@/lib/branding";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 // Strong password rules — enforced client-side; HIBP checked server-side.
 const MIN_LEN = 10;
@@ -85,6 +86,9 @@ export default function ResetPassword() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-surface p-4">
       <div className="w-full max-w-md">
+        <div className="flex justify-end mb-2">
+          <LanguageToggle />
+        </div>
         <div className="mb-6 text-center">
           {brand.logo_url ? (
             <img src={brand.logo_url} alt={brand.company_name} className="mx-auto mb-3 h-14 w-14 rounded-xl object-cover shadow-elegant" />
