@@ -235,7 +235,7 @@ export default function Cashbook() {
           </div>
         </div>
         <div className="flex gap-2 mt-3">
-          <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />Print</Button>
+          <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
           <Button size="sm" variant="outline" onClick={() => exportAuditReportPDF({
             brand: { company_name: brand.company_name, address: brand.address ?? "" },
             range: rangeLabel(),
