@@ -1,5 +1,6 @@
 import { QRCodeSVG } from "qrcode.react";
 import { User } from "lucide-react";
+import { TEMPLATES, type TemplateId } from "./templates";
 
 export interface CardData {
   company_name: string;
@@ -19,31 +20,44 @@ export interface CardData {
   issued_at: string;
 }
 
-/** Standard CR80 card: 85.6mm × 54mm. We render it in mm via inline width/height + a wrapper. */
-export function MembershipCard({ data }: { data: CardData }) {
+interface Props {
+  data: CardData;
+  templateId?: TemplateId;
+}
+
+/** Standard CR80 card: 85.6mm × 54mm. */
+export function MembershipCard({ data, templateId = "classic" }: Props) {
   const f = data.farmer;
   const issued = new Date(data.issued_at).toLocaleDateString();
+  const tpl = TEMPLATES[templateId] ?? TEMPLATES.classic;
+  const headerTitle = tpl.bnFirst
+    ? data.company_name_bn || data.company_name
+    : data.company_name;
+  const headerSub = tpl.bnFirst
+    ? data.company_name
+    : data.company_name_bn;
 
   return (
-    <div className="flex flex-wrap gap-4 print:gap-2" data-testid="membership-card">
+    <div className="flex flex-wrap gap-4 print:gap-2" data-testid="membership-card" data-template={templateId}>
       {/* FRONT */}
       <div
-        className="bg-white text-gray-900 rounded-lg shadow-elegant overflow-hidden border print:shadow-none"
+        className={`bg-white text-gray-900 rounded-lg shadow-elegant overflow-hidden border print:shadow-none ${tpl.bodyFontClass}`}
         style={{ width: "85.6mm", height: "54mm" }}
       >
-        <div className="h-full flex flex-col p-2">
-          <div className="flex items-center gap-2 border-b pb-1">
+        <div className="h-full flex flex-col">
+          <div className={`flex items-center gap-2 px-2 py-1 ${tpl.headerClass}`}>
             {data.logo_url ? (
               <img src={data.logo_url} alt="" className="h-6 w-6 rounded object-cover" crossOrigin="anonymous" />
             ) : (
-              <div className="h-6 w-6 rounded bg-emerald-600" />
+              <div className="h-6 w-6 rounded bg-white/20" />
             )}
             <div className="text-[9px] leading-tight font-semibold truncate">
-              {data.company_name_bn || data.company_name}
-              <div className="text-[7px] font-normal text-gray-500 truncate">Member ID Card</div>
+              {headerTitle}
+              {headerSub && <div className="text-[7px] font-normal opacity-80 truncate">{headerSub}</div>}
             </div>
+            <div className="ml-auto text-[7px] opacity-80">Member ID</div>
           </div>
-          <div className="flex-1 flex items-center gap-2 mt-1">
+          <div className="flex-1 flex items-center gap-2 p-2">
             <div className="h-16 w-12 shrink-0 rounded border bg-gray-50 overflow-hidden flex items-center justify-center">
               {f.photo_url ? (
                 <img src={f.photo_url} alt="" className="h-full w-full object-cover" crossOrigin="anonymous" />
@@ -64,7 +78,7 @@ export function MembershipCard({ data }: { data: CardData }) {
 
       {/* BACK */}
       <div
-        className="bg-white text-gray-900 rounded-lg shadow-elegant overflow-hidden border print:shadow-none"
+        className={`bg-white text-gray-900 rounded-lg shadow-elegant overflow-hidden border print:shadow-none ${tpl.bodyFontClass}`}
         style={{ width: "85.6mm", height: "54mm" }}
       >
         <div className="h-full flex p-2 gap-2">
