@@ -180,6 +180,29 @@ export default function SmsSettings() {
         </Card>
 
         <Card className="lg:col-span-2">
+          <CardHeader><CardTitle className="text-base">Message Templates (English)</CardTitle></CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {tplFields.map((f) => {
+              const enKey = (f.key + "_en") as keyof Settings;
+              return (
+                <div key={enKey}>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-sm">{f.label}</Label>
+                    <span className="text-[10px] text-muted-foreground">vars: {TEMPLATE_VARS[f.key]?.join(", ")}</span>
+                  </div>
+                  <Textarea
+                    value={(s as any)[enKey] ?? ""}
+                    onChange={(e) => set(enKey, e.target.value as any)}
+                    rows={3}
+                    className="text-sm"
+                  />
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Send className="h-4 w-4"/>Send Test SMS</CardTitle></CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3 sm:items-end">
             <div>
