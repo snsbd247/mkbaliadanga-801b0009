@@ -37,14 +37,14 @@ export function clearRlsErrors() {
 function policyHintFor(code?: string, msg?: string): string | undefined {
   if (!code && !msg) return;
   if (code === "42501") {
-    if (msg?.includes("function")) return "RLS helper function এর EXECUTE permission নেই — anon/authenticated কে GRANT EXECUTE করতে হবে।";
-    return "Row-Level Security policy block করেছে — office_id mismatch বা role check ফেইল।";
+    if (msg?.includes("function")) return "rlsHelperFnNoExecute";
+    return "rlsPolicyBlocked";
   }
-  if (code === "PGRST301") return "JWT expired বা invalid — পুনরায় লগইন করুন।";
-  if (code === "PGRST116") return "Row not found বা RLS USING clause match করেনি।";
-  if (code === "23505") return "Unique constraint violation — duplicate value।";
-  if (code === "23503") return "Foreign key reference invalid।";
-  if (code === "23514") return "CHECK constraint বা trigger validation fail।";
+  if (code === "PGRST301") return "jwtExpired";
+  if (code === "PGRST116") return "rowNotFoundOrRls";
+  if (code === "23505") return "uniqueViolation";
+  if (code === "23503") return "fkInvalid";
+  if (code === "23514") return "checkConstraintFail";
   return;
 }
 
