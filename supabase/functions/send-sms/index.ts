@@ -41,9 +41,10 @@ function normalizeBdMobile(m: string): string {
 }
 
 async function sendViaGreenWeb(mobile: string, message: string, senderId?: string | null): Promise<{ ok: boolean; resp: string }> {
-  if (!GW_TOKEN) return { ok: false, resp: "Missing GREENWEB_SMS_TOKEN" };
+  const token = await getGreenWebToken();
+  if (!token) return { ok: false, resp: "Missing GreenWeb API token. Configure it in SMS Settings." };
   const params = new URLSearchParams({
-    token: GW_TOKEN,
+    token,
     to: normalizeBdMobile(mobile),
     message,
   });
