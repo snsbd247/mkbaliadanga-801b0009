@@ -266,11 +266,13 @@ export default function Cashbook() {
 
         <TabsContent value="cashbook">
           <ExportBar
-            onPdf={() => exportTablePDF(`Cash Book ${rangeLabel()}`,
+            onPdf={() => exportTablePDF("Cash Book",
               ["Date", "Kind", "Description", "Ref", "Income", "Expense", "Balance"],
-              cashbookEntries.map(r => [fmtDate(r.date), r.kind, r.label, r.ref, r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]))}
-            onXlsx={() => exportExcel("cashbook", "Cashbook",
-              cashbookEntries.map(r => ({ Date: r.date, Kind: r.kind, Description: r.label, Ref: r.ref, Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })))}
+              cashbookEntries.map(r => [fmtDate(r.date), r.kind, r.label, r.ref, r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
+              { from, to })}
+            onXlsx={() => exportExcel("cash-book", "Cashbook",
+              cashbookEntries.map(r => ({ Date: r.date, Kind: r.kind, Description: r.label, Ref: r.ref, Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })),
+              { from, to })}
           />
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
@@ -315,8 +317,8 @@ export default function Cashbook() {
 
         <TabsContent value="receipts">
           <ExportBar
-            onPdf={() => exportTablePDF(`Receipts ${rangeLabel()}`, ["Receipt #", "Date", "Kind", "Farmer", "Amount", "Method"], receipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), KIND_LABEL[x.kind as Kind] ?? x.kind, x.farmers?.name_en ?? "—", x.amount, x.method]))}
-            onXlsx={() => exportExcel("receipts", "Receipts", receipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: KIND_LABEL[x.kind as Kind] ?? x.kind, Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })))}
+            onPdf={() => exportTablePDF("Receipts", ["Receipt #", "Date", "Kind", "Farmer", "Amount", "Method"], receipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), KIND_LABEL[x.kind as Kind] ?? x.kind, x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
+            onXlsx={() => exportExcel("receipts", "Receipts", receipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: KIND_LABEL[x.kind as Kind] ?? x.kind, Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
           />
           <Card><Table>
             <TableHeader><TableRow>
@@ -342,8 +344,8 @@ export default function Cashbook() {
 
         <TabsContent value="expenses">
           <ExportBar
-            onPdf={() => exportTablePDF(`Expenses ${rangeLabel()}`, ["Date", "Head", "Payee", "Amount", "Method"], expenses.map(x => [fmtDate(x.expense_date), x.head, x.payee ?? "—", x.amount, x.method]))}
-            onXlsx={() => exportExcel("expenses", "Expenses", expenses.map(x => ({ Date: x.expense_date, Head: x.head, Payee: x.payee, Amount: x.amount, Method: x.method, Note: x.note })))}
+            onPdf={() => exportTablePDF("Expenses", ["Date", "Head", "Payee", "Amount", "Method"], expenses.map(x => [fmtDate(x.expense_date), x.head, x.payee ?? "—", x.amount, x.method]), { from, to })}
+            onXlsx={() => exportExcel("expenses", "Expenses", expenses.map(x => ({ Date: x.expense_date, Head: x.head, Payee: x.payee, Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
           />
           <Card><Table>
             <TableHeader><TableRow>
@@ -369,7 +371,7 @@ export default function Cashbook() {
         <TabsContent value="audit">
           <div className="flex justify-end gap-2 mb-3 print:hidden">
             <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
-            <Button size="sm" variant="outline" onClick={() => exportTablePDF(`Audit Report ${rangeLabel()}`,
+            <Button size="sm" variant="outline" onClick={() => exportTablePDF("Audit Report",
               ["Section", "Amount"],
               [
                 ["Total Income", totals.income],
@@ -382,7 +384,8 @@ export default function Cashbook() {
                 ["Irrigation Charged", totals.irrCharged],
                 ["Irrigation Collected", totals.irrCollected],
                 ["Irrigation Outstanding (Due)", totals.irrDue],
-              ])}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
+              ],
+              { from, to })}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
           </div>
           <Card className="p-6 print:shadow-none print:border-0">
             <div className="text-center mb-6">
