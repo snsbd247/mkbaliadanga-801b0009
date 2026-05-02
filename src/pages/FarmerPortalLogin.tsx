@@ -95,8 +95,7 @@ export default function FarmerPortalLogin() {
     <div className="min-h-screen bg-gradient-surface flex flex-col">
       <div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="flex justify-between items-center mb-2">
-          <a href="/auth" className="text-xs text-primary underline">Admin Login →</a>
+        <div className="flex justify-end items-center mb-2">
           <LanguageToggle />
         </div>
         <div className="mb-6 text-center">
