@@ -9,8 +9,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Eye, Search, Upload } from "lucide-react";
+import { Plus, Eye, Search, Upload, IdCard, Trash2 } from "lucide-react";
 import { LocationPicker, LocationValue } from "@/components/locations/LocationPicker";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
@@ -63,7 +64,13 @@ export default function Farmers() {
     const { data, error } = await supabase.from("farmers").insert(payload).select().single();
     if (error) return toast.error(error.message);
     if (data) await supabase.from("shares").insert({ farmer_id: data.id, balance: 0 });
-    toast.success(t("saved")); setOpen(false); setPhoto(null); load();
+  }
+
+  async function remove(id: string) {
+    const { error } = await supabase.from("farmers").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted");
+    load();
   }
 
   return (
@@ -135,7 +142,31 @@ export default function Farmers() {
                 <TableCell>{f.village}</TableCell>
                 <TableCell className="text-xs">{f.offices?.name}</TableCell>
                 <TableCell><Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status}</Badge></TableCell>
-                <TableCell className="text-right"><Button size="icon" variant="ghost"><Eye className="h-4 w-4" /></Button></TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button size="icon" variant="ghost" title="View" onClick={() => nav(`/farmers/${f.id}`)}><Eye className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" title="Membership card" onClick={() => nav(`/farmers/${f.id}/card`)}><IdCard className="h-4 w-4" /></Button>
+                    {isSuper && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete farmer?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This permanently deletes <span className="font-mono">{f.farmer_code}</span>. Linked records will be affected. This cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => remove(f.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {list.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
