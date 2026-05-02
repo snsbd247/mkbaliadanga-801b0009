@@ -18,6 +18,7 @@ import { Lock, Unlock, RefreshCw, FileDown, Eye } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Period = {
   id: string;
@@ -42,6 +43,7 @@ type Office = { id: string; name: string };
 const NONE = "__none__";
 
 export default function PeriodClose() {
+  const { t } = useLang();
   const { isSuper } = useAuth();
   const [periods, setPeriods] = useState<Period[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
