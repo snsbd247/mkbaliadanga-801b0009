@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
@@ -17,53 +16,27 @@ export default function AuthPage() {
   const { user } = useAuth();
   const { t, lang, setLang } = useLang();
   const brand = useBranding();
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
-  const [signupEmail, setSignupEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { document.title = `${t("login")} — ${brand.company_name}`; }, [t, brand.company_name]);
   useEffect(() => { if (user) nav("/", { replace: true }); }, [user, nav]);
 
-  async function resolveEmail(input: string): Promise<string | null> {
-    if (input.includes("@")) return input;
-    const { data, error } = await supabase.rpc("email_for_username", { _username: input });
-    if (error) return null;
-    return (data as string) || null;
-  }
-
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    const u = username.trim();
+    if (!u || !password) return toast.error("Username and password required");
     setBusy(true);
-    const email = await resolveEmail(identifier.trim());
-    if (!email) { setBusy(false); return toast.error("Username not found"); }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else { toast.success(t("welcomeBack")); nav("/", { replace: true }); }
-  };
-
-  const signUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim()) return toast.error("Username required");
-    setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: signupEmail,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: fullName, username: username.trim() },
-      },
-    });
-    if (!error && data.user) {
-      // Save username on profile (handle_new_user creates the row)
-      await supabase.from("profiles").update({ username: username.trim() }).eq("id", data.user.id);
+    const { data: emailData, error: lookupErr } = await supabase.rpc("email_for_username", { _username: u });
+    if (lookupErr || !emailData) {
+      setBusy(false);
+      return toast.error("Invalid username or password");
     }
+    const { error } = await supabase.auth.signInWithPassword({ email: emailData as string, password });
     setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("Account created — check your email if confirmation is required.");
+    if (error) toast.error("Invalid username or password");
+    else { toast.success(t("welcomeBack")); nav("/", { replace: true }); }
   };
 
   return (
@@ -85,35 +58,34 @@ export default function AuthPage() {
         </div>
 
         <Card className="p-6 shadow-elegant">
-          <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">{t("login")}</TabsTrigger>
-              <TabsTrigger value="signup">{t("signup")}</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin" className="mt-4">
-              <p className="text-sm text-muted-foreground mb-4">{t("signInDesc")}</p>
-              <form onSubmit={signIn} className="space-y-3">
-                <div>
-                  <Label>Username or Email</Label>
-                  <Input required value={identifier} onChange={e => setIdentifier(e.target.value)} placeholder="username or you@example.com" />
-                </div>
-                <div><Label>{t("password")}</Label><Input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
-                <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup" className="mt-4">
-              <p className="text-sm text-muted-foreground mb-4">{t("signUpDesc")}</p>
-              <form onSubmit={signUp} className="space-y-3">
-                <div><Label>{t("fullName")}</Label><Input required value={fullName} onChange={e => setFullName(e.target.value)} /></div>
-                <div><Label>Username</Label><Input required pattern="[a-zA-Z0-9_.-]{3,30}" value={username} onChange={e => setUsername(e.target.value)} placeholder="3–30 chars, no spaces" /></div>
-                <div><Label>{t("email")}</Label><Input type="email" required value={signupEmail} onChange={e => setSignupEmail(e.target.value)} /></div>
-                <div><Label>{t("password")}</Label><Input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} /></div>
-                <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("createAccount")}</Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          <h2 className="text-lg font-semibold mb-1">{t("login")}</h2>
+          <p className="text-sm text-muted-foreground mb-4">{t("signInDesc")}</p>
+          <form onSubmit={signIn} className="space-y-3">
+            <div>
+              <Label>Username</Label>
+              <Input
+                required
+                autoComplete="username"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="username"
+              />
+            </div>
+            <div>
+              <Label>{t("password")}</Label>
+              <Input
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
+          </form>
+          <p className="mt-4 text-xs text-center text-muted-foreground">
+            Accounts are created by your Super Admin.
+          </p>
         </Card>
       </div>
     </div>

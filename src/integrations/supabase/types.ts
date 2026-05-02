@@ -235,6 +235,13 @@ export type Database = {
             foreignKeyName: "irrigation_charges_farmer_id_fkey"
             columns: ["farmer_id"]
             isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "irrigation_charges_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
             referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
@@ -289,6 +296,13 @@ export type Database = {
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
         Relationships: [
+          {
+            foreignKeyName: "lands_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
           {
             foreignKeyName: "lands_farmer_id_fkey"
             columns: ["farmer_id"]
@@ -389,6 +403,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "loans_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
           {
             foreignKeyName: "loans_farmer_id_fkey"
             columns: ["farmer_id"]
@@ -518,6 +539,13 @@ export type Database = {
             foreignKeyName: "payments_farmer_id_fkey"
             columns: ["farmer_id"]
             isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "payments_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
             referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
@@ -609,6 +637,13 @@ export type Database = {
             foreignKeyName: "savings_transactions_farmer_id_fkey"
             columns: ["farmer_id"]
             isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "savings_transactions_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
             referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
@@ -661,6 +696,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shares_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: true
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
           {
             foreignKeyName: "shares_farmer_id_fkey"
             columns: ["farmer_id"]
@@ -720,7 +762,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      farmer_savings_balance: {
+        Row: {
+          balance: number | null
+          farmer_id: string | null
+          total_deposit: number | null
+          total_withdraw: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _lookup_email_by_username: {

@@ -13,14 +13,35 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { ALL_MODULES, type ModuleKey } from "@/lib/permissions";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, KeyRound } from "lucide-react";
+import { useAuth } from "@/auth/AuthProvider";
+import { z } from "zod";
+
+const createSchema = z.object({
+  username: z.string().trim().regex(/^[a-zA-Z0-9_.-]{3,30}$/, "3–30 chars; letters, digits, . _ -"),
+  email: z.string().trim().email().max(255),
+  full_name: z.string().trim().min(1).max(120),
+  password: z.string().min(8, "At least 8 characters").max(72),
+  role: z.enum(["super_admin", "admin", "staff"]),
+  office_id: z.string().nullable(),
+});
 
 export default function Users() {
   const { t } = useLang();
+  const { user: me } = useAuth();
   const [list, setList] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
   const [permFor, setPermFor] = useState<any | null>(null);
   const [perms, setPerms] = useState<Record<string, any>>({});
+  const [createOpen, setCreateOpen] = useState(false);
+  const [resetFor, setResetFor] = useState<any | null>(null);
+  const [resetPwd, setResetPwd] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const [form, setForm] = useState({
+    username: "", email: "", full_name: "", password: "",
+    role: "staff" as "super_admin" | "admin" | "staff", office_id: "",
+  });
 
   useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, []);
 
@@ -36,6 +57,49 @@ export default function Users() {
     setList((p.data ?? []).map((x: any) => ({ ...x, roles: rolesByUser[x.id] ?? [] })));
   }
 
+  async function callAdmin(payload: any) {
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
+    setBusy(false);
+    if (error || data?.error) {
+      toast.error(data?.error ?? error?.message ?? "Failed");
+      return null;
+    }
+    return data;
+  }
+
+  async function createUser() {
+    const parsed = createSchema.safeParse({ ...form, office_id: form.office_id || null });
+    if (!parsed.success) {
+      const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
+      return toast.error(first ?? "Validation failed");
+    }
+    const ok = await callAdmin({ action: "create", ...parsed.data });
+    if (!ok) return;
+    toast.success("User created");
+    setCreateOpen(false);
+    setForm({ username: "", email: "", full_name: "", password: "", role: "staff", office_id: "" });
+    load();
+  }
+
+  async function deleteUser(u: any) {
+    if (u.id === me?.id) return toast.error("You cannot delete yourself");
+    if (!confirm(`Delete ${u.username || u.email}? This cannot be undone.`)) return;
+    const ok = await callAdmin({ action: "delete", user_id: u.id });
+    if (!ok) return;
+    toast.success("User deleted");
+    load();
+  }
+
+  async function resetPassword() {
+    if (!resetFor) return;
+    if (resetPwd.length < 8) return toast.error("Password must be at least 8 characters");
+    const ok = await callAdmin({ action: "reset_password", user_id: resetFor.id, password: resetPwd });
+    if (!ok) return;
+    toast.success("Password updated");
+    setResetFor(null); setResetPwd("");
+  }
+
   async function setRole(uid: string, role: "super_admin" | "admin" | "staff") {
     await supabase.from("user_roles").delete().eq("user_id", uid);
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role });
@@ -47,18 +111,12 @@ export default function Users() {
     if (error) return toast.error(error.message);
     load();
   }
-  async function setUsername(uid: string, username: string) {
-    const { error } = await supabase.from("profiles").update({ username: username || null }).eq("id", uid);
-    if (error) return toast.error(error.message);
-    toast.success(t("saved")); load();
-  }
 
   async function openPerms(u: any) {
     setPermFor(u);
     const { data } = await supabase.from("user_permissions").select("*").eq("user_id", u.id);
     const map: Record<string, any> = {};
     (data ?? []).forEach((r: any) => { map[r.module] = r; });
-    // initialize defaults
     ALL_MODULES.forEach((m) => {
       if (!map[m]) map[m] = { module: m, can_view: true, can_add: false, can_edit: false, can_delete: false };
     });
@@ -67,12 +125,9 @@ export default function Users() {
   async function savePerms() {
     if (!permFor) return;
     const rows = ALL_MODULES.map((m) => ({
-      user_id: permFor.id,
-      module: m,
-      can_view: !!perms[m]?.can_view,
-      can_add: !!perms[m]?.can_add,
-      can_edit: !!perms[m]?.can_edit,
-      can_delete: !!perms[m]?.can_delete,
+      user_id: permFor.id, module: m,
+      can_view: !!perms[m]?.can_view, can_add: !!perms[m]?.can_add,
+      can_edit: !!perms[m]?.can_edit, can_delete: !!perms[m]?.can_delete,
     }));
     await supabase.from("user_permissions").delete().eq("user_id", permFor.id);
     const { error } = await supabase.from("user_permissions").insert(rows);
@@ -86,7 +141,47 @@ export default function Users() {
 
   return (
     <>
-      <PageHeader title={t("users")} />
+      <PageHeader title={t("users")} description="Only Super Admins can create or remove users." actions={
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4 mr-1" />New user</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Create user</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div><Label>Full name</Label><Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Username</Label><Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="3–30 chars" /></div>
+                <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+              </div>
+              <div><Label>Password</Label><Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="≥ 8 characters" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Role</Label>
+                  <Select value={form.role} onValueChange={v => setForm({ ...form, role: v as any })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
+                      <SelectItem value="admin">{t("admin")}</SelectItem>
+                      <SelectItem value="staff">{t("staff")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Office</Label>
+                  <Select value={form.office_id} onValueChange={v => setForm({ ...form, office_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCreateOpen(false)}>{t("cancel")}</Button>
+              <Button onClick={createUser} disabled={busy}>{busy ? "…" : "Create"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      } />
+
       <Card>
         <Table>
           <TableHeader><TableRow>
@@ -101,14 +196,7 @@ export default function Users() {
           <TableBody>
             {list.map(u => (
               <TableRow key={u.id}>
-                <TableCell>
-                  <Input
-                    defaultValue={u.username ?? ""}
-                    onBlur={(e) => { if (e.target.value !== (u.username ?? "")) setUsername(u.id, e.target.value); }}
-                    className="h-8 w-32 font-mono text-xs"
-                    placeholder="—"
-                  />
-                </TableCell>
+                <TableCell className="font-mono text-xs">{u.username ?? "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{u.email}</TableCell>
                 <TableCell>{u.full_name}</TableCell>
                 <TableCell>
@@ -127,10 +215,16 @@ export default function Users() {
                     <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell>{fmtDate(u.created_at)}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="outline" onClick={() => openPerms(u)}>
-                    <ShieldCheck className="h-4 w-4 mr-1" />{t("permissions")}
+                <TableCell className="whitespace-nowrap text-xs">{fmtDate(u.created_at)}</TableCell>
+                <TableCell className="text-right space-x-1">
+                  <Button size="sm" variant="outline" onClick={() => openPerms(u)} title="Permissions">
+                    <ShieldCheck className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title="Reset password">
+                    <KeyRound className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => deleteUser(u)} disabled={u.id === me?.id} title="Delete">
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -140,6 +234,7 @@ export default function Users() {
         </Table>
       </Card>
 
+      {/* Permissions dialog */}
       <Dialog open={!!permFor} onOpenChange={(o) => !o && setPermFor(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -169,6 +264,21 @@ export default function Users() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPermFor(null)}>{t("cancel")}</Button>
             <Button onClick={savePerms}>{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset password dialog */}
+      <Dialog open={!!resetFor} onOpenChange={(o) => !o && setResetFor(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Reset password — {resetFor?.username || resetFor?.email}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Label>New password</Label>
+            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder="≥ 8 characters" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetFor(null)}>{t("cancel")}</Button>
+            <Button onClick={resetPassword} disabled={busy}>{busy ? "…" : "Update"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
