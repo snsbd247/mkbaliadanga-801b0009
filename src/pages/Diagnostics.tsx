@@ -154,7 +154,7 @@ export default function Diagnostics() {
         <TabsContent value="health">
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-muted-foreground">প্রতিটা টেবিলে SELECT permission test করা হবে।</div>
+              <div className="text-sm text-muted-foreground">{t("rlsHealthCheckDesc")}</div>
               <Button onClick={runHealthCheck} disabled={running}>
                 {running ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
                 Run health check
