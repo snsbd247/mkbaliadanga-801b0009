@@ -355,6 +355,13 @@ export default function SmsSettings() {
   const [testLog, setTestLog] = useState<TestRecord[]>(() => loadTestLog());
   const [confirmTest, setConfirmTest] = useState<{ key: keyof Settings; baseKey: string; preview: string; label: string } | null>(null);
 
+  // GreenWeb provider token state
+  const [tokenInput, setTokenInput] = useState<string>("");
+  const [tokenConfigured, setTokenConfigured] = useState<boolean>(false);
+  const [tokenUpdatedAt, setTokenUpdatedAt] = useState<string | null>(null);
+  const [tokenBusy, setTokenBusy] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+
   // Manual scheduler state
   const today = new Date().toISOString().slice(0, 10);
   const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
