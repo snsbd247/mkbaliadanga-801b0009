@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useBranding } from "@/lib/branding";
 
-// Strong password rules — enforced client-side; HIBP checked server-side by Lovable Cloud.
+// Strong password rules — enforced client-side; HIBP checked server-side.
 const MIN_LEN = 10;
 function scorePassword(p: string) {
   const checks = [
@@ -71,7 +71,7 @@ export default function ResetPassword() {
     const { error } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);
     if (error) {
-      // Lovable Cloud's HIBP check returns a clear message when the password is leaked.
+      // The backend HIBP check returns a clear message when the password is leaked.
       if (/pwned|leaked|compromis/i.test(error.message)) {
         return toast.error("This password has appeared in a known data breach. Pick a different one.");
       }
