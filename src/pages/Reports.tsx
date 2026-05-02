@@ -464,7 +464,7 @@ export default function Reports() {
               arrears.map(r => ({ Date: r.date, Code: r.code, Farmer: r.name, Season: r.season, Dag: r.dag, Total: r.total, Paid: r.paid, Due: r.due, AgeDays: r.days, Bucket: r.bucket })))}
           />
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
-            {(["0-30", "30-60", "60-90", "90+"] as const).map(b => {
+            {(["0-30", "31-60", "61-90", "90+"] as const).map(b => {
               const sum = arrears.filter(r => r.bucket === b).reduce((a, r) => a + r.due, 0);
               return (
                 <Card key={b} className="p-3"><div className="text-xs uppercase text-muted-foreground">{b} days</div><div className="text-lg font-bold">{money(sum)}</div></Card>
