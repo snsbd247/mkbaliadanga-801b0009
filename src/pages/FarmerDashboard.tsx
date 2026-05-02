@@ -96,7 +96,7 @@ export default function FarmerDashboard() {
           <Alert variant="destructive"><AlertDescription>{error || "No data."}</AlertDescription></Alert>
           <div className="mt-4 flex gap-2">
             <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />Retry</Button>
-            <Button onClick={logout} className="flex-1">Sign out</Button>
+            <Button onClick={() => logout()} className="flex-1">Sign out</Button>
           </div>
         </Card>
       </div>
@@ -117,7 +117,7 @@ export default function FarmerDashboard() {
             )}
             <span className="text-sm font-medium truncate">Farmer Portal</span>
           </div>
-          <Button variant="outline" size="sm" onClick={logout}>
+          <Button variant="outline" size="sm" onClick={() => logout()}>
             <LogOut className="h-4 w-4" /> Sign out
           </Button>
         </div>
