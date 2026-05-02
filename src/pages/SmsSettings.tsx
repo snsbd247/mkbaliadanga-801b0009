@@ -213,6 +213,55 @@ export default function SmsSettings() {
 
         <Card className="lg:col-span-2">
           <CardHeader>
+            <CardTitle className="text-base">Per-Office Overrides</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Disable SMS for a specific office, or use a different Sender ID. Leave Sender ID blank to fall back to the global setting.
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="table-responsive">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40">
+                  <tr className="text-left">
+                    <th className="px-3 py-2">Office</th>
+                    <th className="px-3 py-2 w-32">SMS Enabled</th>
+                    <th className="px-3 py-2">Sender ID (override)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {offices.length === 0 ? (
+                    <tr><td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">No offices configured.</td></tr>
+                  ) : offices.map((o) => {
+                    const ov = overrides[o.id] ?? { office_id: o.id, enabled: true, sender_id: null };
+                    return (
+                      <tr key={o.id} className="border-t">
+                        <td className="px-3 py-2 font-medium">{o.name}</td>
+                        <td className="px-3 py-2">
+                          <Switch
+                            checked={ov.enabled}
+                            onCheckedChange={(v) => saveOfficeOverride(o.id, { enabled: v })}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <Input
+                            value={ov.sender_id ?? ""}
+                            placeholder={s.sender_id ?? "(global)"}
+                            onChange={(e) => setOverrides({ ...overrides, [o.id]: { ...ov, sender_id: e.target.value } })}
+                            onBlur={(e) => saveOfficeOverride(o.id, { sender_id: e.target.value.trim() || null })}
+                            className="h-8 max-w-[220px]"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
             <CardTitle className="text-base">Message Templates</CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               Toggle Bangla / English. Live preview shows the message with sample values substituted for placeholders.
