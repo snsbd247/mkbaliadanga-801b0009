@@ -2026,6 +2026,57 @@ export type Database = {
         }
         Relationships: []
       }
+      villages: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          union_id: string
+          updated_at: string
+          ward_id: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          union_id: string
+          updated_at?: string
+          ward_id?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          union_id?: string
+          updated_at?: string
+          ward_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "villages_union_id_fkey"
+            columns: ["union_id"]
+            isOneToOne: false
+            referencedRelation: "unions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "villages_ward_id_fkey"
+            columns: ["ward_id"]
+            isOneToOne: false
+            referencedRelation: "wards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wards: {
         Row: {
           code: string | null
@@ -2159,6 +2210,10 @@ export type Database = {
       current_user_office: { Args: never; Returns: string }
       data_integrity_scan: { Args: never; Returns: Json }
       email_for_username: { Args: { _username: string }; Returns: string }
+      generate_farmer_qr_tokens: {
+        Args: { _force_rotate?: boolean }
+        Returns: Json
+      }
       get_previous_due: {
         Args: { _exclude_season: string; _farmer: string; _land: string }
         Returns: number
@@ -2208,6 +2263,7 @@ export type Database = {
       }
       reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
       retire_sms_token: { Args: { _id: string }; Returns: undefined }
+      seed_rajshahi_locations: { Args: never; Returns: Json }
       sms_enqueue: {
         Args: {
           _event: string
@@ -2220,6 +2276,7 @@ export type Database = {
         }
         Returns: string
       }
+      verify_seed_integrity: { Args: never; Returns: Json }
     }
     Enums: {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
