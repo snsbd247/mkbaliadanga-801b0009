@@ -15,15 +15,14 @@ interface Stat { label: string; value: string; icon: any; tone?: "default" | "da
 
 function NoOfficeBanner() {
   const { rolesLoaded, officeId, isSuper, isAdmin, roles } = useAuth();
+  const { t } = useLang();
   if (!rolesLoaded || isSuper) return null;
   const isAssignableRole = isAdmin || roles.includes("staff") || roles.includes("committee");
   if (!isAssignableRole || officeId) return null;
   return (
     <Alert className="mb-4 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30">
       <AlertTriangle className="h-4 w-4 text-amber-600" />
-      <AlertDescription>
-        Your account is not assigned to any office. You won't see office-scoped data until a Super Admin assigns you on the Users page.
-      </AlertDescription>
+      <AlertDescription>{t("noOfficeAssigned")}</AlertDescription>
     </Alert>
   );
 }
