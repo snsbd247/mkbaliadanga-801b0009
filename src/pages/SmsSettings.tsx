@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Send, Eye, CalendarClock } from "lucide-react";
+import { MessageSquare, Send, Eye, CalendarClock, AlertTriangle, RotateCcw } from "lucide-react";
 
 type Settings = {
   enabled: boolean;
