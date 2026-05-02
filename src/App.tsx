@@ -43,6 +43,8 @@ import FinanceSummary from "./pages/FinanceSummary";
 import SmsSettings from "./pages/SmsSettings";
 import SmsLogs from "./pages/SmsLogs";
 import Locations from "./pages/Locations";
+import LedgerReconciliation from "./pages/LedgerReconciliation";
+import QrRotation from "./pages/QrRotation";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -95,6 +97,8 @@ const App = () => (
                 <Route path="/sms-settings" element={<SmsSettings />} />
                 <Route path="/sms-logs" element={<SmsLogs />} />
                 <Route path="/locations" element={<Locations />} />
+                <Route path="/admin/reconciliation" element={<LedgerReconciliation />} />
+                <Route path="/admin/qr-rotation" element={<QrRotation />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

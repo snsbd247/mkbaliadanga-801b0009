@@ -5,7 +5,7 @@ import {
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
   BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, MessageSquare, MessagesSquare, MapPin,
-  ChevronRight, Briefcase, Banknote, BarChart3, Shield,
+  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -70,6 +70,7 @@ export function AppSidebar() {
         { url: "/financial-reports", icon: TrendingUp, label: "Financial Reports", permKey: "reports" },
         { url: "/period-close", icon: Lock, label: "Period Close", permKey: "reports" },
         { url: "/ledger-integrity", icon: ShieldAlert, label: "Ledger Integrity", permKey: "reports" },
+        { url: "/admin/reconciliation", icon: ClipboardCheck, label: "Monthly Reconciliation", permKey: "reports" },
       ],
     },
     {
@@ -87,6 +88,7 @@ export function AppSidebar() {
         { url: "/settings", icon: SettingsIcon, label: t("settings"), superOnly: true },
         { url: "/backup", icon: Database, label: "Backup", superOnly: true },
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), superOnly: true },
+        { url: "/admin/qr-rotation", icon: RefreshCw, label: "QR Rotation", superOnly: true },
         { url: "/sms-settings", icon: MessageSquare, label: "SMS Settings", superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: "SMS Logs", superOnly: true },
         { url: "/locations", icon: MapPin, label: "Locations", superOnly: true },
