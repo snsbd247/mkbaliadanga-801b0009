@@ -13,7 +13,7 @@ import { notifyBrandingChange, useBranding } from "@/lib/branding";
 
 export default function Settings() {
   const { t } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, rolesLoaded } = useAuth();
   const brand = useBranding();
   const [form, setForm] = useState<any>(brand);
   const [logo, setLogo] = useState<File | null>(null);
