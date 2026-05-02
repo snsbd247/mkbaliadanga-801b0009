@@ -30,3 +30,6 @@ verify_jwt = false
 [functions.ledger-reconcile-monthly]
 verify_jwt = false
 
+[functions.ledger-reconcile-notify]
+verify_jwt = false
+
