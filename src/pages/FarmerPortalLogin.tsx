@@ -90,16 +90,16 @@ export default function FarmerPortalLogin() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.token) {
-        setError(data?.error || "Invalid or expired code.");
+        setError(data?.error || t("invalidOrExpiredCode"));
         return;
       }
       localStorage.setItem("farmer_portal_token", data.token);
       localStorage.setItem("farmer_portal_expires", data.expires_at ?? "");
       localStorage.setItem("farmer_portal_name", data.farmer?.name ?? "");
-      toast.success("Verified");
+      toast.success(t("verified"));
       nav("/farmer/dashboard", { replace: true });
     } catch {
-      setError("Network error. Please try again.");
+      setError(t("networkErrorRetry"));
     } finally {
       setBusy(false);
     }
