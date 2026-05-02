@@ -397,6 +397,10 @@ export default function SmsSettings() {
                       for (const k of usedVars) subset[k] = sampleVars[k] ?? "";
                       const preview = renderTpl(value, subset);
                       const vars = TEMPLATE_VARS[f.key] ?? [];
+                      const missing = findMissingPlaceholders(value, vars);
+                      const defaultTpl = DEFAULT_TEMPLATES[String(key)] ?? "";
+                      const isDefault = value === defaultTpl;
+                      const testingThis = tplTestBusy === String(key);
                       return (
                         <div key={String(key)} className="space-y-1.5">
                           <div className="flex items-center justify-between">
@@ -422,6 +426,15 @@ export default function SmsSettings() {
                             className="text-sm"
                             dir={lang === "bn" ? "auto" : "ltr"}
                           />
+                          {missing.length > 0 && (
+                            <div className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-2 py-1.5 text-[11px] text-amber-800 dark:text-amber-300">
+                              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              <span>
+                                Missing placeholder{missing.length > 1 ? "s" : ""}:{" "}
+                                <span className="font-mono">{missing.join(", ")}</span>. The message will be sent without this dynamic value.
+                              </span>
+                            </div>
+                          )}
                           <div className="rounded-md border bg-muted/30 px-2.5 py-1.5">
                             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                               <Eye className="h-3 w-3"/> Preview
@@ -430,6 +443,32 @@ export default function SmsSettings() {
                             <p className="text-xs whitespace-pre-wrap break-words">
                               {preview || <span className="italic text-muted-foreground">empty template</span>}
                             </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-0.5">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px]"
+                              onClick={() => resetTemplate(key)}
+                              disabled={isDefault || !defaultTpl}
+                              title={isDefault ? "Already matches the default" : "Restore default wording"}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Reset to default
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              className="h-7 text-[11px]"
+                              onClick={() => sendTemplateTest(key, f.key)}
+                              disabled={testingThis || !tplTestMobile.trim() || !value.trim()}
+                              title={!tplTestMobile.trim() ? "Enter a test phone number above" : "Send rendered preview to test number"}
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              {testingThis ? "Sending…" : "Test send"}
+                            </Button>
                           </div>
                         </div>
                       );
