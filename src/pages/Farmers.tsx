@@ -103,7 +103,7 @@ export default function Farmers() {
       <Card>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>{t("farmerCode")}</TableHead><TableHead>{t("farmerName")}</TableHead>
+            <TableHead>{t("farmerCode")}</TableHead><TableHead>{t("memberNo") || "Member No"}</TableHead><TableHead>{t("farmerName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
             <TableHead className="text-right">{t("actions")}</TableHead>
@@ -112,6 +112,7 @@ export default function Farmers() {
             {list.map(f => (
               <TableRow key={f.id} className="cursor-pointer" onClick={() => nav(`/farmers/${f.id}`)}>
                 <TableCell className="font-mono text-xs">{f.farmer_code}</TableCell>
+                <TableCell className="font-mono text-xs">{f.member_no || "—"}</TableCell>
                 <TableCell>
                   <div className="font-medium">{f.name_en}</div>
                   {f.name_bn && <div className="text-xs text-muted-foreground">{f.name_bn}</div>}
