@@ -255,7 +255,7 @@ export default function FinancialReports() {
                       <TableCell className="text-right">{money(r.raw.credit - r.raw.debit)}</TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="font-semibold"><TableCell>{t("totalIncome")}</TableCell><TableCell className="text-right">{money(totalIncome)}</TableCell></TableRow>
+                  <TableRow className="font-semibold"><TableCell>{t("total")} {t("income")}</TableCell><TableCell className="text-right">{money(totalIncome)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
@@ -269,7 +269,7 @@ export default function FinancialReports() {
                       <TableCell className="text-right">{money(r.raw.debit - r.raw.credit)}</TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="font-semibold"><TableCell>{t("totalExpense")}</TableCell><TableCell className="text-right">{money(totalExpense)}</TableCell></TableRow>
+                  <TableRow className="font-semibold"><TableCell>{t("total")} {t("expense")}</TableCell><TableCell className="text-right">{money(totalExpense)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
@@ -316,34 +316,34 @@ export default function FinancialReports() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
-              <CardHeader><CardTitle className="text-lg">Assets</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">{t("assets")}</CardTitle></CardHeader>
               <CardContent>
                 <Table><TableBody>
                   {assetRows.map((r) => (
                     <TableRow key={r.id}><TableCell>{r.name}</TableCell><TableCell className="text-right">{money(r.raw.debit - r.raw.credit)}</TableCell></TableRow>
                   ))}
-                  <TableRow className="font-semibold"><TableCell>Total Assets</TableCell><TableCell className="text-right">{money(totalAssets)}</TableCell></TableRow>
+                  <TableRow className="font-semibold"><TableCell>{t("totalAssets")}</TableCell><TableCell className="text-right">{money(totalAssets)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle className="text-lg">Liabilities + Equity</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">{t("liabilitiesEquity")}</CardTitle></CardHeader>
               <CardContent>
                 <Table><TableBody>
                   {liabilityRows.map((r) => (
                     <TableRow key={r.id}><TableCell>{r.name}</TableCell><TableCell className="text-right">{money(r.raw.credit - r.raw.debit)}</TableCell></TableRow>
                   ))}
-                  <TableRow><TableCell>Retained Earnings (Net Income)</TableCell><TableCell className="text-right">{money(netIncome)}</TableCell></TableRow>
+                  <TableRow><TableCell>{t("retainedEarningsNet")}</TableCell><TableCell className="text-right">{money(netIncome)}</TableCell></TableRow>
                   {equityRows.map((r) => (
                     <TableRow key={r.id}><TableCell>{r.name}</TableCell><TableCell className="text-right">{money(r.raw.credit - r.raw.debit)}</TableCell></TableRow>
                   ))}
-                  <TableRow className="font-semibold"><TableCell>Total Liab. + Equity</TableCell><TableCell className="text-right">{money(totalLiabilities + totalEquity)}</TableCell></TableRow>
+                  <TableRow className="font-semibold"><TableCell>{t("totalLiabEquity")}</TableCell><TableCell className="text-right">{money(totalLiabilities + totalEquity)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01 ? "✅ Balanced" : "⚠ Out of balance"}
+            {Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01 ? `✅ ${t("balanced")}` : `⚠ ${t("outOfBalance")}`}
           </p>
         </TabsContent>
 
@@ -372,8 +372,8 @@ export default function FinancialReports() {
             </div>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Date</TableHead><TableHead>Description</TableHead>
-                <TableHead className="text-right">Cash In</TableHead><TableHead className="text-right">Cash Out</TableHead>
+                <TableHead>{t("date")}</TableHead><TableHead>{t("description")}</TableHead>
+                <TableHead className="text-right">{t("cashIn")}</TableHead><TableHead className="text-right">{t("cashOut")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {cashEntries.map((e) => (
@@ -385,12 +385,12 @@ export default function FinancialReports() {
                   </TableRow>
                 ))}
                 <TableRow className="font-semibold">
-                  <TableCell colSpan={2}>Totals</TableCell>
+                  <TableCell colSpan={2}>{t("totals")}</TableCell>
                   <TableCell className="text-right">{money(cashTotal.in)}</TableCell>
                   <TableCell className="text-right">{money(cashTotal.out)}</TableCell>
                 </TableRow>
                 <TableRow className="font-semibold">
-                  <TableCell colSpan={3}>Net Cash</TableCell>
+                  <TableCell colSpan={3}>{t("netCash")}</TableCell>
                   <TableCell className="text-right">{money(cashTotal.in - cashTotal.out)}</TableCell>
                 </TableRow>
               </TableBody>
