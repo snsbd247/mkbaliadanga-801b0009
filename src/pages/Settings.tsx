@@ -22,7 +22,7 @@ export default function Settings() {
   useEffect(() => { document.title = `${t("settings")} — ${t("appName")}`; }, [t]);
   useEffect(() => { setForm(brand); }, [brand.company_name]);
 
-  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">{t("loading")}</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   async function save() {
@@ -82,7 +82,7 @@ export default function Settings() {
               <Input value={form.address ?? ""} onChange={e => setForm({ ...form, address: e.target.value })} />
             </div>
             <div>
-              <Label>Default Loan Interest %</Label>
+              <Label>{t("defaultLoanInterest")}</Label>
               <Input type="number" step="0.01" value={form.default_loan_interest ?? 0} onChange={e => setForm({ ...form, default_loan_interest: e.target.value })} />
             </div>
             <div>
@@ -91,7 +91,7 @@ export default function Settings() {
               {form.logo_url && !logo && <img src={form.logo_url} className="mt-2 h-14 w-14 rounded object-cover" alt="logo" />}
             </div>
             <div className="sm:col-span-2 border-t pt-4 mt-2">
-              <h3 className="font-semibold mb-2">Irrigation Penalty</h3>
+              <h3 className="font-semibold mb-2">{t("irrigationPenalty")}</h3>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
                   <Label>{t("penaltyType")}</Label>
