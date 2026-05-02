@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import type { CardData } from "./MembershipCard";
+import { TEMPLATES, type TemplateId } from "./templates";
 
 const CARD_W = 85.6; // mm
 const CARD_H = 54;
@@ -36,42 +37,54 @@ async function imgToDataUrl(src: string): Promise<string | null> {
   } catch { return null; }
 }
 
-export async function downloadCardPdf(data: CardData, qrSvg: SVGElement | null) {
+export async function downloadCardPdf(
+  data: CardData,
+  qrSvg: SVGElement | null,
+  templateId: TemplateId = "classic",
+) {
+  const tpl = TEMPLATES[templateId] ?? TEMPLATES.classic;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  doc.setFont(tpl.pdfFont, "normal");
   const pageW = doc.internal.pageSize.getWidth();
   const startX = (pageW - CARD_W) / 2;
   const frontY = 20;
   const backY = frontY + CARD_H + 8;
 
-  // FRONT
-  doc.setDrawColor(220); doc.roundedRect(startX, frontY, CARD_W, CARD_H, 2, 2, "S");
-  doc.setFontSize(9); doc.setFont("helvetica", "bold");
-  doc.text((data.company_name_bn || data.company_name).slice(0, 36), startX + 3, frontY + 5);
-  doc.setFontSize(6); doc.setFont("helvetica", "normal");
-  doc.setTextColor(120); doc.text("Member ID Card", startX + 3, frontY + 8.5);
+  // FRONT card outline
+  doc.setDrawColor(...tpl.borderRgb); doc.roundedRect(startX, frontY, CARD_W, CARD_H, 2, 2, "S");
+
+  // Header bar
+  doc.setFillColor(...tpl.headerRgb);
+  doc.rect(startX, frontY, CARD_W, 8, "F");
+  doc.setTextColor(...tpl.headerTextRgb);
+  doc.setFontSize(9); doc.setFont(tpl.pdfFont, "bold");
+  const titleSrc = tpl.bnFirst
+    ? (data.company_name_bn || data.company_name)
+    : data.company_name;
+  doc.text(String(titleSrc).slice(0, 36), startX + 3, frontY + 5.5);
   doc.setTextColor(0);
 
-  // photo
+  // Photo
   if (data.farmer.photo_url) {
     const pUrl = await imgToDataUrl(data.farmer.photo_url);
-    if (pUrl) doc.addImage(pUrl, "JPEG", startX + 3, frontY + 12, 18, 24);
+    if (pUrl) doc.addImage(pUrl, "JPEG", startX + 3, frontY + 11, 18, 24);
   } else {
-    doc.setDrawColor(220); doc.rect(startX + 3, frontY + 12, 18, 24);
+    doc.setDrawColor(...tpl.borderRgb); doc.rect(startX + 3, frontY + 11, 18, 24);
   }
 
-  doc.setFontSize(10); doc.setFont("helvetica", "bold");
-  doc.text(String(data.farmer.name).slice(0, 28), startX + 24, frontY + 17);
-  doc.setFontSize(7); doc.setFont("helvetica", "normal");
-  let y = frontY + 22;
+  doc.setFontSize(10); doc.setFont(tpl.pdfFont, "bold");
+  doc.text(String(data.farmer.name).slice(0, 28), startX + 24, frontY + 16);
+  doc.setFontSize(7); doc.setFont(tpl.pdfFont, "normal");
+  let y = frontY + 21;
   if (data.farmer.farmer_code) { doc.text(`ID: ${data.farmer.farmer_code}`, startX + 24, y); y += 4; }
   if (data.farmer.member_no)  { doc.text(`Member: ${data.farmer.member_no}`, startX + 24, y); y += 4; }
   doc.text(`Issued: ${new Date(data.issued_at).toLocaleDateString()}`, startX + 24, y);
 
   // BACK
-  doc.setDrawColor(220); doc.roundedRect(startX, backY, CARD_W, CARD_H, 2, 2, "S");
-  doc.setFontSize(8); doc.setFont("helvetica", "bold");
+  doc.setDrawColor(...tpl.borderRgb); doc.roundedRect(startX, backY, CARD_W, CARD_H, 2, 2, "S");
+  doc.setFontSize(8); doc.setFont(tpl.pdfFont, "bold");
   doc.text("Contact", startX + 3, backY + 5);
-  doc.setFontSize(7); doc.setFont("helvetica", "normal");
+  doc.setFontSize(7); doc.setFont(tpl.pdfFont, "normal");
   let by = backY + 10;
   if (data.farmer.village) { doc.text(`Village: ${data.farmer.village}`, startX + 3, by); by += 4; }
   if (data.farmer.address) {
@@ -88,5 +101,10 @@ export async function downloadCardPdf(data: CardData, qrSvg: SVGElement | null) 
     doc.setTextColor(0);
   }
 
-  doc.save(`farmer-card-${data.farmer.farmer_code || data.farmer.member_no || "card"}.pdf`);
+  // Footer with template label (helps audit which design was issued)
+  doc.setFontSize(5); doc.setTextColor(160);
+  doc.text(`Template: ${tpl.label}`, startX, backY + CARD_H + 4);
+  doc.setTextColor(0);
+
+  doc.save(`farmer-card-${tpl.id}-${data.farmer.farmer_code || data.farmer.member_no || "card"}.pdf`);
 }

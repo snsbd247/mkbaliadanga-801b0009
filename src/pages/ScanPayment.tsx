@@ -32,19 +32,25 @@ const PaySchema = z.object({
 
 const fmt = (n: number) => new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export default function ScanPayment() {
   const { t } = useLang();
   const { user } = useAuth();
   const [scanning, setScanning] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [resolved, setResolved] = useState<Resolved | null>(null);
+  const [scannedToken, setScannedToken] = useState<string>("");
   const [manualToken, setManualToken] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [kind, setKind] = useState<"loan" | "savings" | "irrigation" | "other">("loan");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
-  const [done, setDone] = useState<{ paymentId: string } | null>(null);
+  const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; farmer: string } | null>(null);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-scan-payment";
@@ -85,9 +91,16 @@ export default function ScanPayment() {
         body: JSON.stringify({ token: token.trim() }),
       });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) { setErrMsg(j?.error || "Could not resolve token"); return; }
+      if (!res.ok) {
+        if (res.status === 410) {
+          setErrMsg("This card has been revoked. Please ask the office to issue a new one.");
+        } else {
+          setErrMsg(j?.error || "Could not resolve token");
+        }
+        return;
+      }
       setResolved(j);
-      // Pre-select the largest due bucket
+      setScannedToken(token.trim());
       const s = j.summary || {};
       if ((s.loan_due ?? 0) > 0) setKind("loan");
       else if ((s.irrigation_due ?? 0) > 0) setKind("irrigation");
@@ -106,6 +119,12 @@ export default function ScanPayment() {
 
     setSubmitting(true);
     try {
+      // Deterministic per-minute idempotency key – blocks accidental double-taps
+      // and re-scans of the same QR for the same amount/kind within the minute.
+      const windowMinute = Math.floor(Date.now() / 60_000);
+      const idemRaw = `${scannedToken}|${resolved.farmer.id}|${parsed.data.kind}|${parsed.data.amount}|${windowMinute}`;
+      const idemKey = await sha256Hex(idemRaw);
+
       const payload: any = {
         farmer_id: resolved.farmer.id,
         kind: parsed.data.kind === "other" ? "savings" : parsed.data.kind,
@@ -115,16 +134,33 @@ export default function ScanPayment() {
         collected_by: user?.id,
         status: "approved",
         office_id: resolved.farmer.office_id ?? null,
+        idempotency_key: idemKey,
       };
       const { data: ins, error } = await supabase.from("payments").insert(payload).select("id").single();
-      if (error) { setErrMsg(error.message); return; }
-      setDone({ paymentId: ins!.id });
+      if (error) {
+        if ((error as any).code === "23505" || /duplicate/i.test(error.message)) {
+          setErrMsg(
+            "Duplicate payment blocked: an identical payment was already recorded in the last minute."
+          );
+        } else {
+          setErrMsg(error.message);
+        }
+        return;
+      }
+      setDone({
+        paymentId: ins!.id,
+        amount: parsed.data.amount,
+        kind: parsed.data.kind,
+        farmer: resolved.farmer.name,
+      });
       toast.success("Payment recorded — SMS notification queued");
+    } catch (e: any) {
+      setErrMsg(e?.message ?? "Network error");
     } finally { setSubmitting(false); }
   }
 
   function reset() {
-    setResolved(null); setDone(null); setAmount(""); setNote(""); setErrMsg(null);
+    setResolved(null); setDone(null); setAmount(""); setNote(""); setErrMsg(null); setScannedToken("");
   }
 
   return (
@@ -215,7 +251,13 @@ export default function ScanPayment() {
           {done && (
             <div className="text-center py-8 space-y-3">
               <CheckCircle2 className="h-12 w-12 text-primary mx-auto" />
-              <div className="font-semibold">Payment recorded</div>
+              <div className="font-semibold text-lg">Payment recorded</div>
+              <div className="text-sm">
+                <div><span className="text-muted-foreground">Farmer:</span> {done.farmer}</div>
+                <div><span className="text-muted-foreground">Type:</span> {done.kind}</div>
+                <div><span className="text-muted-foreground">Amount:</span> <span className="font-mono font-semibold">৳ {fmt(done.amount)}</span></div>
+                <div className="text-xs text-muted-foreground mt-2 font-mono">Ref: {done.paymentId.slice(0, 8)}…</div>
+              </div>
               <div className="text-xs text-muted-foreground">SMS notification has been queued.</div>
               <Button onClick={reset} variant="outline">Scan another</Button>
             </div>

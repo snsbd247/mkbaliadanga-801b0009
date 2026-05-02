@@ -8,68 +8,231 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
-import { Eye } from "lucide-react";
+import { Eye, Download, RefreshCw, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+const ENTITY_OPTIONS = [
+  "qr_tokens",
+  "payments",
+  "farmers",
+  "loans",
+  "loan_payments",
+  "savings_transactions",
+  "irrigation_charges",
+  "expenses",
+  "journal_entries",
+];
+
+const PAGE_LIMIT = 1000;
 
 export default function AuditLogs() {
   const { t } = useLang();
   const [list, setList] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [offices, setOffices] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(false);
+
+  // Filters
+  const today = new Date();
+  const monthAgo = new Date(today.getTime() - 30 * 86400_000);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [entityFilter, setEntityFilter] = useState<string>("all");
+  const [officeFilter, setOfficeFilter] = useState<string>("all");
+  const [farmerQuery, setFarmerQuery] = useState("");
+  const [farmerId, setFarmerId] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<string>(monthAgo.toISOString().slice(0, 10));
+  const [dateTo, setDateTo] = useState<string>(today.toISOString().slice(0, 10));
 
   useEffect(() => {
     document.title = `${t("auditLogs")} — ${t("appName")}`;
     (async () => {
-      const [logs, prof, ofcs] = await Promise.all([
-        supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(500),
+      const [prof, ofcs] = await Promise.all([
         supabase.from("profiles").select("id,full_name,username"),
         supabase.from("offices").select("id,name"),
       ]);
-      setList(logs.data ?? []);
       setProfiles(Object.fromEntries((prof.data ?? []).map((p: any) => [p.id, p])));
       setOffices(Object.fromEntries((ofcs.data ?? []).map((o: any) => [o.id, o])));
+      await runQuery();
     })();
+    // eslint-disable-next-line
   }, []);
 
-  const entities = useMemo(() => Array.from(new Set(list.map(l => l.entity).filter(Boolean))), [list]);
-
-  const filtered = list.filter(l => {
-    if (actionFilter !== "all" && l.action !== actionFilter) return false;
-    if (entityFilter !== "all" && l.entity !== entityFilter) return false;
-    if (search) {
-      const hay = `${l.entity} ${l.action} ${profiles[l.user_id]?.full_name ?? ""} ${profiles[l.user_id]?.username ?? ""}`.toLowerCase();
-      if (!hay.includes(search.toLowerCase())) return false;
+  async function resolveFarmer(): Promise<string | null> {
+    const q = farmerQuery.trim();
+    if (!q) return null;
+    const { data } = await supabase
+      .from("farmers")
+      .select("id, farmer_code, name_en, name_bn")
+      .or(`farmer_code.ilike.%${q}%,name_en.ilike.%${q}%,name_bn.ilike.%${q}%`)
+      .limit(1)
+      .maybeSingle();
+    if (!data) {
+      toast.error(`No farmer matched "${q}"`);
+      return null;
     }
-    return true;
-  });
+    setFarmerId(data.id);
+    return data.id;
+  }
+
+  async function runQuery() {
+    setLoading(true);
+    try {
+      let fid = farmerId;
+      if (farmerQuery && !fid) {
+        fid = (await resolveFarmer()) ?? "";
+      } else if (!farmerQuery) {
+        fid = "";
+        setFarmerId("");
+      }
+
+      let q = supabase
+        .from("audit_logs")
+        .select("*")
+        .gte("created_at", `${dateFrom}T00:00:00.000Z`)
+        .lte("created_at", `${dateTo}T23:59:59.999Z`)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_LIMIT);
+      if (actionFilter !== "all") q = q.eq("action", actionFilter);
+      if (entityFilter !== "all") q = q.eq("entity", entityFilter);
+      if (officeFilter !== "all") q = q.eq("office_id", officeFilter);
+      if (fid) q = q.eq("entity_id", fid);
+
+      const { data, error } = await q;
+      if (error) toast.error(error.message);
+      setList(data ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filtered = useMemo(() => {
+    if (!search) return list;
+    const s = search.toLowerCase();
+    return list.filter((l) => {
+      const u = profiles[l.user_id];
+      const hay = `${l.entity ?? ""} ${l.action ?? ""} ${u?.full_name ?? ""} ${u?.username ?? ""} ${l.entity_id ?? ""}`.toLowerCase();
+      return hay.includes(s);
+    });
+  }, [list, search, profiles]);
+
+  function exportCsv() {
+    const rows = filtered;
+    if (rows.length === 0) { toast.error("Nothing to export"); return; }
+    const header = ["timestamp", "action", "entity", "entity_id", "user", "office", "old_values", "new_values"];
+    const csv = [header.join(",")].concat(
+      rows.map((l) => {
+        const u = profiles[l.user_id];
+        const o = offices[l.office_id];
+        const cells = [
+          new Date(l.created_at).toISOString(),
+          l.action ?? "",
+          l.entity ?? "",
+          l.entity_id ?? "",
+          u?.full_name ?? u?.username ?? l.user_id ?? "",
+          o?.name ?? "",
+          JSON.stringify(l.old_values ?? null),
+          JSON.stringify(l.new_values ?? null),
+        ];
+        return cells.map((c) => {
+          const s = String(c).replace(/"/g, '""');
+          return /[",\n]/.test(s) ? `"${s}"` : s;
+        }).join(",");
+      })
+    ).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `audit-logs-${dateFrom}-to-${dateTo}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} entries`);
+  }
 
   return (
     <>
-      <PageHeader title={t("auditLogs")} description="Every critical action recorded with before/after values" />
+      <PageHeader
+        title={t("auditLogs")}
+        description="Search QR token events, scans, and payments by office, farmer, and date range"
+        actions={
+          <div className="flex gap-2">
+            <Button onClick={runQuery} variant="outline" size="sm" disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}Refresh
+            </Button>
+            <Button onClick={exportCsv} size="sm" disabled={loading || filtered.length === 0}>
+              <Download className="h-4 w-4" />Export CSV
+            </Button>
+          </div>
+        }
+      />
+
       <Card className="p-4 mb-4">
-        <div className="grid gap-3 md:grid-cols-4">
-          <Input placeholder={t("search")} value={search} onChange={e => setSearch(e.target.value)} />
-          <Select value={actionFilter} onValueChange={setActionFilter}>
-            <SelectTrigger><SelectValue placeholder="Action" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All actions</SelectItem>
-              <SelectItem value="insert">Insert</SelectItem>
-              <SelectItem value="update">Update</SelectItem>
-              <SelectItem value="delete">Delete</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={entityFilter} onValueChange={setEntityFilter}>
-            <SelectTrigger><SelectValue placeholder="Entity" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All entities</SelectItem>
-              {entities.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <div className="text-sm text-muted-foreground self-center">{filtered.length} entries</div>
+        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <div>
+            <Label className="text-xs">From</Label>
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">To</Label>
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">Office</Label>
+            <Select value={officeFilter} onValueChange={setOfficeFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All offices</SelectItem>
+                {Object.values(offices).map((o: any) => (
+                  <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Farmer (code or name)</Label>
+            <Input
+              value={farmerQuery}
+              onChange={(e) => { setFarmerQuery(e.target.value); setFarmerId(""); }}
+              placeholder="2026-00000123 or Rahim"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Action</Label>
+            <Select value={actionFilter} onValueChange={setActionFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All actions</SelectItem>
+                <SelectItem value="insert">Insert</SelectItem>
+                <SelectItem value="update">Update</SelectItem>
+                <SelectItem value="delete">Delete</SelectItem>
+                <SelectItem value="scan">Scan</SelectItem>
+                <SelectItem value="issue">Issue</SelectItem>
+                <SelectItem value="revoke">Revoke</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Entity</Label>
+            <Select value={entityFilter} onValueChange={setEntityFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All entities</SelectItem>
+                {ENTITY_OPTIONS.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Label className="text-xs">Quick search (in current results)</Label>
+            <Input placeholder="Filter loaded rows…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+        </div>
+        <div className="mt-3 text-xs text-muted-foreground">
+          Showing {filtered.length} of {list.length} loaded entries
+          {list.length === PAGE_LIMIT && ` (capped at ${PAGE_LIMIT}; narrow filters for more)`}
         </div>
       </Card>
 
@@ -94,23 +257,19 @@ export default function AuditLogs() {
                 <TableRow key={l.id}>
                   <TableCell className="whitespace-nowrap text-xs">{fmtDate(l.created_at)} <span className="text-muted-foreground">{new Date(l.created_at).toLocaleTimeString()}</span></TableCell>
                   <TableCell>
-                    <Badge variant={l.action === "delete" ? "destructive" : l.action === "update" ? "secondary" : "default"}>
+                    <Badge variant={l.action === "delete" || l.action === "revoke" ? "destructive" : l.action === "update" ? "secondary" : "default"}>
                       {l.action}
                     </Badge>
                   </TableCell>
                   <TableCell>{l.entity}</TableCell>
                   <TableCell className="text-xs">{u?.full_name ?? u?.username ?? <span className="font-mono text-muted-foreground">{l.user_id?.slice(0, 8) ?? "system"}</span>}</TableCell>
                   <TableCell className="text-xs">{o?.name ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell>
-                    <DiffDialog log={l} />
-                  </TableCell>
-                  <TableCell>
-                    <LedgerLinkButton log={l} />
-                  </TableCell>
+                  <TableCell><DiffDialog log={l} /></TableCell>
+                  <TableCell><LedgerLinkButton log={l} /></TableCell>
                 </TableRow>
               );
             })}
-            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{loading ? "Loading…" : t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
