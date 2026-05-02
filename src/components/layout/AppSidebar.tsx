@@ -182,7 +182,11 @@ export function AppSidebar() {
                         <SidebarMenuSub>
                           {visibleChildren.map((child) => (
                             <SidebarMenuSubItem key={child.url}>
-                              <SidebarMenuSubButton asChild isActive={isActive(child.url)}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={isActive(child.url)}
+                                className="focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium"
+                              >
                                 <NavLink to={child.url}>
                                   <child.icon className="h-4 w-4" />
                                   <span>{child.label}</span>
