@@ -37,8 +37,8 @@ function LevelTab({ level }: { level: Level }) {
 
   useEffect(() => {
     if (parent.table) {
-      supabase.from(parent.table).select("id,name").order("name")
-        .then(({ data }) => setParents((data as any) ?? []));
+      (supabase.from as any)(parent.table).select("id,name").order("name")
+        .then(({ data }: any) => setParents((data as any) ?? []));
     }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
