@@ -436,7 +436,7 @@ function LevelTab({ level }: { level: Level }) {
                 {loading ? (
                   <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6"><Loader2 className="h-4 w-4 animate-spin inline mr-2"/>Loading…</TableCell></TableRow>
                 ) : visibleRows.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No entries</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">{t("noEntries")}</TableCell></TableRow>
                 ) : visibleRows.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell>{r.name}</TableCell>
