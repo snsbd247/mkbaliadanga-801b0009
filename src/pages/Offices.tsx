@@ -37,7 +37,7 @@ export default function Offices() {
     setForm({ ...form, payment_priority: arr });
   }
   async function save() {
-    if (!form.name) return toast.error("Name required");
+    if (!form.name) return toast.error(t("nameRequired"));
     const payload = { ...form, established_on: form.established_on || null };
     const { error } = editing
       ? await supabase.from("offices").update(payload).eq("id", editing.id)
@@ -69,7 +69,7 @@ export default function Offices() {
               <div><Label>{t("address")}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
               <div>
                 <Label>{t("paymentAllocationPriority")}</Label>
-                <p className="text-xs text-muted-foreground mb-2">Auto-allocated payments will be applied to dues in this order.</p>
+                <p className="text-xs text-muted-foreground mb-2">{t("autoAllocPriorityHint")}</p>
                 <div className="space-y-1">
                   {form.payment_priority.map((p, i) => (
                     <div key={p} className="flex items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5">

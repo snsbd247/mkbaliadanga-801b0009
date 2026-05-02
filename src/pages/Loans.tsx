@@ -57,8 +57,8 @@ export default function Loans() {
     if (error) return toast.error(error.message);
     await supabase.from("notifications").insert({
       kind: "loan_pending",
-      title: "Loan approval needed",
-      body: `${farmer?.name_en ?? ""} requested ${form.principal}`,
+      title: t("loanApprovalNeededTitle"),
+      body: t("loanRequestedBody").replace("{name}", farmer?.name_en ?? "").replace("{amount}", String(form.principal)),
       link: "/loans",
     });
     toast.success(t("saved")); setOpen(false); load();
@@ -70,7 +70,7 @@ export default function Loans() {
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function remove(id: string) {
-    if (!window.confirm("Delete this loan? Linked payments and ledger entries will be removed. This cannot be undone.")) return;
+    if (!window.confirm(t("deleteLoanConfirm"))) return;
     const { error } = await supabase.from("loans").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("deleted")); load();

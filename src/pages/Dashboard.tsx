@@ -8,24 +8,10 @@ import { money, fmtDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { useAuth } from "@/auth/AuthProvider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
-
-function NoOfficeBanner() {
-  const { rolesLoaded, officeId, isSuper, isAdmin, roles } = useAuth();
-  const { t } = useLang();
-  if (!rolesLoaded || isSuper) return null;
-  const isAssignableRole = isAdmin || roles.includes("staff") || roles.includes("committee");
-  if (!isAssignableRole || officeId) return null;
-  return (
-    <Alert className="mb-4 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30">
-      <AlertTriangle className="h-4 w-4 text-amber-600" />
-      <AlertDescription>{t("noOfficeAssigned")}</AlertDescription>
-    </Alert>
-  );
-}
 
 export default function Dashboard() {
   const { t } = useLang();
@@ -156,9 +142,9 @@ export default function Dashboard() {
       <NoOfficeBanner />
       <div className="mb-3 flex items-center gap-2 text-xs">
         <Badge variant={isSuper ? "secondary" : "default"}>
-          {isSuper ? "Viewing: All offices" : `Office: ${officeName || "—"}`}
+          {isSuper ? t("viewingAllOffices") : `${t("officeLabel")}: ${officeName || "—"}`}
         </Badge>
-        <span className="text-muted-foreground">All figures below respect office-level access (RLS).</span>
+        <span className="text-muted-foreground">{t("officeAccessNote")}</span>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
@@ -184,7 +170,7 @@ export default function Dashboard() {
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
-          <h2 className="font-semibold mb-3">Income vs Expense (last 6 months)</h2>
+          <h2 className="font-semibold mb-3">{t("incomeVsExpense6mo")}</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={trend}>
@@ -193,8 +179,8 @@ export default function Dashboard() {
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
                 <Legend />
-                <Bar dataKey="income" fill="hsl(var(--success))" name="Income" />
-                <Bar dataKey="expense" fill="hsl(var(--destructive))" name="Expense" />
+                <Bar dataKey="income" fill="hsl(var(--success))" name={t("income")} />
+                <Bar dataKey="expense" fill="hsl(var(--destructive))" name={t("expense")} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -230,7 +216,7 @@ export default function Dashboard() {
           </div>
         </Card>
         <Card className="p-5">
-          <h2 className="font-semibold mb-3">Top 5 Dues</h2>
+          <h2 className="font-semibold mb-3">{t("top5Dues")}</h2>
           {topDues.length === 0 ? <p className="text-sm text-muted-foreground">{t("noData")}</p> : (
             <div className="divide-y">
               {topDues.map((d, i) => (

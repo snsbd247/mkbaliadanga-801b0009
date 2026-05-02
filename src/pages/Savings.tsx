@@ -56,8 +56,8 @@ export default function Savings() {
     if (status === "pending") {
       await supabase.from("notifications").insert({
         kind: "withdrawal_pending",
-        title: "Withdrawal request",
-        body: `${farmer?.name_en ?? ""} requested ${form.amount}`,
+        title: t("withdrawalRequestTitle"),
+        body: t("withdrawalRequestedBody").replace("{name}", farmer?.name_en ?? "").replace("{amount}", String(form.amount)),
         link: "/savings",
       });
     }

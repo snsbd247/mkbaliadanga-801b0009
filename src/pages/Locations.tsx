@@ -274,7 +274,7 @@ function LevelTab({ level }: { level: Level }) {
   }, [editChain.union_id, optionalCol, editing]);
 
   async function add() {
-    if (!name.trim()) return toast.error("Name required");
+    if (!name.trim()) return toast.error(t("nameRequired"));
     // Validate full chain selected
     for (const step of chain) {
       if (!addChain[step.col]) return toast.error(`Please select ${step.label} first`);
@@ -285,16 +285,16 @@ function LevelTab({ level }: { level: Level }) {
 
     const { error } = await (supabase.from as any)(level).insert(payload);
     if (error) return toast.error(error.message);
-    toast.success("Added");
+    toast.success(t("addedToast"));
     setName(""); setNameBn(""); setOptionalWardId("");
     load();
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this entry? Existing references will be preserved per database rules.")) return;
+    if (!confirm(t("confirmDeleteEntry"))) return;
     const { error } = await (supabase.from as any)(level).delete().eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); load();
+    toast.success(t("deletedToast")); load();
   }
 
   // ----- EDIT -----
@@ -326,7 +326,7 @@ function LevelTab({ level }: { level: Level }) {
 
   async function saveEdit() {
     if (!editing) return;
-    if (!editName.trim()) return toast.error("Name required");
+    if (!editName.trim()) return toast.error(t("nameRequired"));
     for (const step of chain) {
       if (!editChain[step.col]) return toast.error(`Please select ${step.label}`);
     }
@@ -338,7 +338,7 @@ function LevelTab({ level }: { level: Level }) {
     const { error } = await (supabase.from as any)(level).update(payload).eq("id", editing.id);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Updated");
+    toast.success(t("updatedToast"));
     setEditing(null);
     load();
   }
