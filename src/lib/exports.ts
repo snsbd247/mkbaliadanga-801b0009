@@ -148,8 +148,8 @@ export function exportPaymentReceiptPDF(opts: {
 
   // Signature lines
   y = Math.max(y + 18, 170);
-  doc.line(15, y, 60, y); doc.text("Collector / গ্রহীতা", 37, y + 4, { align: "center" });
-  doc.line(w - 60, y, w - 15, y); doc.text("Authorized Sig. / অনুমোদিত", w - 37, y + 4, { align: "center" });
+  doc.line(15, y, 60, y); doc.text("Collector", 37, y + 4, { align: "center" });
+  doc.line(w - 60, y, w - 15, y); doc.text("Authorized Sig.", w - 37, y + 4, { align: "center" });
 
   doc.save(`receipt-${opts.receipt_no}.pdf`);
 }
