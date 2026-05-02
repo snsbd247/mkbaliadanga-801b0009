@@ -97,6 +97,11 @@ export default function FarmerDetail() {
             <div><div className="text-xs text-muted-foreground">{t("village")}</div><div>{farmer.village ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("upazila")}</div><div>{farmer.upazila ?? "-"}</div></div>
           </div>
+          <div className="flex flex-col items-center gap-1 rounded-md border bg-card p-2">
+            <QRCodeSVG value={`farmer:${farmer.id}`} size={96} />
+            <div className="text-[10px] text-muted-foreground">{t("qrCode")}</div>
+            <div className="font-mono text-[10px]">{farmer.farmer_code}</div>
+          </div>
         </div>
       </Card>
 
