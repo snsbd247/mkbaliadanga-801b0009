@@ -265,6 +265,18 @@ export const translations = {
     branding: "ব্র্যান্ডিং", companyName: "প্রতিষ্ঠানের নাম", logo: "লোগো",
     permissions: "অনুমতি", canView: "দেখা", canAdd: "যোগ", canEdit: "সম্পাদনা", canDelete: "মুছুন",
     notifications: "বিজ্ঞপ্তি", username: "ইউজারনেম", module: "মডিউল",
+    memberNo: "সদস্য নং", sharecropper: "বর্গাদার", landRelations: "জমি সম্পর্ক",
+    activeRelation: "চলমান", historic: "ঐতিহাসিক", sharePercent: "অংশ %",
+    validFrom: "থেকে", validTo: "পর্যন্ত", endRelation: "শেষ",
+    cashbook: "ক্যাশ বুক", receipts: "রসিদ", expenses: "খরচ",
+    receiptNo: "রসিদ নং", head: "খাত", payee: "প্রাপক",
+    bighaRent: "বিঘা ভাড়া", pond: "পুকুর আয়", cropSale: "ফসল বিক্রি",
+    scrap: "ভাংড়ি", loanTaken: "হাওলাত", donation: "অনুদান",
+    auditReport: "অডিট রিপোর্ট", income: "আয়", expense: "ব্যয়", balance: "ব্যালেন্স",
+    statement: "বিবরণী", openingBalance: "প্রারম্ভিক ব্যালেন্স",
+    closingBalance: "শেষ ব্যালেন্স", runningBalance: "চলমান ব্যালেন্স",
+    penalty: "জরিমানা", arrears: "বকেয়া", previousDue: "পূর্ববর্তী বকেয়া",
+    penaltyType: "জরিমানার ধরন", penaltyValue: "জরিমানার মান", graceDays: "ছাড়ের দিন",
   },
 } as const;
 
