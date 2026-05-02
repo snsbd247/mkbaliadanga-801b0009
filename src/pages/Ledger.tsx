@@ -29,10 +29,12 @@ export default function Ledger() {
   const [accountId, setAccountId] = useState<string>("all");
   const [officeId, setOfficeId] = useState<string>("all");
   const [refType, setRefType] = useState<string>("all");
+  const [farmerSearch, setFarmerSearch] = useState<string>("");
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>("");
   const [fyStartMonth, setFyStartMonth] = useState<number>(7);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [farmerRefIds, setFarmerRefIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -47,6 +49,36 @@ export default function Ledger() {
     })();
   }, []);
 
+  // Resolve farmer search → list of reference_ids (loans, savings, payments) belonging to matching farmers
+  useEffect(() => {
+    const term = farmerSearch.trim();
+    if (!term) { setFarmerRefIds(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data: fs } = await supabase
+        .from("farmers").select("id")
+        .or(`name_en.ilike.%${term}%,farmer_code.ilike.%${term}%,member_no.ilike.%${term}%,mobile.ilike.%${term}%`)
+        .limit(500);
+      const ids = (fs ?? []).map((f: any) => f.id);
+      if (!ids.length) { if (!cancelled) setFarmerRefIds([]); return; }
+      const [savings, loans, lps, irrs] = await Promise.all([
+        supabase.from("savings_transactions").select("id").in("farmer_id", ids),
+        supabase.from("loans").select("id").in("farmer_id", ids),
+        supabase.from("loan_payments").select("id,loan_id").in("loan_id",
+          ((await supabase.from("loans").select("id").in("farmer_id", ids)).data ?? []).map((l: any) => l.id)),
+        supabase.from("irrigation_charges").select("id").in("farmer_id", ids),
+      ]);
+      const refIds = [
+        ...((savings.data ?? []).map((x: any) => x.id)),
+        ...((loans.data ?? []).map((x: any) => x.id)),
+        ...((lps.data ?? []).map((x: any) => x.id)),
+        ...((irrs.data ?? []).map((x: any) => x.id)),
+      ];
+      if (!cancelled) setFarmerRefIds(refIds.length ? refIds : []);
+    })();
+    return () => { cancelled = true; };
+  }, [farmerSearch]);
+
   const fyOptions = useMemo(() => listFiscalYears(fyStartMonth, 6), [fyStartMonth]);
 
   useEffect(() => {
@@ -56,8 +88,12 @@ export default function Ledger() {
     if (refType !== "all") q = q.eq("reference_type", refType);
     if (from) q = q.gte("entry_date", from);
     if (to) q = q.lte("entry_date", to);
+    if (farmerRefIds !== null) {
+      if (farmerRefIds.length === 0) { setEntries([]); return; }
+      q = q.in("reference_id", farmerRefIds);
+    }
     q.then(({ data }) => setEntries((data as Entry[]) || []));
-  }, [accountId, officeId, refType, from, to]);
+  }, [accountId, officeId, refType, from, to, farmerRefIds]);
 
   const showRunning = accountId !== "all";
   const withRunning = useMemo(() => {
@@ -133,6 +169,10 @@ export default function Ledger() {
           <div>
             <Label>To</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          <div className="lg:col-span-2">
+            <Label>Farmer search (name / code / member / mobile)</Label>
+            <Input placeholder="Type to filter by farmer…" value={farmerSearch} onChange={(e) => setFarmerSearch(e.target.value)} />
           </div>
         </CardContent>
       </Card>

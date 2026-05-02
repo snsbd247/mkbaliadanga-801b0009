@@ -51,6 +51,7 @@ import Verification from "./pages/admin/Verification";
 import RlsTest from "./pages/admin/RlsTest";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import DemoReset from "./pages/admin/DemoReset";
+import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -82,6 +83,7 @@ const App = () => (
                 <Route path="/irrigation" element={<Irrigation />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/reports/irrigation-due" element={<IrrigationDueReport />} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/scan" element={<Scan />} />

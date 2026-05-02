@@ -29,6 +29,8 @@ function NoOfficeBanner() {
 
 export default function Dashboard() {
   const { t } = useLang();
+  const { isSuper, officeId } = useAuth();
+  const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
@@ -37,6 +39,12 @@ export default function Dashboard() {
   const [composition, setComposition] = useState<any[]>([]);
 
   useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, []);
+
+  useEffect(() => {
+    if (!officeId) { setOfficeName(""); return; }
+    supabase.from("offices").select("name").eq("id", officeId).maybeSingle()
+      .then(({ data }) => setOfficeName((data as any)?.name ?? ""));
+  }, [officeId]);
 
   const sum = (rows: any[], f: string) => rows.reduce((a, r) => a + Number(r[f] || 0), 0);
 
@@ -66,6 +74,11 @@ export default function Dashboard() {
     const irrCollection = sum(irrData, "paid_amount");
     const totalDue = sum(irrData, "due_amount") + sum(loansData.filter(l => l.status === "approved"), "total_payable");
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
+    const monthStart = today.slice(0, 7) + "-01";
+    const { data: monthPayAll } = await supabase
+      .from("payments").select("amount,created_at").gte("created_at", monthStart);
+    const monthCollect = sum(monthPayAll ?? [], "amount");
+    const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
     setStats([
       { label: t("totalFarmers"), value: String(farmersData.length), icon: Users },
@@ -75,7 +88,9 @@ export default function Dashboard() {
       { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins },
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success" },
+      { label: "This Month Collection", value: money(monthCollect), icon: CalendarClock },
       { label: t("totalDue"), value: money(totalDue), icon: AlertTriangle, tone: "danger" },
+      { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
     ]);
     setRecent(paymentsData);
     setPending([
@@ -139,6 +154,12 @@ export default function Dashboard() {
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
       <NoOfficeBanner />
+      <div className="mb-3 flex items-center gap-2 text-xs">
+        <Badge variant={isSuper ? "secondary" : "default"}>
+          {isSuper ? "Viewing: All offices" : `Office: ${officeName || "—"}`}
+        </Badge>
+        <span className="text-muted-foreground">All figures below respect office-level access (RLS).</span>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="stat-card">
