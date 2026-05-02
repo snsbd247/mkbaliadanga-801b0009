@@ -50,6 +50,8 @@ import ReceiptTemplate from "./pages/ReceiptTemplate";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
+import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
+import FarmersImport from "./pages/FarmersImport";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 
@@ -84,6 +86,8 @@ const App = () => (
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/reports/irrigation-due" element={<IrrigationDueReport />} />
                 <Route path="/reports/collections" element={<CollectionReport />} />
+                <Route path="/reports/farmer-rejections" element={<RequirePerm module="farmers" action="can_edit"><FarmerRejectionsReport /></RequirePerm>} />
+                <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/scan" element={<Scan />} />

@@ -5,7 +5,7 @@ import {
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
   BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, MessageSquare, MessagesSquare, MapPin,
-  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard,
+  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -79,6 +79,7 @@ export function AppSidebar() {
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: "Collection Report", permKey: "reports" },
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: "Irrigation Due Report", permKey: "reports" },
+        { url: "/reports/farmer-rejections", icon: AlertTriangle, label: "Rejected Farmer Submissions", permKey: "farmers" },
         { url: "/dues", icon: AlertTriangle, label: "Dues", permKey: "reports" },
       ],
     },
@@ -92,6 +93,7 @@ export function AppSidebar() {
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), permKey: "audit" },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: "QR Rotation", superOnly: true },
         { url: "/admin/bulk-cards", icon: IdCard, label: "Bulk Cards", permKey: "farmers" },
+        { url: "/farmers/import", icon: Upload, label: "Bulk Farmer Import", permKey: "farmers" },
         { url: "/admin/receipt-template", icon: Receipt, label: "Receipt Template", superOnly: true },
         { url: "/sms-settings", icon: MessageSquare, label: "SMS Settings", superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: "SMS Logs", permKey: "sms" },
