@@ -391,10 +391,11 @@ export default function SmsSettings() {
   }
 
   async function load() {
-    const [settingsRes, officesRes, overridesRes] = await Promise.all([
+    const [settingsRes, officesRes, overridesRes, tokenRes] = await Promise.all([
       supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("offices").select("id,name").order("name"),
       supabase.from("sms_office_settings").select("office_id,enabled,sender_id"),
+      supabase.from("sms_provider_secrets" as any).select("api_token,updated_at").eq("provider", "greenweb").maybeSingle(),
     ]);
     if (settingsRes.error) return toast.error(settingsRes.error.message);
     setS(settingsRes.data as any);
@@ -402,6 +403,38 @@ export default function SmsSettings() {
     const map: Record<string, OfficeOverride> = {};
     for (const o of ((overridesRes.data as any) ?? []) as OfficeOverride[]) map[o.office_id] = o;
     setOverrides(map);
+    const tok = (tokenRes as any)?.data;
+    setTokenConfigured(!!tok?.api_token);
+    setTokenUpdatedAt(tok?.updated_at ?? null);
+    setTokenInput("");
+  }
+
+  async function saveProviderToken() {
+    const value = tokenInput.trim();
+    if (!value) return toast.error("Enter the GreenWeb API token");
+    setTokenBusy(true);
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("sms_provider_secrets" as any)
+      .upsert(
+        { provider: "greenweb", api_token: value, updated_at: new Date().toISOString(), updated_by: u.user?.id ?? null } as any,
+        { onConflict: "provider" },
+      );
+    setTokenBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("GreenWeb API token saved");
+    setTokenInput("");
+    setShowToken(false);
+    await load();
+  }
+
+  async function clearProviderToken() {
+    setTokenBusy(true);
+    const { error } = await supabase.from("sms_provider_secrets" as any).delete().eq("provider", "greenweb");
+    setTokenBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Token cleared");
+    await load();
   }
 
   async function saveOfficeOverride(officeId: string, patch: Partial<OfficeOverride>) {
