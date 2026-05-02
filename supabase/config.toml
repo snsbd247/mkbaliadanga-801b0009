@@ -33,3 +33,6 @@ verify_jwt = false
 [functions.ledger-reconcile-notify]
 verify_jwt = false
 
+[functions.data-integrity-scan]
+verify_jwt = false
+
