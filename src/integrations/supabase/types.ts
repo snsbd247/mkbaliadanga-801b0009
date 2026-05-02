@@ -14,24 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _pwcheck: {
-        Row: {
-          hash: string | null
-          id: number
-          ok: boolean | null
-        }
-        Insert: {
-          hash?: string | null
-          id: number
-          ok?: boolean | null
-        }
-        Update: {
-          hash?: string | null
-          id?: number
-          ok?: boolean | null
-        }
-        Relationships: []
-      }
       audit_logs: {
         Row: {
           action: string
