@@ -54,6 +54,7 @@ import DemoReset from "./pages/admin/DemoReset";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
 import NotFound from "./pages/NotFound.tsx";
+import { RequirePerm } from "./components/auth/RequirePerm";
 
 const queryClient = new QueryClient();
 
