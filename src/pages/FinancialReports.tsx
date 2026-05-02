@@ -226,6 +226,35 @@ export default function FinancialReports() {
         </TabsContent>
 
         <TabsContent value="bs">
+          <div className="mb-3 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => exportTablePDF(
+              "Balance Sheet",
+              ["Section", "Account", "Amount"],
+              [
+                ...assetRows.map((r) => ["Asset", r.name, money(r.raw.debit - r.raw.credit)]),
+                ["", "Total Assets", money(totalAssets)],
+                ...liabilityRows.map((r) => ["Liability", r.name, money(r.raw.credit - r.raw.debit)]),
+                ["Equity", "Retained Earnings", money(netIncome)],
+                ...equityRows.map((r) => ["Equity", r.name, money(r.raw.credit - r.raw.debit)]),
+                ["", "Total Liab. + Equity", money(totalLiabilities + totalEquity)],
+              ],
+            )}>
+              <FileDown className="mr-1 h-4 w-4" /> PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => exportExcel(
+              "balance-sheet", "Balance Sheet",
+              [
+                ...assetRows.map((r) => ({ Section: "Asset", Account: r.name, Amount: r.raw.debit - r.raw.credit })),
+                { Section: "", Account: "Total Assets", Amount: totalAssets },
+                ...liabilityRows.map((r) => ({ Section: "Liability", Account: r.name, Amount: r.raw.credit - r.raw.debit })),
+                { Section: "Equity", Account: "Retained Earnings", Amount: netIncome },
+                ...equityRows.map((r) => ({ Section: "Equity", Account: r.name, Amount: r.raw.credit - r.raw.debit })),
+                { Section: "", Account: "Total Liab. + Equity", Amount: totalLiabilities + totalEquity },
+              ],
+            )}>
+              <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
+            </Button>
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader><CardTitle className="text-lg">Assets</CardTitle></CardHeader>
@@ -261,6 +290,25 @@ export default function FinancialReports() {
 
         <TabsContent value="cash">
           <Card><CardContent className="pt-6">
+            <div className="mb-3 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => exportTablePDF(
+                "Cash Book",
+                ["Date", "Description", "Cash In", "Cash Out"],
+                [
+                  ...cashEntries.map((e) => [fmtDate(e.entry_date), e.description || "-", e.debit > 0 ? money(e.debit) : "", e.credit > 0 ? money(e.credit) : ""]),
+                  ["", "Totals", money(cashTotal.in), money(cashTotal.out)],
+                  ["", "Net Cash", money(cashTotal.in - cashTotal.out), ""],
+                ],
+              )}>
+                <FileDown className="mr-1 h-4 w-4" /> PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => exportExcel(
+                "cash-book", "Cash Book",
+                cashEntries.map((e) => ({ Date: e.entry_date, Description: e.description, "Cash In": Number(e.debit) || 0, "Cash Out": Number(e.credit) || 0 })),
+              )}>
+                <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
+              </Button>
+            </div>
             <Table>
               <TableHeader><TableRow>
                 <TableHead>Date</TableHead><TableHead>Description</TableHead>
