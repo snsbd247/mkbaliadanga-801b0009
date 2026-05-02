@@ -50,18 +50,51 @@ export function exportFarmerReportPDF(farmer: any, ctx: any) {
   doc.save(`farmer-${farmer.farmer_code}.pdf`);
 }
 
-export function exportTablePDF(title: string, head: string[], rows: any[][]) {
-  const doc = new jsPDF();
-  doc.setFontSize(14); doc.text(title, 14, 14);
-  autoTable(doc, { startY: 20, head: [head], body: rows });
-  doc.save(`${title.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+// Build a clean filename: "report-name_2025-01-01_to_2025-01-31"
+export function buildExportName(
+  reportName: string,
+  range?: { from?: string | null; to?: string | null }
+) {
+  const slug = reportName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  const f = range?.from?.slice(0, 10);
+  const t = range?.to?.slice(0, 10);
+  if (f && t) return `${slug}_${f}_to_${t}`;
+  if (f) return `${slug}_from_${f}`;
+  if (t) return `${slug}_until_${t}`;
+  return `${slug}_${new Date().toISOString().slice(0, 10)}`;
 }
 
-export function exportExcel(filename: string, sheetName: string, rows: any[]) {
+export function exportTablePDF(
+  title: string,
+  head: string[],
+  rows: any[][],
+  range?: { from?: string | null; to?: string | null }
+) {
+  const doc = new jsPDF();
+  doc.setFontSize(14); doc.text(title, 14, 14);
+  if (range?.from || range?.to) {
+    doc.setFontSize(9);
+    doc.text(`Period: ${range.from || "—"} to ${range.to || "—"}`, 14, 20);
+    autoTable(doc, { startY: 26, head: [head], body: rows });
+  } else {
+    autoTable(doc, { startY: 20, head: [head], body: rows });
+  }
+  doc.save(`${buildExportName(title, range)}.pdf`);
+}
+
+export function exportExcel(
+  filename: string,
+  sheetName: string,
+  rows: any[],
+  range?: { from?: string | null; to?: string | null }
+) {
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  XLSX.writeFile(wb, `${buildExportName(filename, range)}.xlsx`);
 }
 
 // ---------- Payment Receipt PDF ----------
