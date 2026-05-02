@@ -159,8 +159,9 @@ function LevelTab({ level }: { level: Level }) {
 }
 
 export default function Locations() {
-  const { isSuper } = useAuth();
+  const { isSuper, rolesLoaded } = useAuth();
   useEffect(() => { document.title = "Locations"; }, []);
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   return (

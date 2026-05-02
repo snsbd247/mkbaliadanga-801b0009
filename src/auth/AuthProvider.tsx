@@ -8,6 +8,7 @@ interface AuthCtx {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  rolesLoaded: boolean;
   roles: AppRole[];
   officeId: string | null;
   isSuper: boolean;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [officeId, setOfficeId] = useState<string | null>(null);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
 
   const loadProfile = async (uid: string) => {
     const [{ data: rolesData }, { data: prof }] = await Promise.all([
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     setRoles((rolesData ?? []).map((r: any) => r.role as AppRole));
     setOfficeId(prof?.office_id ?? null);
+    setRolesLoaded(true);
   };
 
   useEffect(() => {
@@ -40,10 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
+        setRolesLoaded(false);
         setTimeout(() => loadProfile(s.user.id), 0);
       } else {
         setRoles([]);
         setOfficeId(null);
+        setRolesLoaded(true);
       }
     });
 
@@ -51,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) loadProfile(s.user.id);
+      else setRolesLoaded(true);
       setLoading(false);
     });
 
@@ -65,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isCommittee = isSuper || roles.includes("committee");
 
   return (
-    <Ctx.Provider value={{ user, session, loading, roles, officeId, isSuper, isAdmin, isCommittee, signOut, refresh }}>
+    <Ctx.Provider value={{ user, session, loading, rolesLoaded, roles, officeId, isSuper, isAdmin, isCommittee, signOut, refresh }}>
       {children}
     </Ctx.Provider>
   );

@@ -338,7 +338,7 @@ function isValidPhone(p: string): boolean {
 }
 
 export default function SmsSettings() {
-  const { isSuper } = useAuth();
+  const { isSuper, rolesLoaded } = useAuth();
   const { lang } = useLang();
   const L = I[lang === "bn" ? "bn" : "en"];
 
@@ -428,6 +428,7 @@ export default function SmsSettings() {
 
   const hasMissing = Object.keys(missingByKey).length > 0;
 
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!isSuper) return <Navigate to="/" replace />;
   if (!s) return <div className="p-6 text-muted-foreground">Loading…</div>;
 

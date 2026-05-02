@@ -13,7 +13,7 @@ import { notifyBrandingChange, useBranding } from "@/lib/branding";
 
 export default function Settings() {
   const { t } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, rolesLoaded } = useAuth();
   const brand = useBranding();
   const [form, setForm] = useState<any>(brand);
   const [logo, setLogo] = useState<File | null>(null);
@@ -22,6 +22,7 @@ export default function Settings() {
   useEffect(() => { document.title = `${t("settings")} — ${t("appName")}`; }, [t]);
   useEffect(() => { setForm(brand); }, [brand.company_name]);
 
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   async function save() {
