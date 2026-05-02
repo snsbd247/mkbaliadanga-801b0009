@@ -252,7 +252,7 @@ export default function Cashbook() {
               { label: "Irrigation Collected", value: totals.irrCollected },
               { label: "Irrigation Outstanding Due", value: totals.irrDue },
             ],
-          })}><FileDown className="h-4 w-4 mr-1" />Audit Report PDF</Button>
+          })}><FileDown className="h-4 w-4 mr-1" />{t("auditReportPdf")}</Button>
         </div>
       </Card>
 
