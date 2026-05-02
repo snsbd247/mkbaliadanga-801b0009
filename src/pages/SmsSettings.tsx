@@ -450,6 +450,48 @@ export default function SmsSettings() {
     await load();
   }
 
+  async function runTestConnection() {
+    const mobile = (testConnPhone || tplTestMobile || testMobile || "").trim();
+    if (!mobile || mobile.replace(/\D/g, "").length < 10) {
+      toast.error("Enter a valid mobile number to test (10–15 digits)");
+      return;
+    }
+    setTestConnBusy(true);
+    setTestConnResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-sms", {
+        body: {
+          test_connection: true,
+          mobile,
+          message: `Smart Irrigation: SMS test ${new Date().toLocaleTimeString()}`,
+        },
+      });
+      if (error) {
+        // supabase-js wraps non-2xx responses; try to surface server JSON
+        const ctx: any = (error as any).context;
+        let parsed: any = null;
+        try { parsed = ctx?.body ? JSON.parse(ctx.body) : null; } catch { /* ignore */ }
+        setTestConnResult({
+          ok: false,
+          error: parsed?.error || error.message,
+          response: parsed?.response,
+          request: parsed?.request,
+          tested_at: parsed?.tested_at,
+        });
+        toast.error(parsed?.error || error.message || "Test failed");
+        return;
+      }
+      setTestConnResult(data as any);
+      if ((data as any)?.ok) toast.success("Test SMS sent — provider responded OK");
+      else toast.error((data as any)?.error || "Provider rejected the test SMS");
+    } catch (e: any) {
+      setTestConnResult({ ok: false, error: String(e?.message || e) });
+      toast.error(String(e?.message || e));
+    } finally {
+      setTestConnBusy(false);
+    }
+  }
+
   async function saveOfficeOverride(officeId: string, patch: Partial<OfficeOverride>) {
     const current = overrides[officeId] ?? { office_id: officeId, enabled: true, sender_id: null };
     const next: OfficeOverride = { ...current, ...patch, office_id: officeId };
