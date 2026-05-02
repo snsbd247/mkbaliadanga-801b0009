@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getRlsErrors, clearRlsErrors, RlsErrorEntry } from "@/lib/rlsLogger";
 import { Loader2, RefreshCw, Trash2, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { fmtDate } from "@/lib/format";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const OPERATIONAL_TABLES = [
   "farmers", "loans", "loan_payments", "savings_transactions",
