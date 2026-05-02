@@ -211,8 +211,10 @@ export default function Reports() {
           <TabsTrigger value="monthly">Monthly Financial</TabsTrigger>
           <TabsTrigger value="recon">Reconciliation</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigationReport")}</TabsTrigger>
+          <TabsTrigger value="arrears">Irrigation Arrears</TabsTrigger>
           <TabsTrigger value="loan">{t("loanReport")}</TabsTrigger>
           <TabsTrigger value="savings">{t("savingsReport")}</TabsTrigger>
+          <TabsTrigger value="balances">Savings Balances</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
 
