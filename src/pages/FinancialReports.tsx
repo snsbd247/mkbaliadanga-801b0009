@@ -7,9 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange, reportFilename } from "@/lib/accounting";
 
 type Account = { id: string; code: string; name: string; type: "asset"|"liability"|"income"|"expense"|"equity" };
 type Entry = { id: string; entry_date: string; account_id: string; debit: number; credit: number; description: string | null };
@@ -17,13 +19,22 @@ type Entry = { id: string; entry_date: string; account_id: string; debit: number
 export default function FinancialReports() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
-  const today = new Date().toISOString().slice(0, 10);
   const [from, setFrom] = useState<string>("");
-  const [to, setTo] = useState<string>(today);
+  const [to, setTo] = useState<string>("");
+  const [fyStartMonth, setFyStartMonth] = useState<number>(7);
 
   useEffect(() => {
-    supabase.from("accounts").select("id,code,name,type").order("code")
-      .then(({ data }) => setAccounts((data as Account[]) || []));
+    (async () => {
+      const [{ data }, m] = await Promise.all([
+        supabase.from("accounts").select("id,code,name,type").order("code"),
+        getFiscalStartMonth(),
+      ]);
+      setAccounts((data as Account[]) || []);
+      setFyStartMonth(m);
+      // default to current fiscal year
+      const fys = listFiscalYears(m, 1);
+      if (fys[0]) { setFrom(fys[0].range.from); setTo(fys[0].range.to); }
+    })();
   }, []);
 
   useEffect(() => {
@@ -32,6 +43,9 @@ export default function FinancialReports() {
     if (to) q = q.lte("entry_date", to);
     q.limit(10000).then(({ data }) => setEntries((data as Entry[]) || []));
   }, [from, to]);
+
+  const fyOptions = useMemo(() => listFiscalYears(fyStartMonth, 6), [fyStartMonth]);
+  const range = { from, to };
 
   const balByAcct = useMemo(() => {
     const m = new Map<string, { debit: number; credit: number }>();
@@ -95,11 +109,48 @@ export default function FinancialReports() {
       <PageHeader title="Financial Reports" description="Trial Balance, Income Statement, Balance Sheet, Cash Book" />
 
       <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2">
+        <CardContent className="grid gap-3 pt-6 md:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <Label>Fiscal Year</Label>
+            <Select onValueChange={(v) => {
+              const fy = fyOptions.find((f) => String(f.startYear) === v);
+              if (fy) { setFrom(fy.range.from); setTo(fy.range.to); }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Select FY" /></SelectTrigger>
+              <SelectContent>
+                {fyOptions.map((f) => <SelectItem key={f.startYear} value={String(f.startYear)}>FY {f.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Quick period</Label>
+            <Select onValueChange={(v) => {
+              const now = new Date();
+              if (v === "this-month") { const r = monthRange(now.getFullYear(), now.getMonth() + 1); setFrom(r.from); setTo(r.to); }
+              else if (v === "last-month") { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); const r = monthRange(d.getFullYear(), d.getMonth() + 1); setFrom(r.from); setTo(r.to); }
+              else if (v.startsWith("q")) { const r = quarterRange(now.getFullYear(), Number(v.slice(1))); setFrom(r.from); setTo(r.to); }
+              else if (v === "ytd") { setFrom(`${now.getFullYear()}-01-01`); setTo(new Date().toISOString().slice(0, 10)); }
+              else if (v === "all") { setFrom(""); setTo(""); }
+            }}>
+              <SelectTrigger><SelectValue placeholder="Select period" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="this-month">This month</SelectItem>
+                <SelectItem value="last-month">Last month</SelectItem>
+                <SelectItem value="q1">Q1</SelectItem>
+                <SelectItem value="q2">Q2</SelectItem>
+                <SelectItem value="q3">Q3</SelectItem>
+                <SelectItem value="q4">Q4</SelectItem>
+                <SelectItem value="ytd">Year-to-date</SelectItem>
+                <SelectItem value="all">All time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label>From</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label>To</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
         </CardContent>
       </Card>
+
+      <p className="text-xs text-muted-foreground">Period: {from || "open"} → {to || "today"}</p>
 
       <Tabs defaultValue="trial">
         <TabsList>
@@ -113,7 +164,7 @@ export default function FinancialReports() {
           <Card><CardContent className="pt-6">
             <div className="mb-3 flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF(
-                "Trial Balance",
+                `Trial Balance ${from || "open"} to ${to || "today"}`,
                 ["Code", "Account", "Type", "Debit", "Credit"],
                 [
                   ...trial.map((r) => [r.code, r.name, r.type, r.raw.debit ? money(r.raw.debit) : "", r.raw.credit ? money(r.raw.credit) : ""]),
@@ -123,7 +174,7 @@ export default function FinancialReports() {
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportExcel(
-                "trial-balance", "Trial Balance",
+                reportFilename("trial-balance", range), `Trial Balance ${from || "open"} to ${to || "today"}`,
                 trial.map((r) => ({ Code: r.code, Account: r.name, Type: r.type, Debit: r.raw.debit, Credit: r.raw.credit })),
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
@@ -162,7 +213,7 @@ export default function FinancialReports() {
         <TabsContent value="pnl">
           <div className="mb-3 flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTablePDF(
-              "Income Statement",
+              `Income Statement ${from || "open"} to ${to || "today"}`,
               ["Section", "Account", "Amount"],
               [
                 ...incomeRows.map((r) => ["Income", r.name, money(r.raw.credit - r.raw.debit)]),
@@ -175,7 +226,7 @@ export default function FinancialReports() {
               <FileDown className="mr-1 h-4 w-4" /> PDF
             </Button>
             <Button variant="outline" size="sm" onClick={() => exportExcel(
-              "income-statement", "P&L",
+              reportFilename("income-statement", range), "P&L",
               [
                 ...incomeRows.map((r) => ({ Section: "Income", Account: r.name, Amount: r.raw.credit - r.raw.debit })),
                 { Section: "", Account: "Total Income", Amount: totalIncome },
@@ -228,7 +279,7 @@ export default function FinancialReports() {
         <TabsContent value="bs">
           <div className="mb-3 flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => exportTablePDF(
-              "Balance Sheet",
+              `Balance Sheet ${from || "open"} to ${to || "today"}`,
               ["Section", "Account", "Amount"],
               [
                 ...assetRows.map((r) => ["Asset", r.name, money(r.raw.debit - r.raw.credit)]),
@@ -242,7 +293,7 @@ export default function FinancialReports() {
               <FileDown className="mr-1 h-4 w-4" /> PDF
             </Button>
             <Button variant="outline" size="sm" onClick={() => exportExcel(
-              "balance-sheet", "Balance Sheet",
+              reportFilename("balance-sheet", range), `Balance Sheet ${from || "open"} to ${to || "today"}`,
               [
                 ...assetRows.map((r) => ({ Section: "Asset", Account: r.name, Amount: r.raw.debit - r.raw.credit })),
                 { Section: "", Account: "Total Assets", Amount: totalAssets },
@@ -292,7 +343,7 @@ export default function FinancialReports() {
           <Card><CardContent className="pt-6">
             <div className="mb-3 flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF(
-                "Cash Book",
+                `Cash Book ${from || "open"} to ${to || "today"}`,
                 ["Date", "Description", "Cash In", "Cash Out"],
                 [
                   ...cashEntries.map((e) => [fmtDate(e.entry_date), e.description || "-", e.debit > 0 ? money(e.debit) : "", e.credit > 0 ? money(e.credit) : ""]),
@@ -303,7 +354,7 @@ export default function FinancialReports() {
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportExcel(
-                "cash-book", "Cash Book",
+                reportFilename("cash-book", range), `Cash Book ${from || "open"} to ${to || "today"}`,
                 cashEntries.map((e) => ({ Date: e.entry_date, Description: e.description, "Cash In": Number(e.debit) || 0, "Cash Out": Number(e.credit) || 0 })),
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
