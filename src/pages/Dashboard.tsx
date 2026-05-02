@@ -65,7 +65,58 @@ export default function Dashboard() {
       ...((pendingW.data ?? []).map((x: any) => ({ ...x, kind: "withdraw" }))),
       ...((pendingL.data ?? []).map((x: any) => ({ ...x, kind: "loan" }))),
     ]);
+
+    // Trend: last 6 months
+    const months: { key: string; label: string; income: number; expense: number; savings: number }[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        label: d.toLocaleString("en", { month: "short" }),
+        income: 0, expense: 0, savings: 0,
+      });
+    }
+    const fromIso = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
+    const [pAll, eAll, sAll] = await Promise.all([
+      supabase.from("payments").select("amount,created_at").gte("created_at", fromIso),
+      supabase.from("expenses").select("amount,expense_date").gte("expense_date", fromIso),
+      supabase.from("savings_transactions").select("type,amount,txn_date,status").eq("status", "approved").gte("txn_date", fromIso),
+    ]);
+    (pAll.data ?? []).forEach((p: any) => {
+      const m = months.find(x => x.key === p.created_at.slice(0, 7)); if (m) m.income += Number(p.amount || 0);
+    });
+    (eAll.data ?? []).forEach((e: any) => {
+      const m = months.find(x => x.key === e.expense_date.slice(0, 7)); if (m) m.expense += Number(e.amount || 0);
+    });
+    (sAll.data ?? []).forEach((s: any) => {
+      const m = months.find(x => x.key === s.txn_date.slice(0, 7));
+      if (!m) return;
+      m.savings += s.type === "deposit" ? Number(s.amount || 0) : -Number(s.amount || 0);
+    });
+    setTrend(months);
+
+    setComposition([
+      { name: "Savings", value: Math.max(0, totalSavings) },
+      { name: "Shares", value: Math.max(0, sum(sharesData, "balance")) },
+      { name: "Loan O/S", value: Math.max(0, totalLoan) },
+      { name: "Irr Due", value: Math.max(0, sum(irrData, "due_amount")) },
+    ]);
+
+    const dueMap = new Map<string, { name: string; code: string; due: number }>();
+    const { data: irrDue } = await supabase
+      .from("irrigation_charges")
+      .select("farmer_id,due_amount,farmers(name_en,farmer_code)")
+      .gt("due_amount", 0);
+    (irrDue ?? []).forEach((r: any) => {
+      const key = r.farmer_id;
+      const cur = dueMap.get(key) ?? { name: r.farmers?.name_en ?? "—", code: r.farmers?.farmer_code ?? "—", due: 0 };
+      cur.due += Number(r.due_amount); dueMap.set(key, cur);
+    });
+    setTopDues(Array.from(dueMap.values()).sort((a, b) => b.due - a.due).slice(0, 5));
   }
+
+  const pieColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--destructive))"];
 
   return (
     <>
