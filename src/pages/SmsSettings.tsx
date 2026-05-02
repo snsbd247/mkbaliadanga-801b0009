@@ -103,6 +103,8 @@ export default function SmsSettings() {
   const [busy, setBusy] = useState(false);
   const [testMobile, setTestMobile] = useState("");
   const [testMsg, setTestMsg] = useState("পরীক্ষামূলক বার্তা — Smart Irrigation");
+  const [tplTestMobile, setTplTestMobile] = useState("");
+  const [tplTestBusy, setTplTestBusy] = useState<string | null>(null);
   const [sampleVars, setSampleVars] = useState<Record<string, string>>(DEFAULT_SAMPLE_VARS);
   const [offices, setOffices] = useState<Office[]>([]);
   const [overrides, setOverrides] = useState<Record<string, OfficeOverride>>({});
