@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_system: boolean
+          name: string
+          name_bn: string | null
+          parent_id: string | null
+          type: Database["public"]["Enums"]["account_type"]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name: string
+          name_bn?: string | null
+          parent_id?: string | null
+          type: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name?: string
+          name_bn?: string | null
+          parent_id?: string | null
+          type?: Database["public"]["Enums"]["account_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -446,6 +493,56 @@ export type Database = {
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ledger_entries: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          credit: number
+          debit: number
+          description: string | null
+          entry_date: string
+          id: string
+          office_id: string | null
+          reference_id: string | null
+          reference_type: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by?: string | null
+          credit?: number
+          debit?: number
+          description?: string | null
+          entry_date?: string
+          id?: string
+          office_id?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          credit?: number
+          debit?: number
+          description?: string | null
+          entry_date?: string
+          id?: string
+          office_id?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -1060,9 +1157,28 @@ export type Database = {
       }
     }
     Functions: {
+      _acct: { Args: { _code: string }; Returns: string }
+      _clear_ref: {
+        Args: { _ref_id: string; _ref_type: string }
+        Returns: undefined
+      }
       _lookup_email_by_username: {
         Args: { _username: string }
         Returns: string
+      }
+      _post_pair: {
+        Args: {
+          _amount: number
+          _credit_acct: string
+          _date: string
+          _debit_acct: string
+          _desc: string
+          _office: string
+          _ref_id: string
+          _ref_type: string
+          _user: string
+        }
+        Returns: undefined
       }
       compute_penalty: {
         Args: { _base: number; _days_overdue: number }
@@ -1085,6 +1201,7 @@ export type Database = {
       is_committee_or_super: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      account_type: "asset" | "liability" | "income" | "expense" | "equity"
       app_role: "super_admin" | "admin" | "staff" | "committee"
       approval_status: "pending" | "approved" | "rejected"
       field_type: "high_land" | "medium_land" | "low_land" | "other"
@@ -1233,6 +1350,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["asset", "liability", "income", "expense", "equity"],
       app_role: ["super_admin", "admin", "staff", "committee"],
       approval_status: ["pending", "approved", "rejected"],
       field_type: ["high_land", "medium_land", "low_land", "other"],
