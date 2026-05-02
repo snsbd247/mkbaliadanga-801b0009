@@ -1,116 +1,81 @@
-## SMS Provider Hardening Plan
+## Goal
 
-Five related improvements to GreenWeb SMS configuration. Two are partially built and will be polished; three are new.
+Wipe all transactional/demo data, keep admin users + system settings, top up the Rajshahi location hierarchy down to union/ward/mouza level, and seed a realistic demo dataset (farmers, lands, savings, loans, irrigation, ledger, QR tokens) with full referential integrity.
 
----
+## Current state (verified)
 
-### 1. Token rotation with staging + expiry (NEW)
+- Divisions (8) and districts (64, all 8 Rajshahi districts present) and upazilas (492) are already fully seeded nationally.
+- Rajshahi division has all 8 districts with upazilas already in place.
+- Sparse: unions (5), wards (9), mouzas (5) — need to be expanded for Rajshahi.
+- Existing demo: 10 farmers, 10 lands, 5 savings, 1 loan, 3 irrigation, 24 ledger entries, 0 qr_tokens — all to be cleared.
+- Admin/system to preserve: `profiles` (1), `user_roles` (2), `offices` (1), `company_settings`, `receipt_settings`, `sms_*` settings, `accounts` (chart of accounts), `seasons`, `role_permissions`, `qr_rotation_settings`.
 
-Extend `sms_provider_secrets` so multiple tokens can coexist per provider with a clear lifecycle:
+## Plan
 
-```text
-provider | api_token | status   | expires_at | activated_at | updated_by
-greenweb | tok_xxx   | active   | 2026-08-01 | 2026-05-02   | <uuid>
-greenweb | tok_yyy   | staged   | 2026-11-01 | NULL         | <uuid>
-greenweb | tok_zzz   | retired  | -          | -            | <uuid>
-```
+### Step 1 — Safe data reset (one migration)
 
-- Schema change: drop the `provider`-only PK, add `id uuid PK`, columns `status` (`active|staged|retired`), `expires_at timestamptz nullable`, `activated_at timestamptz nullable`, `label text nullable`. Partial unique index ensures **only one `active` row per provider**.
-- Save flow: new tokens always land as **`staged` + disabled** (per your choice). A separate **"Activate"** action atomically retires the current `active` row and promotes the staged one — zero downtime, instant rollback by re-activating the retired row before it's deleted.
-- `getGreenWebToken()` in the edge function selects the single `active` row; if none active or `expires_at < now()`, send fails with a clear "token expired/not active" error.
-- UI shows a token list (status badge, expiry, last updated, who) with **Activate / Retire / Delete** buttons.
+Wrap in a single transaction. Use `TRUNCATE ... RESTART IDENTITY CASCADE` in dependency order. Tables cleared:
 
-### 2. Audit log for SMS secret changes (NEW)
+- `qr_tokens`, `farmer_otps`, `farmer_portal_sessions`
+- `payment_allocations`, `payments`, `loan_payments`, `receipts`
+- `irrigation_charges`, `loans`, `savings_transactions`, `savings_yearly_opening`, `shares`
+- `ledger_entries`, `journal_entry_lines`, `journal_entries`
+- `expenses`, `notifications`, `sms_logs`, `audit_logs`
+- `land_relations`, `lands`, `farmers`
 
-Database trigger `trg_audit_sms_provider_secrets` on INSERT/UPDATE/DELETE writes to existing `public.audit_logs`:
+Tables explicitly preserved: `profiles`, `user_roles`, `user_permissions`, `role_permissions`, `offices`, `company_settings`, `receipt_settings`, `sms_office_settings`, `sms_provider_secrets`, `sms_settings`, `accounts`, `seasons`, `qr_rotation_settings`, `accounting_periods`, and the entire location hierarchy.
 
-- `action`: `sms_secret.create | sms_secret.update | sms_secret.activate | sms_secret.retire | sms_secret.delete`
-- `entity`: `sms_provider_secrets`, `entity_id`: row id
-- `meta`: `{ provider, status_before, status_after, expires_at, label, masked_token: "tok_****abcd" }`
-- `user_id`: from `auth.uid()`; never stores raw token.
+### Step 2 — Top up Rajshahi location hierarchy
 
-Settings page gets a **"Recent token changes"** panel reading the last 20 entries (super-admin RLS already covers this).
+Insert (idempotent, `ON CONFLICT DO NOTHING` on existing unique keys):
 
-### 3. Token format validation (NEW)
+- ~3–5 representative **unions** per upazila across all 8 Rajshahi districts (~250 unions total) with English + Bangla names.
+- ~9 standard **wards** per seeded union.
+- ~2–3 **mouzas** per seeded union with realistic JL numbers.
 
-Per your choice: **alphanumeric, 20–80 chars** (`/^[A-Za-z0-9]{20,80}$/`).
+This stays well within practical seed size while giving every Rajshahi upazila navigable child data. Existing 5 unions / 9 wards / 5 mouzas remain untouched.
 
-- **Client (zod)** in `SmsSettings.tsx` save handler — rejects with inline error before any network call.
-- **Server (zod)** in `send-sms` edge function on the save path is N/A (saves go direct to DB), so we add a **Postgres CHECK constraint** plus a `BEFORE INSERT/UPDATE` trigger that raises a friendly error: `"GreenWeb token must be 20–80 alphanumeric characters"`. This guarantees rejection even if someone bypasses the UI.
+### Step 3 — Seed demo data (single insert script)
 
-### 4. Dashboard SMS status indicator (NEW)
+All farmers attached to `office_id` = the existing single office, distributed across Rajshahi districts/upazilas/unions/wards/mouzas.
 
-New compact card on `src/pages/Dashboard.tsx` (super-admin & admin only), showing:
+- **30 farmers**: realistic Bangla + English names, unique `farmer_code` (`MK-0001`…`MK-0030`), valid mobile (`017xxxxxxxx`), NID, address, photo placeholder URL, location FKs filled, `created_by` = first super_admin.
+- **Lands**: 1–2 per farmer, mix of `field_type` and `owner_type`, sizes 0.3–3.5 acres, mouza_id linked.
+- **Savings**: 3–8 transactions per farmer (mix `deposit`/`withdrawal`), realistic amounts ৳200–৳5,000, dates spread over last 12 months, `status='approved'`.
+- **Loans**: ~15 loans across farmers — 5 active (no payments), 5 partially paid (loan_payments cover 30–60%), 5 fully paid; `interest_rate` 8–12%, `total_payable` computed.
+- **Loan payments**: rows in `loan_payments` matching the partial/completed loans.
+- **Irrigation charges**: 1–2 per farmer for current season (`per_size` basis), with `paid_amount` random portion of `total`, leaving accurate `due_amount`.
+- **Receipts + payment_allocations**: generated for every payment so receipt module works.
+- **Ledger entries**: insert matching debit/credit pairs for each savings deposit/withdrawal, loan disbursement, loan payment, irrigation charge, and irrigation collection — using existing accounts in the chart of accounts. Trial balance must net to zero.
+- **QR tokens**: one active token per farmer (random 32-char), `revoked=false`, no expiry.
 
-- **Status pill**: `Ready` (green) / `Disabled` (gray) / `No token` (red) / `Expiring in N days` (amber, < 14 days) / `Expired` (red).
-- Last updated timestamp + updater name.
-- Sender ID.
-- Click → navigates to `/settings/sms`.
+### Step 4 — Consistency verification
 
-Reads from a small RPC `get_sms_provider_status()` (security definer, returns no token bytes) so we don't expose the secret table to non-super-admins.
+After insert, run validators in the same migration block:
 
-### 5. "Send test SMS" button (POLISH — already exists)
+- Every `lands.farmer_id`, `loans.farmer_id`, `savings_transactions.farmer_id`, `irrigation_charges.farmer_id`, `qr_tokens.farmer_id` resolves.
+- `SUM(debit) = SUM(credit)` in `ledger_entries`.
+- Each loan: `principal + interest - SUM(loan_payments.amount) = outstanding` matches expected status.
+- Each farmer has exactly one active QR token.
 
-`runTestConnection` in `SmsSettings.tsx` and `test_connection` mode in `send-sms` are already implemented. Polish work:
+If any check fails, the transaction rolls back.
 
-- Make the test path read the **active** token (works automatically after step 1).
-- Add a confirmation dialog ("This sends ~1 paid SMS").
-- Persist last test result (timestamp, status, masked response) into `sms_settings.config.last_test` so the dashboard card and Settings page both show "Last successful test: …".
+### Step 5 — Safety guarantees
 
----
+- No schema changes — only data DML inside one migration.
+- Admin auth rows in `auth.users`, `profiles`, `user_roles` are never touched.
+- All existing settings tables untouched.
+- Idempotent location top-up uses `ON CONFLICT DO NOTHING` against existing unique constraints (`upazilas(district_id,name)`, `unions(upazila_id,name)`, `wards(union_id,name)`).
 
-### Technical Details
+## Technical details
 
-**Migration outline**
+- Delivered as **one Supabase migration** containing: TRUNCATE block → location upserts → demo seed → verification `DO $$ ... RAISE EXCEPTION` block.
+- No frontend code changes required.
+- `created_by` / `collected_by` set to the existing super_admin profile id (looked up via `(SELECT id FROM user_roles WHERE role='super_admin' LIMIT 1)`).
+- Ledger postings use account codes already present in `accounts` (Cash, Savings Liability, Loan Receivable, Interest Income, Irrigation Income).
 
-```sql
--- 1. Restructure sms_provider_secrets
-ALTER TABLE public.sms_provider_secrets
-  DROP CONSTRAINT sms_provider_secrets_pkey,
-  ADD COLUMN id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  ADD COLUMN status text NOT NULL DEFAULT 'staged'
-    CHECK (status IN ('active','staged','retired')),
-  ADD COLUMN expires_at timestamptz,
-  ADD COLUMN activated_at timestamptz,
-  ADD COLUMN label text;
+## Out of scope
 
-CREATE UNIQUE INDEX one_active_token_per_provider
-  ON public.sms_provider_secrets(provider) WHERE status = 'active';
-
--- 2. Format constraint + friendly trigger
-ALTER TABLE public.sms_provider_secrets
-  ADD CONSTRAINT api_token_format
-  CHECK (api_token ~ '^[A-Za-z0-9]{20,80}$');
-
--- 3. Audit trigger writing to public.audit_logs with masked token
-CREATE TRIGGER trg_audit_sms_provider_secrets
-  AFTER INSERT OR UPDATE OR DELETE ON public.sms_provider_secrets
-  FOR EACH ROW EXECUTE FUNCTION audit_sms_provider_secrets();
-
--- 4. Activation RPC (atomic swap)
-CREATE FUNCTION activate_sms_token(_id uuid) RETURNS void ...
-  -- super-admin only; sets current active -> retired, given id -> active
-
--- 5. Status RPC for dashboard (no token bytes)
-CREATE FUNCTION get_sms_provider_status() RETURNS jsonb ...
-  -- returns { configured, status, expires_at, days_to_expiry, sender_id, last_updated, last_updater_name, last_test }
-```
-
-**Code touchpoints**
-
-- `supabase/functions/send-sms/index.ts` — `getGreenWebToken()` filters `status='active' AND (expires_at IS NULL OR expires_at > now())`.
-- `src/pages/SmsSettings.tsx` — replace single-token UI with token list + Activate/Retire actions; add zod validation; add audit log panel; add expiry date picker on save.
-- `src/pages/Dashboard.tsx` — add `SmsProviderStatusCard` component calling `get_sms_provider_status` RPC.
-- `src/integrations/supabase/types.ts` — auto-regenerated after migration.
-
-**Backward compatibility**
-
-The migration backfills the existing single row (if any) as `status='active'` with `activated_at = updated_at`, so live SMS keeps working through the upgrade.
-
----
-
-### Out of scope
-
-- Multiple SMS providers (GreenWeb only for now).
-- Auto-rotation on a schedule (manual activation per your choice).
-- Email/Slack alerts on expiry (dashboard pill only).
+- No new tables, columns, RLS, triggers, functions, or RPCs.
+- No edge function changes.
+- No UI changes.
