@@ -145,7 +145,20 @@ export default function SmsSettings() {
     else toast.error("Failed: " + ((data as any)?.response ?? "unknown"));
   }
 
-  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS({ ...s!, [k]: v });
+  async function runManualReminders() {
+    if (!schedFrom || !schedTo) return toast.error("Pick both dates");
+    if (schedFrom > schedTo) return toast.error("From date must be before To date");
+    setSchedBusy(true);
+    setSchedResult(null);
+    const payload: Record<string, unknown> = { from: schedFrom, to: schedTo };
+    if (schedOffice !== "__all__") payload.office_id = schedOffice;
+    const { data, error } = await supabase.functions.invoke("sms-due-reminders", { body: payload });
+    setSchedBusy(false);
+    if (error) return toast.error(error.message);
+    setSchedResult(data);
+    if ((data as any)?.skipped) toast.warning(String((data as any).skipped));
+    else toast.success(`Queued: ${(data as any)?.loan ?? 0} loan, ${(data as any)?.irrigation ?? 0} irrigation`);
+  }
 
   const tplFields: { key: keyof Settings; label: string }[] = [
     { key: "tpl_savings_deposit", label: "Savings Deposit" },
