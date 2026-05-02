@@ -11,7 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
-import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
+import { useBranding } from "@/lib/branding";
+import { Card as KCard } from "@/components/ui/card";
 
 const ALL = "__all__";
 
