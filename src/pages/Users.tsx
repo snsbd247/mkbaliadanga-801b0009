@@ -112,7 +112,7 @@ export default function Users() {
     if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "reset_password", user_id: resetFor.id, password: resetPwd });
     if (!ok) return;
-    toast.success("Password updated");
+    toast.success(t("passwordUpdated"));
     setResetFor(null); setResetPwd("");
   }
 
