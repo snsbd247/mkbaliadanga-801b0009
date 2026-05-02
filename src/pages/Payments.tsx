@@ -328,7 +328,7 @@ export default function Payments() {
         <Card className="p-5 lg:col-span-2">
           <h2 className="font-semibold mb-3">{t("recentTransactions")}</h2>
           <Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>Allocations</TableHead><TableHead>{t("amount")}</TableHead><TableHead>Status</TableHead><TableHead>Receipt</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
             <TableBody>
               {list.map(p => (
                 <TableRow key={p.id}>
