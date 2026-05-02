@@ -15,11 +15,13 @@ import {
 } from "lucide-react";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type AccountRow = { id: string; code: string; name: string; type: "asset" | "liability" | "equity" | "income" | "expense" };
 type LedgerRow = { account_id: string; debit: number; credit: number };
 
 export default function FinanceSummary() {
+  const { t } = useLang();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [fyMonth, setFyMonth] = useState(7);
