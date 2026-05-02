@@ -7,9 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange, reportFilename } from "@/lib/accounting";
 
 type Account = { id: string; code: string; name: string; type: "asset"|"liability"|"income"|"expense"|"equity" };
 type Entry = { id: string; entry_date: string; account_id: string; debit: number; credit: number; description: string | null };
@@ -17,13 +19,22 @@ type Entry = { id: string; entry_date: string; account_id: string; debit: number
 export default function FinancialReports() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
-  const today = new Date().toISOString().slice(0, 10);
   const [from, setFrom] = useState<string>("");
-  const [to, setTo] = useState<string>(today);
+  const [to, setTo] = useState<string>("");
+  const [fyStartMonth, setFyStartMonth] = useState<number>(7);
 
   useEffect(() => {
-    supabase.from("accounts").select("id,code,name,type").order("code")
-      .then(({ data }) => setAccounts((data as Account[]) || []));
+    (async () => {
+      const [{ data }, m] = await Promise.all([
+        supabase.from("accounts").select("id,code,name,type").order("code"),
+        getFiscalStartMonth(),
+      ]);
+      setAccounts((data as Account[]) || []);
+      setFyStartMonth(m);
+      // default to current fiscal year
+      const fys = listFiscalYears(m, 1);
+      if (fys[0]) { setFrom(fys[0].range.from); setTo(fys[0].range.to); }
+    })();
   }, []);
 
   useEffect(() => {
@@ -32,6 +43,9 @@ export default function FinancialReports() {
     if (to) q = q.lte("entry_date", to);
     q.limit(10000).then(({ data }) => setEntries((data as Entry[]) || []));
   }, [from, to]);
+
+  const fyOptions = useMemo(() => listFiscalYears(fyStartMonth, 6), [fyStartMonth]);
+  const range = { from, to };
 
   const balByAcct = useMemo(() => {
     const m = new Map<string, { debit: number; credit: number }>();
