@@ -260,7 +260,7 @@ export default function Payments() {
                 <div className="text-[10px] uppercase font-semibold text-muted-foreground">Auto-allocate (priority: {priority.join(" → ")})</div>
                 <div className="flex gap-2">
                   <Input type="number" min="0" placeholder="Total amount" value={autoAmount || ""} onChange={(e) => setAutoAmount(+e.target.value)} />
-                  <Button type="button" variant="secondary" onClick={autoAllocate}>Apply</Button>
+                  <Button type="button" variant="secondary" onClick={autoAllocate}>{t("apply")}</Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground">Configurable per office in Settings → Offices.</p>
               </div>
