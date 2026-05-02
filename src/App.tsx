@@ -50,6 +50,8 @@ import ReceiptTemplate from "./pages/ReceiptTemplate";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
+import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
+import FarmersImport from "./pages/FarmersImport";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 
