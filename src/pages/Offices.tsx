@@ -68,7 +68,7 @@ export default function Offices() {
               <div><Label>{t("contact")}</Label><Input value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} /></div>
               <div><Label>{t("address")}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
               <div>
-                <Label>Payment allocation priority</Label>
+                <Label>{t("paymentAllocationPriority")}</Label>
                 <p className="text-xs text-muted-foreground mb-2">Auto-allocated payments will be applied to dues in this order.</p>
                 <div className="space-y-1">
                   {form.payment_priority.map((p, i) => (
