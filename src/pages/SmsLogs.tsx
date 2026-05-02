@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { toast } from "sonner";
 import { RefreshCw, Send, Megaphone, Bell, Eye, Loader2, FileDown, FileSpreadsheet } from "lucide-react";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Log = {
   id: string;
@@ -61,6 +62,7 @@ const EVENT_TYPES = [
 ];
 
 export default function SmsLogs() {
+  const { t } = useLang();
   const { isAdmin, isSuper } = useAuth();
   const allowed = isAdmin || isSuper;
   const [logs, setLogs] = useState<Log[]>([]);
@@ -244,21 +246,21 @@ export default function SmsLogs() {
   return (
     <>
       <PageHeader
-        title="SMS Logs"
-        description="Delivery history, due reminders, and bulk announcements"
+        title={t("smsLogs")}
+        description={t("smsLogsDesc")}
         actions={
           <div className="btn-group-responsive">
-            <Button variant="outline" size="sm" onClick={load}><RefreshCw className="mr-1 h-4 w-4"/>Refresh</Button>
-            <Button variant="outline" size="sm" onClick={runDueReminders} disabled={busy}><Bell className="mr-1 h-4 w-4"/>Run Reminders</Button>
-            <Button size="sm" onClick={retryAllFailed} disabled={busy}><Send className="mr-1 h-4 w-4"/>Retry failed</Button>
+            <Button variant="outline" size="sm" onClick={load}><RefreshCw className="mr-1 h-4 w-4"/>{t("refresh")}</Button>
+            <Button variant="outline" size="sm" onClick={runDueReminders} disabled={busy}><Bell className="mr-1 h-4 w-4"/>{t("runReminders")}</Button>
+            <Button size="sm" onClick={retryAllFailed} disabled={busy}><Send className="mr-1 h-4 w-4"/>{t("retryFailed")}</Button>
           </div>
         }
       />
 
       <Tabs defaultValue="logs">
         <TabsList>
-          <TabsTrigger value="logs">Delivery Logs</TabsTrigger>
-          <TabsTrigger value="bulk"><Megaphone className="mr-1 h-3.5 w-3.5"/>Bulk Send</TabsTrigger>
+          <TabsTrigger value="logs">{t("deliveryLogs")}</TabsTrigger>
+          <TabsTrigger value="bulk"><Megaphone className="mr-1 h-3.5 w-3.5"/>{t("bulkSend")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="logs" className="mt-4 space-y-3">
@@ -266,7 +268,7 @@ export default function SmsLogs() {
             <CardContent className="p-3 sm:p-4">
               <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
                 <div>
-                  <Label className="text-xs">Status</Label>
+                  <Label className="text-xs">{t("status")}</Label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger><SelectValue/></SelectTrigger>
                     <SelectContent>
@@ -275,7 +277,7 @@ export default function SmsLogs() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Event</Label>
+                  <Label className="text-xs">{t("event")}</Label>
                   <Select value={eventFilter} onValueChange={setEventFilter}>
                     <SelectTrigger><SelectValue/></SelectTrigger>
                     <SelectContent>
@@ -284,26 +286,26 @@ export default function SmsLogs() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Office</Label>
+                  <Label className="text-xs">{t("office")}</Label>
                   <Select value={officeFilter} onValueChange={setOfficeFilter}>
                     <SelectTrigger><SelectValue/></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All offices</SelectItem>
+                      <SelectItem value="all">{t("allOffices")}</SelectItem>
                       {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">From</Label>
+                  <Label className="text-xs">{t("from")}</Label>
                   <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
                 </div>
                 <div>
-                  <Label className="text-xs">To</Label>
+                  <Label className="text-xs">{t("to")}</Label>
                   <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
                 </div>
                 <div>
-                  <Label className="text-xs">Mobile / Farmer</Label>
-                  <Input placeholder="search…" value={farmerSearch} onChange={(e) => setFarmerSearch(e.target.value)} />
+                  <Label className="text-xs">{t("mobileFarmer")}</Label>
+                  <Input placeholder={t("searchPlaceholder")} value={farmerSearch} onChange={(e) => setFarmerSearch(e.target.value)} />
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -359,7 +361,7 @@ export default function SmsLogs() {
                   >
                     <FileSpreadsheet className="mr-1 h-4 w-4" />Excel
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>Clear filters</Button>
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>{t("clearFilters")}</Button>
                 </div>
               </div>
             </CardContent>
@@ -371,22 +373,22 @@ export default function SmsLogs() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Farmer</TableHead>
-                      <TableHead>Mobile</TableHead>
-                      <TableHead>Office</TableHead>
-                      <TableHead>Event</TableHead>
-                      <TableHead>Message</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Retries</TableHead>
+                      <TableHead>{t("time")}</TableHead>
+                      <TableHead>{t("farmer")}</TableHead>
+                      <TableHead>{t("mobile")}</TableHead>
+                      <TableHead>{t("office")}</TableHead>
+                      <TableHead>{t("event")}</TableHead>
+                      <TableHead>{t("message")}</TableHead>
+                      <TableHead>{t("status")}</TableHead>
+                      <TableHead>{t("retries")}</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading ? (
-                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Loading…</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{t("loading")}</TableCell></TableRow>
                     ) : filtered.length === 0 ? (
-                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">No SMS logs</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{t("noSmsLogs")}</TableCell></TableRow>
                     ) : filtered.map((l) => (
                       <TableRow key={l.id}>
                         <TableCell className="whitespace-nowrap">{new Date(l.created_at).toLocaleString()}</TableCell>
