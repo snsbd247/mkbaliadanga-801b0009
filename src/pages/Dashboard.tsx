@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, Al
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
 
