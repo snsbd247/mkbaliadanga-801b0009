@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { exportFarmerReportPDF } from "@/lib/exports";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
+import { LandRelations } from "@/components/LandRelations";
+import { SavingsStatement } from "@/components/SavingsStatement";
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -115,7 +117,9 @@ export default function FarmerDetail() {
       <Tabs defaultValue="lands">
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
+          <TabsTrigger value="relations">{t("landRelations")}</TabsTrigger>
           <TabsTrigger value="savings">{t("savings")}</TabsTrigger>
+          <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           <TabsTrigger value="loans">{t("loans")}</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
         </TabsList>
