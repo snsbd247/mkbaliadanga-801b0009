@@ -7,6 +7,11 @@ vi.mock("@/lib/branding", () => ({
   useBranding: () => ({ company_name: "Test Co", company_name_bn: "টেস্ট", logo_url: null }),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("@/auth/AuthProvider", () => ({
+  useAuth: () => ({
+    user: null, isSuper: false, isAdmin: false, isCommittee: false, rolesLoaded: true, roles: [],
+  }),
+}));
 
 function renderApp() {
   return render(
