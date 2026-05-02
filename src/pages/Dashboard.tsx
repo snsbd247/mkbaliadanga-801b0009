@@ -15,6 +15,9 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stat[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
+  const [trend, setTrend] = useState<any[]>([]);
+  const [topDues, setTopDues] = useState<any[]>([]);
+  const [composition, setComposition] = useState<any[]>([]);
 
   useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, []);
 
