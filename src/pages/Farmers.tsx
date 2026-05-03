@@ -22,6 +22,55 @@ import { useAuth } from "@/auth/AuthProvider";
 import { validateLocationChain, parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
 import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 
+function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
+  const [generating, setGenerating] = useState(false);
+  return (
+    <>
+      <div className="flex items-center gap-3 h-10">
+        <Switch
+          checked={!!f.is_voter}
+          disabled={disabled || generating}
+          onCheckedChange={async (on) => {
+            if (!on) { setF({ ...f, is_voter: false }); return; }
+            if (f.voter_number) { setF({ ...f, is_voter: true }); return; }
+            setGenerating(true);
+            try {
+              const { data, error } = await supabase.rpc("generate_farmer_voter_number");
+              if (error) { toast.error(error.message); setF({ ...f, is_voter: false }); return; }
+              setF({ ...f, is_voter: true, voter_number: String(data ?? "") });
+            } finally {
+              setGenerating(false);
+            }
+          }}
+          data-testid="voter-toggle"
+        />
+        {generating ? (
+          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> generating voter number…
+          </span>
+        ) : f.voter_number ? (
+          <Input
+            value={f.voter_number}
+            disabled
+            readOnly
+            inputMode="numeric"
+            maxLength={20}
+            className="font-mono"
+            aria-label="Voter number (read-only)"
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">No voter number assigned</span>
+        )}
+      </div>
+      {f.voter_number && !generating && (
+        <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+          ⚠ Voter number is permanent and cannot be edited. It will be reused if Is Voter is re-enabled.
+        </p>
+      )}
+    </>
+  );
+}
+
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
   post_office: "", address: "", voter_number: "", is_voter: false,
