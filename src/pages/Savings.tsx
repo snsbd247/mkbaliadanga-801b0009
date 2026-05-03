@@ -10,12 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Check, X, Printer } from "lucide-react";
+import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/exports";
 import { useBranding } from "@/lib/branding";
 
 export default function Savings() {
