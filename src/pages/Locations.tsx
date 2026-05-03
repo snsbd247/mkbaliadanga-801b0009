@@ -189,9 +189,7 @@ function LevelTab({ level }: { level: Level }) {
   const [addChain, setAddChain] = useState<Chain>({});
   const [name, setName] = useState("");
   const [nameBn, setNameBn] = useState("");
-  // For villages/mouzas — optional ward
-  const [optionalWardId, setOptionalWardId] = useState<string>("");
-  const [wardsForOptional, setWardsForOptional] = useState<Row[]>([]);
+  
 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -202,8 +200,7 @@ function LevelTab({ level }: { level: Level }) {
   const [editChain, setEditChain] = useState<Chain>({});
   const [editName, setEditName] = useState("");
   const [editNameBn, setEditNameBn] = useState("");
-  const [editOptionalWardId, setEditOptionalWardId] = useState<string>("");
-  const [editWardsForOptional, setEditWardsForOptional] = useState<Row[]>([]);
+  
   const [saving, setSaving] = useState(false);
 
   // Load list whenever filter changes (uses deepest filter, falls back to direct parent)
@@ -215,7 +212,10 @@ function LevelTab({ level }: { level: Level }) {
   async function load() {
     setLoading(true);
     let q: any = (supabase.from as any)(level).select("*").order("name").limit(1000);
-    if (directCol) {
+    // For villages/mouzas, ward_id is the most specific filter even though directCol is union_id
+    if (optionalCol && filter[optionalCol]) {
+      q = q.eq(optionalCol, filter[optionalCol]);
+    } else if (directCol) {
       // Use the deepest filter that targets this table's direct parent column
       const filterId = filter[directCol];
       if (filterId) q = q.eq(directCol, filterId);
@@ -258,20 +258,8 @@ function LevelTab({ level }: { level: Level }) {
     return currentIds;
   }
 
-  // Wards for optional ward selector (villages/mouzas) — depends on Add union_id
-  useEffect(() => {
-    if (!optionalCol) return;
-    const unionId = addChain.union_id;
-    if (!unionId) { setWardsForOptional([]); setOptionalWardId(""); return; }
-    childrenOf("wards", "union_id", unionId).then(setWardsForOptional).catch((e) => toast.error(e.message));
-  }, [addChain.union_id, optionalCol]);
 
-  useEffect(() => {
-    if (!optionalCol || !editing) return;
-    const unionId = editChain.union_id;
-    if (!unionId) { setEditWardsForOptional([]); return; }
-    childrenOf("wards", "union_id", unionId).then(setEditWardsForOptional).catch((e) => toast.error(e.message));
-  }, [editChain.union_id, optionalCol, editing]);
+
 
   async function add() {
     if (!name.trim()) return toast.error(t("nameRequired"));
@@ -281,12 +269,12 @@ function LevelTab({ level }: { level: Level }) {
     }
     const payload: any = { name: name.trim(), name_bn: nameBn.trim() || null };
     if (directCol) payload[directCol] = addChain[directCol];
-    if (optionalCol && optionalWardId) payload[optionalCol] = optionalWardId;
+    if (optionalCol && addChain[optionalCol]) payload[optionalCol] = addChain[optionalCol];
 
     const { error } = await (supabase.from as any)(level).insert(payload);
     if (error) return toast.error(error.message);
     toast.success(t("addedToast"));
-    setName(""); setNameBn(""); setOptionalWardId("");
+    setName(""); setNameBn("");
     load();
   }
 
@@ -319,9 +307,8 @@ function LevelTab({ level }: { level: Level }) {
         currentTable = parentStep.table;
       }
     }
+    if (optionalCol && row[optionalCol]) c[optionalCol] = row[optionalCol];
     setEditChain(c);
-    if (optionalCol) setEditOptionalWardId(row[optionalCol] ?? "");
-    else setEditOptionalWardId("");
   }
 
   async function saveEdit() {
@@ -333,7 +320,7 @@ function LevelTab({ level }: { level: Level }) {
     setSaving(true);
     const payload: any = { name: editName.trim(), name_bn: editNameBn.trim() || null };
     if (directCol) payload[directCol] = editChain[directCol];
-    if (optionalCol) payload[optionalCol] = editOptionalWardId || null;
+    if (optionalCol) payload[optionalCol] = editChain[optionalCol] || null;
 
     const { error } = await (supabase.from as any)(level).update(payload).eq("id", editing.id);
     setSaving(false);
@@ -387,18 +374,6 @@ function LevelTab({ level }: { level: Level }) {
             <CascadeFilters level={level} value={addChain} onChange={setAddChain} />
           )}
           <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
-            {optionalCol && (
-              <div>
-                <Label className="text-xs">Ward (optional)</Label>
-                <Select value={optionalWardId || "__none__"} onValueChange={(v) => setOptionalWardId(v === "__none__" ? "" : v)} disabled={!addChain.union_id}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">—</SelectItem>
-                    {wardsForOptional.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div>
               <Label className="text-xs">Name (English) *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
@@ -466,18 +441,6 @@ function LevelTab({ level }: { level: Level }) {
               <CascadeFilters level={level} value={editChain} onChange={setEditChain} />
             )}
             <div className="grid gap-3 sm:grid-cols-2">
-              {optionalCol && (
-                <div className="sm:col-span-2">
-                  <Label className="text-xs">Ward (optional)</Label>
-                  <Select value={editOptionalWardId || "__none__"} onValueChange={(v) => setEditOptionalWardId(v === "__none__" ? "" : v)} disabled={!editChain.union_id}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">—</SelectItem>
-                      {editWardsForOptional.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div>
                 <Label className="text-xs">Name (English) *</Label>
                 <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
