@@ -319,11 +319,19 @@ export default function Irrigation() {
         </Dialog>
         </div>
       } />
+      <Card className="p-3 mb-3 flex items-center gap-3">
+        <Label className="text-sm flex items-center gap-2 cursor-pointer">
+          <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+          Show archived
+        </Label>
+        {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted charges only.</span>}
+      </Card>
       <Card><Table>
         <TableHeader><TableRow>
           <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
           <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
           <TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
+          {showDeleted && <TableHead className="text-right">Actions</TableHead>}
         </TableRow></TableHeader>
         <TableBody>
           {rows.map(r => (
@@ -335,9 +343,14 @@ export default function Irrigation() {
               <TableCell>{money(r.total)}</TableCell>
               <TableCell>{money(r.paid_amount)}</TableCell>
               <TableCell className={r.due_amount > 0 ? "due-text" : ""}>{money(r.due_amount)}</TableCell>
+              {showDeleted && (
+                <TableCell className="text-right">
+                  <Button size="sm" variant="outline" onClick={() => restore(r.id)}>Restore</Button>
+                </TableCell>
+              )}
             </TableRow>
           ))}
-          {rows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={showDeleted ? 8 : 7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table></Card>
     </>
