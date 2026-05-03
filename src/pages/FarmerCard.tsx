@@ -26,6 +26,7 @@ export default function FarmerCard() {
   const { id = "" } = useParams();
   const brand = useBranding();
   const { isAdmin } = useAuth();
+  const cardCfg = useCardSettings();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [revoking, setRevoking] = useState(false);
@@ -34,6 +35,11 @@ export default function FarmerCard() {
     const saved = (typeof window !== "undefined" && localStorage.getItem(TEMPLATE_KEY)) as TemplateId | null;
     return saved && ["classic", "minimal", "bilingual"].includes(saved) ? saved : "classic";
   });
+  useEffect(() => {
+    if (cardCfg.template_id && ["classic", "minimal", "bilingual"].includes(cardCfg.template_id)) {
+      setTemplateId(cardCfg.template_id as TemplateId);
+    }
+  }, [cardCfg.template_id]);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { document.title = "Membership Card"; load(false); /* eslint-disable-next-line */ }, [id]);
@@ -46,7 +52,7 @@ export default function FarmerCard() {
       if (!session) { toast.error("Please sign in"); return; }
       const { data: f, error } = await supabase
         .from("farmers")
-        .select("id, name_en, name_bn, farmer_code, member_no, mobile, village, address, photo_url")
+        .select("id, name_en, name_bn, farmer_code, member_no, account_number, voter_number, mobile, village, address, photo_url")
         .eq("id", id).maybeSingle();
       if (error || !f) { toast.error("Farmer not found"); return; }
 
@@ -67,6 +73,8 @@ export default function FarmerCard() {
         return;
       }
 
+      const acc = (f as any).account_number as string | null;
+      const qrValue = acc ? `${window.location.origin}/scan?acc=${acc}` : j.token;
       setData({
         company_name: brand.company_name,
         company_name_bn: brand.company_name_bn,
@@ -76,12 +84,15 @@ export default function FarmerCard() {
           name_en: f.name_en,
           farmer_code: f.farmer_code,
           member_no: f.member_no ?? undefined,
+          account_number: acc,
+          voter_number: (f as any).voter_number ?? null,
           mobile: f.mobile ?? undefined,
           village: f.village ?? undefined,
           address: f.address ?? undefined,
           photo_url: f.photo_url,
         },
         token: j.token,
+        qr_value: qrValue,
         issued_at: j.issued_at,
       });
       if (rotate) toast.success("New QR token issued");
