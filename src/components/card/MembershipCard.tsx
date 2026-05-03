@@ -77,19 +77,27 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
             <div className="ml-auto text-[7px] opacity-80">Member ID</div>
           </div>
           <div className="flex-1 flex items-center gap-2 p-2">
-            <div className="h-16 w-12 shrink-0 rounded border bg-gray-50 overflow-hidden flex items-center justify-center">
-              {f.photo_url ? (
-                <img src={f.photo_url} alt="" className="h-full w-full object-cover" crossOrigin="anonymous" />
-              ) : (
-                <User className="h-6 w-6 text-gray-300" />
-              )}
-            </div>
+            {opts.show_photo && (
+              <div className="h-16 w-12 shrink-0 rounded border bg-gray-50 overflow-hidden flex items-center justify-center">
+                {f.photo_url ? (
+                  <img src={f.photo_url} alt="" className="h-full w-full object-cover" crossOrigin="anonymous" />
+                ) : (
+                  <User className="h-6 w-6 text-gray-300" />
+                )}
+              </div>
+            )}
             <div className="min-w-0 flex-1 text-[9px] leading-tight space-y-0.5">
               <div className="font-bold text-[11px] truncate">{f.name}</div>
               {f.name_en && f.name_en !== f.name && <div className="text-gray-500 truncate">{f.name_en}</div>}
-              <div><span className="text-gray-500">ID:</span> <span className="font-mono">{f.farmer_code || "—"}</span></div>
-              {f.member_no && <div><span className="text-gray-500">Member:</span> <span className="font-mono">{f.member_no}</span></div>}
-              <div><span className="text-gray-500">Issued:</span> {issued}</div>
+              {opts.show_account_number && f.account_number && (
+                <div><span className="text-gray-500">A/C:</span> <span className="font-mono" data-testid="card-account">{f.account_number}</span></div>
+              )}
+              {opts.show_voter_number && f.voter_number && (
+                <div><span className="text-gray-500">Voter:</span> <span className="font-mono" data-testid="card-voter">{f.voter_number}</span></div>
+              )}
+              {opts.show_issue_date && (
+                <div><span className="text-gray-500">Issued:</span> {issued}</div>
+              )}
             </div>
           </div>
         </div>
