@@ -360,7 +360,7 @@ export default function Farmers() {
           >
             <DialogHeader><DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle></DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); if (!saving) save(); }}>
-              <FormFields
+              {renderFormFields({
                 f={form}
                 setF={(next) => { setForm(next); if (createErr) setCreateErr(null); if (Object.keys(createFieldErrors).length) setCreateFieldErrors({}); }}
                 photoFile={photo}
@@ -459,7 +459,7 @@ export default function Farmers() {
           <DialogHeader><DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle></DialogHeader>
           {editForm && (
             <form onSubmit={(e) => { e.preventDefault(); if (!saving) saveEdit(); }}>
-              <FormFields
+              {renderFormFields({
                 f={editForm}
                 setF={(next) => { setEditForm(next); if (editErr) setEditErr(null); if (Object.keys(editFieldErrors).length) setEditFieldErrors({}); }}
                 photoFile={editPhoto}
