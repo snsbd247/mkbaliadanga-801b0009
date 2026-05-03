@@ -347,6 +347,11 @@ export default function DataImport() {
             };
 
             if (upsertMode) {
+              if (dryRun) {
+                next[i] = { ...next[i], status: "ok", message: "Will upsert (preview)" };
+                if (i % 10 === 0) setRows([...next]);
+                continue;
+              }
               const { error: upErr } = await supabase
                 .from("land_relations")
                 .upsert(lrPayload, {
