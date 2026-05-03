@@ -83,6 +83,9 @@ export function LandRelations({ farmerId }: Props) {
 
   async function save() {
     if (!form.land_id || !form.owner_farmer_id) return toast.error("Land and Owner required");
+    if (form.sharecropper_farmer_id && form.sharecropper_farmer_id === form.owner_farmer_id) {
+      return toast.error("Owner and Tenant must be different farmers");
+    }
     setSaving(true);
     try {
       const { error } = await supabase.from("land_relations").insert({
