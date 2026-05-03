@@ -121,11 +121,11 @@ export default function Statement() {
       const [irrRes, loansRes] = await Promise.all([
         supabase.from("irrigation_charges")
           .select("entry_date,total,paid_amount,due_amount,seasons(name,year),lands(dag_no)")
-          .eq("farmer_id", farmerId).gte("entry_date", f1).lte("entry_date", t1)
+          .eq("farmer_id", farmerId).is("deleted_at", null).gte("entry_date", f1).lte("entry_date", t1)
           .order("entry_date", { ascending: true }),
         supabase.from("loans")
           .select("issued_on,principal,interest_rate,total_payable,status,loan_payments(amount)")
-          .eq("farmer_id", farmerId).gte("issued_on", f1).lte("issued_on", t1)
+          .eq("farmer_id", farmerId).is("deleted_at", null).gte("issued_on", f1).lte("issued_on", t1)
           .order("issued_on", { ascending: true }),
       ]);
       const irrigation = (irrRes.data ?? []).map((r: any) => ({
