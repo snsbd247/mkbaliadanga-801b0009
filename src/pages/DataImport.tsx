@@ -35,6 +35,9 @@ type Module =
   | "loan_payments"
   | "savings"
   | "payments"
+  | "irrigation"
+  | "cashbook_receipts"
+  | "cashbook_expenses"
   | "ledger";
 
 type RowResult = {
@@ -42,6 +45,7 @@ type RowResult = {
   raw: Record<string, any>;
   status: "pending" | "ok" | "error";
   message?: string;
+  resolved?: Record<string, any>;
 };
 
 const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any> }> = {
@@ -72,6 +76,18 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   ledger: {
     columns: ["entry_date", "account_code", "debit", "credit", "description", "reference_type"],
     sample: { entry_date: "2026-02-01", account_code: "1010", debit: 500, credit: 0, description: "Cash adjustment", reference_type: "manual" },
+  },
+  irrigation: {
+    columns: ["account_number", "dag_no", "season_year", "season_type", "quantity", "base_charge", "canal_charge", "maintenance_charge", "other_charge", "previous_due_brought", "penalty_amount", "entry_date", "note"],
+    sample: { account_number: "100000000001", dag_no: "123/A", season_year: 2026, season_type: "boro", quantity: 0.33, base_charge: 200, canal_charge: 50, maintenance_charge: 20, other_charge: 0, previous_due_brought: 0, penalty_amount: 0, entry_date: "2026-02-01", note: "" },
+  },
+  cashbook_receipts: {
+    columns: ["receipt_date", "kind", "account_number", "amount", "method", "note"],
+    sample: { receipt_date: "2026-02-01", kind: "donation", account_number: "", amount: 1000, method: "cash", note: "Anonymous donation" },
+  },
+  cashbook_expenses: {
+    columns: ["expense_date", "head", "payee", "amount", "method", "note"],
+    sample: { expense_date: "2026-02-01", head: "Office", payee: "Stationery shop", amount: 500, method: "cash", note: "Pens & paper" },
   },
 };
 
@@ -117,7 +133,16 @@ function downloadTemplate(mod: Module) {
 function downloadErrorReport(rows: RowResult[]) {
   const errs = rows.filter((r) => r.status === "error");
   if (!errs.length) return;
-  const ws = XLSX.utils.json_to_sheet(errs.map((r) => ({ row: r.idx + 2, error: r.message, ...r.raw })));
+  const ws = XLSX.utils.json_to_sheet(
+    errs.map((r) => ({
+      row: r.idx + 2,
+      error: r.message,
+      ...(r.resolved
+        ? Object.fromEntries(Object.entries(r.resolved).map(([k, v]) => [`resolved_${k}`, v]))
+        : {}),
+      ...r.raw,
+    })),
+  );
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "errors");
   XLSX.writeFile(wb, `import_errors.xlsx`);
@@ -130,6 +155,7 @@ export default function DataImport() {
   const [rows, setRows] = useState<RowResult[]>([]);
   const [working, setWorking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [upsertMode, setUpsertMode] = useState(false);
 
   const stats = useMemo(() => ({
     total: rows.length,
@@ -241,14 +267,13 @@ export default function DataImport() {
             };
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
-            if (!owner) throw new Error("Owner farmer not found for owner_account_number");
+            if (!owner) throw new Error(`Owner farmer not found for owner_account_number=${raw.owner_account_number ?? ""}`);
             const sharecropper = raw.sharecropper_account_number
               ? farmerMap.get(String(raw.sharecropper_account_number))
               : null;
             if (raw.sharecropper_account_number && !sharecropper) {
-              throw new Error("Sharecropper farmer not found for sharecropper_account_number");
+              throw new Error(`Sharecropper farmer not found for sharecropper_account_number=${raw.sharecropper_account_number}`);
             }
-            // Resolve land by owner farmer + dag_no
             const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
             if (!dag) throw new Error("dag_no required to identify the land");
             const { data: landRow, error: landErr } = await supabase
@@ -258,21 +283,71 @@ export default function DataImport() {
               .eq("dag_no", dag)
               .maybeSingle();
             if (landErr) throw landErr;
-            if (!landRow) throw new Error(`No land found for owner with dag_no=${dag}`);
+            if (!landRow) throw new Error(`No land found for owner ${owner.id} with dag_no=${dag}`);
             const share = Number(raw.share_percentage ?? 50);
-            if (!(share > 0 && share <= 100)) throw new Error("share_percentage must be between 0 and 100");
-            table = "land_relations";
-            payload = {
+            if (!(share > 0 && share <= 100)) throw new Error("share_percentage must be > 0 and ≤ 100");
+            const validFrom = raw.valid_from ?? new Date().toISOString().slice(0, 10);
+            const validTo = raw.valid_to || null;
+
+            // Validate: total share for this land in overlapping period must not exceed 100
+            const { data: existing } = await supabase
+              .from("land_relations")
+              .select("id, share_percentage, owner_farmer_id, sharecropper_farmer_id, valid_from, valid_to")
+              .eq("land_id", landRow.id);
+            const overlap = (existing ?? []).filter((e: any) => {
+              const eFrom = e.valid_from;
+              const eTo = e.valid_to ?? "9999-12-31";
+              const nTo = validTo ?? "9999-12-31";
+              return !(eTo < validFrom || eFrom > nTo);
+            });
+            const isSame = (e: any) =>
+              e.owner_farmer_id === owner.id &&
+              (e.sharecropper_farmer_id ?? null) === (sharecropper ? sharecropper.id : null) &&
+              e.valid_from === validFrom &&
+              (e.valid_to ?? null) === validTo;
+            const totalOther = overlap.filter((e: any) => !isSame(e))
+              .reduce((s: number, e: any) => s + Number(e.share_percentage || 0), 0);
+            if (totalOther + share > 100) {
+              throw new Error(`Share total ${totalOther + share}% exceeds 100% for land_id=${landRow.id} in overlapping period`);
+            }
+
+            // Capture resolved info on the row for error reports / UI
+            next[i] = {
+              ...r,
+              resolved: {
+                owner_farmer_id: owner.id,
+                sharecropper_farmer_id: sharecropper ? sharecropper.id : null,
+                land_id: landRow.id,
+                dag_no: dag,
+              },
+            };
+
+            const lrPayload = {
               land_id: landRow.id,
               office_id: landRow.office_id ?? owner.office_id,
               owner_farmer_id: owner.id,
               sharecropper_farmer_id: sharecropper ? sharecropper.id : null,
               share_percentage: share,
-              valid_from: raw.valid_from ?? new Date().toISOString().slice(0, 10),
-              valid_to: raw.valid_to || null,
+              valid_from: validFrom,
+              valid_to: validTo,
               note: raw.note ?? null,
               created_by: user?.id,
             };
+
+            if (upsertMode) {
+              const { error: upErr } = await supabase
+                .from("land_relations")
+                .upsert(lrPayload, {
+                  onConflict: "land_id,owner_farmer_id,sharecropper_farmer_id,valid_from,valid_to",
+                  ignoreDuplicates: false,
+                });
+              if (upErr) throw upErr;
+              next[i] = { ...next[i], status: "ok" };
+              if (i % 10 === 0) setRows([...next]);
+              continue;
+            }
+            table = "land_relations";
+            payload = lrPayload;
           } else if (mod === "loans") {
             const f = farmerMap.get(String(raw.account_number));
             if (!f) throw new Error("Farmer not found for account_number");
@@ -361,13 +436,97 @@ export default function DataImport() {
               reference_type: raw.reference_type ?? "manual_import",
               created_by: user?.id,
             };
+          } else if (mod === "irrigation") {
+            const f = farmerMap.get(String(raw.account_number));
+            if (!f) throw new Error(`Farmer not found for account_number=${raw.account_number ?? ""}`);
+            const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
+            if (!dag) throw new Error("dag_no required");
+            const { data: landRow } = await supabase
+              .from("lands").select("id, office_id")
+              .eq("farmer_id", f.id).eq("dag_no", dag).maybeSingle();
+            if (!landRow) throw new Error(`No land found for farmer with dag_no=${dag}`);
+            const year = Number(raw.season_year);
+            const stype = String(raw.season_type ?? "").toLowerCase();
+            if (!year || !stype) throw new Error("season_year and season_type required");
+            const { data: season } = await supabase
+              .from("seasons").select("id").eq("year", year).eq("type", stype as any).maybeSingle();
+            if (!season) throw new Error(`Season not found year=${year} type=${stype}`);
+            const qty = Number(raw.quantity ?? 0);
+            const base = Number(raw.base_charge ?? 0);
+            const canal = Number(raw.canal_charge ?? 0);
+            const maint = Number(raw.maintenance_charge ?? 0);
+            const other = Number(raw.other_charge ?? 0);
+            const prevDue = Number(raw.previous_due_brought ?? 0);
+            const penalty = Number(raw.penalty_amount ?? 0);
+            const total = +(base + canal + maint + other + prevDue + penalty).toFixed(2);
+            if (total <= 0) throw new Error("total charge must be > 0");
+            table = "irrigation_charges";
+            payload = {
+              farmer_id: f.id,
+              land_id: landRow.id,
+              season_id: season.id,
+              office_id: landRow.office_id ?? f.office_id,
+              basis: "per_size" as any,
+              quantity: qty,
+              base_charge: base,
+              canal_charge: canal,
+              maintenance_charge: maint,
+              other_charge: other,
+              previous_due_brought: prevDue,
+              penalty_amount: penalty,
+              total,
+              due_amount: total,
+              entry_date: raw.entry_date ?? new Date().toISOString().slice(0, 10),
+              note: raw.note ?? null,
+              created_by: user?.id,
+            };
+          } else if (mod === "cashbook_receipts") {
+            const kind = String(raw.kind ?? "").toLowerCase();
+            const allowedKinds = ["irrigation","bigha_rent","pond","crop_sale","scrap","loan_taken","donation","savings_deposit","share","other"];
+            if (!allowedKinds.includes(kind)) throw new Error(`kind must be one of ${allowedKinds.join("/")}`);
+            const amt = Number(raw.amount ?? 0);
+            if (amt <= 0) throw new Error("amount required");
+            const acc = raw.account_number ? String(raw.account_number).trim() : null;
+            let f: any = null;
+            if (acc) {
+              const { data: fdata } = await supabase
+                .from("farmers").select("id, office_id").eq("account_number", acc).maybeSingle();
+              if (!fdata) throw new Error(`Farmer not found for account_number=${acc}`);
+              f = fdata;
+            }
+            table = "receipts";
+            payload = {
+              kind: kind as any,
+              farmer_id: f?.id ?? null,
+              office_id: f?.office_id ?? null,
+              amount: amt,
+              method: raw.method ?? "cash",
+              note: raw.note ?? null,
+              receipt_date: raw.receipt_date ?? new Date().toISOString().slice(0, 10),
+              collected_by: user?.id,
+            };
+          } else if (mod === "cashbook_expenses") {
+            const head = String(raw.head ?? "").trim();
+            if (!head) throw new Error("head required");
+            const amt = Number(raw.amount ?? 0);
+            if (amt <= 0) throw new Error("amount required");
+            table = "expenses";
+            payload = {
+              head,
+              payee: raw.payee ?? null,
+              amount: amt,
+              method: raw.method ?? "cash",
+              note: raw.note ?? null,
+              expense_date: raw.expense_date ?? new Date().toISOString().slice(0, 10),
+              created_by: user?.id,
+            };
           }
 
           const { error } = await supabase.from(table as any).insert(payload);
           if (error) throw error;
-          next[i] = { ...r, status: "ok" };
+          next[i] = { ...next[i], status: "ok" };
         } catch (e: any) {
-          next[i] = { ...r, status: "error", message: e?.message ?? String(e) };
+          next[i] = { ...next[i], status: "error", message: e?.message ?? String(e) };
         }
 
         if (i % 10 === 0) setRows([...next]);
@@ -417,6 +576,9 @@ export default function DataImport() {
                 <SelectItem value="loan_payments">Loan Payments</SelectItem>
                 <SelectItem value="savings">Savings Transactions</SelectItem>
                 <SelectItem value="payments">Payments (generic)</SelectItem>
+                <SelectItem value="irrigation">Irrigation Charges</SelectItem>
+                <SelectItem value="cashbook_receipts">Cashbook — Receipts</SelectItem>
+                <SelectItem value="cashbook_expenses">Cashbook — Expenses</SelectItem>
                 {isSuper && <SelectItem value="ledger">Ledger Entries (super-admin)</SelectItem>}
               </SelectContent>
             </Select>
@@ -436,6 +598,12 @@ export default function DataImport() {
               <Upload className="h-4 w-4 mr-1" /> Choose File
             </Button>
             {file && <span className="text-sm text-muted-foreground">{file.name}</span>}
+            {mod === "land_relations" && (
+              <label className="flex items-center gap-2 text-sm ml-2">
+                <input type="checkbox" checked={upsertMode} onChange={(e) => setUpsertMode(e.target.checked)} />
+                Upsert mode (update existing relation)
+              </label>
+            )}
           </div>
         </div>
 
