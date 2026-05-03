@@ -182,7 +182,7 @@ export default function Farmers() {
   }, [createErr, editErr]);
 
   async function load() {
-    let qy = supabase.from("farmers").select("*, offices(name), villages(name,name_bn)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
+    let qy = supabase.from("farmers").select("*, offices(name), villages(name,name_bn)").is("deleted_at", null).order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
     const { data } = await qy;
     const farmers = data ?? [];
@@ -365,9 +365,9 @@ export default function Farmers() {
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from("farmers").delete().eq("id", id);
+    const { error } = await supabase.from("farmers").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted");
+    toast.success("Farmer archived (soft delete)");
     load();
   }
 
