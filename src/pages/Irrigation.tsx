@@ -308,6 +308,7 @@ export default function Irrigation() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       } />
       <Card><Table>
         <TableHeader><TableRow>
