@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isCommittee = isSuper || roles.includes("committee");
 
   return (
-    <Ctx.Provider value={{ user, session, loading, rolesLoaded, roles, officeId, isSuper, isAdmin, isCommittee, signOut, refresh }}>
+    <Ctx.Provider value={{ user, session, loading, rolesLoaded, roles, officeId, isSuper, isSuperAdmin: isSuper, isAdmin, isCommittee, signOut, refresh }}>
       {children}
     </Ctx.Provider>
   );
