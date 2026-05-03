@@ -21,8 +21,18 @@ type Row = {
   voter_number: string | null;
   mobile: string | null;
   village: string | null;
+  villages?: { name: string | null; name_bn: string | null } | null;
+  unions?: { name: string | null } | null;
+  upazilas?: { name: string | null } | null;
+  districts?: { name: string | null } | null;
   offices?: { name: string | null } | null;
 };
+
+function locationOf(r: Row): string {
+  const v = r.villages?.name_bn || r.villages?.name || r.village || "";
+  const parts = [v, r.unions?.name, r.upazilas?.name, r.districts?.name].filter(Boolean);
+  return parts.join(", ") || "—";
+}
 
 export default function VoterList() {
   const { t } = useLang();
