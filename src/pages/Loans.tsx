@@ -81,6 +81,14 @@ export default function Loans() {
   async function decide(id: string, status: "approved" | "rejected") {
     const { error } = await supabase.from("loans").update({ status, approved_by: user?.id, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
+    if (status === "approved") {
+      const loan = loans.find(l => l.id === id);
+      if (loan?.plan_id) {
+        const { error: gErr } = await supabase.rpc("generate_loan_installments", { _loan_id: id });
+        if (gErr) toast.error(`Schedule: ${gErr.message}`);
+        else toast.success("Installment schedule generated");
+      }
+    }
     toast.success(t("saved")); load();
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
