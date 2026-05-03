@@ -155,6 +155,7 @@ export default function DataImport() {
   const [rows, setRows] = useState<RowResult[]>([]);
   const [working, setWorking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [upsertMode, setUpsertMode] = useState(false);
 
   const stats = useMemo(() => ({
     total: rows.length,
