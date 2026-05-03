@@ -247,7 +247,7 @@ export default function Farmers() {
     const id = (editForm as any).id;
     const payload = toFarmerUpdatePayload(editForm as any, photo_url ? { photo_url } : {});
     if (import.meta.env.DEV) console.debug("[farmers.update] payload keys:", Object.keys(payload));
-    const { error } = await supabase.from("farmers").update(payload).eq("id", id);
+    const { error } = await supabase.from("farmers").update(payload as any).eq("id", id);
     if (error) {
       setSaving(false);
       const lvl = parseLocationDbError(error.message);
