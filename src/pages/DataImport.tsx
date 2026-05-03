@@ -746,6 +746,52 @@ export default function DataImport() {
           )}
         </Card>
       )}
+
+      {ledgerVerify.length > 0 && (
+        <Card className="mt-4">
+          <div className="p-3 border-b font-medium">Ledger posting verification</div>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Row</TableHead><TableHead>Record ID</TableHead>
+              <TableHead>Ledger Entry IDs</TableHead><TableHead>Status</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {ledgerVerify.map((v) => (
+                <TableRow key={v.record_id}>
+                  <TableCell>{v.idx + 2}</TableCell>
+                  <TableCell className="font-mono text-xs">{v.record_id}</TableCell>
+                  <TableCell className="font-mono text-xs">{v.ledger_ids.join(", ") || "—"}</TableCell>
+                  <TableCell>{v.ok ? <Badge className="bg-green-600">Posted</Badge> : <Badge variant="destructive">Missing</Badge>}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      {recentImports.length > 0 && (
+        <Card className="mt-4">
+          <div className="p-3 border-b font-medium">Recent imports</div>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>When</TableHead><TableHead>Module</TableHead><TableHead>Mode</TableHead>
+              <TableHead>Processed</TableHead><TableHead>Inserted</TableHead><TableHead>Failed</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {recentImports.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs">{new Date(r.created_at).toLocaleString()}</TableCell>
+                  <TableCell>{r.module}</TableCell>
+                  <TableCell>{r.mode}</TableCell>
+                  <TableCell>{r.rows_processed}</TableCell>
+                  <TableCell>{r.rows_inserted}</TableCell>
+                  <TableCell>{r.rows_failed > 0 ? <Badge variant="destructive">{r.rows_failed}</Badge> : r.rows_failed}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
     </>
   );
 }
