@@ -21,6 +21,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { validateLocationChain, parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
 import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
+import { VoterHistoryDialog } from "@/components/farmers/VoterHistoryDialog";
+import { History } from "lucide-react";
 
 function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
   const [generating, setGenerating] = useState(false);
