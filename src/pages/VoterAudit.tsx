@@ -105,7 +105,7 @@ export default function VoterAudit() {
             <Label>Farmer</Label>
             <FarmerSearchSelect value={farmerId} onChange={(id) => setFarmerId(id)} />
           </div>
-          {isSuperAdmin && (
+          {isSuper && (
             <div>
               <Label>Office</Label>
               <Select value={officeId} onValueChange={setOfficeId}>
