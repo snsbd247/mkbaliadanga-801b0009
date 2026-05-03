@@ -153,6 +153,7 @@ export default function Farmers() {
       mobile: f.mobile ?? "",
       post_office: f.post_office ?? "",
       address: f.address ?? "",
+      voter_number: f.voter_number ?? "",
       office_id: f.office_id ?? "",
     });
 
@@ -307,6 +308,11 @@ export default function Farmers() {
           {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
         </div>
         <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
+        <div>
+          <Label>Voter Number</Label>
+          <Input value={f.voter_number ?? ""} disabled={disabled} inputMode="numeric" maxLength={20}
+            onChange={e => setF({ ...f, voter_number: e.target.value.replace(/\D/g, "") })} placeholder="optional" />
+        </div>
         <div>
           <Label>{t("office")}</Label>
           <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>
