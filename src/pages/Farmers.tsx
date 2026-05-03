@@ -373,6 +373,13 @@ export default function Farmers() {
     load();
   }
 
+  async function restore(id: string) {
+    const { error } = await supabase.from("farmers").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Farmer restored");
+    load();
+  }
+
   // ---------- Reusable form fields ----------
   const renderFormFields = ({
     f, setF, photoFile, setPhotoFile, err, fieldErrors, disabled, nameInputRef,
