@@ -13,6 +13,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 
 export default function Irrigation() {
   const { t } = useLang();
