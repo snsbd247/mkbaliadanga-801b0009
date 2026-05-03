@@ -371,21 +371,26 @@ export default function Payments() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {isAdmin && p.status === "pending" && (<>
+                      {showDeleted && isAdmin && (
+                        <Button size="sm" variant="outline" onClick={() => restorePayment(p.id)} title="Restore">Restore</Button>
+                      )}
+                      {!showDeleted && isAdmin && p.status === "pending" && (<>
                         <Button size="icon" variant="ghost" onClick={() => approvePayment(p)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
                       </>)}
-                      <Button size="icon" variant="ghost" title="Print Receipt" onClick={() => exportPaymentReceiptPDF({
-                        brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
-                        receipt_no: p.id.slice(0, 8).toUpperCase(),
-                        date: p.created_at,
-                        farmer: { name_en: p.farmers?.name_en ?? "—", farmer_code: p.farmers?.farmer_code, mobile: p.farmers?.mobile },
-                        amount: Number(p.amount),
-                        method: p.method ?? "cash",
-                        note: p.note ?? "",
-                        allocations: (p.payment_allocations?.length ? p.payment_allocations : [{ kind: p.kind, amount: Number(p.amount) }])
-                          .map((a: any) => ({ kind: a.kind, amount: Number(a.amount) })),
-                      })}><Printer className="h-4 w-4" /></Button>
+                      {!showDeleted && (
+                        <Button size="icon" variant="ghost" title="Print Receipt" onClick={() => exportPaymentReceiptPDF({
+                          brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
+                          receipt_no: p.id.slice(0, 8).toUpperCase(),
+                          date: p.created_at,
+                          farmer: { name_en: p.farmers?.name_en ?? "—", farmer_code: p.farmers?.farmer_code, mobile: p.farmers?.mobile },
+                          amount: Number(p.amount),
+                          method: p.method ?? "cash",
+                          note: p.note ?? "",
+                          allocations: (p.payment_allocations?.length ? p.payment_allocations : [{ kind: p.kind, amount: Number(p.amount) }])
+                            .map((a: any) => ({ kind: a.kind, amount: Number(a.amount) })),
+                        })}><Printer className="h-4 w-4" /></Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
