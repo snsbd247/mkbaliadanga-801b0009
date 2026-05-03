@@ -28,7 +28,7 @@ export default function Irrigation() {
 
   const [prevDue, setPrevDue] = useState<number>(0);
 
-  useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, []);
+  useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, [showDeleted]);
   useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); else setLands([]); }, [form.farmer_id]);
   // Auto-fill quantity from land size when basis = per_size
   useEffect(() => {
