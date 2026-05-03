@@ -66,24 +66,47 @@ export default function FarmerProfileReport() {
         }
       });
 
+      const fieldTypeLabel = (v: string) => {
+        switch (v) {
+          case "high_land": return "উঁচু জমি(High Land)";
+          case "medium_land": return "মাঝারি জমি(Medium Land)";
+          case "low_land": return "নিচু জমি(Low Land)";
+          case "other": return "বিবিধ";
+          default: return safeText(v);
+        }
+      };
+
       const ownerInformation = (ir.data ?? []).map((row: any) => {
         const relation = activeRelationByLand.get(row.land_id);
         const sc = relation?.sc;
-        const ownerTypeValue = row.lands?.owner_type === "borgadar" ? "বর্গাদার" : "মালিক";
-        const ownerTypeCell = sc?.name_en
-          ? `${safeText(sc.name_en)}-${safeText(sc.farmer_code)} /${ownerTypeValue}`
-          : ownerTypeValue;
+        const isBorga = row.lands?.owner_type === "borgadar";
+        const ownerTypeText = isBorga ? "বর্গাদার" : "মালিক";
+        const ownerNameFid = isBorga && sc?.name_en
+          ? `${safeText(sc.name_en)} - ${safeText(sc.farmer_code)}`
+          : "";
 
         return {
           id: row.id,
           mouza: safeText(row.lands?.mouza),
           season: row.seasons?.name ? `${safeText(row.seasons.name)}, ${safeText(row.seasons.year)}` : "",
           dag_no: safeText(row.lands?.dag_no),
-          owner_name_fid: `${safeText(f.data?.name_en)} - ${safeText(f.data?.farmer_code)}`.trim(),
-          owner_type: ownerTypeCell,
+          owner_type: ownerTypeText,
+          owner_name_fid: ownerNameFid,
           land_size: row.lands?.land_size !== null && row.lands?.land_size !== undefined ? Number(row.lands.land_size).toFixed(6) : "",
-          field_type: safeText(row.lands?.field_type),
-          irrigation_year: safeText(row.seasons?.year),
+          field_type: fieldTypeLabel(row.lands?.field_type),
+          charge_rate: Number(row.base_charge || 0).toFixed(2),
+          canal_charge: Number(row.canal_charge || 0).toFixed(2),
+          maintenance_charge: Number(row.maintenance_charge || 0).toFixed(2),
+          other_charge: Number(row.other_charge || 0).toFixed(2),
+          charge: Number(row.total || 0).toFixed(2),
+          due: Number(row.due_amount || 0).toFixed(2),
+          land_size_num: Number(row.lands?.land_size || 0),
+          canal_num: Number(row.canal_charge || 0),
+          maintenance_num: Number(row.maintenance_charge || 0),
+          other_num: Number(row.other_charge || 0),
+          charge_num: Number(row.total || 0),
+          due_num: Number(row.due_amount || 0),
+          irrigation_year: Number(row.seasons?.year) || new Date().getFullYear(),
         };
       });
 
