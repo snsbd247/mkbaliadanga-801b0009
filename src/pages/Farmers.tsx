@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Eye, Search, IdCard, Trash2, Pencil, AlertTriangle, Loader2 } from "lucide-react";
+import { Plus, Eye, Search, Trash2, Pencil, AlertTriangle, Loader2 } from "lucide-react";
+import { money } from "@/lib/format";
 import { LocationPicker, LocationValue } from "@/components/locations/LocationPicker";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
@@ -146,6 +147,7 @@ export default function Farmers() {
   const { officeId, isSuper } = useAuth();
   const nav = useNavigate();
   const [list, setList] = useState<any[]>([]);
+  const [duesMap, setDuesMap] = useState<Record<string, { net_due: number; loan_due: number; irr_due: number; savings_bal: number }>>({});
   const [offices, setOffices] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
@@ -180,10 +182,20 @@ export default function Farmers() {
   }, [createErr, editErr]);
 
   async function load() {
-    let qy = supabase.from("farmers").select("*, offices(name), villages(name,name_bn)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
+    let qy = supabase.from("farmers").select("*, offices(name), villages(name,name_bn)").is("deleted_at", null).order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
     const { data } = await qy;
-    setList(data ?? []);
+    const farmers = data ?? [];
+    setList(farmers);
+    if (farmers.length) {
+      const ids = farmers.map((f: any) => f.id);
+      const { data: dues } = await supabase.rpc("farmer_dues_summary" as any);
+      const map: Record<string, any> = {};
+      (dues ?? []).forEach((d: any) => { if (ids.includes(d.farmer_id)) map[d.farmer_id] = d; });
+      setDuesMap(map);
+    } else {
+      setDuesMap({});
+    }
   }
 
   function levelLabel(level: LocationLevel) {
@@ -353,9 +365,9 @@ export default function Farmers() {
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from("farmers").delete().eq("id", id);
+    const { error } = await supabase.from("farmers").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted");
+    toast.success("Farmer archived (soft delete)");
     load();
   }
 
@@ -491,6 +503,7 @@ export default function Farmers() {
             <TableHead>Account No</TableHead><TableHead>Voter Number</TableHead><TableHead>{t("farmerName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
+            <TableHead className="text-right">{t("dueAmount")}</TableHead>
             <TableHead className="text-right">{t("actions")}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
@@ -506,11 +519,17 @@ export default function Farmers() {
                 <TableCell>{f.village || f.villages?.name_bn || f.villages?.name || "—"}</TableCell>
                 <TableCell className="text-xs">{f.offices?.name}</TableCell>
                 <TableCell><Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status}</Badge></TableCell>
+                <TableCell className="text-right">
+                  {(() => {
+                    const d = duesMap[f.id];
+                    const v = d ? Number(d.net_due) : 0;
+                    return <span className={v > 0 ? "due-text font-semibold" : "text-muted-foreground"}>{money(v)}</span>;
+                  })()}
+                </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <Button size="icon" variant="ghost" title="View" onClick={() => nav(`/farmers/${f.id}`)}><Eye className="h-4 w-4" /></Button>
                     <Button size="icon" variant="ghost" title="Edit" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Membership card" onClick={() => nav(`/farmers/${f.id}/card`)}><IdCard className="h-4 w-4" /></Button>
                     {isSuper && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -534,7 +553,7 @@ export default function Farmers() {
                 </TableCell>
               </TableRow>
             ))}
-            {list.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            {list.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
         <div className="flex items-center justify-between p-3 border-t">

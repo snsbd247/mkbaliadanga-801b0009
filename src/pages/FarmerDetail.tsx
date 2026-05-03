@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Printer, FileDown, Receipt, Pencil, Trash2, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Printer, FileDown, Receipt, Pencil, Trash2, FileSpreadsheet, FileText, IdCard } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -223,7 +223,7 @@ export default function FarmerDetail() {
         toast.error(`Cannot delete: linked to ${irrCnt ?? 0} irrigation entries and ${relCnt ?? 0} relations.`);
         return;
       }
-      const { error } = await supabase.from("lands").delete().eq("id", delTarget.id);
+      const { error } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", delTarget.id);
       if (error) { toast.error(error.message); return; }
       toast.success("Land deleted");
       setDelTarget(null);
@@ -253,6 +253,7 @@ export default function FarmerDetail() {
         description={`${farmer.account_number ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
+          <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />Print Card</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
           <Button onClick={() => nav(`/farmers/${farmer.id}/report`)}>
             <FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}

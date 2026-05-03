@@ -368,6 +368,7 @@ export type Database = {
           amount: number
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           expense_date: string
           head: string
           id: string
@@ -381,6 +382,7 @@ export type Database = {
           amount: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           expense_date?: string
           head: string
           id?: string
@@ -394,6 +396,7 @@ export type Database = {
           amount?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           expense_date?: string
           head?: string
           id?: string
@@ -587,6 +590,7 @@ export type Database = {
           address: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           district: string | null
           district_id: string | null
           division: string | null
@@ -620,6 +624,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           district?: string | null
           district_id?: string | null
           division?: string | null
@@ -653,6 +658,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           district?: string | null
           district_id?: string | null
           division?: string | null
@@ -834,6 +840,7 @@ export type Database = {
           canal_charge: number
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           due_amount: number
           entry_date: string
           farmer_id: string
@@ -856,6 +863,7 @@ export type Database = {
           canal_charge?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           due_amount?: number
           entry_date?: string
           farmer_id: string
@@ -878,6 +886,7 @@ export type Database = {
           canal_charge?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           due_amount?: number
           entry_date?: string
           farmer_id?: string
@@ -984,6 +993,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           entry_date: string
           id: string
@@ -996,6 +1006,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           entry_date?: string
           id?: string
@@ -1008,6 +1019,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           entry_date?: string
           id?: string
@@ -1068,6 +1080,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           land_id: string
           note: string | null
@@ -1081,6 +1094,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           land_id: string
           note?: string | null
@@ -1094,6 +1108,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           land_id?: string
           note?: string | null
@@ -1153,6 +1168,7 @@ export type Database = {
         Row: {
           created_at: string
           dag_no: string | null
+          deleted_at: string | null
           farmer_id: string
           field_type: Database["public"]["Enums"]["field_type"]
           id: string
@@ -1165,6 +1181,7 @@ export type Database = {
         Insert: {
           created_at?: string
           dag_no?: string | null
+          deleted_at?: string | null
           farmer_id: string
           field_type?: Database["public"]["Enums"]["field_type"]
           id?: string
@@ -1177,6 +1194,7 @@ export type Database = {
         Update: {
           created_at?: string
           dag_no?: string | null
+          deleted_at?: string | null
           farmer_id?: string
           field_type?: Database["public"]["Enums"]["field_type"]
           id?: string
@@ -1423,6 +1441,7 @@ export type Database = {
           approved_by: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           farmer_id: string
           id: string
           installment_amount: number | null
@@ -1444,6 +1463,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           farmer_id: string
           id?: string
           installment_amount?: number | null
@@ -1465,6 +1485,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           farmer_id?: string
           id?: string
           installment_amount?: number | null
@@ -1687,6 +1708,7 @@ export type Database = {
           approved_by: string | null
           collected_by: string | null
           created_at: string
+          deleted_at: string | null
           farmer_id: string
           id: string
           idempotency_key: string | null
@@ -1704,6 +1726,7 @@ export type Database = {
           approved_by?: string | null
           collected_by?: string | null
           created_at?: string
+          deleted_at?: string | null
           farmer_id: string
           id?: string
           idempotency_key?: string | null
@@ -1721,6 +1744,7 @@ export type Database = {
           approved_by?: string | null
           collected_by?: string | null
           created_at?: string
+          deleted_at?: string | null
           farmer_id?: string
           id?: string
           idempotency_key?: string | null
@@ -2051,6 +2075,7 @@ export type Database = {
           approved_by: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           farmer_id: string
           id: string
           note: string | null
@@ -2064,6 +2089,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           farmer_id: string
           id?: string
           note?: string | null
@@ -2077,6 +2103,7 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           farmer_id?: string
           id?: string
           note?: string | null
@@ -2865,6 +2892,16 @@ export type Database = {
       current_user_office: { Args: never; Returns: string }
       data_integrity_scan: { Args: never; Returns: Json }
       email_for_username: { Args: { _username: string }; Returns: string }
+      farmer_dues_summary: {
+        Args: never
+        Returns: {
+          farmer_id: string
+          irr_due: number
+          loan_due: number
+          net_due: number
+          savings_bal: number
+        }[]
+      }
       farmer_loan_statement: {
         Args: { _farmer_id: string; _from?: string; _to?: string }
         Returns: {
