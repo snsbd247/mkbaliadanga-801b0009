@@ -221,11 +221,14 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
           const due = Number(l.total_payable) - paid;
           const isOpen = expanded === l.id;
           const hasPayments = (l.loan_payments ?? []).length > 0;
+          const hasSchedule = !!l.plan_id;
+          const canExpand = hasPayments || hasSchedule;
+          const sched = installments?.[l.id] ?? [];
           return (
             <Fragment key={l.id}>
               <TableRow>
                 <TableCell>
-                  {hasPayments && (
+                  {canExpand && (
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setExpanded(isOpen ? null : l.id)}>
                       {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                     </Button>
