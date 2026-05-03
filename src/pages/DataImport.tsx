@@ -157,6 +157,16 @@ export default function DataImport() {
   const [working, setWorking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [upsertMode, setUpsertMode] = useState(false);
+  const [ledgerVerify, setLedgerVerify] = useState<Array<{ idx: number; record_id: string; ledger_ids: string[]; ok: boolean }>>([]);
+  const [recentImports, setRecentImports] = useState<any[]>([]);
+
+  async function loadRecentImports() {
+    const { data } = await supabase
+      .from("import_audit_logs" as any)
+      .select("*").order("created_at", { ascending: false }).limit(20);
+    setRecentImports((data as any) ?? []);
+  }
+  useMemo(() => { loadRecentImports(); }, []);
 
   const stats = useMemo(() => ({
     total: rows.length,
