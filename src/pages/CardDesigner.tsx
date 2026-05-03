@@ -88,8 +88,8 @@ export default function CardDesigner() {
 
   const previewData: CardData = {
     ...SAMPLE,
-    company_name: brand.company_name ?? SAMPLE.company_name,
-    company_name_bn: brand.company_name_bn ?? SAMPLE.company_name_bn,
+    company_name: s.header_text || brand.company_name || SAMPLE.company_name,
+    company_name_bn: s.header_text_bn || brand.company_name_bn || SAMPLE.company_name_bn,
     logo_url: brand.logo_url,
   };
 
