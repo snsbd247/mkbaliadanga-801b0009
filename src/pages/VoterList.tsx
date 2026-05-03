@@ -86,13 +86,13 @@ export default function VoterList() {
   }
 
   function exportCsv() {
-    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Village", "Office"];
+    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"];
     const escape = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const lines = [head.map(escape).join(",")];
     for (const r of rows) {
       lines.push([
         r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
-        r.mobile ?? "", r.village ?? "", r.offices?.name ?? "",
+        r.mobile ?? "", locationOf(r), r.offices?.name ?? "",
       ].map(escape).join(","));
     }
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
