@@ -19,7 +19,7 @@ import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/expo
 import { useBranding } from "@/lib/branding";
 
 export default function Savings() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { isCommittee, user } = useAuth();
   const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
