@@ -107,7 +107,8 @@ export default function FarmerStatement() {
 
   return (
     <div className="p-4 space-y-4">
-      <PageHeader title="Farmer Statement" subtitle="Bank-style statement from ledger" />
+      <PageHeader title="Farmer Statement" />
+      <p className="text-sm text-muted-foreground -mt-2">Bank-style statement from ledger</p>
 
       <Card className="p-4 space-y-4">
         <Tabs value={kind} onValueChange={(v) => setKind(v as Kind)}>
