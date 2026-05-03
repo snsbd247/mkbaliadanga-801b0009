@@ -297,6 +297,14 @@ export default function FarmerProfileReport() {
           font-weight: 700;
         }
 
+        .farmer-table tr.totals-row td {
+          background: #aeb9c9;
+          font-weight: 700;
+        }
+
+        .irrigation-year-block { margin-bottom: 6px; }
+        .irrigation-year-block .farmer-table { margin-bottom: 8px; }
+
         .farmer-table td {
           text-align: center;
         }
