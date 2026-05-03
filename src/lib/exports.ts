@@ -2,6 +2,49 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { money, moneyPdf, fmtDate } from "./format";
+import { loadBranding } from "./branding";
+
+// Shared A4 PDF header/footer. Adds branded company name + period at top, and
+// "Page X of Y · printed at" footer on every page. Returns the Y position
+// where body content can safely start.
+export async function applyPdfHeaderFooter(
+  doc: jsPDF,
+  opts: { title: string; range?: { from?: string | null; to?: string | null } } = { title: "" }
+): Promise<number> {
+  const brand = await loadBranding().catch(() => null);
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  // Header (drawn only on page 1; subsequent pages get a slim title bar via hook)
+  doc.setFontSize(13); doc.setFont(undefined, "bold");
+  doc.text(brand?.company_name || "Report", pageW / 2, 12, { align: "center" });
+  if (brand?.address) {
+    doc.setFontSize(9); doc.setFont(undefined, "normal");
+    doc.text(brand.address, pageW / 2, 17, { align: "center" });
+  }
+  doc.setFontSize(12); doc.setFont(undefined, "bold");
+  doc.text(opts.title || "", pageW / 2, 24, { align: "center" });
+  if (opts.range?.from || opts.range?.to) {
+    doc.setFontSize(9); doc.setFont(undefined, "normal");
+    doc.text(`Period: ${opts.range.from || "—"} to ${opts.range.to || "—"}`, pageW / 2, 29, { align: "center" });
+  }
+  // Footer drawer — call drawFooters() AFTER all content is added.
+  (doc as any).__drawFooters = () => {
+    const total = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setFont(undefined, "normal");
+      doc.text(`Printed: ${new Date().toLocaleString()}`, 14, pageH - 6);
+      doc.text(`Page ${i} of ${total}`, pageW - 14, pageH - 6, { align: "right" });
+    }
+  };
+  return opts.range?.from || opts.range?.to ? 33 : 28;
+}
+
+export function finalizePdf(doc: jsPDF) {
+  const fn = (doc as any).__drawFooters;
+  if (typeof fn === "function") fn();
+}
 
 export function exportFarmerReportPDF(farmer: any, ctx: any) {
   const doc = new jsPDF();
@@ -67,21 +110,16 @@ export function buildExportName(
   return `${slug}_${new Date().toISOString().slice(0, 10)}`;
 }
 
-export function exportTablePDF(
+export async function exportTablePDF(
   title: string,
   head: string[],
   rows: any[][],
   range?: { from?: string | null; to?: string | null }
 ) {
-  const doc = new jsPDF();
-  doc.setFontSize(14); doc.text(title, 14, 14);
-  if (range?.from || range?.to) {
-    doc.setFontSize(9);
-    doc.text(`Period: ${range.from || "—"} to ${range.to || "—"}`, 14, 20);
-    autoTable(doc, { startY: 26, head: [head], body: rows });
-  } else {
-    autoTable(doc, { startY: 20, head: [head], body: rows });
-  }
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const startY = await applyPdfHeaderFooter(doc, { title, range });
+  autoTable(doc, { startY: startY + 2, head: [head], body: rows, styles: { fontSize: 9 }, headStyles: { fillColor: [30, 110, 70] } });
+  finalizePdf(doc);
   doc.save(`${buildExportName(title, range)}.pdf`);
 }
 
