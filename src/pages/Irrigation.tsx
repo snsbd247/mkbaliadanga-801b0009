@@ -79,7 +79,7 @@ export default function Irrigation() {
 
   async function load() {
     const [r, s] = await Promise.all([
-      supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200),
+      supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").is("deleted_at", null).order("entry_date", { ascending: false }).limit(200),
       supabase.from("seasons").select("*").order("year", { ascending: false }),
     ]);
     setRows(r.data ?? []); setSeasons(s.data ?? []);
