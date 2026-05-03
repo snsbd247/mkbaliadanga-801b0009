@@ -74,10 +74,10 @@ export default function VoterList() {
 
   function exportExcel() {
     const wb = XLSX.utils.book_new();
-    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Village", "Office"];
+    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"];
     const data = [head, ...rows.map(r => [
       r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
-      r.mobile ?? "", r.village ?? "", r.offices?.name ?? "",
+      r.mobile ?? "", locationOf(r), r.offices?.name ?? "",
     ])];
     const ws = XLSX.utils.aoa_to_sheet(data);
     ws["!cols"] = [{ wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 24 }, { wch: 14 }, { wch: 18 }, { wch: 20 }];
