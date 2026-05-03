@@ -20,6 +20,56 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { validateLocationChain, parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
+import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
+
+function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
+  const [generating, setGenerating] = useState(false);
+  return (
+    <>
+      <div className="flex items-center gap-3 h-10">
+        <Switch
+          checked={!!f.is_voter}
+          disabled={disabled || generating}
+          onCheckedChange={async (on) => {
+            if (!on) { setF({ ...f, is_voter: false }); return; }
+            if (f.voter_number) { setF({ ...f, is_voter: true }); return; }
+            setGenerating(true);
+            try {
+              const { data, error } = await supabase.rpc("generate_farmer_voter_number");
+              if (error) { toast.error(error.message); setF({ ...f, is_voter: false }); return; }
+              setF({ ...f, is_voter: true, voter_number: String(data ?? "") });
+            } finally {
+              setGenerating(false);
+            }
+          }}
+          data-testid="voter-toggle"
+        />
+        {generating ? (
+          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> generating voter number…
+          </span>
+        ) : f.voter_number ? (
+          <Input
+            value={f.voter_number}
+            disabled
+            readOnly
+            inputMode="numeric"
+            maxLength={20}
+            className="font-mono"
+            aria-label="Voter number (read-only)"
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">No voter number assigned</span>
+        )}
+      </div>
+      {f.voter_number && !generating && (
+        <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+          ⚠ Voter number is permanent and cannot be edited. It will be reused if Is Voter is re-enabled.
+        </p>
+      )}
+    </>
+  );
+}
 
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
@@ -243,23 +293,12 @@ export default function Farmers() {
       photo_url = await uploadPhoto(editPhoto);
       if (!photo_url) { setSaving(false); return; }
     }
-    // Strip read-only / joined-relation fields from the update payload.
-    // voter_number IS kept: the DB immutability trigger preserves the original
-    // when one already exists, but allows the first assignment to persist.
-    const {
-      id, farmer_code, created_at, updated_at,
-      offices: _o, villages: _v, divisions: _dv, districts: _dt,
-      upazilas: _up, unions: _un, wards: _w, mouzas: _m,
-      village: _village, // legacy text col (joined name)
-      ...rest
-    } = editForm as any;
-    const payload: any = { ...rest, ...(photo_url ? { photo_url } : {}), office_id: editForm.office_id || null };
-    // Drop empty voter_number so we don't try to clear an existing one
-    if (!payload.voter_number) delete payload.voter_number;
+    const id = (editForm as any).id;
+    const payload = toFarmerUpdatePayload(editForm as any, photo_url ? { photo_url } : {});
     if (import.meta.env.DEV) console.debug("[farmers.update] payload keys:", Object.keys(payload));
-    const { error } = await supabase.from("farmers").update(payload).eq("id", id);
-    setSaving(false);
+    const { error } = await supabase.from("farmers").update(payload as any).eq("id", id);
     if (error) {
+      setSaving(false);
       const lvl = parseLocationDbError(error.message);
       if (lvl) {
         setEditErr({ level: lvl, key: "locationInvalidMismatch" });
@@ -267,9 +306,19 @@ export default function Farmers() {
       } else toast.error(error.message);
       return;
     }
+    // Optimistic local update so voter_number / changed fields show immediately.
+    setList((prev) => prev.map((r) => (r.id === id ? { ...r, ...payload } : r)));
+    // Targeted refetch for the edited row to reconcile DB-trigger derived fields
+    // (voter_number, farmer_code, joined relations) without a full table reload.
+    const { data: fresh } = await supabase
+      .from("farmers")
+      .select("*, offices(name), villages(name,name_bn)")
+      .eq("id", id)
+      .maybeSingle();
+    if (fresh) setList((prev) => prev.map((r) => (r.id === id ? fresh : r)));
+    setSaving(false);
     toast.success("Farmer updated");
     resetEditForm();
-    load();
   }
 
   async function remove(id: string) {
@@ -323,46 +372,7 @@ export default function Farmers() {
         <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
         <div>
           <Label>Is Voter</Label>
-          <div className="flex items-center gap-3 h-10">
-            <Switch
-              checked={!!f.is_voter}
-              disabled={disabled}
-              onCheckedChange={async (on) => {
-                if (on) {
-                  if (f.voter_number) {
-                    setF({ ...f, is_voter: true });
-                    return;
-                  }
-                  const { data, error } = await supabase.rpc("generate_farmer_voter_number");
-                  if (error) { toast.error(error.message); return; }
-                  setF({ ...f, is_voter: true, voter_number: String(data ?? "") });
-                } else {
-                  setF({ ...f, is_voter: false });
-                }
-              }}
-              data-testid="voter-toggle"
-            />
-            {f.voter_number ? (
-              <Input
-                value={f.voter_number}
-                disabled
-                readOnly
-                inputMode="numeric"
-                maxLength={20}
-                className="font-mono"
-                aria-label="Voter number (read-only)"
-              />
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                {f.is_voter ? "auto-generating…" : "No voter number assigned"}
-              </span>
-            )}
-          </div>
-          {f.voter_number && (
-            <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
-              ⚠ Voter number is permanent and cannot be edited. It will be reused if Is Voter is re-enabled.
-            </p>
-          )}
+          <VoterToggleField f={f} setF={setF} disabled={disabled} />
         </div>
         <div>
           <Label>{t("office")}</Label>
