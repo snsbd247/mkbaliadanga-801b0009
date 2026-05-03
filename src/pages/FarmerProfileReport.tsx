@@ -66,24 +66,47 @@ export default function FarmerProfileReport() {
         }
       });
 
+      const fieldTypeLabel = (v: string) => {
+        switch (v) {
+          case "high_land": return "উঁচু জমি(High Land)";
+          case "medium_land": return "মাঝারি জমি(Medium Land)";
+          case "low_land": return "নিচু জমি(Low Land)";
+          case "other": return "বিবিধ";
+          default: return safeText(v);
+        }
+      };
+
       const ownerInformation = (ir.data ?? []).map((row: any) => {
         const relation = activeRelationByLand.get(row.land_id);
         const sc = relation?.sc;
-        const ownerTypeValue = row.lands?.owner_type === "borgadar" ? "বর্গাদার" : "মালিক";
-        const ownerTypeCell = sc?.name_en
-          ? `${safeText(sc.name_en)}-${safeText(sc.farmer_code)} /${ownerTypeValue}`
-          : ownerTypeValue;
+        const isBorga = row.lands?.owner_type === "borgadar";
+        const ownerTypeText = isBorga ? "বর্গাদার" : "মালিক";
+        const ownerNameFid = isBorga && sc?.name_en
+          ? `${safeText(sc.name_en)} - ${safeText(sc.farmer_code)}`
+          : "";
 
         return {
           id: row.id,
           mouza: safeText(row.lands?.mouza),
           season: row.seasons?.name ? `${safeText(row.seasons.name)}, ${safeText(row.seasons.year)}` : "",
           dag_no: safeText(row.lands?.dag_no),
-          owner_name_fid: `${safeText(f.data?.name_en)} - ${safeText(f.data?.farmer_code)}`.trim(),
-          owner_type: ownerTypeCell,
+          owner_type: ownerTypeText,
+          owner_name_fid: ownerNameFid,
           land_size: row.lands?.land_size !== null && row.lands?.land_size !== undefined ? Number(row.lands.land_size).toFixed(6) : "",
-          field_type: safeText(row.lands?.field_type),
-          irrigation_year: safeText(row.seasons?.year),
+          field_type: fieldTypeLabel(row.lands?.field_type),
+          charge_rate: Number(row.base_charge || 0).toFixed(2),
+          canal_charge: Number(row.canal_charge || 0).toFixed(2),
+          maintenance_charge: Number(row.maintenance_charge || 0).toFixed(2),
+          other_charge: Number(row.other_charge || 0).toFixed(2),
+          charge: Number(row.total || 0).toFixed(2),
+          due: Number(row.due_amount || 0).toFixed(2),
+          land_size_num: Number(row.lands?.land_size || 0),
+          canal_num: Number(row.canal_charge || 0),
+          maintenance_num: Number(row.maintenance_charge || 0),
+          other_num: Number(row.other_charge || 0),
+          charge_num: Number(row.total || 0),
+          due_num: Number(row.due_amount || 0),
+          irrigation_year: Number(row.seasons?.year) || new Date().getFullYear(),
         };
       });
 
@@ -151,6 +174,15 @@ export default function FarmerProfileReport() {
     return <div className="p-6 text-sm text-muted-foreground">Farmer not found.</div>;
   }
 
+  const ownerByYear = useMemo(() => {
+    const map = new Map<number, any[]>();
+    ownerRows.forEach((r) => {
+      const y = r.irrigation_year || new Date().getFullYear();
+      if (!map.has(y)) map.set(y, []);
+      map.get(y)!.push(r);
+    });
+    return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
+  }, [ownerRows]);
   const irrigationYear = ownerRows.find((row) => row.irrigation_year)?.irrigation_year || new Date().getFullYear();
   const logoSrc = brand.logo_url || "";
 
@@ -264,6 +296,14 @@ export default function FarmerProfileReport() {
           text-align: center;
           font-weight: 700;
         }
+
+        .farmer-table tr.totals-row td {
+          background: #aeb9c9;
+          font-weight: 700;
+        }
+
+        .irrigation-year-block { margin-bottom: 6px; }
+        .irrigation-year-block .farmer-table { margin-bottom: 8px; }
 
         .farmer-table td {
           text-align: center;
@@ -416,52 +456,91 @@ export default function FarmerProfileReport() {
             </tbody>
           </table>
 
-          <div className="farmer-section-title">Owner Information</div>
-          <div className="farmer-year-row">সেচ বর্ষ: {irrigationYear}</div>
-          <table className="farmer-table compact-gap">
-            <colgroup>
-              <col style={{ width: "4.5%" }} />
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "42.5%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "13%" }} />
-              <col style={{ width: "6.5%" }} />
-              <col style={{ width: "11.5%" }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Mouza</th>
-                <th>Season</th>
-                <th>Dag No</th>
-                <th>Owner Name - FID</th>
-                <th>Owner Type</th>
-                <th>Land Size</th>
-                <th>Field Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(ownerRows.length ? ownerRows : [{
-                id: "empty-owner-row",
-                mouza: "",
-                season: "",
-                dag_no: "",
-                owner_name_fid: "",
-                owner_type: "",
-                land_size: "",
-                field_type: "",
-              }]).map((row) => (
-                <tr key={row.id}>
-                  <td>{row.mouza}</td>
-                  <td>{row.season}</td>
-                  <td>{row.dag_no}</td>
-                  <td>{row.owner_name_fid}</td>
-                  <td>{row.owner_type}</td>
-                  <td>{row.land_size}</td>
-                  <td className="field-type-cell">{row.field_type}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="farmer-section-title">Irrigation Charge Information</div>
+          {(ownerByYear.length ? ownerByYear : [[irrigationYear, []]]).map(([year, rows]) => {
+            const totals = rows.reduce(
+              (acc: any, r: any) => {
+                acc.land_size += r.land_size_num;
+                acc.canal += r.canal_num;
+                acc.maintenance += r.maintenance_num;
+                acc.other += r.other_num;
+                acc.charge += r.charge_num;
+                acc.due += r.due_num;
+                return acc;
+              },
+              { land_size: 0, canal: 0, maintenance: 0, other: 0, charge: 0, due: 0 }
+            );
+            return (
+              <div key={year} className="irrigation-year-block">
+                <div className="farmer-year-row">সেচ বর্ষ: {year}</div>
+                <table className="farmer-table compact-gap">
+                  <colgroup>
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "6.5%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "6.5%" }} />
+                    <col style={{ width: "6.5%" }} />
+                    <col style={{ width: "6.5%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Mouza</th>
+                      <th>Season</th>
+                      <th>Dag No</th>
+                      <th>Owner Type</th>
+                      <th>Owner Name - FID</th>
+                      <th>Land Size</th>
+                      <th>Field Type</th>
+                      <th>Charge Rate</th>
+                      <th>Canal Charge</th>
+                      <th>Maintenance Charge</th>
+                      <th>Other Charges</th>
+                      <th>Charge</th>
+                      <th>Due</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(rows.length ? rows : [{ id: `empty-${year}` }]).map((row: any) => (
+                      <tr key={row.id}>
+                        <td>{row.mouza}</td>
+                        <td>{row.season}</td>
+                        <td>{row.dag_no}</td>
+                        <td>{row.owner_type}</td>
+                        <td>{row.owner_name_fid}</td>
+                        <td>{row.land_size}</td>
+                        <td className="field-type-cell">{row.field_type}</td>
+                        <td>{row.charge_rate}</td>
+                        <td>{row.canal_charge}</td>
+                        <td>{row.maintenance_charge}</td>
+                        <td>{row.other_charge}</td>
+                        <td>{row.charge}</td>
+                        <td>{row.due}</td>
+                      </tr>
+                    ))}
+                    {rows.length > 0 && (
+                      <tr className="totals-row">
+                        <td></td><td></td><td></td><td></td><td></td>
+                        <td>{totals.land_size.toFixed(4).replace(/\.?0+$/, "")}</td>
+                        <td></td><td></td>
+                        <td>{totals.canal || 0}</td>
+                        <td>{totals.maintenance || 0}</td>
+                        <td>{totals.other || 0}</td>
+                        <td>{Math.round(totals.charge)}</td>
+                        <td>{Math.round(totals.due)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
 
           <div className="farmer-section-title">Loan Information</div>
           <table className="farmer-table">
