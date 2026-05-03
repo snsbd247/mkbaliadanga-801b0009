@@ -64,7 +64,7 @@ export default function Payments() {
   async function load() {
     const [f, p] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
-      supabase.from("payments").select("*, farmers(name_en,farmer_code), payment_allocations(*)").order("created_at", { ascending: false }).limit(100),
+      supabase.from("payments").select("*, farmers(name_en,farmer_code), payment_allocations(*)").is("deleted_at", null).order("created_at", { ascending: false }).limit(100),
     ]);
     setFarmers(f.data ?? []); setList(p.data ?? []);
   }
