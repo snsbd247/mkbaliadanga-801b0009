@@ -124,36 +124,91 @@ export default function Farmers() {
     return supabase.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
   }
 
-  function commonValidate(f: FormState): boolean {
-    if (!f.name_en?.trim()) { toast.error("English name required"); return false; }
-    if (f.mobile && !/^\+?\d[\d\s-]{6,20}$/.test(f.mobile)) { toast.error("Invalid mobile number"); return false; }
-    if (f.nid && !/^\d{10,17}$/.test(f.nid.replace(/\D/g, ""))) { toast.error("Invalid NID (10–17 digits)"); return false; }
+  function resetCreateForm() {
+    setOpen(false);
+    setPhoto(null);
+    setCreateErr(null);
+    setCreateFieldErrors({});
+    setForm({ ...EMPTY_FORM, office_id: officeId ?? "" });
+    setSaving(false);
+  }
+
+  function resetEditForm() {
+    setEditOpen(false);
+    setEditForm(null);
+    setEditPhoto(null);
+    setEditErr(null);
+    setEditFieldErrors({});
+    setSaving(false);
+  }
+
+  function commonValidate(f: FormState, setErrors: (errors: FormErrors) => void): boolean {
+    const parsed = farmerFormSchema.safeParse({
+      name_en: f.name_en,
+      name_bn: f.name_bn ?? "",
+      father_name: f.father_name ?? "",
+      mother_name: f.mother_name ?? "",
+      nid: f.nid ?? "",
+      mobile: f.mobile ?? "",
+      post_office: f.post_office ?? "",
+      address: f.address ?? "",
+      office_id: f.office_id ?? "",
+    });
+
+    const nextErrors: FormErrors = {};
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as keyof FormErrors | undefined;
+        if (key && !nextErrors[key]) nextErrors[key] = issue.message;
+      }
+    }
+
+    const loc = pickLocation(f);
+    if (!loc.division_id || !loc.district_id || !loc.upazila_id || !loc.union_id || !loc.ward_id || !loc.village_id || !loc.mouza_id) {
+      nextErrors.location = "Please complete all location dropdowns.";
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      const firstError = Object.values(nextErrors)[0];
+      if (firstError) toast.error(firstError);
+      return false;
+    }
     return true;
   }
 
   async function save() {
     setCreateErr(null);
-    if (!commonValidate(form)) return;
+    setCreateFieldErrors({});
+    if (!commonValidate(form, setCreateFieldErrors)) return;
     const v = validateLocationChain(pickLocation(form));
-    if (v.ok === false) { setCreateErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
+    if (v.ok === false) {
+      setCreateErr({ level: v.level, key: "locationInvalidMissingParent" });
+      setCreateFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMissingParent", v.level) }));
+      return;
+    }
 
+    setSaving(true);
     let photo_url: string | undefined;
     if (photo) {
       photo_url = await uploadPhoto(photo);
-      if (!photo_url) return;
+      if (!photo_url) { setSaving(false); return; }
     }
     const payload: any = { ...form, ...(photo_url ? { photo_url } : {}), office_id: form.office_id || null };
     const { data, error } = await supabase.from("farmers").insert(payload).select().single();
     if (error) {
+      setSaving(false);
       const lvl = parseLocationDbError(error.message);
-      if (lvl) setCreateErr({ level: lvl, key: "locationInvalidMismatch" });
-      else toast.error(error.message);
+      if (lvl) {
+        setCreateErr({ level: lvl, key: "locationInvalidMismatch" });
+        setCreateFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMismatch", lvl) }));
+      } else toast.error(error.message);
       return;
     }
     if (data) await supabase.from("shares").insert({ farmer_id: data.id, balance: 0 });
+    setSaving(false);
     toast.success("Farmer added");
-    setOpen(false); setPhoto(null);
-    setForm({ ...EMPTY_FORM, office_id: officeId ?? "" });
+    resetCreateForm();
     load();
   }
 
