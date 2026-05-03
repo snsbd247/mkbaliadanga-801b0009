@@ -1,6 +1,7 @@
 import { QRCodeSVG } from "qrcode.react";
 import { User } from "lucide-react";
 import { TEMPLATES, type TemplateId } from "./templates";
+import { useBranding } from "@/lib/branding";
 
 export interface CardData {
   company_name: string;
@@ -48,6 +49,7 @@ interface Props {
 
 /** Standard CR80 card: 85.6mm × 54mm. */
 export function MembershipCard({ data, templateId = "classic", display }: Props) {
+  const brand = useBranding();
   const f = data.farmer;
   const opts = {
     show_photo: true, show_account_number: true, show_voter_number: true,
@@ -144,7 +146,19 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
             {f.village && <div><span className="text-gray-500">Village:</span> {f.village}</div>}
             {f.address && <div className="line-clamp-3"><span className="text-gray-500">Address:</span> {f.address}</div>}
             {f.mobile && <div><span className="text-gray-500">Mobile:</span> <span className="font-mono">{f.mobile}</span></div>}
-            <div className="pt-1 text-[7px] text-gray-500">If found, please return to the issuing office.</div>
+            <div className="pt-1 text-[7px] text-gray-500 leading-snug">
+              {brand?.pdf_footer_text || "If found, please return to the issuing office."}
+              {brand?.pdf_footer_show_address && brand?.address && (
+                <div className="truncate">{brand.address}</div>
+              )}
+              {brand?.pdf_footer_show_contact && (brand?.mobile || brand?.email) && (
+                <div className="truncate">
+                  {brand?.mobile ? `📞 ${brand.mobile}` : ""}
+                  {brand?.mobile && brand?.email ? " · " : ""}
+                  {brand?.email || ""}
+                </div>
+              )}
+            </div>
           </div>
           {opts.show_qr && (
             <div className="flex flex-col items-center justify-center shrink-0">
