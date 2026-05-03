@@ -174,6 +174,57 @@ export type Database = {
         }
         Relationships: []
       }
+      card_settings: {
+        Row: {
+          accent_color: string
+          font_scale: number
+          header_text: string
+          header_text_bn: string
+          id: number
+          photo_size_mm: number
+          show_account_number: boolean
+          show_issue_date: boolean
+          show_photo: boolean
+          show_qr: boolean
+          show_voter_number: boolean
+          template_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          accent_color?: string
+          font_scale?: number
+          header_text?: string
+          header_text_bn?: string
+          id?: number
+          photo_size_mm?: number
+          show_account_number?: boolean
+          show_issue_date?: boolean
+          show_photo?: boolean
+          show_qr?: boolean
+          show_voter_number?: boolean
+          template_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accent_color?: string
+          font_scale?: number
+          header_text?: string
+          header_text_bn?: string
+          id?: number
+          photo_size_mm?: number
+          show_account_number?: boolean
+          show_issue_date?: boolean
+          show_photo?: boolean
+          show_qr?: boolean
+          show_voter_number?: boolean
+          template_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       company_settings: {
         Row: {
           address: string | null
@@ -2483,6 +2534,7 @@ export type Database = {
         Args: { _force_rotate?: boolean }
         Returns: Json
       }
+      generate_farmer_voter_number: { Args: never; Returns: string }
       get_previous_due: {
         Args: { _exclude_season: string; _farmer: string; _land: string }
         Returns: number
