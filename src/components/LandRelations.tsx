@@ -49,20 +49,23 @@ export function LandRelations({ farmerId }: Props) {
 
   async function save() {
     if (!form.land_id || !form.owner_farmer_id) return toast.error("Land and Owner required");
-    const { error } = await supabase.from("land_relations").insert({
-      land_id: form.land_id,
-      owner_farmer_id: form.owner_farmer_id,
-      sharecropper_farmer_id: form.sharecropper_farmer_id || null,
-      share_percentage: Number(form.share_percentage),
-      valid_from: form.valid_from,
-      note: form.note,
-      created_by: user?.id,
-    });
-    if (error) return toast.error(error.message);
-    toast.success(t("saved"));
-    setOpen(false);
-    setForm({ land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "", share_percentage: 50, valid_from: new Date().toISOString().slice(0, 10), note: "" });
-    load();
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("land_relations").insert({
+        land_id: form.land_id,
+        owner_farmer_id: form.owner_farmer_id,
+        sharecropper_farmer_id: form.sharecropper_farmer_id || null,
+        share_percentage: Number(form.share_percentage),
+        valid_from: form.valid_from,
+        note: form.note,
+        created_by: user?.id,
+      });
+      if (error) { toast.error(error.message); return; }
+      toast.success(t("saved"));
+      setOpen(false);
+      resetForm();
+      load();
+    } finally { setSaving(false); }
   }
 
   async function endRelation(id: string) {
@@ -76,36 +79,40 @@ export function LandRelations({ farmerId }: Props) {
     <Card>
       <div className="flex items-center justify-between p-3 border-b">
         <div className="text-sm text-muted-foreground">{t("landRelations")} — owner ↔ sharecropper history</div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
           <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{t("addNew")} — {t("landRelations")}</DialogTitle></DialogHeader>
             <div className="grid gap-3">
-              <div><Label>{t("lands")}</Label>
-                <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{lands.map(l => <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} · {l.mouza} · {l.land_size}</SelectItem>)}</SelectContent>
-                </Select>
+              <div>
+                <Label>{t("owner")} <span className="text-destructive">*</span></Label>
+                <FarmerSearchSelect value={form.owner_farmer_id}
+                  onChange={(id) => setForm({ ...form, owner_farmer_id: id ?? "", land_id: "" })}
+                  placeholder="Search owner farmer (name / ID / mobile)" disabled={saving} />
               </div>
-              <div><Label>{t("owner")}</Label>
-                <Select value={form.owner_farmer_id} onValueChange={v => setForm({ ...form, owner_farmer_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
+              <div><Label>{t("lands")} <span className="text-destructive">*</span></Label>
+                <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })} disabled={saving || !form.owner_farmer_id}>
+                  <SelectTrigger><SelectValue placeholder={form.owner_farmer_id ? "—" : "Select owner first"} /></SelectTrigger>
+                  <SelectContent>
+                    {lands.filter(l => l.farmer_id === form.owner_farmer_id).map(l => (
+                      <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} · {l.mouza} · {l.land_size}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div><Label>{t("sharecropper")} <span className="text-xs text-muted-foreground">(optional)</span></Label>
-                <Select value={form.sharecropper_farmer_id} onValueChange={v => setForm({ ...form, sharecropper_farmer_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{farmers.filter(f => f.id !== form.owner_farmer_id).map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-                </Select>
+                <FarmerSearchSelect value={form.sharecropper_farmer_id || null}
+                  onChange={(id) => setForm({ ...form, sharecropper_farmer_id: id ?? "" })}
+                  excludeIds={form.owner_farmer_id ? [form.owner_farmer_id] : []}
+                  placeholder="Search sharecropper (optional)" disabled={saving} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>{t("sharePercent")}</Label><Input type="number" min={0} max={100} step="0.1" value={form.share_percentage} onChange={e => setForm({ ...form, share_percentage: +e.target.value })} /></div>
-                <div><Label>{t("validFrom")}</Label><Input type="date" value={form.valid_from} onChange={e => setForm({ ...form, valid_from: e.target.value })} /></div>
+                <div><Label>{t("sharePercent")}</Label><Input type="number" min={0} max={100} step="0.1" disabled={saving} value={form.share_percentage} onChange={e => setForm({ ...form, share_percentage: +e.target.value })} /></div>
+                <div><Label>{t("validFrom")}</Label><Input type="date" disabled={saving} value={form.valid_from} onChange={e => setForm({ ...form, valid_from: e.target.value })} /></div>
               </div>
-              <div><Label>{t("note")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
+              <div><Label>{t("note")}</Label><Input disabled={saving} value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
             </div>
-            <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
+            <DialogFooter><Button variant="outline" disabled={saving} onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save} disabled={saving}>{saving ? "…" : t("save")}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
