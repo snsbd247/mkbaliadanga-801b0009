@@ -102,6 +102,11 @@ export default function Loans() {
     if (error) return toast.error(error.message);
     toast.success(t("deleted")); load();
   }
+  async function restore(id: string) {
+    const { error } = await supabase.from("loans").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Restored"); load();
+  }
 
   function printLoanReceipt(loan: any, payment?: any) {
     const isIssue = !payment;
