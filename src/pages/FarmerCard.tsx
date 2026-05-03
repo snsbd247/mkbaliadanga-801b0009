@@ -190,7 +190,7 @@ export default function FarmerCard() {
           </div>
         ) : data ? (
           <div ref={cardRef} className="flex justify-center">
-            <MembershipCard data={data} templateId={templateId} />
+            <MembershipCard data={data} templateId={templateId} display={cardCfg} />
           </div>
         ) : (
           <div className="text-sm text-muted-foreground py-6 text-center">
