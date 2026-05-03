@@ -31,24 +31,9 @@ export async function applyPdfHeaderFooter(
   // Footer drawer — call drawFooters() AFTER all content is added.
   (doc as any).__drawFooters = () => {
     const total = (doc as any).internal.getNumberOfPages();
-    const footerLines: string[] = [];
-    if (brand?.pdf_footer_text) footerLines.push(brand.pdf_footer_text);
-    const contactBits: string[] = [];
-    if (brand?.pdf_footer_show_address && brand?.address) contactBits.push(brand.address);
-    if (brand?.pdf_footer_show_contact) {
-      if (brand?.mobile) contactBits.push(`Mobile: ${brand.mobile}`);
-      if (brand?.email) contactBits.push(brand.email);
-    }
-    if (contactBits.length) footerLines.push(contactBits.join(" · "));
-    const extraH = footerLines.length * 4;
     for (let i = 1; i <= total; i++) {
       doc.setPage(i);
       doc.setFontSize(8); doc.setFont(undefined, "normal");
-      let y = pageH - 6 - extraH;
-      footerLines.forEach((line) => {
-        doc.text(line, pageW / 2, y, { align: "center" });
-        y += 4;
-      });
       doc.text(`Printed: ${new Date().toLocaleString()}`, 14, pageH - 6);
       doc.text(`Page ${i} of ${total}`, pageW - 14, pageH - 6, { align: "right" });
     }
