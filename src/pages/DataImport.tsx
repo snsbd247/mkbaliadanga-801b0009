@@ -30,6 +30,7 @@ import { toast } from "sonner";
 
 type Module =
   | "lands"
+  | "land_relations"
   | "loans"
   | "loan_payments"
   | "savings"
