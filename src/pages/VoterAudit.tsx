@@ -15,7 +15,7 @@ import { useAuth } from "@/auth/AuthProvider";
 const PAGE_SIZE = 50;
 
 export default function VoterAudit() {
-  const { isSuperAdmin } = useAuth() as any;
+  const { isSuper } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
   const [farmersMap, setFarmersMap] = useState<Record<string, any>>({});
   const [profilesMap, setProfilesMap] = useState<Record<string, any>>({});
