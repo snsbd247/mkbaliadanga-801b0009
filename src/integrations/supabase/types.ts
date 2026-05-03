@@ -248,6 +248,9 @@ export type Database = {
           id: number
           logo_url: string | null
           mobile: string | null
+          pdf_footer_show_address: boolean
+          pdf_footer_show_contact: boolean
+          pdf_footer_text: string | null
           penalty_grace_days: number
           penalty_type: string
           penalty_value: number
@@ -263,6 +266,9 @@ export type Database = {
           id?: number
           logo_url?: string | null
           mobile?: string | null
+          pdf_footer_show_address?: boolean
+          pdf_footer_show_contact?: boolean
+          pdf_footer_text?: string | null
           penalty_grace_days?: number
           penalty_type?: string
           penalty_value?: number
@@ -278,6 +284,9 @@ export type Database = {
           id?: number
           logo_url?: string | null
           mobile?: string | null
+          pdf_footer_show_address?: boolean
+          pdf_footer_show_contact?: boolean
+          pdf_footer_text?: string | null
           penalty_grace_days?: number
           penalty_type?: string
           penalty_value?: number
