@@ -225,9 +225,14 @@ export default function Farmers() {
   async function saveEdit() {
     if (!editForm) return;
     setEditErr(null);
-    if (!commonValidate(editForm)) return;
+    setEditFieldErrors({});
+    if (!commonValidate(editForm, setEditFieldErrors)) return;
     const v = validateLocationChain(pickLocation(editForm));
-    if (v.ok === false) { setEditErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
+    if (v.ok === false) {
+      setEditErr({ level: v.level, key: "locationInvalidMissingParent" });
+      setEditFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMissingParent", v.level) }));
+      return;
+    }
 
     setSaving(true);
     let photo_url: string | undefined;
@@ -241,12 +246,14 @@ export default function Farmers() {
     setSaving(false);
     if (error) {
       const lvl = parseLocationDbError(error.message);
-      if (lvl) setEditErr({ level: lvl, key: "locationInvalidMismatch" });
-      else toast.error(error.message);
+      if (lvl) {
+        setEditErr({ level: lvl, key: "locationInvalidMismatch" });
+        setEditFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMismatch", lvl) }));
+      } else toast.error(error.message);
       return;
     }
     toast.success("Farmer updated");
-    setEditOpen(false); setEditForm(null); setEditPhoto(null);
+    resetEditForm();
     load();
   }
 
