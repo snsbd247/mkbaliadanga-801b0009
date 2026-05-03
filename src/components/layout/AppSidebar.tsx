@@ -85,6 +85,7 @@ export function AppSidebar() {
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
         { url: "/reports/voter-audit", icon: FileBarChart, label: "Voter Audit", permKey: "farmers" },
+        { url: "/reports/farmer-statement", icon: FileBarChart, label: "Farmer Statement", permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
       ],
     },
