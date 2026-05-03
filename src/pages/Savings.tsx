@@ -474,11 +474,14 @@ function TxnTable({ rows, t, isAdmin, showDeleted, onDecide, onRestore, onPrint,
               ) : "—"}
             </TableCell>
             <TableCell className="text-right">
-              {isAdmin && r.status === "pending" && (<>
+              {showDeleted && isAdmin && (
+                <Button size="sm" variant="outline" onClick={() => onRestore(r.id)} title="Restore">Restore</Button>
+              )}
+              {!showDeleted && isAdmin && r.status === "pending" && (<>
                 <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "approved")} title={t("approveAction")}><Check className="h-4 w-4 text-success" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "rejected")} title={t("rejectAction")}><X className="h-4 w-4 text-destructive" /></Button>
               </>)}
-              {(r.status === "approved" || historyMode) && (
+              {!showDeleted && (r.status === "approved" || historyMode) && (
                 <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title={t("printReceipt")}><Printer className="h-4 w-4" /></Button>
               )}
             </TableCell>
