@@ -49,7 +49,15 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
                 setF({ ...f, is_voter: prev.is_voter, voter_number: prev.voter_number });
                 return;
               }
-              setF({ ...f, is_voter: true, voter_number: String(data ?? "") });
+              const newVoter = String(data ?? "");
+              setF({ ...f, is_voter: true, voter_number: newVoter });
+              if (f.id) {
+                toast.success(`Voter number ${newVoter} generated`, {
+                  action: { label: "View history", onClick: () => setHistoryOpen(true) },
+                });
+              } else {
+                toast.success(`Voter number ${newVoter} generated`);
+              }
             } finally {
               setGenerating(false);
             }

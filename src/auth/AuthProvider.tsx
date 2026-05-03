@@ -12,6 +12,8 @@ interface AuthCtx {
   roles: AppRole[];
   officeId: string | null;
   isSuper: boolean;
+  /** Alias for isSuper to standardize naming across pages. */
+  isSuperAdmin: boolean;
   isAdmin: boolean; // admin or super
   isCommittee: boolean; // committee or super
   signOut: () => Promise<void>;
@@ -71,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isCommittee = isSuper || roles.includes("committee");
 
   return (
-    <Ctx.Provider value={{ user, session, loading, rolesLoaded, roles, officeId, isSuper, isAdmin, isCommittee, signOut, refresh }}>
+    <Ctx.Provider value={{ user, session, loading, rolesLoaded, roles, officeId, isSuper, isSuperAdmin: isSuper, isAdmin, isCommittee, signOut, refresh }}>
       {children}
     </Ctx.Provider>
   );
