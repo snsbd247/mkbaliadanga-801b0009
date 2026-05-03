@@ -141,9 +141,19 @@ export default function Loans() {
                   <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              <div><Label>Loan Plan (optional)</Label>
+                <Select value={form.plan_id} onValueChange={v => {
+                  const p = plans.find(x => x.id === v);
+                  setForm({ ...form, plan_id: v, interest_rate: p?.interest_rate ?? form.interest_rate });
+                }}>
+                  <SelectTrigger><SelectValue placeholder="No plan (manual)" /></SelectTrigger>
+                  <SelectContent>{plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} @ {p.interest_rate}%</SelectItem>)}</SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">When a plan is selected, an installment schedule is auto-generated upon committee approval.</p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>{t("principal")}</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
-                <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={form.interest_rate} disabled={!form.interest_enabled} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
+                <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={form.interest_rate} disabled={!form.interest_enabled || !!form.plan_id} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <Label>{t("interestEnabled")}</Label>
