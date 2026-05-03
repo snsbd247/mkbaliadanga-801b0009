@@ -14,6 +14,7 @@ export type FarmerLite = {
   member_no?: string | null;
   account_number?: string | null;
   mobile?: string | null;
+  voter_number?: string | null;
 };
 
 interface Props {
@@ -25,24 +26,40 @@ interface Props {
   className?: string;
 }
 
-/** Searchable, debounced farmer combobox. Searches name / code / account / member / mobile. */
+const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number";
+const MIN_SEARCH = 2;
+
+function highlight(text: string | null | undefined, q: string): React.ReactNode {
+  if (!text) return null;
+  if (!q) return text;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx < 0) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-primary/20 text-foreground rounded px-0.5">{text.slice(idx, idx + q.length)}</mark>
+      {text.slice(idx + q.length)}
+    </>
+  );
+}
+
+/** Searchable, debounced farmer combobox. Searches name / code / account / mobile / voter / member. */
 export function FarmerSearchSelect({ value, onChange, excludeIds = [], placeholder = "Search farmer…", disabled, className }: Props) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<FarmerLite[]>([]);
   const [selected, setSelected] = useState<FarmerLite | null>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
   const debounceRef = useRef<any>(null);
-  // Per-mount LRU-ish cache keyed by trimmed query (case-insensitive).
   const cacheRef = useRef<Map<string, FarmerLite[]>>(new Map());
-  // Monotonic request id used to drop stale results when the user keeps typing.
   const reqIdRef = useRef(0);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  // Hydrate selected label when value comes from outside
   useEffect(() => {
     if (!value) { setSelected(null); return; }
     if (selected?.id === value) return;
-    supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,account_number,mobile").eq("id", value).maybeSingle()
+    supabase.from("farmers").select(SELECT_COLS).eq("id", value).maybeSingle()
       .then(({ data }) => setSelected((data as any) ?? null));
   }, [value]);
 
@@ -50,36 +67,52 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
     if (!open) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const term = q.trim().toLowerCase();
+    // Require min chars (unless empty -> show recent default list)
+    if (term.length > 0 && term.length < MIN_SEARCH) {
+      setItems([]); setLoading(false); return;
+    }
     const cached = cacheRef.current.get(term);
     if (cached) {
-      // Show cached results instantly; still refresh in background below.
       setItems(cached.filter((r) => !excludeIds.includes(r.id)));
       setLoading(false);
     }
     debounceRef.current = setTimeout(async () => {
       const myReq = ++reqIdRef.current;
       if (!cached) setLoading(true);
-      let qy = supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,account_number,mobile").order("name_en").limit(20);
+      let qy = supabase.from("farmers").select(SELECT_COLS).order("name_en").limit(20);
       if (term) {
-        qy = qy.or(`name_en.ilike.%${term}%,name_bn.ilike.%${term}%,farmer_code.ilike.%${term}%,account_number.ilike.%${term}%,member_no.ilike.%${term}%,mobile.ilike.%${term}%`);
+        const esc = term.replace(/[%,()]/g, " ");
+        qy = qy.or(`name_en.ilike.%${esc}%,name_bn.ilike.%${esc}%,farmer_code.ilike.%${esc}%,account_number.ilike.%${esc}%,member_no.ilike.%${esc}%,mobile.ilike.%${esc}%,voter_number.ilike.%${esc}%`);
       }
       const { data } = await qy;
-      // Drop stale responses — only the latest in-flight request may update state.
       if (myReq !== reqIdRef.current) return;
       const list = ((data as any[]) ?? []) as FarmerLite[];
-      // Cap cache to ~50 keys (FIFO eviction).
       if (cacheRef.current.size > 50) {
         const firstKey = cacheRef.current.keys().next().value;
         if (firstKey !== undefined) cacheRef.current.delete(firstKey);
       }
       cacheRef.current.set(term, list);
       setItems(list.filter((r) => !excludeIds.includes(r.id)));
+      setActiveIdx(0);
       setLoading(false);
-    }, 200);
+    }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [q, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const display = selected ? `${selected.name_en} • ${selected.account_number ?? selected.farmer_code}${selected.mobile ? " • " + selected.mobile : ""}` : "";
+  function pick(it: FarmerLite) { setSelected(it); onChange(it.id, it); setOpen(false); }
+
+  function onKey(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, items.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)); }
+    else if (e.key === "Enter") { e.preventDefault(); if (items[activeIdx]) pick(items[activeIdx]); }
+    else if (e.key === "Escape") { setOpen(false); }
+  }
+
+  const display = selected
+    ? `${selected.account_number ?? selected.farmer_code} — ${selected.name_en}${selected.mobile ? ` (${selected.mobile})` : ""}`
+    : "";
+  const term = q.trim();
+  const tooShort = term.length > 0 && term.length < MIN_SEARCH;
 
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setQ(""); }}>
@@ -96,31 +129,40 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <div className="p-2 border-b">
-          <Input autoFocus placeholder="Type name, ID, account, mobile…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input autoFocus placeholder="Type name, account, mobile, voter no…" value={q}
+            onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} />
         </div>
-        <div className="max-h-72 overflow-y-auto">
+        <div ref={listRef} className="max-h-72 overflow-y-auto">
           {loading && (
             <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />Searching…
             </div>
           )}
-          {!loading && items.length === 0 && (
+          {!loading && tooShort && (
+            <div className="py-6 text-center text-xs text-muted-foreground">Type at least {MIN_SEARCH} characters…</div>
+          )}
+          {!loading && !tooShort && items.length === 0 && (
             <div className="py-6 text-center text-sm text-muted-foreground">No farmer found</div>
           )}
-          {!loading && items.map((it) => (
+          {!loading && items.map((it, idx) => (
             <button
               key={it.id}
               type="button"
-              onClick={() => { setSelected(it); onChange(it.id, it); setOpen(false); }}
-              className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-accent"
+              onMouseEnter={() => setActiveIdx(idx)}
+              onClick={() => pick(it)}
+              className={cn("w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-accent",
+                idx === activeIdx && "bg-accent")}
             >
               <Check className={cn("h-4 w-4 mt-1 shrink-0", value === it.id ? "opacity-100" : "opacity-0")} />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{it.name_en}{it.name_bn ? ` (${it.name_bn})` : ""}</div>
+                <div className="text-sm font-medium truncate">
+                  {highlight(it.name_en, term)}{it.name_bn ? <> ({highlight(it.name_bn, term)})</> : null}
+                </div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {(it.account_number ?? it.farmer_code)}
-                  {it.member_no ? ` • Member #${it.member_no}` : ""}
-                  {it.mobile ? ` • ${it.mobile}` : ""}
+                  {highlight(it.account_number ?? it.farmer_code, term)}
+                  {it.mobile ? <> • {highlight(it.mobile, term)}</> : null}
+                  {it.voter_number ? <> • Voter {highlight(it.voter_number, term)}</> : null}
+                  {it.member_no ? ` • #${it.member_no}` : ""}
                 </div>
               </div>
             </button>
