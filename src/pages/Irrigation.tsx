@@ -57,12 +57,11 @@ export default function Irrigation() {
   }, [form.farmer_id, form.land_id, form.season_id]);
 
   async function load() {
-    const [r, f, s] = await Promise.all([
-      supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200),
-      supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
+    const [r, s] = await Promise.all([
+      supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200),
       supabase.from("seasons").select("*").order("year", { ascending: false }),
     ]);
-    setRows(r.data ?? []); setFarmers(f.data ?? []); setSeasons(s.data ?? []);
+    setRows(r.data ?? []); setSeasons(s.data ?? []);
   }
 
   const total = +form.base_charge + +form.canal_charge + +form.maintenance_charge + +form.other_charge;
