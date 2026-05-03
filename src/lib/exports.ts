@@ -110,21 +110,16 @@ export function buildExportName(
   return `${slug}_${new Date().toISOString().slice(0, 10)}`;
 }
 
-export function exportTablePDF(
+export async function exportTablePDF(
   title: string,
   head: string[],
   rows: any[][],
   range?: { from?: string | null; to?: string | null }
 ) {
-  const doc = new jsPDF();
-  doc.setFontSize(14); doc.text(title, 14, 14);
-  if (range?.from || range?.to) {
-    doc.setFontSize(9);
-    doc.text(`Period: ${range.from || "—"} to ${range.to || "—"}`, 14, 20);
-    autoTable(doc, { startY: 26, head: [head], body: rows });
-  } else {
-    autoTable(doc, { startY: 20, head: [head], body: rows });
-  }
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const startY = await applyPdfHeaderFooter(doc, { title, range });
+  autoTable(doc, { startY: startY + 2, head: [head], body: rows, styles: { fontSize: 9 }, headStyles: { fillColor: [30, 110, 70] } });
+  finalizePdf(doc);
   doc.save(`${buildExportName(title, range)}.pdf`);
 }
 
