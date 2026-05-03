@@ -11,23 +11,42 @@ export interface CardData {
     name_en?: string;
     farmer_code?: string;
     member_no?: string;
+    account_number?: string | null;
+    voter_number?: string | null;
     mobile?: string;
     village?: string;
     address?: string;
     photo_url?: string | null;
   };
+  /** Legacy QR token (deprecated). When `qr_value` is provided, it overrides this. */
   token: string;
+  /** Preferred QR payload — typically a /scan?acc=<account_number> URL. */
+  qr_value?: string;
   issued_at: string;
+}
+
+export interface CardDisplayOptions {
+  show_photo?: boolean;
+  show_account_number?: boolean;
+  show_voter_number?: boolean;
+  show_issue_date?: boolean;
+  show_qr?: boolean;
 }
 
 interface Props {
   data: CardData;
   templateId?: TemplateId;
+  display?: CardDisplayOptions;
 }
 
 /** Standard CR80 card: 85.6mm × 54mm. */
-export function MembershipCard({ data, templateId = "classic" }: Props) {
+export function MembershipCard({ data, templateId = "classic", display }: Props) {
   const f = data.farmer;
+  const opts = {
+    show_photo: true, show_account_number: true, show_voter_number: true,
+    show_issue_date: true, show_qr: true, ...display,
+  };
+  const qrValue = data.qr_value || data.token;
   const issued = new Date(data.issued_at).toLocaleDateString();
   const tpl = TEMPLATES[templateId] ?? TEMPLATES.classic;
   const headerTitle = tpl.bnFirst
