@@ -265,7 +265,7 @@ export default function Farmers() {
   }
 
   // ---------- Reusable form fields ----------
-  function FormFields({
+  const renderFormFields = ({
     f, setF, photoFile, setPhotoFile, err, fieldErrors, disabled, nameInputRef,
   }: {
     f: FormState;
@@ -276,7 +276,7 @@ export default function Farmers() {
     fieldErrors: FormErrors;
     disabled: boolean;
     nameInputRef?: RefObject<HTMLInputElement | null>;
-  }) {
+  }) => {
     return (
       <div className="grid grid-cols-2 gap-3">
         <div>
