@@ -243,7 +243,7 @@ export default function Farmers() {
       photo_url = await uploadPhoto(editPhoto);
       if (!photo_url) { setSaving(false); return; }
     }
-    const { id, farmer_code, created_at, updated_at, offices: _o, ...rest } = editForm as any;
+    const { id, farmer_code, created_at, updated_at, voter_number, offices: _o, ...rest } = editForm as any;
     const payload = { ...rest, ...(photo_url ? { photo_url } : {}), office_id: editForm.office_id || null };
     const { error } = await supabase.from("farmers").update(payload).eq("id", id);
     setSaving(false);
