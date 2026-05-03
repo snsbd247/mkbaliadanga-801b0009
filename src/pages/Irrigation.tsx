@@ -19,6 +19,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 export default function Irrigation() {
   const { t } = useLang();
   const { user } = useAuth();
+  const [showDeleted, setShowDeleted] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
