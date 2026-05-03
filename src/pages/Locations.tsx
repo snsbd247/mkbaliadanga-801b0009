@@ -348,9 +348,18 @@ function LevelTab({ level }: { level: Level }) {
 
   async function saveEdit() {
     if (!editing) return;
-    if (!editName.trim()) return toast.error(t("nameRequired"));
+    setEditNameError(null);
+    setEditErrorCol(null);
+    if (!editName.trim()) {
+      setEditNameError(t("nameRequired"));
+      return;
+    }
     for (const step of chain) {
-      if (!editChain[step.col]) return toast.error(`Please select ${step.label}`);
+      if (!editChain[step.col]) {
+        setEditErrorCol(step.col);
+        toast.error(`Please select ${step.label}`);
+        return;
+      }
     }
     setSaving(true);
     const payload: any = { name: editName.trim(), name_bn: editNameBn.trim() || null };
@@ -361,8 +370,14 @@ function LevelTab({ level }: { level: Level }) {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(t("updatedToast"));
-    setEditing(null);
+    closeEditDialog();
     load();
+  }
+
+  function closeEditDialog() {
+    setEditing(null);
+    setEditChain({}); setEditName(""); setEditNameBn("");
+    setEditErrorCol(null); setEditNameError(null); setSaving(false);
   }
 
   // Filtered rows by search
