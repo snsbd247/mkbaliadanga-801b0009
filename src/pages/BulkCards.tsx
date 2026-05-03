@@ -235,11 +235,16 @@ export default function BulkCards() {
         </div>
       </Card>
 
-      {/* Hidden container that mounts a QRCodeSVG per selected farmer so the PDF generator can serialize them. */}
-      <div ref={qrHostRef} className="absolute -left-[9999px] top-0" aria-hidden>
-        {Object.entries(tokens).map(([fid, t]) => (
-          <div key={fid} data-fid={fid}>
-            <QRCodeSVG value={t.token} size={128} level="M" includeMargin={false} />
+      {/* Hidden host that renders real MembershipCard components so the PDF
+          generator can capture them via html2canvas (matches preview exactly). */}
+      <div
+        ref={cardHostRef}
+        style={{ position: "fixed", left: -10000, top: 0, opacity: 0, pointerEvents: "none" }}
+        aria-hidden
+      >
+        {bulkCards.map((c) => (
+          <div key={c.farmer_id} data-fid={c.farmer_id} style={{ marginBottom: 8 }}>
+            <MembershipCard data={c.data} templateId={templateId} display={cardCfg} />
           </div>
         ))}
       </div>
