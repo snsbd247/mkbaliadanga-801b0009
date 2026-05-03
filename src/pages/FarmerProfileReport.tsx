@@ -42,18 +42,20 @@ export default function FarmerProfileReport() {
       setLoading(true);
       const [f, s, sh, ln, ir, rel] = await Promise.all([
         supabase.from("farmers").select("*").eq("id", id).maybeSingle(),
-        supabase.from("savings_transactions").select("*").eq("farmer_id", id),
+        supabase.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null),
         supabase.from("shares").select("balance").eq("farmer_id", id).maybeSingle(),
-        supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).order("issued_on", { ascending: false }),
+        supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
         supabase
           .from("irrigation_charges")
           .select("id, total, due_amount, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type)")
           .eq("farmer_id", id)
+          .is("deleted_at", null)
           .order("entry_date", { ascending: false }),
         supabase
           .from("land_relations")
           .select("land_id, valid_to, sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en, farmer_code)")
-          .eq("owner_farmer_id", id),
+          .eq("owner_farmer_id", id)
+          .is("deleted_at", null),
       ]);
 
       if (ignore) return;
