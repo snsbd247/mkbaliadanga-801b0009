@@ -188,7 +188,7 @@ export default function Irrigation() {
           {rows.map(r => (
             <TableRow key={r.id}>
               <TableCell>{fmtDate(r.entry_date)}</TableCell>
-              <TableCell>{r.farmers?.name_en} <span className="text-xs text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
+              <TableCell>{r.farmers?.name_en} <span className="text-xs text-muted-foreground">({r.farmers?.account_number ?? r.farmers?.farmer_code})</span></TableCell>
               <TableCell>{r.seasons?.name}</TableCell>
               <TableCell>{r.lands?.dag_no}</TableCell>
               <TableCell>{money(r.total)}</TableCell>
