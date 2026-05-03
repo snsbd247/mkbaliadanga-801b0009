@@ -162,10 +162,68 @@ export default function Savings() {
           <TabsTrigger value="all">{t("all")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
           <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
+          <TabsTrigger value="plans">Plans {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
         </TabsList>
         <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} onDecide={decide} onPrint={printReceipt} profiles={profiles} /></TabsContent>
         <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} onDecide={decide} onPrint={printReceipt} profiles={profiles} /></TabsContent>
         <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} onDecide={decide} onPrint={printReceipt} profiles={profiles} historyMode /></TabsContent>
+        <TabsContent value="plans">
+          <Card className="p-3 mb-3 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">Enroll farmers in defined savings plans. Plans drive maturity calculations and are managed in <a href="/savings-plans" className="underline">Savings Plans</a>.</div>
+            <Dialog open={planOpen} onOpenChange={setPlanOpen}>
+              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Enroll Farmer</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Enroll in Savings Plan</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div><Label>Farmer</Label>
+                    <Select value={planForm.farmer_id} onValueChange={v => setPlanForm({ ...planForm, farmer_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Plan</Label>
+                    <Select value={planForm.plan_id} onValueChange={v => setPlanForm({ ...planForm, plan_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>{plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} ৳{p.installment_amount} @ {p.interest_rate}% ({p.maturity_type})</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Start Date</Label><Input type="date" value={planForm.start_date} onChange={e => setPlanForm({ ...planForm, start_date: e.target.value })} /></div>
+                  {planForm.plan_id && (() => { const p = plans.find(x => x.id === planForm.plan_id); if (!p) return null; const c = calcMaturity(p); return (
+                    <div className="rounded-md bg-muted p-2 text-sm space-y-1">
+                      <div>Installments: <b>{c.count}</b></div>
+                      <div>Total deposits: <b>{money(c.total)}</b></div>
+                      <div>Expected interest: <b>{money(c.interest)}</b></div>
+                      <div>Maturity amount: <b>{money(c.maturity)}</b></div>
+                    </div>
+                  ); })()}
+                </div>
+                <DialogFooter><Button variant="outline" onClick={() => setPlanOpen(false)}>{t("cancel")}</Button><Button onClick={enrollPlan}>{t("save")}</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </Card>
+          <Card><Table>
+            <TableHeader><TableRow>
+              <TableHead>Start</TableHead><TableHead>Farmer</TableHead><TableHead>Plan</TableHead>
+              <TableHead>Installment</TableHead><TableHead>Expected Total</TableHead>
+              <TableHead>Interest</TableHead><TableHead>Maturity</TableHead><TableHead>Status</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {farmerPlans.map((fp: any) => (
+                <TableRow key={fp.id}>
+                  <TableCell>{fmtDate(fp.start_date)}</TableCell>
+                  <TableCell>{fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
+                  <TableCell>{fp.savings_plans?.name} <span className="text-xs text-muted-foreground">({fp.savings_plans?.duration_months}mo / {fp.savings_plans?.installment_type})</span></TableCell>
+                  <TableCell>{money(fp.savings_plans?.installment_amount)}</TableCell>
+                  <TableCell>{money(fp.expected_total)}</TableCell>
+                  <TableCell>{money(fp.expected_interest)}</TableCell>
+                  <TableCell className="font-semibold">{money(fp.maturity_amount)}</TableCell>
+                  <TableCell><Badge variant={fp.status === "active" ? "default" : "secondary"}>{fp.status}</Badge></TableCell>
+                </TableRow>
+              ))}
+              {farmerPlans.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            </TableBody>
+          </Table></Card>
+        </TabsContent>
       </Tabs>
     </>
   );
