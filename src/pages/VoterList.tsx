@@ -50,6 +50,7 @@ export default function VoterList() {
       .neq("voter_number", "")
       .order("voter_number", { ascending: true })
       .limit(500);
+    if (!isSuper && officeId) qy = qy.eq("office_id", officeId);
     const term = q.trim();
     if (term) {
       qy = qy.or(`voter_number.ilike.%${term}%,name_en.ilike.%${term}%,name_bn.ilike.%${term}%,mobile.ilike.%${term}%,account_number.ilike.%${term}%`);
