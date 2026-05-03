@@ -243,8 +243,20 @@ export default function Farmers() {
       photo_url = await uploadPhoto(editPhoto);
       if (!photo_url) { setSaving(false); return; }
     }
-    const { id, farmer_code, created_at, updated_at, voter_number, offices: _o, villages: _v, divisions: _dv, districts: _dt, upazilas: _up, unions: _un, wards: _w, mouzas: _m, ...rest } = editForm as any;
-    const payload = { ...rest, ...(photo_url ? { photo_url } : {}), office_id: editForm.office_id || null };
+    // Strip read-only / joined-relation fields from the update payload.
+    // voter_number IS kept: the DB immutability trigger preserves the original
+    // when one already exists, but allows the first assignment to persist.
+    const {
+      id, farmer_code, created_at, updated_at,
+      offices: _o, villages: _v, divisions: _dv, districts: _dt,
+      upazilas: _up, unions: _un, wards: _w, mouzas: _m,
+      village: _village, // legacy text col (joined name)
+      ...rest
+    } = editForm as any;
+    const payload: any = { ...rest, ...(photo_url ? { photo_url } : {}), office_id: editForm.office_id || null };
+    // Drop empty voter_number so we don't try to clear an existing one
+    if (!payload.voter_number) delete payload.voter_number;
+    if (import.meta.env.DEV) console.debug("[farmers.update] payload keys:", Object.keys(payload));
     const { error } = await supabase.from("farmers").update(payload).eq("id", id);
     setSaving(false);
     if (error) {
