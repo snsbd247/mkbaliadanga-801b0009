@@ -46,8 +46,11 @@ export default function Settings() {
       penalty_type: form.penalty_type ?? "flat",
       penalty_value: Number(form.penalty_value ?? 0),
       penalty_grace_days: Number(form.penalty_grace_days ?? 30),
+      pdf_footer_text: form.pdf_footer_text ?? "",
+      pdf_footer_show_address: !!form.pdf_footer_show_address,
+      pdf_footer_show_contact: !!form.pdf_footer_show_contact,
       updated_at: new Date().toISOString(),
-    }).eq("id", 1);
+    } as any).eq("id", 1);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(t("saved"));
@@ -108,6 +111,33 @@ export default function Settings() {
                 <div>
                   <Label>{t("graceDays")}</Label>
                   <Input type="number" value={form.penalty_grace_days ?? 30} onChange={e => setForm({ ...form, penalty_grace_days: e.target.value })} />
+                </div>
+              </div>
+            </div>
+            <div className="sm:col-span-2 border-t pt-4 mt-2">
+              <h3 className="font-semibold mb-2">PDF Footer</h3>
+              <div className="grid gap-3">
+                <div>
+                  <Label>Return Instruction / Footer Text</Label>
+                  <textarea
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm min-h-20"
+                    value={form.pdf_footer_text ?? ""}
+                    onChange={e => setForm({ ...form, pdf_footer_text: e.target.value })}
+                    placeholder="e.g. If found, please return to the issuing office."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Shown in the footer of every generated PDF report.</p>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={!!form.pdf_footer_show_address}
+                      onChange={e => setForm({ ...form, pdf_footer_show_address: e.target.checked })} />
+                    Show office address in footer
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={!!form.pdf_footer_show_contact}
+                      onChange={e => setForm({ ...form, pdf_footer_show_contact: e.target.checked })} />
+                    Show mobile / email in footer
+                  </label>
                 </div>
               </div>
             </div>

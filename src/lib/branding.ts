@@ -12,6 +12,9 @@ export interface CompanyBranding {
   penalty_type?: "flat" | "percent" | "none" | null;
   penalty_value?: number | null;
   penalty_grace_days?: number | null;
+  pdf_footer_text?: string | null;
+  pdf_footer_show_address?: boolean | null;
+  pdf_footer_show_contact?: boolean | null;
 }
 
 const DEFAULTS: CompanyBranding = {
