@@ -45,6 +45,7 @@ type RowResult = {
   raw: Record<string, any>;
   status: "pending" | "ok" | "error";
   message?: string;
+  resolved?: Record<string, any>;
 };
 
 const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any> }> = {
