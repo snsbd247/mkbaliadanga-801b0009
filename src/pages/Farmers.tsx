@@ -22,13 +22,33 @@ import { validateLocationChain, parseLocationDbError, type LocationLevel } from 
 
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
-  village: "", post_office: "", upazila: "", district: "", division: "", address: "",
+  post_office: "", address: "",
   office_id: "", status: "active",
   division_id: null, district_id: null, upazila_id: null, union_id: null,
   ward_id: null, village_id: null, mouza_id: null,
 };
 
 type FormState = typeof EMPTY_FORM & Record<string, any>;
+
+type FormErrors = {
+  name_en?: string;
+  mobile?: string;
+  nid?: string;
+  office_id?: string;
+  location?: string;
+};
+
+const farmerFormSchema = z.object({
+  name_en: z.string().trim().min(1, "English name required").max(100, "Name must be 100 characters or less"),
+  name_bn: z.string().trim().max(100, "Name must be 100 characters or less").optional().or(z.literal("")),
+  father_name: z.string().trim().max(100, "Father's name must be 100 characters or less").optional().or(z.literal("")),
+  mother_name: z.string().trim().max(100, "Mother's name must be 100 characters or less").optional().or(z.literal("")),
+  nid: z.string().trim().refine((v) => !v || /^\d{10,17}$/.test(v.replace(/\D/g, "")), "Invalid NID (10–17 digits)"),
+  mobile: z.string().trim().refine((v) => !v || /^\+?\d[\d\s-]{6,20}$/.test(v), "Invalid mobile number"),
+  post_office: z.string().trim().max(100, "Post office must be 100 characters or less").optional().or(z.literal("")),
+  address: z.string().trim().max(250, "Address must be 250 characters or less").optional().or(z.literal("")),
+  office_id: z.string().optional().or(z.literal("")),
+});
 
 function pickLocation(form: FormState): LocationValue {
   return {
