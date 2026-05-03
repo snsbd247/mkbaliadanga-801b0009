@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
@@ -35,13 +36,16 @@ export default function Savings() {
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [reportRange, setReportRange] = useState({ from: "", to: "" });
   const [decision, setDecision] = useState<{ id: string; mode: "reject" | "cancel"; reason: string } | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
   
 
-  useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
+  useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, [showDeleted]);
   async function load() {
+    let tq = supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200);
+    tq = showDeleted ? tq.not("deleted_at", "is", null) : tq.is("deleted_at", null);
     const [f, ts, pr, sp, fsp] = await Promise.all([
       supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").order("name_en"),
-      supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
+      tq,
       supabase.from("profiles").select("id,full_name,username"),
       supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
       supabase.from("farmer_savings_plans").select("*, farmers(name_en,name_bn,farmer_code), savings_plans(name,name_bn,duration_months,installment_type,installment_amount,interest_rate,maturity_type)").order("created_at", { ascending: false }),
@@ -203,6 +207,11 @@ export default function Savings() {
     if (error) return toast.error(error.message);
     toast.success(t("saved")); load();
   }
+  async function restoreTxn(id: string) {
+    const { error } = await supabase.from("savings_transactions").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Restored"); load();
+  }
 
   function printReceipt(r: any) {
     exportPaymentReceiptPDF({
@@ -254,6 +263,14 @@ export default function Savings() {
         </Dialog>
       } />
 
+      <Card className="p-3 mb-3 flex items-center gap-3">
+        <Label className="text-sm flex items-center gap-2 cursor-pointer">
+          <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+          Show archived
+        </Label>
+        {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted transactions only.</span>}
+      </Card>
+
       <Tabs defaultValue="all">
         <TabsList>
           <TabsTrigger value="all">{t("all")}</TabsTrigger>
@@ -261,9 +278,9 @@ export default function Savings() {
           <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
           <TabsTrigger value="plans">Plans {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
         </TabsList>
-        <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} onDecide={decide} onPrint={printReceipt} profiles={profiles} /></TabsContent>
-        <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} onDecide={decide} onPrint={printReceipt} profiles={profiles} /></TabsContent>
-        <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} onDecide={decide} onPrint={printReceipt} profiles={profiles} historyMode /></TabsContent>
+        <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} /></TabsContent>
+        <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} /></TabsContent>
+        <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} historyMode /></TabsContent>
         <TabsContent value="plans">
           <Card className="p-3 mb-3 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">Enroll farmers in defined savings plans. Plans drive maturity calculations and are managed in <a href="/savings-plans" className="underline">Savings Plans</a>.</div>
@@ -430,7 +447,7 @@ export default function Savings() {
   );
 }
 
-function TxnTable({ rows, t, isAdmin, onDecide, onPrint, profiles, historyMode }: any) {
+function TxnTable({ rows, t, isAdmin, showDeleted, onDecide, onRestore, onPrint, profiles, historyMode }: any) {
   return (
     <Card><Table>
       <TableHeader><TableRow>
@@ -457,11 +474,14 @@ function TxnTable({ rows, t, isAdmin, onDecide, onPrint, profiles, historyMode }
               ) : "—"}
             </TableCell>
             <TableCell className="text-right">
-              {isAdmin && r.status === "pending" && (<>
+              {showDeleted && isAdmin && (
+                <Button size="sm" variant="outline" onClick={() => onRestore(r.id)} title="Restore">Restore</Button>
+              )}
+              {!showDeleted && isAdmin && r.status === "pending" && (<>
                 <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "approved")} title={t("approveAction")}><Check className="h-4 w-4 text-success" /></Button>
                 <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "rejected")} title={t("rejectAction")}><X className="h-4 w-4 text-destructive" /></Button>
               </>)}
-              {(r.status === "approved" || historyMode) && (
+              {!showDeleted && (r.status === "approved" || historyMode) && (
                 <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title={t("printReceipt")}><Printer className="h-4 w-4" /></Button>
               )}
             </TableCell>

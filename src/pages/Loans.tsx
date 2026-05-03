@@ -34,12 +34,15 @@ export default function Loans() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [showDeleted, setShowDeleted] = useState(false);
 
-  useEffect(() => { document.title = `${t("loans")} — ${t("appName")}`; load(); }, []);
+  useEffect(() => { document.title = `${t("loans")} — ${t("appName")}`; load(); }, [showDeleted]);
   async function load() {
+    let lq = supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by), loan_plans(name,name_bn,installment_type,duration_months)").order("created_at", { ascending: false }).limit(200);
+    lq = showDeleted ? lq.not("deleted_at", "is", null) : lq.is("deleted_at", null);
     const [f, l, pr, lp] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code,member_no,mobile,village").order("name_en"),
-      supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by), loan_plans(name,name_bn,installment_type,duration_months)").is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
+      lq,
       supabase.from("profiles").select("id,full_name,username"),
       supabase.from("loan_plans").select("*").eq("is_active", true).order("name"),
     ]);
@@ -98,6 +101,11 @@ export default function Loans() {
     const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("deleted")); load();
+  }
+  async function restore(id: string) {
+    const { error } = await supabase.from("loans").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Restored"); load();
   }
 
   function printLoanReceipt(loan: any, payment?: any) {
@@ -170,6 +178,14 @@ export default function Loans() {
         </Dialog>
       } />
 
+      <Card className="p-3 mb-3 flex items-center gap-3">
+        <Label className="text-sm flex items-center gap-2 cursor-pointer">
+          <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+          Show archived
+        </Label>
+        {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted loans only.</span>}
+      </Card>
+
       <Tabs defaultValue="approved">
         <TabsList>
           <TabsTrigger value="approved">Active / Paid</TabsTrigger>
@@ -188,7 +204,9 @@ export default function Loans() {
               rows={rows}
               t={t}
               isCommittee={isCommittee}
+              showDeleted={showDeleted}
               onDecide={decide}
+              onRestore={restore}
               onPrint={printLoanReceipt}
               profiles={profiles}
               expanded={expanded}
@@ -202,7 +220,7 @@ export default function Loans() {
   );
 }
 
-function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded, setExpanded, installments }: any) {
+function LoanTable({ rows, t, isCommittee, showDeleted, onDecide, onRestore, onPrint, profiles, expanded, setExpanded, installments }: any) {
   return (
     <Card className="overflow-x-auto"><Table>
       <TableHeader><TableRow>
@@ -249,11 +267,14 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
                   ) : "—"}
                 </TableCell>
                 <TableCell className="text-right">
-                  {isCommittee && l.status === "pending" && (<>
+                  {showDeleted && isCommittee && (
+                    <Button size="sm" variant="outline" onClick={() => onRestore(l.id)} title="Restore">Restore</Button>
+                  )}
+                  {!showDeleted && isCommittee && l.status === "pending" && (<>
                     <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "approved")} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "rejected")} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
                   </>)}
-                  {(l.status === "approved" || l.status === "paid") && (
+                  {!showDeleted && (l.status === "approved" || l.status === "paid") && (
                     <Button size="icon" variant="ghost" onClick={() => onPrint(l)} title="Print disbursement receipt"><Printer className="h-4 w-4" /></Button>
                   )}
                 </TableCell>

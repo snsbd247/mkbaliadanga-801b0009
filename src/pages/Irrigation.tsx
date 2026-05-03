@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Sparkles } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
@@ -18,6 +19,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 export default function Irrigation() {
   const { t } = useLang();
   const { user } = useAuth();
+  const [showDeleted, setShowDeleted] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
@@ -26,7 +28,7 @@ export default function Irrigation() {
 
   const [prevDue, setPrevDue] = useState<number>(0);
 
-  useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, []);
+  useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, [showDeleted]);
   useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); else setLands([]); }, [form.farmer_id]);
   // Auto-fill quantity from land size when basis = per_size
   useEffect(() => {
@@ -78,11 +80,18 @@ export default function Irrigation() {
   }, [form.farmer_id, form.land_id, form.season_id]);
 
   async function load() {
+    let q = supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200);
+    q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
     const [r, s] = await Promise.all([
-      supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").is("deleted_at", null).order("entry_date", { ascending: false }).limit(200),
+      q,
       supabase.from("seasons").select("*").order("year", { ascending: false }),
     ]);
     setRows(r.data ?? []); setSeasons(s.data ?? []);
+  }
+  async function restore(id: string) {
+    const { error } = await supabase.from("irrigation_charges").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Restored"); load();
   }
 
   const total = +form.base_charge + +form.canal_charge + +form.maintenance_charge + +form.other_charge;
@@ -310,11 +319,19 @@ export default function Irrigation() {
         </Dialog>
         </div>
       } />
+      <Card className="p-3 mb-3 flex items-center gap-3">
+        <Label className="text-sm flex items-center gap-2 cursor-pointer">
+          <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+          Show archived
+        </Label>
+        {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted charges only.</span>}
+      </Card>
       <Card><Table>
         <TableHeader><TableRow>
           <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
           <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
           <TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
+          {showDeleted && <TableHead className="text-right">Actions</TableHead>}
         </TableRow></TableHeader>
         <TableBody>
           {rows.map(r => (
@@ -326,9 +343,14 @@ export default function Irrigation() {
               <TableCell>{money(r.total)}</TableCell>
               <TableCell>{money(r.paid_amount)}</TableCell>
               <TableCell className={r.due_amount > 0 ? "due-text" : ""}>{money(r.due_amount)}</TableCell>
+              {showDeleted && (
+                <TableCell className="text-right">
+                  <Button size="sm" variant="outline" onClick={() => restore(r.id)}>Restore</Button>
+                </TableCell>
+              )}
             </TableRow>
           ))}
-          {rows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={showDeleted ? 8 : 7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table></Card>
     </>

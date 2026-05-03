@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -42,8 +43,10 @@ export default function Payments() {
   const [idemKey, setIdemKey] = useState<string>(newKey());
   const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
   const [autoAmount, setAutoAmount] = useState<number>(0);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
+  useEffect(() => { load(); /* refresh on toggle */ }, [showDeleted]);
   useEffect(() => { if (farmerId) loadDues(); else { setOpenLoans([]); setOpenIrr([]); } }, [farmerId]);
   useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
 
@@ -62,11 +65,18 @@ export default function Payments() {
   }
 
   async function load() {
+    let pq = supabase.from("payments").select("*, farmers(name_en,farmer_code), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
+    pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
     const [f, p] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
-      supabase.from("payments").select("*, farmers(name_en,farmer_code), payment_allocations(*)").is("deleted_at", null).order("created_at", { ascending: false }).limit(100),
+      pq,
     ]);
     setFarmers(f.data ?? []); setList(p.data ?? []);
+  }
+  async function restorePayment(id: string) {
+    const { error } = await supabase.from("payments").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Restored"); load();
   }
   async function loadDues() {
     const [l, i] = await Promise.all([
@@ -327,7 +337,13 @@ export default function Payments() {
         </Card>
 
         <Card className="p-5 lg:col-span-2">
-          <h2 className="font-semibold mb-3">{t("recentTransactions")}</h2>
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <h2 className="font-semibold">{t("recentTransactions")}</h2>
+            <Label className="text-sm flex items-center gap-2 cursor-pointer">
+              <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+              <span className="text-xs">Show archived</span>
+            </Label>
+          </div>
           <Table>
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
             <TableBody>
@@ -355,21 +371,26 @@ export default function Payments() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {isAdmin && p.status === "pending" && (<>
+                      {showDeleted && isAdmin && (
+                        <Button size="sm" variant="outline" onClick={() => restorePayment(p.id)} title="Restore">Restore</Button>
+                      )}
+                      {!showDeleted && isAdmin && p.status === "pending" && (<>
                         <Button size="icon" variant="ghost" onClick={() => approvePayment(p)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
                       </>)}
-                      <Button size="icon" variant="ghost" title="Print Receipt" onClick={() => exportPaymentReceiptPDF({
-                        brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
-                        receipt_no: p.id.slice(0, 8).toUpperCase(),
-                        date: p.created_at,
-                        farmer: { name_en: p.farmers?.name_en ?? "—", farmer_code: p.farmers?.farmer_code, mobile: p.farmers?.mobile },
-                        amount: Number(p.amount),
-                        method: p.method ?? "cash",
-                        note: p.note ?? "",
-                        allocations: (p.payment_allocations?.length ? p.payment_allocations : [{ kind: p.kind, amount: Number(p.amount) }])
-                          .map((a: any) => ({ kind: a.kind, amount: Number(a.amount) })),
-                      })}><Printer className="h-4 w-4" /></Button>
+                      {!showDeleted && (
+                        <Button size="icon" variant="ghost" title="Print Receipt" onClick={() => exportPaymentReceiptPDF({
+                          brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
+                          receipt_no: p.id.slice(0, 8).toUpperCase(),
+                          date: p.created_at,
+                          farmer: { name_en: p.farmers?.name_en ?? "—", farmer_code: p.farmers?.farmer_code, mobile: p.farmers?.mobile },
+                          amount: Number(p.amount),
+                          method: p.method ?? "cash",
+                          note: p.note ?? "",
+                          allocations: (p.payment_allocations?.length ? p.payment_allocations : [{ kind: p.kind, amount: Number(p.amount) }])
+                            .map((a: any) => ({ kind: a.kind, amount: Number(a.amount) })),
+                        })}><Printer className="h-4 w-4" /></Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
