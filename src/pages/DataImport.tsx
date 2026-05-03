@@ -436,6 +436,90 @@ export default function DataImport() {
               reference_type: raw.reference_type ?? "manual_import",
               created_by: user?.id,
             };
+          } else if (mod === "irrigation") {
+            const f = farmerMap.get(String(raw.account_number));
+            if (!f) throw new Error(`Farmer not found for account_number=${raw.account_number ?? ""}`);
+            const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
+            if (!dag) throw new Error("dag_no required");
+            const { data: landRow } = await supabase
+              .from("lands").select("id, office_id")
+              .eq("farmer_id", f.id).eq("dag_no", dag).maybeSingle();
+            if (!landRow) throw new Error(`No land found for farmer with dag_no=${dag}`);
+            const year = Number(raw.season_year);
+            const stype = String(raw.season_type ?? "").toLowerCase();
+            if (!year || !stype) throw new Error("season_year and season_type required");
+            const { data: season } = await supabase
+              .from("seasons").select("id").eq("year", year).eq("type", stype as any).maybeSingle();
+            if (!season) throw new Error(`Season not found year=${year} type=${stype}`);
+            const qty = Number(raw.quantity ?? 0);
+            const base = Number(raw.base_charge ?? 0);
+            const canal = Number(raw.canal_charge ?? 0);
+            const maint = Number(raw.maintenance_charge ?? 0);
+            const other = Number(raw.other_charge ?? 0);
+            const prevDue = Number(raw.previous_due_brought ?? 0);
+            const penalty = Number(raw.penalty_amount ?? 0);
+            const total = +(base + canal + maint + other + prevDue + penalty).toFixed(2);
+            if (total <= 0) throw new Error("total charge must be > 0");
+            table = "irrigation_charges";
+            payload = {
+              farmer_id: f.id,
+              land_id: landRow.id,
+              season_id: season.id,
+              office_id: landRow.office_id ?? f.office_id,
+              basis: "per_size" as any,
+              quantity: qty,
+              base_charge: base,
+              canal_charge: canal,
+              maintenance_charge: maint,
+              other_charge: other,
+              previous_due_brought: prevDue,
+              penalty_amount: penalty,
+              total,
+              due_amount: total,
+              entry_date: raw.entry_date ?? new Date().toISOString().slice(0, 10),
+              note: raw.note ?? null,
+              created_by: user?.id,
+            };
+          } else if (mod === "cashbook_receipts") {
+            const kind = String(raw.kind ?? "").toLowerCase();
+            const allowedKinds = ["irrigation","bigha_rent","pond","crop_sale","scrap","loan_taken","donation","savings_deposit","share","other"];
+            if (!allowedKinds.includes(kind)) throw new Error(`kind must be one of ${allowedKinds.join("/")}`);
+            const amt = Number(raw.amount ?? 0);
+            if (amt <= 0) throw new Error("amount required");
+            const acc = raw.account_number ? String(raw.account_number).trim() : null;
+            let f: any = null;
+            if (acc) {
+              const { data: fdata } = await supabase
+                .from("farmers").select("id, office_id").eq("account_number", acc).maybeSingle();
+              if (!fdata) throw new Error(`Farmer not found for account_number=${acc}`);
+              f = fdata;
+            }
+            table = "receipts";
+            payload = {
+              kind: kind as any,
+              farmer_id: f?.id ?? null,
+              office_id: f?.office_id ?? null,
+              amount: amt,
+              method: raw.method ?? "cash",
+              note: raw.note ?? null,
+              receipt_date: raw.receipt_date ?? new Date().toISOString().slice(0, 10),
+              collected_by: user?.id,
+            };
+          } else if (mod === "cashbook_expenses") {
+            const head = String(raw.head ?? "").trim();
+            if (!head) throw new Error("head required");
+            const amt = Number(raw.amount ?? 0);
+            if (amt <= 0) throw new Error("amount required");
+            table = "expenses";
+            payload = {
+              head,
+              payee: raw.payee ?? null,
+              amount: amt,
+              method: raw.method ?? "cash",
+              note: raw.note ?? null,
+              expense_date: raw.expense_date ?? new Date().toISOString().slice(0, 10),
+              created_by: user?.id,
+            };
           }
 
           const { error } = await supabase.from(table as any).insert(payload);
