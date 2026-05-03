@@ -223,7 +223,7 @@ export default function FarmerDetail() {
         toast.error(`Cannot delete: linked to ${irrCnt ?? 0} irrigation entries and ${relCnt ?? 0} relations.`);
         return;
       }
-      const { error } = await supabase.from("lands").delete().eq("id", delTarget.id);
+      const { error } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", delTarget.id);
       if (error) { toast.error(error.message); return; }
       toast.success("Land deleted");
       setDelTarget(null);
