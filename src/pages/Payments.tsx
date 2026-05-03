@@ -242,10 +242,9 @@ export default function Payments() {
           <p className="text-xs text-muted-foreground mb-3">Approved payments automatically update loan, savings &amp; irrigation ledgers.</p>
           <div className="space-y-3">
             <div><Label>{t("selectFarmer")}</Label>
-              <Select value={farmerId} onValueChange={(v) => { setFarmerId(v); setAllocs([{ kind: "irrigation", reference_id: "", amount: 0 }]); }}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-              </Select>
+              <FarmerSearchSelect value={farmerId || null}
+                onChange={(id) => { setFarmerId(id ?? ""); setAllocs([{ kind: "irrigation", reference_id: "", amount: 0 }]); }} />
+
             </div>
 
             {farmerId && (
