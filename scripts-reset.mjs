@@ -66,10 +66,11 @@ async function main() {
 
   // wards & mouzas under first union (sadar)
   const sadarUnion = unions.find(u => u.name.includes("Sadar")) ?? unions[0];
-  const { data: wards } = await admin.from("wards").insert([
-    { union_id: sadarUnion.id, name: "Ward 1", name_bn: "ওয়ার্ড ১", ward_no: "1" },
-    { union_id: sadarUnion.id, name: "Ward 2", name_bn: "ওয়ার্ড ২", ward_no: "2" },
+  const { data: wards, error: wardErr } = await admin.from("wards").insert([
+    { union_id: sadarUnion.id, name: "Ward 1", name_bn: "ওয়ার্ড ১", code: "1" },
+    { union_id: sadarUnion.id, name: "Ward 2", name_bn: "ওয়ার্ড ২", code: "2" },
   ]).select("id, name");
+  if (wardErr) throw wardErr;
 
   const { data: mouzas } = await admin.from("mouzas").insert([
     { ward_id: wards[0].id, union_id: sadarUnion.id, name: "Rehaichar", name_bn: "রেহাইচর" },
