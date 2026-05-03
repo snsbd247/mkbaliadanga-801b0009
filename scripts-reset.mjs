@@ -77,6 +77,12 @@ async function main() {
     { ward_id: wards[0].id, union_id: sadarUnion.id, name: "Baliadanga", name_bn: "বালিয়াডাঙ্গা" },
   ]).select("id, name");
 
+  const { data: villages, error: vErr } = await admin.from("villages").insert([
+    { ward_id: wards[0].id, union_id: sadarUnion.id, name: "Rehaichar", name_bn: "রেহাইচর" },
+    { ward_id: wards[0].id, union_id: sadarUnion.id, name: "Baliadanga", name_bn: "বালিয়াডাঙ্গা" },
+  ]).select("id, name");
+  if (vErr) throw vErr;
+
   // 5. Super admin user
   console.log("Creating super admin...");
   const { data: u, error: uErr } = await admin.auth.admin.createUser({
