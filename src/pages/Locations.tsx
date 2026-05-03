@@ -281,9 +281,18 @@ function LevelTab({ level }: { level: Level }) {
 
 
   async function add() {
-    if (!name.trim()) return toast.error(t("nameRequired"));
+    setAddNameError(null);
+    setAddErrorCol(null);
+    if (!name.trim()) {
+      setAddNameError(t("nameRequired"));
+      return;
+    }
     for (const step of chain) {
-      if (!addChain[step.col]) return toast.error(`Please select ${step.label} first`);
+      if (!addChain[step.col]) {
+        setAddErrorCol(step.col);
+        toast.error(`Please select ${step.label} first`);
+        return;
+      }
     }
     const payload: any = { name: name.trim(), name_bn: nameBn.trim() || null };
     if (directCol) payload[directCol] = addChain[directCol];
@@ -294,8 +303,14 @@ function LevelTab({ level }: { level: Level }) {
     setAdding(false);
     if (error) return toast.error(error.message);
     toast.success(t("addedToast"));
-    setName(""); setNameBn(""); setAddChain({}); setAddOpen(false);
+    closeAddDialog();
     load();
+  }
+
+  function closeAddDialog() {
+    setAddOpen(false);
+    setName(""); setNameBn(""); setAddChain({});
+    setAddErrorCol(null); setAddNameError(null); setAdding(false);
   }
 
   async function remove(id: string) {
