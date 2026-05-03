@@ -344,7 +344,7 @@ export default function Farmers() {
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <>
