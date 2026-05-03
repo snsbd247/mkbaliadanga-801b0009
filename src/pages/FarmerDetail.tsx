@@ -106,8 +106,8 @@ export default function FarmerDetail() {
         description={`${farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
-          <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
-          <Button onClick={() => exportFarmerReportPDF(farmer, { lands, savings, loans, irr, savingsBal, loanDue, irrDue, share: share?.balance ?? 0 })}>
+          <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
+          <Button onClick={() => nav(`/farmers/${farmer.id}/report`)}>
             <FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}
           </Button>
         </>}
