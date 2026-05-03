@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Upload, Download, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, Download, AlertTriangle, CheckCircle2, Loader2, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import { downloadCsvTemplate } from "@/lib/importTemplates";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
@@ -156,6 +157,16 @@ export default function DataImport() {
   const [working, setWorking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [upsertMode, setUpsertMode] = useState(false);
+  const [ledgerVerify, setLedgerVerify] = useState<Array<{ idx: number; record_id: string; ledger_ids: string[]; ok: boolean }>>([]);
+  const [recentImports, setRecentImports] = useState<any[]>([]);
+
+  async function loadRecentImports() {
+    const { data } = await supabase
+      .from("import_audit_logs" as any)
+      .select("*").order("created_at", { ascending: false }).limit(20);
+    setRecentImports((data as any) ?? []);
+  }
+  useMemo(() => { loadRecentImports(); }, []);
 
   const stats = useMemo(() => ({
     total: rows.length,
@@ -200,8 +211,9 @@ export default function DataImport() {
     return m;
   }
 
-  async function importAll() {
+  async function importAll(dryRun = false) {
     if (!rows.length) return;
+    if (dryRun) setLedgerVerify([]);
     if (mod === "ledger" && !isSuper) {
       toast.error("Only Super Admin can import ledger entries.");
       return;
@@ -335,6 +347,11 @@ export default function DataImport() {
             };
 
             if (upsertMode) {
+              if (dryRun) {
+                next[i] = { ...next[i], status: "ok", message: "Will upsert (preview)" };
+                if (i % 10 === 0) setRows([...next]);
+                continue;
+              }
               const { error: upErr } = await supabase
                 .from("land_relations")
                 .upsert(lrPayload, {
@@ -522,9 +539,13 @@ export default function DataImport() {
             };
           }
 
-          const { error } = await supabase.from(table as any).insert(payload);
-          if (error) throw error;
-          next[i] = { ...next[i], status: "ok" };
+          if (dryRun) {
+            next[i] = { ...next[i], status: "ok", message: `Will insert into ${table} (preview)` };
+          } else {
+            const { data: inserted, error } = await supabase.from(table as any).insert(payload).select("id").maybeSingle();
+            if (error) throw error;
+            next[i] = { ...next[i], status: "ok", resolved: { ...(next[i].resolved ?? {}), record_id: (inserted as any)?.id } };
+          }
         } catch (e: any) {
           next[i] = { ...next[i], status: "error", message: e?.message ?? String(e) };
         }
@@ -535,8 +556,59 @@ export default function DataImport() {
       setRows([...next]);
       const ok = next.filter((x) => x.status === "ok").length;
       const er = next.filter((x) => x.status === "error").length;
-      if (er === 0) toast.success(`Imported ${ok} rows successfully`);
-      else toast.warning(`Imported ${ok}, failed ${er}. Download error report.`);
+
+      // Ledger verification + audit log (only on real run)
+      if (!dryRun) {
+        const ledgerKinds = ["payments", "irrigation", "cashbook_receipts", "cashbook_expenses"];
+        if (ledgerKinds.includes(mod)) {
+          const ids = next
+            .filter((x) => x.status === "ok" && x.resolved?.record_id)
+            .map((x) => ({ idx: x.idx, id: x.resolved!.record_id as string }));
+          if (ids.length) {
+            const { data: led } = await supabase
+              .from("ledger_entries")
+              .select("id,reference_id,debit,credit")
+              .in("reference_id", ids.map((x) => x.id));
+            const grouped = new Map<string, string[]>();
+            (led ?? []).forEach((e: any) => {
+              const arr = grouped.get(e.reference_id) ?? [];
+              arr.push(e.id);
+              grouped.set(e.reference_id, arr);
+            });
+            setLedgerVerify(ids.map((x) => ({
+              idx: x.idx, record_id: x.id,
+              ledger_ids: grouped.get(x.id) ?? [],
+              ok: (grouped.get(x.id) ?? []).length > 0,
+            })));
+          }
+        }
+
+        // Persist audit log
+        try {
+          const officeId = (next.find((r) => r.resolved?.office_id)?.resolved?.office_id) ?? null;
+          await supabase.from("import_audit_logs" as any).insert({
+            user_id: user?.id ?? null,
+            office_id: officeId,
+            module: mod,
+            mode: upsertMode ? "upsert" : "insert",
+            rows_processed: next.length,
+            rows_inserted: ok,
+            rows_updated: 0,
+            rows_failed: er,
+            summary: {
+              record_ids: next.filter((r) => r.resolved?.record_id).map((r) => ({ row: r.idx + 2, id: r.resolved!.record_id })),
+            },
+          });
+          loadRecentImports();
+        } catch (auditErr) {
+          console.warn("Audit log insert failed", auditErr);
+        }
+
+        if (er === 0) toast.success(`Imported ${ok} rows successfully`);
+        else toast.warning(`Imported ${ok}, failed ${er}. Download error report.`);
+      } else {
+        toast.info(`Preview ready: ${ok} rows will be processed, ${er} have errors.`);
+      }
     } catch (e: any) {
       toast.error(`Import failed: ${e.message}`);
     } finally {
@@ -587,6 +659,11 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadTemplate(mod)}>
               <Download className="h-4 w-4 mr-1" /> Template (.xlsx)
             </Button>
+            {(["payments","irrigation","cashbook_receipts","cashbook_expenses"] as Module[]).includes(mod) && (
+              <Button variant="outline" onClick={() => downloadCsvTemplate(mod === "irrigation" ? "irrigation" : (mod as any))}>
+                <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
+              </Button>
+            )}
             <input
               ref={fileRef}
               type="file"
@@ -623,9 +700,13 @@ export default function DataImport() {
                   <Download className="h-4 w-4 mr-1" /> Error Report
                 </Button>
               )}
-              <Button onClick={importAll} disabled={working || stats.pending === 0}>
+              <Button variant="outline" onClick={() => importAll(true)} disabled={working || stats.pending === 0}>
+                {working ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Preview ({stats.pending})
+              </Button>
+              <Button onClick={() => importAll(false)} disabled={working || stats.pending === 0}>
                 {working ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
-                Import {stats.pending} rows
+                Confirm Import
               </Button>
             </div>
           </div>
@@ -663,6 +744,52 @@ export default function DataImport() {
               Showing first 200 of {rows.length} rows.
             </div>
           )}
+        </Card>
+      )}
+
+      {ledgerVerify.length > 0 && (
+        <Card className="mt-4">
+          <div className="p-3 border-b font-medium">Ledger posting verification</div>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Row</TableHead><TableHead>Record ID</TableHead>
+              <TableHead>Ledger Entry IDs</TableHead><TableHead>Status</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {ledgerVerify.map((v) => (
+                <TableRow key={v.record_id}>
+                  <TableCell>{v.idx + 2}</TableCell>
+                  <TableCell className="font-mono text-xs">{v.record_id}</TableCell>
+                  <TableCell className="font-mono text-xs">{v.ledger_ids.join(", ") || "—"}</TableCell>
+                  <TableCell>{v.ok ? <Badge className="bg-green-600">Posted</Badge> : <Badge variant="destructive">Missing</Badge>}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      {recentImports.length > 0 && (
+        <Card className="mt-4">
+          <div className="p-3 border-b font-medium">Recent imports</div>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>When</TableHead><TableHead>Module</TableHead><TableHead>Mode</TableHead>
+              <TableHead>Processed</TableHead><TableHead>Inserted</TableHead><TableHead>Failed</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {recentImports.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs">{new Date(r.created_at).toLocaleString()}</TableCell>
+                  <TableCell>{r.module}</TableCell>
+                  <TableCell>{r.mode}</TableCell>
+                  <TableCell>{r.rows_processed}</TableCell>
+                  <TableCell>{r.rows_inserted}</TableCell>
+                  <TableCell>{r.rows_failed > 0 ? <Badge variant="destructive">{r.rows_failed}</Badge> : r.rows_failed}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </Card>
       )}
     </>

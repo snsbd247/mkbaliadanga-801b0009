@@ -782,6 +782,51 @@ export type Database = {
           },
         ]
       }
+      import_audit_logs: {
+        Row: {
+          created_at: string
+          error_report_url: string | null
+          id: string
+          mode: string
+          module: string
+          office_id: string | null
+          rows_failed: number
+          rows_inserted: number
+          rows_processed: number
+          rows_updated: number
+          summary: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_report_url?: string | null
+          id?: string
+          mode?: string
+          module: string
+          office_id?: string | null
+          rows_failed?: number
+          rows_inserted?: number
+          rows_processed?: number
+          rows_updated?: number
+          summary?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_report_url?: string | null
+          id?: string
+          mode?: string
+          module?: string
+          office_id?: string | null
+          rows_failed?: number
+          rows_inserted?: number
+          rows_processed?: number
+          rows_updated?: number
+          summary?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       irrigation_charges: {
         Row: {
           base_charge: number

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -361,7 +361,7 @@ export default function FarmerDetail() {
                 {lands.map(l => (
                   <TableRow key={l.id}>
                     <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
-                    <TableCell>{l.dag_no}</TableCell>
+                    <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
                     <TableCell>{l.land_size}</TableCell>
                     <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                     <TableCell>{t((l.field_type as any) ?? "")}</TableCell>

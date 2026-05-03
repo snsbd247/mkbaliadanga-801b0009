@@ -1,98 +1,94 @@
-# Voter Audit + Role-Update RLS Fix
+# Plan: Land Detail, Import UX & Audit, Ledger Verification
 
-## 1. user_roles RLS fix (migration)
+This plan adds five capabilities. They're independent and can be reviewed/built incrementally, but I'll ship them together.
 
-Current policy only allows `super_admin` to manage roles, so admins editing users get RLS errors. Replace with:
+---
 
-- `super admin manage roles` (ALL) — full access
-- `admin update office roles` (UPDATE) — `is_admin_or_super(auth.uid())` AND target user's `profiles.office_id = current_user_office()` AND `role <> 'super_admin'` (in both USING and WITH CHECK)
-- `admin insert office roles` (INSERT) — same check on inserted row's user
-- `admin delete office roles` (DELETE) — same office scoping, never super_admin
-- Existing `users read own roles` SELECT policy kept unchanged
+## 1. Land Detail Page (`/lands/:id`)
 
-Also add a `prevent_super_admin_self_demotion` trigger: on DELETE/UPDATE of the last super_admin row by the same user, raise an exception.
+New route + page showing a single land parcel with:
+- Land info: dag_no, mouza, size, field_type, owner_type, location chain (via `lands_with_location` view)
+- Current owner (from `lands.farmer_id`)
+- **All `land_relations` for this land**: owner ↔ sharecropper, share %, valid_from/to, status (active/historic), notes
+- Per-period total share % with a visual warning when active relations exceed 100%
+- Linked irrigation charges summary for the land (read-only list)
 
-`Users.setRole()` is left as-is (delete + insert) since policies cover both ops.
+Files:
+- New `src/pages/LandDetail.tsx`
+- Add route in `src/App.tsx`
+- Link to it from `FarmerDetail` lands list and from `LandRelations` rows ("View land")
 
-## 2. voter_audit_logs table + trigger
+No DB changes — reuses existing `land_relations`, `lands`, `lands_with_location`, `irrigation_charges`.
 
-```text
-voter_audit_logs
-  id uuid pk
-  farmer_id uuid not null
-  account_number text
-  voter_number_old text
-  voter_number_new text
-  is_voter_old boolean
-  is_voter_new boolean
-  changed_by uuid
-  office_id uuid
-  created_at timestamptz default now()
-```
+---
 
-Trigger `trg_voter_audit` on `farmers` AFTER UPDATE — fires only when `voter_number` or `is_voter` changes.
+## 2. CSV Templates (Payments, Irrigation, Cashbook)
+
+Add a "Download template" button per module on `/import` that downloads a CSV with the exact accepted headers + 1 example row + a `# instructions` comment row.
+
+Templates:
+- **payments.csv** — `account_number, amount, kind, method, paid_on, reference_id, note, idempotency_key`
+- **irrigation_charges.csv** — `account_number, dag_no, season_name, basis, base_charge, canal_charge, maintenance_charge, other_charge, quantity, entry_date, note`
+- **cashbook_receipts.csv** — `receipt_date, head, payer, amount, method, note`
+- **cashbook_expenses.csv** — `expense_date, head, payee, amount, method, note`
+
+Implementation: small helper `src/lib/importTemplates.ts` returning CSV strings, triggered via `Blob` download in `DataImport.tsx`.
+
+---
+
+## 3. Import Preview Step (Dry-run)
+
+In `DataImport.tsx`, add a 2-step flow:
+1. **Parse + Resolve** — read file, resolve account_numbers → farmer_ids, lands, etc., **without writing**. Classify each row as `insert | update | skip(error)` (esp. for Land Relations upsert mode and idempotent payments).
+2. **Preview table** — show row #, action, resolved IDs, key fields, and any validation errors. User clicks "Confirm import" to actually write.
+
+Refactor `DataImport.tsx`:
+- Extract the per-row resolver into `buildPlan(rows, module, mode)` returning `PlanRow[]`
+- Extract the writer into `applyPlan(planRows)`
+- UI: "Preview" → table → "Confirm" / "Cancel"
+
+---
+
+## 4. Import Audit Log
+
+New table `public.import_audit_logs`:
+- `id`, `user_id`, `office_id`, `module` (text), `mode` (text: insert/upsert)
+- `rows_processed`, `rows_inserted`, `rows_updated`, `rows_failed`
+- `error_report_url` (text, nullable — for now stores a data: URL or a stored object key; v1 keeps the CSV client-side and stores `null`, recording counts only)
+- `summary` (jsonb: per-row IDs, ledger entry IDs)
+- `created_at`
 
 RLS:
-- `office read voter_audit` (SELECT): super_admin OR same office
-- INSERT only via trigger (security definer); no client INSERT/UPDATE/DELETE policies
+- INSERT: any authenticated user for own `user_id`
+- SELECT: super_admin OR admin within same office
 
-The pre-existing `audit_logs`-based voter trigger from the earlier loop is replaced by this dedicated table (cleaner queries, faster filters).
+UI: new tab on `/import` "Recent imports" listing the last 50 with download-error and re-open-summary actions.
 
-## 3. Viewer page `/voter-audit`
+---
 
-New page `src/pages/VoterAudit.tsx`, route added in `App.tsx`, sidebar link under Reports (admin+ only).
+## 5. Ledger Posting Verification
 
-Filters:
-- Farmer search (reuses `FarmerSearchSelect`)
-- Office (super admin only; admin auto-scoped)
-- Date range (from/to)
+After `applyPlan` runs, for each inserted **payment / irrigation_charge / cashbook receipt+expense**, immediately query `ledger_entries WHERE reference_id IN (...inserted ids...)` and:
+- Display a results table: row → record id → ledger entry IDs (debit/credit summary) → ✅/⚠️
+- Flag rows with no ledger entries as warnings (trigger may not have fired)
+- Persist these IDs into the `summary` jsonb of the audit log row
 
-Table columns: Date · Farmer (name + account) · Old → New voter # · Changed by (profile name) · Office.
+This relies on the existing DB triggers (no trigger changes). Purely a verification surface.
 
-Pagination: 50/page.
+Also: extend `src/pages/__tests__/PaymentLedgerStatement.flow.test.tsx` with one extra assertion that an imported payment produces ledger entries with matching `reference_id`.
 
-## 4. Export
+---
 
-"Export Excel" + "Export PDF" buttons on the viewer using existing `exportExcel` / `exportTablePDF` from `src/lib/exports.ts` against the currently filtered rows.
+## Technical notes
 
-## 5. History modal on Farmers page
+- One migration only (audit log table + RLS).
+- All other changes are frontend (TS/React) under `src/pages/DataImport.tsx`, `src/pages/LandDetail.tsx`, `src/lib/importTemplates.ts`, `src/App.tsx`.
+- Non-breaking: no changes to ledger logic, account_number logic, or existing RLS on financial tables.
+- i18n keys added to `src/i18n/translations.ts` as needed (English + Bangla).
 
-Add a small "History" icon button next to the existing `VoterToggleField` in `Farmers.tsx`. Opens a Dialog showing the last 20 audit rows for that farmer (same columns as viewer, no filters).
+## Out of scope for this round
 
-## 6. Voter toggle UX
+- Storing error reports as files in Supabase Storage (kept client-side download for now).
+- Bulk re-run of failed rows from the audit log (can be added later).
 
-`VoterToggleField` already uses an in-flight loader. Tighten it:
-- On RPC error: revert `is_voter` toggle locally, keep prior `voter_number`, show inline `Alert` under the toggle (not just toast)
-- Disable toggle while pending
-- Surface RLS / network error message verbatim
-
-## 7. Tests
-
-- `src/lib/__tests__/voterAudit.policy.test.ts` — mocked supabase client asserting:
-  - super admin: insert/update/delete user_roles allowed
-  - admin same office: update allowed, super_admin role rejected
-  - staff: denied
-- `src/lib/__tests__/voterAudit.trigger.test.ts` — asserts a voter_number change produces a `voter_audit_logs` row with correct old/new values (uses mocked client)
-
-These are unit-level mock tests (no live DB) consistent with the existing `__tests__` pattern.
-
-## Files
-
-Created:
-- `supabase/migrations/<ts>_voter_audit_and_role_rls.sql`
-- `src/pages/VoterAudit.tsx`
-- `src/lib/__tests__/voterAudit.policy.test.ts`
-- `src/lib/__tests__/voterAudit.trigger.test.ts`
-
-Edited:
-- `src/App.tsx` (route)
-- `src/components/layout/AppSidebar.tsx` (link)
-- `src/pages/Farmers.tsx` (History modal + tighter VoterToggleField)
-
-Untouched: ledger, payments, reports, auth provider, farmer CRUD payload.
-
-## Non-breaking guarantees
-
-- Existing `super admin manage roles` policy preserved → no regression for super admin flows.
-- Voter trigger is additive; old `audit_logs` voter trigger is dropped to avoid double-logging.
-- No changes to farmer columns, RPC signatures, or client APIs used elsewhere.
+Confirm and I'll implement in this order: migration → templates + LandDetail (parallel) → preview/verification refactor → audit log UI.

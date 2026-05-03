@@ -16,6 +16,7 @@ import Farmers from "./pages/Farmers";
 import FarmerDetail from "./pages/FarmerDetail";
 import FarmerProfileReport from "./pages/FarmerProfileReport";
 import FarmerCard from "./pages/FarmerCard";
+import LandDetail from "./pages/LandDetail";
 import ScanPayment from "./pages/ScanPayment";
 import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
@@ -88,6 +89,7 @@ const App = () => (
                 <Route path="/farmers/:id" element={<FarmerDetail />} />
                 <Route path="/farmers/:id/report" element={<FarmerProfileReport />} />
                 <Route path="/farmers/:id/card" element={<FarmerCard />} />
+                <Route path="/lands/:id" element={<LandDetail />} />
                 <Route path="/scan-payment" element={<ScanPayment />} />
                 <Route path="/seasons" element={<Seasons />} />
                 <Route path="/savings" element={<Savings />} />
