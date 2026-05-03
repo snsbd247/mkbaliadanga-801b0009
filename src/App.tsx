@@ -16,6 +16,7 @@ import Farmers from "./pages/Farmers";
 import FarmerDetail from "./pages/FarmerDetail";
 import FarmerProfileReport from "./pages/FarmerProfileReport";
 import FarmerCard from "./pages/FarmerCard";
+import LandDetail from "./pages/LandDetail";
 import ScanPayment from "./pages/ScanPayment";
 import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
