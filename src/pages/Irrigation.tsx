@@ -80,11 +80,18 @@ export default function Irrigation() {
   }, [form.farmer_id, form.land_id, form.season_id]);
 
   async function load() {
+    let q = supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200);
+    q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
     const [r, s] = await Promise.all([
-      supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").is("deleted_at", null).order("entry_date", { ascending: false }).limit(200),
+      q,
       supabase.from("seasons").select("*").order("year", { ascending: false }),
     ]);
     setRows(r.data ?? []); setSeasons(s.data ?? []);
+  }
+  async function restore(id: string) {
+    const { error } = await supabase.from("irrigation_charges").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Restored"); load();
   }
 
   const total = +form.base_charge + +form.canal_charge + +form.maintenance_charge + +form.other_charge;
