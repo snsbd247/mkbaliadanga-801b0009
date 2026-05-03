@@ -204,7 +204,9 @@ function LevelTab({ level }: { level: Level }) {
   const [name, setName] = useState("");
   const [nameBn, setNameBn] = useState("");
   const [adding, setAdding] = useState(false);
-  
+  const [addErrorCol, setAddErrorCol] = useState<string | null>(null);
+  const [addNameError, setAddNameError] = useState<string | null>(null);
+  const addNameRef = useRef<HTMLInputElement>(null);
 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -215,8 +217,10 @@ function LevelTab({ level }: { level: Level }) {
   const [editChain, setEditChain] = useState<Chain>({});
   const [editName, setEditName] = useState("");
   const [editNameBn, setEditNameBn] = useState("");
-  
   const [saving, setSaving] = useState(false);
+  const [editErrorCol, setEditErrorCol] = useState<string | null>(null);
+  const [editNameError, setEditNameError] = useState<string | null>(null);
+  const editNameRef = useRef<HTMLInputElement>(null);
 
   // Load list whenever filter changes (uses deepest filter, falls back to direct parent)
   useEffect(() => {
