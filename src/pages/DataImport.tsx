@@ -356,7 +356,7 @@ export default function DataImport() {
 
   return (
     <>
-      <PageHeader title="Data Import" subtitle="CSV / Excel — keyed by farmer account_number" />
+      <PageHeader title="Data Import" />
 
       <Card className="p-4 space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
