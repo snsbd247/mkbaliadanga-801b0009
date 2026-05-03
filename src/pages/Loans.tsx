@@ -27,30 +27,45 @@ export default function Loans() {
   const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [installments, setInstallments] = useState<Record<string, any[]>>({});
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({ farmer_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
 
   useEffect(() => { document.title = `${t("loans")} — ${t("appName")}`; load(); }, []);
   async function load() {
-    const [f, l, pr] = await Promise.all([
+    const [f, l, pr, lp] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code,member_no,mobile,village").order("name_en"),
-      supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by)").order("created_at", { ascending: false }).limit(200),
+      supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by), loan_plans(name,name_bn,installment_type,duration_months)").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("id,full_name,username"),
+      supabase.from("loan_plans").select("*").eq("is_active", true).order("name"),
     ]);
     setFarmers(f.data ?? []);
     setLoans(l.data ?? []);
+    setPlans(lp.data ?? []);
     const map: Record<string, string> = {};
     (pr.data ?? []).forEach((p: any) => { map[p.id] = p.full_name || p.username || p.id.slice(0, 6); });
     setProfiles(map);
   }
+  async function loadInstallments(loanId: string) {
+    const { data } = await supabase.from("loan_installments").select("*").eq("loan_id", loanId).order("installment_no");
+    setInstallments(prev => ({ ...prev, [loanId]: data ?? [] }));
+  }
   async function save() {
     if (!form.farmer_id || form.principal <= 0) return toast.error(t("pickFarmerAndAmount"));
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
+    const plan = plans.find((p: any) => p.id === form.plan_id);
+    const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
+    const total_payable = form.principal * (1 + interest_rate / 100);
     const { error } = await supabase.from("loans").insert({
-      farmer_id: form.farmer_id, principal: form.principal, interest_enabled: form.interest_enabled,
-      interest_rate: form.interest_enabled ? form.interest_rate : 0,
+      farmer_id: form.farmer_id,
+      plan_id: form.plan_id || null,
+      principal: form.principal,
+      interest_enabled: form.interest_enabled,
+      interest_rate,
+      total_payable,
       issued_on: form.issued_on, next_due_on: form.next_due_on || null, note: form.note,
       status: "pending", created_by: user?.id,
     });
