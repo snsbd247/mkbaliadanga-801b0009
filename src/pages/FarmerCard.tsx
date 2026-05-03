@@ -117,11 +117,11 @@ export default function FarmerCard() {
   }
 
   async function onPdf() {
-    if (!data) return;
+    if (!data || !cardRef.current) return;
     setBusy(true);
     try {
-      const svg = cardRef.current?.querySelector("svg") as SVGElement | null;
-      await downloadCardPdf(data, svg, templateId, cardCfg);
+      const fname = `farmer-card-${templateId}-${data.farmer.farmer_code || data.farmer.member_no || "card"}.pdf`;
+      await downloadCardPdf(cardRef.current, fname);
     } catch (e: any) {
       toast.error(e?.message ?? "PDF export failed");
     } finally { setBusy(false); }

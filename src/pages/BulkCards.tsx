@@ -14,11 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Download, Search, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { QRCodeSVG } from "qrcode.react";
 import { TEMPLATE_LIST, type TemplateId } from "@/components/card/templates";
 import { downloadBulkCardsPdf } from "@/components/card/cardPdf";
 import { useCardSettings } from "@/lib/cardSettings";
-import type { CardData } from "@/components/card/MembershipCard";
+import { MembershipCard, type CardData } from "@/components/card/MembershipCard";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
@@ -42,9 +41,10 @@ export default function BulkCards() {
   const [templateId, setTemplateId] = useState<TemplateId>("classic");
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  // Hidden container holds QR SVGs we need to feed into the PDF generator.
-  const qrHostRef = useRef<HTMLDivElement>(null);
-  const [tokens, setTokens] = useState<Record<string, { token: string; issued_at: string }>>({});
+  // Hidden container that mounts a real MembershipCard per selected farmer so
+  // the PDF generator can capture each card's DOM (matches preview exactly).
+  const cardHostRef = useRef<HTMLDivElement>(null);
+  const [bulkCards, setBulkCards] = useState<{ farmer_id: string; data: CardData }[]>([]);
 
   useEffect(() => {
     document.title = "Bulk Membership Cards";
@@ -94,42 +94,48 @@ export default function BulkCards() {
       if (!res.ok) { toast.error(j?.error || "Bulk fetch failed"); return; }
       const items: any[] = j.items ?? [];
       const ok = items.filter((i) => !i.error);
-      const tokMap: typeof tokens = {};
-      ok.forEach((i) => { tokMap[i.farmer_id] = { token: i.token, issued_at: i.issued_at }; });
-      setTokens(tokMap);
 
-      // Wait one render so QR SVGs are mounted in the hidden host.
-      await new Promise(requestAnimationFrame);
-      await new Promise(requestAnimationFrame);
-
-      const cards = ok.map((it) => {
+      const cardData = ok.map((it) => {
+        const acc = it.farmer.account_number ?? null;
+        const qrValue = acc ? `${window.location.origin}/scan?acc=${acc}` : it.token;
         const data: CardData = {
           company_name: brand.company_name,
           company_name_bn: brand.company_name_bn,
           logo_url: brand.logo_url,
           farmer: {
-            name: it.farmer.name,
+            name: it.farmer.name_bn || it.farmer.name_en || it.farmer.name,
             name_en: it.farmer.name_en,
             farmer_code: it.farmer.farmer_code,
             member_no: it.farmer.member_no ?? undefined,
+            account_number: acc,
+            voter_number: it.farmer.voter_number ?? null,
             mobile: it.farmer.mobile ?? undefined,
             village: it.farmer.village ?? undefined,
             address: it.farmer.address ?? undefined,
             photo_url: it.farmer.photo_url,
           },
           token: it.token,
+          qr_value: qrValue,
           issued_at: it.issued_at,
         };
-        const wrap = qrHostRef.current?.querySelector(`[data-fid="${it.farmer_id}"]`) as HTMLElement | null;
-        const svg = wrap?.querySelector("svg") as SVGElement | null;
-        return { data, qrSvg: svg };
+        return { farmer_id: it.farmer_id, data };
       });
-      await downloadBulkCardsPdf(cards, templateId, `farmer-cards-${ok.length}-${templateId}.pdf`, cardCfg);
+      setBulkCards(cardData);
+
+      // Wait two frames so the hidden MembershipCard nodes are fully laid out.
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+
+      const roots: HTMLElement[] = cardData
+        .map((c) => cardHostRef.current?.querySelector(`[data-fid="${c.farmer_id}"]`) as HTMLElement | null)
+        .filter((n): n is HTMLElement => !!n);
+
+      await downloadBulkCardsPdf(roots, `farmer-cards-${ok.length}-${templateId}.pdf`);
       const skipped = items.length - ok.length;
       toast.success(`Generated ${ok.length} card(s)${skipped ? `, skipped ${skipped}` : ""}.`);
     } catch (e: any) {
       toast.error(e?.message ?? "PDF export failed");
-    } finally { setBusy(false); }
+    } finally { setBusy(false); setBulkCards([]); }
   }
 
   if (!isAdmin) {
@@ -229,11 +235,16 @@ export default function BulkCards() {
         </div>
       </Card>
 
-      {/* Hidden container that mounts a QRCodeSVG per selected farmer so the PDF generator can serialize them. */}
-      <div ref={qrHostRef} className="absolute -left-[9999px] top-0" aria-hidden>
-        {Object.entries(tokens).map(([fid, t]) => (
-          <div key={fid} data-fid={fid}>
-            <QRCodeSVG value={t.token} size={128} level="M" includeMargin={false} />
+      {/* Hidden host that renders real MembershipCard components so the PDF
+          generator can capture them via html2canvas (matches preview exactly). */}
+      <div
+        ref={cardHostRef}
+        style={{ position: "fixed", left: -10000, top: 0, opacity: 0, pointerEvents: "none" }}
+        aria-hidden
+      >
+        {bulkCards.map((c) => (
+          <div key={c.farmer_id} data-fid={c.farmer_id} style={{ marginBottom: 8 }}>
+            <MembershipCard data={c.data} templateId={templateId} display={cardCfg} />
           </div>
         ))}
       </div>
