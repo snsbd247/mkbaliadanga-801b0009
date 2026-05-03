@@ -124,7 +124,7 @@ export default function BulkCards() {
         const svg = wrap?.querySelector("svg") as SVGElement | null;
         return { data, qrSvg: svg };
       });
-      await downloadBulkCardsPdf(cards, templateId, `farmer-cards-${ok.length}-${templateId}.pdf`);
+      await downloadBulkCardsPdf(cards, templateId, `farmer-cards-${ok.length}-${templateId}.pdf`, cardCfg);
       const skipped = items.length - ok.length;
       toast.success(`Generated ${ok.length} card(s)${skipped ? `, skipped ${skipped}` : ""}.`);
     } catch (e: any) {
