@@ -193,7 +193,8 @@ export default function Loans() {
               onPrint={printLoanReceipt}
               profiles={profiles}
               expanded={expanded}
-              setExpanded={setExpanded}
+              setExpanded={(id: string | null) => { setExpanded(id); if (id) loadInstallments(id); }}
+              installments={installments}
             />
           </TabsContent>
         ))}
