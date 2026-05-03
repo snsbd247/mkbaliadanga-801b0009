@@ -11,12 +11,14 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function renderApp() {
   return render(
-    <MemoryRouter initialEntries={["/farmer/dashboard"]}>
-      <Routes>
-        <Route path="/" element={<div>LOGIN_PAGE</div>} />
-        <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
-      </Routes>
-    </MemoryRouter>,
+    <LanguageProvider>
+      <MemoryRouter initialEntries={["/farmer/dashboard"]}>
+        <Routes>
+          <Route path="/" element={<div>LOGIN_PAGE</div>} />
+          <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
+        </Routes>
+      </MemoryRouter>
+    </LanguageProvider>,
   );
 }
 
