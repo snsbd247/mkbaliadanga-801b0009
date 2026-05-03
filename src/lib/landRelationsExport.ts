@@ -33,7 +33,7 @@ function buildLocation(r: LandRelationExportRow): string {
   return chain.join(" › ");
 }
 
-const headers = ["#", "Location", "Dag No", "Size", "Owner", "Sharecropper", "Share %", "Valid From", "Valid To", "Status"];
+const headers = ["#", "Location", "Dag No", "Size", "Owner", "Tenant", "Share %", "Valid From", "Valid To", "Status"];
 
 function rows(list: LandRelationExportRow[]): (string | number)[][] {
   return list.map((r, i) => [

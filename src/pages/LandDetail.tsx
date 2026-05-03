@@ -82,7 +82,7 @@ export default function LandDetail() {
 
       <Card className="mt-4">
         <div className="p-3 border-b flex items-center justify-between">
-          <div className="font-medium">Land Relations (owner ↔ sharecropper)</div>
+          <div className="font-medium">Land Relations (owner ↔ tenant)</div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Active total:</span>
             <Badge variant={overShare ? "destructive" : "default"}>{totalActiveShare}%</Badge>
@@ -97,7 +97,7 @@ export default function LandDetail() {
         )}
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Owner</TableHead><TableHead>Sharecropper</TableHead><TableHead>Share %</TableHead>
+            <TableHead>Owner</TableHead><TableHead>Tenant</TableHead><TableHead>Share %</TableHead>
             <TableHead>Valid From</TableHead><TableHead>Valid To</TableHead><TableHead>Status</TableHead>
           </TableRow></TableHeader>
           <TableBody>

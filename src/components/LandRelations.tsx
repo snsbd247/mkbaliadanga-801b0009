@@ -83,6 +83,9 @@ export function LandRelations({ farmerId }: Props) {
 
   async function save() {
     if (!form.land_id || !form.owner_farmer_id) return toast.error("Land and Owner required");
+    if (form.sharecropper_farmer_id && form.sharecropper_farmer_id === form.owner_farmer_id) {
+      return toast.error("Owner and Tenant must be different farmers");
+    }
     setSaving(true);
     try {
       const { error } = await supabase.from("land_relations").insert({
@@ -112,7 +115,7 @@ export function LandRelations({ farmerId }: Props) {
   return (
     <Card>
       <div className="flex items-center justify-between p-3 border-b gap-2 flex-wrap">
-        <div className="text-sm text-muted-foreground">{t("landRelations")} — owner ↔ sharecropper history</div>
+        <div className="text-sm text-muted-foreground">{t("landRelations")} — owner ↔ tenant history</div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" disabled={rows.length === 0}
             onClick={() => exportLandRelationsPdf(`Farmer ${farmerId.slice(0, 8)}`, buildExportRows())}>
@@ -143,11 +146,11 @@ export function LandRelations({ farmerId }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>{t("sharecropper")} <span className="text-xs text-muted-foreground">(optional)</span></Label>
+              <div><Label>{t("tenant")} <span className="text-xs text-muted-foreground">(optional)</span></Label>
                 <FarmerSearchSelect value={form.sharecropper_farmer_id || null}
                   onChange={(id) => setForm({ ...form, sharecropper_farmer_id: id ?? "" })}
                   excludeIds={form.owner_farmer_id ? [form.owner_farmer_id] : []}
-                  placeholder="Search sharecropper (optional)" disabled={saving} />
+                  placeholder="Search tenant (optional)" disabled={saving} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>{t("sharePercent")}</Label><Input type="number" min={0} max={100} step="0.1" disabled={saving} value={form.share_percentage} onChange={e => setForm({ ...form, share_percentage: +e.target.value })} /></div>
@@ -165,7 +168,7 @@ export function LandRelations({ farmerId }: Props) {
         <TableHeader><TableRow>
           <TableHead>Land</TableHead>
           <TableHead>{t("owner")}</TableHead>
-          <TableHead>{t("sharecropper")}</TableHead>
+          <TableHead>{t("tenant")}</TableHead>
           <TableHead>{t("sharePercent")}</TableHead>
           <TableHead>{t("validFrom")}</TableHead>
           <TableHead>{t("validTo")}</TableHead>

@@ -42,6 +42,7 @@ export default function FarmerDetail() {
   const [irr, setIrr] = useState<any[]>([]);
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
+  const [tenantLands, setTenantLands] = useState<any[]>([]);
 
   // Add land dialog
   const [openLand, setOpenLand] = useState(false);
@@ -79,6 +80,14 @@ export default function FarmerDetail() {
     setFarmer(f.data); setLands((l.data as any) ?? []); setSavings(s.data ?? []);
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
     setPayments(pm.data ?? []);
+
+    // Cultivated lands (this farmer is tenant on active relations)
+    const { data: tRels } = await supabase.from("land_relations")
+      .select("id, share_percentage, valid_from, valid_to, land_id, lands(id,dag_no,land_size,mouza,field_type), owner:farmers!land_relations_owner_farmer_id_fkey(id,name_en,account_number,farmer_code)")
+      .eq("sharecropper_farmer_id", id!)
+      .is("valid_to", null)
+      .order("valid_from", { ascending: false });
+    setTenantLands(tRels ?? []);
   }
 
   function farmerLocationLine(fr: any): string {
@@ -372,6 +381,33 @@ export default function FarmerDetail() {
                   </TableRow>
                 ))}
                 {lands.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
+
+          <Card className="mt-4">
+            <div className="p-3 border-b font-medium">{t("cultivatedLands")}</div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{t("dagNo")}</TableHead>
+                <TableHead>{t("landSize")}</TableHead>
+                <TableHead>{t("owner")}</TableHead>
+                <TableHead>{t("sharePercent")}</TableHead>
+                <TableHead>{t("validFrom")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {tenantLands.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell><Link to={`/lands/${r.lands?.id}`} className="underline">{r.lands?.dag_no}</Link></TableCell>
+                    <TableCell>{r.lands?.land_size}</TableCell>
+                    <TableCell>
+                      {r.owner ? <Link to={`/farmers/${r.owner.id}`} className="underline">{r.owner.name_en} <span className="text-xs text-muted-foreground">({r.owner.account_number ?? r.owner.farmer_code})</span></Link> : "—"}
+                    </TableCell>
+                    <TableCell>{r.share_percentage}%</TableCell>
+                    <TableCell>{fmtDate(r.valid_from)}</TableCell>
+                  </TableRow>
+                ))}
+                {tenantLands.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">{t("noData")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
