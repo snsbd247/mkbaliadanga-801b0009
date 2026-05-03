@@ -154,6 +154,7 @@ export default function CollectionReport() {
       let svQ: any = supabase
         .from("savings_transactions")
         .select("id,txn_date,amount,type,status,farmer_id,created_by,farmers(name_en,farmer_code)")
+        .is("deleted_at", null)
         .eq("type", "deposit")
         .eq("status", "approved")
         .order("txn_date", { ascending: false });
