@@ -337,7 +337,13 @@ export default function Payments() {
         </Card>
 
         <Card className="p-5 lg:col-span-2">
-          <h2 className="font-semibold mb-3">{t("recentTransactions")}</h2>
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <h2 className="font-semibold">{t("recentTransactions")}</h2>
+            <Label className="text-sm flex items-center gap-2 cursor-pointer">
+              <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+              <span className="text-xs">Show archived</span>
+            </Label>
+          </div>
           <Table>
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
             <TableBody>
