@@ -35,6 +35,9 @@ type Module =
   | "loan_payments"
   | "savings"
   | "payments"
+  | "irrigation"
+  | "cashbook_receipts"
+  | "cashbook_expenses"
   | "ledger";
 
 type RowResult = {
