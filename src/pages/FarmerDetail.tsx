@@ -267,6 +267,7 @@ export default function FarmerDetail() {
             <div><div className="text-xs text-muted-foreground">{t("mobile")}</div><div>{farmer.mobile ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">Voter Number</div><div className="font-mono">{farmer.voter_number ?? "—"}</div></div>
             <div className="col-span-2 md:col-span-4"><div className="text-xs text-muted-foreground">{t("village")} / Location</div><div className="text-sm">{farmerLocationLine(farmer)}</div></div>
+          </div>
           <div className="flex flex-col items-center gap-1 rounded-md border bg-card p-2">
             <QRCodeSVG value={`${window.location.origin}/scan?acc=${farmer.account_number ?? farmer.farmer_code}`} size={96} />
             <div className="text-[10px] text-muted-foreground">{t("qrCode")}</div>
