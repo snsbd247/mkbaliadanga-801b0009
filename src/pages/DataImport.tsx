@@ -49,6 +49,10 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
     columns: ["account_number", "dag_no", "land_size", "owner_type", "field_type", "mouza"],
     sample: { account_number: "AC-0001", dag_no: "123/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "" },
   },
+  land_relations: {
+    columns: ["owner_account_number", "sharecropper_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
+    sample: { owner_account_number: "100000000001", sharecropper_account_number: "100000000002", dag_no: "123/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
+  },
   loans: {
     columns: ["account_number", "principal", "interest_rate", "total_payable", "issued_on", "note"],
     sample: { account_number: "AC-0001", principal: 10000, interest_rate: 12, total_payable: 11200, issued_on: "2026-01-15", note: "Crop loan" },
