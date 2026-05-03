@@ -329,7 +329,7 @@ export default function Savings() {
                         </Button>
                       </TableCell>
                       <TableCell>{fmtDate(fp.start_date)}</TableCell>
-                      <TableCell>{fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
+                      <TableCell>{(lang === "bn" && fp.farmers?.name_bn) || fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
                       <TableCell>{planLabel(fp)} <span className="text-xs text-muted-foreground">({fp.savings_plans?.duration_months}mo / {fp.savings_plans?.installment_type})</span></TableCell>
                       <TableCell>{money(fp.savings_plans?.installment_amount)}</TableCell>
                       <TableCell>{money(fp.expected_total)}</TableCell>
