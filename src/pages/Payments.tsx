@@ -43,8 +43,10 @@ export default function Payments() {
   const [idemKey, setIdemKey] = useState<string>(newKey());
   const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
   const [autoAmount, setAutoAmount] = useState<number>(0);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
+  useEffect(() => { load(); /* refresh on toggle */ }, [showDeleted]);
   useEffect(() => { if (farmerId) loadDues(); else { setOpenLoans([]); setOpenIrr([]); } }, [farmerId]);
   useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
 
