@@ -524,9 +524,9 @@ export default function DataImport() {
 
           const { error } = await supabase.from(table as any).insert(payload);
           if (error) throw error;
-          next[i] = { ...r, status: "ok" };
+          next[i] = { ...next[i], status: "ok" };
         } catch (e: any) {
-          next[i] = { ...r, status: "error", message: e?.message ?? String(e) };
+          next[i] = { ...next[i], status: "error", message: e?.message ?? String(e) };
         }
 
         if (i % 10 === 0) setRows([...next]);
