@@ -107,16 +107,42 @@ export default function Scan() {
 
     if (!key) return toast.error("Invalid QR");
 
+    // Active-only lookup helper (RLS already scopes to current office)
+    const activeFarmer = (q: any) =>
+      q.eq("status", "active").is("deleted_at", null).maybeSingle();
+
     if (kind !== "id" && /^[0-9]{8,18}$/.test(key)) {
-      const byAcc = await supabase.from("farmers").select("id").eq("account_number", key).maybeSingle();
+      const byAcc = await activeFarmer(
+        supabase.from("farmers").select("id").eq("account_number", key),
+      );
       if (byAcc.data?.id) return nav(`/payments?farmer=${byAcc.data.id}`);
     }
     if (kind === "id" || /^[0-9a-f-]{36}$/i.test(key)) {
-      const byId = await supabase.from("farmers").select("id").eq("id", key).maybeSingle();
+      const byId = await activeFarmer(
+        supabase.from("farmers").select("id").eq("id", key),
+      );
       if (byId.data?.id) return nav(`/payments?farmer=${byId.data.id}`);
     }
-    const byCode = await supabase.from("farmers").select("id").eq("farmer_code", key).maybeSingle();
+    const byCode = await activeFarmer(
+      supabase.from("farmers").select("id").eq("farmer_code", key),
+    );
     if (byCode.data?.id) return nav(`/payments?farmer=${byCode.data.id}`);
+
+    // Legacy token QR fallback (mkc_...) — resolve via edge function then redirect.
+    if (/^mkc_[0-9a-f]{16,}$/i.test(key)) {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/qr-resolve-token`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: key }),
+          },
+        );
+        const j = await res.json().catch(() => ({}));
+        if (res.ok && j?.farmer_id) return nav(`/payments?farmer=${j.farmer_id}`);
+      } catch { /* ignore */ }
+    }
 
     toast.error("Account number not found in your office");
   }

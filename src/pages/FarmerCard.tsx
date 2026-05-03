@@ -56,24 +56,29 @@ export default function FarmerCard() {
         .eq("id", id).maybeSingle();
       if (error || !f) { toast.error("Farmer not found"); return; }
 
-      let j: any = {};
-      try {
-        const res = await fetch(`${FN}/farmer-card-token`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ farmer_id: id, rotate }),
-        });
-        j = await res.json().catch(() => ({}));
-        if (!res.ok || j?.fallback || j?.ok === false) {
-          toast.error(j?.error || j?.message || "Could not get token");
-          if (!j?.token) return;
+      const acc = (f as any).account_number as string | null;
+      let j: any = { token: acc || f.farmer_code, issued_at: new Date().toISOString() };
+
+      // Only fall back to token issuance if there is no stable account number
+      // (or admin explicitly asked to rotate the legacy token).
+      if (!acc || rotate) {
+        try {
+          const res = await fetch(`${FN}/farmer-card-token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ farmer_id: id, rotate }),
+          });
+          const r = await res.json().catch(() => ({}));
+          if (res.ok && r?.token) j = r;
+          else if (!acc) {
+            toast.error(r?.error || r?.message || "Could not get token");
+            return;
+          }
+        } catch (e: any) {
+          if (!acc) { toast.error(e?.message || "Network error"); return; }
         }
-      } catch (e: any) {
-        toast.error(e?.message || "Network error");
-        return;
       }
 
-      const acc = (f as any).account_number as string | null;
       const qrValue = acc ? `${window.location.origin}/scan?acc=${acc}` : j.token;
       setData({
         company_name: brand.company_name,
