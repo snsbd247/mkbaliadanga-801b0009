@@ -412,6 +412,7 @@ export default function DataImport() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="lands">Lands</SelectItem>
+                <SelectItem value="land_relations">Land Relations (owner/sharecropper)</SelectItem>
                 <SelectItem value="loans">Loans</SelectItem>
                 <SelectItem value="loan_payments">Loan Payments</SelectItem>
                 <SelectItem value="savings">Savings Transactions</SelectItem>
