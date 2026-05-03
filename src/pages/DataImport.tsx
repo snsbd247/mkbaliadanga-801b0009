@@ -598,6 +598,12 @@ export default function DataImport() {
               <Upload className="h-4 w-4 mr-1" /> Choose File
             </Button>
             {file && <span className="text-sm text-muted-foreground">{file.name}</span>}
+            {mod === "land_relations" && (
+              <label className="flex items-center gap-2 text-sm ml-2">
+                <input type="checkbox" checked={upsertMode} onChange={(e) => setUpsertMode(e.target.checked)} />
+                Upsert mode (update existing relation)
+              </label>
+            )}
           </div>
         </div>
 
