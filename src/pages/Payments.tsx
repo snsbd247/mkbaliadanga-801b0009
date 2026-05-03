@@ -169,7 +169,7 @@ export default function Payments() {
       ? p.payment_allocations.map((x: any) => ({ kind: x.kind, reference_id: x.reference_id ?? "", amount: Number(x.amount) }))
       : [{ kind: p.kind, reference_id: p.reference_id ?? "", amount: Number(p.amount) }];
 
-    await applyAllocationsToLedgers(p.id, p.farmer_id, allocList);
+    await applyAllocationsToLedgers(p.id, p.farmer_id, allocList, p.note);
     toast.success("Approved");
     load();
   }
