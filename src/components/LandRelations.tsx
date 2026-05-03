@@ -8,12 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X } from "lucide-react";
+import { Plus, X, FileText, FileSpreadsheet } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
+import { exportLandRelationsPdf, exportLandRelationsExcel, type LandRelationExportRow } from "@/lib/landRelationsExport";
 
 interface Props { farmerId: string; }
 
@@ -38,13 +39,46 @@ export function LandRelations({ farmerId }: Props) {
   async function load() {
     const [rels, ld] = await Promise.all([
       supabase.from("land_relations")
-        .select("*, lands(dag_no,mouza,land_size), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,account_number), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,account_number)")
+        .select("*, lands(dag_no,mouza,land_size,mouza_id), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,account_number), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,account_number)")
         .or(`owner_farmer_id.eq.${farmerId},sharecropper_farmer_id.eq.${farmerId}`)
         .order("valid_from", { ascending: false }),
       supabase.from("lands").select("id,dag_no,mouza,land_size,farmer_id").order("created_at"),
     ]);
-    setRows(rels.data ?? []);
+    const relsData = rels.data ?? [];
+    // Hydrate location chain for involved lands
+    const landIds = Array.from(new Set(relsData.map((r: any) => r.land_id).filter(Boolean)));
+    let locByLand: Record<string, any> = {};
+    if (landIds.length) {
+      const { data: locs } = await (supabase.from as any)("lands_with_location")
+        .select("id,division_name,district_name,upazila_name,union_name,ward_name,village_name,mouza_name")
+        .in("id", landIds);
+      (locs ?? []).forEach((l: any) => { locByLand[l.id] = l; });
+    }
+    setRows(relsData.map((r: any) => ({ ...r, _loc: locByLand[r.land_id] })));
     setLands(ld.data ?? []);
+  }
+
+  function buildExportRows(): LandRelationExportRow[] {
+    return rows.map((r) => ({
+      dag_no: r.lands?.dag_no,
+      land_size: r.lands?.land_size,
+      mouza: r.lands?.mouza,
+      mouza_name: r._loc?.mouza_name,
+      division_name: r._loc?.division_name,
+      district_name: r._loc?.district_name,
+      upazila_name: r._loc?.upazila_name,
+      union_name: r._loc?.union_name,
+      ward_name: r._loc?.ward_name,
+      village_name: r._loc?.village_name,
+      owner_name: r.owner?.name_en,
+      owner_account: r.owner?.account_number ?? r.owner?.farmer_code,
+      sc_name: r.sc?.name_en,
+      sc_account: r.sc?.account_number ?? r.sc?.farmer_code,
+      share_percentage: r.share_percentage,
+      valid_from: r.valid_from,
+      valid_to: r.valid_to,
+      status: r.valid_to ? "historic" : "active",
+    }));
   }
 
   async function save() {
