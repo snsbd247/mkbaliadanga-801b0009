@@ -111,10 +111,19 @@ export function LandRelations({ farmerId }: Props) {
 
   return (
     <Card>
-      <div className="flex items-center justify-between p-3 border-b">
+      <div className="flex items-center justify-between p-3 border-b gap-2 flex-wrap">
         <div className="text-sm text-muted-foreground">{t("landRelations")} — owner ↔ sharecropper history</div>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={rows.length === 0}
+            onClick={() => exportLandRelationsPdf(`Farmer ${farmerId.slice(0, 8)}`, buildExportRows())}>
+            <FileText className="h-4 w-4 mr-1" />PDF
+          </Button>
+          <Button size="sm" variant="outline" disabled={rows.length === 0}
+            onClick={() => exportLandRelationsExcel(`Farmer ${farmerId.slice(0, 8)}`, buildExportRows())}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" />Excel
+          </Button>
+          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+            <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{t("addNew")} — {t("landRelations")}</DialogTitle></DialogHeader>
             <div className="grid gap-3">
