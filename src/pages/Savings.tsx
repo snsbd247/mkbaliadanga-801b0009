@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -10,16 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Check, X, Printer } from "lucide-react";
+import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/exports";
 import { useBranding } from "@/lib/branding";
 
 export default function Savings() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { isCommittee, user } = useAuth();
   const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
@@ -31,15 +31,18 @@ export default function Savings() {
   const [farmerPlans, setFarmerPlans] = useState<any[]>([]);
   const [planOpen, setPlanOpen] = useState(false);
   const [planForm, setPlanForm] = useState({ farmer_id: "", plan_id: "", start_date: new Date().toISOString().slice(0, 10) });
+  const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
+  const [reportRange, setReportRange] = useState({ from: "", to: "" });
+  
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
   async function load() {
     const [f, ts, pr, sp, fsp] = await Promise.all([
-      supabase.from("farmers").select("id,name_en,farmer_code,member_no,mobile,village").order("name_en"),
+      supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").order("name_en"),
       supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("id,full_name,username"),
       supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
-      supabase.from("farmer_savings_plans").select("*, farmers(name_en,farmer_code), savings_plans(name,name_bn,duration_months,installment_type,installment_amount,interest_rate,maturity_type)").order("created_at", { ascending: false }),
+      supabase.from("farmer_savings_plans").select("*, farmers(name_en,name_bn,farmer_code), savings_plans(name,name_bn,duration_months,installment_type,installment_amount,interest_rate,maturity_type)").order("created_at", { ascending: false }),
     ]);
     setFarmers(f.data ?? []);
     setTxns(ts.data ?? []);
@@ -72,11 +75,102 @@ export default function Savings() {
       expected_total: c.total,
       expected_interest: c.interest,
       maturity_amount: c.maturity,
+      status: "pending",
       created_by: user?.id,
     });
     if (error) return toast.error(error.message);
-    toast.success("Enrolled"); setPlanOpen(false); load();
+    toast.success("Enrollment submitted for approval"); setPlanOpen(false); load();
   }
+  async function approvePlan(id: string) {
+    const { error } = await supabase.from("farmer_savings_plans")
+      .update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Enrollment approved"); load();
+  }
+  async function rejectPlan(id: string) {
+    const { error } = await supabase.from("farmer_savings_plans")
+      .update({ status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Enrollment rejected"); load();
+  }
+  async function cancelPlan(id: string) {
+    const reason = window.prompt("Cancellation reason (optional)") ?? "";
+    if (!window.confirm("Cancel this enrollment? Expected/maturity amounts will be reset to 0. Existing savings transactions remain unchanged.")) return;
+    const { error } = await supabase.from("farmer_savings_plans")
+      .update({
+        status: "cancelled",
+        cancelled_by: user?.id,
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: reason,
+        expected_total: 0,
+        expected_interest: 0,
+        maturity_amount: 0,
+      })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Enrollment cancelled"); load();
+  }
+  function buildSchedule(fp: any): { no: number; due_date: string; amount: number }[] {
+    const plan = fp.savings_plans;
+    if (!plan) return [];
+    const start = new Date(fp.start_date);
+    const n = plan.installment_type === "daily" ? plan.duration_months * 30
+      : plan.installment_type === "weekly" ? Math.floor(plan.duration_months * 30 / 7)
+      : plan.duration_months;
+    const out: { no: number; due_date: string; amount: number }[] = [];
+    for (let i = 1; i <= n; i++) {
+      const d = new Date(start);
+      if (plan.installment_type === "daily") d.setDate(d.getDate() + i);
+      else if (plan.installment_type === "weekly") d.setDate(d.getDate() + i * 7);
+      else d.setMonth(d.getMonth() + i);
+      out.push({ no: i, due_date: d.toISOString().slice(0, 10), amount: Number(plan.installment_amount) });
+    }
+    return out;
+  }
+  function planLabel(fp: any) {
+    const p = fp.savings_plans;
+    if (!p) return "—";
+    return lang === "bn" && p.name_bn ? p.name_bn : p.name;
+  }
+  function exportPlanReport(kind: "pdf" | "xlsx") {
+    const filtered = farmerPlans.filter(fp => {
+      const d = fp.start_date;
+      if (reportRange.from && d < reportRange.from) return false;
+      if (reportRange.to && d > reportRange.to) return false;
+      return true;
+    });
+    const head = ["Start", "Farmer", "Code", "Plan", "Installment", "Expected Total", "Interest", "Maturity", "Status"];
+    const rows = filtered.map(fp => [
+      fp.start_date,
+      fp.farmers?.name_en ?? "",
+      fp.farmers?.farmer_code ?? "",
+      planLabel(fp),
+      Number(fp.savings_plans?.installment_amount ?? 0),
+      Number(fp.expected_total),
+      Number(fp.expected_interest),
+      Number(fp.maturity_amount),
+      fp.status,
+    ]);
+    if (kind === "pdf") {
+      exportTablePDF("Savings Plan Enrollments", head, rows, reportRange);
+    } else {
+      const objs = filtered.map(fp => ({
+        Start: fp.start_date,
+        Farmer: fp.farmers?.name_en ?? "",
+        Code: fp.farmers?.farmer_code ?? "",
+        Plan: planLabel(fp),
+        Installment: Number(fp.savings_plans?.installment_amount ?? 0),
+        ExpectedTotal: Number(fp.expected_total),
+        Interest: Number(fp.expected_interest),
+        Maturity: Number(fp.maturity_amount),
+        Status: fp.status,
+      }));
+      exportExcel("Savings Plan Enrollments", "Enrollments", objs, reportRange);
+    }
+  }
+
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
     const status = form.type === "withdraw" ? "pending" : "approved";
@@ -201,26 +295,86 @@ export default function Savings() {
               </DialogContent>
             </Dialog>
           </Card>
-          <Card><Table>
+          <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
+            <div>
+              <Label className="text-xs">From</Label>
+              <Input type="date" className="h-9" value={reportRange.from} onChange={e => setReportRange({ ...reportRange, from: e.target.value })} />
+            </div>
+            <div>
+              <Label className="text-xs">To</Label>
+              <Input type="date" className="h-9" value={reportRange.to} onChange={e => setReportRange({ ...reportRange, to: e.target.value })} />
+            </div>
+            <Button variant="outline" size="sm" onClick={() => exportPlanReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+            <Button variant="outline" size="sm" onClick={() => exportPlanReport("pdf")}><FileText className="h-4 w-4 mr-1" />PDF</Button>
+          </Card>
+          <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
+              <TableHead className="w-8"></TableHead>
               <TableHead>Start</TableHead><TableHead>Farmer</TableHead><TableHead>Plan</TableHead>
               <TableHead>Installment</TableHead><TableHead>Expected Total</TableHead>
               <TableHead>Interest</TableHead><TableHead>Maturity</TableHead><TableHead>Status</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {farmerPlans.map((fp: any) => (
-                <TableRow key={fp.id}>
-                  <TableCell>{fmtDate(fp.start_date)}</TableCell>
-                  <TableCell>{fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
-                  <TableCell>{fp.savings_plans?.name} <span className="text-xs text-muted-foreground">({fp.savings_plans?.duration_months}mo / {fp.savings_plans?.installment_type})</span></TableCell>
-                  <TableCell>{money(fp.savings_plans?.installment_amount)}</TableCell>
-                  <TableCell>{money(fp.expected_total)}</TableCell>
-                  <TableCell>{money(fp.expected_interest)}</TableCell>
-                  <TableCell className="font-semibold">{money(fp.maturity_amount)}</TableCell>
-                  <TableCell><Badge variant={fp.status === "active" ? "default" : "secondary"}>{fp.status}</Badge></TableCell>
-                </TableRow>
-              ))}
-              {farmerPlans.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+              {farmerPlans.map((fp: any) => {
+                const isOpen = expandedPlan === fp.id;
+                const sched = isOpen ? buildSchedule(fp) : [];
+                const statusVariant = fp.status === "active" ? "default" : fp.status === "pending" ? "outline" : fp.status === "rejected" || fp.status === "cancelled" ? "destructive" : "secondary";
+                return (
+                  <Fragment key={fp.id}>
+                    <TableRow>
+                      <TableCell>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setExpandedPlan(isOpen ? null : fp.id)}>
+                          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                        </Button>
+                      </TableCell>
+                      <TableCell>{fmtDate(fp.start_date)}</TableCell>
+                      <TableCell>{(lang === "bn" && fp.farmers?.name_bn) || fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
+                      <TableCell>{planLabel(fp)} <span className="text-xs text-muted-foreground">({fp.savings_plans?.duration_months}mo / {fp.savings_plans?.installment_type})</span></TableCell>
+                      <TableCell>{money(fp.savings_plans?.installment_amount)}</TableCell>
+                      <TableCell>{money(fp.expected_total)}</TableCell>
+                      <TableCell>{money(fp.expected_interest)}</TableCell>
+                      <TableCell className="font-semibold">{money(fp.maturity_amount)}</TableCell>
+                      <TableCell><Badge variant={statusVariant as any}>{fp.status}</Badge></TableCell>
+                      <TableCell className="text-right">
+                        {isCommittee && fp.status === "pending" && (<>
+                          <Button size="icon" variant="ghost" onClick={() => approvePlan(fp.id)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => rejectPlan(fp.id)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                        </>)}
+                        {isCommittee && (fp.status === "active" || fp.status === "pending") && (
+                          <Button size="icon" variant="ghost" onClick={() => cancelPlan(fp.id)} title="Cancel enrollment"><Ban className="h-4 w-4 text-destructive" /></Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    {isOpen && (
+                      <TableRow className="bg-muted/30">
+                        <TableCell></TableCell>
+                        <TableCell colSpan={9} className="py-2">
+                          <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">
+                            Installment Schedule — {sched.length} {fp.savings_plans?.installment_type} installments
+                            {fp.cancel_reason && <span className="ml-3 text-destructive normal-case">Cancelled: {fp.cancel_reason}</span>}
+                          </div>
+                          <div className="max-h-64 overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="text-xs text-muted-foreground sticky top-0 bg-muted/30"><tr><th className="text-left py-1">#</th><th className="text-left">Due Date</th><th className="text-right">Amount</th></tr></thead>
+                              <tbody>
+                                {sched.map(s => (
+                                  <tr key={s.no} className="border-t">
+                                    <td className="py-1">{s.no}</td>
+                                    <td>{fmtDate(s.due_date)}</td>
+                                    <td className="text-right">{money(s.amount)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
+                );
+              })}
+              {farmerPlans.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>
