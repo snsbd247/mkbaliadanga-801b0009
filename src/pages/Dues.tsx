@@ -68,6 +68,7 @@ export default function Dues() {
     const { data: loans } = await supabase
       .from("loans")
       .select("id,farmer_id,total_payable,issued_on,farmers(name_en,farmer_code,mobile)")
+      .is("deleted_at", null)
       .eq("status", "approved");
     const loanIds = (loans ?? []).map((l: any) => l.id);
     let payByLoan = new Map<string, number>();
