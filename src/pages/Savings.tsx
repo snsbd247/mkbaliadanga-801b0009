@@ -35,13 +35,16 @@ export default function Savings() {
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [reportRange, setReportRange] = useState({ from: "", to: "" });
   const [decision, setDecision] = useState<{ id: string; mode: "reject" | "cancel"; reason: string } | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
   
 
-  useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
+  useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, [showDeleted]);
   async function load() {
+    let tq = supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200);
+    tq = showDeleted ? tq.not("deleted_at", "is", null) : tq.is("deleted_at", null);
     const [f, ts, pr, sp, fsp] = await Promise.all([
       supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").order("name_en"),
-      supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
+      tq,
       supabase.from("profiles").select("id,full_name,username"),
       supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
       supabase.from("farmer_savings_plans").select("*, farmers(name_en,name_bn,farmer_code), savings_plans(name,name_bn,duration_months,installment_type,installment_amount,interest_rate,maturity_type)").order("created_at", { ascending: false }),
