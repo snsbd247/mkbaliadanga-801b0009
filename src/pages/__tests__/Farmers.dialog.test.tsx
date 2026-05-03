@@ -140,7 +140,8 @@ describe("Farmers Add/Edit dialog", () => {
     // Wait for the in-flight insert to register, then resolve it
     await waitFor(() => expect(insertCalls.length).toBeGreaterThan(0));
     expect(saveBtn).toBeDisabled();
-    expect(nameInput).toBeDisabled();
+    const liveName = document.querySelector('input[maxlength="100"]') as HTMLInputElement;
+    expect(liveName).toBeDisabled();
 
     await act(async () => {
       insertResolver?.({ data: { id: "new-id" }, error: null });
