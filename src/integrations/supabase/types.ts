@@ -2817,6 +2817,32 @@ export type Database = {
       current_user_office: { Args: never; Returns: string }
       data_integrity_scan: { Args: never; Returns: Json }
       email_for_username: { Args: { _username: string }; Returns: string }
+      farmer_loan_statement: {
+        Args: { _farmer_id: string; _from?: string; _to?: string }
+        Returns: {
+          balance: number
+          credit: number
+          debit: number
+          description: string
+          entry_date: string
+          id: string
+          reference_id: string
+          reference_type: string
+        }[]
+      }
+      farmer_savings_statement: {
+        Args: { _farmer_id: string; _from?: string; _to?: string }
+        Returns: {
+          balance: number
+          credit: number
+          debit: number
+          description: string
+          entry_date: string
+          id: string
+          reference_id: string
+          reference_type: string
+        }[]
+      }
       generate_farmer_account_number: {
         Args: { p_created_at: string; p_office_id: string }
         Returns: string
