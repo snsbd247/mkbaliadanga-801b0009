@@ -26,6 +26,7 @@ type Row = {
 
 export default function VoterList() {
   const { t } = useLang();
+  const { officeId, isSuper } = useAuth();
   const nav = useNavigate();
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
