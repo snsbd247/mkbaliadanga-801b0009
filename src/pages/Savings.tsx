@@ -27,19 +27,55 @@ export default function Savings() {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "" });
+  const [plans, setPlans] = useState<any[]>([]);
+  const [farmerPlans, setFarmerPlans] = useState<any[]>([]);
+  const [planOpen, setPlanOpen] = useState(false);
+  const [planForm, setPlanForm] = useState({ farmer_id: "", plan_id: "", start_date: new Date().toISOString().slice(0, 10) });
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
   async function load() {
-    const [f, ts, pr] = await Promise.all([
+    const [f, ts, pr, sp, fsp] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code,member_no,mobile,village").order("name_en"),
       supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("id,full_name,username"),
+      supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
+      supabase.from("farmer_savings_plans").select("*, farmers(name_en,farmer_code), savings_plans(name,name_bn,duration_months,installment_type,installment_amount,interest_rate,maturity_type)").order("created_at", { ascending: false }),
     ]);
     setFarmers(f.data ?? []);
     setTxns(ts.data ?? []);
+    setPlans(sp.data ?? []);
+    setFarmerPlans(fsp.data ?? []);
     const map: Record<string, string> = {};
     (pr.data ?? []).forEach((p: any) => { map[p.id] = p.full_name || p.username || p.id.slice(0, 6); });
     setProfiles(map);
+  }
+  function calcMaturity(plan: any) {
+    const n = plan.installment_type === "daily" ? plan.duration_months * 30
+      : plan.installment_type === "weekly" ? Math.floor(plan.duration_months * 30 / 7)
+      : plan.duration_months;
+    const total = Number(plan.installment_amount) * n;
+    const r = Number(plan.interest_rate) / 100;
+    const years = plan.duration_months / 12;
+    const interest = plan.maturity_type === "compound"
+      ? total * (Math.pow(1 + r, years) - 1)
+      : total * r * years;
+    return { total, interest, maturity: total + interest, count: n };
+  }
+  async function enrollPlan() {
+    if (!planForm.farmer_id || !planForm.plan_id) return toast.error("Select farmer and plan");
+    const plan = plans.find(p => p.id === planForm.plan_id);
+    const c = calcMaturity(plan);
+    const { error } = await supabase.from("farmer_savings_plans").insert({
+      farmer_id: planForm.farmer_id,
+      plan_id: planForm.plan_id,
+      start_date: planForm.start_date,
+      expected_total: c.total,
+      expected_interest: c.interest,
+      maturity_amount: c.maturity,
+      created_by: user?.id,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Enrolled"); setPlanOpen(false); load();
   }
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
@@ -126,10 +162,68 @@ export default function Savings() {
           <TabsTrigger value="all">{t("all")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
           <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
+          <TabsTrigger value="plans">Plans {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
         </TabsList>
         <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} onDecide={decide} onPrint={printReceipt} profiles={profiles} /></TabsContent>
         <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} onDecide={decide} onPrint={printReceipt} profiles={profiles} /></TabsContent>
         <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} onDecide={decide} onPrint={printReceipt} profiles={profiles} historyMode /></TabsContent>
+        <TabsContent value="plans">
+          <Card className="p-3 mb-3 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">Enroll farmers in defined savings plans. Plans drive maturity calculations and are managed in <a href="/savings-plans" className="underline">Savings Plans</a>.</div>
+            <Dialog open={planOpen} onOpenChange={setPlanOpen}>
+              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Enroll Farmer</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Enroll in Savings Plan</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div><Label>Farmer</Label>
+                    <Select value={planForm.farmer_id} onValueChange={v => setPlanForm({ ...planForm, farmer_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Plan</Label>
+                    <Select value={planForm.plan_id} onValueChange={v => setPlanForm({ ...planForm, plan_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>{plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} ৳{p.installment_amount} @ {p.interest_rate}% ({p.maturity_type})</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Start Date</Label><Input type="date" value={planForm.start_date} onChange={e => setPlanForm({ ...planForm, start_date: e.target.value })} /></div>
+                  {planForm.plan_id && (() => { const p = plans.find(x => x.id === planForm.plan_id); if (!p) return null; const c = calcMaturity(p); return (
+                    <div className="rounded-md bg-muted p-2 text-sm space-y-1">
+                      <div>Installments: <b>{c.count}</b></div>
+                      <div>Total deposits: <b>{money(c.total)}</b></div>
+                      <div>Expected interest: <b>{money(c.interest)}</b></div>
+                      <div>Maturity amount: <b>{money(c.maturity)}</b></div>
+                    </div>
+                  ); })()}
+                </div>
+                <DialogFooter><Button variant="outline" onClick={() => setPlanOpen(false)}>{t("cancel")}</Button><Button onClick={enrollPlan}>{t("save")}</Button></DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </Card>
+          <Card><Table>
+            <TableHeader><TableRow>
+              <TableHead>Start</TableHead><TableHead>Farmer</TableHead><TableHead>Plan</TableHead>
+              <TableHead>Installment</TableHead><TableHead>Expected Total</TableHead>
+              <TableHead>Interest</TableHead><TableHead>Maturity</TableHead><TableHead>Status</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {farmerPlans.map((fp: any) => (
+                <TableRow key={fp.id}>
+                  <TableCell>{fmtDate(fp.start_date)}</TableCell>
+                  <TableCell>{fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
+                  <TableCell>{fp.savings_plans?.name} <span className="text-xs text-muted-foreground">({fp.savings_plans?.duration_months}mo / {fp.savings_plans?.installment_type})</span></TableCell>
+                  <TableCell>{money(fp.savings_plans?.installment_amount)}</TableCell>
+                  <TableCell>{money(fp.expected_total)}</TableCell>
+                  <TableCell>{money(fp.expected_interest)}</TableCell>
+                  <TableCell className="font-semibold">{money(fp.maturity_amount)}</TableCell>
+                  <TableCell><Badge variant={fp.status === "active" ? "default" : "secondary"}>{fp.status}</Badge></TableCell>
+                </TableRow>
+              ))}
+              {farmerPlans.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            </TableBody>
+          </Table></Card>
+        </TabsContent>
       </Tabs>
     </>
   );
