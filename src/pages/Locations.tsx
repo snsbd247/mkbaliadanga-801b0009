@@ -335,7 +335,7 @@ function LevelTab({ level }: { level: Level }) {
     setSaving(true);
     const payload: any = { name: editName.trim(), name_bn: editNameBn.trim() || null };
     if (directCol) payload[directCol] = editChain[directCol];
-    if (optionalCol) payload[optionalCol] = editOptionalWardId || null;
+    if (optionalCol) payload[optionalCol] = editChain[optionalCol] || null;
 
     const { error } = await (supabase.from as any)(level).update(payload).eq("id", editing.id);
     setSaving(false);
