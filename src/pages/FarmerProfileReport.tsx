@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Download, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -124,7 +124,7 @@ export default function FarmerProfileReport() {
     };
   }, [id]);
 
-  const savingsSummary = useMemo(() => {
+  const savingsSummary = (() => {
     const approved = savings.filter((row) => row.status === "approved");
     const deposits = approved
       .filter((row) => row.type === "deposit")
@@ -136,9 +136,10 @@ export default function FarmerProfileReport() {
       totalAmount: deposits > 0 ? deposits.toFixed(0) : "0",
       shareAmount: Number(share?.balance ?? 0).toFixed(0),
     };
-  }, [farmer, savings, share]);
+  })();
 
-  const loanRows = useMemo(() => {
+  const loanRows = loans.map((loan) => {
+    const paid = (loan.loan_payments ?? []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
     return loans.map((loan) => {
       const paid = (loan.loan_payments ?? []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
       return {
@@ -152,9 +153,9 @@ export default function FarmerProfileReport() {
         due_amount: safeNumber(Number(loan.total_payable || 0) - paid),
       };
     });
-  }, [loans]);
+  });
 
-  const ownerByYear = useMemo(() => {
+  const ownerByYear = (() => {
     const map = new Map<number, any[]>();
     ownerRows.forEach((r) => {
       const y = r.irrigation_year || new Date().getFullYear();
@@ -162,7 +163,7 @@ export default function FarmerProfileReport() {
       map.get(y)!.push(r);
     });
     return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
-  }, [ownerRows]);
+  })();
 
   useEffect(() => {
     if (!farmer) return;
