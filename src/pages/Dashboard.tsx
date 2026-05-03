@@ -37,14 +37,14 @@ export default function Dashboard() {
   async function load() {
     const today = new Date().toISOString().slice(0, 10);
     const [farmers, savings, shares, loans, irrigations, payments, pendingW, pendingL] = await Promise.all([
-      supabase.from("farmers").select("id,status"),
-      supabase.from("savings_transactions").select("type,amount,status"),
+      supabase.from("farmers").select("id,status").is("deleted_at", null),
+      supabase.from("savings_transactions").select("type,amount,status").is("deleted_at", null),
       supabase.from("shares").select("balance"),
-      supabase.from("loans").select("principal,total_payable,status"),
-      supabase.from("irrigation_charges").select("total,paid_amount,due_amount"),
-      supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").order("created_at", { ascending: false }).limit(8),
-      supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").eq("status", "pending").eq("type", "withdraw"),
-      supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").eq("status", "pending"),
+      supabase.from("loans").select("principal,total_payable,status").is("deleted_at", null),
+      supabase.from("irrigation_charges").select("total,paid_amount,due_amount").is("deleted_at", null),
+      supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+      supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw"),
+      supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending"),
     ]);
 
     const farmersData = farmers.data ?? [];
@@ -62,7 +62,7 @@ export default function Dashboard() {
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
     const { data: monthPayAll } = await supabase
-      .from("payments").select("amount,created_at").gte("created_at", monthStart);
+      .from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart);
     const monthCollect = sum(monthPayAll ?? [], "amount");
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
@@ -97,9 +97,9 @@ export default function Dashboard() {
     }
     const fromIso = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
     const [pAll, eAll, sAll] = await Promise.all([
-      supabase.from("payments").select("amount,created_at").gte("created_at", fromIso),
-      supabase.from("expenses").select("amount,expense_date").gte("expense_date", fromIso),
-      supabase.from("savings_transactions").select("type,amount,txn_date,status").eq("status", "approved").gte("txn_date", fromIso),
+      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", fromIso),
+      supabase.from("expenses").select("amount,expense_date").is("deleted_at", null).gte("expense_date", fromIso),
+      supabase.from("savings_transactions").select("type,amount,txn_date,status").is("deleted_at", null).eq("status", "approved").gte("txn_date", fromIso),
     ]);
     (pAll.data ?? []).forEach((p: any) => {
       const m = months.find(x => x.key === p.created_at.slice(0, 7)); if (m) m.income += Number(p.amount || 0);
@@ -125,6 +125,7 @@ export default function Dashboard() {
     const { data: irrDue } = await supabase
       .from("irrigation_charges")
       .select("farmer_id,due_amount,farmers(name_en,farmer_code)")
+      .is("deleted_at", null)
       .gt("due_amount", 0);
     (irrDue ?? []).forEach((r: any) => {
       const key = r.farmer_id;

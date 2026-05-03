@@ -57,7 +57,7 @@ export default function IrrigationDueReport() {
       let q = supabase.from("irrigation_charges").select(
         "farmer_id,land_id,season_id,total,paid_amount,due_amount,office_id," +
         "farmers(name_en,farmer_code),lands(mouza,dag_no,land_size),seasons(name,year,type)"
-      ).limit(5000);
+      ).is("deleted_at", null).limit(5000);
       if (officeId !== "all") q = q.eq("office_id", officeId);
       if (seasonId !== "all") q = q.eq("season_id", seasonId);
       const { data, error } = await q;

@@ -40,6 +40,7 @@ export function SavingsStatement({ farmer }: Props) {
       .select("type,amount")
       .eq("farmer_id", farmer.id)
       .eq("status", "approved")
+      .is("deleted_at", null)
       .lt("txn_date", yearStart);
     const priorBal = (prior ?? []).reduce((s, r: any) => s + (r.type === "deposit" ? +r.amount : -r.amount), 0);
     setPriorBalance(priorBal);
@@ -50,6 +51,7 @@ export function SavingsStatement({ farmer }: Props) {
       .from("savings_transactions")
       .select("*")
       .eq("farmer_id", farmer.id)
+      .is("deleted_at", null)
       .gte("txn_date", yearStart)
       .lte("txn_date", yearEnd)
       .order("txn_date", { ascending: true });

@@ -35,11 +35,11 @@ export default function Approvals() {
   const reload = async () => {
     const [{ data: s }, { data: p }, { data: l }] = await Promise.all([
       supabase.from("savings_transactions").select("id,txn_date,amount,type,status,note,farmer_id,farmers(name_en,farmer_code)")
-        .eq("type", "withdraw").eq("status", "pending").order("txn_date", { ascending: false }),
+        .is("deleted_at", null).eq("type", "withdraw").eq("status", "pending").order("txn_date", { ascending: false }),
       supabase.from("loan_payments").select("id,paid_on,amount,status,loan_id,loans(farmer_id,farmers(name_en,farmer_code))")
         .eq("status", "pending").order("paid_on", { ascending: false }),
       supabase.from("loans").select("id,issued_on,principal,total_payable,status,note,farmer_id,farmers(name_en,farmer_code)")
-        .eq("status", "pending").order("issued_on", { ascending: false }),
+        .is("deleted_at", null).eq("status", "pending").order("issued_on", { ascending: false }),
     ]);
     setSavings((s as any[]) || []);
     setPayments((p as any[]) || []);

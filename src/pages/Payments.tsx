@@ -64,14 +64,14 @@ export default function Payments() {
   async function load() {
     const [f, p] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
-      supabase.from("payments").select("*, farmers(name_en,farmer_code), payment_allocations(*)").order("created_at", { ascending: false }).limit(100),
+      supabase.from("payments").select("*, farmers(name_en,farmer_code), payment_allocations(*)").is("deleted_at", null).order("created_at", { ascending: false }).limit(100),
     ]);
     setFarmers(f.data ?? []); setList(p.data ?? []);
   }
   async function loadDues() {
     const [l, i] = await Promise.all([
       supabase.from("loans").select("id,principal,total_payable,issued_on,loan_payments(amount)").eq("farmer_id", farmerId).eq("status", "approved"),
-      supabase.from("irrigation_charges").select("id,total,paid_amount,due_amount,entry_date").eq("farmer_id", farmerId).gt("due_amount", 0),
+      supabase.from("irrigation_charges").select("id,total,paid_amount,due_amount,entry_date").eq("farmer_id", farmerId).is("deleted_at", null).gt("due_amount", 0),
     ]);
     setOpenLoans(l.data ?? []); setOpenIrr(i.data ?? []);
   }

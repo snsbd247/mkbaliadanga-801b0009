@@ -48,6 +48,7 @@ export default function Dues() {
     const { data: irr } = await supabase
       .from("irrigation_charges")
       .select("farmer_id,due_amount,entry_date,seasons(name,year),farmers(name_en,farmer_code,mobile)")
+      .is("deleted_at", null)
       .gt("due_amount", 0);
     (irr ?? []).forEach((r: any) => {
       const days = Math.max(0, Math.floor((today - new Date(r.entry_date).getTime()) / 86400000));
@@ -67,6 +68,7 @@ export default function Dues() {
     const { data: loans } = await supabase
       .from("loans")
       .select("id,farmer_id,total_payable,issued_on,farmers(name_en,farmer_code,mobile)")
+      .is("deleted_at", null)
       .eq("status", "approved");
     const loanIds = (loans ?? []).map((l: any) => l.id);
     let payByLoan = new Map<string, number>();
