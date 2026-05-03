@@ -186,33 +186,50 @@ export default function FarmerDetail() {
         <TabsContent value="lands">
           <Card>
             <div className="flex justify-end p-3 border-b">
-              <Dialog open={openLand} onOpenChange={setOpenLand}>
+              <Dialog open={openLand} onOpenChange={(o) => {
+                setOpenLand(o);
+                if (!o) {
+                  setLand({ dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+                  setLandLoc({});
+                  setLandLocErr(null);
+                }
+              }}>
                 <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
                 <DialogContent>
                   <DialogHeader><DialogTitle>{t("addNew")} — {t("lands")}</DialogTitle></DialogHeader>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>{t("mouza")}</Label><Input value={land.mouza} onChange={e => setLand({ ...land, mouza: e.target.value })} /></div>
-                    <div><Label>{t("dagNo")}</Label><Input value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
-                    <div><Label>{t("landSize")}</Label><Input type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
-                    <div><Label>{t("ownerType")}</Label>
-                      <Select value={land.owner_type} onValueChange={v => setLand({ ...land, owner_type: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
-                      </Select>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">{t("location" as any) || "Location"}</Label>
+                      <LocationPicker
+                        value={landLoc}
+                        onChange={(v) => { setLandLoc(v); if (landLocErr) setLandLocErr(null); }}
+                        errorLevel={landLocErr?.level ?? null}
+                        errorMessage={landLocErr?.message ?? null}
+                      />
                     </div>
-                    <div className="col-span-2"><Label>{t("fieldType")}</Label>
-                      <Select value={land.field_type} onValueChange={v => setLand({ ...land, field_type: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="high_land">{t("highLand")}</SelectItem>
-                          <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
-                          <SelectItem value="low_land">{t("lowLand")}</SelectItem>
-                          <SelectItem value="other">{t("other")}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>{t("dagNo")}</Label><Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
+                      <div><Label>{t("landSize")}</Label><Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
+                      <div><Label>{t("ownerType")}</Label>
+                        <Select value={land.owner_type} disabled={savingLand} onValueChange={v => setLand({ ...land, owner_type: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label>{t("fieldType")}</Label>
+                        <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="high_land">{t("highLand")}</SelectItem>
+                            <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
+                            <SelectItem value="low_land">{t("lowLand")}</SelectItem>
+                            <SelectItem value="other">{t("other")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                  <DialogFooter><Button variant="outline" onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand}>{t("save")}</Button></DialogFooter>
+                  <DialogFooter><Button variant="outline" disabled={savingLand} onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand} disabled={savingLand}>{savingLand ? "…" : t("save")}</Button></DialogFooter>
                 </DialogContent>
               </Dialog>
             </div>
