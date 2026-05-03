@@ -34,12 +34,15 @@ export default function Loans() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [showDeleted, setShowDeleted] = useState(false);
 
-  useEffect(() => { document.title = `${t("loans")} — ${t("appName")}`; load(); }, []);
+  useEffect(() => { document.title = `${t("loans")} — ${t("appName")}`; load(); }, [showDeleted]);
   async function load() {
+    let lq = supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by), loan_plans(name,name_bn,installment_type,duration_months)").order("created_at", { ascending: false }).limit(200);
+    lq = showDeleted ? lq.not("deleted_at", "is", null) : lq.is("deleted_at", null);
     const [f, l, pr, lp] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code,member_no,mobile,village").order("name_en"),
-      supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by), loan_plans(name,name_bn,installment_type,duration_months)").is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
+      lq,
       supabase.from("profiles").select("id,full_name,username"),
       supabase.from("loan_plans").select("*").eq("is_active", true).order("name"),
     ]);
