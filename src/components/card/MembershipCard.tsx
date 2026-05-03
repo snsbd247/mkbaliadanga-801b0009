@@ -131,8 +131,7 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
           </div>
         </div>
       </div>
-        </div>
-      </div>
+
 
       {/* BACK */}
       <div
