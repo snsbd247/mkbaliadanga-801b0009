@@ -313,30 +313,36 @@ export default function Farmers() {
           <Label>Is Voter</Label>
           <div className="flex items-center gap-3 h-10">
             <Switch
-              checked={!!f.voter_number}
+              checked={!!f.is_voter}
               disabled={disabled}
               onCheckedChange={async (on) => {
                 if (on) {
-                  if (f.voter_number) return;
+                  if (f.voter_number) {
+                    setF({ ...f, is_voter: true });
+                    return;
+                  }
                   const { data, error } = await supabase.rpc("generate_farmer_voter_number");
                   if (error) { toast.error(error.message); return; }
-                  setF({ ...f, voter_number: String(data ?? "") });
+                  setF({ ...f, is_voter: true, voter_number: String(data ?? "") });
                 } else {
-                  setF({ ...f, voter_number: "" });
+                  setF({ ...f, is_voter: false });
                 }
               }}
               data-testid="voter-toggle"
             />
             <Input
               value={f.voter_number ?? ""}
-              disabled={disabled || !f.voter_number}
+              disabled
+              readOnly
               inputMode="numeric"
               maxLength={20}
-              onChange={(e) => setF({ ...f, voter_number: e.target.value.replace(/\D/g, "") })}
-              placeholder="auto"
+              placeholder={f.is_voter ? "auto" : "—"}
               className="font-mono"
             />
           </div>
+          {f.voter_number && !f.is_voter && (
+            <p className="mt-1 text-xs text-muted-foreground">Voter number is permanent and will be reused if re-enabled.</p>
+          )}
         </div>
         <div>
           <Label>{t("office")}</Label>
