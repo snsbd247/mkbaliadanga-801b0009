@@ -178,6 +178,14 @@ export default function Loans() {
         </Dialog>
       } />
 
+      <Card className="p-3 mb-3 flex items-center gap-3">
+        <Label className="text-sm flex items-center gap-2 cursor-pointer">
+          <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+          Show archived
+        </Label>
+        {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted loans only.</span>}
+      </Card>
+
       <Tabs defaultValue="approved">
         <TabsList>
           <TabsTrigger value="approved">Active / Paid</TabsTrigger>
@@ -196,7 +204,9 @@ export default function Loans() {
               rows={rows}
               t={t}
               isCommittee={isCommittee}
+              showDeleted={showDeleted}
               onDecide={decide}
+              onRestore={restore}
               onPrint={printLoanReceipt}
               profiles={profiles}
               expanded={expanded}
@@ -210,7 +220,7 @@ export default function Loans() {
   );
 }
 
-function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded, setExpanded, installments }: any) {
+function LoanTable({ rows, t, isCommittee, showDeleted, onDecide, onRestore, onPrint, profiles, expanded, setExpanded, installments }: any) {
   return (
     <Card className="overflow-x-auto"><Table>
       <TableHeader><TableRow>
