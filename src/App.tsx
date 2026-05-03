@@ -56,6 +56,7 @@ import CollectionReport from "./pages/reports/CollectionReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
 import FarmersImport from "./pages/FarmersImport";
 import VoterList from "./pages/VoterList";
+import VoterAudit from "./pages/VoterAudit";
 import SavingsPlans from "./pages/SavingsPlans";
 import LoanPlans from "./pages/LoanPlans";
 import NotFound from "./pages/NotFound.tsx";
