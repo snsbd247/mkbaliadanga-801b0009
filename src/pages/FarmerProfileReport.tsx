@@ -1,0 +1,509 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Download, Printer } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { useBranding } from "@/lib/branding";
+
+function safeText(value: unknown) {
+  if (value === null || value === undefined || value === "") return "";
+  return String(value);
+}
+
+function safeNumber(value: unknown, fallback = "0") {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? String(n) : fallback;
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "";
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return String(value);
+  return dt.toLocaleDateString("en-GB");
+}
+
+export default function FarmerProfileReport() {
+  const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const nav = useNavigate();
+  const brand = useBranding();
+  const [loading, setLoading] = useState(true);
+  const [farmer, setFarmer] = useState<any>(null);
+  const [savings, setSavings] = useState<any[]>([]);
+  const [share, setShare] = useState<any>(null);
+  const [loans, setLoans] = useState<any[]>([]);
+  const [ownerRows, setOwnerRows] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    let ignore = false;
+
+    async function load() {
+      setLoading(true);
+      const [f, s, sh, ln, ir, rel] = await Promise.all([
+        supabase.from("farmers").select("*").eq("id", id).maybeSingle(),
+        supabase.from("savings_transactions").select("*").eq("farmer_id", id),
+        supabase.from("shares").select("balance").eq("farmer_id", id).maybeSingle(),
+        supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).order("issued_on", { ascending: false }),
+        supabase
+          .from("irrigation_charges")
+          .select("id, total, due_amount, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type)")
+          .eq("farmer_id", id)
+          .order("entry_date", { ascending: false }),
+        supabase
+          .from("land_relations")
+          .select("land_id, valid_to, sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en, farmer_code)")
+          .eq("owner_farmer_id", id),
+      ]);
+
+      if (ignore) return;
+
+      const activeRelationByLand = new Map<string, any>();
+      (rel.data ?? []).forEach((row: any) => {
+        if (!row.land_id) return;
+        if (!row.valid_to && !activeRelationByLand.has(row.land_id)) {
+          activeRelationByLand.set(row.land_id, row);
+        }
+      });
+
+      const ownerInformation = (ir.data ?? []).map((row: any) => {
+        const relation = activeRelationByLand.get(row.land_id);
+        const sc = relation?.sc;
+        const ownerTypeValue = row.lands?.owner_type === "borgadar" ? "বর্গাদার" : "মালিক";
+        const ownerTypeCell = sc?.name_en
+          ? `${safeText(sc.name_en)}-${safeText(sc.farmer_code)} /${ownerTypeValue}`
+          : ownerTypeValue;
+
+        return {
+          id: row.id,
+          mouza: safeText(row.lands?.mouza),
+          season: row.seasons?.name ? `${safeText(row.seasons.name)}, ${safeText(row.seasons.year)}` : "",
+          dag_no: safeText(row.lands?.dag_no),
+          owner_name_fid: `${safeText(f.data?.name_en)} - ${safeText(f.data?.farmer_code)}`.trim(),
+          owner_type: ownerTypeCell,
+          land_size: row.lands?.land_size !== null && row.lands?.land_size !== undefined ? Number(row.lands.land_size).toFixed(6) : "",
+          field_type: safeText(row.lands?.field_type),
+          irrigation_year: safeText(row.seasons?.year),
+        };
+      });
+
+      setFarmer(f.data ?? null);
+      setSavings(s.data ?? []);
+      setShare(sh.data ?? null);
+      setLoans(ln.data ?? []);
+      setOwnerRows(ownerInformation);
+      setLoading(false);
+    }
+
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [id]);
+
+  const savingsSummary = useMemo(() => {
+    const approved = savings.filter((row) => row.status === "approved");
+    const deposits = approved
+      .filter((row) => row.type === "deposit")
+      .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+
+    return {
+      accountNo: safeText(farmer?.member_no || farmer?.farmer_code),
+      activeStatus: farmer?.status === "active" ? "Active" : safeText(farmer?.status),
+      totalAmount: deposits > 0 ? deposits.toFixed(0) : "0",
+      shareAmount: Number(share?.balance ?? 0).toFixed(0),
+    };
+  }, [farmer, savings, share]);
+
+  const loanRows = useMemo(() => {
+    return loans.map((loan) => {
+      const paid = (loan.loan_payments ?? []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
+      return {
+        id: loan.id,
+        loan_account: safeText(loan.id).slice(0, 8).toUpperCase(),
+        loan_amount: safeNumber(loan.principal),
+        interest_rate: loan.interest_rate !== null && loan.interest_rate !== undefined ? `${loan.interest_rate}` : "0",
+        total_loan_amount: safeNumber(loan.total_payable),
+        issue_date: formatDate(loan.issued_on),
+        next_due_date: formatDate(loan.next_due_on),
+        due_amount: safeNumber(Number(loan.total_payable || 0) - paid),
+      };
+    });
+  }, [loans]);
+
+  useEffect(() => {
+    if (!farmer) return;
+    document.title = `${safeText(farmer.farmer_code)} report`;
+  }, [farmer]);
+
+  useEffect(() => {
+    if (!loading && searchParams.get("print") === "1") {
+      const timer = window.setTimeout(() => window.print(), 250);
+      return () => window.clearTimeout(timer);
+    }
+  }, [loading, searchParams]);
+
+  if (loading) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading report...</div>;
+  }
+
+  if (!farmer) {
+    return <div className="p-6 text-sm text-muted-foreground">Farmer not found.</div>;
+  }
+
+  const irrigationYear = ownerRows.find((row) => row.irrigation_year)?.irrigation_year || new Date().getFullYear();
+  const logoSrc = brand.logo_url || "/placeholder.svg";
+
+  return (
+    <>
+      <style>{`
+        @page {
+          size: A4 portrait;
+          margin: 10mm 10mm 12mm 10mm;
+        }
+
+        .farmer-report-page {
+          background: white;
+          color: #1f1f1f;
+          min-height: 100vh;
+          font-family: "Times New Roman", Times, serif;
+        }
+
+        .farmer-report-toolbar {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          padding: 12px 16px 0;
+        }
+
+        .farmer-report-sheet {
+          width: 100%;
+          max-width: 1060px;
+          margin: 0 auto;
+          padding: 20px 24px 40px;
+        }
+
+        .farmer-report-header {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 6px;
+        }
+
+        .farmer-report-logo {
+          max-height: 52px;
+          width: auto;
+          object-fit: contain;
+          margin-bottom: 2px;
+        }
+
+        .farmer-report-org {
+          font-size: 14px;
+          line-height: 1.1;
+          font-weight: 700;
+          text-align: center;
+        }
+
+        .farmer-report-subtitle {
+          font-size: 13px;
+          line-height: 1.05;
+          font-weight: 700;
+          text-align: center;
+          margin-top: 2px;
+          margin-bottom: 4px;
+        }
+
+        .farmer-report-rule {
+          border: 1px solid #9e9e9e;
+          height: 30px;
+          margin-bottom: 4px;
+        }
+
+        .farmer-section-title {
+          font-size: 11px;
+          font-weight: 400;
+          line-height: 1.1;
+          margin: 0 0 3px 0;
+        }
+
+        .farmer-year-row {
+          font-size: 10px;
+          text-align: center;
+          border: 1px solid #9e9e9e;
+          border-bottom: 0;
+          padding: 2px 0;
+          margin-top: -1px;
+        }
+
+        .farmer-table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+          margin-bottom: 22px;
+        }
+
+        .farmer-table th,
+        .farmer-table td {
+          border: 1px solid #9e9e9e;
+          padding: 2px 4px;
+          font-size: 10px;
+          line-height: 1.05;
+          vertical-align: middle;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+
+        .farmer-table th {
+          background: #aeb9c9;
+          color: #1a1a1a;
+          text-align: center;
+          font-weight: 700;
+        }
+
+        .farmer-table td {
+          text-align: center;
+        }
+
+        .farmer-table td.text-left,
+        .farmer-table th.text-left {
+          text-align: left;
+        }
+
+        .farmer-table.compact-gap {
+          margin-bottom: 18px;
+        }
+
+        .field-type-cell {
+          white-space: nowrap;
+        }
+
+        @media screen {
+          .farmer-report-page {
+            background: hsl(var(--muted));
+          }
+
+          .farmer-report-sheet {
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            min-height: calc(100vh - 24px);
+          }
+        }
+
+        @media print {
+          body {
+            background: white !important;
+          }
+
+          .farmer-report-toolbar {
+            display: none !important;
+          }
+
+          .farmer-report-sheet {
+            box-shadow: none !important;
+            max-width: none;
+            padding: 0;
+          }
+
+          .farmer-table,
+          .farmer-table thead,
+          .farmer-table tbody,
+          .farmer-table tr,
+          .farmer-table td,
+          .farmer-table th {
+            page-break-inside: avoid !important;
+          }
+        }
+      `}</style>
+
+      <div className="farmer-report-page">
+        <div className="farmer-report-toolbar print:hidden">
+          <Button variant="outline" size="sm" onClick={() => nav(-1)}>
+            <ArrowLeft className="mr-1 h-4 w-4" />Back
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="mr-1 h-4 w-4" />Print
+          </Button>
+          <Button size="sm" onClick={() => window.print()}>
+            <Download className="mr-1 h-4 w-4" />PDF
+          </Button>
+        </div>
+
+        <div className="farmer-report-sheet">
+          <div className="farmer-report-header">
+            <img src={logoSrc} alt={brand.company_name} className="farmer-report-logo" />
+            <div className="farmer-report-org">{brand.company_name_bn || brand.company_name}</div>
+            <div className="farmer-report-subtitle">এক নজরে কৃষকের তথ্য</div>
+          </div>
+
+          <div className="farmer-report-rule" />
+
+          <div className="farmer-section-title">Farmer Information</div>
+          <table className="farmer-table compact-gap">
+            <colgroup>
+              <col style={{ width: "4%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "19.5%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "4%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "5.5%" }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>FID</th>
+                <th>Name(EN)</th>
+                <th>Name(BN)</th>
+                <th>Father Name</th>
+                <th>Mother Name</th>
+                <th>NID</th>
+                <th>Mobile No</th>
+                <th>Village</th>
+                <th>Post</th>
+                <th>Upazila</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{safeText(farmer.farmer_code)}</td>
+                <td>{safeText(farmer.name_en)}</td>
+                <td>{safeText(farmer.name_bn)}</td>
+                <td>{safeText(farmer.father_name)}</td>
+                <td>{safeText(farmer.mother_name)}</td>
+                <td>{safeText(farmer.nid)}</td>
+                <td>{safeText(farmer.mobile)}</td>
+                <td>{safeText(farmer.village)}</td>
+                <td>{safeText(farmer.post_office || farmer.upazila)}</td>
+                <td>{safeText(farmer.upazila)}</td>
+                <td>{safeText(farmer.address || farmer.village)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="farmer-section-title">Savings Deposit Information</div>
+          <table className="farmer-table compact-gap">
+            <colgroup>
+              <col style={{ width: "22%" }} />
+              <col style={{ width: "24%" }} />
+              <col style={{ width: "26%" }} />
+              <col style={{ width: "28%" }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Account No</th>
+                <th>Active Status</th>
+                <th>Total Amount</th>
+                <th>Share Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{savingsSummary.accountNo}</td>
+                <td>{savingsSummary.activeStatus}</td>
+                <td>{savingsSummary.totalAmount}</td>
+                <td>{savingsSummary.shareAmount}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="farmer-section-title">Owner Information</div>
+          <div className="farmer-year-row">সেচ বর্ষ: {irrigationYear}</div>
+          <table className="farmer-table compact-gap">
+            <colgroup>
+              <col style={{ width: "4.5%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "42.5%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "13%" }} />
+              <col style={{ width: "6.5%" }} />
+              <col style={{ width: "11.5%" }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Mouza</th>
+                <th>Season</th>
+                <th>Dag No</th>
+                <th>Owner Name - FID</th>
+                <th>Owner Type</th>
+                <th>Land Size</th>
+                <th>Field Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(ownerRows.length ? ownerRows : [{
+                id: "empty-owner-row",
+                mouza: "",
+                season: "",
+                dag_no: "",
+                owner_name_fid: "",
+                owner_type: "",
+                land_size: "",
+                field_type: "",
+              }]).map((row) => (
+                <tr key={row.id}>
+                  <td>{row.mouza}</td>
+                  <td>{row.season}</td>
+                  <td>{row.dag_no}</td>
+                  <td>{row.owner_name_fid}</td>
+                  <td>{row.owner_type}</td>
+                  <td>{row.land_size}</td>
+                  <td className="field-type-cell">{row.field_type}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="farmer-section-title">Loan Information</div>
+          <table className="farmer-table">
+            <colgroup>
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "14.5%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "12%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "11.5%" }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Loan Account</th>
+                <th>Loan Amount</th>
+                <th>Interest Rate</th>
+                <th>Total Loan Amt</th>
+                <th>Issue Date</th>
+                <th>Next Due Date</th>
+                <th>Due Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(loanRows.length ? loanRows : [{
+                id: "empty-loan-row",
+                loan_account: "",
+                loan_amount: "",
+                interest_rate: "",
+                total_loan_amount: "",
+                issue_date: "",
+                next_due_date: "",
+                due_amount: "",
+              }]).map((row) => (
+                <tr key={row.id}>
+                  <td>{row.loan_account}</td>
+                  <td>{row.loan_amount}</td>
+                  <td>{row.interest_rate}</td>
+                  <td>{row.total_loan_amount}</td>
+                  <td>{row.issue_date}</td>
+                  <td>{row.next_due_date}</td>
+                  <td>{row.due_amount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}

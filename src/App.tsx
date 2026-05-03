@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Offices from "./pages/Offices";
 import Farmers from "./pages/Farmers";
 import FarmerDetail from "./pages/FarmerDetail";
+import FarmerProfileReport from "./pages/FarmerProfileReport";
 import FarmerCard from "./pages/FarmerCard";
 import ScanPayment from "./pages/ScanPayment";
 import Seasons from "./pages/Seasons";
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/offices" element={<Offices />} />
                 <Route path="/farmers" element={<Farmers />} />
                 <Route path="/farmers/:id" element={<FarmerDetail />} />
+                <Route path="/farmers/:id/report" element={<FarmerProfileReport />} />
                 <Route path="/farmers/:id/card" element={<FarmerCard />} />
                 <Route path="/scan-payment" element={<ScanPayment />} />
                 <Route path="/seasons" element={<Seasons />} />

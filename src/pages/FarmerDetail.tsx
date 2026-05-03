@@ -16,7 +16,6 @@ import { Plus, Printer, FileDown, Receipt } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
-import { exportFarmerReportPDF } from "@/lib/exports";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { LandRelations } from "@/components/LandRelations";
@@ -106,8 +105,8 @@ export default function FarmerDetail() {
         description={`${farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
-          <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
-          <Button onClick={() => exportFarmerReportPDF(farmer, { lands, savings, loans, irr, savingsBal, loanDue, irrDue, share: share?.balance ?? 0 })}>
+          <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
+          <Button onClick={() => nav(`/farmers/${farmer.id}/report`)}>
             <FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}
           </Button>
         </>}
