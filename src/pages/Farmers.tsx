@@ -361,15 +361,15 @@ export default function Farmers() {
             <DialogHeader><DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle></DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); if (!saving) save(); }}>
               {renderFormFields({
-                f={form}
-                setF={(next) => { setForm(next); if (createErr) setCreateErr(null); if (Object.keys(createFieldErrors).length) setCreateFieldErrors({}); }}
-                photoFile={photo}
-                setPhotoFile={setPhoto}
-                err={createErr}
-                fieldErrors={createFieldErrors}
-                disabled={saving}
-                nameInputRef={createNameRef}
-              />
+                f: form,
+                setF: (next) => { setForm(next); if (createErr) setCreateErr(null); if (Object.keys(createFieldErrors).length) setCreateFieldErrors({}); },
+                photoFile: photo,
+                setPhotoFile: setPhoto,
+                err: createErr,
+                fieldErrors: createFieldErrors,
+                disabled: saving,
+                nameInputRef: createNameRef,
+              })}
               <DialogFooter className="mt-6">
                 <Button type="button" variant="outline" onClick={resetCreateForm} disabled={saving}>{t("cancel")}</Button>
                 <Button type="submit" disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
