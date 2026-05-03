@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { LandRelations } from "@/components/LandRelations";
+import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
+import { validateLocationChain } from "@/lib/locationValidation";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
