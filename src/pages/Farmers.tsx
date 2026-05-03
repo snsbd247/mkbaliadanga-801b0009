@@ -450,7 +450,7 @@ export default function Farmers() {
                   {f.name_bn && <div className="text-xs text-muted-foreground">{f.name_bn}</div>}
                 </TableCell>
                 <TableCell>{f.mobile}</TableCell>
-                <TableCell>{f.village}</TableCell>
+                <TableCell>{f.village || f.villages?.name_bn || f.villages?.name || "—"}</TableCell>
                 <TableCell className="text-xs">{f.offices?.name}</TableCell>
                 <TableCell><Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status}</Badge></TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
