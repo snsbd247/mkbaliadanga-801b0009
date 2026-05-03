@@ -513,6 +513,59 @@ export type Database = {
         }
         Relationships: []
       }
+      farmer_savings_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expected_interest: number
+          expected_total: number
+          farmer_id: string
+          id: string
+          maturity_amount: number
+          office_id: string | null
+          plan_id: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expected_interest?: number
+          expected_total?: number
+          farmer_id: string
+          id?: string
+          maturity_amount?: number
+          office_id?: string | null
+          plan_id: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expected_interest?: number
+          expected_total?: number
+          farmer_id?: string
+          id?: string
+          maturity_amount?: number
+          office_id?: string | null
+          plan_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_savings_plans_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "savings_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       farmers: {
         Row: {
           account_number: string | null
@@ -1147,6 +1200,59 @@ export type Database = {
           },
         ]
       }
+      loan_installments: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          id: string
+          installment_no: number
+          loan_id: string
+          office_id: string | null
+          paid_amount: number
+          paid_on: string | null
+          penalty_amount: number
+          status: Database["public"]["Enums"]["installment_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_no: number
+          loan_id: string
+          office_id?: string | null
+          paid_amount?: number
+          paid_on?: string | null
+          penalty_amount?: number
+          status?: Database["public"]["Enums"]["installment_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_no?: number
+          loan_id?: string
+          office_id?: string | null
+          paid_amount?: number
+          paid_on?: string | null
+          penalty_amount?: number
+          status?: Database["public"]["Enums"]["installment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_installments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_payments: {
         Row: {
           amount: number
@@ -1197,6 +1303,57 @@ export type Database = {
           },
         ]
       }
+      loan_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          duration_months: number
+          grace_period_days: number
+          id: string
+          installment_type: Database["public"]["Enums"]["loan_installment_type"]
+          interest_rate: number
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          office_id: string | null
+          penalty_type: Database["public"]["Enums"]["loan_penalty_type"]
+          penalty_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          duration_months: number
+          grace_period_days?: number
+          id?: string
+          installment_type?: Database["public"]["Enums"]["loan_installment_type"]
+          interest_rate?: number
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          office_id?: string | null
+          penalty_type?: Database["public"]["Enums"]["loan_penalty_type"]
+          penalty_value?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          duration_months?: number
+          grace_period_days?: number
+          id?: string
+          installment_type?: Database["public"]["Enums"]["loan_installment_type"]
+          interest_rate?: number
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          office_id?: string | null
+          penalty_type?: Database["public"]["Enums"]["loan_penalty_type"]
+          penalty_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loans: {
         Row: {
           approval_note: string | null
@@ -1205,14 +1362,17 @@ export type Database = {
           created_by: string | null
           farmer_id: string
           id: string
+          installment_amount: number | null
           interest_enabled: boolean
           interest_rate: number
           issued_on: string
           next_due_on: string | null
           note: string | null
           office_id: string | null
+          plan_id: string | null
           principal: number
           status: Database["public"]["Enums"]["loan_status"]
+          total_due: number | null
           total_payable: number
           updated_at: string
         }
@@ -1223,14 +1383,17 @@ export type Database = {
           created_by?: string | null
           farmer_id: string
           id?: string
+          installment_amount?: number | null
           interest_enabled?: boolean
           interest_rate?: number
           issued_on?: string
           next_due_on?: string | null
           note?: string | null
           office_id?: string | null
+          plan_id?: string | null
           principal: number
           status?: Database["public"]["Enums"]["loan_status"]
+          total_due?: number | null
           total_payable?: number
           updated_at?: string
         }
@@ -1241,14 +1404,17 @@ export type Database = {
           created_by?: string | null
           farmer_id?: string
           id?: string
+          installment_amount?: number | null
           interest_enabled?: boolean
           interest_rate?: number
           issued_on?: string
           next_due_on?: string | null
           note?: string | null
           office_id?: string | null
+          plan_id?: string | null
           principal?: number
           status?: Database["public"]["Enums"]["loan_status"]
+          total_due?: number | null
           total_payable?: number
           updated_at?: string
         }
@@ -1265,6 +1431,13 @@ export type Database = {
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loans_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -1757,6 +1930,54 @@ export type Database = {
           can_view?: boolean
           module?: string
           role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      savings_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          duration_months: number
+          id: string
+          installment_amount: number
+          installment_type: Database["public"]["Enums"]["savings_installment_type"]
+          interest_rate: number
+          is_active: boolean
+          maturity_type: Database["public"]["Enums"]["savings_maturity_type"]
+          name: string
+          name_bn: string | null
+          office_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          duration_months: number
+          id?: string
+          installment_amount?: number
+          installment_type?: Database["public"]["Enums"]["savings_installment_type"]
+          interest_rate?: number
+          is_active?: boolean
+          maturity_type?: Database["public"]["Enums"]["savings_maturity_type"]
+          name: string
+          name_bn?: string | null
+          office_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          duration_months?: number
+          id?: string
+          installment_amount?: number
+          installment_type?: Database["public"]["Enums"]["savings_installment_type"]
+          interest_rate?: number
+          is_active?: boolean
+          maturity_type?: Database["public"]["Enums"]["savings_maturity_type"]
+          name?: string
+          name_bn?: string | null
+          office_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2632,8 +2853,11 @@ export type Database = {
       app_role: "super_admin" | "admin" | "staff" | "committee"
       approval_status: "pending" | "approved" | "rejected"
       field_type: "high_land" | "medium_land" | "low_land" | "other"
+      installment_status: "due" | "paid" | "missed" | "partial"
       irrigation_basis: "per_size" | "per_day" | "per_hour"
+      loan_installment_type: "daily" | "weekly" | "monthly"
       loan_payment_status: "pending" | "approved" | "rejected"
+      loan_penalty_type: "percentage" | "fixed"
       loan_status: "pending" | "approved" | "paid" | "rejected"
       owner_type: "owner" | "borgadar"
       payment_kind: "loan" | "savings" | "irrigation"
@@ -2649,6 +2873,8 @@ export type Database = {
         | "savings_deposit"
         | "share"
         | "other"
+      savings_installment_type: "daily" | "monthly"
+      savings_maturity_type: "simple" | "compound"
       savings_txn_type: "deposit" | "withdraw"
       season_type: "aman" | "boro" | "iri" | "other"
     }
@@ -2782,8 +3008,11 @@ export const Constants = {
       app_role: ["super_admin", "admin", "staff", "committee"],
       approval_status: ["pending", "approved", "rejected"],
       field_type: ["high_land", "medium_land", "low_land", "other"],
+      installment_status: ["due", "paid", "missed", "partial"],
       irrigation_basis: ["per_size", "per_day", "per_hour"],
+      loan_installment_type: ["daily", "weekly", "monthly"],
       loan_payment_status: ["pending", "approved", "rejected"],
+      loan_penalty_type: ["percentage", "fixed"],
       loan_status: ["pending", "approved", "paid", "rejected"],
       owner_type: ["owner", "borgadar"],
       payment_kind: ["loan", "savings", "irrigation"],
@@ -2800,6 +3029,8 @@ export const Constants = {
         "share",
         "other",
       ],
+      savings_installment_type: ["daily", "monthly"],
+      savings_maturity_type: ["simple", "compound"],
       savings_txn_type: ["deposit", "withdraw"],
       season_type: ["aman", "boro", "iri", "other"],
     },

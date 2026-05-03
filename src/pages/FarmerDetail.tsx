@@ -68,7 +68,7 @@ export default function FarmerDetail() {
 
   async function loadAll() {
     const [f, l, s, ln, ir, sh, pm] = await Promise.all([
-      supabase.from("farmers").select("*, offices(name)").eq("id", id!).maybeSingle(),
+      supabase.from("farmers").select("*, offices(name), divisions(name,name_bn), districts(name,name_bn), upazilas(name,name_bn), unions(name,name_bn), wards(name,name_bn), villages(name,name_bn), mouzas(name,name_bn)").eq("id", id!).maybeSingle(),
       (supabase.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
       supabase.from("savings_transactions").select("*").eq("farmer_id", id!).order("txn_date", { ascending: false }),
       supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).order("issued_on", { ascending: false }),
@@ -80,6 +80,18 @@ export default function FarmerDetail() {
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
     setPayments(pm.data ?? []);
   }
+
+  function farmerLocationLine(fr: any): string {
+    if (!fr) return "—";
+    const pick = (n: any) => n?.name_bn || n?.name || null;
+    const parts = [
+      pick(fr.divisions), pick(fr.districts), pick(fr.upazilas),
+      pick(fr.unions), pick(fr.wards), pick(fr.villages), pick(fr.mouzas),
+    ].filter(Boolean);
+    if (parts.length) return parts.join(" › ");
+    return fr.village || fr.address || "—";
+  }
+
 
   function reprintReceipt(p: any) {
     if (!farmer) return;
@@ -253,7 +265,8 @@ export default function FarmerDetail() {
             <div><div className="text-xs text-muted-foreground">{t("motherName")}</div><div>{farmer.mother_name ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nid")}</div><div className="font-mono">{farmer.nid ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("mobile")}</div><div>{farmer.mobile ?? "-"}</div></div>
-            <div><div className="text-xs text-muted-foreground">{t("village")}</div><div>{farmer.village ?? "-"}</div></div>
+            <div><div className="text-xs text-muted-foreground">Voter Number</div><div className="font-mono">{farmer.voter_number ?? "—"}</div></div>
+            <div className="col-span-2 md:col-span-4"><div className="text-xs text-muted-foreground">{t("village")} / Location</div><div className="text-sm">{farmerLocationLine(farmer)}</div></div>
           </div>
           <div className="flex flex-col items-center gap-1 rounded-md border bg-card p-2">
             <QRCodeSVG value={`${window.location.origin}/scan?acc=${farmer.account_number ?? farmer.farmer_code}`} size={96} />
