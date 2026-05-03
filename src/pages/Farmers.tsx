@@ -22,7 +22,7 @@ import { validateLocationChain, parseLocationDbError, type LocationLevel } from 
 
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
-  post_office: "", address: "",
+  post_office: "", address: "", voter_number: "",
   office_id: "", status: "active",
   division_id: null, district_id: null, upazila_id: null, union_id: null,
   ward_id: null, village_id: null, mouza_id: null,
@@ -47,6 +47,7 @@ const farmerFormSchema = z.object({
   mobile: z.string().trim().refine((v) => !v || /^\+?\d[\d\s-]{6,20}$/.test(v), "Invalid mobile number"),
   post_office: z.string().trim().max(100, "Post office must be 100 characters or less").optional().or(z.literal("")),
   address: z.string().trim().max(250, "Address must be 250 characters or less").optional().or(z.literal("")),
+  voter_number: z.string().trim().refine((v) => !v || /^\d{1,20}$/.test(v), "Voter number must be digits only").optional().or(z.literal("")),
   office_id: z.string().optional().or(z.literal("")),
 });
 
@@ -152,6 +153,7 @@ export default function Farmers() {
       mobile: f.mobile ?? "",
       post_office: f.post_office ?? "",
       address: f.address ?? "",
+      voter_number: f.voter_number ?? "",
       office_id: f.office_id ?? "",
     });
 
@@ -306,6 +308,11 @@ export default function Farmers() {
           {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
         </div>
         <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
+        <div>
+          <Label>Voter Number</Label>
+          <Input value={f.voter_number ?? ""} disabled={disabled} inputMode="numeric" maxLength={20}
+            onChange={e => setF({ ...f, voter_number: e.target.value.replace(/\D/g, "") })} placeholder="optional" />
+        </div>
         <div>
           <Label>{t("office")}</Label>
           <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>

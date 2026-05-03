@@ -54,6 +54,7 @@ import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
 import FarmersImport from "./pages/FarmersImport";
+import VoterList from "./pages/VoterList";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 
@@ -77,6 +78,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/offices" element={<Offices />} />
                 <Route path="/farmers" element={<Farmers />} />
+                <Route path="/voters" element={<VoterList />} />
                 <Route path="/farmers/:id" element={<FarmerDetail />} />
                 <Route path="/farmers/:id/report" element={<FarmerProfileReport />} />
                 <Route path="/farmers/:id/card" element={<FarmerCard />} />

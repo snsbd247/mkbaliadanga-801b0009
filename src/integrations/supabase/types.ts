@@ -480,6 +480,7 @@ export type Database = {
           updated_at: string
           village: string | null
           village_id: string | null
+          voter_number: string | null
           ward_id: string | null
         }
         Insert: {
@@ -511,6 +512,7 @@ export type Database = {
           updated_at?: string
           village?: string | null
           village_id?: string | null
+          voter_number?: string | null
           ward_id?: string | null
         }
         Update: {
@@ -542,6 +544,7 @@ export type Database = {
           updated_at?: string
           village?: string | null
           village_id?: string | null
+          voter_number?: string | null
           ward_id?: string | null
         }
         Relationships: [

@@ -44,6 +44,7 @@ export function AppSidebar() {
       key: "operations", icon: Briefcase, label: t("operations"),
       children: [
         { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
+        { url: "/voters", icon: Users, label: "Voter List", permKey: "farmers" },
         { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
