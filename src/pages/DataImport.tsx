@@ -539,9 +539,13 @@ export default function DataImport() {
             };
           }
 
-          const { error } = await supabase.from(table as any).insert(payload);
-          if (error) throw error;
-          next[i] = { ...next[i], status: "ok" };
+          if (dryRun) {
+            next[i] = { ...next[i], status: "ok", message: `Will insert into ${table} (preview)` };
+          } else {
+            const { data: inserted, error } = await supabase.from(table as any).insert(payload).select("id").maybeSingle();
+            if (error) throw error;
+            next[i] = { ...next[i], status: "ok", resolved: { ...(next[i].resolved ?? {}), record_id: (inserted as any)?.id } };
+          }
         } catch (e: any) {
           next[i] = { ...next[i], status: "error", message: e?.message ?? String(e) };
         }
@@ -552,8 +556,59 @@ export default function DataImport() {
       setRows([...next]);
       const ok = next.filter((x) => x.status === "ok").length;
       const er = next.filter((x) => x.status === "error").length;
-      if (er === 0) toast.success(`Imported ${ok} rows successfully`);
-      else toast.warning(`Imported ${ok}, failed ${er}. Download error report.`);
+
+      // Ledger verification + audit log (only on real run)
+      if (!dryRun) {
+        const ledgerKinds = ["payments", "irrigation", "cashbook_receipts", "cashbook_expenses"];
+        if (ledgerKinds.includes(mod)) {
+          const ids = next
+            .filter((x) => x.status === "ok" && x.resolved?.record_id)
+            .map((x) => ({ idx: x.idx, id: x.resolved!.record_id as string }));
+          if (ids.length) {
+            const { data: led } = await supabase
+              .from("ledger_entries")
+              .select("id,reference_id,debit,credit")
+              .in("reference_id", ids.map((x) => x.id));
+            const grouped = new Map<string, string[]>();
+            (led ?? []).forEach((e: any) => {
+              const arr = grouped.get(e.reference_id) ?? [];
+              arr.push(e.id);
+              grouped.set(e.reference_id, arr);
+            });
+            setLedgerVerify(ids.map((x) => ({
+              idx: x.idx, record_id: x.id,
+              ledger_ids: grouped.get(x.id) ?? [],
+              ok: (grouped.get(x.id) ?? []).length > 0,
+            })));
+          }
+        }
+
+        // Persist audit log
+        try {
+          const officeId = (next.find((r) => r.resolved?.office_id)?.resolved?.office_id) ?? null;
+          await supabase.from("import_audit_logs" as any).insert({
+            user_id: user?.id ?? null,
+            office_id: officeId,
+            module: mod,
+            mode: upsertMode ? "upsert" : "insert",
+            rows_processed: next.length,
+            rows_inserted: ok,
+            rows_updated: 0,
+            rows_failed: er,
+            summary: {
+              record_ids: next.filter((r) => r.resolved?.record_id).map((r) => ({ row: r.idx + 2, id: r.resolved!.record_id })),
+            },
+          });
+          loadRecentImports();
+        } catch (auditErr) {
+          console.warn("Audit log insert failed", auditErr);
+        }
+
+        if (er === 0) toast.success(`Imported ${ok} rows successfully`);
+        else toast.warning(`Imported ${ok}, failed ${er}. Download error report.`);
+      } else {
+        toast.info(`Preview ready: ${ok} rows will be processed, ${er} have errors.`);
+      }
     } catch (e: any) {
       toast.error(`Import failed: ${e.message}`);
     } finally {
