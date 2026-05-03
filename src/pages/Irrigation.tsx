@@ -40,6 +40,28 @@ export default function Irrigation() {
     setForm((f: any) => f.base_charge === calc ? f : { ...f, base_charge: calc });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.rate, form.quantity]);
+  // Auto-fill rate + extra charges from irrigation_rates table when season+basis change
+  useEffect(() => {
+    (async () => {
+      if (!form.season_id) return;
+      const { data } = await supabase
+        .from("irrigation_rates")
+        .select("base_rate,canal_charge,maintenance_charge,other_charge,basis")
+        .eq("season_id", form.season_id)
+        .eq("basis", form.basis)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (!data) return;
+      setForm((f: any) => ({
+        ...f,
+        rate: Number(data.base_rate) || f.rate,
+        canal_charge: Number(data.canal_charge) || 0,
+        maintenance_charge: Number(data.maintenance_charge) || 0,
+        other_charge: Number(data.other_charge) || 0,
+      }));
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.season_id, form.basis]);
   useEffect(() => {
     (async () => {
       if (!form.farmer_id || !form.land_id) { setPrevDue(0); return; }
