@@ -265,7 +265,6 @@ function LevelTab({ level }: { level: Level }) {
 
   async function add() {
     if (!name.trim()) return toast.error(t("nameRequired"));
-    // Validate full chain selected
     for (const step of chain) {
       if (!addChain[step.col]) return toast.error(`Please select ${step.label} first`);
     }
@@ -273,10 +272,12 @@ function LevelTab({ level }: { level: Level }) {
     if (directCol) payload[directCol] = addChain[directCol];
     if (optionalCol && addChain[optionalCol]) payload[optionalCol] = addChain[optionalCol];
 
+    setAdding(true);
     const { error } = await (supabase.from as any)(level).insert(payload);
+    setAdding(false);
     if (error) return toast.error(error.message);
     toast.success(t("addedToast"));
-    setName(""); setNameBn("");
+    setName(""); setNameBn(""); setAddChain({}); setAddOpen(false);
     load();
   }
 
