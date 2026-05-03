@@ -21,6 +21,8 @@ export default function Scan() {
   useEffect(() => { document.title = `${t("scanQr")} — ${t("appName")}`; }, [t]);
 
   useEffect(() => {
+    const acc = new URLSearchParams(window.location.search).get("acc");
+    if (acc) onDecoded(`acc:${acc}`);
     return () => { stop(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
