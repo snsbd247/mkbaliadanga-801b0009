@@ -266,14 +266,13 @@ export default function DataImport() {
             };
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
-            if (!owner) throw new Error("Owner farmer not found for owner_account_number");
+            if (!owner) throw new Error(`Owner farmer not found for owner_account_number=${raw.owner_account_number ?? ""}`);
             const sharecropper = raw.sharecropper_account_number
               ? farmerMap.get(String(raw.sharecropper_account_number))
               : null;
             if (raw.sharecropper_account_number && !sharecropper) {
-              throw new Error("Sharecropper farmer not found for sharecropper_account_number");
+              throw new Error(`Sharecropper farmer not found for sharecropper_account_number=${raw.sharecropper_account_number}`);
             }
-            // Resolve land by owner farmer + dag_no
             const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
             if (!dag) throw new Error("dag_no required to identify the land");
             const { data: landRow, error: landErr } = await supabase
@@ -283,21 +282,71 @@ export default function DataImport() {
               .eq("dag_no", dag)
               .maybeSingle();
             if (landErr) throw landErr;
-            if (!landRow) throw new Error(`No land found for owner with dag_no=${dag}`);
+            if (!landRow) throw new Error(`No land found for owner ${owner.id} with dag_no=${dag}`);
             const share = Number(raw.share_percentage ?? 50);
-            if (!(share > 0 && share <= 100)) throw new Error("share_percentage must be between 0 and 100");
-            table = "land_relations";
-            payload = {
+            if (!(share > 0 && share <= 100)) throw new Error("share_percentage must be > 0 and ≤ 100");
+            const validFrom = raw.valid_from ?? new Date().toISOString().slice(0, 10);
+            const validTo = raw.valid_to || null;
+
+            // Validate: total share for this land in overlapping period must not exceed 100
+            const { data: existing } = await supabase
+              .from("land_relations")
+              .select("id, share_percentage, owner_farmer_id, sharecropper_farmer_id, valid_from, valid_to")
+              .eq("land_id", landRow.id);
+            const overlap = (existing ?? []).filter((e: any) => {
+              const eFrom = e.valid_from;
+              const eTo = e.valid_to ?? "9999-12-31";
+              const nTo = validTo ?? "9999-12-31";
+              return !(eTo < validFrom || eFrom > nTo);
+            });
+            const isSame = (e: any) =>
+              e.owner_farmer_id === owner.id &&
+              (e.sharecropper_farmer_id ?? null) === (sharecropper ? sharecropper.id : null) &&
+              e.valid_from === validFrom &&
+              (e.valid_to ?? null) === validTo;
+            const totalOther = overlap.filter((e: any) => !isSame(e))
+              .reduce((s: number, e: any) => s + Number(e.share_percentage || 0), 0);
+            if (totalOther + share > 100) {
+              throw new Error(`Share total ${totalOther + share}% exceeds 100% for land_id=${landRow.id} in overlapping period`);
+            }
+
+            // Capture resolved info on the row for error reports / UI
+            next[i] = {
+              ...r,
+              resolved: {
+                owner_farmer_id: owner.id,
+                sharecropper_farmer_id: sharecropper ? sharecropper.id : null,
+                land_id: landRow.id,
+                dag_no: dag,
+              },
+            };
+
+            const lrPayload = {
               land_id: landRow.id,
               office_id: landRow.office_id ?? owner.office_id,
               owner_farmer_id: owner.id,
               sharecropper_farmer_id: sharecropper ? sharecropper.id : null,
               share_percentage: share,
-              valid_from: raw.valid_from ?? new Date().toISOString().slice(0, 10),
-              valid_to: raw.valid_to || null,
+              valid_from: validFrom,
+              valid_to: validTo,
               note: raw.note ?? null,
               created_by: user?.id,
             };
+
+            if (upsertMode) {
+              const { error: upErr } = await supabase
+                .from("land_relations")
+                .upsert(lrPayload, {
+                  onConflict: "land_id,owner_farmer_id,sharecropper_farmer_id,valid_from,valid_to",
+                  ignoreDuplicates: false,
+                });
+              if (upErr) throw upErr;
+              next[i] = { ...next[i], status: "ok" };
+              if (i % 10 === 0) setRows([...next]);
+              continue;
+            }
+            table = "land_relations";
+            payload = lrPayload;
           } else if (mod === "loans") {
             const f = farmerMap.get(String(raw.account_number));
             if (!f) throw new Error("Farmer not found for account_number");
