@@ -152,7 +152,7 @@ export default function FarmerProfileReport() {
   }
 
   const irrigationYear = ownerRows.find((row) => row.irrigation_year)?.irrigation_year || new Date().getFullYear();
-  const logoSrc = brand.logo_url || "/placeholder.svg";
+  const logoSrc = brand.logo_url || "";
 
   return (
     <>
