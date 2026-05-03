@@ -33,6 +33,10 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
   const [items, setItems] = useState<FarmerLite[]>([]);
   const [selected, setSelected] = useState<FarmerLite | null>(null);
   const debounceRef = useRef<any>(null);
+  // Per-mount LRU-ish cache keyed by trimmed query (case-insensitive).
+  const cacheRef = useRef<Map<string, FarmerLite[]>>(new Map());
+  // Monotonic request id used to drop stale results when the user keeps typing.
+  const reqIdRef = useRef(0);
 
   // Hydrate selected label when value comes from outside
   useEffect(() => {
@@ -45,16 +49,31 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
   useEffect(() => {
     if (!open) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    const term = q.trim().toLowerCase();
+    const cached = cacheRef.current.get(term);
+    if (cached) {
+      // Show cached results instantly; still refresh in background below.
+      setItems(cached.filter((r) => !excludeIds.includes(r.id)));
+      setLoading(false);
+    }
     debounceRef.current = setTimeout(async () => {
-      setLoading(true);
+      const myReq = ++reqIdRef.current;
+      if (!cached) setLoading(true);
       let qy = supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,account_number,mobile").order("name_en").limit(20);
-      const term = q.trim();
       if (term) {
         qy = qy.or(`name_en.ilike.%${term}%,name_bn.ilike.%${term}%,farmer_code.ilike.%${term}%,account_number.ilike.%${term}%,member_no.ilike.%${term}%,mobile.ilike.%${term}%`);
       }
       const { data } = await qy;
-      const filtered = ((data as any[]) ?? []).filter((r) => !excludeIds.includes(r.id));
-      setItems(filtered as any);
+      // Drop stale responses — only the latest in-flight request may update state.
+      if (myReq !== reqIdRef.current) return;
+      const list = ((data as any[]) ?? []) as FarmerLite[];
+      // Cap cache to ~50 keys (FIFO eviction).
+      if (cacheRef.current.size > 50) {
+        const firstKey = cacheRef.current.keys().next().value;
+        if (firstKey !== undefined) cacheRef.current.delete(firstKey);
+      }
+      cacheRef.current.set(term, list);
+      setItems(list.filter((r) => !excludeIds.includes(r.id)));
       setLoading(false);
     }, 200);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
