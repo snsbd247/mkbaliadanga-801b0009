@@ -21,8 +21,18 @@ type Row = {
   voter_number: string | null;
   mobile: string | null;
   village: string | null;
+  villages?: { name: string | null; name_bn: string | null } | null;
+  unions?: { name: string | null } | null;
+  upazilas?: { name: string | null } | null;
+  districts?: { name: string | null } | null;
   offices?: { name: string | null } | null;
 };
+
+function locationOf(r: Row): string {
+  const v = r.villages?.name_bn || r.villages?.name || r.village || "";
+  const parts = [v, r.unions?.name, r.upazilas?.name, r.districts?.name].filter(Boolean);
+  return parts.join(", ") || "—";
+}
 
 export default function VoterList() {
   const { t } = useLang();
@@ -44,7 +54,7 @@ export default function VoterList() {
     setLoading(true);
     let qy = supabase
       .from("farmers")
-      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,offices(name)")
+      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,offices(name),villages(name,name_bn),unions(name),upazilas(name),districts(name)")
       .eq("is_voter", true)
       .not("voter_number", "is", null)
       .neq("voter_number", "")
@@ -64,10 +74,10 @@ export default function VoterList() {
 
   function exportExcel() {
     const wb = XLSX.utils.book_new();
-    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Village", "Office"];
+    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"];
     const data = [head, ...rows.map(r => [
       r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
-      r.mobile ?? "", r.village ?? "", r.offices?.name ?? "",
+      r.mobile ?? "", locationOf(r), r.offices?.name ?? "",
     ])];
     const ws = XLSX.utils.aoa_to_sheet(data);
     ws["!cols"] = [{ wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 24 }, { wch: 14 }, { wch: 18 }, { wch: 20 }];
@@ -76,13 +86,13 @@ export default function VoterList() {
   }
 
   function exportCsv() {
-    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Village", "Office"];
+    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"];
     const escape = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const lines = [head.map(escape).join(",")];
     for (const r of rows) {
       lines.push([
         r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
-        r.mobile ?? "", r.village ?? "", r.offices?.name ?? "",
+        r.mobile ?? "", locationOf(r), r.offices?.name ?? "",
       ].map(escape).join(","));
     }
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -101,10 +111,10 @@ export default function VoterList() {
     doc.text(`${total} voter${total === 1 ? "" : "s"}`, 40, 52);
     autoTable(doc, {
       startY: 64,
-      head: [["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Village", "Office"]],
+      head: [["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"]],
       body: rows.map(r => [
         r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
-        r.mobile ?? "", r.village ?? "", r.offices?.name ?? "",
+        r.mobile ?? "", locationOf(r), r.offices?.name ?? "",
       ]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [16, 122, 87] },
@@ -160,7 +170,7 @@ export default function VoterList() {
                 </TableCell>
                 <TableCell className="font-mono text-xs">{r.account_number ?? "—"}</TableCell>
                 <TableCell>{r.mobile ?? "—"}</TableCell>
-                <TableCell className="text-xs">{r.village ?? "—"}</TableCell>
+                <TableCell className="text-xs">{locationOf(r)}</TableCell>
                 <TableCell className="text-xs">{r.offices?.name ?? "—"}</TableCell>
               </TableRow>
             ))}

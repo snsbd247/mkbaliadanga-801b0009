@@ -99,7 +99,7 @@ export default function Farmers() {
   }, [createErr, editErr]);
 
   async function load() {
-    let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
+    let qy = supabase.from("farmers").select("*, offices(name), villages(name,name_bn)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
     const { data } = await qy;
     setList(data ?? []);
@@ -450,7 +450,7 @@ export default function Farmers() {
                   {f.name_bn && <div className="text-xs text-muted-foreground">{f.name_bn}</div>}
                 </TableCell>
                 <TableCell>{f.mobile}</TableCell>
-                <TableCell>{f.village}</TableCell>
+                <TableCell>{f.village || f.villages?.name_bn || f.villages?.name || "—"}</TableCell>
                 <TableCell className="text-xs">{f.offices?.name}</TableCell>
                 <TableCell><Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status}</Badge></TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
