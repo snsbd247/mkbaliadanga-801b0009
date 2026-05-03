@@ -217,6 +217,11 @@ export default function FarmerProfileReport() {
           border: 1px solid #9e9e9e;
           height: 30px;
           margin-bottom: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 700;
         }
 
         .farmer-section-title {
@@ -334,10 +339,9 @@ export default function FarmerProfileReport() {
               <img src={logoSrc} alt={brand.company_name} className="farmer-report-logo" />
             ) : null}
             <div className="farmer-report-org">{brand.company_name_bn || brand.company_name}</div>
-            <div className="farmer-report-subtitle">এক নজরে কৃষকের তথ্য</div>
           </div>
 
-          <div className="farmer-report-rule" />
+          <div className="farmer-report-rule">এক নজরে কৃষকের তথ্য</div>
 
           <div className="farmer-section-title">Farmer Information</div>
           <table className="farmer-table compact-gap">
