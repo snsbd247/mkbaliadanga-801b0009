@@ -30,6 +30,7 @@ import { toast } from "sonner";
 
 type Module =
   | "lands"
+  | "land_relations"
   | "loans"
   | "loan_payments"
   | "savings"
@@ -47,6 +48,10 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   lands: {
     columns: ["account_number", "dag_no", "land_size", "owner_type", "field_type", "mouza"],
     sample: { account_number: "AC-0001", dag_no: "123/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "" },
+  },
+  land_relations: {
+    columns: ["owner_account_number", "sharecropper_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
+    sample: { owner_account_number: "100000000001", sharecropper_account_number: "100000000002", dag_no: "123/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
   },
   loans: {
     columns: ["account_number", "principal", "interest_rate", "total_payable", "issued_on", "note"],
@@ -180,9 +185,16 @@ export default function DataImport() {
 
     try {
       // Pre-resolve farmer mapping where applicable
-      const accountNumbers = next
-        .filter((r) => mod !== "ledger")
-        .map((r) => String(r.raw.account_number ?? "").trim());
+      const accountNumbers: string[] = [];
+      next.forEach((r) => {
+        if (mod === "ledger") return;
+        if (mod === "land_relations") {
+          accountNumbers.push(String(r.raw.owner_account_number ?? "").trim());
+          if (r.raw.sharecropper_account_number) accountNumbers.push(String(r.raw.sharecropper_account_number).trim());
+        } else {
+          accountNumbers.push(String(r.raw.account_number ?? "").trim());
+        }
+      });
       const farmerMap = mod !== "ledger" ? await resolveFarmers(accountNumbers) : new Map();
 
       const accountMap = mod === "ledger"
@@ -226,6 +238,40 @@ export default function DataImport() {
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
+            };
+          } else if (mod === "land_relations") {
+            const owner = farmerMap.get(String(raw.owner_account_number));
+            if (!owner) throw new Error("Owner farmer not found for owner_account_number");
+            const sharecropper = raw.sharecropper_account_number
+              ? farmerMap.get(String(raw.sharecropper_account_number))
+              : null;
+            if (raw.sharecropper_account_number && !sharecropper) {
+              throw new Error("Sharecropper farmer not found for sharecropper_account_number");
+            }
+            // Resolve land by owner farmer + dag_no
+            const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
+            if (!dag) throw new Error("dag_no required to identify the land");
+            const { data: landRow, error: landErr } = await supabase
+              .from("lands")
+              .select("id, office_id")
+              .eq("farmer_id", owner.id)
+              .eq("dag_no", dag)
+              .maybeSingle();
+            if (landErr) throw landErr;
+            if (!landRow) throw new Error(`No land found for owner with dag_no=${dag}`);
+            const share = Number(raw.share_percentage ?? 50);
+            if (!(share > 0 && share <= 100)) throw new Error("share_percentage must be between 0 and 100");
+            table = "land_relations";
+            payload = {
+              land_id: landRow.id,
+              office_id: landRow.office_id ?? owner.office_id,
+              owner_farmer_id: owner.id,
+              sharecropper_farmer_id: sharecropper ? sharecropper.id : null,
+              share_percentage: share,
+              valid_from: raw.valid_from ?? new Date().toISOString().slice(0, 10),
+              valid_to: raw.valid_to || null,
+              note: raw.note ?? null,
+              created_by: user?.id,
             };
           } else if (mod === "loans") {
             const f = farmerMap.get(String(raw.account_number));
@@ -366,6 +412,7 @@ export default function DataImport() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="lands">Lands</SelectItem>
+                <SelectItem value="land_relations">Land Relations (owner/sharecropper)</SelectItem>
                 <SelectItem value="loans">Loans</SelectItem>
                 <SelectItem value="loan_payments">Loan Payments</SelectItem>
                 <SelectItem value="savings">Savings Transactions</SelectItem>
