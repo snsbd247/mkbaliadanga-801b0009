@@ -121,7 +121,7 @@ export default function FarmerCard() {
     setBusy(true);
     try {
       const svg = cardRef.current?.querySelector("svg") as SVGElement | null;
-      await downloadCardPdf(data, svg, templateId);
+      await downloadCardPdf(data, svg, templateId, cardCfg);
     } catch (e: any) {
       toast.error(e?.message ?? "PDF export failed");
     } finally { setBusy(false); }

@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { TEMPLATE_LIST, type TemplateId } from "@/components/card/templates";
 import { downloadBulkCardsPdf } from "@/components/card/cardPdf";
+import { useCardSettings } from "@/lib/cardSettings";
 import type { CardData } from "@/components/card/MembershipCard";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
@@ -32,6 +33,7 @@ interface FarmerRow {
 export default function BulkCards() {
   const { isAdmin } = useAuth();
   const brand = useBranding();
+  const cardCfg = useCardSettings();
   const [list, setList] = useState<FarmerRow[]>([]);
   const [q, setQ] = useState("");
   const [officeId, setOfficeId] = useState<string>("all");
@@ -122,7 +124,7 @@ export default function BulkCards() {
         const svg = wrap?.querySelector("svg") as SVGElement | null;
         return { data, qrSvg: svg };
       });
-      await downloadBulkCardsPdf(cards, templateId, `farmer-cards-${ok.length}-${templateId}.pdf`);
+      await downloadBulkCardsPdf(cards, templateId, `farmer-cards-${ok.length}-${templateId}.pdf`, cardCfg);
       const skipped = items.length - ok.length;
       toast.success(`Generated ${ok.length} card(s)${skipped ? `, skipped ${skipped}` : ""}.`);
     } catch (e: any) {
