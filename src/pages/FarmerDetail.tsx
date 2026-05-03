@@ -68,7 +68,7 @@ export default function FarmerDetail() {
 
   async function loadAll() {
     const [f, l, s, ln, ir, sh, pm] = await Promise.all([
-      supabase.from("farmers").select("*, offices(name)").eq("id", id!).maybeSingle(),
+      supabase.from("farmers").select("*, offices(name), divisions(name,name_bn), districts(name,name_bn), upazilas(name,name_bn), unions(name,name_bn), wards(name,name_bn), villages(name,name_bn), mouzas(name,name_bn)").eq("id", id!).maybeSingle(),
       (supabase.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
       supabase.from("savings_transactions").select("*").eq("farmer_id", id!).order("txn_date", { ascending: false }),
       supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).order("issued_on", { ascending: false }),
@@ -80,6 +80,18 @@ export default function FarmerDetail() {
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
     setPayments(pm.data ?? []);
   }
+
+  function farmerLocationLine(fr: any): string {
+    if (!fr) return "—";
+    const pick = (n: any) => n?.name_bn || n?.name || null;
+    const parts = [
+      pick(fr.divisions), pick(fr.districts), pick(fr.upazilas),
+      pick(fr.unions), pick(fr.wards), pick(fr.villages), pick(fr.mouzas),
+    ].filter(Boolean);
+    if (parts.length) return parts.join(" › ");
+    return fr.village || fr.address || "—";
+  }
+
 
   function reprintReceipt(p: any) {
     if (!farmer) return;
