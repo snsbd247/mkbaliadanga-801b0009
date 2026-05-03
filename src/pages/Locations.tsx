@@ -200,8 +200,7 @@ function LevelTab({ level }: { level: Level }) {
   const [editChain, setEditChain] = useState<Chain>({});
   const [editName, setEditName] = useState("");
   const [editNameBn, setEditNameBn] = useState("");
-  const [editOptionalWardId, setEditOptionalWardId] = useState<string>("");
-  const [editWardsForOptional, setEditWardsForOptional] = useState<Row[]>([]);
+  
   const [saving, setSaving] = useState(false);
 
   // Load list whenever filter changes (uses deepest filter, falls back to direct parent)
