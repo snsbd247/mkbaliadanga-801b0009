@@ -1,1 +1,90 @@
-## Goal\n\nWipe all transactional/demo data, preserve admin + system configuration, ensure Rajshahi Division has full hierarchical location coverage (including the currently empty `villages` table), and seed a fresh, fully consistent demo dataset with farmers, lands, savings, loans, irrigation, payments, ledger, receipts, and QR tokens — all attached to real Rajshahi locations.\n\n## Current state (verified just now)\n\n- **Locations (national)**: 8 divisions, 64 districts, all 8 Rajshahi districts present.\n- **Rajshahi Division**: 67 upazilas, 206 unions, 1818 wards, 407 mouzas already seeded across all 8 districts (Bogura, Chapainawabganj, Joypurhat, Naogaon, Natore, Pabna, Rajshahi, Sirajganj).\n- **Villages table**: 0 rows. The Farmer form's cascading picker requires `village_id` between ward → mouza, so this is the gap to fill.\n- **Demo data to wipe**: 30 farmers, 30 lands, 130 savings, 15 loans, 10 loan_payments, 30 irrigation_charges, 350 ledger entries, 30 qr_tokens.\n- **Preserve as-is**: 1 office (Baliadanga), 1 super_admin profile + role, 19 chart-of-accounts entries, 3 seasons, all settings tables, all location data already present.\n\n## Plan\n\n### Step 1 — Safe transactional reset (one migration)\n\nSingle transaction wiping in dependency order using `DELETE` (TRUNCATE on `farmer_rejections` to reset the audit log too). No schema changes, no `ALTER` on reserved schemas.\n\nTables cleared:\n- `qr_tokens`, `farmer_otps`, `farmer_portal_sessions`\n- `payment_allocations`, `payments`, `loan_payments`, `receipts`\n- `irrigation_charges`, `loans`, `savings_transactions`, `savings_yearly_opening`, `shares`\n- `ledger_entries`, `journal_entry_lines`, `journal_entries`\n- `expenses`, `notifications`, `sms_logs`, `audit_logs`, `farmer_rejections`\n- `land_relations`, `lands`, `farmers`\n\nPreserved: `profiles`, `user_roles`, `user_permissions`, `role_permissions`, `offices`, `company_settings`, `receipt_settings`, `sms_*`, `accounts`, `seasons`, `qr_rotation_settings`, `accounting_periods`, and the entire location hierarchy (`divisions`, `districts`, `upazilas`, `unions`, `wards`, `mouzas`, `villages`).\n\n### Step 2 — Fill the villages gap for Rajshahi\n\n`villages` is empty but the cascading picker (and `farmers.village_id`) expects it. Insert 2 representative villages per ward across **all Rajshahi wards** (~3,636 villages), each linked to its `union_id` + `ward_id`, with English + Bangla names like `<Ward Name> Village 1 / 2`. Idempotent insert guarded by `NOT EXISTS`.\n\nAlso relink existing Rajshahi mouzas to a ward when missing (best-effort — only if mouza has `union_id` but no `ward_id`, attach to the union's first ward) so the picker's mouza filter (`ward_id` match or null) works cleanly.\n\n### Step 3 — Seed demo data (single migration, after Step 1+2)\n\nAll farmers attached to the existing Baliadanga office, distributed across the 8 Rajshahi districts.\n\n- **30 farmers**: realistic Bangla + English names, unique `farmer_code` `MK-0001…MK-0030`, valid mobile `017xxxxxxxx`, NID, address, placeholder photo URL, and a fully resolved location chain `division_id → district_id → upazila_id → union_id → ward_id → village_id → mouza_id` chosen via SQL from the seeded Rajshahi tree. The DB hierarchy-validation trigger will accept them because parents are picked from real children.\n- **Lands**: 1–2 per farmer, mix of `field_type` and `owner_type`, sizes 0.3–3.5 acres, `mouza_id` linked.\n- **Savings**: 3–8 transactions per farmer (mix `deposit`/`withdrawal`), ৳200–৳5,000, dates spread over last 12 months, `status='approved'`.\n- **Loans**: 15 loans — 5 active (no payments), 5 partially paid (loan_payments cover 30–60%), 5 fully paid. `interest_rate` 8–12%, computed `total_payable`.\n- **Loan payments**: rows in `loan_payments` matching the partial/completed loans.\n- **Irrigation charges**: 1–2 per farmer for current season (`per_size`), with `paid_amount` random portion of `total`, accurate `due_amount`.\n- **Payments + receipts + payment_allocations**: a cash payment + receipt + allocation generated for every loan_payment and irrigation collection, so receipts module works.\n- **Ledger entries**: matching debit/credit pairs for each savings deposit/withdrawal, loan disbursement, loan payment, irrigation charge, irrigation collection — using existing chart-of-accounts codes (1010 Cash, 1030/2010 Savings, 1040/2020 Loan, 1050/4010 Irrigation). Trial balance nets to zero.\n- **QR tokens**: one active token per farmer (random 32-char), `revoked=false`, no expiry.\n\n### Step 4 — Consistency verification\n\nIn the same transaction, a `DO $$ … $$` block:\n- Every FK from lands/loans/savings/irrigation/qr_tokens resolves to a farmer.\n- `SUM(debit) = SUM(credit)` in `ledger_entries`.\n- For each loan: `total_payable - SUM(loan_payments.amount)` matches the loan's status.\n- Each farmer has exactly one active QR token.\n- Every farmer's location chain passes the `validate_farmer_location_hierarchy` trigger.\n\nAny failure raises and rolls back the whole migration.\n\n### Step 5 — Safety guarantees\n\n- No schema changes — pure DML inside one or two migrations.\n- Auth rows in `auth.users`, `profiles`, `user_roles` never touched.\n- All settings tables untouched.\n- Village inserts use `NOT EXISTS` guards so re-running is a no-op.\n- The DB hierarchy trigger remains active and will block any malformed farmer; the seed builds chains by walking down from real parents so it cannot violate it.\n\n## Technical details\n\n- Delivered as **two Supabase migrations**, applied in order:\n  1. `wipe_and_topup_villages.sql` — Steps 1 + 2.\n  2. `seed_rajshahi_demo.sql` — Step 3 + Step 4 verification.\n- `created_by` / `collected_by` / `approved_by` set to the existing super_admin `auth.users.id` (looked up via `(SELECT user_id FROM user_roles WHERE role='super_admin' LIMIT 1)`).\n- Office defaults to the existing `offices` row (Baliadanga).\n- Bangla names use realistic transliterations of the picked English names so reports display correctly in BN mode.\n- Receipt numbers generated as `R-YYYYMMDD-####`.\n\n## Out of scope\n\n- No new tables, columns, RLS, triggers, functions, RPCs, or edge functions.\n- No frontend changes.\n- No edits to `auth.*`, `storage.*`, `realtime.*`, `vault.*`.\n- City Corporation / Pourashava / Thana tables — these aren't in the current schema and the user's \
+# Plan — Land Management & Farmer Account Number Upgrades
+
+A multi-part upgrade across DB, UI, and tests. Delivered in 9 grouped slices that map 1:1 to your numbered requirements. Backward compatibility preserved at every step.
+
+---
+
+## 1. Land CRUD (Edit + Delete) — `FarmerDetail.tsx`
+- Add **Edit** and **Delete** buttons to each land row in the Lands tab.
+- **Edit dialog**: reuses Add-Land form; pre-fills `LocationPicker` from `mouza_id` (resolves ancestors via DB lookup), supports cascade reset on close, disables inputs while saving.
+- **Delete**: shadcn `AlertDialog` confirmation. On confirm:
+  - Block delete if land is referenced by `irrigation_charges` (count check) → toast error with count.
+  - Otherwise call `supabase.from("lands").delete()` (RLS already enforces office scope).
+- Toast success/error via sonner.
+
+## 2. Land Export (PDF + Excel)
+- New file `src/lib/landExport.ts`:
+  - `exportLandsPdf(farmer, lands)` → uses existing `jspdf` + `jspdf-autotable` (already used in `paymentReceiptPdf.ts`).
+  - `exportLandsExcel(farmer, lands)` → uses `xlsx` (verify dep; add if missing).
+- Columns: Account No, Farmer Name, Division → District → Upazila → Union → Ward → Village → Mouza, Dag No, Land Size, Owner Type, Field Type.
+- Buttons in Lands tab header: "Export PDF" / "Export Excel".
+
+## 3. Location Summary Display (Lands list)
+- Add new column **Location** showing breadcrumb `Division › District › … › Mouza`.
+- Implementation: enrich land query with `mouzas(name, ward_id, wards(name, village_id, villages(name, ...)))` via PostgREST nested select **OR** add an SQL view `lands_with_location`. Prefer view for reuse in exports + reports.
+- Migration: `CREATE VIEW public.lands_with_location AS SELECT l.*, div.name AS division_name, dis.name AS district_name, ... FROM lands l LEFT JOIN mouzas m ON ... LEFT JOIN villages v ON ... LEFT JOIN wards w ... LEFT JOIN unions u ... LEFT JOIN upazilas up ... LEFT JOIN districts d ... LEFT JOIN divisions div ...`.
+
+## 4. Irrigation Auto-Calculation — `Irrigation.tsx`
+- When user picks `land_id` + `season_id`, auto-fetch:
+  - `lands.land_size`
+  - season-based rate (new table `irrigation_rates(season_id, base_per_size, canal, maintenance, other)` or reuse existing per-office config — investigate during impl).
+- Compute `base_charge = land_size * rate`, populate `total = base + canal + maintenance + other + previous_due + penalty`, write `due_amount = total - paid_amount`.
+- Each land already has its own `irrigation_charges` row → due tracking per land works today; just ensure ledger entry insert hook fires (existing trigger or via code).
+
+## 5. Searchable Farmer Picker (Land Relations)
+- New component `src/components/farmers/FarmerSearchSelect.tsx`:
+  - shadcn `Command` + `Popover` based combobox.
+  - Debounced query against `farmers` table: `or(farmer_code.ilike.%q%, member_no.ilike.%q%, mobile.ilike.%q%, name_en.ilike.%q%)`, limit 20.
+  - Renders `Name • Code • Mobile`.
+- Integrate in `LandRelations.tsx` (Add Relation flow) and any "Add Land" entry point that needs farmer selection. Existing FarmerDetail flow already has farmer context — unchanged.
+
+## 6. Unique Farmer Account Number
+- Migration:
+  - `ALTER TABLE farmers ADD COLUMN account_number text;`
+  - Backfill existing rows: `UPDATE farmers SET account_number = farmer_code WHERE account_number IS NULL;` (then user can regenerate).
+  - `CREATE UNIQUE INDEX farmers_account_number_key ON farmers(account_number);`
+  - DB function `generate_farmer_account_number(office_id, created_at)` returning formatted string `YYMM<office_seq><random4>` (e.g., `2401510064476`).
+  - Trigger `BEFORE INSERT` on `farmers`: if `account_number IS NULL`, set via the function.
+- UI: show `account_number` on FarmerDetail header, Farmers list, receipts, reports.
+
+## 7. System-Wide Display Update
+- Replace user-facing `farmer_code` displays with `account_number ?? farmer_code` fallback in:
+  - `Farmers.tsx` table, `FarmerDetail.tsx` header, `Payments.tsx`, `Receipts/PDF templates`, `Reports/*`.
+- Search inputs in Farmers/Payments now also match `account_number`.
+- `farmer_code` kept intact internally (no breaking change).
+
+## 8. E2E Tests
+- Extend `src/pages/__tests__/Farmers.dialog.test.tsx` with land Add/Edit/Delete covering cascade reset.
+- New `src/pages/__tests__/FarmerDetail.lands.test.tsx`:
+  - Open Add Land dialog → cascade Division→…→Mouza required → save.
+  - Reset on close.
+  - Delete with confirmation.
+- Playwright spec `e2e/land-crud.spec.ts` covering full happy path + delete.
+
+## 9. Non-Breaking Guarantees
+- All new columns nullable with sensible defaults; no existing column types changed.
+- Views are additive.
+- `farmer_code` retained; `account_number` is additive.
+- RLS policies unchanged on lands/irrigation; new view inherits RLS via `security_invoker=on`.
+- After each migration: run `npm test` for existing suites (Farmers, FarmerDashboard, NotificationBell, Locations) to confirm green.
+
+---
+
+## Suggested Execution Order
+1. Migration: `account_number` + `lands_with_location` view.
+2. Land CRUD (edit/delete) + Location summary column.
+3. Land export (PDF/Excel).
+4. Searchable FarmerSelect + integrate into LandRelations.
+5. Irrigation auto-calc.
+6. System-wide `account_number` display swaps.
+7. Tests (unit + e2e).
+8. Regression run + smoke check Savings/Loans/Irrigation/Reports.
+
+## Open Questions Before Starting
+- **Account number format**: confirm exact rule. Example `2401510064476` looks like `YY(24) MM(01) office(5100) seq(64476)`. Should I:
+  - (a) Use `YYMM` + office short code + 5-digit incremental seq, OR
+  - (b) Keep your sample exactly (13 digits, last 5 random)?
+- **Irrigation rate source**: do per-season rates already exist somewhere (e.g., `seasons` extra columns or office settings), or should I create a new `irrigation_rates` table keyed by `(office_id, season_id)`?
+- **Excel library**: OK to add `xlsx` (SheetJS community) as a dependency? It's ~400KB but standard.
+
+I'll proceed once you confirm the three points above (or say "use defaults" and I'll pick sensible ones).
