@@ -40,4 +40,11 @@ test.describe("scan?acc account-number flow", () => {
     await page.getByRole("button", { name: /Open Payment Screen/i }).click();
     await expect(page.getByText(/Account number not found/i)).toBeVisible({ timeout: 5_000 });
   });
+
+  test("missing acc parameter stays on /scan with no redirect", async ({ page }) => {
+    await page.goto(`/scan`);
+    await expect(page).toHaveURL(/\/scan$/);
+    // Manual input area should be visible
+    await expect(page.getByPlaceholder("2401510064476")).toBeVisible();
+  });
 });

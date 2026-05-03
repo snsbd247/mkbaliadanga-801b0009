@@ -177,10 +177,14 @@ export type Database = {
       card_settings: {
         Row: {
           accent_color: string
+          custom_text: string
+          custom_text_bn: string
           font_scale: number
+          header_height_mm: number
           header_text: string
           header_text_bn: string
           id: number
+          logo_size_mm: number
           photo_size_mm: number
           show_account_number: boolean
           show_issue_date: boolean
@@ -193,10 +197,14 @@ export type Database = {
         }
         Insert: {
           accent_color?: string
+          custom_text?: string
+          custom_text_bn?: string
           font_scale?: number
+          header_height_mm?: number
           header_text?: string
           header_text_bn?: string
           id?: number
+          logo_size_mm?: number
           photo_size_mm?: number
           show_account_number?: boolean
           show_issue_date?: boolean
@@ -209,10 +217,14 @@ export type Database = {
         }
         Update: {
           accent_color?: string
+          custom_text?: string
+          custom_text_bn?: string
           font_scale?: number
+          header_height_mm?: number
           header_text?: string
           header_text_bn?: string
           id?: number
+          logo_size_mm?: number
           photo_size_mm?: number
           show_account_number?: boolean
           show_issue_date?: boolean
