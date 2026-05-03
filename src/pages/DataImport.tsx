@@ -659,6 +659,11 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadTemplate(mod)}>
               <Download className="h-4 w-4 mr-1" /> Template (.xlsx)
             </Button>
+            {(["payments","irrigation","cashbook_receipts","cashbook_expenses"] as Module[]).includes(mod) && (
+              <Button variant="outline" onClick={() => downloadCsvTemplate(mod === "irrigation" ? "irrigation" : (mod as any))}>
+                <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
+              </Button>
+            )}
             <input
               ref={fileRef}
               type="file"
@@ -695,9 +700,13 @@ export default function DataImport() {
                   <Download className="h-4 w-4 mr-1" /> Error Report
                 </Button>
               )}
-              <Button onClick={importAll} disabled={working || stats.pending === 0}>
+              <Button variant="outline" onClick={() => importAll(true)} disabled={working || stats.pending === 0}>
+                {working ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Preview ({stats.pending})
+              </Button>
+              <Button onClick={() => importAll(false)} disabled={working || stats.pending === 0}>
                 {working ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
-                Import {stats.pending} rows
+                Confirm Import
               </Button>
             </div>
           </div>
