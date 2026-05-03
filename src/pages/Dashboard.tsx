@@ -62,7 +62,7 @@ export default function Dashboard() {
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
     const { data: monthPayAll } = await supabase
-      .from("payments").select("amount,created_at").gte("created_at", monthStart);
+      .from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart);
     const monthCollect = sum(monthPayAll ?? [], "amount");
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
