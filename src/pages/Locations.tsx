@@ -185,10 +185,12 @@ function LevelTab({ level }: { level: Level }) {
 
   // Filter state — cascading
   const [filter, setFilter] = useState<Chain>({});
-  // Add form state — cascading (independent of filter so user can add anywhere)
+  // Add dialog state — cascading (independent of filter so user can add anywhere)
+  const [addOpen, setAddOpen] = useState(false);
   const [addChain, setAddChain] = useState<Chain>({});
   const [name, setName] = useState("");
   const [nameBn, setNameBn] = useState("");
+  const [adding, setAdding] = useState(false);
   
 
   const [rows, setRows] = useState<Row[]>([]);
