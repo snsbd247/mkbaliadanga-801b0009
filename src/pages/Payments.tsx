@@ -65,11 +65,18 @@ export default function Payments() {
   }
 
   async function load() {
+    let pq = supabase.from("payments").select("*, farmers(name_en,farmer_code), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
+    pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
     const [f, p] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
-      supabase.from("payments").select("*, farmers(name_en,farmer_code), payment_allocations(*)").is("deleted_at", null).order("created_at", { ascending: false }).limit(100),
+      pq,
     ]);
     setFarmers(f.data ?? []); setList(p.data ?? []);
+  }
+  async function restorePayment(id: string) {
+    const { error } = await supabase.from("payments").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Restored"); load();
   }
   async function loadDues() {
     const [l, i] = await Promise.all([
