@@ -323,46 +323,7 @@ export default function Farmers() {
         <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
         <div>
           <Label>Is Voter</Label>
-          <div className="flex items-center gap-3 h-10">
-            <Switch
-              checked={!!f.is_voter}
-              disabled={disabled}
-              onCheckedChange={async (on) => {
-                if (on) {
-                  if (f.voter_number) {
-                    setF({ ...f, is_voter: true });
-                    return;
-                  }
-                  const { data, error } = await supabase.rpc("generate_farmer_voter_number");
-                  if (error) { toast.error(error.message); return; }
-                  setF({ ...f, is_voter: true, voter_number: String(data ?? "") });
-                } else {
-                  setF({ ...f, is_voter: false });
-                }
-              }}
-              data-testid="voter-toggle"
-            />
-            {f.voter_number ? (
-              <Input
-                value={f.voter_number}
-                disabled
-                readOnly
-                inputMode="numeric"
-                maxLength={20}
-                className="font-mono"
-                aria-label="Voter number (read-only)"
-              />
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                {f.is_voter ? "auto-generating…" : "No voter number assigned"}
-              </span>
-            )}
-          </div>
-          {f.voter_number && (
-            <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
-              ⚠ Voter number is permanent and cannot be edited. It will be reused if Is Voter is re-enabled.
-            </p>
-          )}
+          <VoterToggleField f={f} setF={setF} disabled={disabled} />
         </div>
         <div>
           <Label>{t("office")}</Label>
