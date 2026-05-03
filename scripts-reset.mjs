@@ -105,7 +105,6 @@ async function main() {
     mobile: `+880170000${String(1000 + i)}`,
     nid: `19900000000000${String(i).padStart(2, "0")}`,
     village: mouzas[i % 2].name,
-    mouza: mouzas[i % 2].name,
     mouza_id: mouzas[i % 2].id,
     ward_id: wards[0].id,
     union_id: sadarUnion.id,
