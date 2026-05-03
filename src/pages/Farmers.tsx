@@ -389,7 +389,7 @@ export default function Farmers() {
       <Card>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>{t("farmerCode")}</TableHead><TableHead>{t("memberNo") || "Member No"}</TableHead><TableHead>{t("farmerName")}</TableHead>
+            <TableHead>Account No</TableHead><TableHead>{t("memberNo") || "Member No"}</TableHead><TableHead>{t("farmerName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
             <TableHead className="text-right">{t("actions")}</TableHead>
