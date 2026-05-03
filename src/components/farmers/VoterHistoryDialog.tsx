@@ -13,16 +13,30 @@ interface Props {
 export function VoterHistoryDialog({ farmerId, open, onOpenChange }: Props) {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !farmerId) return;
     setLoading(true);
+    setError(null);
     supabase.from("voter_audit_logs")
       .select("*")
       .eq("farmer_id", farmerId)
       .order("created_at", { ascending: false })
       .limit(20)
-      .then(({ data }) => { setRows((data as any[]) ?? []); setLoading(false); });
+      .then(({ data, error }) => {
+        if (error) {
+          setError(
+            /permission|rls|row-level security/i.test(error.message)
+              ? "You don't have permission to view this farmer's voter history."
+              : "Failed to load history."
+          );
+          setRows([]);
+        } else {
+          setRows((data as any[]) ?? []);
+        }
+        setLoading(false);
+      });
   }, [open, farmerId]);
 
   return (
@@ -30,9 +44,11 @@ export function VoterHistoryDialog({ farmerId, open, onOpenChange }: Props) {
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>Voter Number History</DialogTitle></DialogHeader>
         {loading ? (
-          <div className="py-8 flex items-center justify-center text-sm text-muted-foreground">
+          <div className="py-8 flex items-center justify-center text-sm text-muted-foreground" role="status">
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />Loading…
           </div>
+        ) : error ? (
+          <div className="py-6 text-center text-sm text-destructive" role="alert">{error}</div>
         ) : rows.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">No history yet</div>
         ) : (
