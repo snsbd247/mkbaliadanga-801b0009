@@ -2865,6 +2865,16 @@ export type Database = {
       current_user_office: { Args: never; Returns: string }
       data_integrity_scan: { Args: never; Returns: Json }
       email_for_username: { Args: { _username: string }; Returns: string }
+      farmer_dues_summary: {
+        Args: never
+        Returns: {
+          farmer_id: string
+          irr_due: number
+          loan_due: number
+          net_due: number
+          savings_bal: number
+        }[]
+      }
       farmer_loan_statement: {
         Args: { _farmer_id: string; _from?: string; _to?: string }
         Returns: {
