@@ -31,6 +31,13 @@ export interface CardDisplayOptions {
   show_voter_number?: boolean;
   show_issue_date?: boolean;
   show_qr?: boolean;
+  header_height_mm?: number;
+  logo_size_mm?: number;
+  photo_size_mm?: number;
+  font_scale?: number;
+  custom_text?: string;
+  custom_text_bn?: string;
+  accent_color?: string;
 }
 
 interface Props {
