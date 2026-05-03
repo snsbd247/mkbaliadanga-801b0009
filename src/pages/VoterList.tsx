@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileSpreadsheet } from "lucide-react";
+import { Search, FileSpreadsheet, FileDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -69,14 +69,37 @@ export default function VoterList() {
     XLSX.writeFile(wb, `voter-list-${Date.now()}.xlsx`);
   }
 
+  function exportCsv() {
+    const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Village", "Office"];
+    const escape = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = [head.map(escape).join(",")];
+    for (const r of rows) {
+      lines.push([
+        r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
+        r.mobile ?? "", r.village ?? "", r.offices?.name ?? "",
+      ].map(escape).join(","));
+    }
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `voter-list-${Date.now()}.csv`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
   const headerInfo = useMemo(() => `${total} voter${total === 1 ? "" : "s"}`, [total]);
 
   return (
     <>
       <PageHeader title="Voter List" description={headerInfo} actions={
-        <Button variant="outline" size="sm" onClick={exportExcel} disabled={total === 0}>
-          <FileSpreadsheet className="h-4 w-4 mr-1" />Export Excel
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={total === 0}>
+            <FileDown className="h-4 w-4 mr-1" />Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportExcel} disabled={total === 0}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" />Export Excel
+          </Button>
+        </div>
       } />
 
       <Card className="p-4 mb-4">
