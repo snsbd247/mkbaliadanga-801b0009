@@ -73,12 +73,16 @@ export default function Farmers() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [form, setForm] = useState<FormState>({ ...EMPTY_FORM, office_id: officeId ?? "" });
   const [createErr, setCreateErr] = useState<{ level: LocationLevel; key: string } | null>(null);
+  const [createFieldErrors, setCreateFieldErrors] = useState<FormErrors>({});
+  const createNameRef = useRef<HTMLInputElement>(null);
 
   // Edit
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<FormState | null>(null);
   const [editPhoto, setEditPhoto] = useState<File | null>(null);
   const [editErr, setEditErr] = useState<{ level: LocationLevel; key: string } | null>(null);
+  const [editFieldErrors, setEditFieldErrors] = useState<FormErrors>({});
+  const editNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page]);
