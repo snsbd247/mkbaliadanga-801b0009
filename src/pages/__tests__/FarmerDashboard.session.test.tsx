@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import FarmerDashboard from "../FarmerDashboard";
+import { LanguageProvider } from "@/i18n/LanguageProvider";
 
 vi.mock("@/lib/branding", () => ({
   useBranding: () => ({ company_name: "Test", company_name_bn: "টে", logo_url: null }),
