@@ -137,10 +137,8 @@ export default function Loans() {
             <DialogHeader><DialogTitle>{t("issueLoan")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>{t("selectFarmer")}</Label>
-                <Select value={form.farmer_id} onValueChange={v => setForm({ ...form, farmer_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-                </Select>
+                <FarmerSearchSelect value={form.farmer_id || null}
+                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
               </div>
               <div><Label>Loan Plan (optional)</Label>
                 <Select value={form.plan_id} onValueChange={v => {
