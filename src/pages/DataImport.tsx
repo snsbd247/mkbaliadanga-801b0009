@@ -185,9 +185,16 @@ export default function DataImport() {
 
     try {
       // Pre-resolve farmer mapping where applicable
-      const accountNumbers = next
-        .filter((r) => mod !== "ledger")
-        .map((r) => String(r.raw.account_number ?? "").trim());
+      const accountNumbers: string[] = [];
+      next.forEach((r) => {
+        if (mod === "ledger") return;
+        if (mod === "land_relations") {
+          accountNumbers.push(String(r.raw.owner_account_number ?? "").trim());
+          if (r.raw.sharecropper_account_number) accountNumbers.push(String(r.raw.sharecropper_account_number).trim());
+        } else {
+          accountNumbers.push(String(r.raw.account_number ?? "").trim());
+        }
+      });
       const farmerMap = mod !== "ledger" ? await resolveFarmers(accountNumbers) : new Map();
 
       const accountMap = mod === "ledger"
