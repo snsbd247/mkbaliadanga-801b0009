@@ -239,6 +239,40 @@ export default function DataImport() {
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
             };
+          } else if (mod === "land_relations") {
+            const owner = farmerMap.get(String(raw.owner_account_number));
+            if (!owner) throw new Error("Owner farmer not found for owner_account_number");
+            const sharecropper = raw.sharecropper_account_number
+              ? farmerMap.get(String(raw.sharecropper_account_number))
+              : null;
+            if (raw.sharecropper_account_number && !sharecropper) {
+              throw new Error("Sharecropper farmer not found for sharecropper_account_number");
+            }
+            // Resolve land by owner farmer + dag_no
+            const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
+            if (!dag) throw new Error("dag_no required to identify the land");
+            const { data: landRow, error: landErr } = await supabase
+              .from("lands")
+              .select("id, office_id")
+              .eq("farmer_id", owner.id)
+              .eq("dag_no", dag)
+              .maybeSingle();
+            if (landErr) throw landErr;
+            if (!landRow) throw new Error(`No land found for owner with dag_no=${dag}`);
+            const share = Number(raw.share_percentage ?? 50);
+            if (!(share > 0 && share <= 100)) throw new Error("share_percentage must be between 0 and 100");
+            table = "land_relations";
+            payload = {
+              land_id: landRow.id,
+              office_id: landRow.office_id ?? owner.office_id,
+              owner_farmer_id: owner.id,
+              sharecropper_farmer_id: sharecropper ? sharecropper.id : null,
+              share_percentage: share,
+              valid_from: raw.valid_from ?? new Date().toISOString().slice(0, 10),
+              valid_to: raw.valid_to || null,
+              note: raw.note ?? null,
+              created_by: user?.id,
+            };
           } else if (mod === "loans") {
             const f = farmerMap.get(String(raw.account_number));
             if (!f) throw new Error("Farmer not found for account_number");
