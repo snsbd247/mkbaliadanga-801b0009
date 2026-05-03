@@ -137,10 +137,6 @@ export default function BulkCards() {
       toast.error(e?.message ?? "PDF export failed");
     } finally { setBusy(false); setBulkCards([]); }
   }
-    } catch (e: any) {
-      toast.error(e?.message ?? "PDF export failed");
-    } finally { setBusy(false); }
-  }
 
   if (!isAdmin) {
     return (
