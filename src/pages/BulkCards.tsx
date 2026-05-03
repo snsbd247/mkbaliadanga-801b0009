@@ -33,6 +33,7 @@ interface FarmerRow {
 export default function BulkCards() {
   const { isAdmin } = useAuth();
   const brand = useBranding();
+  const cardCfg = useCardSettings();
   const [list, setList] = useState<FarmerRow[]>([]);
   const [q, setQ] = useState("");
   const [officeId, setOfficeId] = useState<string>("all");
