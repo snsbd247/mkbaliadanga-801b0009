@@ -384,6 +384,33 @@ export default function FarmerDetail() {
               </TableBody>
             </Table>
           </Card>
+
+          <Card className="mt-4">
+            <div className="p-3 border-b font-medium">{t("cultivatedLands")}</div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{t("dagNo")}</TableHead>
+                <TableHead>{t("landSize")}</TableHead>
+                <TableHead>{t("owner")}</TableHead>
+                <TableHead>{t("sharePercent")}</TableHead>
+                <TableHead>{t("validFrom")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {tenantLands.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell><Link to={`/lands/${r.lands?.id}`} className="underline">{r.lands?.dag_no}</Link></TableCell>
+                    <TableCell>{r.lands?.land_size}</TableCell>
+                    <TableCell>
+                      {r.owner ? <Link to={`/farmers/${r.owner.id}`} className="underline">{r.owner.name_en} <span className="text-xs text-muted-foreground">({r.owner.account_number ?? r.owner.farmer_code})</span></Link> : "—"}
+                    </TableCell>
+                    <TableCell>{r.share_percentage}%</TableCell>
+                    <TableCell>{fmtDate(r.valid_from)}</TableCell>
+                  </TableRow>
+                ))}
+                {tenantLands.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">{t("noData")}</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
         </TabsContent>
 
         <TabsContent value="relations">
