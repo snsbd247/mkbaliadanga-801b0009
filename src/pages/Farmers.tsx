@@ -397,7 +397,7 @@ export default function Farmers() {
           <TableBody>
             {list.map(f => (
               <TableRow key={f.id} className="cursor-pointer" onClick={() => nav(`/farmers/${f.id}`)}>
-                <TableCell className="font-mono text-xs">{f.farmer_code}</TableCell>
+                <TableCell className="font-mono text-xs">{f.account_number ?? f.farmer_code}</TableCell>
                 <TableCell className="font-mono text-xs">{f.member_no || "—"}</TableCell>
                 <TableCell>
                   <div className="font-medium">{f.name_en}</div>
