@@ -448,50 +448,91 @@ export default function FarmerProfileReport() {
             </tbody>
           </table>
 
-          <div className="farmer-section-title">Owner Information</div>
-          <div className="farmer-year-row">সেচ বর্ষ: {irrigationYear}</div>
-          <table className="farmer-table compact-gap">
-            <colgroup>
-              <col style={{ width: "4.5%" }} />
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "42.5%" }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: "13%" }} />
-              <col style={{ width: "6.5%" }} />
-              <col style={{ width: "11.5%" }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Mouza</th>
-                <th>Season</th>
-                <th>Dag No</th>
-                <th>Owner Name - FID</th>
-                <th>Owner Type</th>
-                <th>Land Size</th>
-                <th>Field Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(ownerRows.length ? ownerRows : [{
-                id: "empty-owner-row",
-                mouza: "",
-                season: "",
-                dag_no: "",
-                owner_name_fid: "",
-                owner_type: "",
-                land_size: "",
-                field_type: "",
-              }]).map((row) => (
-                <tr key={row.id}>
-                  <td>{row.mouza}</td>
-                  <td>{row.season}</td>
-                  <td>{row.dag_no}</td>
-                  <td>{row.owner_name_fid}</td>
-                  <td>{row.owner_type}</td>
-                  <td>{row.land_size}</td>
-                  <td className="field-type-cell">{row.field_type}</td>
-                </tr>
-              ))}
+          <div className="farmer-section-title">Irrigation Charge Information</div>
+          {(ownerByYear.length ? ownerByYear : [[irrigationYear, []]]).map(([year, rows]) => {
+            const totals = rows.reduce(
+              (acc: any, r: any) => {
+                acc.land_size += r.land_size_num;
+                acc.canal += r.canal_num;
+                acc.maintenance += r.maintenance_num;
+                acc.other += r.other_num;
+                acc.charge += r.charge_num;
+                acc.due += r.due_num;
+                return acc;
+              },
+              { land_size: 0, canal: 0, maintenance: 0, other: 0, charge: 0, due: 0 }
+            );
+            return (
+              <div key={year} className="irrigation-year-block">
+                <div className="farmer-year-row">সেচ বর্ষ: {year}</div>
+                <table className="farmer-table compact-gap">
+                  <colgroup>
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "6.5%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "6.5%" }} />
+                    <col style={{ width: "6.5%" }} />
+                    <col style={{ width: "6.5%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Mouza</th>
+                      <th>Season</th>
+                      <th>Dag No</th>
+                      <th>Owner Type</th>
+                      <th>Owner Name - FID</th>
+                      <th>Land Size</th>
+                      <th>Field Type</th>
+                      <th>Charge Rate</th>
+                      <th>Canal Charge</th>
+                      <th>Maintenance Charge</th>
+                      <th>Other Charges</th>
+                      <th>Charge</th>
+                      <th>Due</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(rows.length ? rows : [{ id: `empty-${year}` }]).map((row: any) => (
+                      <tr key={row.id}>
+                        <td>{row.mouza}</td>
+                        <td>{row.season}</td>
+                        <td>{row.dag_no}</td>
+                        <td>{row.owner_type}</td>
+                        <td>{row.owner_name_fid}</td>
+                        <td>{row.land_size}</td>
+                        <td className="field-type-cell">{row.field_type}</td>
+                        <td>{row.charge_rate}</td>
+                        <td>{row.canal_charge}</td>
+                        <td>{row.maintenance_charge}</td>
+                        <td>{row.other_charge}</td>
+                        <td>{row.charge}</td>
+                        <td>{row.due}</td>
+                      </tr>
+                    ))}
+                    {rows.length > 0 && (
+                      <tr className="totals-row">
+                        <td></td><td></td><td></td><td></td><td></td>
+                        <td>{totals.land_size.toFixed(4).replace(/\.?0+$/, "")}</td>
+                        <td></td><td></td>
+                        <td>{totals.canal || 0}</td>
+                        <td>{totals.maintenance || 0}</td>
+                        <td>{totals.other || 0}</td>
+                        <td>{Math.round(totals.charge)}</td>
+                        <td>{Math.round(totals.due)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
             </tbody>
           </table>
 
