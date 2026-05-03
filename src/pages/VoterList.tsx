@@ -93,6 +93,25 @@ export default function VoterList() {
     document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
+  function exportPdf() {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    doc.setFontSize(14);
+    doc.text("Voter List", 40, 36);
+    doc.setFontSize(10);
+    doc.text(`${total} voter${total === 1 ? "" : "s"}`, 40, 52);
+    autoTable(doc, {
+      startY: 64,
+      head: [["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Village", "Office"]],
+      body: rows.map(r => [
+        r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
+        r.mobile ?? "", r.village ?? "", r.offices?.name ?? "",
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [16, 122, 87] },
+    });
+    doc.save(`voter-list-${Date.now()}.pdf`);
+  }
+
   const headerInfo = useMemo(() => `${total} voter${total === 1 ? "" : "s"}`, [total]);
 
   return (
