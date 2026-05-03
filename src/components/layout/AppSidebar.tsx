@@ -100,6 +100,7 @@ export function AppSidebar() {
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
         { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
+        { url: "/import", icon: Upload, label: "Universal Import", permKey: "farmers" },
         { url: "/admin/receipt-template", icon: Receipt, label: t("receiptTemplate"), superOnly: true },
         { url: "/admin/card-designer", icon: IdCard, label: "Card Designer", superOnly: true },
         { url: "/sms-settings", icon: MessageSquare, label: t("smsSettings"), superOnly: true },

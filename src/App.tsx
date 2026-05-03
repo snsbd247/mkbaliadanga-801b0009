@@ -55,6 +55,7 @@ import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
 import FarmersImport from "./pages/FarmersImport";
+import DataImport from "./pages/DataImport";
 import VoterList from "./pages/VoterList";
 import VoterAudit from "./pages/VoterAudit";
 import FarmerStatement from "./pages/FarmerStatement";
@@ -103,6 +104,7 @@ const App = () => (
                 <Route path="/reports/voter-audit" element={<RequirePerm module="farmers" action="can_edit"><VoterAudit /></RequirePerm>} />
                 <Route path="/reports/farmer-statement" element={<FarmerStatement />} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
+                <Route path="/import" element={<RequirePerm module="farmers" action="can_add"><DataImport /></RequirePerm>} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/scan" element={<Scan />} />
