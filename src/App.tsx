@@ -55,6 +55,7 @@ import RoleMatrix from "./pages/admin/RoleMatrix";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
+import ExpensesReport from "./pages/reports/ExpensesReport";
 import FarmersImport from "./pages/FarmersImport";
 import DataImport from "./pages/DataImport";
 import VoterList from "./pages/VoterList";
@@ -105,6 +106,7 @@ const App = () => (
                 <Route path="/reports/farmer-rejections" element={<RequirePerm module="farmers" action="can_edit"><FarmerRejectionsReport /></RequirePerm>} />
                 <Route path="/reports/voter-audit" element={<RequirePerm module="farmers" action="can_edit"><VoterAudit /></RequirePerm>} />
                 <Route path="/reports/farmer-statement" element={<FarmerStatement />} />
+                <Route path="/reports/expenses" element={<RequirePerm module="reports" action="can_view"><ExpensesReport /></RequirePerm>} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 <Route path="/import" element={<RequirePerm module="farmers" action="can_add"><DataImport /></RequirePerm>} />
                 <Route path="/users" element={<Users />} />
