@@ -27,30 +27,45 @@ export default function Loans() {
   const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [installments, setInstallments] = useState<Record<string, any[]>>({});
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({ farmer_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
 
   useEffect(() => { document.title = `${t("loans")} — ${t("appName")}`; load(); }, []);
   async function load() {
-    const [f, l, pr] = await Promise.all([
+    const [f, l, pr, lp] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code,member_no,mobile,village").order("name_en"),
-      supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by)").order("created_at", { ascending: false }).limit(200),
+      supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by), loan_plans(name,name_bn,installment_type,duration_months)").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("id,full_name,username"),
+      supabase.from("loan_plans").select("*").eq("is_active", true).order("name"),
     ]);
     setFarmers(f.data ?? []);
     setLoans(l.data ?? []);
+    setPlans(lp.data ?? []);
     const map: Record<string, string> = {};
     (pr.data ?? []).forEach((p: any) => { map[p.id] = p.full_name || p.username || p.id.slice(0, 6); });
     setProfiles(map);
   }
+  async function loadInstallments(loanId: string) {
+    const { data } = await supabase.from("loan_installments").select("*").eq("loan_id", loanId).order("installment_no");
+    setInstallments(prev => ({ ...prev, [loanId]: data ?? [] }));
+  }
   async function save() {
     if (!form.farmer_id || form.principal <= 0) return toast.error(t("pickFarmerAndAmount"));
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
+    const plan = plans.find((p: any) => p.id === form.plan_id);
+    const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
+    const total_payable = form.principal * (1 + interest_rate / 100);
     const { error } = await supabase.from("loans").insert({
-      farmer_id: form.farmer_id, principal: form.principal, interest_enabled: form.interest_enabled,
-      interest_rate: form.interest_enabled ? form.interest_rate : 0,
+      farmer_id: form.farmer_id,
+      plan_id: form.plan_id || null,
+      principal: form.principal,
+      interest_enabled: form.interest_enabled,
+      interest_rate,
+      total_payable,
       issued_on: form.issued_on, next_due_on: form.next_due_on || null, note: form.note,
       status: "pending", created_by: user?.id,
     });
@@ -66,6 +81,14 @@ export default function Loans() {
   async function decide(id: string, status: "approved" | "rejected") {
     const { error } = await supabase.from("loans").update({ status, approved_by: user?.id, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
+    if (status === "approved") {
+      const loan = loans.find(l => l.id === id);
+      if (loan?.plan_id) {
+        const { error: gErr } = await supabase.rpc("generate_loan_installments", { _loan_id: id });
+        if (gErr) toast.error(`Schedule: ${gErr.message}`);
+        else toast.success("Installment schedule generated");
+      }
+    }
     toast.success(t("saved")); load();
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -118,9 +141,19 @@ export default function Loans() {
                   <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              <div><Label>Loan Plan (optional)</Label>
+                <Select value={form.plan_id} onValueChange={v => {
+                  const p = plans.find(x => x.id === v);
+                  setForm({ ...form, plan_id: v, interest_rate: p?.interest_rate ?? form.interest_rate });
+                }}>
+                  <SelectTrigger><SelectValue placeholder="No plan (manual)" /></SelectTrigger>
+                  <SelectContent>{plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} @ {p.interest_rate}%</SelectItem>)}</SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">When a plan is selected, an installment schedule is auto-generated upon committee approval.</p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>{t("principal")}</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
-                <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={form.interest_rate} disabled={!form.interest_enabled} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
+                <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={form.interest_rate} disabled={!form.interest_enabled || !!form.plan_id} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <Label>{t("interestEnabled")}</Label>
@@ -160,7 +193,8 @@ export default function Loans() {
               onPrint={printLoanReceipt}
               profiles={profiles}
               expanded={expanded}
-              setExpanded={setExpanded}
+              setExpanded={(id: string | null) => { setExpanded(id); if (id) loadInstallments(id); }}
+              installments={installments}
             />
           </TabsContent>
         ))}
@@ -169,7 +203,7 @@ export default function Loans() {
   );
 }
 
-function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded, setExpanded }: any) {
+function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded, setExpanded, installments }: any) {
   return (
     <Card className="overflow-x-auto"><Table>
       <TableHeader><TableRow>
@@ -187,11 +221,14 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
           const due = Number(l.total_payable) - paid;
           const isOpen = expanded === l.id;
           const hasPayments = (l.loan_payments ?? []).length > 0;
+          const hasSchedule = !!l.plan_id;
+          const canExpand = hasPayments || hasSchedule;
+          const sched = installments?.[l.id] ?? [];
           return (
             <Fragment key={l.id}>
               <TableRow>
                 <TableCell>
-                  {hasPayments && (
+                  {canExpand && (
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setExpanded(isOpen ? null : l.id)}>
                       {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                     </Button>
@@ -222,26 +259,56 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
                   )}
                 </TableCell>
               </TableRow>
-              {isOpen && hasPayments && (
+              {isOpen && canExpand && (
                 <TableRow className="bg-muted/30">
                   <TableCell></TableCell>
-                  <TableCell colSpan={9} className="py-2">
-                    <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">Repayments</div>
-                    <table className="w-full text-sm">
-                      <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">Date</th><th className="text-right">Amount</th><th className="text-left pl-3">Collected by</th><th className="text-right">Receipt</th></tr></thead>
-                      <tbody>
-                        {(l.loan_payments ?? []).slice().sort((a: any, b: any) => (b.paid_on ?? "").localeCompare(a.paid_on ?? "")).map((p: any) => (
-                          <tr key={p.id} className="border-t">
-                            <td className="py-1">{fmtDate(p.paid_on)}</td>
-                            <td className="py-1 text-right text-success font-semibold">{money(p.amount)}</td>
-                            <td className="py-1 pl-3">{p.collected_by ? (profiles?.[p.collected_by] ?? p.collected_by.slice(0, 6)) : "—"}</td>
-                            <td className="py-1 text-right">
-                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPrint(l, p)} title="Print payment receipt"><Printer className="h-3.5 w-3.5" /></Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <TableCell colSpan={9} className="py-2 space-y-4">
+                    {hasSchedule && (
+                      <div>
+                        <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">
+                          Installment Schedule {l.loan_plans ? `— ${l.loan_plans.name} (${l.loan_plans.installment_type})` : ""}
+                        </div>
+                        {sched.length === 0 ? (
+                          <div className="text-xs text-muted-foreground">No installments generated yet.</div>
+                        ) : (
+                          <table className="w-full text-sm">
+                            <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">#</th><th className="text-left">Due</th><th className="text-right">Amount</th><th className="text-right">Paid</th><th className="text-right">Penalty</th><th>Status</th></tr></thead>
+                            <tbody>
+                              {sched.map((it: any) => (
+                                <tr key={it.id} className="border-t">
+                                  <td className="py-1">{it.installment_no}</td>
+                                  <td>{fmtDate(it.due_date)}</td>
+                                  <td className="text-right">{money(it.amount)}</td>
+                                  <td className="text-right">{money(it.paid_amount)}</td>
+                                  <td className="text-right">{money(it.penalty_amount)}</td>
+                                  <td><Badge variant={it.status === "paid" ? "secondary" : it.status === "missed" ? "destructive" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                    {hasPayments && (
+                      <div>
+                        <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">Repayments</div>
+                        <table className="w-full text-sm">
+                          <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">Date</th><th className="text-right">Amount</th><th className="text-left pl-3">Collected by</th><th className="text-right">Receipt</th></tr></thead>
+                          <tbody>
+                            {(l.loan_payments ?? []).slice().sort((a: any, b: any) => (b.paid_on ?? "").localeCompare(a.paid_on ?? "")).map((p: any) => (
+                              <tr key={p.id} className="border-t">
+                                <td className="py-1">{fmtDate(p.paid_on)}</td>
+                                <td className="py-1 text-right text-success font-semibold">{money(p.amount)}</td>
+                                <td className="py-1 pl-3">{p.collected_by ? (profiles?.[p.collected_by] ?? p.collected_by.slice(0, 6)) : "—"}</td>
+                                <td className="py-1 text-right">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPrint(l, p)} title="Print payment receipt"><Printer className="h-3.5 w-3.5" /></Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               )}
