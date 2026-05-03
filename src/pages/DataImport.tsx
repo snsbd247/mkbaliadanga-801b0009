@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Upload, Download, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, Download, AlertTriangle, CheckCircle2, Loader2, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import { downloadCsvTemplate } from "@/lib/importTemplates";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
