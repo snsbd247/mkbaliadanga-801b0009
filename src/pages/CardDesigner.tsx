@@ -134,6 +134,16 @@ export default function CardDesigner() {
               <Input type="number" min={0.7} max={1.6} step={0.05} value={s.font_scale}
                 onChange={(e) => setS({ ...s, font_scale: Number(e.target.value) || 1 })} />
             </div>
+            <div>
+              <Label>Header height (mm)</Label>
+              <Input type="number" min={5} max={20} step={0.5} value={s.header_height_mm}
+                onChange={(e) => setS({ ...s, header_height_mm: Number(e.target.value) || 8 })} />
+            </div>
+            <div>
+              <Label>Logo size (mm)</Label>
+              <Input type="number" min={3} max={20} step={0.5} value={s.logo_size_mm}
+                onChange={(e) => setS({ ...s, logo_size_mm: Number(e.target.value) || 6 })} />
+            </div>
             <div className="md:col-span-2">
               <Label>Header text (EN)</Label>
               <Input value={s.header_text} maxLength={120} onChange={(e) => setS({ ...s, header_text: e.target.value })} />
@@ -141,6 +151,16 @@ export default function CardDesigner() {
             <div className="md:col-span-2">
               <Label>Header text (BN)</Label>
               <Input value={s.header_text_bn} maxLength={120} onChange={(e) => setS({ ...s, header_text_bn: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Custom text (EN)</Label>
+              <Input value={s.custom_text} maxLength={120} placeholder="e.g. Valid until 2027"
+                onChange={(e) => setS({ ...s, custom_text: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Custom text (BN)</Label>
+              <Input value={s.custom_text_bn} maxLength={120}
+                onChange={(e) => setS({ ...s, custom_text_bn: e.target.value })} />
             </div>
           </div>
           <div className="grid gap-2 pt-2 border-t">
