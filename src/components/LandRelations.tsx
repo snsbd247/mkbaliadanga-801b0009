@@ -40,9 +40,10 @@ export function LandRelations({ farmerId }: Props) {
     const [rels, ld] = await Promise.all([
       supabase.from("land_relations")
         .select("*, lands(dag_no,mouza,land_size,mouza_id), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,account_number), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,account_number)")
+        .is("deleted_at", null)
         .or(`owner_farmer_id.eq.${farmerId},sharecropper_farmer_id.eq.${farmerId}`)
         .order("valid_from", { ascending: false }),
-      supabase.from("lands").select("id,dag_no,mouza,land_size,farmer_id").order("created_at"),
+      supabase.from("lands").select("id,dag_no,mouza,land_size,farmer_id").is("deleted_at", null).order("created_at"),
     ]);
     const relsData = rels.data ?? [];
     // Hydrate location chain for involved lands
