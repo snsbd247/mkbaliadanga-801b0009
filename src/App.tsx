@@ -21,6 +21,7 @@ import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
 import Loans from "./pages/Loans";
 import Irrigation from "./pages/Irrigation";
+import IrrigationRates from "./pages/IrrigationRates";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
@@ -84,6 +85,7 @@ const App = () => (
                 <Route path="/savings" element={<Savings />} />
                 <Route path="/loans" element={<Loans />} />
                 <Route path="/irrigation" element={<Irrigation />} />
+                <Route path="/irrigation/rates" element={<IrrigationRates />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/reports/irrigation-due" element={<IrrigationDueReport />} />
