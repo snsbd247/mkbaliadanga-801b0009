@@ -392,6 +392,43 @@ export default function Savings() {
           </Table></Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!decision} onOpenChange={(v) => !v && setDecision(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{decision?.mode === "reject" ? t("rejectAction") : t("cancelEnrollment" as any)}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {decision?.mode === "cancel" && (
+              <p className="text-sm text-muted-foreground">{t("cancelEnrollmentConfirm" as any)}</p>
+            )}
+            <div>
+              <Label>{decision?.mode === "reject" ? t("rejectionReason" as any) : t("cancellationReason" as any)}</Label>
+              <Input
+                autoFocus
+                maxLength={500}
+                value={decision?.reason ?? ""}
+                onChange={(e) => decision && setDecision({ ...decision, reason: e.target.value })}
+                placeholder={t("reasonRequired" as any)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDecision(null)}>{t("cancel")}</Button>
+            <Button
+              variant="destructive"
+              disabled={(decision?.reason ?? "").trim().length < 3}
+              onClick={async () => {
+                if (!decision) return;
+                const ok = await submitDecision(decision.id, decision.mode, decision.reason);
+                if (ok) setDecision(null);
+              }}
+            >
+              {t("save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
