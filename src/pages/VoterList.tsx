@@ -170,7 +170,7 @@ export default function VoterList() {
                 </TableCell>
                 <TableCell className="font-mono text-xs">{r.account_number ?? "—"}</TableCell>
                 <TableCell>{r.mobile ?? "—"}</TableCell>
-                <TableCell className="text-xs">{r.village ?? "—"}</TableCell>
+                <TableCell className="text-xs">{locationOf(r)}</TableCell>
                 <TableCell className="text-xs">{r.offices?.name ?? "—"}</TableCell>
               </TableRow>
             ))}
