@@ -100,6 +100,7 @@ export default function CollectionReport() {
       let irrQ: any = supabase
         .from("irrigation_charges")
         .select("id,entry_date,paid_amount,farmer_id,created_by,farmers(name_en,farmer_code)")
+        .is("deleted_at", null)
         .gt("paid_amount", 0)
         .order("entry_date", { ascending: false });
       if (from) irrQ = irrQ.gte("entry_date", from);
