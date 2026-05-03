@@ -65,7 +65,7 @@ export function SmsProviderStatusCard() {
   const PillIcon = pill.icon;
 
   return (
-    <Link to="/settings/sms" className="block">
+    <Link to="/sms-settings" className="block">
       <Card className="p-4 hover:bg-accent/40 transition-colors">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1.5 text-sm font-medium">
