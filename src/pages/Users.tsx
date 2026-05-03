@@ -64,8 +64,12 @@ export default function Users() {
       supabase.from("offices").select("id,name"),
     ]);
     setOffices(o.data ?? []);
+    const ROLE_RANK: Record<string, number> = { super_admin: 4, admin: 3, committee: 2, staff: 1 };
     const rolesByUser: Record<string, string[]> = {};
     (r.data ?? []).forEach((x: any) => { (rolesByUser[x.user_id] ??= []).push(x.role); });
+    Object.keys(rolesByUser).forEach((uid) => {
+      rolesByUser[uid].sort((a, b) => (ROLE_RANK[b] ?? 0) - (ROLE_RANK[a] ?? 0));
+    });
     setList((p.data ?? []).map((x: any) => ({ ...x, roles: rolesByUser[x.id] ?? [] })));
   }
 
