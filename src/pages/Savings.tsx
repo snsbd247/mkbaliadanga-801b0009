@@ -31,6 +31,9 @@ export default function Savings() {
   const [farmerPlans, setFarmerPlans] = useState<any[]>([]);
   const [planOpen, setPlanOpen] = useState(false);
   const [planForm, setPlanForm] = useState({ farmer_id: "", plan_id: "", start_date: new Date().toISOString().slice(0, 10) });
+  const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
+  const [reportRange, setReportRange] = useState({ from: "", to: "" });
+  const { lang } = useLang();
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
   async function load() {
