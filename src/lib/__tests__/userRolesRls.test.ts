@@ -13,10 +13,10 @@ function canManageUserRole(actor: Actor, target: Target, op: "insert" | "update"
   if (actor.role === "super_admin") return true;
   if (actor.role !== "admin") return false;
   if (target.new_role === "super_admin") return false; // super admin role is reserved
-  // For delete, the "new_role" is treated as the existing role being removed.
-  if (op === "delete" && target.new_role === "super_admin") return false;
   return target.user_office_id === actor.office_id;
 }
+// Suppress unused-param lint for `op`; kept for API parity with SQL policies.
+void canManageUserRole;
 
 describe("user_roles RLS (logic mirror)", () => {
   const office1 = "office-1";
