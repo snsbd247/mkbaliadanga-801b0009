@@ -13,6 +13,10 @@ export interface CardSettings {
   show_qr: boolean;
   photo_size_mm: number;
   font_scale: number;
+  header_height_mm: number;
+  logo_size_mm: number;
+  custom_text: string;
+  custom_text_bn: string;
 }
 
 export const DEFAULT_CARD_SETTINGS: CardSettings = {
@@ -27,6 +31,10 @@ export const DEFAULT_CARD_SETTINGS: CardSettings = {
   show_qr: true,
   photo_size_mm: 18,
   font_scale: 1,
+  header_height_mm: 8,
+  logo_size_mm: 6,
+  custom_text: "",
+  custom_text_bn: "",
 };
 
 let cached: CardSettings | null = null;
