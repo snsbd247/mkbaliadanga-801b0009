@@ -82,35 +82,38 @@ export default function Savings() {
     toast.success("Enrollment submitted for approval"); setPlanOpen(false); load();
   }
   async function approvePlan(id: string) {
+    const target = farmerPlans.find(x => x.id === id);
+    if (target?.status === "cancelled" || target?.status === "rejected") {
+      toast.error(t("cannotEditCancelled" as any));
+      return;
+    }
     const { error } = await supabase.from("farmer_savings_plans")
       .update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("status", "pending");
     if (error) return toast.error(error.message);
-    toast.success("Enrollment approved"); load();
+    toast.success(t("approved" as any)); load();
   }
-  async function rejectPlan(id: string) {
-    const { error } = await supabase.from("farmer_savings_plans")
-      .update({ status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Enrollment rejected"); load();
-  }
-  async function cancelPlan(id: string) {
-    const reason = window.prompt("Cancellation reason (optional)") ?? "";
-    if (!window.confirm("Cancel this enrollment? Expected/maturity amounts will be reset to 0. Existing savings transactions remain unchanged.")) return;
-    const { error } = await supabase.from("farmer_savings_plans")
-      .update({
-        status: "cancelled",
-        cancelled_by: user?.id,
-        cancelled_at: new Date().toISOString(),
-        cancel_reason: reason,
-        expected_total: 0,
-        expected_interest: 0,
-        maturity_amount: 0,
-      })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Enrollment cancelled"); load();
+  async function submitDecision(id: string, mode: "reject" | "cancel", reason: string) {
+    const trimmed = reason.trim();
+    if (trimmed.length < 3) { toast.error(t("reasonRequired" as any)); return false; }
+    const target = farmerPlans.find(x => x.id === id);
+    if (target?.status === "cancelled" || target?.status === "rejected") {
+      toast.error(t("cannotEditCancelled" as any));
+      return false;
+    }
+    const patch: any = mode === "reject"
+      ? { status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString(), cancel_reason: trimmed }
+      : { status: "cancelled", cancelled_by: user?.id, cancelled_at: new Date().toISOString(), cancel_reason: trimmed, expected_total: 0, expected_interest: 0, maturity_amount: 0 };
+    let q = supabase.from("farmer_savings_plans").update(patch).eq("id", id);
+    // Server-side guard: only allow rejecting from 'pending' and cancelling from 'pending'/'active'
+    if (mode === "reject") q = q.eq("status", "pending");
+    else q = q.in("status", ["pending", "active"]);
+    const { error } = await q;
+    if (error) { toast.error(error.message); return false; }
+    toast.success(mode === "reject" ? t("rejected" as any) : t("cancelled" as any));
+    load();
+    return true;
   }
   function buildSchedule(fp: any): { no: number; due_date: string; amount: number }[] {
     const plan = fp.savings_plans;
