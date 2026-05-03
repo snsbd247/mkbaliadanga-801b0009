@@ -185,10 +185,12 @@ function LevelTab({ level }: { level: Level }) {
 
   // Filter state — cascading
   const [filter, setFilter] = useState<Chain>({});
-  // Add form state — cascading (independent of filter so user can add anywhere)
+  // Add dialog state — cascading (independent of filter so user can add anywhere)
+  const [addOpen, setAddOpen] = useState(false);
   const [addChain, setAddChain] = useState<Chain>({});
   const [name, setName] = useState("");
   const [nameBn, setNameBn] = useState("");
+  const [adding, setAdding] = useState(false);
   
 
   const [rows, setRows] = useState<Row[]>([]);
@@ -263,7 +265,6 @@ function LevelTab({ level }: { level: Level }) {
 
   async function add() {
     if (!name.trim()) return toast.error(t("nameRequired"));
-    // Validate full chain selected
     for (const step of chain) {
       if (!addChain[step.col]) return toast.error(`Please select ${step.label} first`);
     }
@@ -271,10 +272,12 @@ function LevelTab({ level }: { level: Level }) {
     if (directCol) payload[directCol] = addChain[directCol];
     if (optionalCol && addChain[optionalCol]) payload[optionalCol] = addChain[optionalCol];
 
+    setAdding(true);
     const { error } = await (supabase.from as any)(level).insert(payload);
+    setAdding(false);
     if (error) return toast.error(error.message);
     toast.success(t("addedToast"));
-    setName(""); setNameBn("");
+    setName(""); setNameBn(""); setAddChain({}); setAddOpen(false);
     load();
   }
 
@@ -366,26 +369,41 @@ function LevelTab({ level }: { level: Level }) {
         </Card>
       )}
 
-      {/* Add form */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">Add new {level.slice(0, -1)}</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {chain.length > 0 && (
-            <CascadeFilters level={level} value={addChain} onChange={setAddChain} />
-          )}
-          <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
-            <div>
-              <Label className="text-xs">Name (English) *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">Name (Bangla)</Label>
-              <Input value={nameBn} onChange={(e) => setNameBn(e.target.value)} />
+      {/* Add button */}
+      <div className="flex justify-end">
+        <Button onClick={() => { setAddChain({}); setName(""); setNameBn(""); setAddOpen(true); }}>
+          <Plus className="h-4 w-4 mr-1"/>Add new {level.slice(0, -1)}
+        </Button>
+      </div>
+
+      {/* Add dialog */}
+      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setAddOpen(false); } }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add new {level.slice(0, -1)}</DialogTitle>
+            <DialogDescription>Select the parent hierarchy and provide name details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {chain.length > 0 && (
+              <CascadeFilters level={level} value={addChain} onChange={setAddChain} />
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="text-xs">Name (English) *</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Name (Bangla)</Label>
+                <Input value={nameBn} onChange={(e) => setNameBn(e.target.value)} />
+              </div>
             </div>
           </div>
-          <Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add</Button>
-        </CardContent>
-      </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={adding}>{t("cancel")}</Button>
+            <Button onClick={add} disabled={adding}>{adding && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}<Plus className="h-4 w-4 mr-1"/>Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Listing */}
       <Card>
