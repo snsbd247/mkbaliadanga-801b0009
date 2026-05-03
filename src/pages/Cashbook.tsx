@@ -83,11 +83,11 @@ export default function Cashbook() {
     };
     const [rec, exp, sv, ln, lp, ir] = await Promise.all([
       date(supabase.from("receipts").select("*, farmers(name_en,farmer_code,member_no)").order("receipt_date", { ascending: false }), "receipt_date"),
-      date(supabase.from("expenses").select("*").order("expense_date", { ascending: false }), "expense_date"),
-      date(supabase.from("savings_transactions").select("amount,type,status,txn_date").eq("status", "approved"), "txn_date"),
-      date(supabase.from("loans").select("principal,total_payable,status,issued_on,loan_payments(amount)"), "issued_on"),
+      date(supabase.from("expenses").select("*").is("deleted_at", null).order("expense_date", { ascending: false }), "expense_date"),
+      date(supabase.from("savings_transactions").select("amount,type,status,txn_date").is("deleted_at", null).eq("status", "approved"), "txn_date"),
+      date(supabase.from("loans").select("principal,total_payable,status,issued_on,loan_payments(amount)").is("deleted_at", null), "issued_on"),
       date(supabase.from("loan_payments").select("amount,paid_on"), "paid_on"),
-      date(supabase.from("irrigation_charges").select("total,paid_amount,due_amount,entry_date"), "entry_date"),
+      date(supabase.from("irrigation_charges").select("total,paid_amount,due_amount,entry_date").is("deleted_at", null), "entry_date"),
     ]);
     setReceipts(rec.data ?? []); setExpenses(exp.data ?? []);
     setSavings(sv.data ?? []); setLoans(ln.data ?? []); setLoanPayments(lp.data ?? []); setIrrigation(ir.data ?? []);
