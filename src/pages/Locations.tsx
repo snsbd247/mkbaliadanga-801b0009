@@ -284,12 +284,12 @@ function LevelTab({ level }: { level: Level }) {
     }
     const payload: any = { name: name.trim(), name_bn: nameBn.trim() || null };
     if (directCol) payload[directCol] = addChain[directCol];
-    if (optionalCol && optionalWardId) payload[optionalCol] = optionalWardId;
+    if (optionalCol && addChain[optionalCol]) payload[optionalCol] = addChain[optionalCol];
 
     const { error } = await (supabase.from as any)(level).insert(payload);
     if (error) return toast.error(error.message);
     toast.success(t("addedToast"));
-    setName(""); setNameBn(""); setOptionalWardId("");
+    setName(""); setNameBn("");
     load();
   }
 
