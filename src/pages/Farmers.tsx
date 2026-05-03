@@ -275,7 +275,7 @@ export default function Farmers() {
     err: { level: LocationLevel; key: string } | null;
     fieldErrors: FormErrors;
     disabled: boolean;
-    nameInputRef?: React.RefObject<HTMLInputElement>;
+    nameInputRef?: RefObject<HTMLInputElement | null>;
   }) {
     return (
       <div className="grid grid-cols-2 gap-3">
