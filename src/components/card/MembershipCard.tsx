@@ -11,23 +11,42 @@ export interface CardData {
     name_en?: string;
     farmer_code?: string;
     member_no?: string;
+    account_number?: string | null;
+    voter_number?: string | null;
     mobile?: string;
     village?: string;
     address?: string;
     photo_url?: string | null;
   };
+  /** Legacy QR token (deprecated). When `qr_value` is provided, it overrides this. */
   token: string;
+  /** Preferred QR payload — typically a /scan?acc=<account_number> URL. */
+  qr_value?: string;
   issued_at: string;
+}
+
+export interface CardDisplayOptions {
+  show_photo?: boolean;
+  show_account_number?: boolean;
+  show_voter_number?: boolean;
+  show_issue_date?: boolean;
+  show_qr?: boolean;
 }
 
 interface Props {
   data: CardData;
   templateId?: TemplateId;
+  display?: CardDisplayOptions;
 }
 
 /** Standard CR80 card: 85.6mm × 54mm. */
-export function MembershipCard({ data, templateId = "classic" }: Props) {
+export function MembershipCard({ data, templateId = "classic", display }: Props) {
   const f = data.farmer;
+  const opts = {
+    show_photo: true, show_account_number: true, show_voter_number: true,
+    show_issue_date: true, show_qr: true, ...display,
+  };
+  const qrValue = data.qr_value || data.token;
   const issued = new Date(data.issued_at).toLocaleDateString();
   const tpl = TEMPLATES[templateId] ?? TEMPLATES.classic;
   const headerTitle = tpl.bnFirst
@@ -58,19 +77,27 @@ export function MembershipCard({ data, templateId = "classic" }: Props) {
             <div className="ml-auto text-[7px] opacity-80">Member ID</div>
           </div>
           <div className="flex-1 flex items-center gap-2 p-2">
-            <div className="h-16 w-12 shrink-0 rounded border bg-gray-50 overflow-hidden flex items-center justify-center">
-              {f.photo_url ? (
-                <img src={f.photo_url} alt="" className="h-full w-full object-cover" crossOrigin="anonymous" />
-              ) : (
-                <User className="h-6 w-6 text-gray-300" />
-              )}
-            </div>
+            {opts.show_photo && (
+              <div className="h-16 w-12 shrink-0 rounded border bg-gray-50 overflow-hidden flex items-center justify-center">
+                {f.photo_url ? (
+                  <img src={f.photo_url} alt="" className="h-full w-full object-cover" crossOrigin="anonymous" />
+                ) : (
+                  <User className="h-6 w-6 text-gray-300" />
+                )}
+              </div>
+            )}
             <div className="min-w-0 flex-1 text-[9px] leading-tight space-y-0.5">
               <div className="font-bold text-[11px] truncate">{f.name}</div>
               {f.name_en && f.name_en !== f.name && <div className="text-gray-500 truncate">{f.name_en}</div>}
-              <div><span className="text-gray-500">ID:</span> <span className="font-mono">{f.farmer_code || "—"}</span></div>
-              {f.member_no && <div><span className="text-gray-500">Member:</span> <span className="font-mono">{f.member_no}</span></div>}
-              <div><span className="text-gray-500">Issued:</span> {issued}</div>
+              {opts.show_account_number && f.account_number && (
+                <div><span className="text-gray-500">A/C:</span> <span className="font-mono" data-testid="card-account">{f.account_number}</span></div>
+              )}
+              {opts.show_voter_number && f.voter_number && (
+                <div><span className="text-gray-500">Voter:</span> <span className="font-mono" data-testid="card-voter">{f.voter_number}</span></div>
+              )}
+              {opts.show_issue_date && (
+                <div><span className="text-gray-500">Issued:</span> {issued}</div>
+              )}
             </div>
           </div>
         </div>
@@ -89,12 +116,14 @@ export function MembershipCard({ data, templateId = "classic" }: Props) {
             {f.mobile && <div><span className="text-gray-500">Mobile:</span> <span className="font-mono">{f.mobile}</span></div>}
             <div className="pt-1 text-[7px] text-gray-500">If found, please return to the issuing office.</div>
           </div>
-          <div className="flex flex-col items-center justify-center shrink-0">
-            <div className="bg-white p-0.5 border rounded">
-              <QRCodeSVG value={data.token} size={90} level="M" includeMargin={false} />
+          {opts.show_qr && (
+            <div className="flex flex-col items-center justify-center shrink-0">
+              <div className="bg-white p-0.5 border rounded">
+                <QRCodeSVG value={qrValue} size={90} level="M" includeMargin={false} />
+              </div>
+              <div className="text-[6px] text-gray-500 mt-0.5">Scan to pay</div>
             </div>
-            <div className="text-[6px] text-gray-500 mt-0.5">Scan to pay</div>
-          </div>
+          )}
         </div>
       </div>
     </div>

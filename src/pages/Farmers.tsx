@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Eye, Search, IdCard, Trash2, Pencil, AlertTriangle, Loader2 } from "lucide-react";
 import { LocationPicker, LocationValue } from "@/components/locations/LocationPicker";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -309,9 +310,33 @@ export default function Farmers() {
         </div>
         <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
         <div>
-          <Label>Voter Number</Label>
-          <Input value={f.voter_number ?? ""} disabled={disabled} inputMode="numeric" maxLength={20}
-            onChange={e => setF({ ...f, voter_number: e.target.value.replace(/\D/g, "") })} placeholder="optional" />
+          <Label>Is Voter</Label>
+          <div className="flex items-center gap-3 h-10">
+            <Switch
+              checked={!!f.voter_number}
+              disabled={disabled}
+              onCheckedChange={async (on) => {
+                if (on) {
+                  if (f.voter_number) return;
+                  const { data, error } = await supabase.rpc("generate_farmer_voter_number");
+                  if (error) { toast.error(error.message); return; }
+                  setF({ ...f, voter_number: String(data ?? "") });
+                } else {
+                  setF({ ...f, voter_number: "" });
+                }
+              }}
+              data-testid="voter-toggle"
+            />
+            <Input
+              value={f.voter_number ?? ""}
+              disabled={disabled || !f.voter_number}
+              inputMode="numeric"
+              maxLength={20}
+              onChange={(e) => setF({ ...f, voter_number: e.target.value.replace(/\D/g, "") })}
+              placeholder="auto"
+              className="font-mono"
+            />
+          </div>
         </div>
         <div>
           <Label>{t("office")}</Label>

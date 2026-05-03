@@ -89,7 +89,7 @@ export default function Scan() {
     const byCode = await supabase.from("farmers").select("id").eq("farmer_code", key).maybeSingle();
     if (byCode.data?.id) return nav(`/payments?farmer=${byCode.data.id}`);
 
-    toast.error("Farmer not found");
+    toast.error("Account number not found in your office");
   }
 
   async function lookupManual() {

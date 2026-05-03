@@ -49,6 +49,7 @@ import LedgerReconciliation from "./pages/LedgerReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
 import ReceiptTemplate from "./pages/ReceiptTemplate";
+import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
@@ -119,6 +120,7 @@ const App = () => (
                 <Route path="/admin/qr-rotation" element={<QrRotation />} />
                 <Route path="/admin/bulk-cards" element={<BulkCards />} />
                 <Route path="/admin/receipt-template" element={<ReceiptTemplate />} />
+                <Route path="/admin/card-designer" element={<CardDesigner />} />
                 <Route path="/admin/role-matrix" element={<RoleMatrix />} />
               </Route>
               <Route path="*" element={<NotFound />} />
