@@ -203,7 +203,7 @@ export default function Loans() {
   );
 }
 
-function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded, setExpanded }: any) {
+function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded, setExpanded, installments }: any) {
   return (
     <Card className="overflow-x-auto"><Table>
       <TableHeader><TableRow>
