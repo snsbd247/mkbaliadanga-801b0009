@@ -529,31 +529,64 @@ function LevelTab({ level }: { level: Level }) {
       </Card>
 
       {/* Edit dialog */}
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={!!editing} onOpenChange={(o) => { if (!o && !saving) closeEditDialog(); }}>
+        <DialogContent
+          className="max-w-2xl"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            setTimeout(() => editNameRef.current?.focus(), 50);
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Edit {level.slice(0, -1)}</DialogTitle>
             <DialogDescription>Update name and parent hierarchy. Existing references stay intact.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (!saving) saveEdit(); }}
+            className="space-y-3"
+          >
             {chain.length > 0 && (
-              <CascadeFilters level={level} value={editChain} onChange={setEditChain} />
+              <CascadeFilters
+                level={level}
+                value={editChain}
+                onChange={(v) => { setEditChain(v); setEditErrorCol(null); }}
+                errorCol={editErrorCol}
+                disabled={saving}
+              />
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs">Name (English) *</Label>
-                <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                <Label className={"text-xs " + (editNameError ? "text-destructive" : "")}>
+                  Name (English) *
+                </Label>
+                <Input
+                  ref={editNameRef}
+                  value={editName}
+                  onChange={(e) => { setEditName(e.target.value); if (editNameError) setEditNameError(null); }}
+                  disabled={saving}
+                  maxLength={100}
+                  aria-invalid={!!editNameError || undefined}
+                  className={editNameError ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
+                />
+                {editNameError && <p role="alert" className="mt-1 text-xs text-destructive">{editNameError}</p>}
               </div>
               <div>
                 <Label className="text-xs">Name (Bangla)</Label>
-                <Input value={editNameBn} onChange={(e) => setEditNameBn(e.target.value)} />
+                <Input
+                  value={editNameBn}
+                  onChange={(e) => setEditNameBn(e.target.value)}
+                  disabled={saving}
+                  maxLength={100}
+                />
               </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>{t("cancel")}</Button>
-            <Button onClick={saveEdit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}{t("save")}</Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeEditDialog} disabled={saving}>{t("cancel")}</Button>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}{t("save")}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
