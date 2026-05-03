@@ -28,10 +28,11 @@ type Row = {
   seasons?: { name: string | null; year: number | null; type: string | null };
 };
 
+type Basis = "per_size" | "per_day" | "per_hour";
 const empty = {
   id: "",
   season_id: "",
-  basis: "per_size" as const,
+  basis: "per_size" as Basis,
   base_rate: 0,
   canal_charge: 0,
   maintenance_charge: 0,
