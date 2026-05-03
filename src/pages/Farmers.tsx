@@ -330,18 +330,26 @@ export default function Farmers() {
               }}
               data-testid="voter-toggle"
             />
-            <Input
-              value={f.voter_number ?? ""}
-              disabled
-              readOnly
-              inputMode="numeric"
-              maxLength={20}
-              placeholder={f.is_voter ? "auto" : "—"}
-              className="font-mono"
-            />
+            {f.voter_number ? (
+              <Input
+                value={f.voter_number}
+                disabled
+                readOnly
+                inputMode="numeric"
+                maxLength={20}
+                className="font-mono"
+                aria-label="Voter number (read-only)"
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {f.is_voter ? "auto-generating…" : "No voter number assigned"}
+              </span>
+            )}
           </div>
-          {f.voter_number && !f.is_voter && (
-            <p className="mt-1 text-xs text-muted-foreground">Voter number is permanent and will be reused if re-enabled.</p>
+          {f.voter_number && (
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+              ⚠ Voter number is permanent and cannot be edited. It will be reused if Is Voter is re-enabled.
+            </p>
           )}
         </div>
         <div>

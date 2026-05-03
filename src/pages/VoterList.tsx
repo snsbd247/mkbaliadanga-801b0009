@@ -6,9 +6,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileSpreadsheet, FileDown } from "lucide-react";
+import { Search, FileSpreadsheet, FileDown, FileText } from "lucide-react";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useLang } from "@/i18n/LanguageProvider";
+import { useAuth } from "@/auth/AuthProvider";
 
 type Row = {
   id: string;
@@ -23,6 +26,7 @@ type Row = {
 
 export default function VoterList() {
   const { t } = useLang();
+  const { officeId, isSuper } = useAuth();
   const nav = useNavigate();
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
@@ -46,6 +50,7 @@ export default function VoterList() {
       .neq("voter_number", "")
       .order("voter_number", { ascending: true })
       .limit(500);
+    if (!isSuper && officeId) qy = qy.eq("office_id", officeId);
     const term = q.trim();
     if (term) {
       qy = qy.or(`voter_number.ilike.%${term}%,name_en.ilike.%${term}%,name_bn.ilike.%${term}%,mobile.ilike.%${term}%,account_number.ilike.%${term}%`);
@@ -88,6 +93,25 @@ export default function VoterList() {
     document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
+  function exportPdf() {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    doc.setFontSize(14);
+    doc.text("Voter List", 40, 36);
+    doc.setFontSize(10);
+    doc.text(`${total} voter${total === 1 ? "" : "s"}`, 40, 52);
+    autoTable(doc, {
+      startY: 64,
+      head: [["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Village", "Office"]],
+      body: rows.map(r => [
+        r.voter_number ?? "", r.account_number ?? "", r.name_en, r.name_bn ?? "",
+        r.mobile ?? "", r.village ?? "", r.offices?.name ?? "",
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [16, 122, 87] },
+    });
+    doc.save(`voter-list-${Date.now()}.pdf`);
+  }
+
   const headerInfo = useMemo(() => `${total} voter${total === 1 ? "" : "s"}`, [total]);
 
   return (
@@ -99,6 +123,9 @@ export default function VoterList() {
           </Button>
           <Button variant="outline" size="sm" onClick={exportExcel} disabled={total === 0}>
             <FileSpreadsheet className="h-4 w-4 mr-1" />Export Excel
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportPdf} disabled={total === 0}>
+            <FileText className="h-4 w-4 mr-1" />Export PDF
           </Button>
         </div>
       } />
