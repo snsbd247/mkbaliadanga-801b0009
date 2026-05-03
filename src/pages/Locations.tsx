@@ -88,11 +88,15 @@ function CascadeFilters({
   value,
   onChange,
   showLeafFilter = false,
+  errorCol = null,
+  disabled = false,
 }: {
   level: Level;
   value: Chain;
   onChange: (v: Chain) => void;
   showLeafFilter?: boolean;
+  errorCol?: string | null;
+  disabled?: boolean;
 }) {
   const { t } = useLang();
   const chain = CHAIN[level];
@@ -128,9 +132,7 @@ function CascadeFilters({
 
   const setAt = (idx: number, id: string | undefined) => {
     const next: Chain = { ...value };
-    // Set this level
     next[chain[idx].col] = id;
-    // Reset all descendants
     for (let j = idx + 1; j < chain.length; j++) delete next[chain[j].col];
     onChange(next);
   };
@@ -144,15 +146,21 @@ function CascadeFilters({
         const parentSelected = !parentStep || !!value[parentStep.col];
         const list = opts[step.col] ?? [];
         const isLoading = !!loading[step.col];
+        const isErr = errorCol === step.col;
         return (
           <div key={step.col}>
-            <Label className="text-xs">{step.label}</Label>
+            <Label className={"text-xs " + (isErr ? "text-destructive" : "")}>
+              {step.label}{isErr ? " *" : ""}
+            </Label>
             <Select
-              disabled={!parentSelected || isLoading}
+              disabled={disabled || !parentSelected || isLoading}
               value={value[step.col] ?? ""}
               onValueChange={(v) => setAt(i, v || undefined)}
             >
-              <SelectTrigger>
+              <SelectTrigger
+                aria-invalid={isErr || undefined}
+                className={isErr ? "border-destructive ring-2 ring-destructive/40 focus:ring-destructive" : ""}
+              >
                 {isLoading ? (
                   <span className="flex items-center text-muted-foreground text-sm"><Loader2 className="h-3 w-3 mr-1 animate-spin"/>Loading…</span>
                 ) : (
@@ -170,6 +178,11 @@ function CascadeFilters({
                 )}
               </SelectContent>
             </Select>
+            {isErr && (
+              <p role="alert" className="mt-1 text-xs text-destructive">
+                Please select {step.label} first
+              </p>
+            )}
           </div>
         );
       })}
