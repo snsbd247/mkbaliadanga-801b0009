@@ -154,6 +154,16 @@ export default function FarmerProfileReport() {
     });
   }, [loans]);
 
+  const ownerByYear = useMemo(() => {
+    const map = new Map<number, any[]>();
+    ownerRows.forEach((r) => {
+      const y = r.irrigation_year || new Date().getFullYear();
+      if (!map.has(y)) map.set(y, []);
+      map.get(y)!.push(r);
+    });
+    return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
+  }, [ownerRows]);
+
   useEffect(() => {
     if (!farmer) return;
     document.title = `${safeText(farmer.farmer_code)} report`;
@@ -174,15 +184,6 @@ export default function FarmerProfileReport() {
     return <div className="p-6 text-sm text-muted-foreground">Farmer not found.</div>;
   }
 
-  const ownerByYear = useMemo(() => {
-    const map = new Map<number, any[]>();
-    ownerRows.forEach((r) => {
-      const y = r.irrigation_year || new Date().getFullYear();
-      if (!map.has(y)) map.set(y, []);
-      map.get(y)!.push(r);
-    });
-    return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
-  }, [ownerRows]);
   const irrigationYear = ownerRows.find((row) => row.irrigation_year)?.irrigation_year || new Date().getFullYear();
   const logoSrc = brand.logo_url || "";
 
