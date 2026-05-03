@@ -2738,6 +2738,7 @@ export type Database = {
       _sms_render: { Args: { _tpl: string; _vars: Json }; Returns: string }
       _sms_savings_balance: { Args: { _farmer: string }; Returns: number }
       activate_sms_token: { Args: { _id: string }; Returns: undefined }
+      apply_loan_installment_penalties: { Args: never; Returns: Json }
       close_accounting_period: {
         Args: { _from: string; _note?: string; _office?: string; _to: string }
         Returns: string
@@ -2771,6 +2772,7 @@ export type Database = {
         Returns: Json
       }
       generate_farmer_voter_number: { Args: never; Returns: string }
+      generate_loan_installments: { Args: { _loan_id: string }; Returns: Json }
       get_previous_due: {
         Args: { _exclude_season: string; _farmer: string; _land: string }
         Returns: number
