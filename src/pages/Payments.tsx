@@ -137,7 +137,7 @@ export default function Payments() {
         if (url) await supabase.from("payments").update({ receipt_url: url }).eq("id", inserted.id);
       }
 
-      if (status === "approved") await applyAllocationsToLedgers(inserted.id, farmerId, allocs);
+      if (status === "approved") await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note);
 
       toast.success(status === "pending" ? "Submitted for approval" : t("paymentSuccess"));
       resetForm();
@@ -147,15 +147,16 @@ export default function Payments() {
     }
   }
 
-  async function applyAllocationsToLedgers(_paymentId: string, fId: string, list: Allocation[]) {
+  async function applyAllocationsToLedgers(_paymentId: string, fId: string, list: Allocation[], desc?: string) {
+    const noteText = desc?.trim() || undefined;
     for (const a of list) {
       if (a.kind === "loan" && a.reference_id) {
-        await supabase.from("loan_payments").insert({ loan_id: a.reference_id, amount: Number(a.amount), collected_by: user?.id });
+        await supabase.from("loan_payments").insert({ loan_id: a.reference_id, amount: Number(a.amount), collected_by: user?.id, note: noteText });
       } else if (a.kind === "irrigation" && a.reference_id) {
         const { data: irr } = await supabase.from("irrigation_charges").select("paid_amount").eq("id", a.reference_id).single();
         if (irr) await supabase.from("irrigation_charges").update({ paid_amount: Number(irr.paid_amount) + Number(a.amount) }).eq("id", a.reference_id);
       } else if (a.kind === "savings") {
-        await supabase.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id });
+        await supabase.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id, note: noteText });
       }
     }
   }
@@ -168,7 +169,7 @@ export default function Payments() {
       ? p.payment_allocations.map((x: any) => ({ kind: x.kind, reference_id: x.reference_id ?? "", amount: Number(x.amount) }))
       : [{ kind: p.kind, reference_id: p.reference_id ?? "", amount: Number(p.amount) }];
 
-    await applyAllocationsToLedgers(p.id, p.farmer_id, allocList);
+    await applyAllocationsToLedgers(p.id, p.farmer_id, allocList, p.note);
     toast.success("Approved");
     load();
   }
