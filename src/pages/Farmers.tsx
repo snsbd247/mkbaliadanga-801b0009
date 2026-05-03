@@ -448,16 +448,33 @@ export default function Farmers() {
       </Card>
 
       {/* Edit dialog */}
-      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) { setEditForm(null); setEditErr(null); setEditPhoto(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <Dialog open={editOpen} onOpenChange={(o) => { if (!o && !saving) resetEditForm(); else setEditOpen(o); }}>
+        <DialogContent
+          className="max-w-2xl max-h-[85vh] overflow-y-auto"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            setTimeout(() => editNameRef.current?.focus(), 50);
+          }}
+        >
           <DialogHeader><DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle></DialogHeader>
           {editForm && (
-            <FormFields f={editForm} setF={setEditForm as any} photoFile={editPhoto} setPhotoFile={setEditPhoto} err={editErr} />
+            <form onSubmit={(e) => { e.preventDefault(); if (!saving) saveEdit(); }}>
+              <FormFields
+                f={editForm}
+                setF={(next) => { setEditForm(next); if (editErr) setEditErr(null); if (Object.keys(editFieldErrors).length) setEditFieldErrors({}); }}
+                photoFile={editPhoto}
+                setPhotoFile={setEditPhoto}
+                err={editErr}
+                fieldErrors={editFieldErrors}
+                disabled={saving}
+                nameInputRef={editNameRef}
+              />
+              <DialogFooter className="mt-6">
+                <Button type="button" variant="outline" onClick={resetEditForm} disabled={saving}>{t("cancel")}</Button>
+                <Button type="submit" disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
+              </DialogFooter>
+            </form>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>{t("cancel")}</Button>
-            <Button onClick={saveEdit} disabled={saving}>{saving ? "…" : t("save")}</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
