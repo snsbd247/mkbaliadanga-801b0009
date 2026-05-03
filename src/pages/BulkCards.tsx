@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { TEMPLATE_LIST, type TemplateId } from "@/components/card/templates";
 import { downloadBulkCardsPdf } from "@/components/card/cardPdf";
+import { useCardSettings } from "@/lib/cardSettings";
 import type { CardData } from "@/components/card/MembershipCard";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
