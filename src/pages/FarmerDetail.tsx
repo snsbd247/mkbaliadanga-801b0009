@@ -86,11 +86,35 @@ export default function FarmerDetail() {
   }
 
   async function addLand() {
-    const { error } = await supabase.from("lands").insert({ farmer_id: id!, mouza: land.mouza, dag_no: land.dag_no, land_size: land.land_size, owner_type: land.owner_type as any, field_type: land.field_type as any });
-    if (error) return toast.error(error.message);
-    toast.success(t("saved")); setOpenLand(false);
-    setLand({ mouza: "", dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
-    loadAll();
+    const v = validateLocationChain(landLoc);
+    if (!v.ok) {
+      setLandLocErr({ level: v.level, message: t("required" as any) || "This field is required" });
+      return toast.error("Please complete the location hierarchy down to Mouza");
+    }
+    if (!landLoc.mouza_id) {
+      setLandLocErr({ level: "mouza", message: "Mouza is required" });
+      return toast.error("Mouza is required");
+    }
+    setLandLocErr(null);
+    setSavingLand(true);
+    try {
+      const { data: m } = await supabase.from("mouzas").select("name,name_bn").eq("id", landLoc.mouza_id).maybeSingle();
+      const mouzaName = (m as any)?.name ?? "";
+      const { error } = await supabase.from("lands").insert({
+        farmer_id: id!,
+        mouza: mouzaName,
+        mouza_id: landLoc.mouza_id,
+        dag_no: land.dag_no,
+        land_size: land.land_size,
+        owner_type: land.owner_type as any,
+        field_type: land.field_type as any,
+      } as any);
+      if (error) { toast.error(error.message); return; }
+      toast.success(t("saved")); setOpenLand(false);
+      setLand({ dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+      setLandLoc({});
+      loadAll();
+    } finally { setSavingLand(false); }
   }
 
   if (!farmer) return <div className="text-muted-foreground">Loading…</div>;
