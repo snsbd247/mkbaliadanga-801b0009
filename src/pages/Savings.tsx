@@ -207,6 +207,11 @@ export default function Savings() {
     if (error) return toast.error(error.message);
     toast.success(t("saved")); load();
   }
+  async function restoreTxn(id: string) {
+    const { error } = await supabase.from("savings_transactions").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Restored"); load();
+  }
 
   function printReceipt(r: any) {
     exportPaymentReceiptPDF({
