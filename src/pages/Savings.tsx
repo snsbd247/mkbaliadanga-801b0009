@@ -33,6 +33,7 @@ export default function Savings() {
   const [planForm, setPlanForm] = useState({ farmer_id: "", plan_id: "", start_date: new Date().toISOString().slice(0, 10) });
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [reportRange, setReportRange] = useState({ from: "", to: "" });
+  const [decision, setDecision] = useState<{ id: string; mode: "reject" | "cancel"; reason: string } | null>(null);
   
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
@@ -82,35 +83,38 @@ export default function Savings() {
     toast.success("Enrollment submitted for approval"); setPlanOpen(false); load();
   }
   async function approvePlan(id: string) {
+    const target = farmerPlans.find(x => x.id === id);
+    if (target?.status === "cancelled" || target?.status === "rejected") {
+      toast.error(t("cannotEditCancelled" as any));
+      return;
+    }
     const { error } = await supabase.from("farmer_savings_plans")
       .update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("status", "pending");
     if (error) return toast.error(error.message);
-    toast.success("Enrollment approved"); load();
+    toast.success(t("approved" as any)); load();
   }
-  async function rejectPlan(id: string) {
-    const { error } = await supabase.from("farmer_savings_plans")
-      .update({ status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Enrollment rejected"); load();
-  }
-  async function cancelPlan(id: string) {
-    const reason = window.prompt("Cancellation reason (optional)") ?? "";
-    if (!window.confirm("Cancel this enrollment? Expected/maturity amounts will be reset to 0. Existing savings transactions remain unchanged.")) return;
-    const { error } = await supabase.from("farmer_savings_plans")
-      .update({
-        status: "cancelled",
-        cancelled_by: user?.id,
-        cancelled_at: new Date().toISOString(),
-        cancel_reason: reason,
-        expected_total: 0,
-        expected_interest: 0,
-        maturity_amount: 0,
-      })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Enrollment cancelled"); load();
+  async function submitDecision(id: string, mode: "reject" | "cancel", reason: string) {
+    const trimmed = reason.trim();
+    if (trimmed.length < 3) { toast.error(t("reasonRequired" as any)); return false; }
+    const target = farmerPlans.find(x => x.id === id);
+    if (target?.status === "cancelled" || target?.status === "rejected") {
+      toast.error(t("cannotEditCancelled" as any));
+      return false;
+    }
+    const patch: any = mode === "reject"
+      ? { status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString(), cancel_reason: trimmed }
+      : { status: "cancelled", cancelled_by: user?.id, cancelled_at: new Date().toISOString(), cancel_reason: trimmed, expected_total: 0, expected_interest: 0, maturity_amount: 0 };
+    let q = supabase.from("farmer_savings_plans").update(patch).eq("id", id);
+    // Server-side guard: only allow rejecting from 'pending' and cancelling from 'pending'/'active'
+    if (mode === "reject") q = q.eq("status", "pending");
+    else q = q.in("status", ["pending", "active"]);
+    const { error } = await q;
+    if (error) { toast.error(error.message); return false; }
+    toast.success(mode === "reject" ? t("rejected" as any) : t("cancelled" as any));
+    load();
+    return true;
   }
   function buildSchedule(fp: any): { no: number; due_date: string; amount: number }[] {
     const plan = fp.savings_plans;
@@ -335,24 +339,32 @@ export default function Savings() {
                       <TableCell>{money(fp.expected_total)}</TableCell>
                       <TableCell>{money(fp.expected_interest)}</TableCell>
                       <TableCell className="font-semibold">{money(fp.maturity_amount)}</TableCell>
-                      <TableCell><Badge variant={statusVariant as any}>{fp.status}</Badge></TableCell>
+                      <TableCell><Badge variant={statusVariant as any}>{t(fp.status as any)}</Badge></TableCell>
                       <TableCell className="text-right">
                         {isCommittee && fp.status === "pending" && (<>
-                          <Button size="icon" variant="ghost" onClick={() => approvePlan(fp.id)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => rejectPlan(fp.id)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => approvePlan(fp.id)} title={t("approveAction")}><Check className="h-4 w-4 text-success" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setDecision({ id: fp.id, mode: "reject", reason: "" })} title={t("rejectAction")}><X className="h-4 w-4 text-destructive" /></Button>
                         </>)}
                         {isCommittee && (fp.status === "active" || fp.status === "pending") && (
-                          <Button size="icon" variant="ghost" onClick={() => cancelPlan(fp.id)} title="Cancel enrollment"><Ban className="h-4 w-4 text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setDecision({ id: fp.id, mode: "cancel", reason: "" })} title={t("cancelEnrollment" as any)}><Ban className="h-4 w-4 text-destructive" /></Button>
                         )}
                       </TableCell>
                     </TableRow>
-                    {isOpen && (
+                    {isOpen && (() => {
+                      const schedTotal = sched.reduce((a, s) => a + Number(s.amount), 0);
+                      return (
                       <TableRow className="bg-muted/30">
                         <TableCell></TableCell>
                         <TableCell colSpan={9} className="py-2">
-                          <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">
-                            Installment Schedule — {sched.length} {fp.savings_plans?.installment_type} installments
-                            {fp.cancel_reason && <span className="ml-3 text-destructive normal-case">Cancelled: {fp.cancel_reason}</span>}
+                          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs mb-2">
+                            <span className="font-semibold uppercase text-muted-foreground">{t("installmentsCount" as any)}: <b className="text-foreground normal-case">{sched.length}</b> ({fp.savings_plans?.installment_type})</span>
+                            <span>{t("expectedTotal" as any)}: <b>{money(schedTotal)}</b></span>
+                            <span>{t("interestRate")}: <b>{money(fp.expected_interest)}</b></span>
+                            <span>{t("maturityTotal" as any)}: <b className="text-success">{money(schedTotal + Number(fp.expected_interest))}</b></span>
+                            {Math.abs(schedTotal - Number(fp.expected_total)) > 0.5 && fp.status !== "cancelled" && (
+                              <span className="text-destructive">⚠ Schedule total differs from expected total by {money(Math.abs(schedTotal - Number(fp.expected_total)))}</span>
+                            )}
+                            {fp.cancel_reason && <span className="text-destructive">{fp.status === "rejected" ? t("rejectionReason" as any) : t("cancellationReason" as any)}: {fp.cancel_reason}</span>}
                           </div>
                           <div className="max-h-64 overflow-y-auto">
                             <table className="w-full text-sm">
@@ -370,7 +382,8 @@ export default function Savings() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    )}
+                      );
+                    })()}
                   </Fragment>
                 );
               })}
@@ -379,6 +392,43 @@ export default function Savings() {
           </Table></Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!decision} onOpenChange={(v) => !v && setDecision(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{decision?.mode === "reject" ? t("rejectAction") : t("cancelEnrollment" as any)}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {decision?.mode === "cancel" && (
+              <p className="text-sm text-muted-foreground">{t("cancelEnrollmentConfirm" as any)}</p>
+            )}
+            <div>
+              <Label>{decision?.mode === "reject" ? t("rejectionReason" as any) : t("cancellationReason" as any)}</Label>
+              <Input
+                autoFocus
+                maxLength={500}
+                value={decision?.reason ?? ""}
+                onChange={(e) => decision && setDecision({ ...decision, reason: e.target.value })}
+                placeholder={t("reasonRequired" as any)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDecision(null)}>{t("cancel")}</Button>
+            <Button
+              variant="destructive"
+              disabled={(decision?.reason ?? "").trim().length < 3}
+              onClick={async () => {
+                if (!decision) return;
+                const ok = await submitDecision(decision.id, decision.mode, decision.reason);
+                if (ok) setDecision(null);
+              }}
+            >
+              {t("save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
