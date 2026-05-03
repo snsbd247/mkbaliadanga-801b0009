@@ -23,7 +23,7 @@ import { validateLocationChain, parseLocationDbError, type LocationLevel } from 
 
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
-  post_office: "", address: "", voter_number: "",
+  post_office: "", address: "", voter_number: "", is_voter: false,
   office_id: "", status: "active",
   division_id: null, district_id: null, upazila_id: null, union_id: null,
   ward_id: null, village_id: null, mouza_id: null,
@@ -243,7 +243,7 @@ export default function Farmers() {
       photo_url = await uploadPhoto(editPhoto);
       if (!photo_url) { setSaving(false); return; }
     }
-    const { id, farmer_code, created_at, updated_at, offices: _o, ...rest } = editForm as any;
+    const { id, farmer_code, created_at, updated_at, voter_number, offices: _o, ...rest } = editForm as any;
     const payload = { ...rest, ...(photo_url ? { photo_url } : {}), office_id: editForm.office_id || null };
     const { error } = await supabase.from("farmers").update(payload).eq("id", id);
     setSaving(false);
@@ -313,30 +313,36 @@ export default function Farmers() {
           <Label>Is Voter</Label>
           <div className="flex items-center gap-3 h-10">
             <Switch
-              checked={!!f.voter_number}
+              checked={!!f.is_voter}
               disabled={disabled}
               onCheckedChange={async (on) => {
                 if (on) {
-                  if (f.voter_number) return;
+                  if (f.voter_number) {
+                    setF({ ...f, is_voter: true });
+                    return;
+                  }
                   const { data, error } = await supabase.rpc("generate_farmer_voter_number");
                   if (error) { toast.error(error.message); return; }
-                  setF({ ...f, voter_number: String(data ?? "") });
+                  setF({ ...f, is_voter: true, voter_number: String(data ?? "") });
                 } else {
-                  setF({ ...f, voter_number: "" });
+                  setF({ ...f, is_voter: false });
                 }
               }}
               data-testid="voter-toggle"
             />
             <Input
               value={f.voter_number ?? ""}
-              disabled={disabled || !f.voter_number}
+              disabled
+              readOnly
               inputMode="numeric"
               maxLength={20}
-              onChange={(e) => setF({ ...f, voter_number: e.target.value.replace(/\D/g, "") })}
-              placeholder="auto"
+              placeholder={f.is_voter ? "auto" : "—"}
               className="font-mono"
             />
           </div>
+          {f.voter_number && !f.is_voter && (
+            <p className="mt-1 text-xs text-muted-foreground">Voter number is permanent and will be reused if re-enabled.</p>
+          )}
         </div>
         <div>
           <Label>{t("office")}</Label>

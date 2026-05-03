@@ -526,6 +526,7 @@ export type Database = {
           farmer_code: string
           father_name: string | null
           id: string
+          is_voter: boolean
           member_no: string | null
           mobile: string | null
           mother_name: string | null
@@ -558,6 +559,7 @@ export type Database = {
           farmer_code: string
           father_name?: string | null
           id?: string
+          is_voter?: boolean
           member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
@@ -590,6 +592,7 @@ export type Database = {
           farmer_code?: string
           father_name?: string | null
           id?: string
+          is_voter?: boolean
           member_no?: string | null
           mobile?: string | null
           mother_name?: string | null

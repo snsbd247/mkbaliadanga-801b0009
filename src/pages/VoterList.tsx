@@ -41,6 +41,7 @@ export default function VoterList() {
     let qy = supabase
       .from("farmers")
       .select("id,name_en,name_bn,account_number,voter_number,mobile,village,offices(name)")
+      .eq("is_voter", true)
       .not("voter_number", "is", null)
       .neq("voter_number", "")
       .order("voter_number", { ascending: true })
