@@ -97,9 +97,9 @@ export default function Dashboard() {
     }
     const fromIso = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
     const [pAll, eAll, sAll] = await Promise.all([
-      supabase.from("payments").select("amount,created_at").gte("created_at", fromIso),
-      supabase.from("expenses").select("amount,expense_date").gte("expense_date", fromIso),
-      supabase.from("savings_transactions").select("type,amount,txn_date,status").eq("status", "approved").gte("txn_date", fromIso),
+      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", fromIso),
+      supabase.from("expenses").select("amount,expense_date").is("deleted_at", null).gte("expense_date", fromIso),
+      supabase.from("savings_transactions").select("type,amount,txn_date,status").is("deleted_at", null).eq("status", "approved").gte("txn_date", fromIso),
     ]);
     (pAll.data ?? []).forEach((p: any) => {
       const m = months.find(x => x.key === p.created_at.slice(0, 7)); if (m) m.income += Number(p.amount || 0);
