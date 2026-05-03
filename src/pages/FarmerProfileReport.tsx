@@ -152,7 +152,7 @@ export default function FarmerProfileReport() {
   }
 
   const irrigationYear = ownerRows.find((row) => row.irrigation_year)?.irrigation_year || new Date().getFullYear();
-  const logoSrc = brand.logo_url || "/placeholder.svg";
+  const logoSrc = brand.logo_url || "";
 
   return (
     <>
@@ -330,7 +330,9 @@ export default function FarmerProfileReport() {
 
         <div className="farmer-report-sheet">
           <div className="farmer-report-header">
-            <img src={logoSrc} alt={brand.company_name} className="farmer-report-logo" />
+            {logoSrc ? (
+              <img src={logoSrc} alt={brand.company_name} className="farmer-report-logo" />
+            ) : null}
             <div className="farmer-report-org">{brand.company_name_bn || brand.company_name}</div>
             <div className="farmer-report-subtitle">এক নজরে কৃষকের তথ্য</div>
           </div>
