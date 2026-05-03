@@ -76,6 +76,18 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
     columns: ["entry_date", "account_code", "debit", "credit", "description", "reference_type"],
     sample: { entry_date: "2026-02-01", account_code: "1010", debit: 500, credit: 0, description: "Cash adjustment", reference_type: "manual" },
   },
+  irrigation: {
+    columns: ["account_number", "dag_no", "season_year", "season_type", "quantity", "base_charge", "canal_charge", "maintenance_charge", "other_charge", "previous_due_brought", "penalty_amount", "entry_date", "note"],
+    sample: { account_number: "100000000001", dag_no: "123/A", season_year: 2026, season_type: "boro", quantity: 0.33, base_charge: 200, canal_charge: 50, maintenance_charge: 20, other_charge: 0, previous_due_brought: 0, penalty_amount: 0, entry_date: "2026-02-01", note: "" },
+  },
+  cashbook_receipts: {
+    columns: ["receipt_date", "kind", "account_number", "amount", "method", "note"],
+    sample: { receipt_date: "2026-02-01", kind: "donation", account_number: "", amount: 1000, method: "cash", note: "Anonymous donation" },
+  },
+  cashbook_expenses: {
+    columns: ["expense_date", "head", "payee", "amount", "method", "note"],
+    sample: { expense_date: "2026-02-01", head: "Office", payee: "Stationery shop", amount: 500, method: "cash", note: "Pens & paper" },
+  },
 };
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
