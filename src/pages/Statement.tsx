@@ -68,6 +68,7 @@ export default function Statement() {
         .select("id,type,amount,status,txn_date,note")
         .eq("farmer_id", farmerId)
         .eq("status", "approved")
+        .is("deleted_at", null)
         .gte("txn_date", f1).lte("txn_date", t1)
         .order("txn_date", { ascending: true });
       setTxns(list ?? []);
