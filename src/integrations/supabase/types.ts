@@ -750,6 +750,54 @@ export type Database = {
           },
         ]
       }
+      irrigation_rates: {
+        Row: {
+          base_rate: number
+          basis: Database["public"]["Enums"]["irrigation_basis"]
+          canal_charge: number
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          maintenance_charge: number
+          note: string | null
+          office_id: string
+          other_charge: number
+          season_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_rate?: number
+          basis?: Database["public"]["Enums"]["irrigation_basis"]
+          canal_charge?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          maintenance_charge?: number
+          note?: string | null
+          office_id: string
+          other_charge?: number
+          season_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_rate?: number
+          basis?: Database["public"]["Enums"]["irrigation_basis"]
+          canal_charge?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          maintenance_charge?: number
+          note?: string | null
+          office_id?: string
+          other_charge?: number
+          season_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           created_at: string
