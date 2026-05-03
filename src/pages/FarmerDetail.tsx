@@ -16,7 +16,6 @@ import { Plus, Printer, FileDown, Receipt } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
-import { exportFarmerReportPDF } from "@/lib/exports";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { LandRelations } from "@/components/LandRelations";
