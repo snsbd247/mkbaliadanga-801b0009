@@ -500,9 +500,17 @@ export default function Farmers() {
       } />
 
       <Card className="p-4 mb-4">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={t("search") + "…"} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={t("search") + "…"} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
+          </div>
+          {isSuper && (
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={showDeleted} onCheckedChange={(v) => { setShowDeleted(v); setPage(0); }} />
+              <span>Show archived</span>
+            </label>
+          )}
         </div>
       </Card>
 
