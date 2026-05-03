@@ -38,7 +38,7 @@ export default function Savings() {
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
   async function load() {
     const [f, ts, pr, sp, fsp] = await Promise.all([
-      supabase.from("farmers").select("id,name_en,farmer_code,member_no,mobile,village").order("name_en"),
+      supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").order("name_en"),
       supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("id,full_name,username"),
       supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
