@@ -215,7 +215,10 @@ function LevelTab({ level }: { level: Level }) {
   async function load() {
     setLoading(true);
     let q: any = (supabase.from as any)(level).select("*").order("name").limit(1000);
-    if (directCol) {
+    // For villages/mouzas, ward_id is the most specific filter even though directCol is union_id
+    if (optionalCol && filter[optionalCol]) {
+      q = q.eq(optionalCol, filter[optionalCol]);
+    } else if (directCol) {
       // Use the deepest filter that targets this table's direct parent column
       const filterId = filter[directCol];
       if (filterId) q = q.eq(directCol, filterId);
