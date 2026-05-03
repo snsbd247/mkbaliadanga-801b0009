@@ -27,19 +27,55 @@ export default function Savings() {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "" });
+  const [plans, setPlans] = useState<any[]>([]);
+  const [farmerPlans, setFarmerPlans] = useState<any[]>([]);
+  const [planOpen, setPlanOpen] = useState(false);
+  const [planForm, setPlanForm] = useState({ farmer_id: "", plan_id: "", start_date: new Date().toISOString().slice(0, 10) });
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
   async function load() {
-    const [f, ts, pr] = await Promise.all([
+    const [f, ts, pr, sp, fsp] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code,member_no,mobile,village").order("name_en"),
       supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200),
       supabase.from("profiles").select("id,full_name,username"),
+      supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
+      supabase.from("farmer_savings_plans").select("*, farmers(name_en,farmer_code), savings_plans(name,name_bn,duration_months,installment_type,installment_amount,interest_rate,maturity_type)").order("created_at", { ascending: false }),
     ]);
     setFarmers(f.data ?? []);
     setTxns(ts.data ?? []);
+    setPlans(sp.data ?? []);
+    setFarmerPlans(fsp.data ?? []);
     const map: Record<string, string> = {};
     (pr.data ?? []).forEach((p: any) => { map[p.id] = p.full_name || p.username || p.id.slice(0, 6); });
     setProfiles(map);
+  }
+  function calcMaturity(plan: any) {
+    const n = plan.installment_type === "daily" ? plan.duration_months * 30
+      : plan.installment_type === "weekly" ? Math.floor(plan.duration_months * 30 / 7)
+      : plan.duration_months;
+    const total = Number(plan.installment_amount) * n;
+    const r = Number(plan.interest_rate) / 100;
+    const years = plan.duration_months / 12;
+    const interest = plan.maturity_type === "compound"
+      ? total * (Math.pow(1 + r, years) - 1)
+      : total * r * years;
+    return { total, interest, maturity: total + interest, count: n };
+  }
+  async function enrollPlan() {
+    if (!planForm.farmer_id || !planForm.plan_id) return toast.error("Select farmer and plan");
+    const plan = plans.find(p => p.id === planForm.plan_id);
+    const c = calcMaturity(plan);
+    const { error } = await supabase.from("farmer_savings_plans").insert({
+      farmer_id: planForm.farmer_id,
+      plan_id: planForm.plan_id,
+      start_date: planForm.start_date,
+      expected_total: c.total,
+      expected_interest: c.interest,
+      maturity_amount: c.maturity,
+      created_by: user?.id,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Enrolled"); setPlanOpen(false); load();
   }
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
