@@ -267,11 +267,14 @@ function LoanTable({ rows, t, isCommittee, showDeleted, onDecide, onRestore, onP
                   ) : "—"}
                 </TableCell>
                 <TableCell className="text-right">
-                  {isCommittee && l.status === "pending" && (<>
+                  {showDeleted && isCommittee && (
+                    <Button size="sm" variant="outline" onClick={() => onRestore(l.id)} title="Restore">Restore</Button>
+                  )}
+                  {!showDeleted && isCommittee && l.status === "pending" && (<>
                     <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "approved")} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
                     <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "rejected")} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
                   </>)}
-                  {(l.status === "approved" || l.status === "paid") && (
+                  {!showDeleted && (l.status === "approved" || l.status === "paid") && (
                     <Button size="icon" variant="ghost" onClick={() => onPrint(l)} title="Print disbursement receipt"><Printer className="h-4 w-4" /></Button>
                   )}
                 </TableCell>
