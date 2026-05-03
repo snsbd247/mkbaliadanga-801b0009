@@ -319,3 +319,77 @@ export function exportFarmerCombinedStatementPDF(opts: {
 
   doc.save(`statement-${(opts.farmer.member_no || opts.farmer.farmer_code || "member")}.pdf`);
 }
+
+// ---------- Bank-style ledger Statement (Savings or Loan) ----------
+export function exportStatementPDF(opts: {
+  brand: { company_name: string; address?: string };
+  kind: "savings" | "loan";
+  farmer: { name_en: string; name_bn?: string | null; account_number?: string | null; farmer_code?: string | null; mobile?: string | null; village?: string | null };
+  from?: string | null;
+  to?: string | null;
+  rows: Array<{ entry_date: string; description: string | null; debit: number; credit: number; balance: number }>;
+  totals: { debit: number; credit: number; closing: number };
+}) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210;
+  const title = opts.kind === "savings" ? "Savings Statement" : "Loan Statement";
+
+  doc.setFontSize(15); doc.setFont(undefined, "bold");
+  doc.text(opts.brand.company_name, W / 2, 14, { align: "center" });
+  doc.setFontSize(10); doc.setFont(undefined, "normal");
+  if (opts.brand.address) doc.text(opts.brand.address, W / 2, 19, { align: "center" });
+
+  doc.setFontSize(13); doc.setFont(undefined, "bold");
+  doc.text(title, W / 2, 27, { align: "center" });
+  doc.setFontSize(9); doc.setFont(undefined, "normal");
+  doc.text(`Period: ${opts.from || "—"} to ${opts.to || "—"}`, W / 2, 32, { align: "center" });
+
+  // Member block
+  autoTable(doc, {
+    startY: 36,
+    theme: "plain",
+    body: [[
+      `Name: ${opts.farmer.name_en}${opts.farmer.name_bn ? " (" + opts.farmer.name_bn + ")" : ""}`,
+      `A/C: ${opts.farmer.account_number || opts.farmer.farmer_code || "—"}`,
+      `Mobile: ${opts.farmer.mobile || "—"}`,
+      `Village: ${opts.farmer.village || "—"}`,
+    ]],
+    styles: { fontSize: 9 },
+    margin: { left: 12, right: 12 },
+  });
+
+  const startY = (doc as any).lastAutoTable.finalY + 2;
+
+  autoTable(doc, {
+    startY,
+    head: [["Date", "Description", "Debit", "Credit", "Balance"]],
+    body: opts.rows.map(r => [
+      fmtDate(r.entry_date),
+      r.description || "—",
+      Number(r.debit) ? moneyPdf(r.debit) : "—",
+      Number(r.credit) ? moneyPdf(r.credit) : "—",
+      moneyPdf(r.balance),
+    ]),
+    foot: [[
+      "Totals", "",
+      moneyPdf(opts.totals.debit),
+      moneyPdf(opts.totals.credit),
+      moneyPdf(opts.totals.closing),
+    ]],
+    theme: "grid",
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [30, 110, 70], halign: "center" },
+    footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: "bold" },
+    columnStyles: {
+      0: { cellWidth: 24 },
+      1: { cellWidth: "auto" },
+      2: { cellWidth: 30, halign: "right" },
+      3: { cellWidth: 30, halign: "right" },
+      4: { cellWidth: 30, halign: "right" },
+    },
+    margin: { left: 12, right: 12 },
+  });
+
+  const ac = opts.farmer.account_number || opts.farmer.farmer_code || "member";
+  doc.save(`${opts.kind}-statement-${ac}.pdf`);
+}
