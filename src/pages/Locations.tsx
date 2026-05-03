@@ -189,9 +189,7 @@ function LevelTab({ level }: { level: Level }) {
   const [addChain, setAddChain] = useState<Chain>({});
   const [name, setName] = useState("");
   const [nameBn, setNameBn] = useState("");
-  // For villages/mouzas — optional ward
-  const [optionalWardId, setOptionalWardId] = useState<string>("");
-  const [wardsForOptional, setWardsForOptional] = useState<Row[]>([]);
+  
 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
