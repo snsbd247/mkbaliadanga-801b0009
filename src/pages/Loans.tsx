@@ -259,26 +259,56 @@ function LoanTable({ rows, t, isCommittee, onDecide, onPrint, profiles, expanded
                   )}
                 </TableCell>
               </TableRow>
-              {isOpen && hasPayments && (
+              {isOpen && canExpand && (
                 <TableRow className="bg-muted/30">
                   <TableCell></TableCell>
-                  <TableCell colSpan={9} className="py-2">
-                    <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">Repayments</div>
-                    <table className="w-full text-sm">
-                      <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">Date</th><th className="text-right">Amount</th><th className="text-left pl-3">Collected by</th><th className="text-right">Receipt</th></tr></thead>
-                      <tbody>
-                        {(l.loan_payments ?? []).slice().sort((a: any, b: any) => (b.paid_on ?? "").localeCompare(a.paid_on ?? "")).map((p: any) => (
-                          <tr key={p.id} className="border-t">
-                            <td className="py-1">{fmtDate(p.paid_on)}</td>
-                            <td className="py-1 text-right text-success font-semibold">{money(p.amount)}</td>
-                            <td className="py-1 pl-3">{p.collected_by ? (profiles?.[p.collected_by] ?? p.collected_by.slice(0, 6)) : "—"}</td>
-                            <td className="py-1 text-right">
-                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPrint(l, p)} title="Print payment receipt"><Printer className="h-3.5 w-3.5" /></Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <TableCell colSpan={9} className="py-2 space-y-4">
+                    {hasSchedule && (
+                      <div>
+                        <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">
+                          Installment Schedule {l.loan_plans ? `— ${l.loan_plans.name} (${l.loan_plans.installment_type})` : ""}
+                        </div>
+                        {sched.length === 0 ? (
+                          <div className="text-xs text-muted-foreground">No installments generated yet.</div>
+                        ) : (
+                          <table className="w-full text-sm">
+                            <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">#</th><th className="text-left">Due</th><th className="text-right">Amount</th><th className="text-right">Paid</th><th className="text-right">Penalty</th><th>Status</th></tr></thead>
+                            <tbody>
+                              {sched.map((it: any) => (
+                                <tr key={it.id} className="border-t">
+                                  <td className="py-1">{it.installment_no}</td>
+                                  <td>{fmtDate(it.due_date)}</td>
+                                  <td className="text-right">{money(it.amount)}</td>
+                                  <td className="text-right">{money(it.paid_amount)}</td>
+                                  <td className="text-right">{money(it.penalty_amount)}</td>
+                                  <td><Badge variant={it.status === "paid" ? "secondary" : it.status === "missed" ? "destructive" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                    {hasPayments && (
+                      <div>
+                        <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">Repayments</div>
+                        <table className="w-full text-sm">
+                          <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">Date</th><th className="text-right">Amount</th><th className="text-left pl-3">Collected by</th><th className="text-right">Receipt</th></tr></thead>
+                          <tbody>
+                            {(l.loan_payments ?? []).slice().sort((a: any, b: any) => (b.paid_on ?? "").localeCompare(a.paid_on ?? "")).map((p: any) => (
+                              <tr key={p.id} className="border-t">
+                                <td className="py-1">{fmtDate(p.paid_on)}</td>
+                                <td className="py-1 text-right text-success font-semibold">{money(p.amount)}</td>
+                                <td className="py-1 pl-3">{p.collected_by ? (profiles?.[p.collected_by] ?? p.collected_by.slice(0, 6)) : "—"}</td>
+                                <td className="py-1 text-right">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPrint(l, p)} title="Print payment receipt"><Printer className="h-3.5 w-3.5" /></Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               )}
