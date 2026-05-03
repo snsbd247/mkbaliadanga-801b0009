@@ -54,7 +54,7 @@ export default function Statement() {
         const { data: prior } = await supabase
           .from("savings_transactions")
           .select("type,amount,status,txn_date")
-          .eq("farmer_id", farmerId).eq("status", "approved").lt("txn_date", start);
+          .eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null).lt("txn_date", start);
         open = (prior ?? []).reduce((acc: number, r: any) =>
           acc + (r.type === "deposit" ? Number(r.amount) : -Number(r.amount)), 0);
       }
