@@ -32,7 +32,7 @@ async function main() {
     "farmers",
     "user_roles", "profiles",
     // locations - wipe everything to reseed minimal
-    "mouzas", "wards", "unions", "upazilas", "post_offices", "districts", "divisions",
+    "villages", "mouzas", "wards", "unions", "upazilas", "districts", "divisions",
     "loan_plans",
     "offices",
   ];
