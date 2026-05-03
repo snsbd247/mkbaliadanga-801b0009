@@ -125,6 +125,7 @@ export default function Dashboard() {
     const { data: irrDue } = await supabase
       .from("irrigation_charges")
       .select("farmer_id,due_amount,farmers(name_en,farmer_code)")
+      .is("deleted_at", null)
       .gt("due_amount", 0);
     (irrDue ?? []).forEach((r: any) => {
       const key = r.farmer_id;
