@@ -273,10 +273,8 @@ export default function Savings() {
                 <DialogHeader><DialogTitle>Enroll in Savings Plan</DialogTitle></DialogHeader>
                 <div className="space-y-3">
                   <div><Label>Farmer</Label>
-                    <Select value={planForm.farmer_id} onValueChange={v => setPlanForm({ ...planForm, farmer_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                      <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <FarmerSearchSelect value={planForm.farmer_id || null}
+                      onChange={(id) => setPlanForm({ ...planForm, farmer_id: id ?? "" })} />
                   </div>
                   <div><Label>Plan</Label>
                     <Select value={planForm.plan_id} onValueChange={v => setPlanForm({ ...planForm, plan_id: v })}>
