@@ -546,22 +546,25 @@ export default function Farmers() {
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <Button size="icon" variant="ghost" title="View" onClick={() => nav(`/farmers/${f.id}`)}><Eye className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Edit" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
-                    {isSuper && (
+                    {!f.deleted_at && <Button size="icon" variant="ghost" title="Edit" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>}
+                    {isSuper && f.deleted_at && (
+                      <Button size="sm" variant="outline" onClick={() => restore(f.id)}>Restore</Button>
+                    )}
+                    {isSuper && !f.deleted_at && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button size="icon" variant="ghost" title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete farmer?</AlertDialogTitle>
+                            <AlertDialogTitle>Archive farmer?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This permanently deletes <span className="font-mono">{f.farmer_code}</span>. Linked records will be affected. This cannot be undone.
+                              This archives <span className="font-mono">{f.farmer_code}</span>. Linked records remain intact and the farmer can be restored later.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => remove(f.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("delete")}</AlertDialogAction>
+                            <AlertDialogAction onClick={() => remove(f.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Archive</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
