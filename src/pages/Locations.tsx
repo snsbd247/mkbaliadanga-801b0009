@@ -418,37 +418,71 @@ function LevelTab({ level }: { level: Level }) {
 
       {/* Add button */}
       <div className="flex justify-end">
-        <Button onClick={() => { setAddChain({}); setName(""); setNameBn(""); setAddOpen(true); }}>
+        <Button onClick={() => { setAddChain({}); setName(""); setNameBn(""); setAddErrorCol(null); setAddNameError(null); setAddOpen(true); }}>
           <Plus className="h-4 w-4 mr-1"/>Add new {level.slice(0, -1)}
         </Button>
       </div>
 
       {/* Add dialog */}
-      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setAddOpen(false); } }}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={addOpen} onOpenChange={(o) => { if (!o && !adding) closeAddDialog(); }}>
+        <DialogContent
+          className="max-w-2xl"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            setTimeout(() => addNameRef.current?.focus(), 50);
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Add new {level.slice(0, -1)}</DialogTitle>
             <DialogDescription>Select the parent hierarchy and provide name details.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (!adding) add(); }}
+            className="space-y-3"
+          >
             {chain.length > 0 && (
-              <CascadeFilters level={level} value={addChain} onChange={setAddChain} />
+              <CascadeFilters
+                level={level}
+                value={addChain}
+                onChange={(v) => { setAddChain(v); setAddErrorCol(null); }}
+                errorCol={addErrorCol}
+                disabled={adding}
+              />
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs">Name (English) *</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
+                <Label className={"text-xs " + (addNameError ? "text-destructive" : "")}>
+                  Name (English) *
+                </Label>
+                <Input
+                  ref={addNameRef}
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); if (addNameError) setAddNameError(null); }}
+                  disabled={adding}
+                  maxLength={100}
+                  aria-invalid={!!addNameError || undefined}
+                  className={addNameError ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
+                />
+                {addNameError && <p role="alert" className="mt-1 text-xs text-destructive">{addNameError}</p>}
               </div>
               <div>
                 <Label className="text-xs">Name (Bangla)</Label>
-                <Input value={nameBn} onChange={(e) => setNameBn(e.target.value)} />
+                <Input
+                  value={nameBn}
+                  onChange={(e) => setNameBn(e.target.value)}
+                  disabled={adding}
+                  maxLength={100}
+                />
               </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={adding}>{t("cancel")}</Button>
-            <Button onClick={add} disabled={adding}>{adding && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}<Plus className="h-4 w-4 mr-1"/>Add</Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeAddDialog} disabled={adding}>{t("cancel")}</Button>
+              <Button type="submit" disabled={adding}>
+                {adding ? <Loader2 className="h-4 w-4 mr-1 animate-spin"/> : <Plus className="h-4 w-4 mr-1"/>}
+                Add
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
