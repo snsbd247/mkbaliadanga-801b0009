@@ -54,7 +54,7 @@ export default function VoterList() {
     setLoading(true);
     let qy = supabase
       .from("farmers")
-      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,offices(name)")
+      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,offices(name),villages(name,name_bn),unions(name),upazilas(name),districts(name)")
       .eq("is_voter", true)
       .not("voter_number", "is", null)
       .neq("voter_number", "")
