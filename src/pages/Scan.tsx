@@ -9,12 +9,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Camera, RefreshCcw, AlertCircle } from "lucide-react";
+
+type CamError =
+  | { kind: "permission"; msg: string }
+  | { kind: "no-device"; msg: string }
+  | { kind: "insecure"; msg: string }
+  | { kind: "other"; msg: string }
+  | null;
+
+function classifyCameraError(e: any): CamError {
+  const name = String(e?.name || "");
+  const raw = String(e?.message || e || "");
+  if (typeof window !== "undefined" && window.isSecureContext === false) {
+    return { kind: "insecure", msg: "Camera requires HTTPS. Open this page over a secure (https://) connection." };
+  }
+  if (name === "NotAllowedError" || /permission|denied|NotAllowed/i.test(raw)) {
+    return { kind: "permission", msg: "Camera permission was denied. Allow camera access in your browser settings and try again." };
+  }
+  if (name === "NotFoundError" || /no.*camera|NotFound|Requested device not found/i.test(raw)) {
+    return { kind: "no-device", msg: "No camera was found on this device. Use manual lookup below." };
+  }
+  return { kind: "other", msg: raw || "Could not start camera." };
+}
 
 export default function Scan() {
   const { t } = useLang();
   const nav = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
+  const [camError, setCamError] = useState<CamError>(null);
   const ref = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-reader";
 
@@ -28,6 +52,7 @@ export default function Scan() {
   }, []);
 
   async function start() {
+    setCamError(null);
     setScanning(true);
     try {
       const inst = new Html5Qrcode(containerId);
@@ -43,7 +68,10 @@ export default function Scan() {
       );
     } catch (e: any) {
       setScanning(false);
-      toast.error(e?.message ?? "Camera error");
+      const err = classifyCameraError(e);
+      setCamError(err);
+      // Don't shout permission errors via toast — the inline panel is clearer.
+      if (err && err.kind === "other") toast.error(err.msg);
     }
   }
 
@@ -54,19 +82,23 @@ export default function Scan() {
     setScanning(false);
   }
 
+  async function retry() {
+    await stop();
+    setCamError(null);
+    await start();
+  }
+
   async function onDecoded(text: string) {
     const raw = text.trim();
     let key: string | null = null;
     let kind: "account" | "id" | "code" = "account";
 
-    // 1) URL form: /scan?acc=XXXXXXXXXXXXX  (or any URL with ?acc=)
     try {
       const u = new URL(raw, window.location.origin);
       const acc = u.searchParams.get("acc");
       if (acc) { key = acc; kind = "account"; }
     } catch { /* not a URL */ }
 
-    // 2) Prefixed forms
     if (!key) {
       if (raw.startsWith("acc:")) { key = raw.slice(4); kind = "account"; }
       else if (raw.startsWith("farmer:")) { key = raw.slice(7); kind = "id"; }
@@ -75,17 +107,14 @@ export default function Scan() {
 
     if (!key) return toast.error("Invalid QR");
 
-    // Prefer account_number lookup (numeric, business identifier)
     if (kind !== "id" && /^[0-9]{8,18}$/.test(key)) {
       const byAcc = await supabase.from("farmers").select("id").eq("account_number", key).maybeSingle();
       if (byAcc.data?.id) return nav(`/payments?farmer=${byAcc.data.id}`);
     }
-    // Legacy: UUID id
     if (kind === "id" || /^[0-9a-f-]{36}$/i.test(key)) {
       const byId = await supabase.from("farmers").select("id").eq("id", key).maybeSingle();
       if (byId.data?.id) return nav(`/payments?farmer=${byId.data.id}`);
     }
-    // Legacy: farmer_code
     const byCode = await supabase.from("farmers").select("id").eq("farmer_code", key).maybeSingle();
     if (byCode.data?.id) return nav(`/payments?farmer=${byCode.data.id}`);
 
@@ -102,14 +131,50 @@ export default function Scan() {
     <>
       <PageHeader title={t("scanQr")} description="Scan farmer QR (account number) to open payment screen" />
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <div id={containerId} className="mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-md bg-muted" />
-          <div className="mt-3 flex justify-center gap-2">
-            {!scanning ? <Button onClick={start}>Start Camera</Button>
-              : <Button variant="outline" onClick={stop}>Stop</Button>}
+        <Card className="p-4 sm:p-5">
+          <div
+            id={containerId}
+            className="mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-md bg-muted"
+            data-testid="qr-reader"
+          />
+
+          {camError && (
+            <div
+              role="alert"
+              className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm"
+              data-testid="cam-error"
+            >
+              <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+              <div className="flex-1">
+                <div className="font-medium text-destructive">
+                  {camError.kind === "permission" && "Camera blocked"}
+                  {camError.kind === "no-device" && "No camera found"}
+                  {camError.kind === "insecure" && "Insecure connection"}
+                  {camError.kind === "other" && "Camera error"}
+                </div>
+                <div className="text-muted-foreground">{camError.msg}</div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {!scanning ? (
+              <>
+                <Button onClick={start} className="min-w-[10rem]" size="lg">
+                  <Camera className="h-4 w-4 mr-1" />Start Camera
+                </Button>
+                {camError && (
+                  <Button variant="outline" size="lg" onClick={retry} data-testid="retry-camera">
+                    <RefreshCcw className="h-4 w-4 mr-1" />Retry
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button variant="outline" size="lg" onClick={stop}>Stop</Button>
+            )}
           </div>
         </Card>
-        <Card className="p-5">
+        <Card className="p-4 sm:p-5">
           <h2 className="font-semibold mb-3">Manual lookup</h2>
           <div className="space-y-3">
             <div>
@@ -118,7 +183,7 @@ export default function Scan() {
                 onKeyDown={(e) => { if (e.key === "Enter") lookupManual(); }}
                 placeholder="2401510064476" inputMode="numeric" />
             </div>
-            <Button onClick={lookupManual} className="w-full">Open Payment Screen</Button>
+            <Button onClick={lookupManual} className="w-full" size="lg">Open Payment Screen</Button>
           </div>
         </Card>
       </div>
