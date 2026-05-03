@@ -11,6 +11,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLang } from "@/i18n/LanguageProvider";
+import { useAuth } from "@/auth/AuthProvider";
 
 type Row = {
   id: string;
