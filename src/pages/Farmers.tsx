@@ -151,6 +151,7 @@ export default function Farmers() {
   const [offices, setOffices] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
+  const [showDeleted, setShowDeleted] = useState(false);
   const PAGE = 15;
 
   // Create
@@ -170,7 +171,7 @@ export default function Farmers() {
   const editNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page]);
+  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
   // Scroll the failing dropdown into view when a hierarchy error appears.
@@ -182,7 +183,8 @@ export default function Farmers() {
   }, [createErr, editErr]);
 
   async function load() {
-    let qy = supabase.from("farmers").select("*, offices(name), villages(name,name_bn)").is("deleted_at", null).order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
+    let qy = supabase.from("farmers").select("*, offices(name), villages(name,name_bn)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
+    qy = showDeleted ? qy.not("deleted_at", "is", null) : qy.is("deleted_at", null);
     if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
     const { data } = await qy;
     const farmers = data ?? [];
@@ -371,6 +373,13 @@ export default function Farmers() {
     load();
   }
 
+  async function restore(id: string) {
+    const { error } = await supabase.from("farmers").update({ deleted_at: null } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Farmer restored");
+    load();
+  }
+
   // ---------- Reusable form fields ----------
   const renderFormFields = ({
     f, setF, photoFile, setPhotoFile, err, fieldErrors, disabled, nameInputRef,
@@ -491,9 +500,17 @@ export default function Farmers() {
       } />
 
       <Card className="p-4 mb-4">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={t("search") + "…"} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={t("search") + "…"} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
+          </div>
+          {isSuper && (
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={showDeleted} onCheckedChange={(v) => { setShowDeleted(v); setPage(0); }} />
+              <span>Show archived</span>
+            </label>
+          )}
         </div>
       </Card>
 
@@ -529,22 +546,25 @@ export default function Farmers() {
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <Button size="icon" variant="ghost" title="View" onClick={() => nav(`/farmers/${f.id}`)}><Eye className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Edit" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
-                    {isSuper && (
+                    {!f.deleted_at && <Button size="icon" variant="ghost" title="Edit" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>}
+                    {isSuper && f.deleted_at && (
+                      <Button size="sm" variant="outline" onClick={() => restore(f.id)}>Restore</Button>
+                    )}
+                    {isSuper && !f.deleted_at && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button size="icon" variant="ghost" title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete farmer?</AlertDialogTitle>
+                            <AlertDialogTitle>Archive farmer?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This permanently deletes <span className="font-mono">{f.farmer_code}</span>. Linked records will be affected. This cannot be undone.
+                              This archives <span className="font-mono">{f.farmer_code}</span>. Linked records remain intact and the farmer can be restored later.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => remove(f.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("delete")}</AlertDialogAction>
+                            <AlertDialogAction onClick={() => remove(f.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Archive</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
