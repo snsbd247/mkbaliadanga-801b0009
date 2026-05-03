@@ -74,8 +74,9 @@ Deno.serve(async (req) => {
       out.push({
         farmer_id: f.id,
         farmer: {
-          name: f.name_bn || f.name_en, name_en: f.name_en,
+          name: f.name_bn || f.name_en, name_en: f.name_en, name_bn: f.name_bn,
           farmer_code: f.farmer_code, member_no: f.member_no,
+          account_number: f.account_number, voter_number: f.voter_number,
           mobile: f.mobile, village: f.village, address: f.address,
           photo_url: f.photo_url,
         },
