@@ -350,13 +350,21 @@ export default function Savings() {
                         )}
                       </TableCell>
                     </TableRow>
-                    {isOpen && (
+                    {isOpen && (() => {
+                      const schedTotal = sched.reduce((a, s) => a + Number(s.amount), 0);
+                      return (
                       <TableRow className="bg-muted/30">
                         <TableCell></TableCell>
                         <TableCell colSpan={9} className="py-2">
-                          <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">
-                            Installment Schedule — {sched.length} {fp.savings_plans?.installment_type} installments
-                            {fp.cancel_reason && <span className="ml-3 text-destructive normal-case">Cancelled: {fp.cancel_reason}</span>}
+                          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs mb-2">
+                            <span className="font-semibold uppercase text-muted-foreground">{t("installmentsCount" as any)}: <b className="text-foreground normal-case">{sched.length}</b> ({fp.savings_plans?.installment_type})</span>
+                            <span>{t("expectedTotal" as any)}: <b>{money(schedTotal)}</b></span>
+                            <span>{t("interestRate")}: <b>{money(fp.expected_interest)}</b></span>
+                            <span>{t("maturityTotal" as any)}: <b className="text-success">{money(schedTotal + Number(fp.expected_interest))}</b></span>
+                            {Math.abs(schedTotal - Number(fp.expected_total)) > 0.5 && fp.status !== "cancelled" && (
+                              <span className="text-destructive">⚠ Schedule total differs from expected total by {money(Math.abs(schedTotal - Number(fp.expected_total)))}</span>
+                            )}
+                            {fp.cancel_reason && <span className="text-destructive">{fp.status === "rejected" ? t("rejectionReason" as any) : t("cancellationReason" as any)}: {fp.cancel_reason}</span>}
                           </div>
                           <div className="max-h-64 overflow-y-auto">
                             <table className="w-full text-sm">
@@ -374,7 +382,8 @@ export default function Savings() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    )}
+                      );
+                    })()}
                   </Fragment>
                 );
               })}
