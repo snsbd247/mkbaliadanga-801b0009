@@ -5,20 +5,6 @@ const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const admin = createClient(url, service, { auth: { persistSession: false } });
 
 async function main() {
-  // 1. Delete all auth users
-  console.log("Deleting auth users...");
-  let page = 1;
-  while (true) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) throw error;
-    if (!data.users.length) break;
-    for (const u of data.users) {
-      const { error: dErr } = await admin.auth.admin.deleteUser(u.id);
-      if (dErr) console.warn("del", u.email, dErr.message);
-    }
-    if (data.users.length < 200) break;
-  }
-
   // 2. Wipe transactional + reference tables (preserve schema, settings, accounts)
   const tables = [
     "voter_audit_logs",
@@ -31,7 +17,6 @@ async function main() {
     "qr_tokens", "sms_logs", "notifications", "audit_logs", "farmer_rejections",
     "farmers",
     "user_roles", "profiles",
-    // locations - wipe everything to reseed minimal
     "villages", "mouzas", "wards", "unions", "upazilas", "districts", "divisions",
     "loan_plans",
     "offices",
@@ -42,6 +27,19 @@ async function main() {
     if (error && !/does not exist/i.test(error.message)) {
       console.warn(`wipe ${t}: ${error.message}`);
     } else console.log(`wiped ${t}`);
+  }
+
+  // 1. Delete all auth users (after profiles/user_roles cleared)
+  console.log("Deleting auth users...");
+  while (true) {
+    const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    if (error) throw error;
+    if (!data.users.length) break;
+    for (const u of data.users) {
+      const { error: dErr } = await admin.auth.admin.deleteUser(u.id);
+      if (dErr) console.warn("del", u.email, dErr.message);
+    }
+    if (data.users.length < 200) break;
   }
 
   // 3. Create office
