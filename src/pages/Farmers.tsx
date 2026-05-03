@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useNavigate } from "react-router-dom";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Eye, Search, IdCard, Trash2, Pencil, AlertTriangle } from "lucide-react";
+import { Plus, Eye, Search, IdCard, Trash2, Pencil, AlertTriangle, Loader2 } from "lucide-react";
 import { LocationPicker, LocationValue } from "@/components/locations/LocationPicker";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
@@ -21,13 +22,33 @@ import { validateLocationChain, parseLocationDbError, type LocationLevel } from 
 
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
-  village: "", post_office: "", upazila: "", district: "", division: "", address: "",
+  post_office: "", address: "",
   office_id: "", status: "active",
   division_id: null, district_id: null, upazila_id: null, union_id: null,
   ward_id: null, village_id: null, mouza_id: null,
 };
 
 type FormState = typeof EMPTY_FORM & Record<string, any>;
+
+type FormErrors = {
+  name_en?: string;
+  mobile?: string;
+  nid?: string;
+  office_id?: string;
+  location?: string;
+};
+
+const farmerFormSchema = z.object({
+  name_en: z.string().trim().min(1, "English name required").max(100, "Name must be 100 characters or less"),
+  name_bn: z.string().trim().max(100, "Name must be 100 characters or less").optional().or(z.literal("")),
+  father_name: z.string().trim().max(100, "Father's name must be 100 characters or less").optional().or(z.literal("")),
+  mother_name: z.string().trim().max(100, "Mother's name must be 100 characters or less").optional().or(z.literal("")),
+  nid: z.string().trim().refine((v) => !v || /^\d{10,17}$/.test(v.replace(/\D/g, "")), "Invalid NID (10–17 digits)"),
+  mobile: z.string().trim().refine((v) => !v || /^\+?\d[\d\s-]{6,20}$/.test(v), "Invalid mobile number"),
+  post_office: z.string().trim().max(100, "Post office must be 100 characters or less").optional().or(z.literal("")),
+  address: z.string().trim().max(250, "Address must be 250 characters or less").optional().or(z.literal("")),
+  office_id: z.string().optional().or(z.literal("")),
+});
 
 function pickLocation(form: FormState): LocationValue {
   return {
@@ -52,12 +73,16 @@ export default function Farmers() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [form, setForm] = useState<FormState>({ ...EMPTY_FORM, office_id: officeId ?? "" });
   const [createErr, setCreateErr] = useState<{ level: LocationLevel; key: string } | null>(null);
+  const [createFieldErrors, setCreateFieldErrors] = useState<FormErrors>({});
+  const createNameRef = useRef<HTMLInputElement>(null);
 
   // Edit
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<FormState | null>(null);
   const [editPhoto, setEditPhoto] = useState<File | null>(null);
   const [editErr, setEditErr] = useState<{ level: LocationLevel; key: string } | null>(null);
+  const [editFieldErrors, setEditFieldErrors] = useState<FormErrors>({});
+  const editNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page]);
@@ -99,36 +124,91 @@ export default function Farmers() {
     return supabase.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
   }
 
-  function commonValidate(f: FormState): boolean {
-    if (!f.name_en?.trim()) { toast.error("English name required"); return false; }
-    if (f.mobile && !/^\+?\d[\d\s-]{6,20}$/.test(f.mobile)) { toast.error("Invalid mobile number"); return false; }
-    if (f.nid && !/^\d{10,17}$/.test(f.nid.replace(/\D/g, ""))) { toast.error("Invalid NID (10–17 digits)"); return false; }
+  function resetCreateForm() {
+    setOpen(false);
+    setPhoto(null);
+    setCreateErr(null);
+    setCreateFieldErrors({});
+    setForm({ ...EMPTY_FORM, office_id: officeId ?? "" });
+    setSaving(false);
+  }
+
+  function resetEditForm() {
+    setEditOpen(false);
+    setEditForm(null);
+    setEditPhoto(null);
+    setEditErr(null);
+    setEditFieldErrors({});
+    setSaving(false);
+  }
+
+  function commonValidate(f: FormState, setErrors: (errors: FormErrors) => void): boolean {
+    const parsed = farmerFormSchema.safeParse({
+      name_en: f.name_en,
+      name_bn: f.name_bn ?? "",
+      father_name: f.father_name ?? "",
+      mother_name: f.mother_name ?? "",
+      nid: f.nid ?? "",
+      mobile: f.mobile ?? "",
+      post_office: f.post_office ?? "",
+      address: f.address ?? "",
+      office_id: f.office_id ?? "",
+    });
+
+    const nextErrors: FormErrors = {};
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as keyof FormErrors | undefined;
+        if (key && !nextErrors[key]) nextErrors[key] = issue.message;
+      }
+    }
+
+    const loc = pickLocation(f);
+    if (!loc.division_id || !loc.district_id || !loc.upazila_id || !loc.union_id || !loc.ward_id || !loc.village_id || !loc.mouza_id) {
+      nextErrors.location = "Please complete all location dropdowns.";
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      const firstError = Object.values(nextErrors)[0];
+      if (firstError) toast.error(firstError);
+      return false;
+    }
     return true;
   }
 
   async function save() {
     setCreateErr(null);
-    if (!commonValidate(form)) return;
+    setCreateFieldErrors({});
+    if (!commonValidate(form, setCreateFieldErrors)) return;
     const v = validateLocationChain(pickLocation(form));
-    if (v.ok === false) { setCreateErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
+    if (v.ok === false) {
+      setCreateErr({ level: v.level, key: "locationInvalidMissingParent" });
+      setCreateFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMissingParent", v.level) }));
+      return;
+    }
 
+    setSaving(true);
     let photo_url: string | undefined;
     if (photo) {
       photo_url = await uploadPhoto(photo);
-      if (!photo_url) return;
+      if (!photo_url) { setSaving(false); return; }
     }
     const payload: any = { ...form, ...(photo_url ? { photo_url } : {}), office_id: form.office_id || null };
     const { data, error } = await supabase.from("farmers").insert(payload).select().single();
     if (error) {
+      setSaving(false);
       const lvl = parseLocationDbError(error.message);
-      if (lvl) setCreateErr({ level: lvl, key: "locationInvalidMismatch" });
-      else toast.error(error.message);
+      if (lvl) {
+        setCreateErr({ level: lvl, key: "locationInvalidMismatch" });
+        setCreateFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMismatch", lvl) }));
+      } else toast.error(error.message);
       return;
     }
     if (data) await supabase.from("shares").insert({ farmer_id: data.id, balance: 0 });
+    setSaving(false);
     toast.success("Farmer added");
-    setOpen(false); setPhoto(null);
-    setForm({ ...EMPTY_FORM, office_id: officeId ?? "" });
+    resetCreateForm();
     load();
   }
 
@@ -145,9 +225,14 @@ export default function Farmers() {
   async function saveEdit() {
     if (!editForm) return;
     setEditErr(null);
-    if (!commonValidate(editForm)) return;
+    setEditFieldErrors({});
+    if (!commonValidate(editForm, setEditFieldErrors)) return;
     const v = validateLocationChain(pickLocation(editForm));
-    if (v.ok === false) { setEditErr({ level: v.level, key: "locationInvalidMissingParent" }); return; }
+    if (v.ok === false) {
+      setEditErr({ level: v.level, key: "locationInvalidMissingParent" });
+      setEditFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMissingParent", v.level) }));
+      return;
+    }
 
     setSaving(true);
     let photo_url: string | undefined;
@@ -161,12 +246,14 @@ export default function Farmers() {
     setSaving(false);
     if (error) {
       const lvl = parseLocationDbError(error.message);
-      if (lvl) setEditErr({ level: lvl, key: "locationInvalidMismatch" });
-      else toast.error(error.message);
+      if (lvl) {
+        setEditErr({ level: lvl, key: "locationInvalidMismatch" });
+        setEditFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMismatch", lvl) }));
+      } else toast.error(error.message);
       return;
     }
     toast.success("Farmer updated");
-    setEditOpen(false); setEditForm(null); setEditPhoto(null);
+    resetEditForm();
     load();
   }
 
@@ -179,47 +266,65 @@ export default function Farmers() {
 
   // ---------- Reusable form fields ----------
   function FormFields({
-    f, setF, photoFile, setPhotoFile, err,
+    f, setF, photoFile, setPhotoFile, err, fieldErrors, disabled, nameInputRef,
   }: {
     f: FormState;
     setF: (next: FormState) => void;
     photoFile: File | null;
     setPhotoFile: (p: File | null) => void;
     err: { level: LocationLevel; key: string } | null;
+    fieldErrors: FormErrors;
+    disabled: boolean;
+    nameInputRef?: RefObject<HTMLInputElement | null>;
   }) {
     return (
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>{t("nameEn")} *</Label><Input value={f.name_en} onChange={e => setF({ ...f, name_en: e.target.value })} /></div>
-        <div><Label>{t("nameBn")}</Label><Input value={f.name_bn} onChange={e => setF({ ...f, name_bn: e.target.value })} /></div>
-        <div><Label>{t("fatherName")}</Label><Input value={f.father_name} onChange={e => setF({ ...f, father_name: e.target.value })} /></div>
-        <div><Label>{t("motherName")}</Label><Input value={f.mother_name} onChange={e => setF({ ...f, mother_name: e.target.value })} /></div>
-        <div><Label>{t("nid")}</Label><Input value={f.nid} onChange={e => setF({ ...f, nid: e.target.value })} /></div>
-        <div><Label>{t("mobile")}</Label><Input value={f.mobile} onChange={e => setF({ ...f, mobile: e.target.value })} /></div>
-        <div><Label>{t("village")}</Label><Input value={f.village} onChange={e => setF({ ...f, village: e.target.value })} /></div>
-        <div><Label>{t("postOffice")}</Label><Input value={f.post_office} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
-        <div><Label>{t("upazila")}</Label><Input value={f.upazila} onChange={e => setF({ ...f, upazila: e.target.value })} /></div>
-        <div><Label>{t("district")}</Label><Input value={f.district} onChange={e => setF({ ...f, district: e.target.value })} /></div>
-        <div><Label>{t("division")}</Label><Input value={f.division} onChange={e => setF({ ...f, division: e.target.value })} /></div>
+        <div>
+          <Label className={fieldErrors.name_en ? "text-destructive" : ""}>{t("nameEn")} *</Label>
+          <Input
+            ref={nameInputRef}
+            value={f.name_en}
+            disabled={disabled}
+            maxLength={100}
+            aria-invalid={!!fieldErrors.name_en || undefined}
+            className={fieldErrors.name_en ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
+            onChange={e => setF({ ...f, name_en: e.target.value })}
+          />
+          {fieldErrors.name_en && <p className="mt-1 text-xs text-destructive">{fieldErrors.name_en}</p>}
+        </div>
+        <div><Label>{t("nameBn")}</Label><Input value={f.name_bn} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, name_bn: e.target.value })} /></div>
+        <div><Label>{t("fatherName")}</Label><Input value={f.father_name} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, father_name: e.target.value })} /></div>
+        <div><Label>{t("motherName")}</Label><Input value={f.mother_name} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, mother_name: e.target.value })} /></div>
+        <div>
+          <Label className={fieldErrors.nid ? "text-destructive" : ""}>{t("nid")}</Label>
+          <Input value={f.nid} disabled={disabled} inputMode="numeric" maxLength={17} onChange={e => setF({ ...f, nid: e.target.value })} className={fieldErrors.nid ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""} />
+          {fieldErrors.nid && <p className="mt-1 text-xs text-destructive">{fieldErrors.nid}</p>}
+        </div>
+        <div>
+          <Label className={fieldErrors.mobile ? "text-destructive" : ""}>{t("mobile")}</Label>
+          <Input value={f.mobile} disabled={disabled} inputMode="tel" maxLength={20} onChange={e => setF({ ...f, mobile: e.target.value })} className={fieldErrors.mobile ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""} />
+          {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
+        </div>
+        <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
         <div>
           <Label>{t("office")}</Label>
-          <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })}>
+          <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>
             <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
             <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
-        <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} onChange={e => setF({ ...f, address: e.target.value })} /></div>
+        <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} disabled={disabled} maxLength={250} onChange={e => setF({ ...f, address: e.target.value })} /></div>
 
         <div className="col-span-2 border-t pt-3 mt-1">
           <div className="text-xs font-medium text-muted-foreground mb-2">
             Location (strict cascading: division → district → upazila → union → ward → village → mouza)
           </div>
-          {err && (
+          {(err || fieldErrors.location) && (
             <Alert variant="destructive" className="mb-3" role="alert" aria-live="assertive">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>{t("locationInvalidTitle")}</AlertTitle>
-              <AlertDescription data-testid="location-error" data-level={err.level}>
-                <span className="font-semibold">{levelLabel(err.level)}:</span>{" "}
-                {buildErrMessage(err.key, err.level)}
+              <AlertDescription data-testid="location-error" data-level={err?.level}>
+                {fieldErrors.location ?? (err ? <><span className="font-semibold">{levelLabel(err.level)}:</span>{" "}{buildErrMessage(err.key, err.level)}</> : null)}
               </AlertDescription>
             </Alert>
           )}
@@ -227,14 +332,14 @@ export default function Farmers() {
             value={pickLocation(f)}
             onChange={(loc) => setF({ ...f, ...loc })}
             errorLevel={err?.level ?? null}
-            errorMessage={err ? buildErrMessage(err.key, err.level) : null}
+            errorMessage={fieldErrors.location ?? (err ? buildErrMessage(err.key, err.level) : null)}
             labels={{
               division: t("division"), district: t("district"), upazila: t("upazila"),
               union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
             }}
           />
         </div>
-        <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
+        <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" disabled={disabled} onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
           {photoFile && <div className="text-xs text-muted-foreground mt-1">{photoFile.name}</div>}
         </div>
       </div>
@@ -244,15 +349,32 @@ export default function Farmers() {
   return (
     <>
       <PageHeader title={t("farmers")} actions={
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setCreateErr(null); }}>
+        <Dialog open={open} onOpenChange={(o) => { if (!o && !saving) resetCreateForm(); else setOpen(o); }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent
+            className="max-w-2xl max-h-[85vh] overflow-y-auto"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              setTimeout(() => createNameRef.current?.focus(), 50);
+            }}
+          >
             <DialogHeader><DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle></DialogHeader>
-            <FormFields f={form} setF={setForm} photoFile={photo} setPhotoFile={setPhoto} err={createErr} />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
-              <Button onClick={save}>{t("save")}</Button>
-            </DialogFooter>
+            <form onSubmit={(e) => { e.preventDefault(); if (!saving) save(); }}>
+              <FormFields
+                f={form}
+                setF={(next) => { setForm(next); if (createErr) setCreateErr(null); if (Object.keys(createFieldErrors).length) setCreateFieldErrors({}); }}
+                photoFile={photo}
+                setPhotoFile={setPhoto}
+                err={createErr}
+                fieldErrors={createFieldErrors}
+                disabled={saving}
+                nameInputRef={createNameRef}
+              />
+              <DialogFooter className="mt-6">
+                <Button type="button" variant="outline" onClick={resetCreateForm} disabled={saving}>{t("cancel")}</Button>
+                <Button type="submit" disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       } />
@@ -326,16 +448,33 @@ export default function Farmers() {
       </Card>
 
       {/* Edit dialog */}
-      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) { setEditForm(null); setEditErr(null); setEditPhoto(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <Dialog open={editOpen} onOpenChange={(o) => { if (!o && !saving) resetEditForm(); else setEditOpen(o); }}>
+        <DialogContent
+          className="max-w-2xl max-h-[85vh] overflow-y-auto"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            setTimeout(() => editNameRef.current?.focus(), 50);
+          }}
+        >
           <DialogHeader><DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle></DialogHeader>
           {editForm && (
-            <FormFields f={editForm} setF={setEditForm as any} photoFile={editPhoto} setPhotoFile={setEditPhoto} err={editErr} />
+            <form onSubmit={(e) => { e.preventDefault(); if (!saving) saveEdit(); }}>
+              <FormFields
+                f={editForm}
+                setF={(next) => { setEditForm(next); if (editErr) setEditErr(null); if (Object.keys(editFieldErrors).length) setEditFieldErrors({}); }}
+                photoFile={editPhoto}
+                setPhotoFile={setEditPhoto}
+                err={editErr}
+                fieldErrors={editFieldErrors}
+                disabled={saving}
+                nameInputRef={editNameRef}
+              />
+              <DialogFooter className="mt-6">
+                <Button type="button" variant="outline" onClick={resetEditForm} disabled={saving}>{t("cancel")}</Button>
+                <Button type="submit" disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
+              </DialogFooter>
+            </form>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>{t("cancel")}</Button>
-            <Button onClick={saveEdit} disabled={saving}>{saving ? "…" : t("save")}</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
