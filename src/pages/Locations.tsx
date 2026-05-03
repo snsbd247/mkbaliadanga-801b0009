@@ -322,9 +322,8 @@ function LevelTab({ level }: { level: Level }) {
         currentTable = parentStep.table;
       }
     }
+    if (optionalCol && row[optionalCol]) c[optionalCol] = row[optionalCol];
     setEditChain(c);
-    if (optionalCol) setEditOptionalWardId(row[optionalCol] ?? "");
-    else setEditOptionalWardId("");
   }
 
   async function saveEdit() {
