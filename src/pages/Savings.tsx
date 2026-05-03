@@ -75,11 +75,102 @@ export default function Savings() {
       expected_total: c.total,
       expected_interest: c.interest,
       maturity_amount: c.maturity,
+      status: "pending",
       created_by: user?.id,
     });
     if (error) return toast.error(error.message);
-    toast.success("Enrolled"); setPlanOpen(false); load();
+    toast.success("Enrollment submitted for approval"); setPlanOpen(false); load();
   }
+  async function approvePlan(id: string) {
+    const { error } = await supabase.from("farmer_savings_plans")
+      .update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Enrollment approved"); load();
+  }
+  async function rejectPlan(id: string) {
+    const { error } = await supabase.from("farmer_savings_plans")
+      .update({ status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Enrollment rejected"); load();
+  }
+  async function cancelPlan(id: string) {
+    const reason = window.prompt("Cancellation reason (optional)") ?? "";
+    if (!window.confirm("Cancel this enrollment? Expected/maturity amounts will be reset to 0. Existing savings transactions remain unchanged.")) return;
+    const { error } = await supabase.from("farmer_savings_plans")
+      .update({
+        status: "cancelled",
+        cancelled_by: user?.id,
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: reason,
+        expected_total: 0,
+        expected_interest: 0,
+        maturity_amount: 0,
+      })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Enrollment cancelled"); load();
+  }
+  function buildSchedule(fp: any): { no: number; due_date: string; amount: number }[] {
+    const plan = fp.savings_plans;
+    if (!plan) return [];
+    const start = new Date(fp.start_date);
+    const n = plan.installment_type === "daily" ? plan.duration_months * 30
+      : plan.installment_type === "weekly" ? Math.floor(plan.duration_months * 30 / 7)
+      : plan.duration_months;
+    const out: { no: number; due_date: string; amount: number }[] = [];
+    for (let i = 1; i <= n; i++) {
+      const d = new Date(start);
+      if (plan.installment_type === "daily") d.setDate(d.getDate() + i);
+      else if (plan.installment_type === "weekly") d.setDate(d.getDate() + i * 7);
+      else d.setMonth(d.getMonth() + i);
+      out.push({ no: i, due_date: d.toISOString().slice(0, 10), amount: Number(plan.installment_amount) });
+    }
+    return out;
+  }
+  function planLabel(fp: any) {
+    const p = fp.savings_plans;
+    if (!p) return "—";
+    return lang === "bn" && p.name_bn ? p.name_bn : p.name;
+  }
+  function exportPlanReport(kind: "pdf" | "xlsx") {
+    const filtered = farmerPlans.filter(fp => {
+      const d = fp.start_date;
+      if (reportRange.from && d < reportRange.from) return false;
+      if (reportRange.to && d > reportRange.to) return false;
+      return true;
+    });
+    const head = ["Start", "Farmer", "Code", "Plan", "Installment", "Expected Total", "Interest", "Maturity", "Status"];
+    const rows = filtered.map(fp => [
+      fp.start_date,
+      fp.farmers?.name_en ?? "",
+      fp.farmers?.farmer_code ?? "",
+      planLabel(fp),
+      Number(fp.savings_plans?.installment_amount ?? 0),
+      Number(fp.expected_total),
+      Number(fp.expected_interest),
+      Number(fp.maturity_amount),
+      fp.status,
+    ]);
+    if (kind === "pdf") {
+      exportTablePDF("Savings Plan Enrollments", head, rows, reportRange);
+    } else {
+      const objs = filtered.map(fp => ({
+        Start: fp.start_date,
+        Farmer: fp.farmers?.name_en ?? "",
+        Code: fp.farmers?.farmer_code ?? "",
+        Plan: planLabel(fp),
+        Installment: Number(fp.savings_plans?.installment_amount ?? 0),
+        ExpectedTotal: Number(fp.expected_total),
+        Interest: Number(fp.expected_interest),
+        Maturity: Number(fp.maturity_amount),
+        Status: fp.status,
+      }));
+      exportExcel("Savings Plan Enrollments", "Enrollments", objs, reportRange);
+    }
+  }
+
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
     const status = form.type === "withdraw" ? "pending" : "approved";
