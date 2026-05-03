@@ -97,6 +97,7 @@ export function AppSidebar() {
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
         { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
         { url: "/admin/receipt-template", icon: Receipt, label: t("receiptTemplate"), superOnly: true },
+        { url: "/admin/card-designer", icon: IdCard, label: "Card Designer", superOnly: true },
         { url: "/sms-settings", icon: MessageSquare, label: t("smsSettings"), superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: t("smsLogs"), permKey: "sms" },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
