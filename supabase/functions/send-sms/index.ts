@@ -173,8 +173,8 @@ Deno.serve(async (req) => {
       const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
         global: { headers: { Authorization: authHeader } },
       });
-      const { data: claims } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-      if (!claims?.claims?.sub) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: claims } = await userClient.auth.getUser();
+      if (!claims?.user?.id) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
       const ids: string[] = Array.isArray(body.ids) && body.ids.length
         ? body.ids
