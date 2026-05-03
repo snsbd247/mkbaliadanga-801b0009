@@ -101,6 +101,7 @@ const App = () => (
                 <Route path="/reports/collections" element={<CollectionReport />} />
                 <Route path="/reports/farmer-rejections" element={<RequirePerm module="farmers" action="can_edit"><FarmerRejectionsReport /></RequirePerm>} />
                 <Route path="/reports/voter-audit" element={<RequirePerm module="farmers" action="can_edit"><VoterAudit /></RequirePerm>} />
+                <Route path="/reports/farmer-statement" element={<FarmerStatement />} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 <Route path="/users" element={<Users />} />
                 <Route path="/settings" element={<Settings />} />
