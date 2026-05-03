@@ -20,6 +20,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { validateLocationChain, parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
+import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
@@ -243,23 +244,12 @@ export default function Farmers() {
       photo_url = await uploadPhoto(editPhoto);
       if (!photo_url) { setSaving(false); return; }
     }
-    // Strip read-only / joined-relation fields from the update payload.
-    // voter_number IS kept: the DB immutability trigger preserves the original
-    // when one already exists, but allows the first assignment to persist.
-    const {
-      id, farmer_code, created_at, updated_at,
-      offices: _o, villages: _v, divisions: _dv, districts: _dt,
-      upazilas: _up, unions: _un, wards: _w, mouzas: _m,
-      village: _village, // legacy text col (joined name)
-      ...rest
-    } = editForm as any;
-    const payload: any = { ...rest, ...(photo_url ? { photo_url } : {}), office_id: editForm.office_id || null };
-    // Drop empty voter_number so we don't try to clear an existing one
-    if (!payload.voter_number) delete payload.voter_number;
+    const id = (editForm as any).id;
+    const payload = toFarmerUpdatePayload(editForm as any, photo_url ? { photo_url } : {});
     if (import.meta.env.DEV) console.debug("[farmers.update] payload keys:", Object.keys(payload));
     const { error } = await supabase.from("farmers").update(payload).eq("id", id);
-    setSaving(false);
     if (error) {
+      setSaving(false);
       const lvl = parseLocationDbError(error.message);
       if (lvl) {
         setEditErr({ level: lvl, key: "locationInvalidMismatch" });
@@ -267,9 +257,19 @@ export default function Farmers() {
       } else toast.error(error.message);
       return;
     }
+    // Optimistic local update so voter_number / changed fields show immediately.
+    setList((prev) => prev.map((r) => (r.id === id ? { ...r, ...payload } : r)));
+    // Targeted refetch for the edited row to reconcile DB-trigger derived fields
+    // (voter_number, farmer_code, joined relations) without a full table reload.
+    const { data: fresh } = await supabase
+      .from("farmers")
+      .select("*, offices(name), villages(name,name_bn)")
+      .eq("id", id)
+      .maybeSingle();
+    if (fresh) setList((prev) => prev.map((r) => (r.id === id ? fresh : r)));
+    setSaving(false);
     toast.success("Farmer updated");
     resetEditForm();
-    load();
   }
 
   async function remove(id: string) {
