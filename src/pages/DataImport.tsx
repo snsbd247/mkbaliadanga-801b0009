@@ -133,7 +133,16 @@ function downloadTemplate(mod: Module) {
 function downloadErrorReport(rows: RowResult[]) {
   const errs = rows.filter((r) => r.status === "error");
   if (!errs.length) return;
-  const ws = XLSX.utils.json_to_sheet(errs.map((r) => ({ row: r.idx + 2, error: r.message, ...r.raw })));
+  const ws = XLSX.utils.json_to_sheet(
+    errs.map((r) => ({
+      row: r.idx + 2,
+      error: r.message,
+      ...(r.resolved
+        ? Object.fromEntries(Object.entries(r.resolved).map(([k, v]) => [`resolved_${k}`, v]))
+        : {}),
+      ...r.raw,
+    })),
+  );
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "errors");
   XLSX.writeFile(wb, `import_errors.xlsx`);
