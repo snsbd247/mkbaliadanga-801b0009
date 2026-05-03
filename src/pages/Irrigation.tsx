@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -119,9 +119,118 @@ export default function Irrigation() {
     toast.success(t("saved")); setOpen(false); load();
   }
 
+  const [genSeason, setGenSeason] = useState<string>("");
+  const [genBasis, setGenBasis] = useState<string>("per_size");
+  const [genOpen, setGenOpen] = useState(false);
+  const [genBusy, setGenBusy] = useState(false);
+
+  async function generateForSeason() {
+    if (!genSeason) return toast.error("Select a season");
+    setGenBusy(true);
+    try {
+      const { data: rate, error: rateErr } = await supabase
+        .from("irrigation_rates")
+        .select("base_rate,canal_charge,maintenance_charge,other_charge,office_id")
+        .eq("season_id", genSeason)
+        .eq("basis", genBasis as any)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (rateErr) throw rateErr;
+      if (!rate) throw new Error("No active rate found for this season+basis. Add one in Irrigation Rates.");
+
+      const { data: lands, error: landsErr } = await supabase
+        .from("lands")
+        .select("id, farmer_id, land_size, office_id");
+      if (landsErr) throw landsErr;
+      if (!lands?.length) throw new Error("No lands found.");
+
+      const { data: existing } = await supabase
+        .from("irrigation_charges")
+        .select("land_id")
+        .eq("season_id", genSeason);
+      const skip = new Set((existing ?? []).map((r: any) => r.land_id));
+
+      const today = new Date().toISOString().slice(0, 10);
+      const rows = lands.filter((l: any) => !skip.has(l.id) && Number(l.land_size) > 0).map((l: any) => {
+        const qty = Number(l.land_size);
+        const base = +(qty * Number(rate.base_rate || 0)).toFixed(2);
+        return {
+          farmer_id: l.farmer_id,
+          land_id: l.id,
+          office_id: l.office_id ?? rate.office_id ?? null,
+          season_id: genSeason,
+          basis: genBasis as any,
+          quantity: qty,
+          base_charge: base,
+          canal_charge: Number(rate.canal_charge || 0),
+          maintenance_charge: Number(rate.maintenance_charge || 0),
+          other_charge: Number(rate.other_charge || 0),
+          paid_amount: 0,
+          entry_date: today,
+          created_by: user?.id,
+          note: "Auto-generated for season",
+        };
+      });
+
+      if (!rows.length) {
+        toast.info(`All ${lands.length} lands already have charges for this season.`);
+      } else {
+        // Chunk to avoid payload limits
+        const SIZE = 200;
+        for (let i = 0; i < rows.length; i += SIZE) {
+          const { error } = await supabase.from("irrigation_charges").insert(rows.slice(i, i + SIZE));
+          if (error) throw error;
+        }
+        toast.success(`Generated ${rows.length} irrigation charges (skipped ${skip.size} existing).`);
+      }
+      setGenOpen(false);
+      load();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setGenBusy(false);
+    }
+  }
+
   return (
     <>
       <PageHeader title={t("irrigation")} actions={
+        <div className="flex gap-2">
+        <Dialog open={genOpen} onOpenChange={setGenOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline"><Sparkles className="h-4 w-4 mr-1" />Generate for Season</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Generate Irrigation Charges</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Season</Label>
+                <Select value={genSeason} onValueChange={setGenSeason}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>{seasons.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Basis</Label>
+                <Select value={genBasis} onValueChange={setGenBasis}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="per_size">Per land size</SelectItem>
+                    <SelectItem value="per_day">Per day</SelectItem>
+                    <SelectItem value="per_hour">Per hour</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Creates one charge per land (skips lands already charged for this season). Uses the active rate from Irrigation Rates × land size.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setGenOpen(false)}>{t("cancel")}</Button>
+              <Button onClick={generateForSeason} disabled={genBusy || !genSeason}>{genBusy ? "Generating..." : "Generate"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addEntry")}</Button></DialogTrigger>
           <DialogContent className="max-w-xl">
@@ -199,6 +308,7 @@ export default function Irrigation() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       } />
       <Card><Table>
         <TableHeader><TableRow>
