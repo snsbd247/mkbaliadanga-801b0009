@@ -87,8 +87,8 @@ export default function FarmerDetail() {
 
   async function addLand() {
     const v = validateLocationChain(landLoc);
-    if (!v.ok) {
-      setLandLocErr({ level: v.level, message: t("required" as any) || "This field is required" });
+    if (v.ok === false) {
+      setLandLocErr({ level: v.level, message: "Please select " + v.level + " first" });
       return toast.error("Please complete the location hierarchy down to Mouza");
     }
     if (!landLoc.mouza_id) {
