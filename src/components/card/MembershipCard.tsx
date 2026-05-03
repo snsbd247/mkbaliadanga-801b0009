@@ -116,12 +116,14 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
             {f.mobile && <div><span className="text-gray-500">Mobile:</span> <span className="font-mono">{f.mobile}</span></div>}
             <div className="pt-1 text-[7px] text-gray-500">If found, please return to the issuing office.</div>
           </div>
-          <div className="flex flex-col items-center justify-center shrink-0">
-            <div className="bg-white p-0.5 border rounded">
-              <QRCodeSVG value={data.token} size={90} level="M" includeMargin={false} />
+          {opts.show_qr && (
+            <div className="flex flex-col items-center justify-center shrink-0">
+              <div className="bg-white p-0.5 border rounded">
+                <QRCodeSVG value={qrValue} size={90} level="M" includeMargin={false} />
+              </div>
+              <div className="text-[6px] text-gray-500 mt-0.5">Scan to pay</div>
             </div>
-            <div className="text-[6px] text-gray-500 mt-0.5">Scan to pay</div>
-          </div>
+          )}
         </div>
       </div>
     </div>
