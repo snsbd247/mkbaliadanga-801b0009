@@ -19,7 +19,6 @@ export default function Irrigation() {
   const { t } = useLang();
   const { user } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
-  const [farmers, setFarmers] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
