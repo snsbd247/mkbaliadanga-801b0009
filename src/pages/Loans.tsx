@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Check, X, Printer, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
@@ -136,10 +137,8 @@ export default function Loans() {
             <DialogHeader><DialogTitle>{t("issueLoan")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>{t("selectFarmer")}</Label>
-                <Select value={form.farmer_id} onValueChange={v => setForm({ ...form, farmer_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-                </Select>
+                <FarmerSearchSelect value={form.farmer_id || null}
+                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
               </div>
               <div><Label>Loan Plan (optional)</Label>
                 <Select value={form.plan_id} onValueChange={v => {

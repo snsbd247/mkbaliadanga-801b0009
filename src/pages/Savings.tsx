@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -235,10 +236,8 @@ export default function Savings() {
             <DialogHeader><DialogTitle>{t("savings")} — {t("addEntry")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>{t("selectFarmer")}</Label>
-                <Select value={form.farmer_id} onValueChange={v => setForm({ ...form, farmer_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-                </Select>
+                <FarmerSearchSelect value={form.farmer_id || null}
+                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
               </div>
               <div><Label>{t("type")}</Label>
                 <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
@@ -274,10 +273,8 @@ export default function Savings() {
                 <DialogHeader><DialogTitle>Enroll in Savings Plan</DialogTitle></DialogHeader>
                 <div className="space-y-3">
                   <div><Label>Farmer</Label>
-                    <Select value={planForm.farmer_id} onValueChange={v => setPlanForm({ ...planForm, farmer_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                      <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <FarmerSearchSelect value={planForm.farmer_id || null}
+                      onChange={(id) => setPlanForm({ ...planForm, farmer_id: id ?? "" })} />
                   </div>
                   <div><Label>Plan</Label>
                     <Select value={planForm.plan_id} onValueChange={v => setPlanForm({ ...planForm, plan_id: v })}>
