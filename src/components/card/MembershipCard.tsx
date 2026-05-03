@@ -63,19 +63,31 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
     ? data.company_name
     : data.company_name_bn;
 
+  const headerH = Math.max(5, Math.min(20, opts.header_height_mm ?? 8));
+  const logoSz = Math.max(3, Math.min(20, opts.logo_size_mm ?? 6));
+  const photoH = Math.max(10, Math.min(40, opts.photo_size_mm ?? 18));
+  const fs = Math.max(0.7, Math.min(1.6, opts.font_scale ?? 1));
+  const headerStyle = opts.accent_color
+    ? { backgroundColor: opts.accent_color, color: "#fff", height: `${headerH}mm` }
+    : { height: `${headerH}mm` };
+
   return (
     <div className="flex flex-wrap gap-4 print:gap-2" data-testid="membership-card" data-template={templateId}>
       {/* FRONT */}
       <div
         className={`bg-white text-gray-900 rounded-lg shadow-elegant overflow-hidden border print:shadow-none ${tpl.bodyFontClass}`}
-        style={{ width: "85.6mm", height: "54mm" }}
+        style={{ width: "85.6mm", height: "54mm", fontSize: `${fs * 100}%` }}
       >
         <div className="h-full flex flex-col">
-          <div className={`flex items-center gap-2 px-2 py-1 ${tpl.headerClass}`}>
+          <div
+            className={`flex items-center gap-2 px-2 ${opts.accent_color ? "" : tpl.headerClass}`}
+            style={headerStyle}
+          >
             {data.logo_url ? (
-              <img src={data.logo_url} alt="" className="h-6 w-6 rounded object-cover" crossOrigin="anonymous" />
+              <img src={data.logo_url} alt="" className="rounded object-contain bg-white/10"
+                style={{ height: `${logoSz}mm`, width: `${logoSz}mm` }} crossOrigin="anonymous" />
             ) : (
-              <div className="h-6 w-6 rounded bg-white/20" />
+              <div className="rounded bg-white/20" style={{ height: `${logoSz}mm`, width: `${logoSz}mm` }} />
             )}
             <div className="text-[9px] leading-tight font-semibold truncate">
               {headerTitle}
@@ -85,7 +97,10 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
           </div>
           <div className="flex-1 flex items-center gap-2 p-2">
             {opts.show_photo && (
-              <div className="h-16 w-12 shrink-0 rounded border bg-gray-50 overflow-hidden flex items-center justify-center">
+              <div
+                className="shrink-0 rounded border bg-gray-50 overflow-hidden flex items-center justify-center"
+                style={{ height: `${photoH}mm`, width: `${photoH * 0.78}mm` }}
+              >
                 {f.photo_url ? (
                   <img src={f.photo_url} alt="" className="h-full w-full object-cover" crossOrigin="anonymous" />
                 ) : (
@@ -105,8 +120,17 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
               {opts.show_issue_date && (
                 <div><span className="text-gray-500">Issued:</span> {issued}</div>
               )}
+              {(opts.custom_text || opts.custom_text_bn) && (
+                <div className="text-[7px] text-gray-600 truncate" data-testid="card-custom">
+                  {opts.custom_text}
+                  {opts.custom_text && opts.custom_text_bn ? " · " : ""}
+                  {opts.custom_text_bn}
+                </div>
+              )}
             </div>
           </div>
+        </div>
+      </div>
         </div>
       </div>
 
