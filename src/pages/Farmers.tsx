@@ -146,6 +146,7 @@ export default function Farmers() {
   const { officeId, isSuper } = useAuth();
   const nav = useNavigate();
   const [list, setList] = useState<any[]>([]);
+  const [duesMap, setDuesMap] = useState<Record<string, { net_due: number; loan_due: number; irr_due: number; savings_bal: number }>>({});
   const [offices, setOffices] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
@@ -183,7 +184,17 @@ export default function Farmers() {
     let qy = supabase.from("farmers").select("*, offices(name), villages(name,name_bn)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
     const { data } = await qy;
-    setList(data ?? []);
+    const farmers = data ?? [];
+    setList(farmers);
+    if (farmers.length) {
+      const ids = farmers.map((f: any) => f.id);
+      const { data: dues } = await supabase.rpc("farmer_dues_summary" as any);
+      const map: Record<string, any> = {};
+      (dues ?? []).forEach((d: any) => { if (ids.includes(d.farmer_id)) map[d.farmer_id] = d; });
+      setDuesMap(map);
+    } else {
+      setDuesMap({});
+    }
   }
 
   function levelLabel(level: LocationLevel) {
