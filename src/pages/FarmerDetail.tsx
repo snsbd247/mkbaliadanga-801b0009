@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import { LandRelations } from "@/components/LandRelations";
+import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
+import { validateLocationChain } from "@/lib/locationValidation";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
@@ -35,7 +37,10 @@ export default function FarmerDetail() {
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [openLand, setOpenLand] = useState(false);
-  const [land, setLand] = useState({ mouza: "", dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+  const [land, setLand] = useState({ dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+  const [landLoc, setLandLoc] = useState<LocationValue>({});
+  const [landLocErr, setLandLocErr] = useState<{ level: any; message: string } | null>(null);
+  const [savingLand, setSavingLand] = useState(false);
   const brand = useBranding();
 
   useEffect(() => { if (id) loadAll(); }, [id]);
@@ -81,11 +86,35 @@ export default function FarmerDetail() {
   }
 
   async function addLand() {
-    const { error } = await supabase.from("lands").insert({ farmer_id: id!, mouza: land.mouza, dag_no: land.dag_no, land_size: land.land_size, owner_type: land.owner_type as any, field_type: land.field_type as any });
-    if (error) return toast.error(error.message);
-    toast.success(t("saved")); setOpenLand(false);
-    setLand({ mouza: "", dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
-    loadAll();
+    const v = validateLocationChain(landLoc);
+    if (v.ok === false) {
+      setLandLocErr({ level: v.level, message: "Please select " + v.level + " first" });
+      return toast.error("Please complete the location hierarchy down to Mouza");
+    }
+    if (!landLoc.mouza_id) {
+      setLandLocErr({ level: "mouza", message: "Mouza is required" });
+      return toast.error("Mouza is required");
+    }
+    setLandLocErr(null);
+    setSavingLand(true);
+    try {
+      const { data: m } = await supabase.from("mouzas").select("name,name_bn").eq("id", landLoc.mouza_id).maybeSingle();
+      const mouzaName = (m as any)?.name ?? "";
+      const { error } = await supabase.from("lands").insert({
+        farmer_id: id!,
+        mouza: mouzaName,
+        mouza_id: landLoc.mouza_id,
+        dag_no: land.dag_no,
+        land_size: land.land_size,
+        owner_type: land.owner_type as any,
+        field_type: land.field_type as any,
+      } as any);
+      if (error) { toast.error(error.message); return; }
+      toast.success(t("saved")); setOpenLand(false);
+      setLand({ dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+      setLandLoc({});
+      loadAll();
+    } finally { setSavingLand(false); }
   }
 
   if (!farmer) return <div className="text-muted-foreground">Loading…</div>;
@@ -157,33 +186,50 @@ export default function FarmerDetail() {
         <TabsContent value="lands">
           <Card>
             <div className="flex justify-end p-3 border-b">
-              <Dialog open={openLand} onOpenChange={setOpenLand}>
+              <Dialog open={openLand} onOpenChange={(o) => {
+                setOpenLand(o);
+                if (!o) {
+                  setLand({ dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+                  setLandLoc({});
+                  setLandLocErr(null);
+                }
+              }}>
                 <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
                 <DialogContent>
                   <DialogHeader><DialogTitle>{t("addNew")} — {t("lands")}</DialogTitle></DialogHeader>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>{t("mouza")}</Label><Input value={land.mouza} onChange={e => setLand({ ...land, mouza: e.target.value })} /></div>
-                    <div><Label>{t("dagNo")}</Label><Input value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
-                    <div><Label>{t("landSize")}</Label><Input type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
-                    <div><Label>{t("ownerType")}</Label>
-                      <Select value={land.owner_type} onValueChange={v => setLand({ ...land, owner_type: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
-                      </Select>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">{t("location" as any) || "Location"}</Label>
+                      <LocationPicker
+                        value={landLoc}
+                        onChange={(v) => { setLandLoc(v); if (landLocErr) setLandLocErr(null); }}
+                        errorLevel={landLocErr?.level ?? null}
+                        errorMessage={landLocErr?.message ?? null}
+                      />
                     </div>
-                    <div className="col-span-2"><Label>{t("fieldType")}</Label>
-                      <Select value={land.field_type} onValueChange={v => setLand({ ...land, field_type: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="high_land">{t("highLand")}</SelectItem>
-                          <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
-                          <SelectItem value="low_land">{t("lowLand")}</SelectItem>
-                          <SelectItem value="other">{t("other")}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>{t("dagNo")}</Label><Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
+                      <div><Label>{t("landSize")}</Label><Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
+                      <div><Label>{t("ownerType")}</Label>
+                        <Select value={land.owner_type} disabled={savingLand} onValueChange={v => setLand({ ...land, owner_type: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label>{t("fieldType")}</Label>
+                        <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="high_land">{t("highLand")}</SelectItem>
+                            <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
+                            <SelectItem value="low_land">{t("lowLand")}</SelectItem>
+                            <SelectItem value="other">{t("other")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                  <DialogFooter><Button variant="outline" onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand}>{t("save")}</Button></DialogFooter>
+                  <DialogFooter><Button variant="outline" disabled={savingLand} onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand} disabled={savingLand}>{savingLand ? "…" : t("save")}</Button></DialogFooter>
                 </DialogContent>
               </Dialog>
             </div>
