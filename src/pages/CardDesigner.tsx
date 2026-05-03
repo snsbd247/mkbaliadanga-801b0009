@@ -64,6 +64,10 @@ export default function CardDesigner() {
         show_qr: s.show_qr,
         photo_size_mm: s.photo_size_mm,
         font_scale: s.font_scale,
+        header_height_mm: s.header_height_mm,
+        logo_size_mm: s.logo_size_mm,
+        custom_text: s.custom_text,
+        custom_text_bn: s.custom_text_bn,
         updated_at: new Date().toISOString(),
       }).eq("id", 1);
       if (error) { toast.error(error.message); return; }
