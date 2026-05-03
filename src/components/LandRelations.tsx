@@ -158,6 +158,7 @@ export function LandRelations({ farmerId }: Props) {
             <DialogFooter><Button variant="outline" disabled={saving} onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save} disabled={saving}>{saving ? "…" : t("save")}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Table>
