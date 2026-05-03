@@ -339,14 +339,14 @@ export default function Savings() {
                       <TableCell>{money(fp.expected_total)}</TableCell>
                       <TableCell>{money(fp.expected_interest)}</TableCell>
                       <TableCell className="font-semibold">{money(fp.maturity_amount)}</TableCell>
-                      <TableCell><Badge variant={statusVariant as any}>{fp.status}</Badge></TableCell>
+                      <TableCell><Badge variant={statusVariant as any}>{t(fp.status as any)}</Badge></TableCell>
                       <TableCell className="text-right">
                         {isCommittee && fp.status === "pending" && (<>
-                          <Button size="icon" variant="ghost" onClick={() => approvePlan(fp.id)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => rejectPlan(fp.id)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => approvePlan(fp.id)} title={t("approveAction")}><Check className="h-4 w-4 text-success" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setDecision({ id: fp.id, mode: "reject", reason: "" })} title={t("rejectAction")}><X className="h-4 w-4 text-destructive" /></Button>
                         </>)}
                         {isCommittee && (fp.status === "active" || fp.status === "pending") && (
-                          <Button size="icon" variant="ghost" onClick={() => cancelPlan(fp.id)} title="Cancel enrollment"><Ban className="h-4 w-4 text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => setDecision({ id: fp.id, mode: "cancel", reason: "" })} title={t("cancelEnrollment" as any)}><Ban className="h-4 w-4 text-destructive" /></Button>
                         )}
                       </TableCell>
                     </TableRow>
