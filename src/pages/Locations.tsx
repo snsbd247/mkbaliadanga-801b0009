@@ -441,18 +441,6 @@ function LevelTab({ level }: { level: Level }) {
               <CascadeFilters level={level} value={editChain} onChange={setEditChain} />
             )}
             <div className="grid gap-3 sm:grid-cols-2">
-              {optionalCol && (
-                <div className="sm:col-span-2">
-                  <Label className="text-xs">Ward (optional)</Label>
-                  <Select value={editOptionalWardId || "__none__"} onValueChange={(v) => setEditOptionalWardId(v === "__none__" ? "" : v)} disabled={!editChain.union_id}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">—</SelectItem>
-                      {editWardsForOptional.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div>
                 <Label className="text-xs">Name (English) *</Label>
                 <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
