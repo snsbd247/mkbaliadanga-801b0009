@@ -13,6 +13,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 
 interface Props { farmerId: string; }
 
