@@ -12,6 +12,8 @@ interface AuthCtx {
   roles: AppRole[];
   officeId: string | null;
   isSuper: boolean;
+  /** Alias for isSuper to standardize naming across pages. */
+  isSuperAdmin: boolean;
   isAdmin: boolean; // admin or super
   isCommittee: boolean; // committee or super
   signOut: () => Promise<void>;
