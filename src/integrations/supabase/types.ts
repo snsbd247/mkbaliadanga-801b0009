@@ -2587,6 +2587,45 @@ export type Database = {
           },
         ]
       }
+      voter_audit_logs: {
+        Row: {
+          account_number: string | null
+          changed_by: string | null
+          created_at: string
+          farmer_id: string
+          id: string
+          is_voter_new: boolean | null
+          is_voter_old: boolean | null
+          office_id: string | null
+          voter_number_new: string | null
+          voter_number_old: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          changed_by?: string | null
+          created_at?: string
+          farmer_id: string
+          id?: string
+          is_voter_new?: boolean | null
+          is_voter_old?: boolean | null
+          office_id?: string | null
+          voter_number_new?: string | null
+          voter_number_old?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          changed_by?: string | null
+          created_at?: string
+          farmer_id?: string
+          id?: string
+          is_voter_new?: boolean | null
+          is_voter_old?: boolean | null
+          office_id?: string | null
+          voter_number_new?: string | null
+          voter_number_old?: string | null
+        }
+        Relationships: []
+      }
       wards: {
         Row: {
           code: string | null

@@ -21,9 +21,13 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { validateLocationChain, parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
 import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
+import { VoterHistoryDialog } from "@/components/farmers/VoterHistoryDialog";
+import { History } from "lucide-react";
 
 function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   return (
     <>
       <div className="flex items-center gap-3 h-10">
@@ -31,12 +35,20 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
           checked={!!f.is_voter}
           disabled={disabled || generating}
           onCheckedChange={async (on) => {
+            setError(null);
             if (!on) { setF({ ...f, is_voter: false }); return; }
             if (f.voter_number) { setF({ ...f, is_voter: true }); return; }
+            const prev = { is_voter: f.is_voter, voter_number: f.voter_number };
             setGenerating(true);
             try {
               const { data, error } = await supabase.rpc("generate_farmer_voter_number");
-              if (error) { toast.error(error.message); setF({ ...f, is_voter: false }); return; }
+              if (error) {
+                setError(error.message);
+                toast.error(error.message);
+                // Revert toggle and keep prior voter_number untouched
+                setF({ ...f, is_voter: prev.is_voter, voter_number: prev.voter_number });
+                return;
+              }
               setF({ ...f, is_voter: true, voter_number: String(data ?? "") });
             } finally {
               setGenerating(false);
@@ -61,12 +73,23 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
         ) : (
           <span className="text-xs text-muted-foreground">No voter number assigned</span>
         )}
+        {f.id && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} title="View history">
+            <History className="h-4 w-4" />
+          </Button>
+        )}
       </div>
-      {f.voter_number && !generating && (
+      {error && (
+        <Alert variant="destructive" className="mt-2">
+          <AlertDescription className="text-xs">{error}</AlertDescription>
+        </Alert>
+      )}
+      {f.voter_number && !generating && !error && (
         <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
           ⚠ Voter number is permanent and cannot be edited. It will be reused if Is Voter is re-enabled.
         </p>
       )}
+      <VoterHistoryDialog farmerId={f.id ?? null} open={historyOpen} onOpenChange={setHistoryOpen} />
     </>
   );
 }
