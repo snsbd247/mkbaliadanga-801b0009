@@ -33,6 +33,7 @@ export default function Savings() {
   const [planForm, setPlanForm] = useState({ farmer_id: "", plan_id: "", start_date: new Date().toISOString().slice(0, 10) });
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [reportRange, setReportRange] = useState({ from: "", to: "" });
+  const [decision, setDecision] = useState<{ id: string; mode: "reject" | "cancel"; reason: string } | null>(null);
   
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, []);
