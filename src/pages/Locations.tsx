@@ -258,20 +258,8 @@ function LevelTab({ level }: { level: Level }) {
     return currentIds;
   }
 
-  // Wards for optional ward selector (villages/mouzas) — depends on Add union_id
-  useEffect(() => {
-    if (!optionalCol) return;
-    const unionId = addChain.union_id;
-    if (!unionId) { setWardsForOptional([]); setOptionalWardId(""); return; }
-    childrenOf("wards", "union_id", unionId).then(setWardsForOptional).catch((e) => toast.error(e.message));
-  }, [addChain.union_id, optionalCol]);
 
-  useEffect(() => {
-    if (!optionalCol || !editing) return;
-    const unionId = editChain.union_id;
-    if (!unionId) { setEditWardsForOptional([]); return; }
-    childrenOf("wards", "union_id", unionId).then(setEditWardsForOptional).catch((e) => toast.error(e.message));
-  }, [editChain.union_id, optionalCol, editing]);
+
 
   async function add() {
     if (!name.trim()) return toast.error(t("nameRequired"));
