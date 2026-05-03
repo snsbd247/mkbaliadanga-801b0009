@@ -140,19 +140,16 @@ export default function FarmerProfileReport() {
 
   const loanRows = loans.map((loan) => {
     const paid = (loan.loan_payments ?? []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
-    return loans.map((loan) => {
-      const paid = (loan.loan_payments ?? []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
-      return {
-        id: loan.id,
-        loan_account: safeText(loan.id).slice(0, 8).toUpperCase(),
-        loan_amount: safeNumber(loan.principal),
-        interest_rate: loan.interest_rate !== null && loan.interest_rate !== undefined ? `${loan.interest_rate}` : "0",
-        total_loan_amount: safeNumber(loan.total_payable),
-        issue_date: formatDate(loan.issued_on),
-        next_due_date: formatDate(loan.next_due_on),
-        due_amount: safeNumber(Number(loan.total_payable || 0) - paid),
-      };
-    });
+    return {
+      id: loan.id,
+      loan_account: safeText(loan.id).slice(0, 8).toUpperCase(),
+      loan_amount: safeNumber(loan.principal),
+      interest_rate: loan.interest_rate !== null && loan.interest_rate !== undefined ? `${loan.interest_rate}` : "0",
+      total_loan_amount: safeNumber(loan.total_payable),
+      issue_date: formatDate(loan.issued_on),
+      next_due_date: formatDate(loan.next_due_on),
+      due_amount: safeNumber(Number(loan.total_payable || 0) - paid),
+    };
   });
 
   const ownerByYear = (() => {
