@@ -41,9 +41,10 @@ export default function BulkCards() {
   const [templateId, setTemplateId] = useState<TemplateId>("classic");
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  // Hidden container holds QR SVGs we need to feed into the PDF generator.
-  const qrHostRef = useRef<HTMLDivElement>(null);
-  const [tokens, setTokens] = useState<Record<string, { token: string; issued_at: string }>>({});
+  // Hidden container that mounts a real MembershipCard per selected farmer so
+  // the PDF generator can capture each card's DOM (matches preview exactly).
+  const cardHostRef = useRef<HTMLDivElement>(null);
+  const [bulkCards, setBulkCards] = useState<{ farmer_id: string; data: CardData }[]>([]);
 
   useEffect(() => {
     document.title = "Bulk Membership Cards";
