@@ -151,6 +151,7 @@ export default function Farmers() {
   const [offices, setOffices] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
+  const [showDeleted, setShowDeleted] = useState(false);
   const PAGE = 15;
 
   // Create
