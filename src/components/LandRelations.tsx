@@ -22,27 +22,29 @@ export function LandRelations({ farmerId }: Props) {
   const { user, isAdmin } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
-  const [farmers, setFarmers] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "",
     share_percentage: 50, valid_from: new Date().toISOString().slice(0, 10), note: "",
   });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { load(); }, [farmerId]);
 
+  function resetForm() {
+    setForm({ land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "", share_percentage: 50, valid_from: new Date().toISOString().slice(0, 10), note: "" });
+  }
+
   async function load() {
-    const [rels, ld, fm] = await Promise.all([
+    const [rels, ld] = await Promise.all([
       supabase.from("land_relations")
-        .select("*, lands(dag_no,mouza,land_size), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code)")
+        .select("*, lands(dag_no,mouza,land_size), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,account_number), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,account_number)")
         .or(`owner_farmer_id.eq.${farmerId},sharecropper_farmer_id.eq.${farmerId}`)
         .order("valid_from", { ascending: false }),
       supabase.from("lands").select("id,dag_no,mouza,land_size,farmer_id").order("created_at"),
-      supabase.from("farmers").select("id,name_en,farmer_code,member_no").order("name_en"),
     ]);
     setRows(rels.data ?? []);
     setLands(ld.data ?? []);
-    setFarmers(fm.data ?? []);
   }
 
   async function save() {
