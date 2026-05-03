@@ -349,15 +349,32 @@ export default function Farmers() {
   return (
     <>
       <PageHeader title={t("farmers")} actions={
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setCreateErr(null); }}>
+        <Dialog open={open} onOpenChange={(o) => { if (!o && !saving) resetCreateForm(); else setOpen(o); }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent
+            className="max-w-2xl max-h-[85vh] overflow-y-auto"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              setTimeout(() => createNameRef.current?.focus(), 50);
+            }}
+          >
             <DialogHeader><DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle></DialogHeader>
-            <FormFields f={form} setF={setForm} photoFile={photo} setPhotoFile={setPhoto} err={createErr} />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
-              <Button onClick={save}>{t("save")}</Button>
-            </DialogFooter>
+            <form onSubmit={(e) => { e.preventDefault(); if (!saving) save(); }}>
+              <FormFields
+                f={form}
+                setF={(next) => { setForm(next); if (createErr) setCreateErr(null); if (Object.keys(createFieldErrors).length) setCreateFieldErrors({}); }}
+                photoFile={photo}
+                setPhotoFile={setPhoto}
+                err={createErr}
+                fieldErrors={createFieldErrors}
+                disabled={saving}
+                nameInputRef={createNameRef}
+              />
+              <DialogFooter className="mt-6">
+                <Button type="button" variant="outline" onClick={resetCreateForm} disabled={saving}>{t("cancel")}</Button>
+                <Button type="submit" disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       } />
