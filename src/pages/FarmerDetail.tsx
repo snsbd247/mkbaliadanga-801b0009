@@ -71,11 +71,11 @@ export default function FarmerDetail() {
     const [f, l, s, ln, ir, sh, pm] = await Promise.all([
       supabase.from("farmers").select("*, offices(name), divisions(name,name_bn), districts(name,name_bn), upazilas(name,name_bn), unions(name,name_bn), wards(name,name_bn), villages(name,name_bn), mouzas(name,name_bn)").eq("id", id!).maybeSingle(),
       (supabase.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
-      supabase.from("savings_transactions").select("*").eq("farmer_id", id!).order("txn_date", { ascending: false }),
-      supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).order("issued_on", { ascending: false }),
-      supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no)").eq("farmer_id", id!).order("entry_date", { ascending: false }),
+      supabase.from("savings_transactions").select("*").eq("farmer_id", id!).is("deleted_at", null).order("txn_date", { ascending: false }),
+      supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).is("deleted_at", null).order("issued_on", { ascending: false }),
+      supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no)").eq("farmer_id", id!).is("deleted_at", null).order("entry_date", { ascending: false }),
       supabase.from("shares").select("balance").eq("farmer_id", id!).maybeSingle(),
-      supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, offices(name)").eq("farmer_id", id!).order("created_at", { ascending: false }).limit(200),
+      supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, offices(name)").eq("farmer_id", id!).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
     ]);
     setFarmer(f.data); setLands((l.data as any) ?? []); setSavings(s.data ?? []);
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
