@@ -171,7 +171,7 @@ export default function Farmers() {
   const editNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page]);
+  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
   // Scroll the failing dropdown into view when a hierarchy error appears.
