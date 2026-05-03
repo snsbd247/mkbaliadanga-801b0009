@@ -106,10 +106,9 @@ export default function Irrigation() {
             <DialogHeader><DialogTitle>{t("irrigation")} — {t("addEntry")}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>{t("selectFarmer")}</Label>
-                <Select value={form.farmer_id} onValueChange={v => setForm({ ...form, farmer_id: v, land_id: "" })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-                </Select>
+                <FarmerSearchSelect value={form.farmer_id || null}
+                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "", land_id: "" })}
+                  placeholder="Search farmer (name / ID / mobile)" />
               </div>
               <div><Label>{t("lands")}</Label>
                 <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
