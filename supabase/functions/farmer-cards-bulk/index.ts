@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
 
     const { data: farmers } = await admin
       .from("farmers")
-      .select("id, name_en, name_bn, farmer_code, member_no, mobile, village, address, photo_url, status, office_id")
+      .select("id, name_en, name_bn, farmer_code, member_no, account_number, voter_number, mobile, village, address, photo_url, status, office_id")
       .in("id", cleaned);
 
     const out: any[] = [];
