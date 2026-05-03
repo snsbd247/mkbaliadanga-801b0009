@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Printer, FileDown, Receipt } from "lucide-react";
+import { Plus, Printer, FileDown, Receipt, Pencil, Trash2, FileSpreadsheet, FileText } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -24,23 +25,42 @@ import { validateLocationChain } from "@/lib/locationValidation";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
+import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
+
+type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null };
+
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" };
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
   const { t, lang } = useLang();
   const nav = useNavigate();
   const [farmer, setFarmer] = useState<any>(null);
-  const [lands, setLands] = useState<any[]>([]);
+  const [lands, setLands] = useState<LandRow[]>([]);
   const [savings, setSavings] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [irr, setIrr] = useState<any[]>([]);
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
+
+  // Add land dialog
   const [openLand, setOpenLand] = useState(false);
-  const [land, setLand] = useState({ dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+  const [land, setLand] = useState({ ...EMPTY_LAND });
   const [landLoc, setLandLoc] = useState<LocationValue>({});
   const [landLocErr, setLandLocErr] = useState<{ level: any; message: string } | null>(null);
   const [savingLand, setSavingLand] = useState(false);
+
+  // Edit land dialog
+  const [editLand, setEditLand] = useState<LandRow | null>(null);
+  const [editForm, setEditForm] = useState({ ...EMPTY_LAND });
+  const [editLoc, setEditLoc] = useState<LocationValue>({});
+  const [editLocErr, setEditLocErr] = useState<{ level: any; message: string } | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Delete confirmation
+  const [delTarget, setDelTarget] = useState<LandRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const brand = useBranding();
 
   useEffect(() => { if (id) loadAll(); }, [id]);
@@ -49,14 +69,14 @@ export default function FarmerDetail() {
   async function loadAll() {
     const [f, l, s, ln, ir, sh, pm] = await Promise.all([
       supabase.from("farmers").select("*, offices(name)").eq("id", id!).maybeSingle(),
-      supabase.from("lands").select("*").eq("farmer_id", id!).order("created_at"),
+      (supabase.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
       supabase.from("savings_transactions").select("*").eq("farmer_id", id!).order("txn_date", { ascending: false }),
       supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).order("issued_on", { ascending: false }),
       supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no)").eq("farmer_id", id!).order("entry_date", { ascending: false }),
       supabase.from("shares").select("balance").eq("farmer_id", id!).maybeSingle(),
       supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, offices(name)").eq("farmer_id", id!).order("created_at", { ascending: false }).limit(200),
     ]);
-    setFarmer(f.data); setLands(l.data ?? []); setSavings(s.data ?? []);
+    setFarmer(f.data); setLands((l.data as any) ?? []); setSavings(s.data ?? []);
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
     setPayments(pm.data ?? []);
   }
@@ -68,7 +88,7 @@ export default function FarmerDetail() {
       payment_id: p.id,
       paid_at: p.created_at,
       farmer_name: farmer.name_en,
-      farmer_code: farmer.farmer_code,
+      farmer_code: farmer.account_number ?? farmer.farmer_code,
       member_no: farmer.member_no ?? null,
       mobile_masked: farmer.mobile ? farmer.mobile.replace(/^(\d{3})\d+(\d{2})$/, "$1***$2") : null,
       village: farmer.village ?? null,
@@ -98,11 +118,10 @@ export default function FarmerDetail() {
     setLandLocErr(null);
     setSavingLand(true);
     try {
-      const { data: m } = await supabase.from("mouzas").select("name,name_bn").eq("id", landLoc.mouza_id).maybeSingle();
-      const mouzaName = (m as any)?.name ?? "";
+      const { data: m } = await supabase.from("mouzas").select("name").eq("id", landLoc.mouza_id).maybeSingle();
       const { error } = await supabase.from("lands").insert({
         farmer_id: id!,
-        mouza: mouzaName,
+        mouza: (m as any)?.name ?? "",
         mouza_id: landLoc.mouza_id,
         dag_no: land.dag_no,
         land_size: land.land_size,
@@ -111,10 +130,84 @@ export default function FarmerDetail() {
       } as any);
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved")); setOpenLand(false);
-      setLand({ dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
+      setLand({ ...EMPTY_LAND });
       setLandLoc({});
       loadAll();
     } finally { setSavingLand(false); }
+  }
+
+  async function openEdit(row: LandRow) {
+    setEditLand(row);
+    setEditForm({
+      dag_no: row.dag_no ?? "",
+      land_size: Number(row.land_size ?? 0),
+      owner_type: (row.owner_type as any) ?? "owner",
+      field_type: (row.field_type as any) ?? "medium_land",
+    });
+    setEditLocErr(null);
+    // Pre-fill cascade from mouza_id
+    if (row.mouza_id) {
+      const { data } = await (supabase.from as any)("lands_with_location").select("division_id,district_id,upazila_id,union_id,ward_id,village_id,mouza_id").eq("id", row.id).maybeSingle();
+      setEditLoc({
+        division_id: data?.division_id ?? null,
+        district_id: data?.district_id ?? null,
+        upazila_id: data?.upazila_id ?? null,
+        union_id: data?.union_id ?? null,
+        ward_id: data?.ward_id ?? null,
+        village_id: data?.village_id ?? null,
+        mouza_id: data?.mouza_id ?? null,
+      });
+    } else { setEditLoc({}); }
+  }
+
+  async function saveEdit() {
+    if (!editLand) return;
+    const v = validateLocationChain(editLoc);
+    if (v.ok === false) {
+      setEditLocErr({ level: v.level, message: "Please select " + v.level + " first" });
+      return toast.error("Please complete the location hierarchy down to Mouza");
+    }
+    if (!editLoc.mouza_id) {
+      setEditLocErr({ level: "mouza", message: "Mouza is required" });
+      return toast.error("Mouza is required");
+    }
+    setEditSaving(true);
+    try {
+      const { data: m } = await supabase.from("mouzas").select("name").eq("id", editLoc.mouza_id).maybeSingle();
+      const { error } = await supabase.from("lands").update({
+        mouza: (m as any)?.name ?? "",
+        mouza_id: editLoc.mouza_id,
+        dag_no: editForm.dag_no,
+        land_size: editForm.land_size,
+        owner_type: editForm.owner_type as any,
+        field_type: editForm.field_type as any,
+      } as any).eq("id", editLand.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success(t("saved"));
+      setEditLand(null);
+      loadAll();
+    } finally { setEditSaving(false); }
+  }
+
+  async function confirmDelete() {
+    if (!delTarget) return;
+    setDeleting(true);
+    try {
+      // Block if referenced by irrigation_charges or land_relations
+      const [{ count: irrCnt }, { count: relCnt }] = await Promise.all([
+        supabase.from("irrigation_charges").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id),
+        supabase.from("land_relations").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id),
+      ]);
+      if ((irrCnt ?? 0) > 0 || (relCnt ?? 0) > 0) {
+        toast.error(`Cannot delete: linked to ${irrCnt ?? 0} irrigation entries and ${relCnt ?? 0} relations.`);
+        return;
+      }
+      const { error } = await supabase.from("lands").delete().eq("id", delTarget.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Land deleted");
+      setDelTarget(null);
+      loadAll();
+    } finally { setDeleting(false); }
   }
 
   if (!farmer) return <div className="text-muted-foreground">Loading…</div>;
@@ -128,10 +221,15 @@ export default function FarmerDetail() {
   }, 0);
   const irrDue = irr.reduce((a, i) => a + Number(i.due_amount), 0);
 
+  const buildLocLine = (l: LandRow) => {
+    const parts = [l.division_name, l.district_name, l.upazila_name, l.union_name, l.ward_name, l.village_name, l.mouza_name].filter(Boolean);
+    return parts.length ? parts.join(" › ") : (l.mouza ?? "-");
+  };
+
   return (
     <>
       <PageHeader title={lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}
-        description={`${farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
+        description={`${farmer.account_number ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
@@ -148,6 +246,7 @@ export default function FarmerDetail() {
             <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{farmer.name_en[0]}</AvatarFallback>
           </Avatar>
           <div className="grid flex-1 grid-cols-2 gap-3 text-sm md:grid-cols-4">
+            <div><div className="text-xs text-muted-foreground">Account No</div><div className="font-mono font-semibold">{farmer.account_number ?? farmer.farmer_code}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameEn")}</div><div className="font-medium">{farmer.name_en}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameBn")}</div><div className="font-medium">{farmer.name_bn ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("fatherName")}</div><div>{farmer.father_name ?? "-"}</div></div>
@@ -155,12 +254,11 @@ export default function FarmerDetail() {
             <div><div className="text-xs text-muted-foreground">{t("nid")}</div><div className="font-mono">{farmer.nid ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("mobile")}</div><div>{farmer.mobile ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("village")}</div><div>{farmer.village ?? "-"}</div></div>
-            <div><div className="text-xs text-muted-foreground">{t("upazila")}</div><div>{farmer.upazila ?? "-"}</div></div>
           </div>
           <div className="flex flex-col items-center gap-1 rounded-md border bg-card p-2">
             <QRCodeSVG value={`farmer:${farmer.id}`} size={96} />
             <div className="text-[10px] text-muted-foreground">{t("qrCode")}</div>
-            <div className="font-mono text-[10px]">{farmer.farmer_code}</div>
+            <div className="font-mono text-[10px]">{farmer.account_number ?? farmer.farmer_code}</div>
           </div>
         </div>
       </Card>
@@ -185,17 +283,21 @@ export default function FarmerDetail() {
 
         <TabsContent value="lands">
           <Card>
-            <div className="flex justify-end p-3 border-b">
+            <div className="flex flex-wrap justify-end gap-2 p-3 border-b">
+              <Button size="sm" variant="outline" disabled={lands.length === 0}
+                onClick={() => exportLandsPdf({ name_en: farmer.name_en, account_number: farmer.account_number, farmer_code: farmer.farmer_code }, lands)}>
+                <FileText className="h-4 w-4 mr-1" />Export PDF
+              </Button>
+              <Button size="sm" variant="outline" disabled={lands.length === 0}
+                onClick={() => exportLandsExcel({ name_en: farmer.name_en, account_number: farmer.account_number, farmer_code: farmer.farmer_code }, lands)}>
+                <FileSpreadsheet className="h-4 w-4 mr-1" />Export Excel
+              </Button>
               <Dialog open={openLand} onOpenChange={(o) => {
                 setOpenLand(o);
-                if (!o) {
-                  setLand({ dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" });
-                  setLandLoc({});
-                  setLandLocErr(null);
-                }
+                if (!o) { setLand({ ...EMPTY_LAND }); setLandLoc({}); setLandLocErr(null); }
               }}>
                 <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader><DialogTitle>{t("addNew")} — {t("lands")}</DialogTitle></DialogHeader>
                   <div className="space-y-3">
                     <div>
@@ -234,10 +336,29 @@ export default function FarmerDetail() {
               </Dialog>
             </div>
             <Table>
-              <TableHeader><TableRow><TableHead>{t("mouza")}</TableHead><TableHead>{t("dagNo")}</TableHead><TableHead>{t("landSize")}</TableHead><TableHead>{t("ownerType")}</TableHead><TableHead>{t("fieldType")}</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>Location</TableHead>
+                <TableHead>{t("dagNo")}</TableHead>
+                <TableHead>{t("landSize")}</TableHead>
+                <TableHead>{t("ownerType")}</TableHead>
+                <TableHead>{t("fieldType")}</TableHead>
+                <TableHead className="text-right">{t("actions")}</TableHead>
+              </TableRow></TableHeader>
               <TableBody>
-                {lands.map(l => <TableRow key={l.id}><TableCell>{l.mouza}</TableCell><TableCell>{l.dag_no}</TableCell><TableCell>{l.land_size}</TableCell><TableCell>{t(l.owner_type as any)}</TableCell><TableCell>{t(l.field_type as any)}</TableCell></TableRow>)}
-                {lands.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+                {lands.map(l => (
+                  <TableRow key={l.id}>
+                    <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
+                    <TableCell>{l.dag_no}</TableCell>
+                    <TableCell>{l.land_size}</TableCell>
+                    <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                    <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(l)} title="Edit"><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => setDelTarget(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {lands.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
@@ -311,6 +432,64 @@ export default function FarmerDetail() {
           </Table></Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit land dialog */}
+      <Dialog open={!!editLand} onOpenChange={(o) => { if (!o && !editSaving) { setEditLand(null); setEditLoc({}); setEditLocErr(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edit Land</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Location</Label>
+              <LocationPicker value={editLoc} onChange={(v) => { setEditLoc(v); if (editLocErr) setEditLocErr(null); }}
+                errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("dagNo")}</Label><Input disabled={editSaving} value={editForm.dag_no} onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })} /></div>
+              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.01" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
+              <div><Label>{t("ownerType")}</Label>
+                <Select value={editForm.owner_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, owner_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div><Label>{t("fieldType")}</Label>
+                <Select value={editForm.field_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, field_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high_land">{t("highLand")}</SelectItem>
+                    <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
+                    <SelectItem value="low_land">{t("lowLand")}</SelectItem>
+                    <SelectItem value="other">{t("other")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={editSaving} onClick={() => setEditLand(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEdit} disabled={editSaving}>{editSaving ? "…" : t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!delTarget} onOpenChange={(o) => { if (!o && !deleting) setDelTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this land?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove Dag <span className="font-mono font-semibold">{delTarget?.dag_no}</span>.
+              Linked irrigation entries or relations will block deletion.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDelete(); }} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

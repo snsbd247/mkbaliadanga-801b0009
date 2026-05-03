@@ -98,7 +98,7 @@ export default function Farmers() {
 
   async function load() {
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
-    if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
+    if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
     const { data } = await qy;
     setList(data ?? []);
   }
@@ -389,7 +389,7 @@ export default function Farmers() {
       <Card>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>{t("farmerCode")}</TableHead><TableHead>{t("memberNo") || "Member No"}</TableHead><TableHead>{t("farmerName")}</TableHead>
+            <TableHead>Account No</TableHead><TableHead>{t("memberNo") || "Member No"}</TableHead><TableHead>{t("farmerName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
             <TableHead className="text-right">{t("actions")}</TableHead>
@@ -397,7 +397,7 @@ export default function Farmers() {
           <TableBody>
             {list.map(f => (
               <TableRow key={f.id} className="cursor-pointer" onClick={() => nav(`/farmers/${f.id}`)}>
-                <TableCell className="font-mono text-xs">{f.farmer_code}</TableCell>
+                <TableCell className="font-mono text-xs">{f.account_number ?? f.farmer_code}</TableCell>
                 <TableCell className="font-mono text-xs">{f.member_no || "—"}</TableCell>
                 <TableCell>
                   <div className="font-medium">{f.name_en}</div>

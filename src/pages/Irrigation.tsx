@@ -13,12 +13,12 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 
 export default function Irrigation() {
   const { t } = useLang();
   const { user } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
-  const [farmers, setFarmers] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -56,12 +56,11 @@ export default function Irrigation() {
   }, [form.farmer_id, form.land_id, form.season_id]);
 
   async function load() {
-    const [r, f, s] = await Promise.all([
-      supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200),
-      supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
+    const [r, s] = await Promise.all([
+      supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200),
       supabase.from("seasons").select("*").order("year", { ascending: false }),
     ]);
-    setRows(r.data ?? []); setFarmers(f.data ?? []); setSeasons(s.data ?? []);
+    setRows(r.data ?? []); setSeasons(s.data ?? []);
   }
 
   const total = +form.base_charge + +form.canal_charge + +form.maintenance_charge + +form.other_charge;
@@ -107,10 +106,9 @@ export default function Irrigation() {
             <DialogHeader><DialogTitle>{t("irrigation")} — {t("addEntry")}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>{t("selectFarmer")}</Label>
-                <Select value={form.farmer_id} onValueChange={v => setForm({ ...form, farmer_id: v, land_id: "" })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{farmers.map(f => <SelectItem key={f.id} value={f.id}>{f.farmer_code} — {f.name_en}</SelectItem>)}</SelectContent>
-                </Select>
+                <FarmerSearchSelect value={form.farmer_id || null}
+                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "", land_id: "" })}
+                  placeholder="Search farmer (name / ID / mobile)" />
               </div>
               <div><Label>{t("lands")}</Label>
                 <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
@@ -190,7 +188,7 @@ export default function Irrigation() {
           {rows.map(r => (
             <TableRow key={r.id}>
               <TableCell>{fmtDate(r.entry_date)}</TableCell>
-              <TableCell>{r.farmers?.name_en} <span className="text-xs text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
+              <TableCell>{r.farmers?.name_en} <span className="text-xs text-muted-foreground">({r.farmers?.account_number ?? r.farmers?.farmer_code})</span></TableCell>
               <TableCell>{r.seasons?.name}</TableCell>
               <TableCell>{r.lands?.dag_no}</TableCell>
               <TableCell>{money(r.total)}</TableCell>
