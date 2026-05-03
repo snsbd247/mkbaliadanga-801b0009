@@ -55,8 +55,8 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
     sample: { account_number: "AC-0001", dag_no: "123/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "" },
   },
   land_relations: {
-    columns: ["owner_account_number", "sharecropper_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
-    sample: { owner_account_number: "100000000001", sharecropper_account_number: "100000000002", dag_no: "123/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
+    columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
+    sample: { owner_account_number: "100000000001", tenant_account_number: "100000000002", dag_no: "123/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
   },
   loans: {
     columns: ["account_number", "principal", "interest_rate", "total_payable", "issued_on", "note"],
@@ -228,7 +228,8 @@ export default function DataImport() {
         if (mod === "ledger") return;
         if (mod === "land_relations") {
           accountNumbers.push(String(r.raw.owner_account_number ?? "").trim());
-          if (r.raw.sharecropper_account_number) accountNumbers.push(String(r.raw.sharecropper_account_number).trim());
+          const tenantAcc = r.raw.tenant_account_number ?? r.raw.sharecropper_account_number;
+          if (tenantAcc) accountNumbers.push(String(tenantAcc).trim());
         } else {
           accountNumbers.push(String(r.raw.account_number ?? "").trim());
         }
@@ -280,11 +281,13 @@ export default function DataImport() {
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
             if (!owner) throw new Error(`Owner farmer not found for owner_account_number=${raw.owner_account_number ?? ""}`);
-            const sharecropper = raw.sharecropper_account_number
-              ? farmerMap.get(String(raw.sharecropper_account_number))
-              : null;
-            if (raw.sharecropper_account_number && !sharecropper) {
-              throw new Error(`Sharecropper farmer not found for sharecropper_account_number=${raw.sharecropper_account_number}`);
+            const tenantAcc = raw.tenant_account_number ?? raw.sharecropper_account_number;
+            const sharecropper = tenantAcc ? farmerMap.get(String(tenantAcc)) : null;
+            if (tenantAcc && !sharecropper) {
+              throw new Error(`Tenant farmer not found for tenant_account_number=${tenantAcc}`);
+            }
+            if (sharecropper && sharecropper.id === owner.id) {
+              throw new Error("Owner and Tenant must be different farmers");
             }
             const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
             if (!dag) throw new Error("dag_no required to identify the land");
@@ -643,7 +646,7 @@ export default function DataImport() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="lands">Lands</SelectItem>
-                <SelectItem value="land_relations">Land Relations (owner/sharecropper)</SelectItem>
+                <SelectItem value="land_relations">Land Relations (owner/tenant)</SelectItem>
                 <SelectItem value="loans">Loans</SelectItem>
                 <SelectItem value="loan_payments">Loan Payments</SelectItem>
                 <SelectItem value="savings">Savings Transactions</SelectItem>
