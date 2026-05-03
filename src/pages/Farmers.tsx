@@ -23,7 +23,7 @@ import { validateLocationChain, parseLocationDbError, type LocationLevel } from 
 
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
-  post_office: "", address: "", voter_number: "",
+  post_office: "", address: "", voter_number: "", is_voter: false,
   office_id: "", status: "active",
   division_id: null, district_id: null, upazila_id: null, union_id: null,
   ward_id: null, village_id: null, mouza_id: null,
