@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -88,11 +88,15 @@ function CascadeFilters({
   value,
   onChange,
   showLeafFilter = false,
+  errorCol = null,
+  disabled = false,
 }: {
   level: Level;
   value: Chain;
   onChange: (v: Chain) => void;
   showLeafFilter?: boolean;
+  errorCol?: string | null;
+  disabled?: boolean;
 }) {
   const { t } = useLang();
   const chain = CHAIN[level];
@@ -128,9 +132,7 @@ function CascadeFilters({
 
   const setAt = (idx: number, id: string | undefined) => {
     const next: Chain = { ...value };
-    // Set this level
     next[chain[idx].col] = id;
-    // Reset all descendants
     for (let j = idx + 1; j < chain.length; j++) delete next[chain[j].col];
     onChange(next);
   };
@@ -144,15 +146,21 @@ function CascadeFilters({
         const parentSelected = !parentStep || !!value[parentStep.col];
         const list = opts[step.col] ?? [];
         const isLoading = !!loading[step.col];
+        const isErr = errorCol === step.col;
         return (
           <div key={step.col}>
-            <Label className="text-xs">{step.label}</Label>
+            <Label className={"text-xs " + (isErr ? "text-destructive" : "")}>
+              {step.label}{isErr ? " *" : ""}
+            </Label>
             <Select
-              disabled={!parentSelected || isLoading}
+              disabled={disabled || !parentSelected || isLoading}
               value={value[step.col] ?? ""}
               onValueChange={(v) => setAt(i, v || undefined)}
             >
-              <SelectTrigger>
+              <SelectTrigger
+                aria-invalid={isErr || undefined}
+                className={isErr ? "border-destructive ring-2 ring-destructive/40 focus:ring-destructive" : ""}
+              >
                 {isLoading ? (
                   <span className="flex items-center text-muted-foreground text-sm"><Loader2 className="h-3 w-3 mr-1 animate-spin"/>Loading…</span>
                 ) : (
@@ -170,6 +178,11 @@ function CascadeFilters({
                 )}
               </SelectContent>
             </Select>
+            {isErr && (
+              <p role="alert" className="mt-1 text-xs text-destructive">
+                Please select {step.label} first
+              </p>
+            )}
           </div>
         );
       })}
@@ -191,7 +204,9 @@ function LevelTab({ level }: { level: Level }) {
   const [name, setName] = useState("");
   const [nameBn, setNameBn] = useState("");
   const [adding, setAdding] = useState(false);
-  
+  const [addErrorCol, setAddErrorCol] = useState<string | null>(null);
+  const [addNameError, setAddNameError] = useState<string | null>(null);
+  const addNameRef = useRef<HTMLInputElement>(null);
 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -202,8 +217,10 @@ function LevelTab({ level }: { level: Level }) {
   const [editChain, setEditChain] = useState<Chain>({});
   const [editName, setEditName] = useState("");
   const [editNameBn, setEditNameBn] = useState("");
-  
   const [saving, setSaving] = useState(false);
+  const [editErrorCol, setEditErrorCol] = useState<string | null>(null);
+  const [editNameError, setEditNameError] = useState<string | null>(null);
+  const editNameRef = useRef<HTMLInputElement>(null);
 
   // Load list whenever filter changes (uses deepest filter, falls back to direct parent)
   useEffect(() => {
@@ -264,9 +281,18 @@ function LevelTab({ level }: { level: Level }) {
 
 
   async function add() {
-    if (!name.trim()) return toast.error(t("nameRequired"));
+    setAddNameError(null);
+    setAddErrorCol(null);
+    if (!name.trim()) {
+      setAddNameError(t("nameRequired"));
+      return;
+    }
     for (const step of chain) {
-      if (!addChain[step.col]) return toast.error(`Please select ${step.label} first`);
+      if (!addChain[step.col]) {
+        setAddErrorCol(step.col);
+        toast.error(`Please select ${step.label} first`);
+        return;
+      }
     }
     const payload: any = { name: name.trim(), name_bn: nameBn.trim() || null };
     if (directCol) payload[directCol] = addChain[directCol];
@@ -277,8 +303,14 @@ function LevelTab({ level }: { level: Level }) {
     setAdding(false);
     if (error) return toast.error(error.message);
     toast.success(t("addedToast"));
-    setName(""); setNameBn(""); setAddChain({}); setAddOpen(false);
+    closeAddDialog();
     load();
+  }
+
+  function closeAddDialog() {
+    setAddOpen(false);
+    setName(""); setNameBn(""); setAddChain({});
+    setAddErrorCol(null); setAddNameError(null); setAdding(false);
   }
 
   async function remove(id: string) {
@@ -316,9 +348,18 @@ function LevelTab({ level }: { level: Level }) {
 
   async function saveEdit() {
     if (!editing) return;
-    if (!editName.trim()) return toast.error(t("nameRequired"));
+    setEditNameError(null);
+    setEditErrorCol(null);
+    if (!editName.trim()) {
+      setEditNameError(t("nameRequired"));
+      return;
+    }
     for (const step of chain) {
-      if (!editChain[step.col]) return toast.error(`Please select ${step.label}`);
+      if (!editChain[step.col]) {
+        setEditErrorCol(step.col);
+        toast.error(`Please select ${step.label}`);
+        return;
+      }
     }
     setSaving(true);
     const payload: any = { name: editName.trim(), name_bn: editNameBn.trim() || null };
@@ -329,8 +370,14 @@ function LevelTab({ level }: { level: Level }) {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(t("updatedToast"));
-    setEditing(null);
+    closeEditDialog();
     load();
+  }
+
+  function closeEditDialog() {
+    setEditing(null);
+    setEditChain({}); setEditName(""); setEditNameBn("");
+    setEditErrorCol(null); setEditNameError(null); setSaving(false);
   }
 
   // Filtered rows by search
@@ -371,37 +418,71 @@ function LevelTab({ level }: { level: Level }) {
 
       {/* Add button */}
       <div className="flex justify-end">
-        <Button onClick={() => { setAddChain({}); setName(""); setNameBn(""); setAddOpen(true); }}>
+        <Button onClick={() => { setAddChain({}); setName(""); setNameBn(""); setAddErrorCol(null); setAddNameError(null); setAddOpen(true); }}>
           <Plus className="h-4 w-4 mr-1"/>Add new {level.slice(0, -1)}
         </Button>
       </div>
 
       {/* Add dialog */}
-      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setAddOpen(false); } }}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={addOpen} onOpenChange={(o) => { if (!o && !adding) closeAddDialog(); }}>
+        <DialogContent
+          className="max-w-2xl"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            setTimeout(() => addNameRef.current?.focus(), 50);
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Add new {level.slice(0, -1)}</DialogTitle>
             <DialogDescription>Select the parent hierarchy and provide name details.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (!adding) add(); }}
+            className="space-y-3"
+          >
             {chain.length > 0 && (
-              <CascadeFilters level={level} value={addChain} onChange={setAddChain} />
+              <CascadeFilters
+                level={level}
+                value={addChain}
+                onChange={(v) => { setAddChain(v); setAddErrorCol(null); }}
+                errorCol={addErrorCol}
+                disabled={adding}
+              />
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs">Name (English) *</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
+                <Label className={"text-xs " + (addNameError ? "text-destructive" : "")}>
+                  Name (English) *
+                </Label>
+                <Input
+                  ref={addNameRef}
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); if (addNameError) setAddNameError(null); }}
+                  disabled={adding}
+                  maxLength={100}
+                  aria-invalid={!!addNameError || undefined}
+                  className={addNameError ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
+                />
+                {addNameError && <p role="alert" className="mt-1 text-xs text-destructive">{addNameError}</p>}
               </div>
               <div>
                 <Label className="text-xs">Name (Bangla)</Label>
-                <Input value={nameBn} onChange={(e) => setNameBn(e.target.value)} />
+                <Input
+                  value={nameBn}
+                  onChange={(e) => setNameBn(e.target.value)}
+                  disabled={adding}
+                  maxLength={100}
+                />
               </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={adding}>{t("cancel")}</Button>
-            <Button onClick={add} disabled={adding}>{adding && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}<Plus className="h-4 w-4 mr-1"/>Add</Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeAddDialog} disabled={adding}>{t("cancel")}</Button>
+              <Button type="submit" disabled={adding}>
+                {adding ? <Loader2 className="h-4 w-4 mr-1 animate-spin"/> : <Plus className="h-4 w-4 mr-1"/>}
+                Add
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -448,31 +529,64 @@ function LevelTab({ level }: { level: Level }) {
       </Card>
 
       {/* Edit dialog */}
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={!!editing} onOpenChange={(o) => { if (!o && !saving) closeEditDialog(); }}>
+        <DialogContent
+          className="max-w-2xl"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            setTimeout(() => editNameRef.current?.focus(), 50);
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Edit {level.slice(0, -1)}</DialogTitle>
             <DialogDescription>Update name and parent hierarchy. Existing references stay intact.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (!saving) saveEdit(); }}
+            className="space-y-3"
+          >
             {chain.length > 0 && (
-              <CascadeFilters level={level} value={editChain} onChange={setEditChain} />
+              <CascadeFilters
+                level={level}
+                value={editChain}
+                onChange={(v) => { setEditChain(v); setEditErrorCol(null); }}
+                errorCol={editErrorCol}
+                disabled={saving}
+              />
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs">Name (English) *</Label>
-                <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                <Label className={"text-xs " + (editNameError ? "text-destructive" : "")}>
+                  Name (English) *
+                </Label>
+                <Input
+                  ref={editNameRef}
+                  value={editName}
+                  onChange={(e) => { setEditName(e.target.value); if (editNameError) setEditNameError(null); }}
+                  disabled={saving}
+                  maxLength={100}
+                  aria-invalid={!!editNameError || undefined}
+                  className={editNameError ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
+                />
+                {editNameError && <p role="alert" className="mt-1 text-xs text-destructive">{editNameError}</p>}
               </div>
               <div>
                 <Label className="text-xs">Name (Bangla)</Label>
-                <Input value={editNameBn} onChange={(e) => setEditNameBn(e.target.value)} />
+                <Input
+                  value={editNameBn}
+                  onChange={(e) => setEditNameBn(e.target.value)}
+                  disabled={saving}
+                  maxLength={100}
+                />
               </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>{t("cancel")}</Button>
-            <Button onClick={saveEdit} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}{t("save")}</Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeEditDialog} disabled={saving}>{t("cancel")}</Button>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin"/>}{t("save")}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
