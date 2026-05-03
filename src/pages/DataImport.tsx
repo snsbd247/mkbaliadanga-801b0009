@@ -211,8 +211,9 @@ export default function DataImport() {
     return m;
   }
 
-  async function importAll() {
+  async function importAll(dryRun = false) {
     if (!rows.length) return;
+    if (dryRun) setLedgerVerify([]);
     if (mod === "ledger" && !isSuper) {
       toast.error("Only Super Admin can import ledger entries.");
       return;
