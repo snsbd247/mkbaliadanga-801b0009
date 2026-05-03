@@ -295,26 +295,86 @@ export default function Savings() {
               </DialogContent>
             </Dialog>
           </Card>
-          <Card><Table>
+          <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
+            <div>
+              <Label className="text-xs">From</Label>
+              <Input type="date" className="h-9" value={reportRange.from} onChange={e => setReportRange({ ...reportRange, from: e.target.value })} />
+            </div>
+            <div>
+              <Label className="text-xs">To</Label>
+              <Input type="date" className="h-9" value={reportRange.to} onChange={e => setReportRange({ ...reportRange, to: e.target.value })} />
+            </div>
+            <Button variant="outline" size="sm" onClick={() => exportPlanReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+            <Button variant="outline" size="sm" onClick={() => exportPlanReport("pdf")}><FileText className="h-4 w-4 mr-1" />PDF</Button>
+          </Card>
+          <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
+              <TableHead className="w-8"></TableHead>
               <TableHead>Start</TableHead><TableHead>Farmer</TableHead><TableHead>Plan</TableHead>
               <TableHead>Installment</TableHead><TableHead>Expected Total</TableHead>
               <TableHead>Interest</TableHead><TableHead>Maturity</TableHead><TableHead>Status</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {farmerPlans.map((fp: any) => (
-                <TableRow key={fp.id}>
-                  <TableCell>{fmtDate(fp.start_date)}</TableCell>
-                  <TableCell>{fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
-                  <TableCell>{fp.savings_plans?.name} <span className="text-xs text-muted-foreground">({fp.savings_plans?.duration_months}mo / {fp.savings_plans?.installment_type})</span></TableCell>
-                  <TableCell>{money(fp.savings_plans?.installment_amount)}</TableCell>
-                  <TableCell>{money(fp.expected_total)}</TableCell>
-                  <TableCell>{money(fp.expected_interest)}</TableCell>
-                  <TableCell className="font-semibold">{money(fp.maturity_amount)}</TableCell>
-                  <TableCell><Badge variant={fp.status === "active" ? "default" : "secondary"}>{fp.status}</Badge></TableCell>
-                </TableRow>
-              ))}
-              {farmerPlans.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+              {farmerPlans.map((fp: any) => {
+                const isOpen = expandedPlan === fp.id;
+                const sched = isOpen ? buildSchedule(fp) : [];
+                const statusVariant = fp.status === "active" ? "default" : fp.status === "pending" ? "outline" : fp.status === "rejected" || fp.status === "cancelled" ? "destructive" : "secondary";
+                return (
+                  <Fragment key={fp.id}>
+                    <TableRow>
+                      <TableCell>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setExpandedPlan(isOpen ? null : fp.id)}>
+                          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                        </Button>
+                      </TableCell>
+                      <TableCell>{fmtDate(fp.start_date)}</TableCell>
+                      <TableCell>{fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
+                      <TableCell>{planLabel(fp)} <span className="text-xs text-muted-foreground">({fp.savings_plans?.duration_months}mo / {fp.savings_plans?.installment_type})</span></TableCell>
+                      <TableCell>{money(fp.savings_plans?.installment_amount)}</TableCell>
+                      <TableCell>{money(fp.expected_total)}</TableCell>
+                      <TableCell>{money(fp.expected_interest)}</TableCell>
+                      <TableCell className="font-semibold">{money(fp.maturity_amount)}</TableCell>
+                      <TableCell><Badge variant={statusVariant as any}>{fp.status}</Badge></TableCell>
+                      <TableCell className="text-right">
+                        {isCommittee && fp.status === "pending" && (<>
+                          <Button size="icon" variant="ghost" onClick={() => approvePlan(fp.id)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
+                          <Button size="icon" variant="ghost" onClick={() => rejectPlan(fp.id)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                        </>)}
+                        {isCommittee && (fp.status === "active" || fp.status === "pending") && (
+                          <Button size="icon" variant="ghost" onClick={() => cancelPlan(fp.id)} title="Cancel enrollment"><Ban className="h-4 w-4 text-destructive" /></Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    {isOpen && (
+                      <TableRow className="bg-muted/30">
+                        <TableCell></TableCell>
+                        <TableCell colSpan={9} className="py-2">
+                          <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">
+                            Installment Schedule — {sched.length} {fp.savings_plans?.installment_type} installments
+                            {fp.cancel_reason && <span className="ml-3 text-destructive normal-case">Cancelled: {fp.cancel_reason}</span>}
+                          </div>
+                          <div className="max-h-64 overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="text-xs text-muted-foreground sticky top-0 bg-muted/30"><tr><th className="text-left py-1">#</th><th className="text-left">Due Date</th><th className="text-right">Amount</th></tr></thead>
+                              <tbody>
+                                {sched.map(s => (
+                                  <tr key={s.no} className="border-t">
+                                    <td className="py-1">{s.no}</td>
+                                    <td>{fmtDate(s.due_date)}</td>
+                                    <td className="text-right">{money(s.amount)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
+                );
+              })}
+              {farmerPlans.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>
