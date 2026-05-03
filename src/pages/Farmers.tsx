@@ -266,47 +266,65 @@ export default function Farmers() {
 
   // ---------- Reusable form fields ----------
   function FormFields({
-    f, setF, photoFile, setPhotoFile, err,
+    f, setF, photoFile, setPhotoFile, err, fieldErrors, disabled, nameInputRef,
   }: {
     f: FormState;
     setF: (next: FormState) => void;
     photoFile: File | null;
     setPhotoFile: (p: File | null) => void;
     err: { level: LocationLevel; key: string } | null;
+    fieldErrors: FormErrors;
+    disabled: boolean;
+    nameInputRef?: React.RefObject<HTMLInputElement>;
   }) {
     return (
       <div className="grid grid-cols-2 gap-3">
-        <div><Label>{t("nameEn")} *</Label><Input value={f.name_en} onChange={e => setF({ ...f, name_en: e.target.value })} /></div>
-        <div><Label>{t("nameBn")}</Label><Input value={f.name_bn} onChange={e => setF({ ...f, name_bn: e.target.value })} /></div>
-        <div><Label>{t("fatherName")}</Label><Input value={f.father_name} onChange={e => setF({ ...f, father_name: e.target.value })} /></div>
-        <div><Label>{t("motherName")}</Label><Input value={f.mother_name} onChange={e => setF({ ...f, mother_name: e.target.value })} /></div>
-        <div><Label>{t("nid")}</Label><Input value={f.nid} onChange={e => setF({ ...f, nid: e.target.value })} /></div>
-        <div><Label>{t("mobile")}</Label><Input value={f.mobile} onChange={e => setF({ ...f, mobile: e.target.value })} /></div>
-        <div><Label>{t("village")}</Label><Input value={f.village} onChange={e => setF({ ...f, village: e.target.value })} /></div>
-        <div><Label>{t("postOffice")}</Label><Input value={f.post_office} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
-        <div><Label>{t("upazila")}</Label><Input value={f.upazila} onChange={e => setF({ ...f, upazila: e.target.value })} /></div>
-        <div><Label>{t("district")}</Label><Input value={f.district} onChange={e => setF({ ...f, district: e.target.value })} /></div>
-        <div><Label>{t("division")}</Label><Input value={f.division} onChange={e => setF({ ...f, division: e.target.value })} /></div>
+        <div>
+          <Label className={fieldErrors.name_en ? "text-destructive" : ""}>{t("nameEn")} *</Label>
+          <Input
+            ref={nameInputRef}
+            value={f.name_en}
+            disabled={disabled}
+            maxLength={100}
+            aria-invalid={!!fieldErrors.name_en || undefined}
+            className={fieldErrors.name_en ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
+            onChange={e => setF({ ...f, name_en: e.target.value })}
+          />
+          {fieldErrors.name_en && <p className="mt-1 text-xs text-destructive">{fieldErrors.name_en}</p>}
+        </div>
+        <div><Label>{t("nameBn")}</Label><Input value={f.name_bn} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, name_bn: e.target.value })} /></div>
+        <div><Label>{t("fatherName")}</Label><Input value={f.father_name} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, father_name: e.target.value })} /></div>
+        <div><Label>{t("motherName")}</Label><Input value={f.mother_name} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, mother_name: e.target.value })} /></div>
+        <div>
+          <Label className={fieldErrors.nid ? "text-destructive" : ""}>{t("nid")}</Label>
+          <Input value={f.nid} disabled={disabled} inputMode="numeric" maxLength={17} onChange={e => setF({ ...f, nid: e.target.value })} className={fieldErrors.nid ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""} />
+          {fieldErrors.nid && <p className="mt-1 text-xs text-destructive">{fieldErrors.nid}</p>}
+        </div>
+        <div>
+          <Label className={fieldErrors.mobile ? "text-destructive" : ""}>{t("mobile")}</Label>
+          <Input value={f.mobile} disabled={disabled} inputMode="tel" maxLength={20} onChange={e => setF({ ...f, mobile: e.target.value })} className={fieldErrors.mobile ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""} />
+          {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
+        </div>
+        <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
         <div>
           <Label>{t("office")}</Label>
-          <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })}>
+          <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>
             <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
             <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
-        <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} onChange={e => setF({ ...f, address: e.target.value })} /></div>
+        <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} disabled={disabled} maxLength={250} onChange={e => setF({ ...f, address: e.target.value })} /></div>
 
         <div className="col-span-2 border-t pt-3 mt-1">
           <div className="text-xs font-medium text-muted-foreground mb-2">
             Location (strict cascading: division → district → upazila → union → ward → village → mouza)
           </div>
-          {err && (
+          {(err || fieldErrors.location) && (
             <Alert variant="destructive" className="mb-3" role="alert" aria-live="assertive">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>{t("locationInvalidTitle")}</AlertTitle>
-              <AlertDescription data-testid="location-error" data-level={err.level}>
-                <span className="font-semibold">{levelLabel(err.level)}:</span>{" "}
-                {buildErrMessage(err.key, err.level)}
+              <AlertDescription data-testid="location-error" data-level={err?.level}>
+                {fieldErrors.location ?? (err ? <><span className="font-semibold">{levelLabel(err.level)}:</span>{" "}{buildErrMessage(err.key, err.level)}</> : null)}
               </AlertDescription>
             </Alert>
           )}
@@ -314,14 +332,14 @@ export default function Farmers() {
             value={pickLocation(f)}
             onChange={(loc) => setF({ ...f, ...loc })}
             errorLevel={err?.level ?? null}
-            errorMessage={err ? buildErrMessage(err.key, err.level) : null}
+            errorMessage={fieldErrors.location ?? (err ? buildErrMessage(err.key, err.level) : null)}
             labels={{
               division: t("division"), district: t("district"), upazila: t("upazila"),
               union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
             }}
           />
         </div>
-        <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
+        <div className="col-span-2"><Label>{t("photo")}</Label><Input type="file" accept="image/*" disabled={disabled} onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
           {photoFile && <div className="text-xs text-muted-foreground mt-1">{photoFile.name}</div>}
         </div>
       </div>
