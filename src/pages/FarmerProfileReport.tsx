@@ -217,6 +217,11 @@ export default function FarmerProfileReport() {
           border: 1px solid #9e9e9e;
           height: 30px;
           margin-bottom: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 700;
         }
 
         .farmer-section-title {
