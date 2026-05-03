@@ -533,8 +533,6 @@ export default function FarmerProfileReport() {
               </div>
             );
           })}
-            </tbody>
-          </table>
 
           <div className="farmer-section-title">Loan Information</div>
           <table className="farmer-table">
