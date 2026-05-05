@@ -71,6 +71,7 @@ import FarmerStatement from "./pages/FarmerStatement";
 import LoanPlans from "./pages/LoanPlans";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 import { RequireRole } from "./components/auth/RequireRole";
@@ -153,6 +154,7 @@ const App = () => (
                 <Route path="/admin/bulk-loan-export" element={<RequireRole roles={["admin","super_admin"]}><BulkLoanExport /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireRole roles={["admin","super_admin"]}><RoleMatrix /></RequireRole>} />
+                <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

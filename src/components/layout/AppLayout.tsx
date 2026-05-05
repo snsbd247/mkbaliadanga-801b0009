@@ -1,12 +1,12 @@
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { Button } from "@/components/ui/button";
-import { LogOut, Languages } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { LogOut, Languages, UserCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useBranding } from "@/lib/branding";
@@ -78,6 +78,10 @@ export function AppLayout() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile"><UserCircle className="mr-2 h-4 w-4" />{lang === "bn" ? "প্রোফাইল ও পাসওয়ার্ড" : "Profile & Password"}</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" />{t("logout")}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -99,6 +103,9 @@ export function AppLayout() {
                   <DropdownMenuItem onClick={() => setLang(lang === "en" ? "bn" : "en")}>
                     <Languages className="mr-2 h-4 w-4" />
                     {lang === "en" ? "বাংলা" : "English"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile"><UserCircle className="mr-2 h-4 w-4" />{lang === "bn" ? "প্রোফাইল ও পাসওয়ার্ড" : "Profile & Password"}</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" />{t("logout")}</DropdownMenuItem>
                 </DropdownMenuContent>
