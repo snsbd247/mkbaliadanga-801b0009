@@ -574,6 +574,7 @@ export default function FarmerDetail() {
                     <Button size="sm" variant="outline" onClick={() => reprintReceipt(p)}>
                       <FileDown className="h-3 w-3 mr-1" />Download
                     </Button>
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deletePayment(p)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
               ))}
