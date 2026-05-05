@@ -113,8 +113,8 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
             <div className="min-w-0 flex-1 text-[9px] leading-tight space-y-0.5">
               <div className="font-bold text-[11px] truncate">{f.name}</div>
               {f.name_en && f.name_en !== f.name && <div className="text-gray-500 truncate">{f.name_en}</div>}
-              {opts.show_account_number && f.account_number && (
-                <div><span className="text-gray-500">A/C:</span> <span className="font-mono" data-testid="card-account">{f.account_number}</span></div>
+              {opts.show_account_number && (f.member_no || f.farmer_code) && (
+                <div><span className="text-gray-500">Member:</span> <span className="font-mono" data-testid="card-account">{f.member_no ?? f.farmer_code}</span></div>
               )}
               {opts.show_voter_number && f.voter_number && (
                 <div><span className="text-gray-500">Voter:</span> <span className="font-mono" data-testid="card-voter">{f.voter_number}</span></div>
