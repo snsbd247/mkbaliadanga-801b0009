@@ -182,14 +182,16 @@ export default function Savings() {
 
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
-    const status = form.type === "withdraw" ? "pending" : "approved";
+    const isWithdraw = form.type === "withdraw";
+    const isDepositKind = form.type === "deposit" || form.type === "deposit_collection" || form.type === "share_collection";
+    const status = isWithdraw ? "pending" : "approved";
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
     const { error } = await supabase.from("savings_transactions").insert({
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
     });
     if (error) return toast.error(error.message);
-    if (form.type === "deposit") {
+    if (isDepositKind) {
       await supabase.from("payments").insert({ farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id });
     }
     if (status === "pending") {
@@ -251,7 +253,12 @@ export default function Savings() {
               <div><Label>{t("type")}</Label>
                 <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="deposit">{t("deposit")}</SelectItem><SelectItem value="withdraw">{t("withdraw")}</SelectItem></SelectContent>
+                  <SelectContent>
+                    <SelectItem value="deposit">{t("deposit")}</SelectItem>
+                    <SelectItem value="deposit_collection">Deposit Collection</SelectItem>
+                    <SelectItem value="share_collection">Share Collection</SelectItem>
+                    <SelectItem value="withdraw">{t("withdraw")}</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
               <div><Label>{t("amount")}</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: +e.target.value })} /></div>
