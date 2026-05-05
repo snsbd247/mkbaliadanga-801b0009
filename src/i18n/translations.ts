@@ -641,7 +641,7 @@ export const translations = {
     showMismatchesOnly: "Show mismatches only",
     run: "Run",
     csv: "CSV",
-    totalSavings: "Total Savings",
+    totalSavingsRecon: "Total Savings",
     totalLedger: "Total Ledger",
     mismatches: "Mismatches",
     matched: "Matched",
