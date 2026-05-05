@@ -134,15 +134,15 @@ type FormErrors = {
 };
 
 const farmerFormSchema = z.object({
-  name_en: z.string().trim().min(1, "English name required").max(100, "Name must be 100 characters or less"),
-  name_bn: z.string().trim().max(100, "Name must be 100 characters or less").optional().or(z.literal("")),
-  father_name: z.string().trim().max(100, "Father's name must be 100 characters or less").optional().or(z.literal("")),
-  mother_name: z.string().trim().max(100, "Mother's name must be 100 characters or less").optional().or(z.literal("")),
-  nid: z.string().trim().refine((v) => !v || /^\d{10,17}$/.test(v.replace(/\D/g, "")), "Invalid NID (10–17 digits)"),
-  mobile: z.string().trim().refine((v) => !v || /^\+?\d[\d\s-]{6,20}$/.test(v), "Invalid mobile number"),
-  post_office: z.string().trim().max(100, "Post office must be 100 characters or less").optional().or(z.literal("")),
-  address: z.string().trim().max(250, "Address must be 250 characters or less").optional().or(z.literal("")),
-  voter_number: z.string().trim().refine((v) => !v || /^\d{1,20}$/.test(v), "Voter number must be digits only").optional().or(z.literal("")),
+  name_en: z.string().trim().min(1, "Name (English) is required").max(100),
+  name_bn: z.string().trim().min(1, "Name (Bangla) is required").max(100),
+  father_name: z.string().trim().min(1, "Father's name is required").max(100),
+  mother_name: z.string().trim().min(1, "Mother's name is required").max(100),
+  nid: z.string().trim().refine((v) => !v || /^\d{10,17}$/.test(v.replace(/\D/g, "")), "Invalid NID (10–17 digits)").optional().or(z.literal("")),
+  mobile: z.string().trim().refine((v) => !v || /^\+?\d[\d\s-]{6,20}$/.test(v), "Invalid mobile number").optional().or(z.literal("")),
+  post_office: z.string().trim().max(100).optional().or(z.literal("")),
+  address: z.string().trim().max(250).optional().or(z.literal("")),
+  voter_number: z.string().trim().refine((v) => !v || /^[\w-]{1,20}$/.test(v), "Invalid voter number").optional().or(z.literal("")),
   office_id: z.string().optional().or(z.literal("")),
 });
 
