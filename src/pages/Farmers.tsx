@@ -14,7 +14,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Eye, Search, Trash2, Pencil, AlertTriangle, Loader2 } from "lucide-react";
+import { Plus, Eye, Search, Trash2, Pencil, AlertTriangle, Loader2, Download, Upload } from "lucide-react";
+import * as XLSX from "xlsx";
+
+const FARMER_TEMPLATE_HEADERS = [
+  "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
+  "member_no", "is_voter", "status", "village", "address",
+  "division", "district", "upazila", "union", "ward", "village_loc", "mouza",
+];
+
+function downloadFarmerTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    FARMER_TEMPLATE_HEADERS,
+    [
+      "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000",
+      "", "false", "active", "Free-text village", "Holding/road",
+      "Dhaka", "Dhaka", "Savar", "Aminbazar", "Ward 1", "Bagbari", "Mouza A",
+    ],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Farmers");
+  XLSX.writeFile(wb, "farmer-import-template.xlsx");
+}
 import { money } from "@/lib/format";
 import { LocationPicker, LocationValue } from "@/components/locations/LocationPicker";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -496,7 +517,14 @@ export default function Farmers() {
   return (
     <>
       <PageHeader title={t("farmers")} actions={
-        <Dialog open={open} onOpenChange={(o) => { if (!o && !saving) resetCreateForm(); else setOpen(o); }}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button type="button" variant="outline" size="sm" onClick={downloadFarmerTemplate} title="Download bulk import template">
+            <Download className="h-4 w-4 mr-1" /> Template
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => nav("/farmers/import")} title="Open bulk importer">
+            <Upload className="h-4 w-4 mr-1" /> Bulk Import
+          </Button>
+          <Dialog open={open} onOpenChange={(o) => { if (!o && !saving) resetCreateForm(); else setOpen(o); }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
           <DialogContent
             className="max-w-2xl max-h-[85vh] overflow-y-auto"
