@@ -48,9 +48,6 @@ const CHAIN: Record<Level, { table: Level; col: string; label: string }[]> = {
     { table: "divisions", col: "division_id", label: "Division" },
     { table: "districts", col: "district_id", label: "District" },
     { table: "upazilas", col: "upazila_id", label: "Upazila" },
-    { table: "unions", col: "union_id", label: "Union" },
-    { table: "wards", col: "ward_id", label: "Ward" },
-    { table: "villages", col: "village_id", label: "Village" },
   ],
 };
 
@@ -61,14 +58,13 @@ const DIRECT_PARENT_COL: Partial<Record<Level, string>> = {
   upazilas: "district_id",
   unions: "upazila_id",
   wards: "union_id",
-  villages: "union_id", // also has ward_id (optional)
-  mouzas: "union_id",   // also has ward_id (optional)
+  villages: "union_id",
+  mouzas: "upazila_id",
 };
 
 // Optional secondary FK on the table (not part of strict chain validation)
 const OPTIONAL_PARENT_COL: Partial<Record<Level, string>> = {
   villages: "ward_id",
-  mouzas: "ward_id",
 };
 
 // Lookup endpoint to fetch children of a parent for cascading dropdowns.
@@ -594,11 +590,11 @@ function LevelTab({ level }: { level: Level }) {
 }
 
 export default function Locations() {
-  const { isSuper, rolesLoaded } = useAuth();
+  const { isAdmin, rolesLoaded } = useAuth();
   const { t } = useLang();
   useEffect(() => { document.title = t("locations"); }, [t]);
   if (!rolesLoaded) return <div className="p-6 text-muted-foreground">{t("loading" as any) || "Loading…"}</div>;
-  if (!isSuper) return <Navigate to="/" replace />;
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
     <>
@@ -615,10 +611,12 @@ export default function Locations() {
           <TabsTrigger value="divisions">{t("divisions")}</TabsTrigger>
           <TabsTrigger value="districts">{t("districts")}</TabsTrigger>
           <TabsTrigger value="upazilas">{t("upazilas")}</TabsTrigger>
+          <TabsTrigger value="mouzas">Mouzas</TabsTrigger>
         </TabsList>
         <TabsContent value="divisions" className="mt-4"><LevelTab level="divisions"/></TabsContent>
         <TabsContent value="districts" className="mt-4"><LevelTab level="districts"/></TabsContent>
         <TabsContent value="upazilas"  className="mt-4"><LevelTab level="upazilas"/></TabsContent>
+        <TabsContent value="mouzas"    className="mt-4"><LevelTab level="mouzas"/></TabsContent>
       </Tabs>
     </>
   );
