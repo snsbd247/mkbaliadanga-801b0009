@@ -35,10 +35,13 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
           checked={!!f.is_voter}
           disabled={disabled || generating}
           onCheckedChange={async (on) => {
-            if (!on) { setF({ ...f, is_voter: false }); return; }
-            // Already has an account_number — just enable
-            if (f.account_number) {
-              setF({ ...f, is_voter: true, voter_number: f.voter_number || f.account_number });
+            if (!on) {
+              // Disable: clear member/voter/account so duplicate-check stays clean
+              setF({ ...f, is_voter: false });
+              return;
+            }
+            if (f.account_number && f.member_no) {
+              setF({ ...f, is_voter: true, voter_number: f.member_no, account_number: f.member_no });
               return;
             }
             setGenerating(true);
@@ -52,9 +55,8 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
                 return;
               }
               const acc = String(data ?? "");
-              // account_number is stored silently in DB; not displayed in UI
-              setF({ ...f, is_voter: true, account_number: acc, voter_number: acc });
-              toast.success("Savings/voter account created");
+              setF({ ...f, is_voter: true, account_number: acc, member_no: acc, voter_number: acc });
+              toast.success("Savings/voter account created — Member No auto-generated");
             } finally {
               setGenerating(false);
             }
@@ -76,6 +78,50 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
       </div>
       <VoterHistoryDialog farmerId={f.id ?? null} open={historyOpen} onOpenChange={setHistoryOpen} />
     </>
+  );
+}
+
+/** Member No field — visible only when voter/savings is on. Admin can edit; duplicates rejected. */
+function MemberNoField({ f, setF, disabled, isAdmin, currentId }: { f: any; setF: (n: any) => void; disabled: boolean; isAdmin: boolean; currentId?: string | null }) {
+  const [checking, setChecking] = useState(false);
+  const [dupErr, setDupErr] = useState<string | null>(null);
+  const tRef = useRef<any>(null);
+
+  if (!f.is_voter) return null;
+
+  async function onChange(v: string) {
+    setF({ ...f, member_no: v, account_number: v, voter_number: v });
+    setDupErr(null);
+    if (tRef.current) clearTimeout(tRef.current);
+    if (!v.trim()) return;
+    setChecking(true);
+    tRef.current = setTimeout(async () => {
+      const { data, error } = await supabase.rpc("member_no_exists" as any, {
+        _member_no: v.trim(), _exclude_id: currentId ?? null,
+      });
+      setChecking(false);
+      if (!error && data === true) setDupErr("This Member No is already used by another farmer.");
+    }, 350);
+  }
+
+  return (
+    <div className="col-span-2">
+      <Label className={dupErr ? "text-destructive" : ""}>
+        Member No * <span className="text-xs text-muted-foreground">(also Savings A/C & Voter No — auto-generated, admin can edit)</span>
+      </Label>
+      <Input
+        value={f.member_no || ""}
+        disabled={disabled || !isAdmin}
+        maxLength={20}
+        inputMode="numeric"
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, ""))}
+        className={dupErr ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
+        data-testid="member-no-input"
+      />
+      {checking && <p className="mt-1 text-xs text-muted-foreground">Checking…</p>}
+      {dupErr && <p className="mt-1 text-xs text-destructive" role="alert">{dupErr}</p>}
+      {!isAdmin && <p className="mt-1 text-xs text-muted-foreground">Only admins can change this value.</p>}
+    </div>
   );
 }
 
