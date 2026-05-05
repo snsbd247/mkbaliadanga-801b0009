@@ -45,14 +45,14 @@ export function AppSidebar() {
 
     // ── Members ──
     {
-      key: "members", icon: Users, label: t("farmers"),
+      key: "members", icon: Users, label: t("members"),
       children: [
         { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
         { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
-        { url: "/voters", icon: Users, label: "Voter List", permKey: "farmers" },
-        { url: "/voters/history", icon: FileBarChart, label: "Voter History", permKey: "farmers" },
-        { url: "/reports/voter-audit", icon: FileBarChart, label: "Voter Audit", permKey: "farmers" },
+        { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
+        { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
+        { url: "/reports/voter-audit", icon: FileBarChart, label: t("voterAudit"), permKey: "farmers" },
       ],
     },
 
@@ -62,11 +62,11 @@ export function AppSidebar() {
       children: [
         { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
-        { url: "/share-collection", icon: Wallet, label: "Share Collection", permKey: "savings" },
+        { url: "/share-collection", icon: Wallet, label: t("shareCollection"), permKey: "savings" },
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
-        { url: "/loans/plans", icon: HandCoins, label: "Loan Plans", permKey: "loans" },
+        { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
         { url: "/irrigation", icon: Droplets, label: t("irrigation"), permKey: "irrigation" },
-        { url: "/irrigation/rates", icon: Droplets, label: "Irrigation Rates", permKey: "irrigation" },
+        { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
@@ -93,7 +93,7 @@ export function AppSidebar() {
         { url: "/financial-reports", icon: TrendingUp, label: t("financialReports"), permKey: "accounting" },
         { url: "/period-close", icon: Lock, label: t("periodClose"), permKey: "accounting" },
         { url: "/admin/reconciliation", icon: ClipboardCheck, label: t("monthlyReconciliation"), permKey: "accounting" },
-        { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: "Share Capital Reconciliation", permKey: "accounting" },
+        { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: t("shareCapitalReconciliation"), permKey: "accounting" },
         { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
       ],
     },
@@ -104,11 +104,11 @@ export function AppSidebar() {
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
-        { url: "/reports/farmer-statement", icon: FileBarChart, label: "Farmer Statement", permKey: "reports" },
-        { url: "/reports/expenses", icon: FileBarChart, label: "Expenses Report", permKey: "reports" },
+        { url: "/reports/farmer-statement", icon: FileBarChart, label: t("farmerStatement"), permKey: "reports" },
+        { url: "/reports/expenses", icon: FileBarChart, label: t("expensesReport"), permKey: "reports" },
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
-        { url: "/dues-audit", icon: AlertTriangle, label: "Dues Audit", permKey: "reports" },
+        { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
       ],
     },
@@ -122,18 +122,18 @@ export function AppSidebar() {
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), superOnly: true },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), permKey: "audit" },
-        { url: "/admin/id-reconcile", icon: ShieldAlert, label: "ID Reconcile", permKey: "farmers" },
-        { url: "/admin/id-review", icon: IdCard, label: "ID Review", permKey: "farmers" },
+        { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), permKey: "farmers" },
+        { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
       ],
     },
 
     // ── Tools & Imports ──
     {
-      key: "tools", icon: Upload, label: "Tools & Imports",
+      key: "tools", icon: Upload, label: t("toolsImports"),
       children: [
-        { url: "/import", icon: Upload, label: "Universal Import", permKey: "farmers" },
+        { url: "/import", icon: Upload, label: t("universalImport"), permKey: "farmers" },
         { url: "/admin/bulk-loan-export", icon: Upload, label: t("bulkExportLoans"), superOnly: true },
-        { url: "/admin/card-designer", icon: IdCard, label: "Card Designer", superOnly: true },
+        { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
         { url: "/backup", icon: Database, label: t("backup"), superOnly: true },
       ],
