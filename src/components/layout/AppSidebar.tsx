@@ -220,10 +220,49 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {!collapsed && (
+          <div className="px-2 pt-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sidebar-foreground/60" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("searchMenu")}
+                className="h-8 pl-7 text-xs bg-sidebar-accent/40 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/60"
+              />
+            </div>
+          </div>
+        )}
+
+        {!collapsed && !q && shortcuts.length > 0 && (
+          <SidebarGroup>
+            <div className="px-3 pt-2 pb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-sidebar-foreground/60">
+              <Star className="h-3 w-3" /> {t("quickShortcuts")}
+            </div>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {shortcuts.map((s) => (
+                  <SidebarMenuItem key={`sc-${s.url}`}>
+                    <SidebarMenuButton asChild isActive={isActive(s.url)} tooltip={s.label} size="sm">
+                      <NavLink to={s.url}>
+                        <s.icon className="h-4 w-4" />
+                        <span>{s.label}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menu.map((parent) => {
+              {filteredMenu.length === 0 && (
+                <div className="px-3 py-4 text-xs text-sidebar-foreground/60">{t("noResults")}</div>
+              )}
+              {filteredMenu.map((parent) => {
                 // Leaf item (no children)
                 if (!parent.children) {
                   if (!allowed(parent)) return null;
