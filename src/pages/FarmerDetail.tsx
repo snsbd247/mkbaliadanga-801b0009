@@ -26,6 +26,8 @@ import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
+import { useAuth } from "@/auth/AuthProvider";
+import { exportPaymentReceiptPDF } from "@/lib/exports";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null };
 
