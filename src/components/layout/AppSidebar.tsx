@@ -1,5 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Search, Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard, Building2, Users, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
@@ -43,14 +45,14 @@ export function AppSidebar() {
 
     // ── Members ──
     {
-      key: "members", icon: Users, label: t("farmers"),
+      key: "members", icon: Users, label: t("members"),
       children: [
         { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
         { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
-        { url: "/voters", icon: Users, label: "Voter List", permKey: "farmers" },
-        { url: "/voters/history", icon: FileBarChart, label: "Voter History", permKey: "farmers" },
-        { url: "/reports/voter-audit", icon: FileBarChart, label: "Voter Audit", permKey: "farmers" },
+        { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
+        { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
+        { url: "/reports/voter-audit", icon: FileBarChart, label: t("voterAudit"), permKey: "farmers" },
       ],
     },
 
@@ -60,11 +62,11 @@ export function AppSidebar() {
       children: [
         { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
-        { url: "/share-collection", icon: Wallet, label: "Share Collection", permKey: "savings" },
+        { url: "/share-collection", icon: Wallet, label: t("shareCollection"), permKey: "savings" },
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
-        { url: "/loans/plans", icon: HandCoins, label: "Loan Plans", permKey: "loans" },
+        { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
         { url: "/irrigation", icon: Droplets, label: t("irrigation"), permKey: "irrigation" },
-        { url: "/irrigation/rates", icon: Droplets, label: "Irrigation Rates", permKey: "irrigation" },
+        { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
@@ -91,7 +93,7 @@ export function AppSidebar() {
         { url: "/financial-reports", icon: TrendingUp, label: t("financialReports"), permKey: "accounting" },
         { url: "/period-close", icon: Lock, label: t("periodClose"), permKey: "accounting" },
         { url: "/admin/reconciliation", icon: ClipboardCheck, label: t("monthlyReconciliation"), permKey: "accounting" },
-        { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: "Share Capital Reconciliation", permKey: "accounting" },
+        { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: t("shareCapitalReconciliation"), permKey: "accounting" },
         { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
       ],
     },
@@ -102,11 +104,11 @@ export function AppSidebar() {
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
-        { url: "/reports/farmer-statement", icon: FileBarChart, label: "Farmer Statement", permKey: "reports" },
-        { url: "/reports/expenses", icon: FileBarChart, label: "Expenses Report", permKey: "reports" },
+        { url: "/reports/farmer-statement", icon: FileBarChart, label: t("farmerStatement"), permKey: "reports" },
+        { url: "/reports/expenses", icon: FileBarChart, label: t("expensesReport"), permKey: "reports" },
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
-        { url: "/dues-audit", icon: AlertTriangle, label: "Dues Audit", permKey: "reports" },
+        { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
       ],
     },
@@ -120,18 +122,18 @@ export function AppSidebar() {
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), superOnly: true },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), permKey: "audit" },
-        { url: "/admin/id-reconcile", icon: ShieldAlert, label: "ID Reconcile", permKey: "farmers" },
-        { url: "/admin/id-review", icon: IdCard, label: "ID Review", permKey: "farmers" },
+        { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), permKey: "farmers" },
+        { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
       ],
     },
 
     // ── Tools & Imports ──
     {
-      key: "tools", icon: Upload, label: "Tools & Imports",
+      key: "tools", icon: Upload, label: t("toolsImports"),
       children: [
-        { url: "/import", icon: Upload, label: "Universal Import", permKey: "farmers" },
+        { url: "/import", icon: Upload, label: t("universalImport"), permKey: "farmers" },
         { url: "/admin/bulk-loan-export", icon: Upload, label: t("bulkExportLoans"), superOnly: true },
-        { url: "/admin/card-designer", icon: IdCard, label: "Card Designer", superOnly: true },
+        { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
         { url: "/backup", icon: Database, label: t("backup"), superOnly: true },
       ],
@@ -158,6 +160,8 @@ export function AppSidebar() {
 
   const isActive = (url: string) => url === "/" ? pathname === "/" : pathname.startsWith(url);
 
+  const [query, setQuery] = useState("");
+
   // Track open groups; default open if any child is active
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
@@ -166,6 +170,32 @@ export function AppSidebar() {
     });
     return init;
   });
+
+  // Filter menu by search query (case-insensitive on labels)
+  const q = query.trim().toLowerCase();
+  const filteredMenu = useMemo(() => {
+    if (!q) return menu;
+    return menu
+      .map((p) => {
+        if (!p.children) {
+          return p.label.toLowerCase().includes(q) ? p : null;
+        }
+        const kids = p.children.filter((c) => c.label.toLowerCase().includes(q));
+        if (kids.length === 0 && !p.label.toLowerCase().includes(q)) return null;
+        return { ...p, children: kids.length ? kids : p.children };
+      })
+      .filter(Boolean) as ParentItem[];
+  }, [q, menu]);
+
+  // Quick shortcuts (most-used routes), filtered by access
+  const shortcuts: SubItem[] = [
+    { url: "/admin", icon: LayoutDashboard, label: t("dashboard"), permKey: "dashboard" },
+    { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
+    { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
+    { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
+    { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
+  ].filter(allowed);
+
 
   return (
     <Sidebar collapsible="icon">
@@ -190,10 +220,49 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {!collapsed && (
+          <div className="px-2 pt-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sidebar-foreground/60" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("searchMenu")}
+                className="h-8 pl-7 text-xs bg-sidebar-accent/40 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/60"
+              />
+            </div>
+          </div>
+        )}
+
+        {!collapsed && !q && shortcuts.length > 0 && (
+          <SidebarGroup>
+            <div className="px-3 pt-2 pb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-sidebar-foreground/60">
+              <Star className="h-3 w-3" /> {t("quickShortcuts")}
+            </div>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {shortcuts.map((s) => (
+                  <SidebarMenuItem key={`sc-${s.url}`}>
+                    <SidebarMenuButton asChild isActive={isActive(s.url)} tooltip={s.label} size="sm">
+                      <NavLink to={s.url}>
+                        <s.icon className="h-4 w-4" />
+                        <span>{s.label}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menu.map((parent) => {
+              {filteredMenu.length === 0 && (
+                <div className="px-3 py-4 text-xs text-sidebar-foreground/60">{t("noResults")}</div>
+              )}
+              {filteredMenu.map((parent) => {
                 // Leaf item (no children)
                 if (!parent.children) {
                   if (!allowed(parent)) return null;
@@ -213,7 +282,7 @@ export function AppSidebar() {
                 const visibleChildren = parent.children.filter(allowed);
                 if (visibleChildren.length === 0) return null;
                 const hasActiveChild = visibleChildren.some((c) => isActive(c.url));
-                const isOpen = openGroups[parent.key] ?? hasActiveChild;
+                const isOpen = q ? true : (openGroups[parent.key] ?? hasActiveChild);
 
                 return (
                   <Collapsible
