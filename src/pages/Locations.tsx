@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, MapPin, Pencil, Loader2, Search } from "lucide-react";
+import { Plus, Trash2, MapPin, Pencil, Loader2, Search, Power } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 
 type Level = "divisions" | "districts" | "upazilas" | "unions" | "wards" | "villages" | "mouzas";
