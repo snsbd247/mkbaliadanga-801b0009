@@ -11,8 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
-import { Eye, Download, RefreshCw, Loader2 } from "lucide-react";
+import { Eye, Download, RefreshCw, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const ENTITY_OPTIONS = [
   "qr_tokens",
@@ -42,6 +44,7 @@ export default function AuditLogs() {
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [entityFilter, setEntityFilter] = useState<string>("all");
   const [officeFilter, setOfficeFilter] = useState<string>("all");
+  const [userFilter, setUserFilter] = useState<string>("all");
   const [farmerQuery, setFarmerQuery] = useState("");
   const [farmerId, setFarmerId] = useState<string>("");
   const [dateFrom, setDateFrom] = useState<string>(monthAgo.toISOString().slice(0, 10));
@@ -99,6 +102,7 @@ export default function AuditLogs() {
       if (actionFilter !== "all") q = q.eq("action", actionFilter);
       if (entityFilter !== "all") q = q.eq("entity", entityFilter);
       if (officeFilter !== "all") q = q.eq("office_id", officeFilter);
+      if (userFilter !== "all") q = q.eq("user_id", userFilter);
       if (fid) q = q.eq("entity_id", fid);
 
       const { data, error } = await q;
@@ -185,6 +189,36 @@ export default function AuditLogs() {
     toast.success(`Exported ${rows.length} entries`);
   }
 
+  function exportPdf() {
+    const rows = filtered;
+    if (rows.length === 0) { toast.error("Nothing to export"); return; }
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.setFontSize(12);
+    doc.text(`Audit Logs (${dateFrom} → ${dateTo})`, 14, 14);
+    doc.setFontSize(8);
+    doc.text(`Filters: office=${officeFilter} user=${userFilter} action=${actionFilter} entity=${entityFilter} farmer=${farmerQuery || "—"}`, 14, 20);
+    autoTable(doc, {
+      startY: 24,
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillSize: 8 } as any,
+      head: [["Date/Time", "Action", "Entity", "Office", "User", "Entity ID"]],
+      body: rows.map((l) => {
+        const u = profiles[l.user_id];
+        const o = offices[l.office_id];
+        return [
+          new Date(l.created_at).toLocaleString(),
+          l.action ?? "",
+          l.entity ?? "",
+          o?.name ?? "",
+          u?.full_name ?? u?.username ?? (l.user_id ? l.user_id.slice(0, 8) : "system"),
+          l.entity_id ?? "",
+        ];
+      }),
+    });
+    doc.save(`audit-logs-${dateFrom}-to-${dateTo}.pdf`);
+    toast.success(`Exported ${rows.length} entries`);
+  }
+
   return (
     <>
       <PageHeader
@@ -195,8 +229,11 @@ export default function AuditLogs() {
             <Button onClick={runQuery} variant="outline" size="sm" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}Refresh
             </Button>
-            <Button onClick={exportCsv} size="sm" disabled={loading || filtered.length === 0}>
-              <Download className="h-4 w-4" />Export CSV
+            <Button onClick={exportCsv} size="sm" variant="outline" disabled={loading || filtered.length === 0}>
+              <Download className="h-4 w-4" />CSV
+            </Button>
+            <Button onClick={exportPdf} size="sm" disabled={loading || filtered.length === 0}>
+              <FileText className="h-4 w-4" />PDF
             </Button>
           </div>
         }
@@ -254,6 +291,18 @@ export default function AuditLogs() {
               <SelectContent>
                 <SelectItem value="all">All entities</SelectItem>
                 {ENTITY_OPTIONS.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">User</Label>
+            <Select value={userFilter} onValueChange={setUserFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All users</SelectItem>
+                {Object.values(profiles).map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.username ?? p.id.slice(0, 8)}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -75,6 +75,7 @@ export function AppSidebar() {
         { url: "/period-close", icon: Lock, label: t("periodClose"), permKey: "accounting" },
         { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
         { url: "/admin/reconciliation", icon: ClipboardCheck, label: t("monthlyReconciliation"), permKey: "accounting" },
+        { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: "Share Capital Reconciliation", permKey: "accounting" },
       ],
     },
     {

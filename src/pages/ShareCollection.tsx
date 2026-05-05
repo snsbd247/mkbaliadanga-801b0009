@@ -109,7 +109,9 @@ export default function ShareCollection() {
     setBatchReport(null);
     // CSV format: farmer_code,amount,date(optional),note(optional)
     const rawLines = batchText.split(/\r?\n/);
-    const lines = rawLines.map((l, i) => ({ raw: l, idx: i + 1 })).filter(l => l.raw.trim());
+    let lines = rawLines.map((l, i) => ({ raw: l, idx: i + 1 })).filter(l => l.raw.trim());
+    // Skip header row if present
+    if (lines.length && /^\s*farmer_code\s*,/i.test(lines[0].raw)) lines = lines.slice(1);
     if (!lines.length) return toast.error("Paste at least one line");
     const today = new Date().toISOString().slice(0, 10);
 
@@ -261,10 +263,25 @@ export default function ShareCollection() {
             <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle>Batch Share Collection</DialogTitle></DialogHeader>
               <div className="space-y-2">
-                <Label>One entry per line: <code className="text-xs">farmer_code,amount,date(YYYY-MM-DD,optional),note(optional)</code></Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label>One entry per line: <code className="text-xs">farmer_code,amount,date(YYYY-MM-DD,optional),note(optional)</code></Label>
+                  <Button type="button" size="sm" variant="outline" onClick={() => {
+                    const csv = [
+                      "farmer_code,amount,date,note",
+                      "MK-0001,500,2026-05-05,May share",
+                      "MK-0002,500,,",
+                      "MK-0003,1000,2026-05-05,Quarterly contribution",
+                    ].join("\n");
+                    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url; a.download = "share-collection-template.csv"; a.click();
+                    URL.revokeObjectURL(url);
+                  }}><FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Download Template</Button>
+                </div>
                 <Textarea rows={8} value={batchText} onChange={e => setBatchText(e.target.value)}
                   placeholder={"MK-0001,500,2026-05-05,May share\nMK-0002,500\nMK-0003,1000"} />
-                <p className="text-xs text-muted-foreground">All entries submitted as pending; admin must approve.</p>
+                <p className="text-xs text-muted-foreground">Header row optional. All entries submitted as pending; admin must approve.</p>
 
                 {batchReport && (
                   <div className="rounded-md border bg-muted/40 p-3 space-y-2 max-h-64 overflow-auto">
