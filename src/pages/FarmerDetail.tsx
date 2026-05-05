@@ -270,7 +270,7 @@ export default function FarmerDetail() {
     setEditSaving(true);
     try {
       const { error } = await supabase.from("lands").update({
-        mouza: (editLoc as any).village ?? "",
+        mouza: (editLoc as any).mouza_name ?? (editLoc as any).village ?? "",
         dag_no: editForm.dag_no,
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
