@@ -183,16 +183,46 @@ export default function Savings() {
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
     const isWithdraw = form.type === "withdraw";
-    const isDepositKind = form.type === "deposit" || form.type === "deposit_collection" || form.type === "share_collection";
+    const isShare = form.type === "share_deposit" || form.type === "share_collection";
+    const isDepositKind = !isWithdraw;
+
+    // Min amount validation
+    if (isShare && form.amount < 50) return toast.error("Minimum share deposit is ৳50");
+    if (!isShare && !isWithdraw && form.amount < 10) return toast.error("Minimum savings deposit is ৳10");
+
+    // Withdraw balance check (savings only)
+    if (isWithdraw) {
+      const { data: bal } = await supabase
+        .from("savings_transactions")
+        .select("type,amount,status")
+        .eq("farmer_id", form.farmer_id)
+        .eq("status", "approved")
+        .is("deleted_at", null);
+      const available = (bal ?? []).reduce((s: number, r: any) => {
+        const a = Number(r.amount) || 0;
+        if (r.type === "withdraw") return s - a;
+        // share collections excluded from withdrawable savings balance
+        if (r.type === "share_deposit" || r.type === "share_collection") return s;
+        return s + a;
+      }, 0);
+      if (form.amount > available) {
+        return toast.error(`Insufficient balance. Available: ৳${available.toLocaleString()}`);
+      }
+    }
+
     const status = isWithdraw ? "pending" : "approved";
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
-    const { error } = await supabase.from("savings_transactions").insert({
+    const payload: any = {
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
-    });
+    };
+    if (form.receipt_no?.trim()) payload.receipt_no = form.receipt_no.trim();
+    const { error } = await supabase.from("savings_transactions").insert(payload);
     if (error) return toast.error(error.message);
     if (isDepositKind) {
-      await supabase.from("payments").insert({ farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id });
+      const payPayload: any = { farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id };
+      if (form.receipt_no?.trim()) payPayload.receipt_no = form.receipt_no.trim();
+      await supabase.from("payments").insert(payPayload);
     }
     if (status === "pending") {
       await supabase.from("notifications").insert({
@@ -202,7 +232,10 @@ export default function Savings() {
         link: "/savings",
       });
     }
-    toast.success(t("saved")); setOpen(false); setForm({ farmer_id: "", type: "deposit", amount: 0, note: "" }); load();
+    toast.success(isWithdraw ? "Withdraw request submitted for approval" : "Saved");
+    setOpen(false);
+    setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "" });
+    load();
   }
   async function decide(id: string, status: "approved" | "rejected") {
     const { error } = await supabase.from("savings_transactions").update({ status, approved_by: user?.id }).eq("id", id);
