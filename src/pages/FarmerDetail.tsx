@@ -344,7 +344,7 @@ export default function FarmerDetail() {
             <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{farmer.name_en[0]}</AvatarFallback>
           </Avatar>
           <div className="grid flex-1 grid-cols-2 gap-3 text-sm md:grid-cols-4">
-            <div><div className="text-xs text-muted-foreground">Member No</div><div className="font-mono font-semibold">{farmer.member_no ?? farmer.farmer_code}</div></div>
+            <div><div className="text-xs text-muted-foreground">Farmer ID</div><div className="font-mono font-semibold">{farmer.member_no ?? farmer.farmer_code}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameEn")}</div><div className="font-medium">{farmer.name_en}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameBn")}</div><div className="font-medium">{farmer.name_bn ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("fatherName")}</div><div>{farmer.father_name ?? "-"}</div></div>

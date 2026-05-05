@@ -162,7 +162,7 @@ export function exportPaymentReceiptPDF(opts: {
   doc.text(`Receipt #: ${opts.receipt_no}`, 12, 41);
   doc.text(`Date: ${fmtDate(opts.date)}`, w - 12, 41, { align: "right" });
 
-  doc.text(`Member: ${opts.farmer.member_no ?? opts.farmer.farmer_code ?? "-"}`, 12, 47);
+  doc.text(`Farmer ID: ${opts.farmer.member_no ?? opts.farmer.farmer_code ?? "-"}`, 12, 47);
   doc.text(`Name: ${opts.farmer.name_en}`, 12, 52);
   if (opts.farmer.village) doc.text(`Village: ${opts.farmer.village}`, 12, 57);
   if (opts.farmer.mobile) doc.text(`Mobile: ${opts.farmer.mobile}`, w - 12, 57, { align: "right" });
@@ -269,7 +269,7 @@ export function exportFarmerCombinedStatementPDF(opts: {
     startY: 38,
     theme: "plain",
     body: [[
-      `Member: ${opts.farmer.name_en}${opts.farmer.name_bn ? " (" + opts.farmer.name_bn + ")" : ""}`,
+      `Farmer ID: ${opts.farmer.name_en}${opts.farmer.name_bn ? " (" + opts.farmer.name_bn + ")" : ""}`,
       `Code: ${opts.farmer.member_no || opts.farmer.farmer_code || "—"}`,
       `Mobile: ${opts.farmer.mobile || "—"}`,
       `Village: ${opts.farmer.village || "—"}`,

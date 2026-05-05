@@ -338,7 +338,7 @@ export default function CollectionReport() {
                   Date: r.date,
                   "Receipt #": r.receipt_no ?? "",
                   Type: sourceLabel(r.source),
-                  "Member No": r.farmer_code,
+                  "Farmer ID": r.farmer_code,
                   "Farmer Name": r.farmer_name,
                   Amount: r.amount,
                   "Created By": r.user_name,

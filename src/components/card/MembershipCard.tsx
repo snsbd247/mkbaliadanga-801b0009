@@ -95,7 +95,7 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
               {headerTitle}
               {headerSub && <div className="text-[7px] font-normal opacity-80 truncate">{headerSub}</div>}
             </div>
-            <div className="ml-auto text-[7px] opacity-80">Member ID</div>
+            <div className="ml-auto text-[7px] opacity-80">Farmer ID</div>
           </div>
           <div className="flex-1 flex items-center gap-2 p-2">
             {opts.show_photo && (
