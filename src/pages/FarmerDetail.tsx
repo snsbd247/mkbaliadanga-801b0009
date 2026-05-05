@@ -237,7 +237,7 @@ export default function FarmerDetail() {
     try {
       const { error } = await supabase.from("lands").insert({
         farmer_id: id!,
-        mouza: (landLoc as any).village ?? "",
+        mouza: (landLoc as any).mouza_name ?? "",
         dag_no: land.dag_no,
         land_size: land.land_size,
         owner_type: land.owner_type as any,
@@ -270,7 +270,7 @@ export default function FarmerDetail() {
     setEditSaving(true);
     try {
       const { error } = await supabase.from("lands").update({
-        mouza: (editLoc as any).village ?? "",
+        mouza: (editLoc as any).mouza_name ?? (editLoc as any).village ?? "",
         dag_no: editForm.dag_no,
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
@@ -403,6 +403,7 @@ export default function FarmerDetail() {
                         onChange={(v) => { setLandLoc(v); if (landLocErr) setLandLocErr(null); }}
                         errorLevel={landLocErr?.level ?? null}
                         errorMessage={landLocErr?.message ?? null}
+                        showVillage={false}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -632,7 +633,7 @@ export default function FarmerDetail() {
             <div>
               <Label className="text-sm font-medium mb-2 block">Location</Label>
               <LocationPicker value={editLoc} onChange={(v) => { setEditLoc(v); if (editLocErr) setEditLocErr(null); }}
-                errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} />
+                errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} showVillage={false} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>{t("dagNo")}</Label><Input disabled={editSaving} value={editForm.dag_no} onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })} /></div>
