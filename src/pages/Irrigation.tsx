@@ -352,7 +352,7 @@ export default function Irrigation() {
           <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
           <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
           <TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
-          {showDeleted && <TableHead className="text-right">Actions</TableHead>}
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {rows.map(r => (
@@ -364,14 +364,19 @@ export default function Irrigation() {
               <TableCell>{money(r.total)}</TableCell>
               <TableCell>{money(r.paid_amount)}</TableCell>
               <TableCell className={r.due_amount > 0 ? "due-text" : ""}>{money(r.due_amount)}</TableCell>
-              {showDeleted && (
-                <TableCell className="text-right">
+              <TableCell className="text-right">
+                {showDeleted ? (
                   <Button size="sm" variant="outline" onClick={() => restore(r.id)}>Restore</Button>
-                </TableCell>
-              )}
+                ) : isSuper ? (
+                  <>
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit">✎</Button>
+                    <Button size="icon" variant="ghost" onClick={() => softDelete(r.id)} title="Delete">🗑</Button>
+                  </>
+                ) : null}
+              </TableCell>
             </TableRow>
           ))}
-          {rows.length === 0 && <TableRow><TableCell colSpan={showDeleted ? 8 : 7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table></Card>
     </>
