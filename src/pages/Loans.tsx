@@ -101,10 +101,15 @@ export default function Loans() {
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function remove(id: string) {
-    if (!window.confirm(t("deleteLoanConfirm"))) return;
+    const ok = await confirm({
+      title: "Delete loan?",
+      description: "This will archive the loan record. You can restore it later.",
+      destructive: true, confirmText: "Delete",
+    });
+    if (!ok) return;
     const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success(t("deleted")); load();
+    toast.success(t("deleted")); await load();
   }
   async function restore(id: string) {
     const { error } = await supabase.from("loans").update({ deleted_at: null } as any).eq("id", id);
