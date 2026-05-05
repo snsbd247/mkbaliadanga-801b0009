@@ -1112,8 +1112,8 @@ export const translations = {
     // Farmer Portal Login
     farmerSelfServicePortal: "কৃষক স্ব-সেবা পোর্টাল",
     signInWithOtp: "ওটিপি দিয়ে সাইন ইন",
-    farmerOtpDesc: "আপনার কৃষক আইডি বা সদস্য নম্বর লিখুন। আমরা আপনার নিবন্ধিত মোবাইলে ৬-সংখ্যার একটি কোড পাঠাব।",
-    farmerIdOrMemberNo: "কৃষক আইডি / ফার্মার আইডি",
+    farmerOtpDesc: "আপনার ফার্মার আইডি লিখুন। আমরা আপনার নিবন্ধিত মোবাইলে ৬-সংখ্যার একটি কোড পাঠাব।",
+    farmerIdOrMemberNo: "ফার্মার আইডি",
     farmerIdPlaceholder: "যেমন ২০২৬-০০০০০১২৩ বা M-000123",
     sendOtp: "ওটিপি পাঠান",
     sending: "পাঠানো হচ্ছে…",
