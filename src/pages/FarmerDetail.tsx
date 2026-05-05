@@ -31,7 +31,7 @@ import { exportPaymentReceiptPDF } from "@/lib/exports";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "" };
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
