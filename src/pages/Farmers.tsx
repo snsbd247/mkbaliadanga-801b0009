@@ -493,11 +493,12 @@ export default function Farmers() {
           <Input value={f.mobile} disabled={disabled} inputMode="tel" maxLength={20} onChange={e => setF({ ...f, mobile: e.target.value })} className={fieldErrors.mobile ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""} />
           {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
         </div>
+        <FarmerIdField f={f} setF={setF} disabled={disabled} isSuper={isSuper} currentId={f.id ?? null} />
         <div>
           <Label>Voter / Savings Account</Label>
           <VoterToggleField f={f} setF={setF} disabled={disabled} />
         </div>
-        <MemberNoField f={f} setF={setF} disabled={disabled} isAdmin={isAdmin} currentId={f.id ?? null} />
+        <SavingsVoterFields f={f} setF={setF} disabled={disabled} isSuper={isSuper} />
         <div>
           <Label>{t("office")}</Label>
           <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>
