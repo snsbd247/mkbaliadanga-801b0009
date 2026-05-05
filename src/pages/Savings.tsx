@@ -524,6 +524,21 @@ export default function Savings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editTxn} onOpenChange={(o) => !o && setEditTxn(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Savings Transaction</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">{editTxn?.farmers?.name_en} — {editTxn?.type}</div>
+            <div><Label>Amount</Label><Input type="number" value={editTxnForm.amount} onChange={e => setEditTxnForm({ ...editTxnForm, amount: +e.target.value })} /></div>
+            <div><Label>Note</Label><Input value={editTxnForm.note} onChange={e => setEditTxnForm({ ...editTxnForm, note: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTxn(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEditTxn}>{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
