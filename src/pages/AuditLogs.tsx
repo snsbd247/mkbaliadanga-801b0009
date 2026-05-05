@@ -189,6 +189,36 @@ export default function AuditLogs() {
     toast.success(`Exported ${rows.length} entries`);
   }
 
+  function exportPdf() {
+    const rows = filtered;
+    if (rows.length === 0) { toast.error("Nothing to export"); return; }
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.setFontSize(12);
+    doc.text(`Audit Logs (${dateFrom} → ${dateTo})`, 14, 14);
+    doc.setFontSize(8);
+    doc.text(`Filters: office=${officeFilter} user=${userFilter} action=${actionFilter} entity=${entityFilter} farmer=${farmerQuery || "—"}`, 14, 20);
+    autoTable(doc, {
+      startY: 24,
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillSize: 8 } as any,
+      head: [["Date/Time", "Action", "Entity", "Office", "User", "Entity ID"]],
+      body: rows.map((l) => {
+        const u = profiles[l.user_id];
+        const o = offices[l.office_id];
+        return [
+          new Date(l.created_at).toLocaleString(),
+          l.action ?? "",
+          l.entity ?? "",
+          o?.name ?? "",
+          u?.full_name ?? u?.username ?? (l.user_id ? l.user_id.slice(0, 8) : "system"),
+          l.entity_id ?? "",
+        ];
+      }),
+    });
+    doc.save(`audit-logs-${dateFrom}-to-${dateTo}.pdf`);
+    toast.success(`Exported ${rows.length} entries`);
+  }
+
   return (
     <>
       <PageHeader
