@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,9 +36,12 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { t, lang } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, user } = useAuth();
   const brand = useBranding();
   const { can } = usePermissions();
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const queryKey = `sidebar:query:${user?.id ?? "guest"}`;
+
 
   const menu: ParentItem[] = [
     { key: "dashboard", icon: LayoutDashboard, label: t("dashboard"), url: "/admin", permKey: "dashboard" },
@@ -160,7 +163,28 @@ export function AppSidebar() {
 
   const isActive = (url: string) => url === "/" ? pathname === "/" : pathname.startsWith(url);
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try { return localStorage.getItem(queryKey) ?? ""; } catch { return ""; }
+  });
+
+  // Persist query per user
+  useEffect(() => {
+    try { localStorage.setItem(queryKey, query); } catch { /* noop */ }
+  }, [query, queryKey]);
+
+  // Ctrl+K / Cmd+K to focus the menu search
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Track open groups; default open if any child is active
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -196,9 +220,25 @@ export function AppSidebar() {
     { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
   ].filter(allowed);
 
+  // Highlight matched substring within a label
+  const highlight = (text: string) => {
+    if (!q) return text;
+    const i = text.toLowerCase().indexOf(q);
+    if (i === -1) return text;
+    return (
+      <>
+        {text.slice(0, i)}
+        <mark className="bg-primary/30 text-sidebar-foreground rounded px-0.5">
+          {text.slice(i, i + q.length)}
+        </mark>
+        {text.slice(i + q.length)}
+      </>
+    );
+  };
 
   return (
     <Sidebar collapsible="icon">
+
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <div className="flex items-center gap-2">
           {brand.logo_url ? (
@@ -225,11 +265,22 @@ export function AppSidebar() {
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sidebar-foreground/60" />
               <Input
+                ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={t("searchMenu")}
+                placeholder={`${t("searchMenu")}  (Ctrl+K)`}
                 className="h-8 pl-7 text-xs bg-sidebar-accent/40 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/60"
               />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-sidebar-foreground/60 hover:text-sidebar-foreground px-1"
+                  aria-label="Clear"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -271,7 +322,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={isActive(parent.url!)} tooltip={parent.label}>
                         <NavLink to={parent.url!} end={parent.url === "/"}>
                           <parent.icon className="h-4 w-4" />
-                          <span>{parent.label}</span>
+                          <span>{highlight(parent.label)}</span>
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -299,7 +350,7 @@ export function AppSidebar() {
                           className="group/parent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1"
                         >
                           <parent.icon className="h-4 w-4" />
-                          <span>{parent.label}</span>
+                          <span>{highlight(parent.label)}</span>
                           <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/parent:rotate-90 data-[state=open]:rotate-90" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
@@ -314,7 +365,12 @@ export function AppSidebar() {
                               >
                                 <NavLink to={child.url}>
                                   <child.icon className="h-4 w-4" />
-                                  <span>{child.label}</span>
+                                  <span className="flex-1 truncate">{highlight(child.label)}</span>
+                                  {q && (
+                                    <span className="ml-1 shrink-0 text-[9px] uppercase tracking-wide text-sidebar-foreground/50">
+                                      {parent.label}
+                                    </span>
+                                  )}
                                 </NavLink>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>

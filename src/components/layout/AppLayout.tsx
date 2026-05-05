@@ -1,4 +1,5 @@
 import { Outlet, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/auth/AuthProvider";
@@ -24,8 +25,20 @@ export function AppLayout() {
   const initial = (user.email ?? "U").charAt(0).toUpperCase();
   const roleLabel = roles.includes("super_admin") ? t("superAdmin") : roles.includes("admin") ? t("admin") : t("staff");
 
+  const sidebarKey = `sidebar:open:${user?.id ?? "guest"}`;
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      const v = localStorage.getItem(sidebarKey);
+      return v === null ? true : v === "1";
+    } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(sidebarKey, sidebarOpen ? "1" : "0"); } catch { /* noop */ }
+  }, [sidebarOpen, sidebarKey]);
+
   return (
-    <SidebarProvider>
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <div className="flex min-h-screen w-full bg-gradient-surface">
         <AppSidebar />
         <div className="flex flex-1 flex-col min-w-0">
