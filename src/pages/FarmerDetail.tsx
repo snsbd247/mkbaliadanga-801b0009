@@ -308,18 +308,31 @@ export default function FarmerDetail() {
     }
 
     let y = 72;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     if (ins.length) {
       autoTable(doc, {
         startY: y,
-        head: [["#", t("nextDue"), t("total"), t("paidAmount"), t("status")]],
-        body: ins.map((i: any) => [i.installment_no, fmtDate(i.due_date), money(i.amount), money(i.paid_amount), i.status]),
+        head: [[t("installmentNo" as any) || "#", t("dueDate" as any) || t("nextDue"), t("total"), t("paidAmount"), t("status")]],
+        body: ins.map((i: any) => {
+          const isOverdue = i.status !== "paid" && new Date(i.due_date) < today;
+          const statusLbl = isOverdue ? (t("overdue" as any) || "Overdue") : (t(i.status as any) || i.status);
+          return [i.installment_no, fmtDate(i.due_date), money(i.amount), money(i.paid_amount), statusLbl];
+        }),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [16, 122, 87] },
+        didParseCell: (data: any) => {
+          if (data.section === "body") {
+            const row = ins[data.row.index];
+            if (row && row.status !== "paid" && new Date(row.due_date) < today) {
+              data.cell.styles.textColor = [200, 30, 30];
+            }
+          }
+        },
       });
       y = (doc as any).lastAutoTable.finalY + 6;
     }
     if (pays.length) {
-      doc.setFont(undefined, "bold"); doc.text(t("payments"), 14, y); y += 4;
+      doc.setFont(undefined, "bold"); doc.text(t("paymentHistory" as any) || t("payments"), 14, y); y += 4;
       autoTable(doc, {
         startY: y,
         head: [[t("date"), t("paidAmount"), t("note")]],
