@@ -361,9 +361,9 @@ export default function ShareCollection() {
           <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
           <TabsTrigger value="summary">Summary ({grouped.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="pending"><RowsTable rows={pending} canDecide={isCommittee} onDecide={decide} /></TabsContent>
-        <TabsContent value="approved"><RowsTable rows={approved} /></TabsContent>
-        <TabsContent value="rejected"><RowsTable rows={rejected} /></TabsContent>
+        <TabsContent value="pending"><RowsTable rows={pending} canDecide={isCommittee} onDecide={decide} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
+        <TabsContent value="approved"><RowsTable rows={approved} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
+        <TabsContent value="rejected"><RowsTable rows={rejected} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
         <TabsContent value="summary" className="space-y-3">
           <Card className="p-3">
             <div className="text-sm font-medium mb-2">{period === "monthly" ? "Monthly" : "Daily"} approved totals</div>
