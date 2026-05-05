@@ -229,8 +229,11 @@ export default function AuditLogs() {
             <Button onClick={runQuery} variant="outline" size="sm" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}Refresh
             </Button>
-            <Button onClick={exportCsv} size="sm" disabled={loading || filtered.length === 0}>
-              <Download className="h-4 w-4" />Export CSV
+            <Button onClick={exportCsv} size="sm" variant="outline" disabled={loading || filtered.length === 0}>
+              <Download className="h-4 w-4" />CSV
+            </Button>
+            <Button onClick={exportPdf} size="sm" disabled={loading || filtered.length === 0}>
+              <FileText className="h-4 w-4" />PDF
             </Button>
           </div>
         }
