@@ -15,10 +15,12 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export default function Irrigation() {
   const { t } = useLang();
   const { user, isSuper } = useAuth();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [showDeleted, setShowDeleted] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
