@@ -219,11 +219,12 @@ export default function FarmerDetail() {
     toast.success("Deleted"); loadAll();
   }
   async function openLoanView(l: any) {
-    setViewLoan(l);
-    const [ins, pays] = await Promise.all([
+    const [ins, pays, planRes] = await Promise.all([
       supabase.from("loan_installments").select("*").eq("loan_id", l.id).order("installment_no"),
       supabase.from("loan_payments").select("*").eq("loan_id", l.id).order("paid_on", { ascending: false }),
+      l.plan_id ? supabase.from("loan_plans").select("*").eq("id", l.plan_id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
+    setViewLoan({ ...l, loan_plans: planRes.data });
     setViewLoanInst(ins.data ?? []);
     setViewLoanPays(pays.data ?? []);
   }
@@ -858,6 +859,15 @@ export default function FarmerDetail() {
                     <div><div className="text-xs text-muted-foreground">{t("installmentsPaid" as any)}</div><div>{paidCount} / {viewLoanInst.length}</div></div>
                     <div><div className="text-xs text-muted-foreground">{t("installmentsRemaining" as any)}</div><div>{remainCount}</div></div>
                   </>}
+                  {viewLoan.loan_plans && (() => {
+                    const plan = viewLoan.loan_plans;
+                    const type = plan.installment_type;
+                    const label = type === "monthly" ? t("perMonth" as any) : type === "weekly" ? t("perWeek" as any) : t("perDay" as any);
+                    const avg = viewLoanInst.length ? Number(viewLoan.total_payable) / viewLoanInst.length : 0;
+                    return (
+                      <div className="col-span-2"><div className="text-xs text-muted-foreground">{label}</div><div className="font-bold">{money(avg)} <span className="text-xs text-muted-foreground">× {viewLoanInst.length} {t("installments" as any)}</span></div></div>
+                    );
+                  })()}
                 </div>
 
                 {viewLoanInst.length > 0 && (
