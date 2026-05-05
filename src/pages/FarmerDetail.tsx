@@ -633,7 +633,7 @@ export default function FarmerDetail() {
             <div>
               <Label className="text-sm font-medium mb-2 block">Location</Label>
               <LocationPicker value={editLoc} onChange={(v) => { setEditLoc(v); if (editLocErr) setEditLocErr(null); }}
-                errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} />
+                errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} showVillage={false} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>{t("dagNo")}</Label><Input disabled={editSaving} value={editForm.dag_no} onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })} /></div>
