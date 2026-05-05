@@ -84,13 +84,6 @@ export default function FarmerDetail() {
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
     setPayments(pm.data ?? []);
 
-    // Cultivated lands (this farmer is tenant on active relations)
-    const { data: tRels } = await supabase.from("land_relations")
-      .select("id, share_percentage, valid_from, valid_to, land_id, lands(id,dag_no,land_size,mouza,field_type), owner:farmers!land_relations_owner_farmer_id_fkey(id,name_en,account_number,farmer_code)")
-      .eq("sharecropper_farmer_id", id!)
-      .is("valid_to", null)
-      .order("valid_from", { ascending: false });
-    setTenantLands(tRels ?? []);
   }
 
   function farmerLocationLine(fr: any): string {
