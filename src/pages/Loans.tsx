@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Check, X, Printer, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { Plus, Check, X, Printer, ChevronDown, ChevronRight, Trash2, Pencil } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
