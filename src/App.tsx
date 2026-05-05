@@ -148,8 +148,8 @@ const App = () => (
                 <Route path="/admin/qr-rotation" element={<QrRotation />} />
                 <Route path="/admin/bulk-cards" element={<BulkCards />} />
                 <Route path="/admin/receipt-template" element={<ReceiptTemplate />} />
-                <Route path="/admin/loan-receipt-settings" element={<LoanReceiptSettings />} />
-                <Route path="/admin/bulk-loan-export" element={<BulkLoanExport />} />
+                <Route path="/admin/loan-receipt-settings" element={<RequireRole roles={["admin","super_admin"]}><LoanReceiptSettings /></RequireRole>} />
+                <Route path="/admin/bulk-loan-export" element={<RequireRole roles={["admin","super_admin"]}><BulkLoanExport /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<CardDesigner />} />
                 <Route path="/admin/role-matrix" element={<RoleMatrix />} />
               </Route>
