@@ -102,43 +102,59 @@ export default function ShareCollection() {
   }
 
   async function batchSubmit() {
+    setBatchReport(null);
     // CSV format: farmer_code,amount,date(optional),note(optional)
-    const lines = batchText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const rawLines = batchText.split(/\r?\n/);
+    const lines = rawLines.map((l, i) => ({ raw: l, idx: i + 1 })).filter(l => l.raw.trim());
     if (!lines.length) return toast.error("Paste at least one line");
     const today = new Date().toISOString().slice(0, 10);
 
-    // Resolve farmer codes
-    const codes = Array.from(new Set(lines.map(l => l.split(",")[0]?.trim()).filter(Boolean)));
+    const codes = Array.from(new Set(lines.map(l => l.raw.split(",")[0]?.trim()).filter(Boolean)));
     const { data: fs } = await supabase.from("farmers").select("id,farmer_code").in("farmer_code", codes);
     const map = new Map<string, string>((fs ?? []).map((f: any) => [f.farmer_code, f.id]));
 
     const payload: any[] = [];
-    const errors: string[] = [];
-    lines.forEach((line, idx) => {
-      const [code, amtStr, dateStr, note] = line.split(",").map(s => s?.trim() ?? "");
+    const errors: { line: number; raw: string; reason: string }[] = [];
+    const seen = new Set<string>();
+    lines.forEach(({ raw, idx }) => {
+      const parts = raw.split(",").map(s => s?.trim() ?? "");
+      const [code, amtStr, dateStr, note] = parts;
+      if (!code) { errors.push({ line: idx, raw, reason: "Missing farmer_code" }); return; }
       const fid = map.get(code);
-      if (!fid) { errors.push(`Line ${idx + 1}: unknown farmer_code "${code}"`); return; }
+      if (!fid) { errors.push({ line: idx, raw, reason: `Unknown farmer_code "${code}"` }); return; }
       const amt = Number(amtStr);
       const v = validate(amt);
-      if (v) { errors.push(`Line ${idx + 1}: ${v}`); return; }
+      if (v) { errors.push({ line: idx, raw, reason: v }); return; }
+      const d = dateStr || today;
+      if (dateStr && !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        errors.push({ line: idx, raw, reason: `Invalid date "${dateStr}" (use YYYY-MM-DD)` }); return;
+      }
+      const key = `${fid}|${d}`;
+      if (seen.has(key)) { errors.push({ line: idx, raw, reason: "Duplicate farmer+date in batch" }); return; }
+      seen.add(key);
       payload.push({
-        farmer_id: fid,
-        type: "share_collection",
-        amount: amt,
-        txn_date: dateStr || today,
-        status: "pending",
-        note: note || "Batch share collection",
-        created_by: user?.id,
+        farmer_id: fid, type: "share_collection", amount: amt, txn_date: d,
+        status: "pending", note: note || "Batch share collection", created_by: user?.id,
       });
     });
 
-    if (errors.length) return toast.error(errors.slice(0, 3).join(" | "));
-    if (!payload.length) return toast.error("Nothing to insert");
+    if (!payload.length) {
+      setBatchReport({ ok: 0, errors });
+      return toast.error(`All ${errors.length} rows failed validation`);
+    }
 
-    const { error } = await supabase.from("savings_transactions").insert(payload);
-    if (error) return toast.error(error.message);
-    toast.success(`Submitted ${payload.length} entries for approval`);
-    setBatchOpen(false); setBatchText(""); load();
+    const { error, data } = await supabase.from("savings_transactions").insert(payload).select("id");
+    if (error) {
+      // Surface DB-side errors (e.g., unique violations) in the report
+      errors.push({ line: 0, raw: "(database)", reason: error.message });
+      setBatchReport({ ok: 0, errors });
+      return toast.error(error.message);
+    }
+    const ok = data?.length ?? payload.length;
+    setBatchReport({ ok, errors });
+    toast.success(`Submitted ${ok} entries${errors.length ? `, ${errors.length} skipped` : ""}`);
+    if (!errors.length) { setBatchOpen(false); setBatchText(""); }
+    load();
   }
 
   async function decide(id: string, status: "approved" | "rejected") {
