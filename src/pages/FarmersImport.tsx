@@ -286,6 +286,12 @@ export default function FarmersImport() {
       updated[i] = { ...updated[i], status: "saving", errorMsg: null };
       setRows([...updated]);
 
+      const isVoter = ((): boolean => {
+        const v = String(r.raw.is_voter ?? "").toLowerCase().trim();
+        return v === "true" || v === "1" || v === "yes" || v === "y";
+      })();
+      const memberNo = r.raw.member_no ? String(r.raw.member_no).trim() : null;
+
       const payload: any = {
         name_en:      r.raw.name_en,
         name_bn:      r.raw.name_bn      ?? null,
@@ -293,10 +299,12 @@ export default function FarmersImport() {
         mother_name:  r.raw.mother_name  ?? null,
         nid:          r.raw.nid          ?? null,
         mobile:       r.raw.mobile       ?? null,
-        member_no:    r.raw.member_no    ?? null,
+        member_no:    memberNo,
+        is_voter:     isVoter,
+        // If voter + member_no provided, mirror it as account_number/voter_number
+        ...(isVoter && memberNo ? { account_number: memberNo, voter_number: memberNo } : {}),
         status:       (r.raw.status as string) || "active",
         village:      r.raw.village      ?? null,
-        post_office:  r.raw.post_office  ?? null,
         address:      r.raw.address      ?? null,
         office_id:    officeId ?? null,
         ...r.resolved,
