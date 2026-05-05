@@ -359,9 +359,9 @@ export default function Savings() {
           <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
           <TabsTrigger value="plans">Plans {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
         </TabsList>
-        <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} /></TabsContent>
-        <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} /></TabsContent>
-        <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} historyMode /></TabsContent>
+        <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
+        <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
+        <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} historyMode /></TabsContent>
         <TabsContent value="plans">
           <Card className="p-3 mb-3 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">Enroll farmers in defined savings plans. Plans drive maturity calculations and are managed in <a href="/savings-plans" className="underline">Savings Plans</a>.</div>
