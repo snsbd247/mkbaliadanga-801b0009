@@ -285,27 +285,6 @@ export function AppSidebar() {
           </div>
         )}
 
-        {!collapsed && !q && shortcuts.length > 0 && (
-          <SidebarGroup>
-            <div className="px-3 pt-2 pb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-sidebar-foreground/60">
-              <Star className="h-3 w-3" /> {t("quickShortcuts")}
-            </div>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {shortcuts.map((s) => (
-                  <SidebarMenuItem key={`sc-${s.url}`}>
-                    <SidebarMenuButton asChild isActive={isActive(s.url)} tooltip={s.label} size="sm">
-                      <NavLink to={s.url}>
-                        <s.icon className="h-4 w-4" />
-                        <span>{s.label}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         <SidebarGroup>
           <SidebarGroupContent>
