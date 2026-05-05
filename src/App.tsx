@@ -61,7 +61,7 @@ import DataImport from "./pages/DataImport";
 import VoterList from "./pages/VoterList";
 import VoterAudit from "./pages/VoterAudit";
 import FarmerStatement from "./pages/FarmerStatement";
-import SavingsPlans from "./pages/SavingsPlans";
+
 import LoanPlans from "./pages/LoanPlans";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
@@ -94,7 +94,7 @@ const App = () => (
                 <Route path="/scan-payment" element={<ScanPayment />} />
                 <Route path="/seasons" element={<Seasons />} />
                 <Route path="/savings" element={<Savings />} />
-                <Route path="/savings/plans" element={<SavingsPlans />} />
+                
                 <Route path="/loans" element={<Loans />} />
                 <Route path="/loans/plans" element={<LoanPlans />} />
                 <Route path="/irrigation" element={<Irrigation />} />
