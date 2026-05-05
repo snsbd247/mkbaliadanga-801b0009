@@ -303,6 +303,7 @@ export default function Farmers() {
       setCreateErr({ level: v.level, key: "locationInvalidMissingParent" });
       setCreateFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMissingParent", v.level) }));
       return;
+    }
     if (form.is_voter && form.member_no) {
       const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(form.member_no).trim(), _exclude_id: null });
       if (dup === true) { toast.error("Duplicate Member No — already used by another farmer."); return; }
