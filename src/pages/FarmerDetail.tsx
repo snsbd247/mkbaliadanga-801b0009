@@ -216,7 +216,7 @@ export default function FarmerDetail() {
   return (
     <>
       <PageHeader title={lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}
-        description={`${farmer.account_number ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
+        description={`${farmer.member_no ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />Print Card</Button>
@@ -234,7 +234,7 @@ export default function FarmerDetail() {
             <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{farmer.name_en[0]}</AvatarFallback>
           </Avatar>
           <div className="grid flex-1 grid-cols-2 gap-3 text-sm md:grid-cols-4">
-            <div><div className="text-xs text-muted-foreground">Account No</div><div className="font-mono font-semibold">{farmer.account_number ?? farmer.farmer_code}</div></div>
+            <div><div className="text-xs text-muted-foreground">Member No</div><div className="font-mono font-semibold">{farmer.member_no ?? farmer.farmer_code}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameEn")}</div><div className="font-medium">{farmer.name_en}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameBn")}</div><div className="font-medium">{farmer.name_bn ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("fatherName")}</div><div>{farmer.father_name ?? "-"}</div></div>
@@ -245,9 +245,9 @@ export default function FarmerDetail() {
             <div className="col-span-2 md:col-span-4"><div className="text-xs text-muted-foreground">{t("village")} / Location</div><div className="text-sm">{farmerLocationLine(farmer)}</div></div>
           </div>
           <div className="flex flex-col items-center gap-1 rounded-md border bg-card p-2">
-            <QRCodeSVG value={`${window.location.origin}/scan?acc=${farmer.account_number ?? farmer.farmer_code}`} size={96} />
+            <QRCodeSVG value={`${window.location.origin}/scan?acc=${farmer.member_no ?? farmer.farmer_code}`} size={96} />
             <div className="text-[10px] text-muted-foreground">{t("qrCode")}</div>
-            <div className="font-mono text-[10px]">{farmer.account_number ?? farmer.farmer_code}</div>
+            <div className="font-mono text-[10px]">{farmer.member_no ?? farmer.farmer_code}</div>
           </div>
         </div>
       </Card>
