@@ -253,7 +253,7 @@ export default function CollectionReport() {
                 <SelectItem value={ALL}>{t("all")}</SelectItem>
                 {farmers.map((f) => (
                   <SelectItem key={f.id} value={f.id}>
-                    {f.farmer_code} — {f.name_en}
+                    {f.member_no ?? f.farmer_code} — {f.name_en}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -319,9 +319,10 @@ export default function CollectionReport() {
             onPdf={() =>
               exportTablePDF(
                 `Collection Report${filterSuffix()}`,
-                ["Date", "Type", "Farmer", "Amount", "Created By"],
+                ["Date", "Receipt #", "Type", "Farmer", "Amount", "Created By"],
                 rows.map((r) => [
                   fmtDate(r.date),
+                  r.receipt_no ?? "—",
                   sourceLabel(r.source),
                   `${r.farmer_code} — ${r.farmer_name}`,
                   r.amount,
@@ -335,8 +336,9 @@ export default function CollectionReport() {
                 "Collections",
                 rows.map((r) => ({
                   Date: r.date,
+                  "Receipt #": r.receipt_no ?? "",
                   Type: sourceLabel(r.source),
-                  "Farmer Code": r.farmer_code,
+                  "Member No": r.farmer_code,
                   "Farmer Name": r.farmer_name,
                   Amount: r.amount,
                   "Created By": r.user_name,
@@ -349,6 +351,7 @@ export default function CollectionReport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
+                  <TableHead>Receipt #</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Farmer</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
@@ -359,6 +362,7 @@ export default function CollectionReport() {
                 {rows.map((r) => (
                   <TableRow key={`${r.source}-${r.ref_id}`}>
                     <TableCell>{fmtDate(r.date)}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.receipt_no ?? "—"}</TableCell>
                     <TableCell>{sourceLabel(r.source)}</TableCell>
                     <TableCell>{r.farmer_code} — {r.farmer_name}</TableCell>
                     <TableCell className="text-right">{money(r.amount)}</TableCell>
@@ -367,7 +371,7 @@ export default function CollectionReport() {
                 ))}
                 {rows.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
                       No collections found for the selected filters.
                     </TableCell>
                   </TableRow>
