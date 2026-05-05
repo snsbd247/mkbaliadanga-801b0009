@@ -28,10 +28,11 @@ import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "" };
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -202,6 +203,15 @@ export default function FarmerDetail() {
 
   async function addLand() {
     setLandLocErr(null);
+    // Require location chain
+    const v = validateLocationChain(landLoc);
+    if (!v.ok) { setLandLocErr({ level: (v as any).level, message: "Please complete the location" }); return; }
+    if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: "Mouza required" }); return; }
+    if (!land.dag_no.trim()) return toast.error("Dag No required");
+    if (!(land.land_size > 0)) return toast.error("Land size required");
+    if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
+      return toast.error("Owner (জমির মালিক) সিলেক্ট করুন");
+    }
     setSavingLand(true);
     try {
       const { error } = await supabase.from("lands").insert({
@@ -211,6 +221,7 @@ export default function FarmerDetail() {
         land_size: land.land_size,
         owner_type: land.owner_type as any,
         field_type: land.field_type as any,
+        owner_farmer_id: land.owner_type === "borgadar" ? land.owner_farmer_id : null,
       } as any);
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved")); setOpenLand(false);
@@ -227,6 +238,7 @@ export default function FarmerDetail() {
       land_size: Number(row.land_size ?? 0),
       owner_type: (row.owner_type as any) ?? "owner",
       field_type: (row.field_type as any) ?? "medium_land",
+      owner_farmer_id: ((row as any).owner_farmer_id as string) ?? "",
     });
     setEditLocErr(null);
     setEditLoc({ village: row.mouza ?? null });
@@ -373,15 +385,29 @@ export default function FarmerDetail() {
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div><Label>{t("dagNo")}</Label><Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
-                      <div><Label>{t("landSize")}</Label><Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
-                      <div><Label>{t("ownerType")}</Label>
-                        <Select value={land.owner_type} disabled={savingLand} onValueChange={v => setLand({ ...land, owner_type: v })}>
+                      <div><Label>{t("ownerType")} <span className="text-destructive">*</span></Label>
+                        <Select value={land.owner_type} disabled={savingLand} onValueChange={v => setLand({ ...land, owner_type: v, owner_farmer_id: v === "owner" ? "" : land.owner_farmer_id })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
                         </Select>
                       </div>
-                      <div><Label>{t("fieldType")}</Label>
+                      <div>
+                        <Label>{t("owner")} {land.owner_type === "borgadar" ? <span className="text-destructive">*</span> : <span className="text-xs text-muted-foreground">(auto)</span>}</Label>
+                        {land.owner_type === "borgadar" ? (
+                          <FarmerSearchSelect
+                            value={land.owner_farmer_id || null}
+                            onChange={(fid) => setLand({ ...land, owner_farmer_id: fid ?? "" })}
+                            excludeIds={[id!]}
+                            placeholder="মালিক সার্চ করুন (নাম / ID / মোবাইল)"
+                            disabled={savingLand}
+                          />
+                        ) : (
+                          <Input disabled value={farmer?.name_en ?? ""} />
+                        )}
+                      </div>
+                      <div><Label>{t("dagNo")} <span className="text-destructive">*</span></Label><Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
+                      <div><Label>{t("landSize")} (শতাংশ) <span className="text-destructive">*</span></Label><Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
+                      <div className="col-span-2"><Label>{t("fieldType")}</Label>
                         <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>

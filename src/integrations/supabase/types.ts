@@ -1113,6 +1113,7 @@ export type Database = {
           land_size: number
           mouza: string | null
           office_id: string | null
+          owner_farmer_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"]
         }
         Insert: {
@@ -1125,6 +1126,7 @@ export type Database = {
           land_size?: number
           mouza?: string | null
           office_id?: string | null
+          owner_farmer_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
         Update: {
@@ -1137,6 +1139,7 @@ export type Database = {
           land_size?: number
           mouza?: string | null
           office_id?: string | null
+          owner_farmer_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
         Relationships: [
@@ -1150,6 +1153,20 @@ export type Database = {
           {
             foreignKeyName: "lands_farmer_id_fkey"
             columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_owner_farmer_id_fkey"
+            columns: ["owner_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "lands_owner_farmer_id_fkey"
+            columns: ["owner_farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
             referencedColumns: ["id"]
