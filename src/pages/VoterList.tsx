@@ -103,7 +103,23 @@ export default function VoterList() {
     const fn = mode === "cancel" ? "cancel_voter_membership" : "reactivate_voter_membership";
     const { error } = await supabase.rpc(fn as any, { _farmer_id: target.id, _reason: reason.trim() });
     setWorking(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      const msg = error.message || "";
+      const m = msg.match(/DUES_BLOCK:(\{.*\})/);
+      if (m) {
+        try {
+          const d = JSON.parse(m[1]);
+          const fmt = (n: any) => Number(n || 0).toLocaleString();
+          toast.error("Cannot cancel — clear all dues first", {
+            description: `Savings balance: ৳${fmt(d.savings_balance)} • Loan due: ৳${fmt(d.loan_due)} • Irrigation due: ৳${fmt(d.irrigation_due)}`,
+            duration: 8000,
+          });
+          return;
+        } catch { /* fallthrough */ }
+      }
+      toast.error(msg);
+      return;
+    }
     toast.success(mode === "cancel" ? "Voter membership cancelled" : "Voter membership reactivated");
     setTarget(null); setMode(null); setReason("");
     load();
