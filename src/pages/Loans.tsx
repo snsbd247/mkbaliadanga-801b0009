@@ -109,6 +109,32 @@ export default function Loans() {
     if (error) return toast.error(error.message);
     toast.success("Restored"); load();
   }
+  function startEdit(l: any) {
+    setEditLoan(l);
+    setEditForm({
+      principal: Number(l.principal),
+      interest_rate: Number(l.interest_rate),
+      interest_enabled: !!l.interest_enabled,
+      issued_on: l.issued_on?.slice(0, 10) ?? "",
+      next_due_on: l.next_due_on?.slice(0, 10) ?? "",
+      note: l.note ?? "",
+    });
+  }
+  async function saveEdit() {
+    if (!editLoan) return;
+    const total_payable = editForm.principal * (1 + (editForm.interest_enabled ? editForm.interest_rate : 0) / 100);
+    const { error } = await supabase.from("loans").update({
+      principal: editForm.principal,
+      interest_rate: editForm.interest_enabled ? editForm.interest_rate : 0,
+      interest_enabled: editForm.interest_enabled,
+      total_payable,
+      issued_on: editForm.issued_on,
+      next_due_on: editForm.next_due_on || null,
+      note: editForm.note,
+    }).eq("id", editLoan.id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated"); setEditLoan(null); load();
+  }
 
   function printLoanReceipt(loan: any, payment?: any) {
     const isIssue = !payment;
