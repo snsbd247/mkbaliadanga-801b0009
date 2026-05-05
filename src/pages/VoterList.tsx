@@ -5,13 +5,20 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, FileSpreadsheet, FileDown, FileText } from "lucide-react";
+import { Search, FileSpreadsheet, FileDown, FileText, Ban, RotateCcw } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
+import { toast } from "sonner";
 
 type Row = {
   id: string;
@@ -21,6 +28,9 @@ type Row = {
   voter_number: string | null;
   mobile: string | null;
   village: string | null;
+  is_voter: boolean;
+  voter_cancelled_at: string | null;
+  voter_cancel_reason: string | null;
   villages?: { name: string | null; name_bn: string | null } | null;
   unions?: { name: string | null } | null;
   upazilas?: { name: string | null } | null;
@@ -38,9 +48,16 @@ export default function VoterList() {
   const { t } = useLang();
   const { officeId, isSuper } = useAuth();
   const nav = useNavigate();
+  const [tab, setTab] = useState<"active" | "cancelled">("active");
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Dialog state
+  const [target, setTarget] = useState<Row | null>(null);
+  const [mode, setMode] = useState<"cancel" | "reactivate" | null>(null);
+  const [reason, setReason] = useState("");
+  const [working, setWorking] = useState(false);
 
   useEffect(() => { document.title = `Voter List — ${t("appName")}`; }, [t]);
 
@@ -48,18 +65,21 @@ export default function VoterList() {
     const handle = setTimeout(load, 200);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  }, [q, tab]);
 
   async function load() {
     setLoading(true);
     let qy = supabase
       .from("farmers")
-      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,offices(name),villages(name,name_bn),unions(name),upazilas(name),districts(name)")
-      .eq("is_voter", true)
+      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,is_voter,voter_cancelled_at,voter_cancel_reason,offices(name),villages(name,name_bn),unions(name),upazilas(name),districts(name)")
       .not("voter_number", "is", null)
       .neq("voter_number", "")
-      .order("voter_number", { ascending: true })
+      .order(tab === "active" ? "voter_number" : "voter_cancelled_at", { ascending: tab === "active" })
       .limit(500);
+
+    if (tab === "active") qy = qy.eq("is_voter", true);
+    else qy = qy.eq("is_voter", false).not("voter_cancelled_at", "is", null);
+
     if (!isSuper && officeId) qy = qy.eq("office_id", officeId);
     const term = q.trim();
     if (term) {
@@ -72,6 +92,23 @@ export default function VoterList() {
 
   const total = rows.length;
 
+  function openDialog(r: Row, m: "cancel" | "reactivate") {
+    setTarget(r); setMode(m); setReason("");
+  }
+
+  async function submitDialog() {
+    if (!target || !mode) return;
+    if (reason.trim().length < 3) { toast.error("Reason is required (min 3 chars)"); return; }
+    setWorking(true);
+    const fn = mode === "cancel" ? "cancel_voter_membership" : "reactivate_voter_membership";
+    const { error } = await supabase.rpc(fn as any, { _farmer_id: target.id, _reason: reason.trim() });
+    setWorking(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(mode === "cancel" ? "Voter membership cancelled" : "Voter membership reactivated");
+    setTarget(null); setMode(null); setReason("");
+    load();
+  }
+
   function exportExcel() {
     const wb = XLSX.utils.book_new();
     const head = ["Voter #", "Account No", "Name (EN)", "Name (BN)", "Mobile", "Location", "Office"];
@@ -82,7 +119,7 @@ export default function VoterList() {
     const ws = XLSX.utils.aoa_to_sheet(data);
     ws["!cols"] = [{ wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 24 }, { wch: 14 }, { wch: 18 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(wb, ws, "Voters");
-    XLSX.writeFile(wb, `voter-list-${Date.now()}.xlsx`);
+    XLSX.writeFile(wb, `voter-list-${tab}-${Date.now()}.xlsx`);
   }
 
   function exportCsv() {
@@ -98,7 +135,7 @@ export default function VoterList() {
     const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `voter-list-${Date.now()}.csv`;
+    a.href = url; a.download = `voter-list-${tab}-${Date.now()}.csv`;
     document.body.appendChild(a); a.click();
     document.body.removeChild(a); URL.revokeObjectURL(url);
   }
@@ -106,7 +143,7 @@ export default function VoterList() {
   function exportPdf() {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     doc.setFontSize(14);
-    doc.text("Voter List", 40, 36);
+    doc.text(`Voter List (${tab})`, 40, 36);
     doc.setFontSize(10);
     doc.text(`${total} voter${total === 1 ? "" : "s"}`, 40, 52);
     autoTable(doc, {
@@ -119,7 +156,7 @@ export default function VoterList() {
       styles: { fontSize: 9 },
       headStyles: { fillColor: [16, 122, 87] },
     });
-    doc.save(`voter-list-${Date.now()}.pdf`);
+    doc.save(`voter-list-${tab}-${Date.now()}.pdf`);
   }
 
   const headerInfo = useMemo(() => `${total} voter${total === 1 ? "" : "s"}`, [total]);
@@ -140,7 +177,13 @@ export default function VoterList() {
         </div>
       } />
 
-      <Card className="p-4 mb-4">
+      <Card className="p-4 mb-4 space-y-3">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+          <TabsList>
+            <TabsTrigger value="active">Active Voters</TabsTrigger>
+            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search by voter #, name, mobile, account…" value={q}
@@ -158,13 +201,15 @@ export default function VoterList() {
               <TableHead>Mobile</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Office</TableHead>
+              {tab === "cancelled" && <TableHead>Reason</TableHead>}
+              {isSuper && <TableHead className="text-right">Action</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map(r => (
-              <TableRow key={r.id} className="cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>
-                <TableCell className="font-mono">{r.voter_number}</TableCell>
-                <TableCell>
+              <TableRow key={r.id}>
+                <TableCell className="font-mono cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>{r.voter_number}</TableCell>
+                <TableCell className="cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>
                   <div className="font-medium">{r.name_en}</div>
                   {r.name_bn && <div className="text-xs text-muted-foreground">{r.name_bn}</div>}
                 </TableCell>
@@ -172,11 +217,29 @@ export default function VoterList() {
                 <TableCell>{r.mobile ?? "—"}</TableCell>
                 <TableCell className="text-xs">{locationOf(r)}</TableCell>
                 <TableCell className="text-xs">{r.offices?.name ?? "—"}</TableCell>
+                {tab === "cancelled" && (
+                  <TableCell className="text-xs max-w-[220px] truncate" title={r.voter_cancel_reason ?? ""}>
+                    {r.voter_cancel_reason ?? "—"}
+                  </TableCell>
+                )}
+                {isSuper && (
+                  <TableCell className="text-right">
+                    {tab === "active" ? (
+                      <Button size="sm" variant="destructive" onClick={() => openDialog(r, "cancel")}>
+                        <Ban className="h-4 w-4 mr-1" />Cancel
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline" onClick={() => openDialog(r, "reactivate")}>
+                        <RotateCcw className="h-4 w-4 mr-1" />Reactivate
+                      </Button>
+                    )}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={isSuper ? (tab === "cancelled" ? 8 : 7) : (tab === "cancelled" ? 7 : 6)} className="text-center text-muted-foreground py-6">
                   {loading ? "Loading…" : "No voters found"}
                 </TableCell>
               </TableRow>
@@ -184,6 +247,62 @@ export default function VoterList() {
           </TableBody>
         </Table>
       </Card>
+
+      <Dialog open={!!target && !!mode} onOpenChange={(o) => { if (!o) { setTarget(null); setMode(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {mode === "cancel" ? "Cancel Voter Membership" : "Reactivate Voter Membership"}
+            </DialogTitle>
+            <DialogDescription>
+              {target && (
+                <span>
+                  <strong>{target.name_en}</strong>
+                  {target.name_bn ? ` (${target.name_bn})` : ""} — Voter #{" "}
+                  <Badge variant="outline" className="font-mono">{target.voter_number}</Badge>
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {mode === "cancel" && (
+            <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
+              Cancellation requires:
+              <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                <li>Savings balance must be exactly 0</li>
+                <li>No outstanding loan due</li>
+                <li>No outstanding irrigation due</li>
+              </ul>
+              The system will reject the action otherwise.
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              {mode === "cancel" ? "Cancellation reason" : "Reactivation reason"} <span className="text-destructive">*</span>
+            </label>
+            <Textarea
+              rows={4}
+              placeholder="Write a clear reason / remark…"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setTarget(null); setMode(null); }} disabled={working}>
+              Cancel
+            </Button>
+            <Button
+              variant={mode === "cancel" ? "destructive" : "default"}
+              onClick={submitDialog}
+              disabled={working || reason.trim().length < 3}
+            >
+              {working ? "Working…" : mode === "cancel" ? "Confirm Cancel" : "Confirm Reactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
