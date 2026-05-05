@@ -516,12 +516,16 @@ function LevelTab({ level }: { level: Level }) {
                 ) : visibleRows.length === 0 ? (
                   <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">{t("noEntries")}</TableCell></TableRow>
                 ) : visibleRows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{r.name}</TableCell>
+                  <TableRow key={r.id} className={r.is_active === false ? "opacity-60" : ""}>
+                    <TableCell>
+                      {r.name}
+                      {r.is_active === false && <span className="ml-2 text-[10px] uppercase rounded bg-muted px-1.5 py-0.5 text-muted-foreground">Inactive</span>}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{r.name_bn ?? "—"}</TableCell>
                     {directCol && <TableCell className="text-muted-foreground">{parentNames[r[directCol]] ?? (r[directCol] ? "…" : "—")}</TableCell>}
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost" onClick={() => openEdit(r)} aria-label="Edit"><Pencil className="h-4 w-4"/></Button>
+                      <Button size="sm" variant="ghost" onClick={() => toggleActive(r)} aria-label={r.is_active === false ? "Activate" : "Deactivate"} title={r.is_active === false ? "Activate" : "Deactivate"}><Power className={"h-4 w-4 " + (r.is_active === false ? "text-muted-foreground" : "text-success")}/></Button>
                       <Button size="sm" variant="ghost" onClick={() => remove(r.id)} aria-label="Delete"><Trash2 className="h-4 w-4 text-destructive"/></Button>
                     </TableCell>
                   </TableRow>
