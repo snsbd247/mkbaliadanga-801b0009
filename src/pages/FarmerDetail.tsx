@@ -96,6 +96,9 @@ export default function FarmerDetail() {
   const brand = useBranding();
 
   useEffect(() => { if (id) loadAll(); }, [id]);
+  useEffect(() => {
+    supabase.from("loan_plans").select("*").eq("is_active", true).then(({ data }) => setLoanPlans(data ?? []));
+  }, []);
   useEffect(() => { document.title = `${farmer?.name_en ?? ""} — ${t("farmers")}`; }, [farmer, t]);
 
   async function loadAll() {
