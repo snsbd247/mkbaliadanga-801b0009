@@ -864,17 +864,27 @@ export default function FarmerDetail() {
                   <div>
                     <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("installments" as any)}</div>
                     <Table>
-                      <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{t("nextDue")}</TableHead><TableHead className="text-right">{t("total")}</TableHead><TableHead className="text-right">{t("paidAmount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{t("nextDue")}</TableHead><TableHead className="text-right">{t("total")}</TableHead><TableHead className="text-right">{t("paidAmount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead className="text-right">{t("actions")}</TableHead></TableRow></TableHeader>
                       <TableBody>
-                        {viewLoanInst.map(it => (
-                          <TableRow key={it.id}>
-                            <TableCell>{it.installment_no}</TableCell>
-                            <TableCell>{fmtDate(it.due_date)}</TableCell>
-                            <TableCell className="text-right">{money(it.amount)}</TableCell>
-                            <TableCell className="text-right">{money(it.paid_amount)}</TableCell>
-                            <TableCell><Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></TableCell>
-                          </TableRow>
-                        ))}
+                        {viewLoanInst.map(it => {
+                          const remaining = Math.max(0, Number(it.amount) - Number(it.paid_amount));
+                          return (
+                            <TableRow key={it.id}>
+                              <TableCell>{it.installment_no}</TableCell>
+                              <TableCell>{fmtDate(it.due_date)}</TableCell>
+                              <TableCell className="text-right">{money(it.amount)}</TableCell>
+                              <TableCell className="text-right">{money(it.paid_amount)}</TableCell>
+                              <TableCell><Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></TableCell>
+                              <TableCell className="text-right">
+                                {it.status !== "paid" && (
+                                  <Button size="sm" variant="outline" onClick={() => nav(`/payments?farmer=${id}&loan=${viewLoan.id}&amount=${remaining.toFixed(2)}`)}>
+                                    <Receipt className="h-3 w-3 mr-1" />{t("pay" as any) || "Pay"}
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
