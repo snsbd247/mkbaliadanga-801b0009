@@ -67,7 +67,7 @@ const L = {
     date: "Date",
     office: "Office",
     farmer: "Farmer",
-    name: "Name", code: "Code", member: "Member No", village: "Village", mobile: "Mobile",
+    name: "Name", code: "Code", member: "Farmer ID", village: "Village", mobile: "Mobile",
     qr: "QR Card", token: "Token", status: "Status",
     type: "Type", method: "Method", amount: "Amount (BDT)",
     note: "Note",

@@ -145,7 +145,7 @@ export default function VoterHistory() {
           </Button>
           <Button variant="outline" size="sm" disabled={!rows.length}
             onClick={() => exportTablePDF("Voter Cancel/Reactivate History",
-              ["Date", "Event", "Farmer", "Member No", "Reason", "Changed By", "Office"],
+              ["Date", "Event", "Farmer", "Farmer ID", "Reason", "Changed By", "Office"],
               exportRows.map(r => [r.Date, r.Event, r.Farmer, r.MemberNo, r.Reason, r.ChangedBy, r.Office]),
               { from, to })}>
             <FileText className="h-4 w-4 mr-1" />PDF
@@ -161,7 +161,7 @@ export default function VoterHistory() {
               <TableHead>Date</TableHead>
               <TableHead>Event</TableHead>
               <TableHead>Farmer</TableHead>
-              <TableHead>Member No</TableHead>
+              <TableHead>Farmer ID</TableHead>
               <TableHead>Reason</TableHead>
               <TableHead>Changed By</TableHead>
               <TableHead>Office</TableHead>

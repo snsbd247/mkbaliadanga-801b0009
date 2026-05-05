@@ -77,7 +77,7 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
               }
               const acc = String(data ?? "");
               setF({ ...f, is_voter: true, account_number: acc, member_no: acc, voter_number: acc });
-              toast.success("Savings/voter account created — Member No auto-generated");
+              toast.success("Savings/voter account created — Farmer ID auto-generated");
             } finally {
               setGenerating(false);
             }
@@ -102,7 +102,7 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
   );
 }
 
-/** Member No field — visible only when voter/savings is on. Admin can edit; duplicates rejected. */
+/** Farmer ID field — visible only when voter/savings is on. Admin can edit; duplicates rejected. */
 function MemberNoField({ f, setF, disabled, isAdmin, currentId }: { f: any; setF: (n: any) => void; disabled: boolean; isAdmin: boolean; currentId?: string | null }) {
   const [checking, setChecking] = useState(false);
   const [dupErr, setDupErr] = useState<string | null>(null);
@@ -121,14 +121,14 @@ function MemberNoField({ f, setF, disabled, isAdmin, currentId }: { f: any; setF
         _member_no: v.trim(), _exclude_id: currentId ?? null,
       });
       setChecking(false);
-      if (!error && data === true) setDupErr("This Member No is already used by another farmer.");
+      if (!error && data === true) setDupErr("This Farmer ID is already used by another farmer.");
     }, 350);
   }
 
   return (
     <div className="col-span-2">
       <Label className={dupErr ? "text-destructive" : ""}>
-        Member No * <span className="text-xs text-muted-foreground">(also Savings A/C & Voter No — auto-generated, admin can edit)</span>
+        Farmer ID * <span className="text-xs text-muted-foreground">(also Savings A/C & Voter No — auto-generated, admin can edit)</span>
       </Label>
       <Input
         value={f.member_no || ""}
@@ -327,7 +327,7 @@ export default function Farmers() {
     }
     if (form.is_voter && form.member_no) {
       const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(form.member_no).trim(), _exclude_id: null });
-      if (dup === true) { toast.error("Duplicate Member No — already used by another farmer."); return; }
+      if (dup === true) { toast.error("Duplicate Farmer ID — already used by another farmer."); return; }
     }
 
     setSaving(true);
@@ -377,7 +377,7 @@ export default function Farmers() {
     }
     if (editForm.is_voter && editForm.member_no) {
       const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(editForm.member_no).trim(), _exclude_id: (editForm as any).id ?? null });
-      if (dup === true) { toast.error("Duplicate Member No — already used by another farmer."); return; }
+      if (dup === true) { toast.error("Duplicate Farmer ID — already used by another farmer."); return; }
     }
 
     setSaving(true);
@@ -573,7 +573,7 @@ export default function Farmers() {
       <Card>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Member No</TableHead><TableHead>Voter Number</TableHead><TableHead>{t("farmerName")}</TableHead>
+            <TableHead>Farmer ID</TableHead><TableHead>Voter Number</TableHead><TableHead>{t("farmerName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
             <TableHead className="text-right">{t("dueAmount")}</TableHead>

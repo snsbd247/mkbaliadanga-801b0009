@@ -24,9 +24,9 @@ interface Row {
 }
 
 const LABELS: Record<Issue, string> = {
-  missing_member: "Missing Member No",
+  missing_member: "Missing Farmer ID",
   missing_account: "Missing Account No",
-  duplicate_member: "Duplicate Member No",
+  duplicate_member: "Duplicate Farmer ID",
   duplicate_account: "Duplicate Account No",
   duplicate_code: "Duplicate Farmer Code",
 };
@@ -94,7 +94,7 @@ export default function IdReconcile() {
     const next = r.farmer_code; // safest: copy farmer_code as member_no fallback
     const { error } = await supabase.from("farmers").update({ member_no: next }).eq("id", r.id);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Set Member No = ${next}`);
+    toast.success(`Set Farmer ID = ${next}`);
     load();
   }
 
@@ -102,7 +102,7 @@ export default function IdReconcile() {
     <>
       <PageHeader
         title="ID Reconcile"
-        description="Find inconsistencies in Member No, Account Number, and Farmer Code across all farmers."
+        description="Find inconsistencies in Farmer ID, Account Number, and Farmer Code across all farmers."
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -137,7 +137,7 @@ export default function IdReconcile() {
             <TableRow>
               <TableHead>Farmer</TableHead>
               <TableHead>Farmer Code</TableHead>
-              <TableHead>Member No</TableHead>
+              <TableHead>Farmer ID</TableHead>
               <TableHead>Account No</TableHead>
               <TableHead>Issues</TableHead>
               <TableHead className="text-right">Actions</TableHead>
