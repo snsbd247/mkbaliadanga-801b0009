@@ -228,7 +228,96 @@ export default function FarmerDetail() {
     setViewLoanPays(pays.data ?? []);
   }
   function editLoanGoto(l: any) {
-    nav(`/loans?edit=${l.id}`);
+    setEditLoanRow(l);
+    setEditLoanForm({
+      plan_id: l.plan_id ?? "",
+      principal: Number(l.principal),
+      interest_rate: Number(l.interest_rate),
+      interest_enabled: !!l.interest_enabled,
+      issued_on: l.issued_on?.slice(0, 10) ?? "",
+      next_due_on: l.next_due_on?.slice(0, 10) ?? "",
+      note: l.note ?? "",
+    });
+  }
+  async function saveEditLoan() {
+    if (!editLoanRow) return;
+    const planChanged = (editLoanRow.plan_id ?? "") !== editLoanForm.plan_id;
+    const total_payable = editLoanForm.principal * (1 + (editLoanForm.interest_enabled ? editLoanForm.interest_rate : 0) / 100);
+    const { error } = await supabase.from("loans").update({
+      plan_id: editLoanForm.plan_id || null,
+      principal: editLoanForm.principal,
+      interest_rate: editLoanForm.interest_enabled ? editLoanForm.interest_rate : 0,
+      interest_enabled: editLoanForm.interest_enabled,
+      total_payable,
+      issued_on: editLoanForm.issued_on,
+      next_due_on: editLoanForm.next_due_on || null,
+      note: editLoanForm.note,
+    }).eq("id", editLoanRow.id);
+    if (error) return toast.error(error.message);
+    if (planChanged && editLoanForm.plan_id) {
+      await supabase.from("loan_installments").delete().eq("loan_id", editLoanRow.id);
+      const { error: gErr } = await supabase.rpc("generate_loan_installments", { _loan_id: editLoanRow.id });
+      if (gErr) toast.error(`Schedule: ${gErr.message}`);
+      else toast.success("Updated & schedule regenerated");
+    } else {
+      toast.success("Updated");
+    }
+    setEditLoanRow(null); loadAll();
+  }
+  async function printLoanFull(l: any) {
+    const [insRes, payRes] = await Promise.all([
+      supabase.from("loan_installments").select("*").eq("loan_id", l.id).order("installment_no"),
+      supabase.from("loan_payments").select("*").eq("loan_id", l.id).order("paid_on"),
+    ]);
+    const ins = insRes.data ?? [];
+    const pays = payRes.data ?? [];
+    const totalPaid = pays.reduce((s, p) => s + Number(p.amount), 0);
+    const totalDue = Number(l.total_payable) - totalPaid;
+    const paidCount = ins.filter((i: any) => i.status === "paid").length;
+    const remainCount = ins.length - paidCount;
+
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    doc.setFontSize(14); doc.setFont(undefined, "bold");
+    doc.text(brand.company_name || "Loan Details", pageW / 2, 14, { align: "center" });
+    doc.setFontSize(11);
+    doc.text(t("loanDetails" as any) || "Loan Details", pageW / 2, 21, { align: "center" });
+    doc.setFontSize(10); doc.setFont(undefined, "normal");
+    doc.text(`${t("farmerName" as any) || "Farmer"}: ${farmer?.name_en ?? ""}  (${farmer?.farmer_code ?? ""})`, 14, 30);
+    doc.text(`${t("issuedOn")}: ${fmtDate(l.issued_on)}`, 14, 36);
+    doc.text(`${t("principal")}: ${money(l.principal)}    ${t("interestRate")}: ${l.interest_rate}%`, 14, 42);
+    doc.text(`${t("totalPayable")}: ${money(l.total_payable)}    ${t("paidAmount")}: ${money(totalPaid)}    ${t("dueAmount")}: ${money(totalDue)}`, 14, 48);
+    if (ins.length) doc.text(`${t("installmentsPaid" as any)}: ${paidCount}/${ins.length}    ${t("installmentsRemaining" as any)}: ${remainCount}`, 14, 54);
+
+    let y = 60;
+    if (ins.length) {
+      autoTable(doc, {
+        startY: y,
+        head: [["#", t("nextDue"), t("total"), t("paidAmount"), t("status")]],
+        body: ins.map((i: any) => [i.installment_no, fmtDate(i.due_date), money(i.amount), money(i.paid_amount), i.status]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [16, 122, 87] },
+      });
+      y = (doc as any).lastAutoTable.finalY + 6;
+    }
+    if (pays.length) {
+      doc.setFont(undefined, "bold"); doc.text(t("payments"), 14, y); y += 4;
+      autoTable(doc, {
+        startY: y,
+        head: [[t("date"), t("paidAmount"), t("note")]],
+        body: pays.map((p: any) => [fmtDate(p.paid_on), money(p.amount), p.note ?? ""]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [16, 122, 87] },
+      });
+    }
+    const total = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i); doc.setFontSize(8);
+      doc.text(`Page ${i}/${total}`, pageW - 14, doc.internal.pageSize.getHeight() - 6, { align: "right" });
+    }
+    doc.save(`loan-${l.id.slice(0, 8)}.pdf`);
   }
   async function deleteIrrigation(i: any) {
     if (!window.confirm("Delete this irrigation entry?")) return;
