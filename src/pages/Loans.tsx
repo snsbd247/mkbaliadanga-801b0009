@@ -237,6 +237,7 @@ export default function Loans() {
               onDecide={decide}
               onRestore={restore}
               onDelete={remove}
+              onEdit={startEdit}
               onPrint={printLoanReceipt}
               profiles={profiles}
               expanded={expanded}
