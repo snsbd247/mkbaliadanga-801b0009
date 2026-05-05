@@ -36,25 +36,16 @@ export default function DuesAudit() {
     if (!farmerId) { setIrr([]); setLoanDue(0); setSavingsBal(0); setShareBal(0); return; }
     setLoading(true);
     (async () => {
-      const [{ data: ic }, { data: loans }, { data: savings }] = await Promise.all([
+      const [{ data: ic }, dues] = await Promise.all([
         supabase.from("irrigation_charges")
           .select("id,entry_date,season_id,due_amount,total,paid_amount,seasons(name,year),lands(dag_no)")
           .eq("farmer_id", farmerId).is("deleted_at", null).order("entry_date", { ascending: false }),
-        supabase.from("loans").select("id,total_payable,status,loan_payments(amount)").eq("farmer_id", farmerId).is("deleted_at", null),
-        supabase.from("savings_transactions").select("amount,type,status").eq("farmer_id", farmerId).is("deleted_at", null),
+        getFarmerDues(farmerId),
       ]);
       setIrr((ic as any) ?? []);
-      setLoanDue((loans ?? []).filter((l: any) => l.status === "approved").reduce((a: number, l: any) => {
-        const paid = (l.loan_payments ?? []).reduce((x: number, p: any) => x + Number(p.amount || 0), 0);
-        return a + Math.max(0, Number(l.total_payable || 0) - paid);
-      }, 0));
-      let sb = 0, sh = 0;
-      (savings ?? []).filter((s: any) => s.status === "approved").forEach((s: any) => {
-        const sign = s.type === "deposit" || s.type === "share_collection" ? 1 : s.type === "withdraw" ? -1 : 0;
-        if (s.type === "share_collection") sh += Number(s.amount || 0) * sign;
-        else sb += Number(s.amount || 0) * sign;
-      });
-      setSavingsBal(sb); setShareBal(sh);
+      setLoanDue(dues.loan_due);
+      setSavingsBal(dues.savings_balance);
+      setShareBal(dues.share_balance);
       setLoading(false);
     })();
   }, [farmerId]);
