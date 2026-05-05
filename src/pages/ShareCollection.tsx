@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
-import { Plus, Check, X, FileSpreadsheet, FileText, Upload, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Check, X, FileSpreadsheet, FileText, Upload, AlertCircle, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
@@ -35,7 +35,7 @@ type Row = {
 };
 
 export default function ShareCollection() {
-  const { user, isCommittee } = useAuth();
+  const { user, isCommittee, isSuper } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -51,6 +51,8 @@ export default function ShareCollection() {
   const [batchReport, setBatchReport] = useState<{ ok: number; errors: { line: number; raw: string; reason: string }[] } | null>(null);
   const [range, setRange] = useState({ from: "", to: "" });
   const [period, setPeriod] = useState<"all" | "daily" | "monthly">("all");
+  const [editRow, setEditRow] = useState<Row | null>(null);
+  const [editForm, setEditForm] = useState({ amount: "", txn_date: "", note: "" });
 
   useEffect(() => { document.title = "Share Collection"; load(); }, []);
 
@@ -172,6 +174,32 @@ export default function ShareCollection() {
       .eq("status", "pending");
     if (error) return toast.error(error.message);
     toast.success(`Marked ${status}`);
+    load();
+  }
+
+  function startEdit(r: Row) {
+    setEditRow(r);
+    setEditForm({ amount: String(r.amount), txn_date: r.txn_date, note: r.note ?? "" });
+  }
+  async function saveEdit() {
+    if (!editRow) return;
+    const amt = Number(editForm.amount);
+    const v = validate(amt);
+    if (v) return toast.error(v);
+    const { error } = await supabase.from("savings_transactions")
+      .update({ amount: amt, txn_date: editForm.txn_date, note: editForm.note || null })
+      .eq("id", editRow.id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated");
+    setEditRow(null);
+    load();
+  }
+  async function deleteRow(r: Row) {
+    if (!window.confirm(`Delete share collection of ${money(r.amount)} for ${r.farmers?.name_en}?`)) return;
+    const { error } = await supabase.from("savings_transactions")
+      .update({ deleted_at: new Date().toISOString() } as any).eq("id", r.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted");
     load();
   }
 
@@ -333,9 +361,9 @@ export default function ShareCollection() {
           <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
           <TabsTrigger value="summary">Summary ({grouped.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="pending"><RowsTable rows={pending} canDecide={isCommittee} onDecide={decide} /></TabsContent>
-        <TabsContent value="approved"><RowsTable rows={approved} /></TabsContent>
-        <TabsContent value="rejected"><RowsTable rows={rejected} /></TabsContent>
+        <TabsContent value="pending"><RowsTable rows={pending} canDecide={isCommittee} onDecide={decide} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
+        <TabsContent value="approved"><RowsTable rows={approved} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
+        <TabsContent value="rejected"><RowsTable rows={rejected} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
         <TabsContent value="summary" className="space-y-3">
           <Card className="p-3">
             <div className="text-sm font-medium mb-2">{period === "monthly" ? "Monthly" : "Daily"} approved totals</div>
@@ -369,13 +397,38 @@ export default function ShareCollection() {
         </TabsContent>
       </Tabs>
       {loading && <p className="text-xs text-muted-foreground mt-2">Loading…</p>}
+
+      <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Share Collection</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">{editRow?.farmers?.farmer_code} — {editRow?.farmers?.name_en}</div>
+            <div><Label>Amount (৳)</Label>
+              <Input type="number" min={MIN_AMOUNT} max={MAX_AMOUNT} value={editForm.amount}
+                onChange={e => setEditForm({ ...editForm, amount: e.target.value })} />
+            </div>
+            <div><Label>Date</Label>
+              <Input type="date" value={editForm.txn_date} onChange={e => setEditForm({ ...editForm, txn_date: e.target.value })} />
+            </div>
+            <div><Label>Note</Label>
+              <Input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRow(null)}>Cancel</Button>
+            <Button onClick={saveEdit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
-function RowsTable({ rows, canDecide, onDecide }: {
+function RowsTable({ rows, canDecide, onDecide, canManage, onEdit, onDelete }: {
   rows: Row[]; canDecide?: boolean; onDecide?: (id: string, s: "approved" | "rejected") => void;
+  canManage?: boolean; onEdit?: (r: Row) => void; onDelete?: (r: Row) => void;
 }) {
+  const showActions = canDecide || canManage;
   return (
     <Card className="p-0 overflow-hidden">
       <Table>
@@ -383,10 +436,10 @@ function RowsTable({ rows, canDecide, onDecide }: {
           <TableHead>Date</TableHead><TableHead>Farmer</TableHead>
           <TableHead className="text-right">Amount</TableHead>
           <TableHead>Status</TableHead><TableHead>Note</TableHead>
-          {canDecide && <TableHead></TableHead>}
+          {showActions && <TableHead></TableHead>}
         </TableRow></TableHeader>
         <TableBody>
-          {rows.length === 0 && <TableRow><TableCell colSpan={canDecide ? 6 : 5} className="text-center text-muted-foreground">No entries</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={showActions ? 6 : 5} className="text-center text-muted-foreground">No entries</TableCell></TableRow>}
           {rows.map(r => (
             <TableRow key={r.id}>
               <TableCell>{fmtDate(r.txn_date)}</TableCell>
@@ -394,12 +447,18 @@ function RowsTable({ rows, canDecide, onDecide }: {
               <TableCell className="text-right">{money(r.amount)}</TableCell>
               <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"}>{r.status}</Badge></TableCell>
               <TableCell className="text-xs text-muted-foreground">{r.reject_reason || r.note}</TableCell>
-              {canDecide && (
+              {showActions && (
                 <TableCell className="flex gap-1 justify-end">
-                  {r.status === "pending" && (
+                  {canDecide && r.status === "pending" && (
                     <>
                       <Button size="sm" variant="default" onClick={() => onDecide?.(r.id, "approved")}><Check className="h-3 w-3" /></Button>
                       <Button size="sm" variant="outline" onClick={() => onDecide?.(r.id, "rejected")}><X className="h-3 w-3" /></Button>
+                    </>
+                  )}
+                  {canManage && (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => onEdit?.(r)} title="Edit"><Pencil className="h-3 w-3" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => onDelete?.(r)} title="Delete"><Trash2 className="h-3 w-3 text-destructive" /></Button>
                     </>
                   )}
                 </TableCell>

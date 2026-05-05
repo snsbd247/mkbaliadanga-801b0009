@@ -26,6 +26,8 @@ import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
+import { useAuth } from "@/auth/AuthProvider";
+import { exportPaymentReceiptPDF } from "@/lib/exports";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null };
 
@@ -34,6 +36,7 @@ const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
   const { t, lang } = useLang();
+  const { isSuper } = useAuth();
   const nav = useNavigate();
   const [farmer, setFarmer] = useState<any>(null);
   const [lands, setLands] = useState<LandRow[]>([]);
@@ -124,6 +127,84 @@ export default function FarmerDetail() {
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
     });
+  }
+
+  function brandObj() {
+    return { company_name: brand.company_name, address: brand.address, mobile: brand.mobile };
+  }
+  function farmerObj() {
+    return {
+      name_en: farmer?.name_en ?? "—",
+      farmer_code: farmer?.farmer_code,
+      member_no: farmer?.member_no,
+      mobile: farmer?.mobile,
+      village: farmer?.village,
+    };
+  }
+  function printSavings(s: any) {
+    exportPaymentReceiptPDF({
+      brand: brandObj(),
+      receipt_no: `SAV-${s.id.slice(0, 8).toUpperCase()}`,
+      date: s.txn_date ?? s.created_at,
+      farmer: farmerObj(),
+      amount: Number(s.amount),
+      method: "cash",
+      note: s.note ?? `Savings ${s.type} (${s.status})`,
+      allocations: [{ kind: `Savings ${s.type}`, amount: Number(s.amount) }],
+    });
+  }
+  function printLoan(l: any) {
+    exportPaymentReceiptPDF({
+      brand: brandObj(),
+      receipt_no: `LOAN-${l.id.slice(0, 8).toUpperCase()}`,
+      date: l.issued_on,
+      farmer: farmerObj(),
+      amount: Number(l.principal),
+      method: "cash",
+      note: `Loan disbursed — Total Payable ${money(l.total_payable)}`,
+      allocations: [{ kind: "Loan Disbursed (Principal)", amount: Number(l.principal) }],
+    });
+  }
+  function printIrrigation(i: any) {
+    exportPaymentReceiptPDF({
+      brand: brandObj(),
+      receipt_no: `IRR-${i.id.slice(0, 8).toUpperCase()}`,
+      date: i.entry_date,
+      farmer: farmerObj(),
+      amount: Number(i.total),
+      method: "cash",
+      note: `Irrigation charge — ${i.seasons?.name ?? ""} ${i.seasons?.year ?? ""}`,
+      allocations: [
+        { kind: "Base", amount: Number(i.base_charge) },
+        { kind: "Canal", amount: Number(i.canal_charge) },
+        { kind: "Maintenance", amount: Number(i.maintenance_charge) },
+        { kind: "Other", amount: Number(i.other_charge) },
+      ].filter(a => a.amount > 0),
+    });
+  }
+  async function deleteSavings(s: any) {
+    if (!window.confirm("Delete this savings transaction?")) return;
+    const { error } = await supabase.from("savings_transactions").update({ deleted_at: new Date().toISOString() } as any).eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); loadAll();
+  }
+  async function deleteLoan(l: any) {
+    if (!window.confirm("Delete this loan?")) return;
+    const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() } as any).eq("id", l.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); loadAll();
+  }
+  async function deleteIrrigation(i: any) {
+    if (!window.confirm("Delete this irrigation entry?")) return;
+    const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", i.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); loadAll();
+  }
+  async function deletePayment(p: any) {
+    if (!window.confirm("Delete this payment?")) return;
+    const { error } = await supabase.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); loadAll();
   }
 
   async function addLand() {
@@ -386,9 +467,26 @@ export default function FarmerDetail() {
 
         <TabsContent value="savings">
           <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
-            <TableBody>{savings.map(s => <TableRow key={s.id}><TableCell>{fmtDate(s.txn_date)}</TableCell><TableCell>{t(s.type as any)}</TableCell><TableCell>{money(s.amount)}</TableCell><TableCell><Badge>{t(s.status as any)}</Badge></TableCell></TableRow>)}
-            {savings.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
+            <TableHeader><TableRow>
+              <TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead>
+              <TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {savings.map(s => (
+                <TableRow key={s.id}>
+                  <TableCell>{fmtDate(s.txn_date)}</TableCell>
+                  <TableCell>{t(s.type as any)}</TableCell>
+                  <TableCell>{money(s.amount)}</TableCell>
+                  <TableCell><Badge>{t(s.status as any)}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <Button size="icon" variant="ghost" onClick={() => printSavings(s)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteSavings(s)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {savings.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
 
@@ -398,21 +496,59 @@ export default function FarmerDetail() {
 
         <TabsContent value="loans">
           <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("issuedOn")}</TableHead><TableHead>{t("principal")}</TableHead><TableHead>{t("interestRate")}</TableHead><TableHead>{t("totalPayable")}</TableHead><TableHead>{t("nextDue")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow>
+              <TableHead>{t("issuedOn")}</TableHead><TableHead>{t("principal")}</TableHead>
+              <TableHead>{t("interestRate")}</TableHead><TableHead>{t("totalPayable")}</TableHead>
+              <TableHead>{t("nextDue")}</TableHead><TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
+            </TableRow></TableHeader>
             <TableBody>{loans.map(l => {
               const paid = (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0);
               const due = Number(l.total_payable) - paid;
-              return <TableRow key={l.id}><TableCell>{fmtDate(l.issued_on)}</TableCell><TableCell>{money(l.principal)}</TableCell><TableCell>{l.interest_rate}%</TableCell><TableCell>{money(l.total_payable)}</TableCell><TableCell className={due > 0 ? "due-text" : ""}>{fmtDate(l.next_due_on)}</TableCell><TableCell><Badge>{t(l.status as any)}</Badge></TableCell></TableRow>;
+              return (
+                <TableRow key={l.id}>
+                  <TableCell>{fmtDate(l.issued_on)}</TableCell>
+                  <TableCell>{money(l.principal)}</TableCell>
+                  <TableCell>{l.interest_rate}%</TableCell>
+                  <TableCell>{money(l.total_payable)}</TableCell>
+                  <TableCell className={due > 0 ? "due-text" : ""}>{fmtDate(l.next_due_on)}</TableCell>
+                  <TableCell><Badge>{t(l.status as any)}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <Button size="icon" variant="ghost" onClick={() => printLoan(l)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  </TableCell>
+                </TableRow>
+              );
             })}
-            {loans.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
+            {loans.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
           </Table></Card>
         </TabsContent>
 
         <TabsContent value="irrigation">
           <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead><TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead></TableRow></TableHeader>
-            <TableBody>{irr.map(i => <TableRow key={i.id}><TableCell>{fmtDate(i.entry_date)}</TableCell><TableCell>{i.seasons?.name}</TableCell><TableCell>{i.lands?.dag_no}</TableCell><TableCell>{money(i.total)}</TableCell><TableCell>{money(i.paid_amount)}</TableCell><TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell></TableRow>)}
-            {irr.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
+            <TableHeader><TableRow>
+              <TableHead>{t("date")}</TableHead><TableHead>{t("season")}</TableHead>
+              <TableHead>{t("dagNo")}</TableHead><TableHead>{t("total")}</TableHead>
+              <TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {irr.map(i => (
+                <TableRow key={i.id}>
+                  <TableCell>{fmtDate(i.entry_date)}</TableCell>
+                  <TableCell>{i.seasons?.name}</TableCell>
+                  <TableCell>{i.lands?.dag_no}</TableCell>
+                  <TableCell>{money(i.total)}</TableCell>
+                  <TableCell>{money(i.paid_amount)}</TableCell>
+                  <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="icon" variant="ghost" onClick={() => printIrrigation(i)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteIrrigation(i)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {irr.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
 
@@ -438,6 +574,7 @@ export default function FarmerDetail() {
                     <Button size="sm" variant="outline" onClick={() => reprintReceipt(p)}>
                       <FileDown className="h-3 w-3 mr-1" />Download
                     </Button>
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deletePayment(p)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
               ))}

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Check, X, Printer, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { Plus, Check, X, Printer, ChevronDown, ChevronRight, Trash2, Pencil } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -35,6 +35,8 @@ export default function Loans() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
   const [showDeleted, setShowDeleted] = useState(false);
+  const [editLoan, setEditLoan] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
 
   useEffect(() => { document.title = `${t("loans")} — ${t("appName")}`; load(); }, [showDeleted]);
   async function load() {
@@ -106,6 +108,32 @@ export default function Loans() {
     const { error } = await supabase.from("loans").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Restored"); load();
+  }
+  function startEdit(l: any) {
+    setEditLoan(l);
+    setEditForm({
+      principal: Number(l.principal),
+      interest_rate: Number(l.interest_rate),
+      interest_enabled: !!l.interest_enabled,
+      issued_on: l.issued_on?.slice(0, 10) ?? "",
+      next_due_on: l.next_due_on?.slice(0, 10) ?? "",
+      note: l.note ?? "",
+    });
+  }
+  async function saveEdit() {
+    if (!editLoan) return;
+    const total_payable = editForm.principal * (1 + (editForm.interest_enabled ? editForm.interest_rate : 0) / 100);
+    const { error } = await supabase.from("loans").update({
+      principal: editForm.principal,
+      interest_rate: editForm.interest_enabled ? editForm.interest_rate : 0,
+      interest_enabled: editForm.interest_enabled,
+      total_payable,
+      issued_on: editForm.issued_on,
+      next_due_on: editForm.next_due_on || null,
+      note: editForm.note,
+    }).eq("id", editLoan.id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated"); setEditLoan(null); load();
   }
 
   function printLoanReceipt(loan: any, payment?: any) {
@@ -209,6 +237,7 @@ export default function Loans() {
               onDecide={decide}
               onRestore={restore}
               onDelete={remove}
+              onEdit={startEdit}
               onPrint={printLoanReceipt}
               profiles={profiles}
               expanded={expanded}
@@ -218,11 +247,37 @@ export default function Loans() {
           </TabsContent>
         ))}
       </Tabs>
+
+      <Dialog open={!!editLoan} onOpenChange={(o) => !o && setEditLoan(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Loan</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("principal")}</Label><Input type="number" value={editForm.principal} onChange={e => setEditForm({ ...editForm, principal: +e.target.value })} /></div>
+              <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={editForm.interest_rate} disabled={!editForm.interest_enabled} onChange={e => setEditForm({ ...editForm, interest_rate: +e.target.value })} /></div>
+            </div>
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <Label>{t("interestEnabled")}</Label>
+              <Switch checked={editForm.interest_enabled} onCheckedChange={v => setEditForm({ ...editForm, interest_enabled: v })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("issuedOn")}</Label><Input type="date" value={editForm.issued_on} onChange={e => setEditForm({ ...editForm, issued_on: e.target.value })} /></div>
+              <div><Label>{t("nextDue")}</Label><Input type="date" value={editForm.next_due_on} onChange={e => setEditForm({ ...editForm, next_due_on: e.target.value })} /></div>
+            </div>
+            <div><Label>{t("note")}</Label><Input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} /></div>
+            <div className="rounded-md bg-muted p-2 text-sm">{t("totalPayable")}: <span className="font-bold">{money(editForm.interest_enabled ? editForm.principal * (1 + editForm.interest_rate / 100) : editForm.principal)}</span></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditLoan(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEdit}>{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
-function LoanTable({ rows, t, isCommittee, showDeleted, onDecide, onRestore, onPrint, profiles, expanded, setExpanded, installments }: any) {
+function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRestore, onDelete, onEdit, onPrint, profiles, expanded, setExpanded, installments }: any) {
   return (
     <Card className="overflow-x-auto"><Table>
       <TableHeader><TableRow>
@@ -279,6 +334,10 @@ function LoanTable({ rows, t, isCommittee, showDeleted, onDecide, onRestore, onP
                   {!showDeleted && (l.status === "approved" || l.status === "paid") && (
                     <Button size="icon" variant="ghost" onClick={() => onPrint(l)} title="Print disbursement receipt"><Printer className="h-4 w-4" /></Button>
                   )}
+                  {!showDeleted && isSuper && (<>
+                    <Button size="icon" variant="ghost" onClick={() => onEdit(l)} title="Edit"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => onDelete(l.id)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </>)}
                 </TableCell>
               </TableRow>
               {isOpen && canExpand && (

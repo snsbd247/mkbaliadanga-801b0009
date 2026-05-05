@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ import { useBranding } from "@/lib/branding";
 
 export default function Savings() {
   const { t, lang } = useLang();
-  const { isCommittee, user } = useAuth();
+  const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [txns, setTxns] = useState<any[]>([]);
@@ -37,6 +37,8 @@ export default function Savings() {
   const [reportRange, setReportRange] = useState({ from: "", to: "" });
   const [decision, setDecision] = useState<{ id: string; mode: "reject" | "cancel"; reason: string } | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [editTxn, setEditTxn] = useState<any | null>(null);
+  const [editTxnForm, setEditTxnForm] = useState({ amount: 0, note: "" });
   
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, [showDeleted]);
@@ -263,6 +265,26 @@ export default function Savings() {
     if (error) return toast.error(error.message);
     toast.success("Restored"); load();
   }
+  function startEditTxn(r: any) {
+    setEditTxn(r);
+    setEditTxnForm({ amount: Number(r.amount), note: r.note ?? "" });
+  }
+  async function saveEditTxn() {
+    if (!editTxn) return;
+    if (editTxnForm.amount <= 0) return toast.error("Amount must be positive");
+    const { error } = await supabase.from("savings_transactions")
+      .update({ amount: editTxnForm.amount, note: editTxnForm.note || null })
+      .eq("id", editTxn.id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated"); setEditTxn(null); load();
+  }
+  async function deleteTxn(id: string) {
+    if (!window.confirm("Delete this savings transaction?")) return;
+    const { error } = await supabase.from("savings_transactions")
+      .update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); load();
+  }
 
   function printReceipt(r: any) {
     exportPaymentReceiptPDF({
@@ -337,9 +359,9 @@ export default function Savings() {
           <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
           <TabsTrigger value="plans">Plans {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
         </TabsList>
-        <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} /></TabsContent>
-        <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} /></TabsContent>
-        <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} profiles={profiles} historyMode /></TabsContent>
+        <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
+        <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
+        <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} historyMode /></TabsContent>
         <TabsContent value="plans">
           <Card className="p-3 mb-3 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">Enroll farmers in defined savings plans. Plans drive maturity calculations and are managed in <a href="/savings-plans" className="underline">Savings Plans</a>.</div>
@@ -502,11 +524,26 @@ export default function Savings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editTxn} onOpenChange={(o) => !o && setEditTxn(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Savings Transaction</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">{editTxn?.farmers?.name_en} — {editTxn?.type}</div>
+            <div><Label>Amount</Label><Input type="number" value={editTxnForm.amount} onChange={e => setEditTxnForm({ ...editTxnForm, amount: +e.target.value })} /></div>
+            <div><Label>Note</Label><Input value={editTxnForm.note} onChange={e => setEditTxnForm({ ...editTxnForm, note: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTxn(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEditTxn}>{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
-function TxnTable({ rows, t, isAdmin, showDeleted, onDecide, onRestore, onPrint, profiles, historyMode }: any) {
+function TxnTable({ rows, t, isAdmin, isSuper, showDeleted, onDecide, onRestore, onPrint, onEdit, onDelete, profiles, historyMode }: any) {
   return (
     <Card><Table>
       <TableHeader><TableRow>
@@ -543,6 +580,10 @@ function TxnTable({ rows, t, isAdmin, showDeleted, onDecide, onRestore, onPrint,
               {!showDeleted && (r.status === "approved" || historyMode) && (
                 <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title={t("printReceipt")}><Printer className="h-4 w-4" /></Button>
               )}
+              {!showDeleted && isSuper && (<>
+                <Button size="icon" variant="ghost" onClick={() => onEdit(r)} title="Edit"><Pencil className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => onDelete(r.id)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </>)}
             </TableCell>
           </TableRow>
         ))}
