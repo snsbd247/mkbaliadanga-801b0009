@@ -108,7 +108,8 @@ export default function Irrigation() {
     if (!form.farmer_id) errors.farmer_id = "Select a farmer";
     if (!form.land_id) errors.land_id = "Select a land";
     if (!form.season_id) errors.season_id = "Select a season";
-    if (!(Number(form.rate) > 0)) errors.rate = "Rate must be greater than 0";
+    if (form.season_id && rateAvailable === false) errors.season_id = "No active irrigation rate found for this season + basis. Please configure it in Irrigation Rates first.";
+    if (!(Number(form.rate) > 0)) errors.rate = "Rate must be greater than 0 (configure in Irrigation Rates)";
     if (!(Number(form.quantity) > 0)) errors.quantity = "Quantity must be greater than 0";
     if (Number(form.canal_charge) < 0) errors.canal_charge = "Cannot be negative";
     if (Number(form.maintenance_charge) < 0) errors.maintenance_charge = "Cannot be negative";
@@ -120,18 +121,46 @@ export default function Irrigation() {
 
   async function save() {
     if (hasErrors) return toast.error("Please fix the highlighted errors");
-    const { error } = await supabase.from("irrigation_charges").insert({
+    if (rateAvailable !== true) return toast.error("Active irrigation rate required for this season + basis.");
+    const payload: any = {
       farmer_id: form.farmer_id, land_id: form.land_id, season_id: form.season_id,
       basis: form.basis as any, quantity: form.quantity,
       base_charge: form.base_charge, canal_charge: form.canal_charge,
       maintenance_charge: form.maintenance_charge, other_charge: form.other_charge,
-      paid_amount: form.paid_amount, entry_date: form.entry_date, created_by: user?.id,
-    });
+      paid_amount: form.paid_amount, entry_date: form.entry_date,
+    };
+    let error;
+    if (editId) {
+      ({ error } = await supabase.from("irrigation_charges").update(payload).eq("id", editId));
+    } else {
+      payload.created_by = user?.id;
+      ({ error } = await supabase.from("irrigation_charges").insert(payload));
+    }
     if (error) return toast.error(error.message);
-    if (form.paid_amount > 0) {
+    if (!editId && form.paid_amount > 0) {
       await supabase.from("payments").insert({ farmer_id: form.farmer_id, kind: "irrigation", amount: form.paid_amount, collected_by: user?.id });
     }
-    toast.success(t("saved")); setOpen(false); load();
+    toast.success(t("saved")); setOpen(false); setEditId(null); load();
+  }
+
+  function openEdit(r: any) {
+    setEditId(r.id);
+    setForm({
+      farmer_id: r.farmer_id, land_id: r.land_id, season_id: r.season_id,
+      basis: r.basis, rate: Number(r.base_charge) / Math.max(1, Number(r.quantity)),
+      quantity: Number(r.quantity), base_charge: Number(r.base_charge),
+      canal_charge: Number(r.canal_charge), maintenance_charge: Number(r.maintenance_charge),
+      other_charge: Number(r.other_charge), paid_amount: Number(r.paid_amount),
+      entry_date: r.entry_date,
+    });
+    setOpen(true);
+  }
+
+  async function softDelete(id: string) {
+    if (!window.confirm("Delete this irrigation entry?")) return;
+    const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); load();
   }
 
   const [genSeason, setGenSeason] = useState<string>("");
