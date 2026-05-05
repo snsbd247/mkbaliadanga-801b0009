@@ -36,6 +36,7 @@ const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
   const { t, lang } = useLang();
+  const { isSuper } = useAuth();
   const nav = useNavigate();
   const [farmer, setFarmer] = useState<any>(null);
   const [lands, setLands] = useState<LandRow[]>([]);
