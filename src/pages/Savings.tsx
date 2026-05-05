@@ -37,6 +37,8 @@ export default function Savings() {
   const [reportRange, setReportRange] = useState({ from: "", to: "" });
   const [decision, setDecision] = useState<{ id: string; mode: "reject" | "cancel"; reason: string } | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [editTxn, setEditTxn] = useState<any | null>(null);
+  const [editTxnForm, setEditTxnForm] = useState({ amount: 0, note: "" });
   
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, [showDeleted]);
