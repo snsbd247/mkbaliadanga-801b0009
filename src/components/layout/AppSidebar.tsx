@@ -112,6 +112,7 @@ export function AppSidebar() {
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), superOnly: true },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: "ID Reconcile", permKey: "farmers" },
+        { url: "/admin/id-review", icon: IdCard, label: "ID Review", permKey: "farmers" },
       ],
     },
   ];
