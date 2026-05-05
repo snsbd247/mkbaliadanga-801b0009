@@ -25,10 +25,29 @@ import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 import { VoterHistoryDialog } from "@/components/farmers/VoterHistoryDialog";
 import { History } from "lucide-react";
 
-function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
+function SavingsAccountField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
   const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [dupError, setDupError] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Debounced uniqueness check on manual edit
+  useEffect(() => {
+    const acc = (f.account_number || "").trim();
+    if (!acc || !f.is_voter) { setDupError(null); return; }
+    const handle = setTimeout(async () => {
+      setChecking(true);
+      let q = supabase.from("farmers").select("id", { head: true, count: "exact" })
+        .eq("account_number", acc);
+      if (f.id) q = q.neq("id", f.id);
+      const { count, error } = await q;
+      setChecking(false);
+      if (error) return;
+      setDupError((count ?? 0) > 0 ? `Account number "${acc}" already exists (duplicate)` : null);
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [f.account_number, f.is_voter, f.id]);
+
   return (
     <>
       <div className="flex items-center gap-3 h-10">
@@ -36,29 +55,25 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
           checked={!!f.is_voter}
           disabled={disabled || generating}
           onCheckedChange={async (on) => {
-            setError(null);
-            if (!on) { setF({ ...f, is_voter: false }); return; }
-            if (f.voter_number) { setF({ ...f, is_voter: true }); return; }
-            const prev = { is_voter: f.is_voter, voter_number: f.voter_number };
+            if (!on) { setF({ ...f, is_voter: false }); setDupError(null); return; }
+            // Already has an account_number — just enable
+            if (f.account_number) {
+              setF({ ...f, is_voter: true, voter_number: f.voter_number || f.account_number });
+              return;
+            }
             setGenerating(true);
             try {
-              const { data, error } = await supabase.rpc("generate_farmer_voter_number");
+              const { data, error } = await supabase.rpc("generate_account_number" as any, {
+                _office_id: f.office_id || null,
+              });
               if (error) {
-                setError(error.message);
                 toast.error(error.message);
-                // Revert toggle and keep prior voter_number untouched
-                setF({ ...f, is_voter: prev.is_voter, voter_number: prev.voter_number });
+                setF({ ...f, is_voter: false });
                 return;
               }
-              const newVoter = String(data ?? "");
-              setF({ ...f, is_voter: true, voter_number: newVoter });
-              if (f.id) {
-                toast.success(`Voter number ${newVoter} generated`, {
-                  action: { label: "View history", onClick: () => setHistoryOpen(true) },
-                });
-              } else {
-                toast.success(`Voter number ${newVoter} generated`);
-              }
+              const acc = String(data ?? "");
+              setF({ ...f, is_voter: true, account_number: acc, voter_number: acc });
+              toast.success(`Savings account ${acc} generated`);
             } finally {
               setGenerating(false);
             }
@@ -67,20 +82,18 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
         />
         {generating ? (
           <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> generating voter number…
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> generating…
           </span>
-        ) : f.voter_number ? (
+        ) : (
           <Input
-            value={f.voter_number}
-            disabled
-            readOnly
-            inputMode="numeric"
+            value={f.account_number || ""}
+            disabled={disabled || !f.is_voter}
+            placeholder={f.is_voter ? "Auto / manual entry" : "Enable savings account"}
             maxLength={20}
             className="font-mono"
-            aria-label="Voter number (read-only)"
+            aria-label="Savings account number"
+            onChange={(e) => setF({ ...f, account_number: e.target.value, voter_number: e.target.value })}
           />
-        ) : (
-          <span className="text-xs text-muted-foreground">No voter number assigned</span>
         )}
         {f.id && (
           <Button type="button" variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} title="View history">
@@ -88,16 +101,15 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
           </Button>
         )}
       </div>
-      {error && (
+      {checking && <p className="mt-1 text-xs text-muted-foreground">Checking uniqueness…</p>}
+      {dupError && (
         <Alert variant="destructive" className="mt-2">
-          <AlertDescription className="text-xs">{error}</AlertDescription>
+          <AlertDescription className="text-xs">{dupError}</AlertDescription>
         </Alert>
       )}
-      {f.voter_number && !generating && !error && (
-        <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
-          ⚠ Voter number is permanent and cannot be edited. It will be reused if Is Voter is re-enabled.
-        </p>
-      )}
+      <p className="mt-1 text-xs text-muted-foreground">
+        Toggle = create savings account. Number is auto-generated office-wise; you may override manually (must be unique).
+      </p>
       <VoterHistoryDialog farmerId={f.id ?? null} open={historyOpen} onOpenChange={setHistoryOpen} />
     </>
   );
