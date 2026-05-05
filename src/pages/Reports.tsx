@@ -348,20 +348,21 @@ export default function Reports() {
 
         <TabsContent value="monthly">
           <ExportBar
-            onPdf={() => exportTablePDF(`Monthly Financial${filterTitleSuffix()}`,
-              ["Month", "Deposits", "Withdrawals", "Loan Issued", "Loan Collected", "Irr Charged", "Irr Collected", "Loan Due", "Irr Due", "Net Total"],
-              monthly.map(m => [m.period, m.deposits, m.withdrawals, m.loanIssued, m.loanCollected, m.irrCharged, m.irrCollected, m.loanDue, m.irrDue, m.total]))}
-            onXlsx={() => exportExcel("monthly-financial", "Monthly", monthly.map(m => ({
-              Month: m.period, Deposits: m.deposits, Withdrawals: m.withdrawals,
+            onPdf={() => exportTablePDF(`${granularity === "daily" ? "Daily" : "Monthly"} Financial${filterTitleSuffix()}`,
+              [granularity === "daily" ? "Date" : "Month", "Deposits", "Withdrawals", "Loan Issued", "Loan Collected", "Irr Charged", "Irr Collected", "Loan Due", "Irr Due", "Net Total"],
+              monthly.map(m => [m.period, m.deposits, m.withdrawals, m.loanIssued, m.loanCollected, m.irrCharged, m.irrCollected, m.loanDue, m.irrDue, m.total]),
+              { from, to })}
+            onXlsx={() => exportExcel(`${granularity}-financial`, granularity === "daily" ? "Daily" : "Monthly", monthly.map(m => ({
+              [granularity === "daily" ? "Date" : "Month"]: m.period, Deposits: m.deposits, Withdrawals: m.withdrawals,
               "Loan Issued": m.loanIssued, "Loan Collected": m.loanCollected,
               "Irrigation Charged": m.irrCharged, "Irrigation Collected": m.irrCollected,
               "Loan Due": m.loanDue, "Irrigation Due": m.irrDue, "Net Total": m.total,
-            })))}
+            })), { from, to })}
           />
           <Card className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Month</TableHead>
+                <TableHead>{granularity === "daily" ? "Date" : "Month"}</TableHead>
                 <TableHead className="text-right">Deposits</TableHead>
                 <TableHead className="text-right">Withdrawals</TableHead>
                 <TableHead className="text-right">Loan Issued</TableHead>
