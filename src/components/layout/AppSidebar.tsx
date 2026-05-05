@@ -163,7 +163,28 @@ export function AppSidebar() {
 
   const isActive = (url: string) => url === "/" ? pathname === "/" : pathname.startsWith(url);
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try { return localStorage.getItem(queryKey) ?? ""; } catch { return ""; }
+  });
+
+  // Persist query per user
+  useEffect(() => {
+    try { localStorage.setItem(queryKey, query); } catch { /* noop */ }
+  }, [query, queryKey]);
+
+  // Ctrl+K / Cmd+K to focus the menu search
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Track open groups; default open if any child is active
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
