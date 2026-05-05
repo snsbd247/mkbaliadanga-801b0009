@@ -47,7 +47,7 @@ export default function Irrigation() {
   // Auto-fill rate + extra charges from irrigation_rates table when season+basis change
   useEffect(() => {
     (async () => {
-      if (!form.season_id) return;
+      if (!form.season_id) { setRateAvailable(null); return; }
       const { data } = await supabase
         .from("irrigation_rates")
         .select("base_rate,canal_charge,maintenance_charge,other_charge,basis")
@@ -55,7 +55,12 @@ export default function Irrigation() {
         .eq("basis", form.basis)
         .eq("is_active", true)
         .maybeSingle();
-      if (!data) return;
+      if (!data) {
+        setRateAvailable(false);
+        setForm((f: any) => ({ ...f, rate: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0 }));
+        return;
+      }
+      setRateAvailable(true);
       setForm((f: any) => ({
         ...f,
         rate: Number(data.base_rate) || f.rate,
@@ -68,18 +73,17 @@ export default function Irrigation() {
   }, [form.season_id, form.basis]);
   useEffect(() => {
     (async () => {
-      if (!form.farmer_id || !form.land_id) { setPrevDue(0); return; }
+      if (!form.farmer_id) { setPrevDue(0); return; }
+      // Total OUTSTANDING irrigation due for this farmer across ALL seasons & lands
       const { data } = await supabase
         .from("irrigation_charges")
-        .select("due_amount, season_id")
+        .select("due_amount")
         .eq("farmer_id", form.farmer_id)
-        .eq("land_id", form.land_id);
-      const sum = (data ?? [])
-        .filter((r: any) => !form.season_id || r.season_id !== form.season_id)
-        .reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+        .is("deleted_at", null);
+      const sum = (data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
       setPrevDue(sum);
     })();
-  }, [form.farmer_id, form.land_id, form.season_id]);
+  }, [form.farmer_id]);
 
   async function load() {
     let q = supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200);
