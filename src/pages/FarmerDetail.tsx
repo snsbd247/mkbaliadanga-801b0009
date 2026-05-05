@@ -275,7 +275,7 @@ export default function FarmerDetail() {
     const ins = insRes.data ?? [];
     const pays = payRes.data ?? [];
     const totalPaid = pays.reduce((s, p) => s + Number(p.amount), 0);
-    const totalDue = Number(l.total_payable) - totalPaid;
+    const totalDue = Math.max(0, Number(l.total_payable) - totalPaid);
     const paidCount = ins.filter((i: any) => i.status === "paid").length;
     const remainCount = ins.length - paidCount;
 
