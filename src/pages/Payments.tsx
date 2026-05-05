@@ -34,6 +34,7 @@ export default function Payments() {
   const [farmerId, setFarmerId] = useState(params.get("farmer") ?? "");
   const [method, setMethod] = useState("cash");
   const [note, setNote] = useState("");
+  const [receiptNo, setReceiptNo] = useState("");
   const [allocs, setAllocs] = useState<Allocation[]>([{ kind: "irrigation", reference_id: "", amount: 0 }]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [openLoans, setOpenLoans] = useState<any[]>([]);
@@ -100,7 +101,7 @@ export default function Payments() {
 
   function resetForm() {
     setAllocs([{ kind: "irrigation", reference_id: "", amount: 0 }]);
-    setNote(""); setReceiptFile(null); setIdemKey(newKey());
+    setNote(""); setReceiptNo(""); setReceiptFile(null); setIdemKey(newKey());
   }
 
   async function pay() {
@@ -126,6 +127,7 @@ export default function Payments() {
         collected_by: user?.id,
         status,
         idempotency_key: idemKey,
+        receipt_no: receiptNo.trim() || null,
       };
 
       const { data: inserted, error } = await supabase.from("payments").insert(payload).select("id").single();
@@ -323,6 +325,7 @@ export default function Payments() {
             </div>
 
             <div><Label>{t("method")}</Label><Input value={method} onChange={e => setMethod(e.target.value)} /></div>
+            <div><Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label><Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" /></div>
             <div><Label>{t("note")}</Label><Input value={note} onChange={e => setNote(e.target.value)} /></div>
             <div>
               <Label className="flex items-center gap-1"><Paperclip className="h-3.5 w-3.5" /> Receipt (optional, requires approval)</Label>
