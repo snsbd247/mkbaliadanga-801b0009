@@ -11,8 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
-import { Eye, Download, RefreshCw, Loader2 } from "lucide-react";
+import { Eye, Download, RefreshCw, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const ENTITY_OPTIONS = [
   "qr_tokens",
