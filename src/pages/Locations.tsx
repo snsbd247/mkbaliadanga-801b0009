@@ -615,10 +615,12 @@ export default function Locations() {
           <TabsTrigger value="divisions">{t("divisions")}</TabsTrigger>
           <TabsTrigger value="districts">{t("districts")}</TabsTrigger>
           <TabsTrigger value="upazilas">{t("upazilas")}</TabsTrigger>
+          <TabsTrigger value="mouzas">Mouzas</TabsTrigger>
         </TabsList>
         <TabsContent value="divisions" className="mt-4"><LevelTab level="divisions"/></TabsContent>
         <TabsContent value="districts" className="mt-4"><LevelTab level="districts"/></TabsContent>
         <TabsContent value="upazilas"  className="mt-4"><LevelTab level="upazilas"/></TabsContent>
+        <TabsContent value="mouzas"    className="mt-4"><LevelTab level="mouzas"/></TabsContent>
       </Tabs>
     </>
   );
