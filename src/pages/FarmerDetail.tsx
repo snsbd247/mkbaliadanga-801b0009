@@ -859,6 +859,15 @@ export default function FarmerDetail() {
                     <div><div className="text-xs text-muted-foreground">{t("installmentsPaid" as any)}</div><div>{paidCount} / {viewLoanInst.length}</div></div>
                     <div><div className="text-xs text-muted-foreground">{t("installmentsRemaining" as any)}</div><div>{remainCount}</div></div>
                   </>}
+                  {viewLoan.loan_plans && (() => {
+                    const plan = viewLoan.loan_plans;
+                    const type = plan.installment_type;
+                    const label = type === "monthly" ? t("perMonth" as any) : type === "weekly" ? t("perWeek" as any) : t("perDay" as any);
+                    const avg = viewLoanInst.length ? Number(viewLoan.total_payable) / viewLoanInst.length : 0;
+                    return (
+                      <div className="col-span-2"><div className="text-xs text-muted-foreground">{label}</div><div className="font-bold">{money(avg)} <span className="text-xs text-muted-foreground">× {viewLoanInst.length} {t("installments" as any)}</span></div></div>
+                    );
+                  })()}
                 </div>
 
                 {viewLoanInst.length > 0 && (
