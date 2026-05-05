@@ -321,12 +321,21 @@ export default function Reports() {
               <SelectContent><SelectItem value={ALL}>{t("all")}</SelectItem>{seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div><Label>Granularity</Label>
+            <Select value={granularity} onValueChange={(v: any) => setGranularity(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </Card>
 
       <Tabs defaultValue="monthly">
         <TabsList>
-          <TabsTrigger value="monthly">Monthly Financial</TabsTrigger>
+          <TabsTrigger value="monthly">{granularity === "daily" ? "Daily" : "Monthly"} Financial</TabsTrigger>
           <TabsTrigger value="recon">Reconciliation</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigationReport")}</TabsTrigger>
           <TabsTrigger value="arrears">Irrigation Arrears</TabsTrigger>
