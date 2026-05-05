@@ -211,14 +211,7 @@ export function AppSidebar() {
       .filter(Boolean) as ParentItem[];
   }, [q, menu]);
 
-  // Quick shortcuts (most-used routes), filtered by access
-  const shortcuts: SubItem[] = [
-    { url: "/admin", icon: LayoutDashboard, label: t("dashboard"), permKey: "dashboard" },
-    { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
-    { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
-    { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
-    { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
-  ].filter(allowed);
+
 
   // Highlight matched substring within a label
   const highlight = (text: string) => {
