@@ -12,11 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
-import { Plus, Check, X, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { Plus, Check, X, FileSpreadsheet, FileText, Upload, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { toast } from "sonner";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 const MIN_AMOUNT = 50;
 const MAX_AMOUNT = 1000000;
@@ -47,6 +48,7 @@ export default function ShareCollection() {
     note: "",
   });
   const [batchText, setBatchText] = useState("");
+  const [batchReport, setBatchReport] = useState<{ ok: number; errors: { line: number; raw: string; reason: string }[] } | null>(null);
   const [range, setRange] = useState({ from: "", to: "" });
   const [period, setPeriod] = useState<"all" | "daily" | "monthly">("all");
 
@@ -100,43 +102,59 @@ export default function ShareCollection() {
   }
 
   async function batchSubmit() {
+    setBatchReport(null);
     // CSV format: farmer_code,amount,date(optional),note(optional)
-    const lines = batchText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const rawLines = batchText.split(/\r?\n/);
+    const lines = rawLines.map((l, i) => ({ raw: l, idx: i + 1 })).filter(l => l.raw.trim());
     if (!lines.length) return toast.error("Paste at least one line");
     const today = new Date().toISOString().slice(0, 10);
 
-    // Resolve farmer codes
-    const codes = Array.from(new Set(lines.map(l => l.split(",")[0]?.trim()).filter(Boolean)));
+    const codes = Array.from(new Set(lines.map(l => l.raw.split(",")[0]?.trim()).filter(Boolean)));
     const { data: fs } = await supabase.from("farmers").select("id,farmer_code").in("farmer_code", codes);
     const map = new Map<string, string>((fs ?? []).map((f: any) => [f.farmer_code, f.id]));
 
     const payload: any[] = [];
-    const errors: string[] = [];
-    lines.forEach((line, idx) => {
-      const [code, amtStr, dateStr, note] = line.split(",").map(s => s?.trim() ?? "");
+    const errors: { line: number; raw: string; reason: string }[] = [];
+    const seen = new Set<string>();
+    lines.forEach(({ raw, idx }) => {
+      const parts = raw.split(",").map(s => s?.trim() ?? "");
+      const [code, amtStr, dateStr, note] = parts;
+      if (!code) { errors.push({ line: idx, raw, reason: "Missing farmer_code" }); return; }
       const fid = map.get(code);
-      if (!fid) { errors.push(`Line ${idx + 1}: unknown farmer_code "${code}"`); return; }
+      if (!fid) { errors.push({ line: idx, raw, reason: `Unknown farmer_code "${code}"` }); return; }
       const amt = Number(amtStr);
       const v = validate(amt);
-      if (v) { errors.push(`Line ${idx + 1}: ${v}`); return; }
+      if (v) { errors.push({ line: idx, raw, reason: v }); return; }
+      const d = dateStr || today;
+      if (dateStr && !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        errors.push({ line: idx, raw, reason: `Invalid date "${dateStr}" (use YYYY-MM-DD)` }); return;
+      }
+      const key = `${fid}|${d}`;
+      if (seen.has(key)) { errors.push({ line: idx, raw, reason: "Duplicate farmer+date in batch" }); return; }
+      seen.add(key);
       payload.push({
-        farmer_id: fid,
-        type: "share_collection",
-        amount: amt,
-        txn_date: dateStr || today,
-        status: "pending",
-        note: note || "Batch share collection",
-        created_by: user?.id,
+        farmer_id: fid, type: "share_collection", amount: amt, txn_date: d,
+        status: "pending", note: note || "Batch share collection", created_by: user?.id,
       });
     });
 
-    if (errors.length) return toast.error(errors.slice(0, 3).join(" | "));
-    if (!payload.length) return toast.error("Nothing to insert");
+    if (!payload.length) {
+      setBatchReport({ ok: 0, errors });
+      return toast.error(`All ${errors.length} rows failed validation`);
+    }
 
-    const { error } = await supabase.from("savings_transactions").insert(payload);
-    if (error) return toast.error(error.message);
-    toast.success(`Submitted ${payload.length} entries for approval`);
-    setBatchOpen(false); setBatchText(""); load();
+    const { error, data } = await supabase.from("savings_transactions").insert(payload).select("id");
+    if (error) {
+      // Surface DB-side errors (e.g., unique violations) in the report
+      errors.push({ line: 0, raw: "(database)", reason: error.message });
+      setBatchReport({ ok: 0, errors });
+      return toast.error(error.message);
+    }
+    const ok = data?.length ?? payload.length;
+    setBatchReport({ ok, errors });
+    toast.success(`Submitted ${ok} entries${errors.length ? `, ${errors.length} skipped` : ""}`);
+    if (!errors.length) { setBatchOpen(false); setBatchText(""); }
+    load();
   }
 
   async function decide(id: string, status: "approved" | "rejected") {
@@ -203,18 +221,41 @@ export default function ShareCollection() {
     <>
       <PageHeader title="Share Collection" description="Collect and track share capital contributions from farmers." actions={
         <div className="flex gap-2">
-          <Dialog open={batchOpen} onOpenChange={setBatchOpen}>
+          <Dialog open={batchOpen} onOpenChange={(v) => { setBatchOpen(v); if (!v) setBatchReport(null); }}>
             <DialogTrigger asChild><Button variant="outline"><Upload className="h-4 w-4 mr-1" />Batch CSV</Button></DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle>Batch Share Collection</DialogTitle></DialogHeader>
               <div className="space-y-2">
                 <Label>One entry per line: <code className="text-xs">farmer_code,amount,date(YYYY-MM-DD,optional),note(optional)</code></Label>
                 <Textarea rows={8} value={batchText} onChange={e => setBatchText(e.target.value)}
                   placeholder={"MK-0001,500,2026-05-05,May share\nMK-0002,500\nMK-0003,1000"} />
                 <p className="text-xs text-muted-foreground">All entries submitted as pending; admin must approve.</p>
+
+                {batchReport && (
+                  <div className="rounded-md border bg-muted/40 p-3 space-y-2 max-h-64 overflow-auto">
+                    <div className="flex items-center gap-3 text-sm font-medium">
+                      <span className="inline-flex items-center gap-1 text-green-600"><CheckCircle2 className="h-4 w-4" />{batchReport.ok} accepted</span>
+                      <span className="inline-flex items-center gap-1 text-destructive"><AlertCircle className="h-4 w-4" />{batchReport.errors.length} failed</span>
+                    </div>
+                    {batchReport.errors.length > 0 && (
+                      <Table>
+                        <TableHeader><TableRow><TableHead className="w-12">Line</TableHead><TableHead>Row</TableHead><TableHead>Reason</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                          {batchReport.errors.map((e, i) => (
+                            <TableRow key={i}>
+                              <TableCell className="font-mono text-xs">{e.line || "-"}</TableCell>
+                              <TableCell className="font-mono text-xs break-all">{e.raw}</TableCell>
+                              <TableCell className="text-xs text-destructive">{e.reason}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setBatchOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setBatchOpen(false)}>Close</Button>
                 <Button onClick={batchSubmit}>Submit Batch</Button>
               </DialogFooter>
             </DialogContent>
@@ -295,7 +336,25 @@ export default function ShareCollection() {
         <TabsContent value="pending"><RowsTable rows={pending} canDecide={isCommittee} onDecide={decide} /></TabsContent>
         <TabsContent value="approved"><RowsTable rows={approved} /></TabsContent>
         <TabsContent value="rejected"><RowsTable rows={rejected} /></TabsContent>
-        <TabsContent value="summary">
+        <TabsContent value="summary" className="space-y-3">
+          <Card className="p-3">
+            <div className="text-sm font-medium mb-2">{period === "monthly" ? "Monthly" : "Daily"} approved totals</div>
+            {grouped.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No data</p>
+            ) : (
+              <div style={{ width: "100%", height: 260 }}>
+                <ResponsiveContainer>
+                  <BarChart data={[...grouped].reverse().map(([k, v]) => ({ period: k, total: v }))}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="period" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(v: any) => money(Number(v))} />
+                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </Card>
           <Card className="p-0 overflow-hidden">
             <Table>
               <TableHeader><TableRow><TableHead>{period === "monthly" ? "Month" : "Date"}</TableHead><TableHead className="text-right">Total Amount</TableHead></TableRow></TableHeader>
