@@ -22,7 +22,7 @@ import { useBranding } from "@/lib/branding";
 
 export default function Savings() {
   const { t, lang } = useLang();
-  const { isCommittee, user } = useAuth();
+  const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [txns, setTxns] = useState<any[]>([]);
