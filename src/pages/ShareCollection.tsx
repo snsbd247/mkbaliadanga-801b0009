@@ -48,6 +48,7 @@ export default function ShareCollection() {
     note: "",
   });
   const [batchText, setBatchText] = useState("");
+  const [batchReport, setBatchReport] = useState<{ ok: number; errors: { line: number; raw: string; reason: string }[] } | null>(null);
   const [range, setRange] = useState({ from: "", to: "" });
   const [period, setPeriod] = useState<"all" | "daily" | "monthly">("all");
 
