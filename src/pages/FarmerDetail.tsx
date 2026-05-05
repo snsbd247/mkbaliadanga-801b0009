@@ -741,6 +741,77 @@ export default function FarmerDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!viewLoan} onOpenChange={(o) => { if (!o) { setViewLoan(null); setViewLoanInst([]); setViewLoanPays([]); } }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{t("loanDetails" as any)}</DialogTitle></DialogHeader>
+          {viewLoan && (() => {
+            const totalPaid = viewLoanPays.reduce((s, p) => s + Number(p.amount), 0);
+            const totalDue = Number(viewLoan.total_payable) - totalPaid;
+            const paidCount = viewLoanInst.filter(i => i.status === "paid").length;
+            const remainCount = viewLoanInst.filter(i => i.status !== "paid").length;
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div><div className="text-xs text-muted-foreground">{t("issuedOn")}</div><div>{fmtDate(viewLoan.issued_on)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("principal")}</div><div>{money(viewLoan.principal)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("totalPayable")}</div><div className="font-bold">{money(viewLoan.total_payable)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("paidAmount")}</div><div className="text-success font-semibold">{money(totalPaid)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("dueAmount")}</div><div className={totalDue > 0 ? "due-text font-semibold" : ""}>{money(totalDue)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("status")}</div><div><Badge>{t(viewLoan.status as any)}</Badge></div></div>
+                  {viewLoanInst.length > 0 && <>
+                    <div><div className="text-xs text-muted-foreground">{t("installmentsPaid" as any)}</div><div>{paidCount} / {viewLoanInst.length}</div></div>
+                    <div><div className="text-xs text-muted-foreground">{t("installmentsRemaining" as any)}</div><div>{remainCount}</div></div>
+                  </>}
+                </div>
+
+                {viewLoanInst.length > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("installments" as any)}</div>
+                    <Table>
+                      <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{t("nextDue")}</TableHead><TableHead className="text-right">{t("total")}</TableHead><TableHead className="text-right">{t("paidAmount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {viewLoanInst.map(it => (
+                          <TableRow key={it.id}>
+                            <TableCell>{it.installment_no}</TableCell>
+                            <TableCell>{fmtDate(it.due_date)}</TableCell>
+                            <TableCell className="text-right">{money(it.amount)}</TableCell>
+                            <TableCell className="text-right">{money(it.paid_amount)}</TableCell>
+                            <TableCell><Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                <div>
+                  <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("payments")}</div>
+                  {viewLoanPays.length === 0 ? <div className="text-xs text-muted-foreground">{t("noData")}</div> : (
+                    <Table>
+                      <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>{t("note")}</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {viewLoanPays.map(p => (
+                          <TableRow key={p.id}>
+                            <TableCell>{fmtDate(p.paid_on)}</TableCell>
+                            <TableCell className="text-right text-success font-semibold">{money(p.amount)}</TableCell>
+                            <TableCell>{p.note ?? ""}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => printLoan(viewLoan)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
+                  <Button onClick={() => nav(`/payments?farmer=${id}&loan=${viewLoan.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payments")}</Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
