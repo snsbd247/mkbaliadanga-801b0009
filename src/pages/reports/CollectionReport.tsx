@@ -29,6 +29,7 @@ type CollectionRow = {
   user_id: string | null;
   user_name: string;
   ref_id: string;
+  receipt_no: string | null;
 };
 
 type ProfileLite = { id: string; full_name: string | null; email: string | null; office_id: string | null };
@@ -57,7 +58,7 @@ export default function CollectionReport() {
     document.title = `Collection Report — ${t("appName")}`;
     supabase
       .from("farmers")
-      .select("id,name_en,farmer_code")
+      .select("id,name_en,farmer_code,member_no")
       .order("name_en")
       .then(({ data }) => setFarmers(data ?? []));
 
@@ -88,7 +89,7 @@ export default function CollectionReport() {
 
   function nameForFarmer(f: any): { code: string; name: string } {
     if (!f) return { code: "—", name: "—" };
-    return { code: f.farmer_code ?? "—", name: f.name_en ?? "—" };
+    return { code: f.member_no ?? f.farmer_code ?? "—", name: f.name_en ?? "—" };
   }
 
   async function load() {
@@ -99,7 +100,7 @@ export default function CollectionReport() {
       // 1) Irrigation collections (paid_amount on irrigation_charges)
       let irrQ: any = supabase
         .from("irrigation_charges")
-        .select("id,entry_date,paid_amount,farmer_id,created_by,farmers(name_en,farmer_code)")
+        .select("id,entry_date,paid_amount,farmer_id,created_by,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .gt("paid_amount", 0)
         .order("entry_date", { ascending: false });
@@ -120,13 +121,14 @@ export default function CollectionReport() {
           user_id: r.created_by,
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
+          receipt_no: null,
         });
       }
 
       // 2) Loan repayments (loan_payments.collected_by)
       let lpQ: any = supabase
         .from("loan_payments")
-        .select("id,paid_on,amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code))")
+        .select("id,paid_on,amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
         .order("paid_on", { ascending: false });
       if (from) lpQ = lpQ.gte("paid_on", from);
       if (to) lpQ = lpQ.lte("paid_on", to);
@@ -147,13 +149,14 @@ export default function CollectionReport() {
           user_id: r.collected_by,
           user_name: nameForUser(r.collected_by),
           ref_id: r.id,
+          receipt_no: null,
         });
       }
 
       // 3) Savings deposits (savings_transactions.created_by)
       let svQ: any = supabase
         .from("savings_transactions")
-        .select("id,txn_date,amount,type,status,farmer_id,created_by,farmers(name_en,farmer_code)")
+        .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .eq("type", "deposit")
         .eq("status", "approved")
@@ -175,6 +178,7 @@ export default function CollectionReport() {
           user_id: r.created_by,
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
+          receipt_no: (r as any).receipt_no ?? null,
         });
       }
 
@@ -249,7 +253,7 @@ export default function CollectionReport() {
                 <SelectItem value={ALL}>{t("all")}</SelectItem>
                 {farmers.map((f) => (
                   <SelectItem key={f.id} value={f.id}>
-                    {f.farmer_code} — {f.name_en}
+                    {f.member_no ?? f.farmer_code} — {f.name_en}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -315,9 +319,10 @@ export default function CollectionReport() {
             onPdf={() =>
               exportTablePDF(
                 `Collection Report${filterSuffix()}`,
-                ["Date", "Type", "Farmer", "Amount", "Created By"],
+                ["Date", "Receipt #", "Type", "Farmer", "Amount", "Created By"],
                 rows.map((r) => [
                   fmtDate(r.date),
+                  r.receipt_no ?? "—",
                   sourceLabel(r.source),
                   `${r.farmer_code} — ${r.farmer_name}`,
                   r.amount,
@@ -331,8 +336,9 @@ export default function CollectionReport() {
                 "Collections",
                 rows.map((r) => ({
                   Date: r.date,
+                  "Receipt #": r.receipt_no ?? "",
                   Type: sourceLabel(r.source),
-                  "Farmer Code": r.farmer_code,
+                  "Member No": r.farmer_code,
                   "Farmer Name": r.farmer_name,
                   Amount: r.amount,
                   "Created By": r.user_name,
@@ -345,6 +351,7 @@ export default function CollectionReport() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
+                  <TableHead>Receipt #</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Farmer</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
@@ -355,6 +362,7 @@ export default function CollectionReport() {
                 {rows.map((r) => (
                   <TableRow key={`${r.source}-${r.ref_id}`}>
                     <TableCell>{fmtDate(r.date)}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.receipt_no ?? "—"}</TableCell>
                     <TableCell>{sourceLabel(r.source)}</TableCell>
                     <TableCell>{r.farmer_code} — {r.farmer_name}</TableCell>
                     <TableCell className="text-right">{money(r.amount)}</TableCell>
@@ -363,7 +371,7 @@ export default function CollectionReport() {
                 ))}
                 {rows.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
                       No collections found for the selected filters.
                     </TableCell>
                   </TableRow>
