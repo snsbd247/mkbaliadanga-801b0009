@@ -109,7 +109,9 @@ export default function ShareCollection() {
     setBatchReport(null);
     // CSV format: farmer_code,amount,date(optional),note(optional)
     const rawLines = batchText.split(/\r?\n/);
-    const lines = rawLines.map((l, i) => ({ raw: l, idx: i + 1 })).filter(l => l.raw.trim());
+    let lines = rawLines.map((l, i) => ({ raw: l, idx: i + 1 })).filter(l => l.raw.trim());
+    // Skip header row if present
+    if (lines.length && /^\s*farmer_code\s*,/i.test(lines[0].raw)) lines = lines.slice(1);
     if (!lines.length) return toast.error("Paste at least one line");
     const today = new Date().toISOString().slice(0, 10);
 
