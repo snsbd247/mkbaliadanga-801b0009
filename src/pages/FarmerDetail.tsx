@@ -965,6 +965,20 @@ export default function FarmerDetail() {
                   {nextDueInst && (
                     <div className="col-span-2"><div className="text-xs text-muted-foreground">{t("nextDue" as any)}</div><div className="font-semibold">{fmtDate(nextDueInst.due_date)} — <span className="due-text">{money(Math.max(0, Number(nextDueInst.amount) - Number(nextDueInst.paid_amount)))}</span></div></div>
                   )}
+                  {(() => {
+                    const schedTotal = viewLoanInst.reduce((s, i) => s + Number(i.amount || 0), 0);
+                    const insPaid = viewLoanInst.reduce((s, i) => s + Number(i.paid_amount || 0), 0);
+                    const tol = 0.5;
+                    const ok = (!viewLoanInst.length || Math.abs(schedTotal - Number(viewLoan.total_payable)) <= tol)
+                      && Math.abs(insPaid - totalPaid) <= tol;
+                    return (
+                      <div className="col-span-4">
+                        <Badge variant={ok ? "secondary" : "destructive"}>
+                          {ok ? `✓ ${t("totalsMatch" as any)}` : `⚠ ${t("totalsMismatch" as any)}`}
+                        </Badge>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {viewLoanInst.length > 0 && (
