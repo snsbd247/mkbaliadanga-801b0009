@@ -294,6 +294,18 @@ export default function AuditLogs() {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label className="text-xs">User</Label>
+            <Select value={userFilter} onValueChange={setUserFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All users</SelectItem>
+                {Object.values(profiles).map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.username ?? p.id.slice(0, 8)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="md:col-span-2">
             <Label className="text-xs">Quick search (in current results)</Label>
             <Input placeholder="Filter loaded rows…" value={search} onChange={(e) => setSearch(e.target.value)} />
