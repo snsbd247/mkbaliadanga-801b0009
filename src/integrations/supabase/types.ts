@@ -1576,6 +1576,7 @@ export type Database = {
           method: string | null
           note: string | null
           office_id: string | null
+          receipt_no: string | null
           receipt_url: string | null
           reference_id: string | null
           status: Database["public"]["Enums"]["payment_status"]
@@ -1594,6 +1595,7 @@ export type Database = {
           method?: string | null
           note?: string | null
           office_id?: string | null
+          receipt_no?: string | null
           receipt_url?: string | null
           reference_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
@@ -1612,6 +1614,7 @@ export type Database = {
           method?: string | null
           note?: string | null
           office_id?: string | null
+          receipt_no?: string | null
           receipt_url?: string | null
           reference_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
@@ -1940,6 +1943,7 @@ export type Database = {
           id: string
           note: string | null
           office_id: string | null
+          receipt_no: string | null
           status: Database["public"]["Enums"]["approval_status"]
           txn_date: string
           type: Database["public"]["Enums"]["savings_txn_type"]
@@ -1954,6 +1958,7 @@ export type Database = {
           id?: string
           note?: string | null
           office_id?: string | null
+          receipt_no?: string | null
           status?: Database["public"]["Enums"]["approval_status"]
           txn_date?: string
           type: Database["public"]["Enums"]["savings_txn_type"]
@@ -1968,6 +1973,7 @@ export type Database = {
           id?: string
           note?: string | null
           office_id?: string | null
+          receipt_no?: string | null
           status?: Database["public"]["Enums"]["approval_status"]
           txn_date?: string
           type?: Database["public"]["Enums"]["savings_txn_type"]
@@ -2666,6 +2672,10 @@ export type Database = {
       }
       generate_farmer_voter_number: { Args: never; Returns: string }
       generate_loan_installments: { Args: { _loan_id: string }; Returns: Json }
+      generate_receipt_no: {
+        Args: { _office_id: string; _ts?: string }
+        Returns: string
+      }
       get_previous_due: {
         Args: { _exclude_season: string; _farmer: string; _land: string }
         Returns: number
@@ -2779,6 +2789,7 @@ export type Database = {
         | "withdraw"
         | "deposit_collection"
         | "share_collection"
+        | "share_deposit"
       season_type: "aman" | "boro" | "iri" | "other"
     }
     CompositeTypes: {
@@ -2939,6 +2950,7 @@ export const Constants = {
         "withdraw",
         "deposit_collection",
         "share_collection",
+        "share_deposit",
       ],
       season_type: ["aman", "boro", "iri", "other"],
     },

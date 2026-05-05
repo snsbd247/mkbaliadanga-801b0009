@@ -1,59 +1,64 @@
-## Scope
+## লক্ষ্য
 
-This is a very large change set. To stay non-breaking, I'll execute in **4 batches**, each independently shippable. After every batch, the app stays fully working.
+ডেটাবেস ও UI কে সরল করা: Savings Plans বাদ, free-form Savings/Share deposit + withdraw (interest নাই, min ৳10/৳50), receipt number support (auto + manual field-receipt), irrigation rate সরলীকরণ, জমির পরিমাণ "শতক" এ standardize, account number শুধু DB-level (UI তে শুধু voter/manual নাম্বার)। বাকি সব আগের ৬ ধাপ আগেই complete।
 
-Soft-delete strategy: add a `deleted_at timestamptz` column to user-facing tables and filter it in list queries. Existing `status` columns (farmers, payments, loans) keep their meaning — we do NOT repurpose them.
+## এই batch-এ যা করব (scope)
 
----
+ব্যবহারকারীর নতুন বার্তায় কিছু আইটেম **আগেই করা হয়েছে** (DUES_BLOCK breakdown, voter history, voter cancel/reactivate tests, Savings dropdown, account auto-generate, Voter toggle savings trigger)। সেগুলো পুনরায় করব না। নতুন কাজ গুলো নিচে।
 
-## Batch 1 — Farmer UI (quick wins, visible)
+### ১. Savings/Share — সরল মডেল
+- Savings Plans পেজ ও routes/sidebar entry সরিয়ে দিব (DB টেবিল রেখে দিব — legacy data সুরক্ষা)।
+- Savings ফর্মে type: **Deposit, Share Deposit, Withdraw**।
+- Min validation: deposit ≥ ৳10, share ≥ ৳50, withdraw > 0।
+- Withdraw → status `pending` (existing approval flow আছেই, কেবল status badge ও approve/reject UI স্পষ্ট করব)।
+- ব্যালেন্স check: withdraw amount > available balance হলে block।
+- কোন interest calc নেই।
 
-- **Farmer List**: add **Due Amount** column = `loan_due + irrigation_due − savings_balance` (clamped ≥0). Use existing views (`farmer_savings_balance`) + aggregate from `loans`/`irrigation_charges` in a single RPC `farmer_dues_summary(office_id)` returning `(farmer_id, loan_due, irr_due, savings_bal, net_due)`. Sortable column, color-coded.
-- **Farmer List**: remove the "Print Card" action from the row menu.
-- **Farmer Profile**: add **Print Membership Card** button in header (opens `/farmers/:id/card`).
+### ২. Receipt Number (manual + auto)
+- `payments` ও `savings_transactions` এ `receipt_no text` কলাম যোগ।
+- Insert এর সময় খালি থাকলে DB trigger auto-generate করবে (`RCPT-YYYYMMDD-####` office-wise sequential)।
+- Form-এ optional "Field Receipt #" input — backdated entry তে staff ম্যানুয়াল বসাতে পারবে।
+- Reports (Collection report, Savings list, Payments list) এ Receipt No কলাম যোগ।
 
-## Batch 2 — Soft delete + Global CRUD polish
+### ৩. Irrigation Rate সরলীকরণ
+- IrrigationRates ফর্ম থেকে Canal Charge / Maintenance / Other ফিল্ড UI তে hide। `base_rate` ই থাকবে।
+- IrrigationCharges এন্ট্রিতেও এই তিনটি ০ default রাখব (DB কলাম legacy তে রাখব, UI hide)।
 
-- Migration: add `deleted_at timestamptz` to `farmers`, `lands`, `loans`, `savings_transactions`, `irrigation_charges`, `payments`, `expenses`, `journal_entries`, `land_relations`, `voter_history`. Index `(deleted_at)` where helpful.
-- Replace existing hard-delete actions on these tables with `UPDATE ... SET deleted_at = now()`.
-- Default list queries get `.is('deleted_at', null)`. Add a "Show deleted" toggle for admins.
-- Keep the existing **financial-link guard** (irrigation_charges, ledger_entries) — block soft-delete if linked, same UX.
-- Restore action (admin only) → sets `deleted_at = null`.
+### ৪. জমির পরিমাণ — শতক
+- Lands টেবিলের `land_size` সব জায়গায় "শতক" (decimal) হিসেবে label করব। Display unit "শতক/Decimal" everywhere।
+- কোন numeric conversion করব না (data already numeric); শুধু label/placeholder/tooltip আপডেট।
 
-## Batch 3 — Reports / PDF polish
+### ৫. Account Number — DB-only
+- Farmers list ও Farmer detail UI থেকে `account_number` কলাম/field hide।
+- ম্যানুয়াল নম্বরের জায়গায় **Member No** (existing `member_no` text field) ব্যবহার করব — সব table/card/report এ সেটা দেখাবে।
+- Voter toggle অন করলে auto-generate হয়ে DB তে account_number বসবে (already implemented), তবে UI তে দেখাবে না।
+- "Post Office" ফিল্ড farmer form থেকে বাদ।
 
-- Shared `pdfHeaderFooter()` helper in `src/lib/exports.ts`: A4, company logo + name (BN/EN), page X of Y, generated date. Reused by all `export*Pdf` functions.
-- Wire export-to-PDF buttons (where missing) on:
-  - Loan report (per-farmer + summary)
-  - Savings report
-  - Irrigation report (already mostly there — unify header)
-  - Ledger report
-  - Audit logs (`/audit`)
-- Bangla font already loaded for receipt PDFs — reuse same font path.
+### ৬. Tests
+- Savings deposit/share min validation tests
+- Withdraw insufficient balance test
+- Receipt number auto vs manual entry test
 
-## Batch 4 — Accounting reports
+## যা করব না (out of scope)
+- Unified transaction history, unified payment form, irrigation calc engine, loan interest settings, daily/monthly bilingual export — এগুলো অনেক বড় feature; পরবর্তী batch এ আলাদা ভাবে নেব।
 
-Chart of Accounts + journal_entries already exist with auto-posting triggers. We add the **report pages** only (no accounting-engine changes):
+## Migration summary
+- ALTER TABLE `payments` ADD COLUMN `receipt_no text`
+- ALTER TABLE `savings_transactions` ADD COLUMN `receipt_no text`
+- Trigger: BEFORE INSERT — যদি `receipt_no` NULL হয় তবে `RCPT-YYYYMMDD-NNNN` (office-wise daily sequence) সেট করবে
+- Index: `(office_id, receipt_no)` unique
+- Add ENUM value `share_deposit` to `savings_txn_type` (replaces share_collection mapping)
 
-- `/financial-reports/trial-balance` — sum debit/credit per account, period filter, export PDF/Excel.
-- `/financial-reports/income-statement` — Income − Expense for period, with grouping by parent account.
-- `/financial-reports/cash-bank` — running balance for accounts of type `asset` where code starts with `1010`/`1020`.
-- `/financial-reports/expenses` — date-range expense breakdown (already partly in Cashbook, add report view + PDF).
-- All read from `ledger_entries` (joined with `accounts`) — extension only, no writes.
+## Files to touch
+- supabase migration (new)
+- src/pages/Savings.tsx — type options, min validation, balance check, receipt field, withdraw status display
+- src/pages/Payments.tsx — receipt_no field + display
+- src/pages/IrrigationRates.tsx — hide canal/maintenance/other
+- src/pages/Farmers.tsx, FarmerDetail.tsx, BulkCards.tsx — hide account_number, drop post_office, show member_no
+- src/components/card/MembershipCard.tsx — show member_no instead
+- src/App.tsx + AppSidebar.tsx — remove SavingsPlans route/link
+- src/pages/reports/CollectionReport.tsx — add Receipt No column
+- New tests: Savings.minValidation, Receipt.autoGenerate
 
-A "Reports" landing page (`/financial-reports`) gets nav cards for each.
-
----
-
-## Non-breaking guardrails
-
-- No changes to existing posting triggers, `ledger_entries` schema, RLS policies on financial tables, payment flow, or QR.
-- All new columns nullable with safe defaults.
-- All new RPCs marked `STABLE` and `SECURITY INVOKER`.
-- Each batch ends with a working app; previous functionality untouched.
-
----
-
-## Order of execution
-
-I'll do **Batch 1** now (visible to you within minutes), then move to Batch 2, 3, 4. After each batch I'll pause briefly for you to verify in the preview.
+## কনফার্ম
+এই scope এ এগোতে অনুমতি দিন? "Plans বাদ" সত্যিই DB টেবিল ড্রপ চান, নাকি শুধু UI hide (আমি UI hide preferred করছি — safer)?
