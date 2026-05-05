@@ -18,7 +18,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [lang]);
 
   const setLang = (l: Lang) => setLangState(l);
-  const t = (k: TranslationKey) => translations[lang][k] ?? translations.en[k] ?? k;
+  const t = (k: TranslationKey) => {
+    const v = (translations[lang] as any)[k];
+    if (v != null && v !== "") return v;
+    const en = (translations.en as any)[k];
+    return en != null && en !== "" ? en : String(k);
+  };
 
   return <LanguageContext.Provider value={{ lang, setLang, t }}>{children}</LanguageContext.Provider>;
 }
