@@ -373,3 +373,13 @@ export default function VoterList() {
     </>
   );
 }
+
+function Stat({ label, value, bad }: { label: string; value: number; bad?: boolean }) {
+  const fmt = (n: number) => Number(n || 0).toLocaleString();
+  return (
+    <div className="rounded border p-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={"font-mono font-semibold " + (bad ? "text-destructive" : "")}>৳{fmt(value)}</div>
+    </div>
+  );
+}
