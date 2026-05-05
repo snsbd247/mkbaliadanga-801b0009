@@ -312,14 +312,31 @@ export default function VoterList() {
           </DialogHeader>
 
           {mode === "cancel" && (
-            <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
-              Cancellation requires:
-              <ul className="list-disc pl-5 mt-1 space-y-0.5">
-                <li>Savings balance must be exactly 0</li>
-                <li>No outstanding loan due</li>
-                <li>No outstanding irrigation due</li>
-              </ul>
-              The system will reject the action otherwise.
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
+                Cancellation requires:
+                <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                  <li>Savings balance must be exactly 0</li>
+                  <li>No outstanding loan due</li>
+                  <li>No outstanding irrigation due</li>
+                </ul>
+              </div>
+              <div className="rounded border p-3 text-sm">
+                <div className="font-medium mb-2">Current balances</div>
+                {duesLoading || !dues ? (
+                  <div className="text-xs text-muted-foreground">Loading dues…</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Stat label="Savings balance" value={dues.savings_balance} bad={dues.savings_balance !== 0} />
+                    <Stat label="Share balance" value={dues.share_balance} />
+                    <Stat label="Loan due" value={dues.loan_due} bad={dues.loan_due > 0} />
+                    <Stat label="Irrigation due" value={dues.irrigation_due} bad={dues.irrigation_due > 0} />
+                  </div>
+                )}
+                {dues && (dues.savings_balance !== 0 || dues.loan_due > 0 || dues.irrigation_due > 0) && (
+                  <div className="mt-2 text-xs text-destructive">Outstanding balances must be cleared before cancelling.</div>
+                )}
+              </div>
             </div>
           )}
 
@@ -342,7 +359,11 @@ export default function VoterList() {
             <Button
               variant={mode === "cancel" ? "destructive" : "default"}
               onClick={submitDialog}
-              disabled={working || reason.trim().length < 3}
+              disabled={
+                working || reason.trim().length < 3 ||
+                (mode === "cancel" && (!dues || duesLoading ||
+                  dues.savings_balance !== 0 || dues.loan_due > 0 || dues.irrigation_due > 0))
+              }
             >
               {working ? "Working…" : mode === "cancel" ? "Confirm Cancel" : "Confirm Reactivate"}
             </Button>
