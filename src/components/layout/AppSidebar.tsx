@@ -40,11 +40,24 @@ export function AppSidebar() {
 
   const menu: ParentItem[] = [
     { key: "dashboard", icon: LayoutDashboard, label: t("dashboard"), url: "/admin", permKey: "dashboard" },
+
+    // ── Members ──
+    {
+      key: "members", icon: Users, label: t("farmers"),
+      children: [
+        { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
+        { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
+        { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
+        { url: "/voters", icon: Users, label: "Voter List", permKey: "farmers" },
+        { url: "/voters/history", icon: FileBarChart, label: "Voter History", permKey: "farmers" },
+        { url: "/reports/voter-audit", icon: FileBarChart, label: "Voter Audit", permKey: "farmers" },
+      ],
+    },
+
+    // ── Operations ──
     {
       key: "operations", icon: Briefcase, label: t("operations"),
       children: [
-        { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
-        { url: "/voters", icon: Users, label: "Voter List", permKey: "farmers" },
         { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
         { url: "/share-collection", icon: Wallet, label: "Share Collection", permKey: "savings" },
@@ -55,6 +68,8 @@ export function AppSidebar() {
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
+
+    // ── Cash & Payments ──
     {
       key: "cash", icon: Banknote, label: t("cashAndPayments"),
       children: [
@@ -64,6 +79,8 @@ export function AppSidebar() {
         { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
       ],
     },
+
+    // ── Accounting ──
     {
       key: "accounting", icon: Calculator, label: t("accounting"),
       children: [
@@ -73,48 +90,62 @@ export function AppSidebar() {
         { url: "/journal-entry", icon: BookKey, label: t("journalEntry"), permKey: "accounting" },
         { url: "/financial-reports", icon: TrendingUp, label: t("financialReports"), permKey: "accounting" },
         { url: "/period-close", icon: Lock, label: t("periodClose"), permKey: "accounting" },
-        { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
         { url: "/admin/reconciliation", icon: ClipboardCheck, label: t("monthlyReconciliation"), permKey: "accounting" },
         { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: "Share Capital Reconciliation", permKey: "accounting" },
+        { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
       ],
     },
+
+    // ── Reports ──
     {
       key: "reports", icon: BarChart3, label: t("reports"),
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
-        { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
-        { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
-        { url: "/reports/voter-audit", icon: FileBarChart, label: "Voter Audit", permKey: "farmers" },
-        { url: "/voters/history", icon: FileBarChart, label: "Voter History", permKey: "farmers" },
         { url: "/reports/farmer-statement", icon: FileBarChart, label: "Farmer Statement", permKey: "reports" },
         { url: "/reports/expenses", icon: FileBarChart, label: "Expenses Report", permKey: "reports" },
+        { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
         { url: "/dues-audit", icon: AlertTriangle, label: "Dues Audit", permKey: "reports" },
+        { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
       ],
     },
+
+    // ── Administration ──
     {
       key: "admin", icon: Shield, label: t("adminGroup"),
       children: [
         { url: "/offices", icon: Building2, label: t("offices"), permKey: "offices" },
         { url: "/users", icon: ShieldCheck, label: t("users"), superOnly: true },
-        { url: "/settings", icon: SettingsIcon, label: t("settings"), superOnly: true },
-        { url: "/backup", icon: Database, label: t("backup"), superOnly: true },
-        { url: "/audit", icon: ScrollText, label: t("auditLogs"), permKey: "audit" },
-        { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
-        { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
-        { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
-        { url: "/import", icon: Upload, label: "Universal Import", permKey: "farmers" },
-        { url: "/admin/receipt-template", icon: Receipt, label: t("receiptTemplate"), superOnly: true },
-        { url: "/admin/loan-receipt-settings", icon: Receipt, label: t("loanReceiptSettings"), superOnly: true },
-        { url: "/admin/bulk-loan-export", icon: Upload, label: t("bulkExportLoans"), superOnly: true },
-        { url: "/admin/card-designer", icon: IdCard, label: "Card Designer", superOnly: true },
-        { url: "/sms-settings", icon: MessageSquare, label: t("smsSettings"), superOnly: true },
-        { url: "/sms-logs", icon: MessagesSquare, label: t("smsLogs"), permKey: "sms" },
-        { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), superOnly: true },
+        { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
+        { url: "/audit", icon: ScrollText, label: t("auditLogs"), permKey: "audit" },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: "ID Reconcile", permKey: "farmers" },
         { url: "/admin/id-review", icon: IdCard, label: "ID Review", permKey: "farmers" },
+      ],
+    },
+
+    // ── Tools & Imports ──
+    {
+      key: "tools", icon: Upload, label: "Tools & Imports",
+      children: [
+        { url: "/import", icon: Upload, label: "Universal Import", permKey: "farmers" },
+        { url: "/admin/bulk-loan-export", icon: Upload, label: t("bulkExportLoans"), superOnly: true },
+        { url: "/admin/card-designer", icon: IdCard, label: "Card Designer", superOnly: true },
+        { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
+        { url: "/backup", icon: Database, label: t("backup"), superOnly: true },
+      ],
+    },
+
+    // ── Settings ──
+    {
+      key: "settings", icon: SettingsIcon, label: t("settings"),
+      children: [
+        { url: "/settings", icon: SettingsIcon, label: t("settings"), superOnly: true },
+        { url: "/admin/receipt-template", icon: Receipt, label: t("receiptTemplate"), superOnly: true },
+        { url: "/admin/loan-receipt-settings", icon: Receipt, label: t("loanReceiptSettings"), superOnly: true },
+        { url: "/sms-settings", icon: MessageSquare, label: t("smsSettings"), superOnly: true },
+        { url: "/sms-logs", icon: MessagesSquare, label: t("smsLogs"), permKey: "sms" },
       ],
     },
   ];
