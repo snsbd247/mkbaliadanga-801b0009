@@ -46,6 +46,7 @@ export default function FarmerDetail() {
   const [viewLoan, setViewLoan] = useState<any | null>(null);
   const [viewLoanInst, setViewLoanInst] = useState<any[]>([]);
   const [viewLoanPays, setViewLoanPays] = useState<any[]>([]);
+  const [viewInstDetail, setViewInstDetail] = useState<any | null>(null);
   const [editLoanRow, setEditLoanRow] = useState<any | null>(null);
   const [editLoanForm, setEditLoanForm] = useState<{ plan_id: string; principal: number; interest_rate: number; interest_enabled: boolean; issued_on: string; next_due_on: string; note: string }>({ plan_id: "", principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
   const [loanPlans, setLoanPlans] = useState<any[]>([]);
