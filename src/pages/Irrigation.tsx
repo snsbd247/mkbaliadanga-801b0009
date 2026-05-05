@@ -253,7 +253,7 @@ export default function Irrigation() {
               <div><Label>{t("lands")}</Label>
                 <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{lands.map(l => <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} ({l.land_size})</SelectItem>)}</SelectContent>
+                  <SelectContent>{lands.map(l => <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} ({l.land_size} শতক)</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label>{t("season")}</Label>
