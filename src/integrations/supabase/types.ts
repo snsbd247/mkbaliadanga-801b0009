@@ -2750,6 +2750,10 @@ export type Database = {
         Args: { _farmer_id: string; _reason: string }
         Returns: Json
       }
+      recompute_share_balance: {
+        Args: { _farmer_id: string }
+        Returns: undefined
+      }
       reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
       retire_sms_token: { Args: { _id: string }; Returns: undefined }
       seed_rajshahi_locations: { Args: never; Returns: Json }

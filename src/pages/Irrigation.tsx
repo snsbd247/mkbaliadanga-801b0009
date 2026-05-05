@@ -18,15 +18,17 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 
 export default function Irrigation() {
   const { t } = useLang();
-  const { user } = useAuth();
+  const { user, isSuper } = useAuth();
   const [showDeleted, setShowDeleted] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", rate: 0, quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, entry_date: new Date().toISOString().slice(0, 10) });
+  const [rateAvailable, setRateAvailable] = useState<boolean | null>(null);
 
   const [prevDue, setPrevDue] = useState<number>(0);
+  const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, [showDeleted]);
   useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); else setLands([]); }, [form.farmer_id]);
@@ -45,7 +47,7 @@ export default function Irrigation() {
   // Auto-fill rate + extra charges from irrigation_rates table when season+basis change
   useEffect(() => {
     (async () => {
-      if (!form.season_id) return;
+      if (!form.season_id) { setRateAvailable(null); return; }
       const { data } = await supabase
         .from("irrigation_rates")
         .select("base_rate,canal_charge,maintenance_charge,other_charge,basis")
@@ -53,7 +55,12 @@ export default function Irrigation() {
         .eq("basis", form.basis)
         .eq("is_active", true)
         .maybeSingle();
-      if (!data) return;
+      if (!data) {
+        setRateAvailable(false);
+        setForm((f: any) => ({ ...f, rate: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0 }));
+        return;
+      }
+      setRateAvailable(true);
       setForm((f: any) => ({
         ...f,
         rate: Number(data.base_rate) || f.rate,
@@ -66,18 +73,17 @@ export default function Irrigation() {
   }, [form.season_id, form.basis]);
   useEffect(() => {
     (async () => {
-      if (!form.farmer_id || !form.land_id) { setPrevDue(0); return; }
+      if (!form.farmer_id) { setPrevDue(0); return; }
+      // Total OUTSTANDING irrigation due for this farmer across ALL seasons & lands
       const { data } = await supabase
         .from("irrigation_charges")
-        .select("due_amount, season_id")
+        .select("due_amount")
         .eq("farmer_id", form.farmer_id)
-        .eq("land_id", form.land_id);
-      const sum = (data ?? [])
-        .filter((r: any) => !form.season_id || r.season_id !== form.season_id)
-        .reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+        .is("deleted_at", null);
+      const sum = (data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
       setPrevDue(sum);
     })();
-  }, [form.farmer_id, form.land_id, form.season_id]);
+  }, [form.farmer_id]);
 
   async function load() {
     let q = supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200);
@@ -102,7 +108,8 @@ export default function Irrigation() {
     if (!form.farmer_id) errors.farmer_id = "Select a farmer";
     if (!form.land_id) errors.land_id = "Select a land";
     if (!form.season_id) errors.season_id = "Select a season";
-    if (!(Number(form.rate) > 0)) errors.rate = "Rate must be greater than 0";
+    if (form.season_id && rateAvailable === false) errors.season_id = "No active irrigation rate found for this season + basis. Please configure it in Irrigation Rates first.";
+    if (!(Number(form.rate) > 0)) errors.rate = "Rate must be greater than 0 (configure in Irrigation Rates)";
     if (!(Number(form.quantity) > 0)) errors.quantity = "Quantity must be greater than 0";
     if (Number(form.canal_charge) < 0) errors.canal_charge = "Cannot be negative";
     if (Number(form.maintenance_charge) < 0) errors.maintenance_charge = "Cannot be negative";
@@ -114,18 +121,46 @@ export default function Irrigation() {
 
   async function save() {
     if (hasErrors) return toast.error("Please fix the highlighted errors");
-    const { error } = await supabase.from("irrigation_charges").insert({
+    if (rateAvailable !== true) return toast.error("Active irrigation rate required for this season + basis.");
+    const payload: any = {
       farmer_id: form.farmer_id, land_id: form.land_id, season_id: form.season_id,
       basis: form.basis as any, quantity: form.quantity,
       base_charge: form.base_charge, canal_charge: form.canal_charge,
       maintenance_charge: form.maintenance_charge, other_charge: form.other_charge,
-      paid_amount: form.paid_amount, entry_date: form.entry_date, created_by: user?.id,
-    });
+      paid_amount: form.paid_amount, entry_date: form.entry_date,
+    };
+    let error;
+    if (editId) {
+      ({ error } = await supabase.from("irrigation_charges").update(payload).eq("id", editId));
+    } else {
+      payload.created_by = user?.id;
+      ({ error } = await supabase.from("irrigation_charges").insert(payload));
+    }
     if (error) return toast.error(error.message);
-    if (form.paid_amount > 0) {
+    if (!editId && form.paid_amount > 0) {
       await supabase.from("payments").insert({ farmer_id: form.farmer_id, kind: "irrigation", amount: form.paid_amount, collected_by: user?.id });
     }
-    toast.success(t("saved")); setOpen(false); load();
+    toast.success(t("saved")); setOpen(false); setEditId(null); load();
+  }
+
+  function openEdit(r: any) {
+    setEditId(r.id);
+    setForm({
+      farmer_id: r.farmer_id, land_id: r.land_id, season_id: r.season_id,
+      basis: r.basis, rate: Number(r.base_charge) / Math.max(1, Number(r.quantity)),
+      quantity: Number(r.quantity), base_charge: Number(r.base_charge),
+      canal_charge: Number(r.canal_charge), maintenance_charge: Number(r.maintenance_charge),
+      other_charge: Number(r.other_charge), paid_amount: Number(r.paid_amount),
+      entry_date: r.entry_date,
+    });
+    setOpen(true);
+  }
+
+  async function softDelete(id: string) {
+    if (!window.confirm("Delete this irrigation entry?")) return;
+    const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); load();
   }
 
   const [genSeason, setGenSeason] = useState<string>("");
@@ -240,10 +275,15 @@ export default function Irrigation() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setRateAvailable(null); } }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addEntry")}</Button></DialogTrigger>
           <DialogContent className="max-w-xl">
-            <DialogHeader><DialogTitle>{t("irrigation")} — {t("addEntry")}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("irrigation")} — {editId ? "Edit Entry" : t("addEntry")}</DialogTitle></DialogHeader>
+            {form.season_id && rateAvailable === false && (
+              <div className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-sm p-2">
+                No active rate found for this season + basis. Add it on the <a href="/irrigation-rates" className="underline">Irrigation Rates</a> page first.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>{t("selectFarmer")}</Label>
                 <FarmerSearchSelect value={form.farmer_id || null}
@@ -317,7 +357,7 @@ export default function Irrigation() {
           <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
           <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
           <TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
-          {showDeleted && <TableHead className="text-right">Actions</TableHead>}
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {rows.map(r => (
@@ -329,14 +369,19 @@ export default function Irrigation() {
               <TableCell>{money(r.total)}</TableCell>
               <TableCell>{money(r.paid_amount)}</TableCell>
               <TableCell className={r.due_amount > 0 ? "due-text" : ""}>{money(r.due_amount)}</TableCell>
-              {showDeleted && (
-                <TableCell className="text-right">
+              <TableCell className="text-right">
+                {showDeleted ? (
                   <Button size="sm" variant="outline" onClick={() => restore(r.id)}>Restore</Button>
-                </TableCell>
-              )}
+                ) : isSuper ? (
+                  <>
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit">✎</Button>
+                    <Button size="icon" variant="ghost" onClick={() => softDelete(r.id)} title="Delete">🗑</Button>
+                  </>
+                ) : null}
+              </TableCell>
             </TableRow>
           ))}
-          {rows.length === 0 && <TableRow><TableCell colSpan={showDeleted ? 8 : 7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table></Card>
     </>
