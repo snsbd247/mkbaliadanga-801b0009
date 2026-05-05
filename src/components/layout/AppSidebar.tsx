@@ -365,7 +365,12 @@ export function AppSidebar() {
                               >
                                 <NavLink to={child.url}>
                                   <child.icon className="h-4 w-4" />
-                                  <span>{child.label}</span>
+                                  <span className="flex-1 truncate">{highlight(child.label)}</span>
+                                  {q && (
+                                    <span className="ml-1 shrink-0 text-[9px] uppercase tracking-wide text-sidebar-foreground/50">
+                                      {parent.label}
+                                    </span>
+                                  )}
                                 </NavLink>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
