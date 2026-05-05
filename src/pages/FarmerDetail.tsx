@@ -45,7 +45,7 @@ export default function FarmerDetail() {
   const [irr, setIrr] = useState<any[]>([]);
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
-  const [tenantLands, setTenantLands] = useState<any[]>([]);
+  
 
   // Add land dialog
   const [openLand, setOpenLand] = useState(false);
