@@ -166,7 +166,7 @@ function pickLocation(form: FormState): LocationValue {
 
 export default function Farmers() {
   const { t } = useLang();
-  const { officeId, isSuper } = useAuth();
+  const { officeId, isSuper, isAdmin } = useAuth();
   const nav = useNavigate();
   const [list, setList] = useState<any[]>([]);
   const [duesMap, setDuesMap] = useState<Record<string, { net_due: number; loan_due: number; irr_due: number; savings_bal: number }>>({});
