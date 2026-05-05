@@ -28,7 +28,7 @@ export default function Savings() {
   const [txns, setTxns] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "" });
+  const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "" });
   const [plans, setPlans] = useState<any[]>([]);
   const [farmerPlans, setFarmerPlans] = useState<any[]>([]);
   const [planOpen, setPlanOpen] = useState(false);
