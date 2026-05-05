@@ -73,6 +73,7 @@ import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
+import { RequireRole } from "./components/auth/RequireRole";
 
 const queryClient = new QueryClient();
 
