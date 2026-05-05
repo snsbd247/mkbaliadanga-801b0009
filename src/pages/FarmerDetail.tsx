@@ -378,8 +378,11 @@ export default function FarmerDetail() {
       || (ins[1]?.due_date ? (() => { const d = (new Date(ins[1].due_date).getTime() - new Date(ins[0].due_date).getTime()) / 86400000; return d >= 25 ? "monthly" : d >= 6 ? "weekly" : "daily"; })() : "monthly");
     const periodLbl = type === "monthly" ? "Per Month" : type === "weekly" ? "Per Week" : "Per Day";
     const nd = ins.find((i: any) => i.status !== "paid");
+    const { validateLoanTotals } = await import("@/lib/loanReceiptFormat");
+    const v = validateLoanTotals(l, ins, pays);
     const summary = [
       ["Farmer", `${farmer?.name_en ?? ""} (${farmer?.farmer_code ?? ""})`],
+      ["Loan ID", l.id],
       ["Issued On", fmtDate(l.issued_on)],
       ["Principal", Number(l.principal)],
       ["Interest %", Number(l.interest_rate)],
@@ -389,15 +392,16 @@ export default function FarmerDetail() {
       ["Period Type", periodLbl],
       ["Next Due Date", nd ? fmtDate(nd.due_date) : "—"],
       ["Next Due Amount", nd ? Math.max(0, Number(nd.amount) - Number(nd.paid_amount)) : 0],
+      ["Validation", v.ok ? "OK" : `MISMATCH: ${v.mismatch}`],
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Loan Summary"], ...summary]), "Summary");
-    const insRows = [["#", "Due Date", "Amount", "Paid", "Status", "Overdue"], ...ins.map((i: any) => [
-      i.installment_no, fmtDate(i.due_date), Number(i.amount), Number(i.paid_amount), i.status,
+    const insRows = [["Installment Ref ID", "#", "Due Date", "Amount", "Paid", "Status", "Overdue"], ...ins.map((i: any) => [
+      i.id, i.installment_no, fmtDate(i.due_date), Number(i.amount), Number(i.paid_amount), i.status,
       i.status !== "paid" && new Date(i.due_date) < today ? "YES" : "",
     ])];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(insRows), "Installments");
-    const payRows = [["Date", "Amount", "Note"], ...pays.map((p: any) => [fmtDate(p.paid_on), Number(p.amount), p.note ?? ""])];
+    const payRows = [["Payment ID", "Date", "Amount", "Note"], ...pays.map((p: any) => [p.id, fmtDate(p.paid_on), Number(p.amount), p.note ?? ""])];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(payRows), "Payments");
     XLSX.writeFile(wb, `loan-${l.id.slice(0, 8)}.xlsx`);
   }
