@@ -65,6 +65,7 @@ import IdReconcile from "./pages/admin/IdReconcile";
 import FarmerStatement from "./pages/FarmerStatement";
 
 import LoanPlans from "./pages/LoanPlans";
+import ShareCollection from "./pages/ShareCollection";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 
@@ -99,6 +100,7 @@ const App = () => (
                 
                 <Route path="/loans" element={<Loans />} />
                 <Route path="/loans/plans" element={<LoanPlans />} />
+                <Route path="/share-collection" element={<ShareCollection />} />
                 <Route path="/irrigation" element={<Irrigation />} />
                 <Route path="/irrigation/rates" element={<IrrigationRates />} />
                 <Route path="/payments" element={<Payments />} />

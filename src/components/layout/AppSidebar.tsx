@@ -47,6 +47,7 @@ export function AppSidebar() {
         { url: "/voters", icon: Users, label: "Voter List", permKey: "farmers" },
         { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
+        { url: "/share-collection", icon: Wallet, label: "Share Collection", permKey: "savings" },
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
         { url: "/loans/plans", icon: HandCoins, label: "Loan Plans", permKey: "loans" },
         { url: "/irrigation", icon: Droplets, label: t("irrigation"), permKey: "irrigation" },
