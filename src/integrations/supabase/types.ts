@@ -333,13 +333,6 @@ export type Database = {
             referencedRelation: "divisions"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "districts_division_id_fkey"
-            columns: ["division_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["division_id"]
-          },
         ]
       }
       divisions: {
@@ -611,7 +604,6 @@ export type Database = {
           member_no: string | null
           mobile: string | null
           mother_name: string | null
-          mouza_id: string | null
           name_bn: string | null
           name_en: string
           nid: string | null
@@ -619,12 +611,10 @@ export type Database = {
           photo_url: string | null
           post_office: string | null
           status: string
-          union_id: string | null
           upazila: string | null
           upazila_id: string | null
           updated_at: string
           village: string | null
-          village_id: string | null
           voter_cancel_reason: string | null
           voter_cancelled_at: string | null
           voter_cancelled_by: string | null
@@ -632,7 +622,6 @@ export type Database = {
           voter_reactivate_reason: string | null
           voter_reactivated_at: string | null
           voter_reactivated_by: string | null
-          ward_id: string | null
         }
         Insert: {
           account_number?: string | null
@@ -651,7 +640,6 @@ export type Database = {
           member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
-          mouza_id?: string | null
           name_bn?: string | null
           name_en: string
           nid?: string | null
@@ -659,12 +647,10 @@ export type Database = {
           photo_url?: string | null
           post_office?: string | null
           status?: string
-          union_id?: string | null
           upazila?: string | null
           upazila_id?: string | null
           updated_at?: string
           village?: string | null
-          village_id?: string | null
           voter_cancel_reason?: string | null
           voter_cancelled_at?: string | null
           voter_cancelled_by?: string | null
@@ -672,7 +658,6 @@ export type Database = {
           voter_reactivate_reason?: string | null
           voter_reactivated_at?: string | null
           voter_reactivated_by?: string | null
-          ward_id?: string | null
         }
         Update: {
           account_number?: string | null
@@ -691,7 +676,6 @@ export type Database = {
           member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
-          mouza_id?: string | null
           name_bn?: string | null
           name_en?: string
           nid?: string | null
@@ -699,12 +683,10 @@ export type Database = {
           photo_url?: string | null
           post_office?: string | null
           status?: string
-          union_id?: string | null
           upazila?: string | null
           upazila_id?: string | null
           updated_at?: string
           village?: string | null
-          village_id?: string | null
           voter_cancel_reason?: string | null
           voter_cancelled_at?: string | null
           voter_cancelled_by?: string | null
@@ -712,7 +694,6 @@ export type Database = {
           voter_reactivate_reason?: string | null
           voter_reactivated_at?: string | null
           voter_reactivated_by?: string | null
-          ward_id?: string | null
         }
         Relationships: [
           {
@@ -723,31 +704,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "farmers_district_id_fkey"
-            columns: ["district_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["district_id"]
-          },
-          {
             foreignKeyName: "farmers_division_id_fkey"
             columns: ["division_id"]
             isOneToOne: false
             referencedRelation: "divisions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "farmers_division_id_fkey"
-            columns: ["division_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["division_id"]
-          },
-          {
-            foreignKeyName: "farmers_mouza_id_fkey"
-            columns: ["mouza_id"]
-            isOneToOne: false
-            referencedRelation: "mouzas"
             referencedColumns: ["id"]
           },
           {
@@ -758,59 +718,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "farmers_union_id_fkey"
-            columns: ["union_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["union_id"]
-          },
-          {
-            foreignKeyName: "farmers_union_id_fkey"
-            columns: ["union_id"]
-            isOneToOne: false
-            referencedRelation: "unions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "farmers_upazila_id_fkey"
-            columns: ["upazila_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["upazila_id"]
-          },
-          {
             foreignKeyName: "farmers_upazila_id_fkey"
             columns: ["upazila_id"]
             isOneToOne: false
             referencedRelation: "upazilas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "farmers_village_id_fkey"
-            columns: ["village_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["village_id"]
-          },
-          {
-            foreignKeyName: "farmers_village_id_fkey"
-            columns: ["village_id"]
-            isOneToOne: false
-            referencedRelation: "villages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "farmers_ward_id_fkey"
-            columns: ["ward_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["ward_id"]
-          },
-          {
-            foreignKeyName: "farmers_ward_id_fkey"
-            columns: ["ward_id"]
-            isOneToOne: false
-            referencedRelation: "wards"
             referencedColumns: ["id"]
           },
         ]
@@ -1201,7 +1112,6 @@ export type Database = {
           id: string
           land_size: number
           mouza: string | null
-          mouza_id: string | null
           office_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"]
         }
@@ -1214,7 +1124,6 @@ export type Database = {
           id?: string
           land_size?: number
           mouza?: string | null
-          mouza_id?: string | null
           office_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
@@ -1227,7 +1136,6 @@ export type Database = {
           id?: string
           land_size?: number
           mouza?: string | null
-          mouza_id?: string | null
           office_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
         }
@@ -1244,13 +1152,6 @@ export type Database = {
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lands_mouza_id_fkey"
-            columns: ["mouza_id"]
-            isOneToOne: false
-            referencedRelation: "mouzas"
             referencedColumns: ["id"]
           },
         ]
@@ -1549,74 +1450,6 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "loan_plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      mouzas: {
-        Row: {
-          code: string | null
-          created_at: string
-          id: string
-          is_active: boolean
-          jl_no: string | null
-          name: string
-          name_bn: string | null
-          union_id: string | null
-          updated_at: string
-          ward_id: string | null
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          jl_no?: string | null
-          name: string
-          name_bn?: string | null
-          union_id?: string | null
-          updated_at?: string
-          ward_id?: string | null
-        }
-        Update: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          jl_no?: string | null
-          name?: string
-          name_bn?: string | null
-          union_id?: string | null
-          updated_at?: string
-          ward_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mouzas_union_id_fkey"
-            columns: ["union_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["union_id"]
-          },
-          {
-            foreignKeyName: "mouzas_union_id_fkey"
-            columns: ["union_id"]
-            isOneToOne: false
-            referencedRelation: "unions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mouzas_ward_id_fkey"
-            columns: ["ward_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["ward_id"]
-          },
-          {
-            foreignKeyName: "mouzas_ward_id_fkey"
-            columns: ["ward_id"]
-            isOneToOne: false
-            referencedRelation: "wards"
             referencedColumns: ["id"]
           },
         ]
@@ -2480,54 +2313,6 @@ export type Database = {
         }
         Relationships: []
       }
-      unions: {
-        Row: {
-          code: string | null
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          name_bn: string | null
-          upazila_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          name_bn?: string | null
-          upazila_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          name_bn?: string | null
-          upazila_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "unions_upazila_id_fkey"
-            columns: ["upazila_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["upazila_id"]
-          },
-          {
-            foreignKeyName: "unions_upazila_id_fkey"
-            columns: ["upazila_id"]
-            isOneToOne: false
-            referencedRelation: "upazilas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       upazilas: {
         Row: {
           code: string | null
@@ -2566,13 +2351,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "districts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "upazilas_district_id_fkey"
-            columns: ["district_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["district_id"]
           },
         ]
       }
@@ -2624,71 +2402,6 @@ export type Database = {
         }
         Relationships: []
       }
-      villages: {
-        Row: {
-          code: string | null
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          name_bn: string | null
-          union_id: string
-          updated_at: string
-          ward_id: string | null
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          name_bn?: string | null
-          union_id: string
-          updated_at?: string
-          ward_id?: string | null
-        }
-        Update: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          name_bn?: string | null
-          union_id?: string
-          updated_at?: string
-          ward_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "villages_union_id_fkey"
-            columns: ["union_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["union_id"]
-          },
-          {
-            foreignKeyName: "villages_union_id_fkey"
-            columns: ["union_id"]
-            isOneToOne: false
-            referencedRelation: "unions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "villages_ward_id_fkey"
-            columns: ["ward_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["ward_id"]
-          },
-          {
-            foreignKeyName: "villages_ward_id_fkey"
-            columns: ["ward_id"]
-            isOneToOne: false
-            referencedRelation: "wards"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       voter_audit_logs: {
         Row: {
           account_number: string | null
@@ -2734,54 +2447,6 @@ export type Database = {
         }
         Relationships: []
       }
-      wards: {
-        Row: {
-          code: string | null
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          name_bn: string | null
-          union_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          name_bn?: string | null
-          union_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          name_bn?: string | null
-          union_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wards_union_id_fkey"
-            columns: ["union_id"]
-            isOneToOne: false
-            referencedRelation: "lands_with_location"
-            referencedColumns: ["union_id"]
-          },
-          {
-            foreignKeyName: "wards_union_id_fkey"
-            columns: ["union_id"]
-            isOneToOne: false
-            referencedRelation: "unions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       farmer_savings_balance: {
@@ -2806,18 +2471,47 @@ export type Database = {
           id: string | null
           land_size: number | null
           mouza: string | null
-          mouza_id: string | null
           mouza_name: string | null
           office_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"] | null
-          union_id: string | null
-          union_name: string | null
           upazila_id: string | null
           upazila_name: string | null
-          village_id: string | null
-          village_name: string | null
-          ward_id: string | null
-          ward_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dag_no?: string | null
+          district_id?: never
+          district_name?: never
+          division_id?: never
+          division_name?: never
+          farmer_id?: string | null
+          field_type?: Database["public"]["Enums"]["field_type"] | null
+          id?: string | null
+          land_size?: number | null
+          mouza?: string | null
+          mouza_name?: string | null
+          office_id?: string | null
+          owner_type?: Database["public"]["Enums"]["owner_type"] | null
+          upazila_id?: never
+          upazila_name?: never
+        }
+        Update: {
+          created_at?: string | null
+          dag_no?: string | null
+          district_id?: never
+          district_name?: never
+          division_id?: never
+          division_name?: never
+          farmer_id?: string | null
+          field_type?: Database["public"]["Enums"]["field_type"] | null
+          id?: string | null
+          land_size?: number | null
+          mouza?: string | null
+          mouza_name?: string | null
+          office_id?: string | null
+          owner_type?: Database["public"]["Enums"]["owner_type"] | null
+          upazila_id?: never
+          upazila_name?: never
         }
         Relationships: [
           {
@@ -2832,13 +2526,6 @@ export type Database = {
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lands_mouza_id_fkey"
-            columns: ["mouza_id"]
-            isOneToOne: false
-            referencedRelation: "mouzas"
             referencedColumns: ["id"]
           },
         ]
@@ -2965,6 +2652,10 @@ export type Database = {
           reference_type: string
         }[]
       }
+      generate_account_number: {
+        Args: { _office_id?: string }
+        Returns: string
+      }
       generate_farmer_account_number: {
         Args: { p_created_at: string; p_office_id: string }
         Returns: string
@@ -3083,7 +2774,11 @@ export type Database = {
         | "other"
       savings_installment_type: "daily" | "monthly"
       savings_maturity_type: "simple" | "compound"
-      savings_txn_type: "deposit" | "withdraw"
+      savings_txn_type:
+        | "deposit"
+        | "withdraw"
+        | "deposit_collection"
+        | "share_collection"
       season_type: "aman" | "boro" | "iri" | "other"
     }
     CompositeTypes: {
@@ -3239,7 +2934,12 @@ export const Constants = {
       ],
       savings_installment_type: ["daily", "monthly"],
       savings_maturity_type: ["simple", "compound"],
-      savings_txn_type: ["deposit", "withdraw"],
+      savings_txn_type: [
+        "deposit",
+        "withdraw",
+        "deposit_collection",
+        "share_collection",
+      ],
       season_type: ["aman", "boro", "iri", "other"],
     },
   },

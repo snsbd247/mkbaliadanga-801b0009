@@ -261,10 +261,7 @@ export default function Farmers() {
       }
     }
 
-    const loc = pickLocation(f);
-    if (!loc.division_id || !loc.district_id || !loc.upazila_id || !loc.union_id || !loc.ward_id || !loc.village_id || !loc.mouza_id) {
-      nextErrors.location = "Please complete all location dropdowns.";
-    }
+    // Location is fully optional now — no chain enforcement.
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -451,11 +448,11 @@ export default function Farmers() {
           <LocationPicker
             value={pickLocation(f)}
             onChange={(loc) => setF({ ...f, ...loc })}
-            errorLevel={err?.level ?? null}
+            errorLevel={(err?.level as any) ?? null}
             errorMessage={fieldErrors.location ?? (err ? buildErrMessage(err.key, err.level) : null)}
             labels={{
-              division: t("division"), district: t("district"), upazila: t("upazila"),
-              union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
+              division: t("division"), district: t("district"),
+              upazila: t("upazila"), village: t("village"),
             }}
           />
         </div>
