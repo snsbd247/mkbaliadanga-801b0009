@@ -18,15 +18,17 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 
 export default function Irrigation() {
   const { t } = useLang();
-  const { user } = useAuth();
+  const { user, isSuper } = useAuth();
   const [showDeleted, setShowDeleted] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", rate: 0, quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, entry_date: new Date().toISOString().slice(0, 10) });
+  const [rateAvailable, setRateAvailable] = useState<boolean | null>(null);
 
   const [prevDue, setPrevDue] = useState<number>(0);
+  const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, [showDeleted]);
   useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); else setLands([]); }, [form.farmer_id]);
