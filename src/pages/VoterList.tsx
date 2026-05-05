@@ -85,7 +85,7 @@ export default function VoterList() {
     if (term) {
       qy = qy.or(`voter_number.ilike.%${term}%,name_en.ilike.%${term}%,name_bn.ilike.%${term}%,mobile.ilike.%${term}%,account_number.ilike.%${term}%`);
     }
-    const { data } = await qy;
+    const { data } = await (qy as any);
     setRows((data as any) ?? []);
     setLoading(false);
   }
