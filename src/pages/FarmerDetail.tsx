@@ -291,6 +291,19 @@ export default function FarmerDetail() {
     doc.text(`${t("principal")}: ${money(l.principal)}    ${t("interestRate")}: ${l.interest_rate}%`, 14, 42);
     doc.text(`${t("totalPayable")}: ${money(l.total_payable)}    ${t("paidAmount")}: ${money(totalPaid)}    ${t("dueAmount")}: ${money(totalDue)}`, 14, 48);
     if (ins.length) doc.text(`${t("installmentsPaid" as any)}: ${paidCount}/${ins.length}    ${t("installmentsRemaining" as any)}: ${remainCount}`, 14, 54);
+    if (ins.length) {
+      const type = l.loan_plans?.installment_type
+        || (ins[1]?.due_date
+          ? (() => { const d = (new Date(ins[1].due_date).getTime() - new Date(ins[0].due_date).getTime()) / 86400000; return d >= 25 ? "monthly" : d >= 6 ? "weekly" : "daily"; })()
+          : "monthly");
+      const lbl = type === "monthly" ? (t("perMonth" as any) || "Per Month") : type === "weekly" ? (t("perWeek" as any) || "Per Week") : (t("perDay" as any) || "Per Day");
+      const amounts = ins.map((i: any) => Number(i.amount));
+      const minA = Math.min(...amounts), maxA = Math.max(...amounts);
+      const disp = minA === maxA ? money(minA) : `${money(minA)} - ${money(maxA)}`;
+      doc.text(`${lbl}: ${disp}`, 14, 60);
+      const nd = ins.find((i: any) => i.status !== "paid");
+      if (nd) doc.text(`${t("nextDue" as any) || "Next Due"}: ${fmtDate(nd.due_date)} — ${money(Math.max(0, Number(nd.amount) - Number(nd.paid_amount)))}`, 14, 66);
+    }
 
     let y = 60;
     if (ins.length) {
