@@ -227,6 +227,7 @@ export default function FarmerDetail() {
       land_size: Number(row.land_size ?? 0),
       owner_type: (row.owner_type as any) ?? "owner",
       field_type: (row.field_type as any) ?? "medium_land",
+      owner_farmer_id: ((row as any).owner_farmer_id as string) ?? "",
     });
     setEditLocErr(null);
     setEditLoc({ village: row.mouza ?? null });
