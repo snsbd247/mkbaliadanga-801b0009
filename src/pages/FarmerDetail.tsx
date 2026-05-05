@@ -227,6 +227,8 @@ export default function FarmerDetail() {
     setViewLoan({ ...l, loan_plans: planRes.data });
     setViewLoanInst(ins.data ?? []);
     setViewLoanPays(pays.data ?? []);
+    // Also generate the print-ready PDF on View
+    printLoanFull({ ...l, loan_plans: planRes.data }).catch(() => {});
   }
   function editLoanGoto(l: any) {
     setEditLoanRow(l);
@@ -273,7 +275,7 @@ export default function FarmerDetail() {
     const ins = insRes.data ?? [];
     const pays = payRes.data ?? [];
     const totalPaid = pays.reduce((s, p) => s + Number(p.amount), 0);
-    const totalDue = Number(l.total_payable) - totalPaid;
+    const totalDue = Math.max(0, Number(l.total_payable) - totalPaid);
     const paidCount = ins.filter((i: any) => i.status === "paid").length;
     const remainCount = ins.length - paidCount;
 
