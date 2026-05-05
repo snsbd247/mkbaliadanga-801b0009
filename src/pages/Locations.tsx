@@ -316,6 +316,14 @@ function LevelTab({ level }: { level: Level }) {
     toast.success(t("deletedToast")); load();
   }
 
+  async function toggleActive(row: Row) {
+    const next = !row.is_active;
+    const { error } = await (supabase.from as any)(level).update({ is_active: next }).eq("id", row.id);
+    if (error) return toast.error(error.message);
+    toast.success(next ? "Activated" : "Deactivated");
+    load();
+  }
+
   // ----- EDIT -----
   async function openEdit(row: Row) {
     setEditing(row);
