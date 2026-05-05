@@ -25,6 +25,7 @@ export default function Savings() {
   const { t, lang } = useLang();
   const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [txns, setTxns] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
