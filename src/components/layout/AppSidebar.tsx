@@ -220,8 +220,22 @@ export function AppSidebar() {
     { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
   ].filter(allowed);
 
+  // Highlight matched substring within a label
+  const highlight = (text: string) => {
+    if (!q) return text;
+    const i = text.toLowerCase().indexOf(q);
+    if (i === -1) return text;
+    return (
+      <>
+        {text.slice(0, i)}
+        <mark className="bg-primary/30 text-sidebar-foreground rounded px-0.5">
+          {text.slice(i, i + q.length)}
+        </mark>
+        {text.slice(i + q.length)}
+      </>
+    );
+  };
 
-  return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <div className="flex items-center gap-2">
