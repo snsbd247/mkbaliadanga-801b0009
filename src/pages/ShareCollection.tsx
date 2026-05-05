@@ -177,7 +177,33 @@ export default function ShareCollection() {
     load();
   }
 
-  const filtered = useMemo(() => {
+  function startEdit(r: Row) {
+    setEditRow(r);
+    setEditForm({ amount: String(r.amount), txn_date: r.txn_date, note: r.note ?? "" });
+  }
+  async function saveEdit() {
+    if (!editRow) return;
+    const amt = Number(editForm.amount);
+    const v = validate(amt);
+    if (v) return toast.error(v);
+    const { error } = await supabase.from("savings_transactions")
+      .update({ amount: amt, txn_date: editForm.txn_date, note: editForm.note || null })
+      .eq("id", editRow.id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated");
+    setEditRow(null);
+    load();
+  }
+  async function deleteRow(r: Row) {
+    if (!window.confirm(`Delete share collection of ${money(r.amount)} for ${r.farmers?.name_en}?`)) return;
+    const { error } = await supabase.from("savings_transactions")
+      .update({ deleted_at: new Date().toISOString() } as any).eq("id", r.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted");
+    load();
+  }
+
+
     return rows.filter(r => {
       if (range.from && r.txn_date < range.from) return false;
       if (range.to && r.txn_date > range.to) return false;
