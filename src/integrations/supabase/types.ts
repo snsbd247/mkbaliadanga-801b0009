@@ -890,7 +890,7 @@ export type Database = {
           is_active: boolean
           maintenance_charge: number
           note: string | null
-          office_id: string
+          office_id: string | null
           other_charge: number
           season_id: string
           updated_at: string
@@ -905,7 +905,7 @@ export type Database = {
           is_active?: boolean
           maintenance_charge?: number
           note?: string | null
-          office_id: string
+          office_id?: string | null
           other_charge?: number
           season_id: string
           updated_at?: string
@@ -920,7 +920,7 @@ export type Database = {
           is_active?: boolean
           maintenance_charge?: number
           note?: string | null
-          office_id?: string
+          office_id?: string | null
           other_charge?: number
           season_id?: string
           updated_at?: string
@@ -2735,6 +2735,10 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      member_no_exists: {
+        Args: { _exclude_id?: string; _member_no: string }
+        Returns: boolean
       }
       reactivate_voter_membership: {
         Args: { _farmer_id: string; _reason: string }

@@ -59,9 +59,15 @@ type RowState = {
 const REQUIRED = ["name_en"];
 const ALL_HEADERS = [
   "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
-  "member_no", "status", "village", "post_office", "address",
+  "member_no", "is_voter", "status", "village", "address",
   "division", "district", "upazila", "union", "ward", "village_loc", "mouza",
 ];
+
+// Notes:
+// - account_number is auto-generated (not imported).
+// - member_no is optional; if provided AND is_voter=true, must be unique.
+// - is_voter accepts: true/false/yes/no/1/0 (default false).
+// - post_office removed from template.
 
 // We keep the legacy free-text "village" column as-is, and use "village_loc"
 // for the cascading hierarchy village name (to avoid colliding with the
@@ -125,7 +131,7 @@ export default function FarmersImport() {
       ALL_HEADERS,
       [
         "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000",
-        "M-001", "active", "Free-text village", "Post Office", "Holding/road",
+        "", "false", "active", "Free-text village", "Holding/road",
         "Dhaka", "Dhaka", "Savar", "Aminbazar", "Ward 1", "Bagbari", "Mouza A",
       ],
     ]);
@@ -280,6 +286,12 @@ export default function FarmersImport() {
       updated[i] = { ...updated[i], status: "saving", errorMsg: null };
       setRows([...updated]);
 
+      const isVoter = ((): boolean => {
+        const v = String(r.raw.is_voter ?? "").toLowerCase().trim();
+        return v === "true" || v === "1" || v === "yes" || v === "y";
+      })();
+      const memberNo = r.raw.member_no ? String(r.raw.member_no).trim() : null;
+
       const payload: any = {
         name_en:      r.raw.name_en,
         name_bn:      r.raw.name_bn      ?? null,
@@ -287,10 +299,12 @@ export default function FarmersImport() {
         mother_name:  r.raw.mother_name  ?? null,
         nid:          r.raw.nid          ?? null,
         mobile:       r.raw.mobile       ?? null,
-        member_no:    r.raw.member_no    ?? null,
+        member_no:    memberNo,
+        is_voter:     isVoter,
+        // If voter + member_no provided, mirror it as account_number/voter_number
+        ...(isVoter && memberNo ? { account_number: memberNo, voter_number: memberNo } : {}),
         status:       (r.raw.status as string) || "active",
         village:      r.raw.village      ?? null,
-        post_office:  r.raw.post_office  ?? null,
         address:      r.raw.address      ?? null,
         office_id:    officeId ?? null,
         ...r.resolved,
