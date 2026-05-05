@@ -246,6 +246,11 @@ export type Database = {
           email: string | null
           fiscal_year_start_month: number
           id: number
+          loan_receipt_footer_bn: string | null
+          loan_receipt_footer_en: string | null
+          loan_receipt_header_bn: string | null
+          loan_receipt_header_en: string | null
+          loan_receipt_no_format: string | null
           logo_url: string | null
           mobile: string | null
           pdf_footer_show_address: boolean
@@ -264,6 +269,11 @@ export type Database = {
           email?: string | null
           fiscal_year_start_month?: number
           id?: number
+          loan_receipt_footer_bn?: string | null
+          loan_receipt_footer_en?: string | null
+          loan_receipt_header_bn?: string | null
+          loan_receipt_header_en?: string | null
+          loan_receipt_no_format?: string | null
           logo_url?: string | null
           mobile?: string | null
           pdf_footer_show_address?: boolean
@@ -282,6 +292,11 @@ export type Database = {
           email?: string | null
           fiscal_year_start_month?: number
           id?: number
+          loan_receipt_footer_bn?: string | null
+          loan_receipt_footer_en?: string | null
+          loan_receipt_header_bn?: string | null
+          loan_receipt_header_en?: string | null
+          loan_receipt_no_format?: string | null
           logo_url?: string | null
           mobile?: string | null
           pdf_footer_show_address?: boolean
