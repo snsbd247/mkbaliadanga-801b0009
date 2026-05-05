@@ -207,6 +207,7 @@ export default function FarmerDetail() {
     toast.success("Deleted"); loadAll();
   }
 
+  async function addLand() {
     setLandLocErr(null);
     setSavingLand(true);
     try {
