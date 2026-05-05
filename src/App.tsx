@@ -71,6 +71,7 @@ import FarmerStatement from "./pages/FarmerStatement";
 import LoanPlans from "./pages/LoanPlans";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 import { RequireRole } from "./components/auth/RequireRole";
