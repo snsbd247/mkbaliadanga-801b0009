@@ -29,6 +29,7 @@ type CollectionRow = {
   user_id: string | null;
   user_name: string;
   ref_id: string;
+  receipt_no: string | null;
 };
 
 type ProfileLite = { id: string; full_name: string | null; email: string | null; office_id: string | null };
@@ -57,7 +58,7 @@ export default function CollectionReport() {
     document.title = `Collection Report — ${t("appName")}`;
     supabase
       .from("farmers")
-      .select("id,name_en,farmer_code")
+      .select("id,name_en,farmer_code,member_no")
       .order("name_en")
       .then(({ data }) => setFarmers(data ?? []));
 
@@ -88,7 +89,7 @@ export default function CollectionReport() {
 
   function nameForFarmer(f: any): { code: string; name: string } {
     if (!f) return { code: "—", name: "—" };
-    return { code: f.farmer_code ?? "—", name: f.name_en ?? "—" };
+    return { code: f.member_no ?? f.farmer_code ?? "—", name: f.name_en ?? "—" };
   }
 
   async function load() {
