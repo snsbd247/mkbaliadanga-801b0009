@@ -25,29 +25,9 @@ import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 import { VoterHistoryDialog } from "@/components/farmers/VoterHistoryDialog";
 import { History } from "lucide-react";
 
-function SavingsAccountField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
+function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
   const [generating, setGenerating] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [dupError, setDupError] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-
-  // Debounced uniqueness check on manual edit
-  useEffect(() => {
-    const acc = (f.account_number || "").trim();
-    if (!acc || !f.is_voter) { setDupError(null); return; }
-    const handle = setTimeout(async () => {
-      setChecking(true);
-      let q = supabase.from("farmers").select("id", { head: true, count: "exact" })
-        .eq("account_number", acc);
-      if (f.id) q = q.neq("id", f.id);
-      const { count, error } = await q;
-      setChecking(false);
-      if (error) return;
-      setDupError((count ?? 0) > 0 ? `Account number "${acc}" already exists (duplicate)` : null);
-    }, 400);
-    return () => clearTimeout(handle);
-  }, [f.account_number, f.is_voter, f.id]);
-
   return (
     <>
       <div className="flex items-center gap-3 h-10">
@@ -55,7 +35,7 @@ function SavingsAccountField({ f, setF, disabled }: { f: any; setF: (n: any) => 
           checked={!!f.is_voter}
           disabled={disabled || generating}
           onCheckedChange={async (on) => {
-            if (!on) { setF({ ...f, is_voter: false }); setDupError(null); return; }
+            if (!on) { setF({ ...f, is_voter: false }); return; }
             // Already has an account_number — just enable
             if (f.account_number) {
               setF({ ...f, is_voter: true, voter_number: f.voter_number || f.account_number });
@@ -72,44 +52,28 @@ function SavingsAccountField({ f, setF, disabled }: { f: any; setF: (n: any) => 
                 return;
               }
               const acc = String(data ?? "");
+              // account_number is stored silently in DB; not displayed in UI
               setF({ ...f, is_voter: true, account_number: acc, voter_number: acc });
-              toast.success(`Savings account ${acc} generated`);
+              toast.success("Savings/voter account created");
             } finally {
               setGenerating(false);
             }
           }}
           data-testid="voter-toggle"
         />
-        {generating ? (
-          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> generating…
-          </span>
-        ) : (
-          <Input
-            value={f.account_number || ""}
-            disabled={disabled || !f.is_voter}
-            placeholder={f.is_voter ? "Auto / manual entry" : "Enable savings account"}
-            maxLength={20}
-            className="font-mono"
-            aria-label="Savings account number"
-            onChange={(e) => setF({ ...f, account_number: e.target.value, voter_number: e.target.value })}
-          />
-        )}
+        <span className="text-xs text-muted-foreground">
+          {generating ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> creating savings account…
+            </span>
+          ) : f.is_voter ? "Voter / savings account active" : "Toggle to create savings + voter account"}
+        </span>
         {f.id && (
           <Button type="button" variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} title="View history">
             <History className="h-4 w-4" />
           </Button>
         )}
       </div>
-      {checking && <p className="mt-1 text-xs text-muted-foreground">Checking uniqueness…</p>}
-      {dupError && (
-        <Alert variant="destructive" className="mt-2">
-          <AlertDescription className="text-xs">{dupError}</AlertDescription>
-        </Alert>
-      )}
-      <p className="mt-1 text-xs text-muted-foreground">
-        Toggle = create savings account. Number is auto-generated office-wise; you may override manually (must be unique).
-      </p>
       <VoterHistoryDialog farmerId={f.id ?? null} open={historyOpen} onOpenChange={setHistoryOpen} />
     </>
   );
@@ -117,7 +81,7 @@ function SavingsAccountField({ f, setF, disabled }: { f: any; setF: (n: any) => 
 
 const EMPTY_FORM = {
   name_en: "", name_bn: "", father_name: "", mother_name: "", nid: "", mobile: "",
-  post_office: "", address: "", voter_number: "", is_voter: false,
+  address: "", voter_number: "", is_voter: false, member_no: "",
   office_id: "", status: "active",
   division_id: null, district_id: null, upazila_id: null, union_id: null,
   ward_id: null, village_id: null, mouza_id: null,
