@@ -401,9 +401,11 @@ export default function ShareCollection() {
   );
 }
 
-function RowsTable({ rows, canDecide, onDecide }: {
+function RowsTable({ rows, canDecide, onDecide, canManage, onEdit, onDelete }: {
   rows: Row[]; canDecide?: boolean; onDecide?: (id: string, s: "approved" | "rejected") => void;
+  canManage?: boolean; onEdit?: (r: Row) => void; onDelete?: (r: Row) => void;
 }) {
+  const showActions = canDecide || canManage;
   return (
     <Card className="p-0 overflow-hidden">
       <Table>
@@ -411,10 +413,10 @@ function RowsTable({ rows, canDecide, onDecide }: {
           <TableHead>Date</TableHead><TableHead>Farmer</TableHead>
           <TableHead className="text-right">Amount</TableHead>
           <TableHead>Status</TableHead><TableHead>Note</TableHead>
-          {canDecide && <TableHead></TableHead>}
+          {showActions && <TableHead></TableHead>}
         </TableRow></TableHeader>
         <TableBody>
-          {rows.length === 0 && <TableRow><TableCell colSpan={canDecide ? 6 : 5} className="text-center text-muted-foreground">No entries</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={showActions ? 6 : 5} className="text-center text-muted-foreground">No entries</TableCell></TableRow>}
           {rows.map(r => (
             <TableRow key={r.id}>
               <TableCell>{fmtDate(r.txn_date)}</TableCell>
@@ -422,12 +424,18 @@ function RowsTable({ rows, canDecide, onDecide }: {
               <TableCell className="text-right">{money(r.amount)}</TableCell>
               <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "rejected" ? "destructive" : "secondary"}>{r.status}</Badge></TableCell>
               <TableCell className="text-xs text-muted-foreground">{r.reject_reason || r.note}</TableCell>
-              {canDecide && (
+              {showActions && (
                 <TableCell className="flex gap-1 justify-end">
-                  {r.status === "pending" && (
+                  {canDecide && r.status === "pending" && (
                     <>
                       <Button size="sm" variant="default" onClick={() => onDecide?.(r.id, "approved")}><Check className="h-3 w-3" /></Button>
                       <Button size="sm" variant="outline" onClick={() => onDecide?.(r.id, "rejected")}><X className="h-3 w-3" /></Button>
+                    </>
+                  )}
+                  {canManage && (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => onEdit?.(r)} title="Edit"><Pencil className="h-3 w-3" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => onDelete?.(r)} title="Delete"><Trash2 className="h-3 w-3 text-destructive" /></Button>
                     </>
                   )}
                 </TableCell>
