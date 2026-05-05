@@ -237,7 +237,7 @@ export default function FarmerDetail() {
     try {
       const { error } = await supabase.from("lands").insert({
         farmer_id: id!,
-        mouza: (landLoc as any).village ?? "",
+        mouza: (landLoc as any).mouza_name ?? "",
         dag_no: land.dag_no,
         land_size: land.land_size,
         owner_type: land.owner_type as any,
