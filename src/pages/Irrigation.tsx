@@ -275,10 +275,15 @@ export default function Irrigation() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setRateAvailable(null); } }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addEntry")}</Button></DialogTrigger>
           <DialogContent className="max-w-xl">
-            <DialogHeader><DialogTitle>{t("irrigation")} — {t("addEntry")}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("irrigation")} — {editId ? "Edit Entry" : t("addEntry")}</DialogTitle></DialogHeader>
+            {form.season_id && rateAvailable === false && (
+              <div className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-sm p-2">
+                No active rate found for this season + basis. Add it on the <a href="/irrigation-rates" className="underline">Irrigation Rates</a> page first.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>{t("selectFarmer")}</Label>
                 <FarmerSearchSelect value={form.farmer_id || null}
