@@ -552,6 +552,7 @@ export default function Farmers() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       } />
 
       <Card className="p-4 mb-4">
