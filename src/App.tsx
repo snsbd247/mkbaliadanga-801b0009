@@ -140,6 +140,7 @@ const App = () => (
                 <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />
                 <Route path="/locations" element={<Locations />} />
                 <Route path="/admin/reconciliation" element={<LedgerReconciliation />} />
+                <Route path="/admin/share-capital-reconciliation" element={<ShareCapitalReconciliation />} />
                 <Route path="/admin/qr-rotation" element={<QrRotation />} />
                 <Route path="/admin/bulk-cards" element={<BulkCards />} />
                 <Route path="/admin/receipt-template" element={<ReceiptTemplate />} />
