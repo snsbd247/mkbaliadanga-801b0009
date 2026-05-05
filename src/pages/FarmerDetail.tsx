@@ -842,10 +842,11 @@ export default function FarmerDetail() {
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{t("loanDetails" as any)}</DialogTitle></DialogHeader>
           {viewLoan && (() => {
-            const totalPaid = viewLoanPays.reduce((s, p) => s + Number(p.amount), 0);
-            const totalDue = Number(viewLoan.total_payable) - totalPaid;
-            const paidCount = viewLoanInst.filter(i => i.status === "paid").length;
-            const remainCount = viewLoanInst.filter(i => i.status !== "paid").length;
+             const totalPaid = viewLoanPays.reduce((s, p) => s + Number(p.amount), 0);
+             const totalDue = Math.max(0, Number(viewLoan.total_payable) - totalPaid);
+             const paidCount = viewLoanInst.filter(i => i.status === "paid").length;
+             const remainCount = viewLoanInst.filter(i => i.status !== "paid").length;
+             const nextDueInst = viewLoanInst.find(i => i.status !== "paid");
             return (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
