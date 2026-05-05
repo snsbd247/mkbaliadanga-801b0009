@@ -100,7 +100,7 @@ export default function CollectionReport() {
       // 1) Irrigation collections (paid_amount on irrigation_charges)
       let irrQ: any = supabase
         .from("irrigation_charges")
-        .select("id,entry_date,paid_amount,farmer_id,created_by,farmers(name_en,farmer_code)")
+        .select("id,entry_date,paid_amount,farmer_id,created_by,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .gt("paid_amount", 0)
         .order("entry_date", { ascending: false });
@@ -121,13 +121,14 @@ export default function CollectionReport() {
           user_id: r.created_by,
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
+          receipt_no: null,
         });
       }
 
       // 2) Loan repayments (loan_payments.collected_by)
       let lpQ: any = supabase
         .from("loan_payments")
-        .select("id,paid_on,amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code))")
+        .select("id,paid_on,amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
         .order("paid_on", { ascending: false });
       if (from) lpQ = lpQ.gte("paid_on", from);
       if (to) lpQ = lpQ.lte("paid_on", to);
@@ -148,13 +149,14 @@ export default function CollectionReport() {
           user_id: r.collected_by,
           user_name: nameForUser(r.collected_by),
           ref_id: r.id,
+          receipt_no: null,
         });
       }
 
       // 3) Savings deposits (savings_transactions.created_by)
       let svQ: any = supabase
         .from("savings_transactions")
-        .select("id,txn_date,amount,type,status,farmer_id,created_by,farmers(name_en,farmer_code)")
+        .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .eq("type", "deposit")
         .eq("status", "approved")
@@ -176,6 +178,7 @@ export default function CollectionReport() {
           user_id: r.created_by,
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
+          receipt_no: (r as any).receipt_no ?? null,
         });
       }
 
