@@ -403,6 +403,7 @@ export default function FarmerDetail() {
                         onChange={(v) => { setLandLoc(v); if (landLocErr) setLandLocErr(null); }}
                         errorLevel={landLocErr?.level ?? null}
                         errorMessage={landLocErr?.message ?? null}
+                        showVillage={false}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
