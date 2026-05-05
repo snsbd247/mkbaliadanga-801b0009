@@ -253,7 +253,7 @@ export default function Irrigation() {
               <div><Label>{t("lands")}</Label>
                 <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{lands.map(l => <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} ({l.land_size})</SelectItem>)}</SelectContent>
+                  <SelectContent>{lands.map(l => <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} ({l.land_size} শতক)</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div><Label>{t("season")}</Label>
@@ -273,7 +273,7 @@ export default function Irrigation() {
                 </Select>
               </div>
               <div>
-                <Label>{form.basis === "per_size" ? `${t("quantity")} (auto = land size)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label>
+                <Label>{form.basis === "per_size" ? `${t("quantity")} (শতক — auto from land)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label>
                 <Input type="number" step="0.01" min="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} aria-invalid={!!errors.quantity} className={errors.quantity ? "border-destructive" : ""} />
                 {errors.quantity && <p className="text-xs text-destructive mt-1">{errors.quantity}</p>}
               </div>
@@ -282,22 +282,8 @@ export default function Irrigation() {
                 <Input type="number" step="0.01" min="0.01" value={form.rate} onChange={e => setForm({ ...form, rate: +e.target.value })} aria-invalid={!!errors.rate} className={errors.rate ? "border-destructive" : ""} />
                 {errors.rate && <p className="text-xs text-destructive mt-1">{errors.rate}</p>}
               </div>
-              <div className="col-span-2"><Label>{t("baseCharge")} (= rate × qty)</Label><Input type="number" value={form.base_charge} readOnly className="bg-muted" /></div>
-              <div>
-                <Label>{t("canalCharge")}</Label>
-                <Input type="number" min="0" value={form.canal_charge} onChange={e => setForm({ ...form, canal_charge: +e.target.value })} className={errors.canal_charge ? "border-destructive" : ""} />
-                {errors.canal_charge && <p className="text-xs text-destructive mt-1">{errors.canal_charge}</p>}
-              </div>
-              <div>
-                <Label>{t("maintenanceCharge")}</Label>
-                <Input type="number" min="0" value={form.maintenance_charge} onChange={e => setForm({ ...form, maintenance_charge: +e.target.value })} className={errors.maintenance_charge ? "border-destructive" : ""} />
-                {errors.maintenance_charge && <p className="text-xs text-destructive mt-1">{errors.maintenance_charge}</p>}
-              </div>
-              <div>
-                <Label>{t("otherCharge")}</Label>
-                <Input type="number" min="0" value={form.other_charge} onChange={e => setForm({ ...form, other_charge: +e.target.value })} className={errors.other_charge ? "border-destructive" : ""} />
-                {errors.other_charge && <p className="text-xs text-destructive mt-1">{errors.other_charge}</p>}
-              </div>
+              <div className="col-span-2"><Label>{t("baseCharge")} (= rate × qty)</Label><Input type="number" value={form.base_charge} readOnly className="bg-muted font-semibold" /></div>
+              {/* Canal / Maintenance / Other charges hidden — kept at 0 by default */}
               <div>
                 <Label>{t("paidAmount")}</Label>
                 <Input type="number" min="0" value={form.paid_amount} onChange={e => setForm({ ...form, paid_amount: +e.target.value })} className={errors.paid_amount ? "border-destructive" : ""} />
