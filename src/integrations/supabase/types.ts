@@ -1107,40 +1107,52 @@ export type Database = {
           created_at: string
           dag_no: string | null
           deleted_at: string | null
+          district_id: string | null
+          division_id: string | null
           farmer_id: string
           field_type: Database["public"]["Enums"]["field_type"]
           id: string
           land_size: number
           mouza: string | null
+          mouza_id: string | null
           office_id: string | null
           owner_farmer_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"]
+          upazila_id: string | null
         }
         Insert: {
           created_at?: string
           dag_no?: string | null
           deleted_at?: string | null
+          district_id?: string | null
+          division_id?: string | null
           farmer_id: string
           field_type?: Database["public"]["Enums"]["field_type"]
           id?: string
           land_size?: number
           mouza?: string | null
+          mouza_id?: string | null
           office_id?: string | null
           owner_farmer_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
+          upazila_id?: string | null
         }
         Update: {
           created_at?: string
           dag_no?: string | null
           deleted_at?: string | null
+          district_id?: string | null
+          division_id?: string | null
           farmer_id?: string
           field_type?: Database["public"]["Enums"]["field_type"]
           id?: string
           land_size?: number
           mouza?: string | null
+          mouza_id?: string | null
           office_id?: string | null
           owner_farmer_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
+          upazila_id?: string | null
         }
         Relationships: [
           {
@@ -2541,47 +2553,13 @@ export type Database = {
           id: string | null
           land_size: number | null
           mouza: string | null
+          mouza_id: string | null
           mouza_name: string | null
           office_id: string | null
+          owner_farmer_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"] | null
           upazila_id: string | null
           upazila_name: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          dag_no?: string | null
-          district_id?: never
-          district_name?: never
-          division_id?: never
-          division_name?: never
-          farmer_id?: string | null
-          field_type?: Database["public"]["Enums"]["field_type"] | null
-          id?: string | null
-          land_size?: number | null
-          mouza?: string | null
-          mouza_name?: string | null
-          office_id?: string | null
-          owner_type?: Database["public"]["Enums"]["owner_type"] | null
-          upazila_id?: never
-          upazila_name?: never
-        }
-        Update: {
-          created_at?: string | null
-          dag_no?: string | null
-          district_id?: never
-          district_name?: never
-          division_id?: never
-          division_name?: never
-          farmer_id?: string | null
-          field_type?: Database["public"]["Enums"]["field_type"] | null
-          id?: string | null
-          land_size?: number | null
-          mouza?: string | null
-          mouza_name?: string | null
-          office_id?: string | null
-          owner_type?: Database["public"]["Enums"]["owner_type"] | null
-          upazila_id?: never
-          upazila_name?: never
         }
         Relationships: [
           {
@@ -2594,6 +2572,20 @@ export type Database = {
           {
             foreignKeyName: "lands_farmer_id_fkey"
             columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_owner_farmer_id_fkey"
+            columns: ["owner_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "lands_owner_farmer_id_fkey"
+            columns: ["owner_farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
             referencedColumns: ["id"]

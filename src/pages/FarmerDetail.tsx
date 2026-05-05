@@ -65,11 +65,10 @@ export default function FarmerDetail() {
     }
     setOwnerLandsLoading(true);
     supabase
-      .from("lands")
-      .select("id,dag_no,land_size,field_type")
+      .from("lands_with_location")
+      .select("id,dag_no,land_size,field_type,division_id,district_id,upazila_id,mouza_name")
       .eq("farmer_id", land.owner_farmer_id)
       .eq("owner_type", "owner")
-      .is("deleted_at", null)
       .then(({ data }) => {
         setOwnerLands(data ?? []);
         setOwnerLandsLoading(false);
@@ -238,6 +237,10 @@ export default function FarmerDetail() {
       const { error } = await supabase.from("lands").insert({
         farmer_id: id!,
         mouza: (landLoc as any).mouza_name ?? "",
+        division_id: (landLoc as any).division_id ?? null,
+        district_id: (landLoc as any).district_id ?? null,
+        upazila_id: (landLoc as any).upazila_id ?? null,
+        mouza_id: (landLoc as any).mouza_id ?? null,
         dag_no: land.dag_no,
         land_size: land.land_size,
         owner_type: land.owner_type as any,
@@ -396,19 +399,11 @@ export default function FarmerDetail() {
                 <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader><DialogTitle>{t("addNew")} — {t("lands")}</DialogTitle></DialogHeader>
                   <div className="space-y-3">
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block">{t("location" as any) || "Location"}</Label>
-                      <LocationPicker
-                        value={landLoc}
-                        onChange={(v) => { setLandLoc(v); if (landLocErr) setLandLocErr(null); }}
-                        errorLevel={landLocErr?.level ?? null}
-                        errorMessage={landLocErr?.message ?? null}
-                        showVillage={false}
-                      />
-                    </div>
+                    {/* 1. Owner Type + Owner */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div><Label>{t("ownerType")} <span className="text-destructive">*</span></Label>
-                        <Select value={land.owner_type} disabled={savingLand} onValueChange={v => setLand({ ...land, owner_type: v, owner_farmer_id: v === "owner" ? "" : land.owner_farmer_id })}>
+                      <div>
+                        <Label>{t("ownerType")} <span className="text-destructive">*</span></Label>
+                        <Select value={land.owner_type} disabled={savingLand} onValueChange={v => { setLand({ ...EMPTY_LAND, owner_type: v }); setLandLoc({}); setLandLocErr(null); }}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
                         </Select>
@@ -418,7 +413,7 @@ export default function FarmerDetail() {
                         {land.owner_type === "borgadar" ? (
                           <FarmerSearchSelect
                             value={land.owner_farmer_id || null}
-                            onChange={(fid) => setLand({ ...land, owner_farmer_id: fid ?? "" })}
+                            onChange={(fid) => { setLand({ ...EMPTY_LAND, owner_type: "borgadar", owner_farmer_id: fid ?? "" }); setLandLoc({}); }}
                             excludeIds={[id!]}
                             placeholder="মালিক সার্চ করুন (নাম / ID / মোবাইল)"
                             disabled={savingLand}
@@ -427,48 +422,94 @@ export default function FarmerDetail() {
                           <Input disabled value={farmer?.name_en ?? ""} />
                         )}
                       </div>
+                    </div>
+
+                    {/* 2a. Borgadar: pick Dag from owner's lands → auto-fills size, field_type, location */}
+                    {land.owner_type === "borgadar" && land.owner_farmer_id && (
                       <div>
                         <Label>{t("dagNo")} <span className="text-destructive">*</span></Label>
-                        {land.owner_type === "borgadar" && land.owner_farmer_id ? (
-                          <Select
-                            value={land.dag_no || ""}
-                            disabled={savingLand || ownerLandsLoading}
-                            onValueChange={(v) => {
-                              const src = ownerLands.find((o) => o.dag_no === v);
+                        <Select
+                          value={land.dag_no || ""}
+                          disabled={savingLand || ownerLandsLoading}
+                          onValueChange={(v) => {
+                            const src = ownerLands.find((o) => o.dag_no === v);
+                            if (src) {
                               setLand({
                                 ...land,
                                 dag_no: v,
-                                land_size: src ? Number(src.land_size ?? 0) : land.land_size,
-                                field_type: src?.field_type ?? land.field_type,
+                                land_size: Number(src.land_size ?? 0),
+                                field_type: src.field_type ?? land.field_type,
                               });
-                            }}
-                          >
-                            <SelectTrigger><SelectValue placeholder={ownerLandsLoading ? "লোড হচ্ছে..." : (ownerLands.length ? "মালিকের দাগ সিলেক্ট করুন" : "এই মালিকের কোনো জমি নেই")} /></SelectTrigger>
-                            <SelectContent>
-                              {ownerLands.map((o) => (
-                                <SelectItem key={o.id} value={o.dag_no ?? ""}>
-                                  {o.dag_no} — {o.land_size} শতাংশ
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} />
-                        )}
-                      </div>
-                      <div><Label>{t("landSize")} (শতাংশ) <span className="text-destructive">*</span></Label><Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
-                      <div className="col-span-2"><Label>{t("fieldType")}</Label>
-                        <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                              setLandLoc({
+                                division_id: src.division_id ?? null,
+                                district_id: src.district_id ?? null,
+                                upazila_id: src.upazila_id ?? null,
+                                mouza_id: src.mouza_id ?? null,
+                                mouza_name: src.mouza_name ?? null,
+                              });
+                              setLandLocErr(null);
+                            } else {
+                              setLand({ ...land, dag_no: v });
+                            }
+                          }}
+                        >
+                          <SelectTrigger><SelectValue placeholder={ownerLandsLoading ? "লোড হচ্ছে..." : (ownerLands.length ? "মালিকের দাগ সিলেক্ট করুন" : "এই মালিকের কোনো জমি নেই")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="high_land">{t("highLand")}</SelectItem>
-                            <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
-                            <SelectItem value="low_land">{t("lowLand")}</SelectItem>
-                            <SelectItem value="other">{t("other")}</SelectItem>
+                            {ownerLands.map((o) => (
+                              <SelectItem key={o.id} value={o.dag_no ?? ""}>
+                                {o.dag_no} — {o.land_size} শতাংশ {o.mouza_name ? `(${o.mouza_name})` : ""}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
+                    )}
+
+                    {/* 2b. Location picker — for owner: manual entry; for borgadar: shown auto-filled (still editable) */}
+                    {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">{t("location" as any) || "Location"}</Label>
+                        <LocationPicker
+                          value={landLoc}
+                          onChange={(v) => { setLandLoc(v); if (landLocErr) setLandLocErr(null); }}
+                          errorLevel={landLocErr?.level ?? null}
+                          errorMessage={landLocErr?.message ?? null}
+                          showVillage={false}
+                        />
+                      </div>
+                    )}
+
+                    {/* 3. For owner only: Dag No input */}
+                    {land.owner_type === "owner" && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>{t("dagNo")} <span className="text-destructive">*</span></Label>
+                          <Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 4. Land size + Field type */}
+                    {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>{t("landSize")} (শতাংশ) <span className="text-destructive">*</span></Label>
+                          <Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} />
+                        </div>
+                        <div>
+                          <Label>{t("fieldType")}</Label>
+                          <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="high_land">{t("highLand")}</SelectItem>
+                              <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
+                              <SelectItem value="low_land">{t("lowLand")}</SelectItem>
+                              <SelectItem value="other">{t("other")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <DialogFooter><Button variant="outline" disabled={savingLand} onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand} disabled={savingLand}>{savingLand ? "…" : t("save")}</Button></DialogFooter>
                 </DialogContent>
