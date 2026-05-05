@@ -84,6 +84,7 @@ export function AppSidebar() {
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
         { url: "/reports/voter-audit", icon: FileBarChart, label: "Voter Audit", permKey: "farmers" },
+        { url: "/voters/history", icon: FileBarChart, label: "Voter History", permKey: "farmers" },
         { url: "/reports/farmer-statement", icon: FileBarChart, label: "Farmer Statement", permKey: "reports" },
         { url: "/reports/expenses", icon: FileBarChart, label: "Expenses Report", permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
@@ -107,6 +108,7 @@ export function AppSidebar() {
         { url: "/sms-logs", icon: MessagesSquare, label: t("smsLogs"), permKey: "sms" },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), superOnly: true },
+        { url: "/admin/id-reconcile", icon: ShieldAlert, label: "ID Reconcile", permKey: "farmers" },
       ],
     },
   ];
