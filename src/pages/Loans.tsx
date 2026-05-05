@@ -18,6 +18,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
 
 const DEFAULT_INTEREST = 8.0;
