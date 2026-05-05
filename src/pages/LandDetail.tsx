@@ -32,12 +32,12 @@ export default function LandDetail() {
       setLoc(lc);
       if (l?.farmer_id) {
         const { data: f } = await supabase.from("farmers")
-          .select("id,name_en,name_bn,account_number,farmer_code,mobile").eq("id", l.farmer_id).maybeSingle();
+          .select("id,name_en,name_bn,member_no,farmer_code,mobile").eq("id", l.farmer_id).maybeSingle();
         setOwner(f);
       }
       const [{ data: rels }, { data: ch }] = await Promise.all([
         supabase.from("land_relations")
-          .select("*, owner:farmers!land_relations_owner_farmer_id_fkey(name_en,account_number), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,account_number)")
+          .select("*, owner:farmers!land_relations_owner_farmer_id_fkey(name_en,member_no,farmer_code), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,member_no,farmer_code)")
           .eq("land_id", id).order("valid_from", { ascending: false }),
         supabase.from("irrigation_charges")
           .select("id,entry_date,total,paid_amount,due_amount,seasons(year,type)")
