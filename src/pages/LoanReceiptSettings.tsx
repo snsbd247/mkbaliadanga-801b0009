@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { notifyBrandingChange, useBranding } from "@/lib/branding";
 import { formatLoanReceiptNo } from "@/lib/loanReceiptFormat";
-import { fmtBDT } from "@/lib/format";
+import { money } from "@/lib/format";
 
 const KNOWN_TOKENS = ["{YYYY}", "{MM}", "{DD}", "{YYYYMMDD}", "{TAIL}"];
 
