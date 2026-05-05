@@ -336,7 +336,25 @@ export default function ShareCollection() {
         <TabsContent value="pending"><RowsTable rows={pending} canDecide={isCommittee} onDecide={decide} /></TabsContent>
         <TabsContent value="approved"><RowsTable rows={approved} /></TabsContent>
         <TabsContent value="rejected"><RowsTable rows={rejected} /></TabsContent>
-        <TabsContent value="summary">
+        <TabsContent value="summary" className="space-y-3">
+          <Card className="p-3">
+            <div className="text-sm font-medium mb-2">{period === "monthly" ? "Monthly" : "Daily"} approved totals</div>
+            {grouped.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No data</p>
+            ) : (
+              <div style={{ width: "100%", height: 260 }}>
+                <ResponsiveContainer>
+                  <BarChart data={[...grouped].reverse().map(([k, v]) => ({ period: k, total: v }))}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="period" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(v: any) => money(Number(v))} />
+                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </Card>
           <Card className="p-0 overflow-hidden">
             <Table>
               <TableHeader><TableRow><TableHead>{period === "monthly" ? "Month" : "Date"}</TableHead><TableHead className="text-right">Total Amount</TableHead></TableRow></TableHeader>
