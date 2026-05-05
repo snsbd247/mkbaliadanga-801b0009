@@ -131,7 +131,7 @@ export default function FarmersImport() {
       ALL_HEADERS,
       [
         "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000",
-        "M-001", "active", "Free-text village", "Post Office", "Holding/road",
+        "", "false", "active", "Free-text village", "Holding/road",
         "Dhaka", "Dhaka", "Savar", "Aminbazar", "Ward 1", "Bagbari", "Mouza A",
       ],
     ]);
