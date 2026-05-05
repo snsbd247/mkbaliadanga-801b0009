@@ -1,5 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Search, Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard, Building2, Users, CalendarDays, Wallet,
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
