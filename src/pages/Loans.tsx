@@ -27,6 +27,7 @@ export default function Loans() {
   const { t } = useLang();
   const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
