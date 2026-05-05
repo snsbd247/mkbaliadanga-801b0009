@@ -57,12 +57,11 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
           disabled={disabled || generating}
           onCheckedChange={async (on) => {
             if (!on) {
-              // Disable: clear member/voter/account so duplicate-check stays clean
               setF({ ...f, is_voter: false });
               return;
             }
-            if (f.account_number && f.member_no) {
-              setF({ ...f, is_voter: true, voter_number: f.member_no, account_number: f.member_no });
+            if (f.account_number && f.voter_number) {
+              setF({ ...f, is_voter: true });
               return;
             }
             setGenerating(true);
@@ -76,8 +75,8 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
                 return;
               }
               const acc = String(data ?? "");
-              setF({ ...f, is_voter: true, account_number: acc, member_no: acc, voter_number: acc });
-              toast.success("Savings/voter account created — Farmer ID auto-generated");
+              setF({ ...f, is_voter: true, account_number: acc, voter_number: acc });
+              toast.success("Savings A/C ও Voter No অটো-জেনারেট হয়েছে");
             } finally {
               setGenerating(false);
             }
@@ -89,7 +88,7 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
             <span className="inline-flex items-center gap-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> creating savings account…
             </span>
-          ) : f.is_voter ? "Voter / savings account active" : "Toggle to create savings + voter account"}
+          ) : f.is_voter ? "Voter / Savings active" : "Toggle to create Savings A/C + Voter No"}
         </span>
         {f.id && (
           <Button type="button" variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} title="View history">
@@ -102,16 +101,42 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
   );
 }
 
-/** Farmer ID field — visible only when voter/savings is on. Admin can edit; duplicates rejected. */
-function MemberNoField({ f, setF, disabled, isAdmin, currentId }: { f: any; setF: (n: any) => void; disabled: boolean; isAdmin: boolean; currentId?: string | null }) {
+/** Savings A/C + Voter No fields — shown only when voter is on. Super admin can override. */
+function SavingsVoterFields({ f, setF, disabled, isSuper }: { f: any; setF: (n: any) => void; disabled: boolean; isSuper: boolean }) {
+  if (!f.is_voter) return null;
+  return (
+    <>
+      <div>
+        <Label>Savings A/C No <span className="text-xs text-muted-foreground">(auto)</span></Label>
+        <Input
+          value={f.account_number || ""}
+          disabled={disabled || !isSuper}
+          maxLength={20}
+          onChange={(e) => setF({ ...f, account_number: e.target.value.replace(/\D/g, "") })}
+        />
+        {!isSuper && <p className="mt-1 text-xs text-muted-foreground">শুধু Super Admin পরিবর্তন করতে পারবে।</p>}
+      </div>
+      <div>
+        <Label>Voter No <span className="text-xs text-muted-foreground">(auto)</span></Label>
+        <Input
+          value={f.voter_number || ""}
+          disabled={disabled || !isSuper}
+          maxLength={20}
+          onChange={(e) => setF({ ...f, voter_number: e.target.value.replace(/\D/g, "") })}
+        />
+      </div>
+    </>
+  );
+}
+
+/** Farmer ID field — always visible, auto-generated on add, super admin can override. */
+function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF: (n: any) => void; disabled: boolean; isSuper: boolean; currentId?: string | null }) {
   const [checking, setChecking] = useState(false);
   const [dupErr, setDupErr] = useState<string | null>(null);
   const tRef = useRef<any>(null);
 
-  if (!f.is_voter) return null;
-
   async function onChange(v: string) {
-    setF({ ...f, member_no: v, account_number: v, voter_number: v });
+    setF({ ...f, member_no: v });
     setDupErr(null);
     if (tRef.current) clearTimeout(tRef.current);
     if (!v.trim()) return;
@@ -121,27 +146,26 @@ function MemberNoField({ f, setF, disabled, isAdmin, currentId }: { f: any; setF
         _member_no: v.trim(), _exclude_id: currentId ?? null,
       });
       setChecking(false);
-      if (!error && data === true) setDupErr("This Farmer ID is already used by another farmer.");
+      if (!error && data === true) setDupErr("এই Farmer ID আগে থেকেই ব্যবহৃত।");
     }, 350);
   }
 
   return (
     <div className="col-span-2">
       <Label className={dupErr ? "text-destructive" : ""}>
-        Farmer ID * <span className="text-xs text-muted-foreground">(also Savings A/C & Voter No — auto-generated, admin can edit)</span>
+        Farmer ID * <span className="text-xs text-muted-foreground">(অটো-জেনারেট, Super Admin পরিবর্তন করতে পারবে)</span>
       </Label>
       <Input
         value={f.member_no || ""}
-        disabled={disabled || !isAdmin}
-        maxLength={20}
-        inputMode="numeric"
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, ""))}
+        disabled={disabled || !isSuper}
+        maxLength={30}
+        onChange={(e) => onChange(e.target.value)}
         className={dupErr ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
         data-testid="member-no-input"
       />
       {checking && <p className="mt-1 text-xs text-muted-foreground">Checking…</p>}
       {dupErr && <p className="mt-1 text-xs text-destructive" role="alert">{dupErr}</p>}
-      {!isAdmin && <p className="mt-1 text-xs text-muted-foreground">Only admins can change this value.</p>}
+      {!isSuper && <p className="mt-1 text-xs text-muted-foreground">শুধু Super Admin পরিবর্তন করতে পারবে।</p>}
     </div>
   );
 }
