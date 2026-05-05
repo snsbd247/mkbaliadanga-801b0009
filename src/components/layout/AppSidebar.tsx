@@ -282,7 +282,7 @@ export function AppSidebar() {
                 const visibleChildren = parent.children.filter(allowed);
                 if (visibleChildren.length === 0) return null;
                 const hasActiveChild = visibleChildren.some((c) => isActive(c.url));
-                const isOpen = openGroups[parent.key] ?? hasActiveChild;
+                const isOpen = q ? true : (openGroups[parent.key] ?? hasActiveChild);
 
                 return (
                   <Collapsible
