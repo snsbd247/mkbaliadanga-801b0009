@@ -58,6 +58,8 @@ export default function VoterList() {
   const [mode, setMode] = useState<"cancel" | "reactivate" | null>(null);
   const [reason, setReason] = useState("");
   const [working, setWorking] = useState(false);
+  const [dues, setDues] = useState<{ savings_balance: number; loan_due: number; irrigation_due: number; share_balance: number } | null>(null);
+  const [duesLoading, setDuesLoading] = useState(false);
 
   useEffect(() => { document.title = `Voter List — ${t("appName")}`; }, [t]);
 
@@ -92,8 +94,36 @@ export default function VoterList() {
 
   const total = rows.length;
 
+  async function loadDues(farmerId: string) {
+    setDuesLoading(true);
+    setDues(null);
+    try {
+      // Aggregate: irrigation due, loan due, savings + share balances
+      const [{ data: irr }, { data: loans }, { data: savings }] = await Promise.all([
+        supabase.from("irrigation_charges").select("due_amount").eq("farmer_id", farmerId).is("deleted_at", null),
+        supabase.from("loans").select("id,total_payable,status,loan_payments(amount)").eq("farmer_id", farmerId).is("deleted_at", null),
+        supabase.from("savings_transactions").select("amount,type,status").eq("farmer_id", farmerId).is("deleted_at", null),
+      ]);
+      const irrigation_due = (irr ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+      const loan_due = (loans ?? []).filter((l: any) => l.status === "approved").reduce((a: number, l: any) => {
+        const paid = (l.loan_payments ?? []).reduce((x: number, p: any) => x + Number(p.amount || 0), 0);
+        return a + Math.max(0, Number(l.total_payable || 0) - paid);
+      }, 0);
+      let savings_balance = 0, share_balance = 0;
+      (savings ?? []).filter((s: any) => s.status === "approved").forEach((s: any) => {
+        const sign = s.type === "deposit" || s.type === "share_collection" ? 1 : s.type === "withdraw" ? -1 : 0;
+        if (s.type === "share_collection") share_balance += Number(s.amount || 0) * sign;
+        else savings_balance += Number(s.amount || 0) * sign;
+      });
+      setDues({ savings_balance, loan_due, irrigation_due, share_balance });
+    } finally {
+      setDuesLoading(false);
+    }
+  }
+
   function openDialog(r: Row, m: "cancel" | "reactivate") {
-    setTarget(r); setMode(m); setReason("");
+    setTarget(r); setMode(m); setReason(""); setDues(null);
+    if (m === "cancel") loadDues(r.id);
   }
 
   async function submitDialog() {
