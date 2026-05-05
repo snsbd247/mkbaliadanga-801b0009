@@ -204,9 +204,11 @@ export default function Loans() {
               rows={rows}
               t={t}
               isCommittee={isCommittee}
+              isSuper={isSuper}
               showDeleted={showDeleted}
               onDecide={decide}
               onRestore={restore}
+              onDelete={remove}
               onPrint={printLoanReceipt}
               profiles={profiles}
               expanded={expanded}
