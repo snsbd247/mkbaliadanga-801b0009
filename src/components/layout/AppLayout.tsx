@@ -78,6 +78,10 @@ export function AppLayout() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile"><UserCircle className="mr-2 h-4 w-4" />{lang === "bn" ? "প্রোফাইল ও পাসওয়ার্ড" : "Profile & Password"}</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" />{t("logout")}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -99,6 +103,9 @@ export function AppLayout() {
                   <DropdownMenuItem onClick={() => setLang(lang === "en" ? "bn" : "en")}>
                     <Languages className="mr-2 h-4 w-4" />
                     {lang === "en" ? "বাংলা" : "English"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile"><UserCircle className="mr-2 h-4 w-4" />{lang === "bn" ? "প্রোফাইল ও পাসওয়ার্ড" : "Profile & Password"}</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" />{t("logout")}</DropdownMenuItem>
                 </DropdownMenuContent>
