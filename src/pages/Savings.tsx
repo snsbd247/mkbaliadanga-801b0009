@@ -238,9 +238,25 @@ export default function Savings() {
     load();
   }
   async function decide(id: string, status: "approved" | "rejected") {
-    const { error } = await supabase.from("savings_transactions").update({ status, approved_by: user?.id }).eq("id", id);
+    let reject_reason: string | null = null;
+    if (status === "rejected") {
+      reject_reason = window.prompt("Reason for rejection (optional):") ?? "";
+      reject_reason = reject_reason.trim() || null;
+    }
+    const patch: any = {
+      status,
+      approved_by: user?.id,
+      decided_at: new Date().toISOString(),
+      ...(status === "rejected" ? { reject_reason } : {}),
+    };
+    const { error } = await supabase
+      .from("savings_transactions")
+      .update(patch)
+      .eq("id", id)
+      .eq("status", "pending"); // guard: only pending → decision
     if (error) return toast.error(error.message);
-    toast.success(t("saved")); load();
+    toast.success(status === "approved" ? "Withdraw approved" : "Withdraw rejected");
+    load();
   }
   async function restoreTxn(id: string) {
     const { error } = await supabase.from("savings_transactions").update({ deleted_at: null } as any).eq("id", id);

@@ -27,6 +27,7 @@ export default function Reports() {
   const [seasonId, setSeasonId] = useState(ALL);
   const [officeId, setOfficeId] = useState(ALL);
   const [farmerId, setFarmerId] = useState(ALL);
+  const [granularity, setGranularity] = useState<"daily" | "monthly">("monthly");
 
   const [irr, setIrr] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
@@ -96,6 +97,9 @@ export default function Reports() {
     total: number;
   };
 
+  const periodKey = (d?: string | null) =>
+    !d ? "" : (granularity === "daily" ? d.slice(0, 10) : d.slice(0, 7));
+
   const monthly: Mrow[] = useMemo(() => {
     const m = new Map<string, Mrow>();
     const get = (k: string) => {
@@ -104,12 +108,12 @@ export default function Reports() {
     };
     for (const r of savings) {
       if (r.status !== "approved") continue;
-      const k = (r.txn_date ?? "").slice(0, 7);
+      const k = periodKey(r.txn_date);
       const g = get(k);
       if (r.type === "deposit") g.deposits += Number(r.amount); else g.withdrawals += Number(r.amount);
     }
     for (const r of loans) {
-      const k = (r.issued_on ?? "").slice(0, 7);
+      const k = periodKey(r.issued_on);
       const g = get(k);
       g.loanIssued += Number(r.principal || 0);
       const paid = (r.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
@@ -117,11 +121,11 @@ export default function Reports() {
       if (r.status === "approved" && due > 0) g.loanDue += due;
     }
     for (const r of loanPayments) {
-      const k = (r.paid_on ?? "").slice(0, 7);
+      const k = periodKey(r.paid_on);
       get(k).loanCollected += Number(r.amount || 0);
     }
     for (const r of irr) {
-      const k = (r.entry_date ?? "").slice(0, 7);
+      const k = periodKey(r.entry_date);
       const g = get(k);
       g.irrCharged += Number(r.total || 0);
       g.irrCollected += Number(r.paid_amount || 0);
@@ -129,7 +133,7 @@ export default function Reports() {
     }
     for (const g of m.values()) g.total = g.deposits - g.withdrawals + g.loanCollected + g.irrCollected;
     return Array.from(m.values()).sort((a, b) => b.period.localeCompare(a.period));
-  }, [savings, loans, loanPayments, irr]);
+  }, [savings, loans, loanPayments, irr, granularity]);
 
   // --- Reconciliation ---
   const recon = useMemo(() => {
@@ -317,12 +321,21 @@ export default function Reports() {
               <SelectContent><SelectItem value={ALL}>{t("all")}</SelectItem>{seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div><Label>Granularity</Label>
+            <Select value={granularity} onValueChange={(v: any) => setGranularity(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </Card>
 
       <Tabs defaultValue="monthly">
         <TabsList>
-          <TabsTrigger value="monthly">Monthly Financial</TabsTrigger>
+          <TabsTrigger value="monthly">{granularity === "daily" ? "Daily" : "Monthly"} Financial</TabsTrigger>
           <TabsTrigger value="recon">Reconciliation</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigationReport")}</TabsTrigger>
           <TabsTrigger value="arrears">Irrigation Arrears</TabsTrigger>
@@ -335,20 +348,21 @@ export default function Reports() {
 
         <TabsContent value="monthly">
           <ExportBar
-            onPdf={() => exportTablePDF(`Monthly Financial${filterTitleSuffix()}`,
-              ["Month", "Deposits", "Withdrawals", "Loan Issued", "Loan Collected", "Irr Charged", "Irr Collected", "Loan Due", "Irr Due", "Net Total"],
-              monthly.map(m => [m.period, m.deposits, m.withdrawals, m.loanIssued, m.loanCollected, m.irrCharged, m.irrCollected, m.loanDue, m.irrDue, m.total]))}
-            onXlsx={() => exportExcel("monthly-financial", "Monthly", monthly.map(m => ({
-              Month: m.period, Deposits: m.deposits, Withdrawals: m.withdrawals,
+            onPdf={() => exportTablePDF(`${granularity === "daily" ? "Daily" : "Monthly"} Financial${filterTitleSuffix()}`,
+              [granularity === "daily" ? "Date" : "Month", "Deposits", "Withdrawals", "Loan Issued", "Loan Collected", "Irr Charged", "Irr Collected", "Loan Due", "Irr Due", "Net Total"],
+              monthly.map(m => [m.period, m.deposits, m.withdrawals, m.loanIssued, m.loanCollected, m.irrCharged, m.irrCollected, m.loanDue, m.irrDue, m.total]),
+              { from, to })}
+            onXlsx={() => exportExcel(`${granularity}-financial`, granularity === "daily" ? "Daily" : "Monthly", monthly.map(m => ({
+              [granularity === "daily" ? "Date" : "Month"]: m.period, Deposits: m.deposits, Withdrawals: m.withdrawals,
               "Loan Issued": m.loanIssued, "Loan Collected": m.loanCollected,
               "Irrigation Charged": m.irrCharged, "Irrigation Collected": m.irrCollected,
               "Loan Due": m.loanDue, "Irrigation Due": m.irrDue, "Net Total": m.total,
-            })))}
+            })), { from, to })}
           />
           <Card className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Month</TableHead>
+                <TableHead>{granularity === "daily" ? "Date" : "Month"}</TableHead>
                 <TableHead className="text-right">Deposits</TableHead>
                 <TableHead className="text-right">Withdrawals</TableHead>
                 <TableHead className="text-right">Loan Issued</TableHead>

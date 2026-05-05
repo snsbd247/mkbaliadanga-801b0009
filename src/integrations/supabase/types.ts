@@ -1938,12 +1938,14 @@ export type Database = {
           approved_by: string | null
           created_at: string
           created_by: string | null
+          decided_at: string | null
           deleted_at: string | null
           farmer_id: string
           id: string
           note: string | null
           office_id: string | null
           receipt_no: string | null
+          reject_reason: string | null
           status: Database["public"]["Enums"]["approval_status"]
           txn_date: string
           type: Database["public"]["Enums"]["savings_txn_type"]
@@ -1953,12 +1955,14 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          decided_at?: string | null
           deleted_at?: string | null
           farmer_id: string
           id?: string
           note?: string | null
           office_id?: string | null
           receipt_no?: string | null
+          reject_reason?: string | null
           status?: Database["public"]["Enums"]["approval_status"]
           txn_date?: string
           type: Database["public"]["Enums"]["savings_txn_type"]
@@ -1968,12 +1972,14 @@ export type Database = {
           approved_by?: string | null
           created_at?: string
           created_by?: string | null
+          decided_at?: string | null
           deleted_at?: string | null
           farmer_id?: string
           id?: string
           note?: string | null
           office_id?: string | null
           receipt_no?: string | null
+          reject_reason?: string | null
           status?: Database["public"]["Enums"]["approval_status"]
           txn_date?: string
           type?: Database["public"]["Enums"]["savings_txn_type"]
