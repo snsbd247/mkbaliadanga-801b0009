@@ -104,9 +104,27 @@ export default function IrrigationRates() {
         note: form.note || null,
         created_by: user?.id,
       };
-      const { error } = form.id
-        ? await supabase.from("irrigation_rates").update(payload).eq("id", form.id)
-        : await supabase.from("irrigation_rates").insert(payload);
+      let error: any = null;
+      if (form.id) {
+        ({ error } = await supabase.from("irrigation_rates").update(payload).eq("id", form.id));
+      } else {
+        // Check duplicate (office_id + season_id)
+        const { data: existing } = await supabase
+          .from("irrigation_rates")
+          .select("id")
+          .eq("season_id", form.season_id)
+          .eq("office_id", officeId as string)
+          .maybeSingle();
+        if (existing?.id) {
+          if (!confirm(t("rateExistsUpdate") || "এই অফিস ও সিজনের জন্য একটি রেট আছে — আপডেট করবেন?")) {
+            setSaving(false);
+            return;
+          }
+          ({ error } = await supabase.from("irrigation_rates").update(payload).eq("id", existing.id));
+        } else {
+          ({ error } = await supabase.from("irrigation_rates").insert(payload));
+        }
+      }
       if (error) throw error;
       toast.success(t("saved"));
       setOpen(false);
