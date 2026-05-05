@@ -32,12 +32,12 @@ export default function LandDetail() {
       setLoc(lc);
       if (l?.farmer_id) {
         const { data: f } = await supabase.from("farmers")
-          .select("id,name_en,name_bn,account_number,farmer_code,mobile").eq("id", l.farmer_id).maybeSingle();
+          .select("id,name_en,name_bn,member_no,farmer_code,mobile").eq("id", l.farmer_id).maybeSingle();
         setOwner(f);
       }
       const [{ data: rels }, { data: ch }] = await Promise.all([
         supabase.from("land_relations")
-          .select("*, owner:farmers!land_relations_owner_farmer_id_fkey(name_en,account_number), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,account_number)")
+          .select("*, owner:farmers!land_relations_owner_farmer_id_fkey(name_en,member_no,farmer_code), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,member_no,farmer_code)")
           .eq("land_id", id).order("valid_from", { ascending: false }),
         supabase.from("irrigation_charges")
           .select("id,entry_date,total,paid_amount,due_amount,seasons(year,type)")
@@ -74,7 +74,7 @@ export default function LandDetail() {
           <span className="text-muted-foreground">Registered owner:</span>{" "}
           {owner ? (
             <Link to={`/farmers/${owner.id}`} className="font-medium underline">
-              {owner.name_en} <span className="text-xs text-muted-foreground">({owner.account_number ?? owner.farmer_code})</span>
+              {owner.name_en} <span className="text-xs text-muted-foreground">({owner.member_no ?? owner.farmer_code})</span>
             </Link>
           ) : "—"}
         </div>
@@ -103,8 +103,8 @@ export default function LandDetail() {
           <TableBody>
             {relations.map((r) => (
               <TableRow key={r.id}>
-                <TableCell>{r.owner?.name_en} <span className="text-xs text-muted-foreground">({r.owner?.account_number})</span></TableCell>
-                <TableCell>{r.sc?.name_en ? <>{r.sc.name_en} <span className="text-xs text-muted-foreground">({r.sc.account_number})</span></> : <span className="text-muted-foreground">—</span>}</TableCell>
+                <TableCell>{r.owner?.name_en} <span className="text-xs text-muted-foreground">({r.owner?.member_no ?? r.owner?.farmer_code})</span></TableCell>
+                <TableCell>{r.sc?.name_en ? <>{r.sc.name_en} <span className="text-xs text-muted-foreground">({r.sc.member_no ?? r.sc.farmer_code})</span></> : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell>{r.share_percentage}%</TableCell>
                 <TableCell>{fmtDate(r.valid_from)}</TableCell>
                 <TableCell>{r.valid_to ? fmtDate(r.valid_to) : "—"}</TableCell>
