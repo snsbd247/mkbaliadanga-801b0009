@@ -2739,6 +2739,7 @@ export type Database = {
       }
       generate_farmer_voter_number: { Args: never; Returns: string }
       generate_loan_installments: { Args: { _loan_id: string }; Returns: Json }
+      generate_member_no: { Args: never; Returns: string }
       generate_receipt_no: {
         Args: { _office_id: string; _ts?: string }
         Returns: string

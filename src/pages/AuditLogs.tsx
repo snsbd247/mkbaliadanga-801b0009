@@ -192,15 +192,32 @@ export default function AuditLogs() {
   function exportPdf() {
     const rows = filtered;
     if (rows.length === 0) { toast.error("Nothing to export"); return; }
-    const doc = new jsPDF({ orientation: "landscape" });
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
     doc.setFontSize(12);
     doc.text(`Audit Logs (${dateFrom} → ${dateTo})`, 14, 14);
     doc.setFontSize(8);
-    doc.text(`Filters: office=${officeFilter} user=${userFilter} action=${actionFilter} entity=${entityFilter} farmer=${farmerQuery || "—"}`, 14, 20);
+    doc.text(
+      `Filters: office=${officeFilter} user=${userFilter} action=${actionFilter} entity=${entityFilter} farmer=${farmerQuery || "—"}`,
+      14, 20
+    );
+
     autoTable(doc, {
       startY: 24,
-      styles: { fontSize: 7, cellPadding: 1.5 },
-      headStyles: { fillSize: 8 } as any,
+      margin: { top: 24, bottom: 14, left: 8, right: 8 },
+      styles: { fontSize: 7, cellPadding: 1.5, overflow: "linebreak", valign: "top" },
+      headStyles: { fontSize: 8, fillColor: [40, 40, 40], textColor: 255 },
+      bodyStyles: { lineWidth: 0.1 },
+      columnStyles: {
+        0: { cellWidth: 36 },
+        1: { cellWidth: 18 },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 38 },
+        5: { cellWidth: "auto" },
+      },
       head: [["Date/Time", "Action", "Entity", "Office", "User", "Entity ID"]],
       body: rows.map((l) => {
         const u = profiles[l.user_id];
@@ -214,6 +231,15 @@ export default function AuditLogs() {
           l.entity_id ?? "",
         ];
       }),
+      didDrawPage: (data) => {
+        const total = (doc as any).internal.getNumberOfPages();
+        const current = data.pageNumber;
+        doc.setFontSize(8);
+        doc.text(
+          `Page ${current} / ${total}  •  ${rows.length} entries`,
+          pageWidth - 14, pageHeight - 6, { align: "right" }
+        );
+      },
     });
     doc.save(`audit-logs-${dateFrom}-to-${dateTo}.pdf`);
     toast.success(`Exported ${rows.length} entries`);
