@@ -127,23 +127,12 @@ export default function FarmerDetail() {
   }
 
   async function addLand() {
-    const v = validateLocationChain(landLoc);
-    if (v.ok === false) {
-      setLandLocErr({ level: v.level, message: "Please select " + v.level + " first" });
-      return toast.error("Please complete the location hierarchy down to Mouza");
-    }
-    if (!landLoc.mouza_id) {
-      setLandLocErr({ level: "mouza", message: "Mouza is required" });
-      return toast.error("Mouza is required");
-    }
     setLandLocErr(null);
     setSavingLand(true);
     try {
-      const { data: m } = await supabase.from("mouzas").select("name").eq("id", landLoc.mouza_id).maybeSingle();
       const { error } = await supabase.from("lands").insert({
         farmer_id: id!,
-        mouza: (m as any)?.name ?? "",
-        mouza_id: landLoc.mouza_id,
+        mouza: (landLoc as any).village ?? "",
         dag_no: land.dag_no,
         land_size: land.land_size,
         owner_type: land.owner_type as any,
@@ -166,38 +155,15 @@ export default function FarmerDetail() {
       field_type: (row.field_type as any) ?? "medium_land",
     });
     setEditLocErr(null);
-    // Pre-fill cascade from mouza_id
-    if (row.mouza_id) {
-      const { data } = await (supabase.from as any)("lands_with_location").select("division_id,district_id,upazila_id,union_id,ward_id,village_id,mouza_id").eq("id", row.id).maybeSingle();
-      setEditLoc({
-        division_id: data?.division_id ?? null,
-        district_id: data?.district_id ?? null,
-        upazila_id: data?.upazila_id ?? null,
-        union_id: data?.union_id ?? null,
-        ward_id: data?.ward_id ?? null,
-        village_id: data?.village_id ?? null,
-        mouza_id: data?.mouza_id ?? null,
-      });
-    } else { setEditLoc({}); }
+    setEditLoc({ village: row.mouza ?? null });
   }
 
   async function saveEdit() {
     if (!editLand) return;
-    const v = validateLocationChain(editLoc);
-    if (v.ok === false) {
-      setEditLocErr({ level: v.level, message: "Please select " + v.level + " first" });
-      return toast.error("Please complete the location hierarchy down to Mouza");
-    }
-    if (!editLoc.mouza_id) {
-      setEditLocErr({ level: "mouza", message: "Mouza is required" });
-      return toast.error("Mouza is required");
-    }
     setEditSaving(true);
     try {
-      const { data: m } = await supabase.from("mouzas").select("name").eq("id", editLoc.mouza_id).maybeSingle();
       const { error } = await supabase.from("lands").update({
-        mouza: (m as any)?.name ?? "",
-        mouza_id: editLoc.mouza_id,
+        mouza: (editLoc as any).village ?? "",
         dag_no: editForm.dag_no,
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
