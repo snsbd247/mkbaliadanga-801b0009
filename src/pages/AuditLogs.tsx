@@ -102,6 +102,7 @@ export default function AuditLogs() {
       if (actionFilter !== "all") q = q.eq("action", actionFilter);
       if (entityFilter !== "all") q = q.eq("entity", entityFilter);
       if (officeFilter !== "all") q = q.eq("office_id", officeFilter);
+      if (userFilter !== "all") q = q.eq("user_id", userFilter);
       if (fid) q = q.eq("entity_id", fid);
 
       const { data, error } = await q;
