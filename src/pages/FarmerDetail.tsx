@@ -227,9 +227,7 @@ export default function FarmerDetail() {
     ]);
     setViewLoan({ ...l, loan_plans: planRes.data });
     setViewLoanInst(ins.data ?? []);
-    setViewLoanPays(pays.data ?? []);
-    // Also generate the print-ready PDF on View
-    printLoanFull({ ...l, loan_plans: planRes.data }).catch(() => {});
+     setViewLoanPays(pays.data ?? []);
   }
   function editLoanGoto(l: any) {
     setEditLoanRow(l);
