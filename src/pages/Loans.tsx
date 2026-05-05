@@ -247,6 +247,32 @@ export default function Loans() {
           </TabsContent>
         ))}
       </Tabs>
+
+      <Dialog open={!!editLoan} onOpenChange={(o) => !o && setEditLoan(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Loan</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("principal")}</Label><Input type="number" value={editForm.principal} onChange={e => setEditForm({ ...editForm, principal: +e.target.value })} /></div>
+              <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={editForm.interest_rate} disabled={!editForm.interest_enabled} onChange={e => setEditForm({ ...editForm, interest_rate: +e.target.value })} /></div>
+            </div>
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <Label>{t("interestEnabled")}</Label>
+              <Switch checked={editForm.interest_enabled} onCheckedChange={v => setEditForm({ ...editForm, interest_enabled: v })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("issuedOn")}</Label><Input type="date" value={editForm.issued_on} onChange={e => setEditForm({ ...editForm, issued_on: e.target.value })} /></div>
+              <div><Label>{t("nextDue")}</Label><Input type="date" value={editForm.next_due_on} onChange={e => setEditForm({ ...editForm, next_due_on: e.target.value })} /></div>
+            </div>
+            <div><Label>{t("note")}</Label><Input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} /></div>
+            <div className="rounded-md bg-muted p-2 text-sm">{t("totalPayable")}: <span className="font-bold">{money(editForm.interest_enabled ? editForm.principal * (1 + editForm.interest_rate / 100) : editForm.principal)}</span></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditLoan(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEdit}>{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
