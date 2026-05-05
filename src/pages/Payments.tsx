@@ -50,6 +50,13 @@ export default function Payments() {
   useEffect(() => { load(); /* refresh on toggle */ }, [showDeleted]);
   useEffect(() => { if (farmerId) loadDues(); else { setOpenLoans([]); setOpenIrr([]); } }, [farmerId]);
   useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
+  useEffect(() => {
+    const loan = params.get("loan");
+    const amt = params.get("amount");
+    if (loan && farmerId) {
+      setAllocs([{ kind: "loan", reference_id: loan, amount: amt ? Number(amt) : 0 }]);
+    }
+  }, [params, farmerId, openLoans.length]);
 
   async function loadPriority() {
     if (!user) return;
