@@ -13,7 +13,7 @@ describe("autoReceiptNo", () => {
   it("strips punctuation from seed", () => {
     const r = autoReceiptNo("LOAN", "!!a-b/c1!!", new Date("2026-12-31T00:00:00Z"));
     expect(r).toMatch(/^LOAN-20261231-[A-Z0-9]{6}$/);
-    expect(r.endsWith("0ABC1") || r.endsWith("AABBC1")).toBe(false);
+    expect(r).not.toMatch(/[^A-Z0-9-]/);
   });
 });
 
