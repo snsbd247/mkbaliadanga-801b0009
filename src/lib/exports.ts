@@ -195,6 +195,37 @@ export function exportPaymentReceiptPDF(opts: {
   doc.line(15, y, 60, y); doc.text("Collector", 37, y + 4, { align: "center" });
   doc.line(w - 60, y, w - 15, y); doc.text("Authorized Sig.", w - 37, y + 4, { align: "center" });
 
+  // Optional loan context (installments + history) on additional pages
+  if (opts.loanContext && opts.loanContext.length) {
+    for (const ctx of opts.loanContext) {
+      doc.addPage("a4", "p");
+      const aw = doc.internal.pageSize.getWidth();
+      doc.setFontSize(12); doc.setFont(undefined, "bold");
+      doc.text(`Loan: ${ctx.label}`, aw / 2, 14, { align: "center" });
+      doc.setFontSize(9); doc.setFont(undefined, "normal");
+      doc.text(`Total Payable: ${moneyPdf(ctx.totalPayable)}    Paid: ${moneyPdf(ctx.paidToDate)}    Due: ${moneyPdf(ctx.due)}`, 14, 22);
+      let yy = 28;
+      if (ctx.installments && ctx.installments.length) {
+        autoTable(doc, {
+          startY: yy,
+          head: [["#", "Due Date", "Amount", "Paid", "Status"]],
+          body: ctx.installments.map(i => [i.no, fmtDate(i.due_date), moneyPdf(i.amount), moneyPdf(i.paid_amount), i.status]),
+          styles: { fontSize: 8 }, headStyles: { fillColor: [30, 110, 70] },
+        });
+        yy = (doc as any).lastAutoTable.finalY + 6;
+      }
+      if (ctx.paymentHistory && ctx.paymentHistory.length) {
+        doc.setFont(undefined, "bold"); doc.text("Payment History", 14, yy); yy += 2;
+        autoTable(doc, {
+          startY: yy,
+          head: [["Date", "Amount", "Note"]],
+          body: ctx.paymentHistory.map(p => [fmtDate(p.date), moneyPdf(p.amount), p.note ?? ""]),
+          styles: { fontSize: 8 }, headStyles: { fillColor: [30, 110, 70] },
+        });
+      }
+    }
+  }
+
   doc.save(`receipt-${opts.receipt_no}.pdf`);
 }
 
