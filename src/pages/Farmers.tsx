@@ -394,10 +394,14 @@ export default function Farmers() {
           <Input value={f.mobile} disabled={disabled} inputMode="tel" maxLength={20} onChange={e => setF({ ...f, mobile: e.target.value })} className={fieldErrors.mobile ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""} />
           {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
         </div>
-        <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
         <div>
-          <Label>Create Savings Account</Label>
-          <SavingsAccountField f={f} setF={setF} disabled={disabled} />
+          <Label>Member No <span className="text-xs text-muted-foreground">(manual identifier shown everywhere)</span></Label>
+          <Input value={f.member_no || ""} disabled={disabled} maxLength={50} placeholder="e.g. M-1024"
+            onChange={e => setF({ ...f, member_no: e.target.value })} />
+        </div>
+        <div>
+          <Label>Voter / Savings Account</Label>
+          <VoterToggleField f={f} setF={setF} disabled={disabled} />
         </div>
         <div>
           <Label>{t("office")}</Label>
