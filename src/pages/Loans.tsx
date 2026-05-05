@@ -205,7 +205,26 @@ export default function Loans() {
                 <div><Label>{t("issuedOn")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
                 <div><Label>{t("nextDue")}</Label><Input type="date" value={form.next_due_on} onChange={e => setForm({ ...form, next_due_on: e.target.value })} /></div>
               </div>
-              <div className="rounded-md bg-muted p-2 text-sm">{t("totalPayable")}: <span className="font-bold">{money(form.interest_enabled ? form.principal * (1 + form.interest_rate / 100) : form.principal)}</span></div>
+              {(() => {
+                const total = form.interest_enabled ? form.principal * (1 + form.interest_rate / 100) : form.principal;
+                const plan = plans.find(p => p.id === form.plan_id);
+                let perLabel = ""; let perAmt = 0; let count = 0;
+                if (plan) {
+                  const months = plan.duration_months || 1;
+                  if (plan.installment_type === "monthly") { count = months; perLabel = t("perMonth" as any) || "Per month"; }
+                  else if (plan.installment_type === "weekly") { count = Math.round(months * 4.345); perLabel = t("perWeek" as any) || "Per week"; }
+                  else if (plan.installment_type === "daily") { count = Math.round(months * 30); perLabel = t("perDay" as any) || "Per day"; }
+                  perAmt = count > 0 ? total / count : 0;
+                }
+                return (
+                  <div className="rounded-md bg-muted p-2 text-sm space-y-1">
+                    <div>{t("totalPayable")}: <span className="font-bold">{money(total)}</span></div>
+                    {plan && count > 0 && (
+                      <div>{perLabel}: <span className="font-bold">{money(perAmt)}</span> <span className="text-xs text-muted-foreground">× {count} {t("installments" as any) || "installments"}</span></div>
+                    )}
+                  </div>
+                );
+              })()}
               <p className="text-xs text-muted-foreground">All loans require committee approval before disbursement is recorded.</p>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save}>{t("save")}</Button></DialogFooter>
