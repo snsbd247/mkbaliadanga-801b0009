@@ -265,6 +265,26 @@ export default function Savings() {
     if (error) return toast.error(error.message);
     toast.success("Restored"); load();
   }
+  function startEditTxn(r: any) {
+    setEditTxn(r);
+    setEditTxnForm({ amount: Number(r.amount), note: r.note ?? "" });
+  }
+  async function saveEditTxn() {
+    if (!editTxn) return;
+    if (editTxnForm.amount <= 0) return toast.error("Amount must be positive");
+    const { error } = await supabase.from("savings_transactions")
+      .update({ amount: editTxnForm.amount, note: editTxnForm.note || null })
+      .eq("id", editTxn.id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated"); setEditTxn(null); load();
+  }
+  async function deleteTxn(id: string) {
+    if (!window.confirm("Delete this savings transaction?")) return;
+    const { error } = await supabase.from("savings_transactions")
+      .update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); load();
+  }
 
   function printReceipt(r: any) {
     exportPaymentReceiptPDF({
