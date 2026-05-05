@@ -451,11 +451,11 @@ export default function Farmers() {
           <LocationPicker
             value={pickLocation(f)}
             onChange={(loc) => setF({ ...f, ...loc })}
-            errorLevel={err?.level ?? null}
+            errorLevel={(err?.level as any) ?? null}
             errorMessage={fieldErrors.location ?? (err ? buildErrMessage(err.key, err.level) : null)}
             labels={{
-              division: t("division"), district: t("district"), upazila: t("upazila"),
-              union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
+              division: t("division"), district: t("district"),
+              upazila: t("upazila"), village: t("village"),
             }}
           />
         </div>
