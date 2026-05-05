@@ -65,11 +65,10 @@ export default function FarmerDetail() {
     }
     setOwnerLandsLoading(true);
     supabase
-      .from("lands")
-      .select("id,dag_no,land_size,field_type")
+      .from("lands_with_location")
+      .select("id,dag_no,land_size,field_type,division_id,district_id,upazila_id,mouza_name")
       .eq("farmer_id", land.owner_farmer_id)
       .eq("owner_type", "owner")
-      .is("deleted_at", null)
       .then(({ data }) => {
         setOwnerLands(data ?? []);
         setOwnerLandsLoading(false);
