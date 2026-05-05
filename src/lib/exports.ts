@@ -145,6 +145,12 @@ export function exportPaymentReceiptPDF(opts: {
   method: string;
   note?: string;
   allocations: Array<{ kind: string; amount: number }>;
+  loanContext?: Array<{
+    label: string;
+    totalPayable: number; paidToDate: number; due: number;
+    installments?: Array<{ no: number; due_date: string; amount: number; paid_amount: number; status: string }>;
+    paymentHistory?: Array<{ date: string; amount: number; note?: string }>;
+  }>;
 }) {
   const doc = new jsPDF({ unit: "mm", format: [148, 210] }); // A5
   const w = 148;
