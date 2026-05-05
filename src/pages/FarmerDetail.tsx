@@ -46,6 +46,9 @@ export default function FarmerDetail() {
   const [viewLoan, setViewLoan] = useState<any | null>(null);
   const [viewLoanInst, setViewLoanInst] = useState<any[]>([]);
   const [viewLoanPays, setViewLoanPays] = useState<any[]>([]);
+  const [editLoanRow, setEditLoanRow] = useState<any | null>(null);
+  const [editLoanForm, setEditLoanForm] = useState<{ plan_id: string; principal: number; interest_rate: number; interest_enabled: boolean; issued_on: string; next_due_on: string; note: string }>({ plan_id: "", principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
+  const [loanPlans, setLoanPlans] = useState<any[]>([]);
   const [irr, setIrr] = useState<any[]>([]);
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
@@ -93,6 +96,9 @@ export default function FarmerDetail() {
   const brand = useBranding();
 
   useEffect(() => { if (id) loadAll(); }, [id]);
+  useEffect(() => {
+    supabase.from("loan_plans").select("*").eq("is_active", true).then(({ data }) => setLoanPlans(data ?? []));
+  }, []);
   useEffect(() => { document.title = `${farmer?.name_en ?? ""} — ${t("farmers")}`; }, [farmer, t]);
 
   async function loadAll() {
@@ -222,7 +228,96 @@ export default function FarmerDetail() {
     setViewLoanPays(pays.data ?? []);
   }
   function editLoanGoto(l: any) {
-    nav(`/loans?edit=${l.id}`);
+    setEditLoanRow(l);
+    setEditLoanForm({
+      plan_id: l.plan_id ?? "",
+      principal: Number(l.principal),
+      interest_rate: Number(l.interest_rate),
+      interest_enabled: !!l.interest_enabled,
+      issued_on: l.issued_on?.slice(0, 10) ?? "",
+      next_due_on: l.next_due_on?.slice(0, 10) ?? "",
+      note: l.note ?? "",
+    });
+  }
+  async function saveEditLoan() {
+    if (!editLoanRow) return;
+    const planChanged = (editLoanRow.plan_id ?? "") !== editLoanForm.plan_id;
+    const total_payable = editLoanForm.principal * (1 + (editLoanForm.interest_enabled ? editLoanForm.interest_rate : 0) / 100);
+    const { error } = await supabase.from("loans").update({
+      plan_id: editLoanForm.plan_id || null,
+      principal: editLoanForm.principal,
+      interest_rate: editLoanForm.interest_enabled ? editLoanForm.interest_rate : 0,
+      interest_enabled: editLoanForm.interest_enabled,
+      total_payable,
+      issued_on: editLoanForm.issued_on,
+      next_due_on: editLoanForm.next_due_on || null,
+      note: editLoanForm.note,
+    }).eq("id", editLoanRow.id);
+    if (error) return toast.error(error.message);
+    if (planChanged && editLoanForm.plan_id) {
+      await supabase.from("loan_installments").delete().eq("loan_id", editLoanRow.id);
+      const { error: gErr } = await supabase.rpc("generate_loan_installments", { _loan_id: editLoanRow.id });
+      if (gErr) toast.error(`Schedule: ${gErr.message}`);
+      else toast.success("Updated & schedule regenerated");
+    } else {
+      toast.success("Updated");
+    }
+    setEditLoanRow(null); loadAll();
+  }
+  async function printLoanFull(l: any) {
+    const [insRes, payRes] = await Promise.all([
+      supabase.from("loan_installments").select("*").eq("loan_id", l.id).order("installment_no"),
+      supabase.from("loan_payments").select("*").eq("loan_id", l.id).order("paid_on"),
+    ]);
+    const ins = insRes.data ?? [];
+    const pays = payRes.data ?? [];
+    const totalPaid = pays.reduce((s, p) => s + Number(p.amount), 0);
+    const totalDue = Number(l.total_payable) - totalPaid;
+    const paidCount = ins.filter((i: any) => i.status === "paid").length;
+    const remainCount = ins.length - paidCount;
+
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    doc.setFontSize(14); doc.setFont(undefined, "bold");
+    doc.text(brand.company_name || "Loan Details", pageW / 2, 14, { align: "center" });
+    doc.setFontSize(11);
+    doc.text(t("loanDetails" as any) || "Loan Details", pageW / 2, 21, { align: "center" });
+    doc.setFontSize(10); doc.setFont(undefined, "normal");
+    doc.text(`${t("farmerName" as any) || "Farmer"}: ${farmer?.name_en ?? ""}  (${farmer?.farmer_code ?? ""})`, 14, 30);
+    doc.text(`${t("issuedOn")}: ${fmtDate(l.issued_on)}`, 14, 36);
+    doc.text(`${t("principal")}: ${money(l.principal)}    ${t("interestRate")}: ${l.interest_rate}%`, 14, 42);
+    doc.text(`${t("totalPayable")}: ${money(l.total_payable)}    ${t("paidAmount")}: ${money(totalPaid)}    ${t("dueAmount")}: ${money(totalDue)}`, 14, 48);
+    if (ins.length) doc.text(`${t("installmentsPaid" as any)}: ${paidCount}/${ins.length}    ${t("installmentsRemaining" as any)}: ${remainCount}`, 14, 54);
+
+    let y = 60;
+    if (ins.length) {
+      autoTable(doc, {
+        startY: y,
+        head: [["#", t("nextDue"), t("total"), t("paidAmount"), t("status")]],
+        body: ins.map((i: any) => [i.installment_no, fmtDate(i.due_date), money(i.amount), money(i.paid_amount), i.status]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [16, 122, 87] },
+      });
+      y = (doc as any).lastAutoTable.finalY + 6;
+    }
+    if (pays.length) {
+      doc.setFont(undefined, "bold"); doc.text(t("payments"), 14, y); y += 4;
+      autoTable(doc, {
+        startY: y,
+        head: [[t("date"), t("paidAmount"), t("note")]],
+        body: pays.map((p: any) => [fmtDate(p.paid_on), money(p.amount), p.note ?? ""]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [16, 122, 87] },
+      });
+    }
+    const total = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i); doc.setFontSize(8);
+      doc.text(`Page ${i}/${total}`, pageW - 14, doc.internal.pageSize.getHeight() - 6, { align: "right" });
+    }
+    doc.save(`loan-${l.id.slice(0, 8)}.pdf`);
   }
   async function deleteIrrigation(i: any) {
     if (!window.confirm("Delete this irrigation entry?")) return;
@@ -611,7 +706,7 @@ export default function FarmerDetail() {
                   <TableCell><Badge>{t(l.status as any)}</Badge></TableCell>
                    <TableCell className="text-right">
                      <Button size="icon" variant="ghost" onClick={() => openLoanView(l)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
-                     <Button size="icon" variant="ghost" onClick={() => printLoan(l)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                     <Button size="icon" variant="ghost" onClick={() => printLoanFull(l)} title={t("print")}><Printer className="h-4 w-4" /></Button>
                      {isSuper && <Button size="icon" variant="ghost" onClick={() => editLoanGoto(l)} title={t("edit" as any) || "Edit"}><Pencil className="h-4 w-4" /></Button>}
                      {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                    </TableCell>
@@ -769,17 +864,27 @@ export default function FarmerDetail() {
                   <div>
                     <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("installments" as any)}</div>
                     <Table>
-                      <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{t("nextDue")}</TableHead><TableHead className="text-right">{t("total")}</TableHead><TableHead className="text-right">{t("paidAmount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{t("nextDue")}</TableHead><TableHead className="text-right">{t("total")}</TableHead><TableHead className="text-right">{t("paidAmount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead className="text-right">{t("actions")}</TableHead></TableRow></TableHeader>
                       <TableBody>
-                        {viewLoanInst.map(it => (
-                          <TableRow key={it.id}>
-                            <TableCell>{it.installment_no}</TableCell>
-                            <TableCell>{fmtDate(it.due_date)}</TableCell>
-                            <TableCell className="text-right">{money(it.amount)}</TableCell>
-                            <TableCell className="text-right">{money(it.paid_amount)}</TableCell>
-                            <TableCell><Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></TableCell>
-                          </TableRow>
-                        ))}
+                        {viewLoanInst.map(it => {
+                          const remaining = Math.max(0, Number(it.amount) - Number(it.paid_amount));
+                          return (
+                            <TableRow key={it.id}>
+                              <TableCell>{it.installment_no}</TableCell>
+                              <TableCell>{fmtDate(it.due_date)}</TableCell>
+                              <TableCell className="text-right">{money(it.amount)}</TableCell>
+                              <TableCell className="text-right">{money(it.paid_amount)}</TableCell>
+                              <TableCell><Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></TableCell>
+                              <TableCell className="text-right">
+                                {it.status !== "paid" && (
+                                  <Button size="sm" variant="outline" onClick={() => nav(`/payments?farmer=${id}&loan=${viewLoan.id}&amount=${remaining.toFixed(2)}`)}>
+                                    <Receipt className="h-3 w-3 mr-1" />{t("pay" as any) || "Pay"}
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -804,12 +909,48 @@ export default function FarmerDetail() {
                 </div>
 
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => printLoan(viewLoan)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
+                  <Button variant="outline" onClick={() => printLoanFull(viewLoan)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
                   <Button onClick={() => nav(`/payments?farmer=${id}&loan=${viewLoan.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payments")}</Button>
                 </DialogFooter>
               </div>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editLoanRow} onOpenChange={(o) => { if (!o) setEditLoanRow(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t("loanDetails" as any)} — {t("edit" as any) || "Edit"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Loan Plan</Label>
+              <Select value={editLoanForm.plan_id || "_none"} onValueChange={v => {
+                const p = loanPlans.find(x => x.id === v);
+                setEditLoanForm(f => ({ ...f, plan_id: v === "_none" ? "" : v, interest_rate: p?.interest_rate ?? f.interest_rate }));
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No plan (manual)</SelectItem>
+                  {loanPlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} @ {p.interest_rate}%</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Changing the plan will regenerate the installment schedule.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("principal")}</Label><Input type="number" value={editLoanForm.principal} onChange={e => setEditLoanForm({ ...editLoanForm, principal: +e.target.value })} /></div>
+              <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={editLoanForm.interest_rate} disabled={!editLoanForm.interest_enabled || !!editLoanForm.plan_id} onChange={e => setEditLoanForm({ ...editLoanForm, interest_rate: +e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("issuedOn")}</Label><Input type="date" value={editLoanForm.issued_on} onChange={e => setEditLoanForm({ ...editLoanForm, issued_on: e.target.value })} /></div>
+              <div><Label>{t("nextDue")}</Label><Input type="date" value={editLoanForm.next_due_on} onChange={e => setEditLoanForm({ ...editLoanForm, next_due_on: e.target.value })} /></div>
+            </div>
+            <div><Label>{t("note")}</Label><Input value={editLoanForm.note} onChange={e => setEditLoanForm({ ...editLoanForm, note: e.target.value })} /></div>
+            <div className="rounded-md bg-muted p-2 text-sm">{t("totalPayable")}: <span className="font-bold">{money(editLoanForm.interest_enabled ? editLoanForm.principal * (1 + editLoanForm.interest_rate / 100) : editLoanForm.principal)}</span></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditLoanRow(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEditLoan}>{t("save")}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
