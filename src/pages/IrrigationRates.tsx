@@ -182,21 +182,7 @@ export default function IrrigationRates() {
                     <Input type="number" min="0" step="0.01" value={form.base_rate}
                       onChange={(e) => setForm({ ...form, base_rate: +e.target.value })} />
                   </div>
-                  <div>
-                    <Label>{t("canalCharge")}</Label>
-                    <Input type="number" min="0" step="0.01" value={form.canal_charge}
-                      onChange={(e) => setForm({ ...form, canal_charge: +e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>{t("maintenanceCharge")}</Label>
-                    <Input type="number" min="0" step="0.01" value={form.maintenance_charge}
-                      onChange={(e) => setForm({ ...form, maintenance_charge: +e.target.value })} />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>{t("otherCharge")}</Label>
-                    <Input type="number" min="0" step="0.01" value={form.other_charge}
-                      onChange={(e) => setForm({ ...form, other_charge: +e.target.value })} />
-                  </div>
+                  {/* Canal/Maintenance/Other charges hidden — defaults to 0 */}
                   <div className="col-span-2">
                     <Label>{t("note")}</Label>
                     <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
@@ -218,9 +204,6 @@ export default function IrrigationRates() {
               <TableHead>{t("season")}</TableHead>
               <TableHead>{t("basis")}</TableHead>
               <TableHead className="text-right">Base</TableHead>
-              <TableHead className="text-right">{t("canalCharge")}</TableHead>
-              <TableHead className="text-right">{t("maintenanceCharge")}</TableHead>
-              <TableHead className="text-right">{t("otherCharge")}</TableHead>
               <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -230,9 +213,6 @@ export default function IrrigationRates() {
                 <TableCell>{r.seasons?.name || `${r.seasons?.type} ${r.seasons?.year}`}</TableCell>
                 <TableCell>{t(r.basis as any)}</TableCell>
                 <TableCell className="text-right">{money(Number(r.base_rate))}</TableCell>
-                <TableCell className="text-right">{money(Number(r.canal_charge))}</TableCell>
-                <TableCell className="text-right">{money(Number(r.maintenance_charge))}</TableCell>
-                <TableCell className="text-right">{money(Number(r.other_charge))}</TableCell>
                 <TableCell className="text-right">
                   {isAdmin && (
                     <>
@@ -249,7 +229,7 @@ export default function IrrigationRates() {
             ))}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={4} className="text-center text-muted-foreground">
                   {t("noData")}
                 </TableCell>
               </TableRow>
