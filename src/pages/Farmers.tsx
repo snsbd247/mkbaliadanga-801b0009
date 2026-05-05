@@ -354,6 +354,10 @@ export default function Farmers() {
       setEditFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMissingParent", v.level) }));
       return;
     }
+    if (editForm.is_voter && editForm.member_no) {
+      const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(editForm.member_no).trim(), _exclude_id: (editForm as any).id ?? null });
+      if (dup === true) { toast.error("Duplicate Member No — already used by another farmer."); return; }
+    }
 
     setSaving(true);
     let photo_url: string | undefined;
