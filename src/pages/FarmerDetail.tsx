@@ -28,6 +28,7 @@ import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null };
 
