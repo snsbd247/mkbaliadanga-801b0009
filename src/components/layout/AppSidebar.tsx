@@ -160,6 +160,8 @@ export function AppSidebar() {
 
   const isActive = (url: string) => url === "/" ? pathname === "/" : pathname.startsWith(url);
 
+  const [query, setQuery] = useState("");
+
   // Track open groups; default open if any child is active
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
@@ -168,6 +170,32 @@ export function AppSidebar() {
     });
     return init;
   });
+
+  // Filter menu by search query (case-insensitive on labels)
+  const q = query.trim().toLowerCase();
+  const filteredMenu = useMemo(() => {
+    if (!q) return menu;
+    return menu
+      .map((p) => {
+        if (!p.children) {
+          return p.label.toLowerCase().includes(q) ? p : null;
+        }
+        const kids = p.children.filter((c) => c.label.toLowerCase().includes(q));
+        if (kids.length === 0 && !p.label.toLowerCase().includes(q)) return null;
+        return { ...p, children: kids.length ? kids : p.children };
+      })
+      .filter(Boolean) as ParentItem[];
+  }, [q, menu]);
+
+  // Quick shortcuts (most-used routes), filtered by access
+  const shortcuts: SubItem[] = [
+    { url: "/admin", icon: LayoutDashboard, label: t("dashboard"), permKey: "dashboard" },
+    { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
+    { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
+    { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
+    { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
+  ].filter(allowed);
+
 
   return (
     <Sidebar collapsible="icon">
