@@ -273,7 +273,7 @@ export default function Irrigation() {
                 </Select>
               </div>
               <div>
-                <Label>{form.basis === "per_size" ? `${t("quantity")} (auto = land size)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label>
+                <Label>{form.basis === "per_size" ? `${t("quantity")} (শতক — auto from land)` : form.basis === "per_day" ? `${t("quantity")} (days)` : `${t("quantity")} (hours)`}</Label>
                 <Input type="number" step="0.01" min="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: +e.target.value })} aria-invalid={!!errors.quantity} className={errors.quantity ? "border-destructive" : ""} />
                 {errors.quantity && <p className="text-xs text-destructive mt-1">{errors.quantity}</p>}
               </div>
