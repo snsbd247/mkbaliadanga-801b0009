@@ -545,6 +545,7 @@ export default function Savings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </>
   );
 }
