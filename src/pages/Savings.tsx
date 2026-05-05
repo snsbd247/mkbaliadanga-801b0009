@@ -253,7 +253,12 @@ export default function Savings() {
               <div><Label>{t("type")}</Label>
                 <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="deposit">{t("deposit")}</SelectItem><SelectItem value="withdraw">{t("withdraw")}</SelectItem></SelectContent>
+                  <SelectContent>
+                    <SelectItem value="deposit">{t("deposit")}</SelectItem>
+                    <SelectItem value="deposit_collection">Deposit Collection</SelectItem>
+                    <SelectItem value="share_collection">Share Collection</SelectItem>
+                    <SelectItem value="withdraw">{t("withdraw")}</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
               <div><Label>{t("amount")}</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: +e.target.value })} /></div>
