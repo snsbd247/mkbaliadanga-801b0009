@@ -223,7 +223,7 @@ export default function Farmers() {
       mother_name: f.mother_name ?? "",
       nid: f.nid ?? "",
       mobile: f.mobile ?? "",
-      post_office: f.post_office ?? "",
+      member_no: f.member_no ?? "",
       address: f.address ?? "",
       voter_number: f.voter_number ?? "",
       office_id: f.office_id ?? "",
