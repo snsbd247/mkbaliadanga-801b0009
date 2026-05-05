@@ -426,7 +426,35 @@ export default function FarmerDetail() {
                           <Input disabled value={farmer?.name_en ?? ""} />
                         )}
                       </div>
-                      <div><Label>{t("dagNo")} <span className="text-destructive">*</span></Label><Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
+                      <div>
+                        <Label>{t("dagNo")} <span className="text-destructive">*</span></Label>
+                        {land.owner_type === "borgadar" && land.owner_farmer_id ? (
+                          <Select
+                            value={land.dag_no || ""}
+                            disabled={savingLand || ownerLandsLoading}
+                            onValueChange={(v) => {
+                              const src = ownerLands.find((o) => o.dag_no === v);
+                              setLand({
+                                ...land,
+                                dag_no: v,
+                                land_size: src ? Number(src.land_size ?? 0) : land.land_size,
+                                field_type: src?.field_type ?? land.field_type,
+                              });
+                            }}
+                          >
+                            <SelectTrigger><SelectValue placeholder={ownerLandsLoading ? "লোড হচ্ছে..." : (ownerLands.length ? "মালিকের দাগ সিলেক্ট করুন" : "এই মালিকের কোনো জমি নেই")} /></SelectTrigger>
+                            <SelectContent>
+                              {ownerLands.map((o) => (
+                                <SelectItem key={o.id} value={o.dag_no ?? ""}>
+                                  {o.dag_no} — {o.land_size} শতাংশ
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} />
+                        )}
+                      </div>
                       <div><Label>{t("landSize")} (শতাংশ) <span className="text-destructive">*</span></Label><Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
                       <div className="col-span-2"><Label>{t("fieldType")}</Label>
                         <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
