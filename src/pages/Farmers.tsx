@@ -369,7 +369,7 @@ export default function Farmers() {
       photo_url = await uploadPhoto(photo);
       if (!photo_url) { setSaving(false); return; }
     }
-    const payload: any = { ...form, ...(photo_url ? { photo_url } : {}), office_id: form.office_id || null };
+    const payload: any = { ...form, member_no: memberNo, ...(photo_url ? { photo_url } : {}), office_id: form.office_id || null };
     const { data, error } = await supabase.from("farmers").insert(payload).select().single();
     if (error) {
       setSaving(false);
