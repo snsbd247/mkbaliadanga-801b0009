@@ -203,7 +203,7 @@ export default function ShareCollection() {
     load();
   }
 
-
+  const filtered = useMemo(() => {
     return rows.filter(r => {
       if (range.from && r.txn_date < range.from) return false;
       if (range.to && r.txn_date > range.to) return false;
