@@ -71,7 +71,7 @@ export default function VoterList() {
     setLoading(true);
     let qy: any = supabase
       .from("farmers")
-      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,is_voter,voter_cancelled_at,voter_cancel_reason,offices(name),villages(name,name_bn),unions(name),upazilas(name),districts(name)")
+      .select("id,name_en,name_bn,account_number,voter_number,mobile,village,is_voter,voter_cancelled_at,voter_cancel_reason,offices(name),upazilas(name),districts(name)")
       .not("voter_number", "is", null)
       .neq("voter_number", "")
       .order(tab === "active" ? "voter_number" : "voter_cancelled_at", { ascending: tab === "active" })

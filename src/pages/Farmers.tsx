@@ -405,7 +405,7 @@ export default function Farmers() {
     // (voter_number, farmer_code, joined relations) without a full table reload.
     const { data: fresh } = await supabase
       .from("farmers")
-      .select("*, offices(name), villages(name,name_bn)")
+      .select("*, offices(name)")
       .eq("id", id)
       .maybeSingle();
     if (fresh) setList((prev) => prev.map((r) => (r.id === id ? fresh : r)));
