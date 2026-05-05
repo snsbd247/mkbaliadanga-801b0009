@@ -139,7 +139,7 @@ export default function LoanReceiptSettings() {
 
         {/* Live preview */}
         <Card className="p-6 space-y-3 bg-white text-black">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground">{t("preview") || "Preview"}</div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Preview</div>
           <div className="border rounded-md p-5 space-y-3" style={{ fontFamily: "serif" }}>
             <div className="flex items-center gap-3 border-b pb-3">
               {(logo ? URL.createObjectURL(logo) : form.logo_url) && (
@@ -151,14 +151,14 @@ export default function LoanReceiptSettings() {
               </div>
             </div>
             <div className="flex justify-between text-sm">
-              <div><strong>{t("receiptNo") || "Receipt #"}:</strong> <span className="font-mono">{previewNo}</span></div>
-              <div><strong>{t("date") || "Date"}:</strong> {new Date().toLocaleDateString()}</div>
+              <div><strong>Receipt #:</strong> <span className="font-mono">{previewNo}</span></div>
+              <div><strong>Date:</strong> {new Date().toLocaleDateString()}</div>
             </div>
             <table className="w-full text-sm border-t border-b">
               <tbody>
-                <tr><td className="py-1">{t("farmerName") || "Farmer"}</td><td className="py-1 text-right">— Sample Farmer —</td></tr>
-                <tr><td className="py-1">{t("loanId") || "Loan ID"}</td><td className="py-1 text-right font-mono">SAMPLE-001</td></tr>
-                <tr><td className="py-1">{t("amount") || "Amount"}</td><td className="py-1 text-right">{fmtBDT(5000, lang)}</td></tr>
+                <tr><td className="py-1">{t("farmerName")}</td><td className="py-1 text-right">— Sample Farmer —</td></tr>
+                <tr><td className="py-1">Loan ID</td><td className="py-1 text-right font-mono">SAMPLE-001</td></tr>
+                <tr><td className="py-1">{t("amount")}</td><td className="py-1 text-right">{money(5000)}</td></tr>
               </tbody>
             </table>
             {footerText && <div className="text-xs whitespace-pre-wrap text-gray-600 pt-2">{footerText}</div>}
