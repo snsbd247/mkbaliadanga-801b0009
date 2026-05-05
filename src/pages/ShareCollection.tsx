@@ -221,18 +221,41 @@ export default function ShareCollection() {
     <>
       <PageHeader title="Share Collection" description="Collect and track share capital contributions from farmers." actions={
         <div className="flex gap-2">
-          <Dialog open={batchOpen} onOpenChange={setBatchOpen}>
+          <Dialog open={batchOpen} onOpenChange={(v) => { setBatchOpen(v); if (!v) setBatchReport(null); }}>
             <DialogTrigger asChild><Button variant="outline"><Upload className="h-4 w-4 mr-1" />Batch CSV</Button></DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle>Batch Share Collection</DialogTitle></DialogHeader>
               <div className="space-y-2">
                 <Label>One entry per line: <code className="text-xs">farmer_code,amount,date(YYYY-MM-DD,optional),note(optional)</code></Label>
                 <Textarea rows={8} value={batchText} onChange={e => setBatchText(e.target.value)}
                   placeholder={"MK-0001,500,2026-05-05,May share\nMK-0002,500\nMK-0003,1000"} />
                 <p className="text-xs text-muted-foreground">All entries submitted as pending; admin must approve.</p>
+
+                {batchReport && (
+                  <div className="rounded-md border bg-muted/40 p-3 space-y-2 max-h-64 overflow-auto">
+                    <div className="flex items-center gap-3 text-sm font-medium">
+                      <span className="inline-flex items-center gap-1 text-green-600"><CheckCircle2 className="h-4 w-4" />{batchReport.ok} accepted</span>
+                      <span className="inline-flex items-center gap-1 text-destructive"><AlertCircle className="h-4 w-4" />{batchReport.errors.length} failed</span>
+                    </div>
+                    {batchReport.errors.length > 0 && (
+                      <Table>
+                        <TableHeader><TableRow><TableHead className="w-12">Line</TableHead><TableHead>Row</TableHead><TableHead>Reason</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                          {batchReport.errors.map((e, i) => (
+                            <TableRow key={i}>
+                              <TableCell className="font-mono text-xs">{e.line || "-"}</TableCell>
+                              <TableCell className="font-mono text-xs break-all">{e.raw}</TableCell>
+                              <TableCell className="text-xs text-destructive">{e.reason}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setBatchOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setBatchOpen(false)}>Close</Button>
                 <Button onClick={batchSubmit}>Submit Batch</Button>
               </DialogFooter>
             </DialogContent>
