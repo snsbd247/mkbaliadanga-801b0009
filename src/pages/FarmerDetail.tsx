@@ -957,14 +957,20 @@ export default function FarmerDetail() {
                       <TableBody>
                         {viewLoanInst.map(it => {
                           const remaining = Math.max(0, Number(it.amount) - Number(it.paid_amount));
+                          const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+                          const isOverdue = it.status !== "paid" && new Date(it.due_date) < today0;
                           return (
-                            <TableRow key={it.id}>
+                            <TableRow key={it.id} className={`cursor-pointer ${isOverdue ? "bg-destructive/5" : ""}`} onClick={() => setViewInstDetail(it)}>
                               <TableCell>{it.installment_no}</TableCell>
-                              <TableCell>{fmtDate(it.due_date)}</TableCell>
+                              <TableCell className={isOverdue ? "due-text font-semibold" : ""}>{fmtDate(it.due_date)}</TableCell>
                               <TableCell className="text-right">{money(it.amount)}</TableCell>
                               <TableCell className="text-right">{money(it.paid_amount)}</TableCell>
-                              <TableCell><Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></TableCell>
-                              <TableCell className="text-right">
+                              <TableCell>
+                                {isOverdue
+                                  ? <Badge variant="destructive">{t("overdue" as any) || "Overdue"}</Badge>
+                                  : <Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{t(it.status as any) || it.status}</Badge>}
+                              </TableCell>
+                              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 {it.status !== "paid" && (
                                   <Button size="sm" variant="outline" onClick={() => nav(`/payments?farmer=${id}&loan=${viewLoan.id}&amount=${remaining.toFixed(2)}`)}>
                                     <Receipt className="h-3 w-3 mr-1" />{t("pay" as any) || "Pay"}
