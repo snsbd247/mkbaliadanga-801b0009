@@ -109,7 +109,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
   }
 
   const display = selected
-    ? `${selected.account_number ?? selected.farmer_code} — ${selected.name_en}${selected.mobile ? ` (${selected.mobile})` : ""}`
+    ? `${selected.member_no ?? selected.farmer_code} — ${selected.name_en}${selected.mobile ? ` (${selected.mobile})` : ""}`
     : "";
   const term = q.trim();
   const tooShort = term.length > 0 && term.length < MIN_SEARCH;
@@ -159,10 +159,9 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
                   {highlight(it.name_en, term)}{it.name_bn ? <> ({highlight(it.name_bn, term)})</> : null}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {highlight(it.account_number ?? it.farmer_code, term)}
+                  {highlight(it.member_no ?? it.farmer_code, term)}
                   {it.mobile ? <> • {highlight(it.mobile, term)}</> : null}
                   {it.voter_number ? <> • Voter {highlight(it.voter_number, term)}</> : null}
-                  {it.member_no ? ` • #${it.member_no}` : ""}
                 </div>
               </div>
             </button>
