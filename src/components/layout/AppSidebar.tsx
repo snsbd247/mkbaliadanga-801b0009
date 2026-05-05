@@ -261,6 +261,12 @@ export function AppSidebar() {
                 ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQuery("");
+                    searchRef.current?.blur();
+                  }
+                }}
                 placeholder={`${t("searchMenu")}  (Ctrl+K)`}
                 className="h-8 pl-7 text-xs bg-sidebar-accent/40 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/60"
               />
