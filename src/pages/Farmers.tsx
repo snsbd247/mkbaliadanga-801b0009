@@ -432,8 +432,8 @@ export default function Farmers() {
         </div>
         <div><Label>{t("postOffice")}</Label><Input value={f.post_office} disabled={disabled} maxLength={100} onChange={e => setF({ ...f, post_office: e.target.value })} /></div>
         <div>
-          <Label>Is Voter</Label>
-          <VoterToggleField f={f} setF={setF} disabled={disabled} />
+          <Label>Create Savings Account</Label>
+          <SavingsAccountField f={f} setF={setF} disabled={disabled} />
         </div>
         <div>
           <Label>{t("office")}</Label>
