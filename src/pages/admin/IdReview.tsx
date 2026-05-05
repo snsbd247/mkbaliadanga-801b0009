@@ -143,7 +143,7 @@ export default function IdReview() {
     <div className="space-y-4">
       <PageHeader
         title={lang === "bn" ? "আইডি রিভিউ (Farmer ID / Savings A/C / Voter No)" : "ID Review (Farmer ID / Savings A/C / Voter No)"}
-        subtitle={lang === "bn"
+        description={lang === "bn"
           ? "তিনটি আইডি একসাথে দেখুন। শুধু Super Admin ম্যানুয়ালি পরিবর্তন করতে পারে; প্রতিটি পরিবর্তন audit log-এ লিপিবদ্ধ হয়।"
           : "Review all three IDs together. Only Super Admin can override; every change is recorded in the audit log."}
       />
