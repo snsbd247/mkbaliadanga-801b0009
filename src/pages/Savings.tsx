@@ -287,14 +287,17 @@ export default function Savings() {
                 <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="deposit">{t("deposit")}</SelectItem>
-                    <SelectItem value="deposit_collection">Deposit Collection</SelectItem>
-                    <SelectItem value="share_collection">Share Collection</SelectItem>
-                    <SelectItem value="withdraw">{t("withdraw")}</SelectItem>
+                    <SelectItem value="deposit">Savings Deposit (min ৳10)</SelectItem>
+                    <SelectItem value="share_deposit">Share Deposit (min ৳50)</SelectItem>
+                    <SelectItem value="withdraw">Withdraw</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div><Label>{t("amount")}</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: +e.target.value })} /></div>
+              <div>
+                <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — leave blank to auto-generate)</span></Label>
+                <Input value={form.receipt_no} placeholder="e.g. 12345" onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
+              </div>
               <div><Label>{t("note")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
               <p className="text-xs text-muted-foreground">{t("withdrawalsRequireApproval")}</p>
             </div>
