@@ -80,7 +80,7 @@ const L = {
     date: "তারিখ",
     office: "অফিস",
     farmer: "কৃষক",
-    name: "নাম", code: "কোড", member: "সদস্য নং", village: "গ্রাম", mobile: "মোবাইল",
+    name: "নাম", code: "কোড", member: "ফার্মার আইডি", village: "গ্রাম", mobile: "মোবাইল",
     qr: "কিউআর কার্ড", token: "টোকেন", status: "অবস্থা",
     type: "ধরন", method: "পদ্ধতি", amount: "টাকা (BDT)",
     note: "মন্তব্য",
