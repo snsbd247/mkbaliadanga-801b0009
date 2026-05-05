@@ -860,15 +860,26 @@ export default function FarmerDetail() {
                     <div><div className="text-xs text-muted-foreground">{t("installmentsPaid" as any)}</div><div>{paidCount} / {viewLoanInst.length}</div></div>
                     <div><div className="text-xs text-muted-foreground">{t("installmentsRemaining" as any)}</div><div>{remainCount}</div></div>
                   </>}
-                  {viewLoan.loan_plans && (() => {
-                    const plan = viewLoan.loan_plans;
-                    const type = plan.installment_type;
+                  {viewLoanInst.length > 0 && (() => {
+                    const type = viewLoan.loan_plans?.installment_type
+                      || (viewLoanInst.length > 0 && viewLoanInst[0].due_date && viewLoanInst[1]?.due_date
+                        ? (() => {
+                            const diff = (new Date(viewLoanInst[1].due_date).getTime() - new Date(viewLoanInst[0].due_date).getTime()) / 86400000;
+                            return diff >= 25 ? "monthly" : diff >= 6 ? "weekly" : "daily";
+                          })()
+                        : "monthly");
                     const label = type === "monthly" ? t("perMonth" as any) : type === "weekly" ? t("perWeek" as any) : t("perDay" as any);
-                    const avg = viewLoanInst.length ? Number(viewLoan.total_payable) / viewLoanInst.length : 0;
+                    const amounts = viewLoanInst.map(i => Number(i.amount));
+                    const minA = Math.min(...amounts);
+                    const maxA = Math.max(...amounts);
+                    const display = minA === maxA ? money(minA) : `${money(minA)} – ${money(maxA)}`;
                     return (
-                      <div className="col-span-2"><div className="text-xs text-muted-foreground">{label}</div><div className="font-bold">{money(avg)} <span className="text-xs text-muted-foreground">× {viewLoanInst.length} {t("installments" as any)}</span></div></div>
+                      <div className="col-span-2"><div className="text-xs text-muted-foreground">{label}</div><div className="font-bold">{display} <span className="text-xs text-muted-foreground">× {viewLoanInst.length} {t("installments" as any)}</span></div></div>
                     );
                   })()}
+                  {nextDueInst && (
+                    <div className="col-span-2"><div className="text-xs text-muted-foreground">{t("nextDue" as any)}</div><div className="font-semibold">{fmtDate(nextDueInst.due_date)} — <span className="due-text">{money(Math.max(0, Number(nextDueInst.amount) - Number(nextDueInst.paid_amount)))}</span></div></div>
+                  )}
                 </div>
 
                 {viewLoanInst.length > 0 && (
