@@ -219,11 +219,12 @@ export default function FarmerDetail() {
     toast.success("Deleted"); loadAll();
   }
   async function openLoanView(l: any) {
-    setViewLoan(l);
-    const [ins, pays] = await Promise.all([
+    const [ins, pays, planRes] = await Promise.all([
       supabase.from("loan_installments").select("*").eq("loan_id", l.id).order("installment_no"),
       supabase.from("loan_payments").select("*").eq("loan_id", l.id).order("paid_on", { ascending: false }),
+      l.plan_id ? supabase.from("loan_plans").select("*").eq("id", l.plan_id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
+    setViewLoan({ ...l, loan_plans: planRes.data });
     setViewLoanInst(ins.data ?? []);
     setViewLoanPays(pays.data ?? []);
   }
