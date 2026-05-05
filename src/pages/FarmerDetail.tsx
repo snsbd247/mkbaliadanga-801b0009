@@ -291,8 +291,21 @@ export default function FarmerDetail() {
     doc.text(`${t("principal")}: ${money(l.principal)}    ${t("interestRate")}: ${l.interest_rate}%`, 14, 42);
     doc.text(`${t("totalPayable")}: ${money(l.total_payable)}    ${t("paidAmount")}: ${money(totalPaid)}    ${t("dueAmount")}: ${money(totalDue)}`, 14, 48);
     if (ins.length) doc.text(`${t("installmentsPaid" as any)}: ${paidCount}/${ins.length}    ${t("installmentsRemaining" as any)}: ${remainCount}`, 14, 54);
+    if (ins.length) {
+      const type = l.loan_plans?.installment_type
+        || (ins[1]?.due_date
+          ? (() => { const d = (new Date(ins[1].due_date).getTime() - new Date(ins[0].due_date).getTime()) / 86400000; return d >= 25 ? "monthly" : d >= 6 ? "weekly" : "daily"; })()
+          : "monthly");
+      const lbl = type === "monthly" ? (t("perMonth" as any) || "Per Month") : type === "weekly" ? (t("perWeek" as any) || "Per Week") : (t("perDay" as any) || "Per Day");
+      const amounts = ins.map((i: any) => Number(i.amount));
+      const minA = Math.min(...amounts), maxA = Math.max(...amounts);
+      const disp = minA === maxA ? money(minA) : `${money(minA)} - ${money(maxA)}`;
+      doc.text(`${lbl}: ${disp}`, 14, 60);
+      const nd = ins.find((i: any) => i.status !== "paid");
+      if (nd) doc.text(`${t("nextDue" as any) || "Next Due"}: ${fmtDate(nd.due_date)} — ${money(Math.max(0, Number(nd.amount) - Number(nd.paid_amount)))}`, 14, 66);
+    }
 
-    let y = 60;
+    let y = 72;
     if (ins.length) {
       autoTable(doc, {
         startY: y,
@@ -842,10 +855,11 @@ export default function FarmerDetail() {
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{t("loanDetails" as any)}</DialogTitle></DialogHeader>
           {viewLoan && (() => {
-            const totalPaid = viewLoanPays.reduce((s, p) => s + Number(p.amount), 0);
-            const totalDue = Number(viewLoan.total_payable) - totalPaid;
-            const paidCount = viewLoanInst.filter(i => i.status === "paid").length;
-            const remainCount = viewLoanInst.filter(i => i.status !== "paid").length;
+             const totalPaid = viewLoanPays.reduce((s, p) => s + Number(p.amount), 0);
+             const totalDue = Math.max(0, Number(viewLoan.total_payable) - totalPaid);
+             const paidCount = viewLoanInst.filter(i => i.status === "paid").length;
+             const remainCount = viewLoanInst.filter(i => i.status !== "paid").length;
+             const nextDueInst = viewLoanInst.find(i => i.status !== "paid");
             return (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -859,15 +873,26 @@ export default function FarmerDetail() {
                     <div><div className="text-xs text-muted-foreground">{t("installmentsPaid" as any)}</div><div>{paidCount} / {viewLoanInst.length}</div></div>
                     <div><div className="text-xs text-muted-foreground">{t("installmentsRemaining" as any)}</div><div>{remainCount}</div></div>
                   </>}
-                  {viewLoan.loan_plans && (() => {
-                    const plan = viewLoan.loan_plans;
-                    const type = plan.installment_type;
+                  {viewLoanInst.length > 0 && (() => {
+                    const type = viewLoan.loan_plans?.installment_type
+                      || (viewLoanInst.length > 0 && viewLoanInst[0].due_date && viewLoanInst[1]?.due_date
+                        ? (() => {
+                            const diff = (new Date(viewLoanInst[1].due_date).getTime() - new Date(viewLoanInst[0].due_date).getTime()) / 86400000;
+                            return diff >= 25 ? "monthly" : diff >= 6 ? "weekly" : "daily";
+                          })()
+                        : "monthly");
                     const label = type === "monthly" ? t("perMonth" as any) : type === "weekly" ? t("perWeek" as any) : t("perDay" as any);
-                    const avg = viewLoanInst.length ? Number(viewLoan.total_payable) / viewLoanInst.length : 0;
+                    const amounts = viewLoanInst.map(i => Number(i.amount));
+                    const minA = Math.min(...amounts);
+                    const maxA = Math.max(...amounts);
+                    const display = minA === maxA ? money(minA) : `${money(minA)} – ${money(maxA)}`;
                     return (
-                      <div className="col-span-2"><div className="text-xs text-muted-foreground">{label}</div><div className="font-bold">{money(avg)} <span className="text-xs text-muted-foreground">× {viewLoanInst.length} {t("installments" as any)}</span></div></div>
+                      <div className="col-span-2"><div className="text-xs text-muted-foreground">{label}</div><div className="font-bold">{display} <span className="text-xs text-muted-foreground">× {viewLoanInst.length} {t("installments" as any)}</span></div></div>
                     );
                   })()}
+                  {nextDueInst && (
+                    <div className="col-span-2"><div className="text-xs text-muted-foreground">{t("nextDue" as any)}</div><div className="font-semibold">{fmtDate(nextDueInst.due_date)} — <span className="due-text">{money(Math.max(0, Number(nextDueInst.amount) - Number(nextDueInst.paid_amount)))}</span></div></div>
+                  )}
                 </div>
 
                 {viewLoanInst.length > 0 && (
