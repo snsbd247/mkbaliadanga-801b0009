@@ -467,9 +467,26 @@ export default function FarmerDetail() {
 
         <TabsContent value="savings">
           <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
-            <TableBody>{savings.map(s => <TableRow key={s.id}><TableCell>{fmtDate(s.txn_date)}</TableCell><TableCell>{t(s.type as any)}</TableCell><TableCell>{money(s.amount)}</TableCell><TableCell><Badge>{t(s.status as any)}</Badge></TableCell></TableRow>)}
-            {savings.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
+            <TableHeader><TableRow>
+              <TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead>
+              <TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {savings.map(s => (
+                <TableRow key={s.id}>
+                  <TableCell>{fmtDate(s.txn_date)}</TableCell>
+                  <TableCell>{t(s.type as any)}</TableCell>
+                  <TableCell>{money(s.amount)}</TableCell>
+                  <TableCell><Badge>{t(s.status as any)}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <Button size="icon" variant="ghost" onClick={() => printSavings(s)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteSavings(s)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {savings.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
 
@@ -479,25 +496,61 @@ export default function FarmerDetail() {
 
         <TabsContent value="loans">
           <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("issuedOn")}</TableHead><TableHead>{t("principal")}</TableHead><TableHead>{t("interestRate")}</TableHead><TableHead>{t("totalPayable")}</TableHead><TableHead>{t("nextDue")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow>
+              <TableHead>{t("issuedOn")}</TableHead><TableHead>{t("principal")}</TableHead>
+              <TableHead>{t("interestRate")}</TableHead><TableHead>{t("totalPayable")}</TableHead>
+              <TableHead>{t("nextDue")}</TableHead><TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
+            </TableRow></TableHeader>
             <TableBody>{loans.map(l => {
               const paid = (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0);
               const due = Number(l.total_payable) - paid;
-              return <TableRow key={l.id}><TableCell>{fmtDate(l.issued_on)}</TableCell><TableCell>{money(l.principal)}</TableCell><TableCell>{l.interest_rate}%</TableCell><TableCell>{money(l.total_payable)}</TableCell><TableCell className={due > 0 ? "due-text" : ""}>{fmtDate(l.next_due_on)}</TableCell><TableCell><Badge>{t(l.status as any)}</Badge></TableCell></TableRow>;
+              return (
+                <TableRow key={l.id}>
+                  <TableCell>{fmtDate(l.issued_on)}</TableCell>
+                  <TableCell>{money(l.principal)}</TableCell>
+                  <TableCell>{l.interest_rate}%</TableCell>
+                  <TableCell>{money(l.total_payable)}</TableCell>
+                  <TableCell className={due > 0 ? "due-text" : ""}>{fmtDate(l.next_due_on)}</TableCell>
+                  <TableCell><Badge>{t(l.status as any)}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <Button size="icon" variant="ghost" onClick={() => printLoan(l)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  </TableCell>
+                </TableRow>
+              );
             })}
-            {loans.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
+            {loans.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
           </Table></Card>
         </TabsContent>
 
         <TabsContent value="irrigation">
           <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead><TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead></TableRow></TableHeader>
-            <TableBody>{irr.map(i => <TableRow key={i.id}><TableCell>{fmtDate(i.entry_date)}</TableCell><TableCell>{i.seasons?.name}</TableCell><TableCell>{i.lands?.dag_no}</TableCell><TableCell>{money(i.total)}</TableCell><TableCell>{money(i.paid_amount)}</TableCell><TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell></TableRow>)}
-            {irr.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
+            <TableHeader><TableRow>
+              <TableHead>{t("date")}</TableHead><TableHead>{t("season")}</TableHead>
+              <TableHead>{t("dagNo")}</TableHead><TableHead>{t("total")}</TableHead>
+              <TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {irr.map(i => (
+                <TableRow key={i.id}>
+                  <TableCell>{fmtDate(i.entry_date)}</TableCell>
+                  <TableCell>{i.seasons?.name}</TableCell>
+                  <TableCell>{i.lands?.dag_no}</TableCell>
+                  <TableCell>{money(i.total)}</TableCell>
+                  <TableCell>{money(i.paid_amount)}</TableCell>
+                  <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="icon" variant="ghost" onClick={() => printIrrigation(i)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteIrrigation(i)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {irr.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
-
-        <TabsContent value="payments">
           <Card><Table>
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>
