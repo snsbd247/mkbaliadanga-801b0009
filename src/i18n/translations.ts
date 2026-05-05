@@ -588,7 +588,7 @@ export const translations = {
     farmerSelfServicePortal: "Farmer Self-Service Portal",
     signInWithOtp: "Sign in with OTP",
     farmerOtpDesc: "Enter your Farmer ID or Farmer ID. We'll send a 6-digit code to your registered mobile.",
-    farmerIdOrMemberNo: "Farmer ID / Farmer ID",
+    farmerIdOrMemberNo: "Farmer ID",
     farmerIdPlaceholder: "e.g. 2026-00000123 or M-000123",
     sendOtp: "Send OTP",
     sending: "Sending…",
