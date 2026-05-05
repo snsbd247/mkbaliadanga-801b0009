@@ -625,7 +625,13 @@ export type Database = {
           updated_at: string
           village: string | null
           village_id: string | null
+          voter_cancel_reason: string | null
+          voter_cancelled_at: string | null
+          voter_cancelled_by: string | null
           voter_number: string | null
+          voter_reactivate_reason: string | null
+          voter_reactivated_at: string | null
+          voter_reactivated_by: string | null
           ward_id: string | null
         }
         Insert: {
@@ -659,7 +665,13 @@ export type Database = {
           updated_at?: string
           village?: string | null
           village_id?: string | null
+          voter_cancel_reason?: string | null
+          voter_cancelled_at?: string | null
+          voter_cancelled_by?: string | null
           voter_number?: string | null
+          voter_reactivate_reason?: string | null
+          voter_reactivated_at?: string | null
+          voter_reactivated_by?: string | null
           ward_id?: string | null
         }
         Update: {
@@ -693,7 +705,13 @@ export type Database = {
           updated_at?: string
           village?: string | null
           village_id?: string | null
+          voter_cancel_reason?: string | null
+          voter_cancelled_at?: string | null
+          voter_cancelled_by?: string | null
           voter_number?: string | null
+          voter_reactivate_reason?: string | null
+          voter_reactivated_at?: string | null
+          voter_reactivated_by?: string | null
           ward_id?: string | null
         }
         Relationships: [
@@ -2674,36 +2692,42 @@ export type Database = {
       voter_audit_logs: {
         Row: {
           account_number: string | null
+          action: string | null
           changed_by: string | null
           created_at: string
           farmer_id: string
           id: string
           is_voter_new: boolean | null
           is_voter_old: boolean | null
+          note: string | null
           office_id: string | null
           voter_number_new: string | null
           voter_number_old: string | null
         }
         Insert: {
           account_number?: string | null
+          action?: string | null
           changed_by?: string | null
           created_at?: string
           farmer_id: string
           id?: string
           is_voter_new?: boolean | null
           is_voter_old?: boolean | null
+          note?: string | null
           office_id?: string | null
           voter_number_new?: string | null
           voter_number_old?: string | null
         }
         Update: {
           account_number?: string | null
+          action?: string | null
           changed_by?: string | null
           created_at?: string
           farmer_id?: string
           id?: string
           is_voter_new?: boolean | null
           is_voter_old?: boolean | null
+          note?: string | null
           office_id?: string | null
           voter_number_new?: string | null
           voter_number_old?: string | null
@@ -2877,6 +2901,10 @@ export type Database = {
       _sms_savings_balance: { Args: { _farmer: string }; Returns: number }
       activate_sms_token: { Args: { _id: string }; Returns: undefined }
       apply_loan_installment_penalties: { Args: never; Returns: Json }
+      cancel_voter_membership: {
+        Args: { _farmer_id: string; _reason: string }
+        Returns: Json
+      }
       close_accounting_period: {
         Args: { _from: string; _note?: string; _office?: string; _to: string }
         Returns: string
@@ -3006,6 +3034,10 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      reactivate_voter_membership: {
+        Args: { _farmer_id: string; _reason: string }
+        Returns: Json
       }
       reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
       retire_sms_token: { Args: { _id: string }; Returns: undefined }
