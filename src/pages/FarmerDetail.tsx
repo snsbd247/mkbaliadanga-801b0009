@@ -305,7 +305,7 @@ export default function FarmerDetail() {
       if (nd) doc.text(`${t("nextDue" as any) || "Next Due"}: ${fmtDate(nd.due_date)} — ${money(Math.max(0, Number(nd.amount) - Number(nd.paid_amount)))}`, 14, 66);
     }
 
-    let y = 60;
+    let y = 72;
     if (ins.length) {
       autoTable(doc, {
         startY: y,
