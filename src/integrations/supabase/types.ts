@@ -2628,6 +2628,17 @@ export type Database = {
       current_user_office: { Args: never; Returns: string }
       data_integrity_scan: { Args: never; Returns: Json }
       email_for_username: { Args: { _username: string }; Returns: string }
+      farmer_dues_breakdown: {
+        Args: { _farmer_id: string }
+        Returns: {
+          farmer_id: string
+          irrigation_due: number
+          loan_due: number
+          net_due: number
+          savings_balance: number
+          share_balance: number
+        }[]
+      }
       farmer_dues_summary: {
         Args: never
         Returns: {
