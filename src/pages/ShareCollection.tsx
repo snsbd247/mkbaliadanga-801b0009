@@ -427,6 +427,7 @@ export default function ShareCollection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </>
   );
 }
