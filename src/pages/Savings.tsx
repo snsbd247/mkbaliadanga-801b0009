@@ -281,13 +281,17 @@ export default function Savings() {
     toast.success("Updated"); setEditTxn(null); load();
   }
   async function deleteTxn(id: string) {
-    if (!window.confirm("Delete this savings transaction?")) return;
+    const ok = await confirm({
+      title: "Delete savings transaction?",
+      description: "This will archive the transaction. Share / savings balance will recompute automatically.",
+      destructive: true, confirmText: "Delete",
+    });
+    if (!ok) return;
     const { error } = await supabase.from("savings_transactions")
       .update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); load();
+    toast.success("Deleted"); await load();
   }
-
   function printReceipt(r: any) {
     exportPaymentReceiptPDF({
       brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
