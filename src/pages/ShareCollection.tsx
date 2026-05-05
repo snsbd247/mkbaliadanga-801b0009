@@ -37,6 +37,7 @@ type Row = {
 
 export default function ShareCollection() {
   const { user, isCommittee, isSuper } = useAuth();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
