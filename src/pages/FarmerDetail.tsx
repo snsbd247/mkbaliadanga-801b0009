@@ -551,6 +551,8 @@ export default function FarmerDetail() {
             </TableBody>
           </Table></Card>
         </TabsContent>
+
+        <TabsContent value="payments">
           <Card><Table>
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>
