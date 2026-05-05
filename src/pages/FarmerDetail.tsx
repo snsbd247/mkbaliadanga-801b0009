@@ -917,6 +917,42 @@ export default function FarmerDetail() {
           })()}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editLoanRow} onOpenChange={(o) => { if (!o) setEditLoanRow(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t("loanDetails" as any)} — {t("edit" as any) || "Edit"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Loan Plan</Label>
+              <Select value={editLoanForm.plan_id || "_none"} onValueChange={v => {
+                const p = loanPlans.find(x => x.id === v);
+                setEditLoanForm(f => ({ ...f, plan_id: v === "_none" ? "" : v, interest_rate: p?.interest_rate ?? f.interest_rate }));
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No plan (manual)</SelectItem>
+                  {loanPlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} @ {p.interest_rate}%</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Changing the plan will regenerate the installment schedule.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("principal")}</Label><Input type="number" value={editLoanForm.principal} onChange={e => setEditLoanForm({ ...editLoanForm, principal: +e.target.value })} /></div>
+              <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={editLoanForm.interest_rate} disabled={!editLoanForm.interest_enabled || !!editLoanForm.plan_id} onChange={e => setEditLoanForm({ ...editLoanForm, interest_rate: +e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("issuedOn")}</Label><Input type="date" value={editLoanForm.issued_on} onChange={e => setEditLoanForm({ ...editLoanForm, issued_on: e.target.value })} /></div>
+              <div><Label>{t("nextDue")}</Label><Input type="date" value={editLoanForm.next_due_on} onChange={e => setEditLoanForm({ ...editLoanForm, next_due_on: e.target.value })} /></div>
+            </div>
+            <div><Label>{t("note")}</Label><Input value={editLoanForm.note} onChange={e => setEditLoanForm({ ...editLoanForm, note: e.target.value })} /></div>
+            <div className="rounded-md bg-muted p-2 text-sm">{t("totalPayable")}: <span className="font-bold">{money(editLoanForm.interest_enabled ? editLoanForm.principal * (1 + editLoanForm.interest_rate / 100) : editLoanForm.principal)}</span></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditLoanRow(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEditLoan}>{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
