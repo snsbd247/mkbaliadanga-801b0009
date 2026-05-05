@@ -385,15 +385,29 @@ export default function FarmerDetail() {
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div><Label>{t("dagNo")}</Label><Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
-                      <div><Label>{t("landSize")}</Label><Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
-                      <div><Label>{t("ownerType")}</Label>
-                        <Select value={land.owner_type} disabled={savingLand} onValueChange={v => setLand({ ...land, owner_type: v })}>
+                      <div><Label>{t("ownerType")} <span className="text-destructive">*</span></Label>
+                        <Select value={land.owner_type} disabled={savingLand} onValueChange={v => setLand({ ...land, owner_type: v, owner_farmer_id: v === "owner" ? "" : land.owner_farmer_id })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
                         </Select>
                       </div>
-                      <div><Label>{t("fieldType")}</Label>
+                      <div>
+                        <Label>{t("owner")} {land.owner_type === "borgadar" ? <span className="text-destructive">*</span> : <span className="text-xs text-muted-foreground">(auto)</span>}</Label>
+                        {land.owner_type === "borgadar" ? (
+                          <FarmerSearchSelect
+                            value={land.owner_farmer_id || null}
+                            onChange={(fid) => setLand({ ...land, owner_farmer_id: fid ?? "" })}
+                            excludeIds={[id!]}
+                            placeholder="মালিক সার্চ করুন (নাম / ID / মোবাইল)"
+                            disabled={savingLand}
+                          />
+                        ) : (
+                          <Input disabled value={farmer?.name_en ?? ""} />
+                        )}
+                      </div>
+                      <div><Label>{t("dagNo")} <span className="text-destructive">*</span></Label><Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} /></div>
+                      <div><Label>{t("landSize")} (শতাংশ) <span className="text-destructive">*</span></Label><Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} /></div>
+                      <div className="col-span-2"><Label>{t("fieldType")}</Label>
                         <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
