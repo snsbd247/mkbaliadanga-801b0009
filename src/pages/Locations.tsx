@@ -604,7 +604,7 @@ export default function Locations() {
     <>
       <PageHeader
         title={t("locations")}
-        description={t("locationsManagementDesc" as any) || "Manage divisions, districts, upazilas, unions, wards, villages, and mouzas with strict cascading hierarchy."}
+        description={t("locationsManagementDesc" as any) || "Manage divisions, districts, and upazilas with strict cascading hierarchy."}
       />
       <div className="rounded-md border bg-muted/30 p-3 mb-4 text-xs text-muted-foreground flex gap-2">
         <MapPin className="h-4 w-4 mt-0.5 shrink-0"/>
