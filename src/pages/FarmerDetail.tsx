@@ -1004,8 +1004,63 @@ export default function FarmerDetail() {
                 </div>
 
                 <DialogFooter>
+                  <Button variant="outline" onClick={() => exportLoanExcel(viewLoan)}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("exportExcel")}</Button>
                   <Button variant="outline" onClick={() => printLoanFull(viewLoan)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
                   <Button onClick={() => nav(`/payments?farmer=${id}&loan=${viewLoan.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payments")}</Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewInstDetail} onOpenChange={(o) => { if (!o) setViewInstDetail(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{t("installmentDetail" as any) || "Installment Detail"}</DialogTitle></DialogHeader>
+          {viewInstDetail && (() => {
+            const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+            const dueDate = new Date(viewInstDetail.due_date);
+            const isOverdue = viewInstDetail.status !== "paid" && dueDate < today0;
+            const daysLate = isOverdue ? Math.floor((today0.getTime() - dueDate.getTime()) / 86400000) : 0;
+            const remaining = Math.max(0, Number(viewInstDetail.amount) - Number(viewInstDetail.paid_amount));
+            const relPays = viewLoanPays.filter((p: any) => {
+              if (!viewInstDetail.paid_on) return false;
+              return new Date(p.paid_on) <= new Date(viewInstDetail.paid_on || viewInstDetail.due_date);
+            });
+            return (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><div className="text-xs text-muted-foreground">{t("installmentNo" as any)}</div><div className="font-semibold">#{viewInstDetail.installment_no}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("dueDate" as any)}</div><div className={isOverdue ? "due-text font-semibold" : "font-semibold"}>{fmtDate(viewInstDetail.due_date)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("total")}</div><div>{money(viewInstDetail.amount)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("paidAmount")}</div><div className="text-success">{money(viewInstDetail.paid_amount)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("dueAmount")}</div><div className={remaining > 0 ? "due-text font-semibold" : ""}>{money(remaining)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("status")}</div>
+                    <div>{isOverdue
+                      ? <Badge variant="destructive">{t("overdue" as any)} ({daysLate} {t("daysOverdue" as any)})</Badge>
+                      : <Badge>{t(viewInstDetail.status as any) || viewInstDetail.status}</Badge>}</div></div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">{t("timeline" as any)}</div>
+                  <ol className="relative border-l border-muted ml-2 space-y-3">
+                    <li className="ml-4"><span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-primary"></span>
+                      <div className="text-xs text-muted-foreground">{t("dueDate" as any)}</div><div>{fmtDate(viewInstDetail.due_date)} — {money(viewInstDetail.amount)}</div></li>
+                    {relPays.map((p: any) => (
+                      <li key={p.id} className="ml-4"><span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-success"></span>
+                        <div className="text-xs text-muted-foreground">{fmtDate(p.paid_on)}</div><div className="text-success">+{money(p.amount)} {p.note ? `— ${p.note}` : ""}</div></li>
+                    ))}
+                    {viewInstDetail.status === "paid" && viewInstDetail.paid_on && (
+                      <li className="ml-4"><span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-success"></span>
+                        <div className="text-xs text-muted-foreground">{t("paid")}</div><div>{fmtDate(viewInstDetail.paid_on)}</div></li>
+                    )}
+                  </ol>
+                </div>
+                <DialogFooter>
+                  {viewInstDetail.status !== "paid" && (
+                    <Button onClick={() => { setViewInstDetail(null); nav(`/payments?farmer=${id}&loan=${viewLoan.id}&amount=${remaining.toFixed(2)}`); }}>
+                      <Receipt className="h-4 w-4 mr-1" />{t("pay" as any) || "Pay"}
+                    </Button>
+                  )}
                 </DialogFooter>
               </div>
             );
