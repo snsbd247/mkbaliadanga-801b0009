@@ -15,10 +15,12 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export default function Irrigation() {
   const { t } = useLang();
   const { user, isSuper } = useAuth();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [showDeleted, setShowDeleted] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
@@ -157,10 +159,15 @@ export default function Irrigation() {
   }
 
   async function softDelete(id: string) {
-    if (!window.confirm("Delete this irrigation entry?")) return;
+    const ok = await confirm({
+      title: "Delete irrigation entry?",
+      description: "This will archive the irrigation charge. You can restore it later from Show archived.",
+      destructive: true, confirmText: "Delete",
+    });
+    if (!ok) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); load();
+    toast.success("Deleted"); await load();
   }
 
   const [genSeason, setGenSeason] = useState<string>("");
@@ -384,6 +391,7 @@ export default function Irrigation() {
           {rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table></Card>
+      {confirmDialog}
     </>
   );
 }

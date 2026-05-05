@@ -18,6 +18,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
 
 const DEFAULT_INTEREST = 8.0;
@@ -26,6 +27,7 @@ export default function Loans() {
   const { t } = useLang();
   const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
@@ -99,10 +101,15 @@ export default function Loans() {
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function remove(id: string) {
-    if (!window.confirm(t("deleteLoanConfirm"))) return;
+    const ok = await confirm({
+      title: "Delete loan?",
+      description: "This will archive the loan record. You can restore it later.",
+      destructive: true, confirmText: "Delete",
+    });
+    if (!ok) return;
     const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success(t("deleted")); load();
+    toast.success(t("deleted")); await load();
   }
   async function restore(id: string) {
     const { error } = await supabase.from("loans").update({ deleted_at: null } as any).eq("id", id);
@@ -273,6 +280,7 @@ export default function Loans() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </>
   );
 }

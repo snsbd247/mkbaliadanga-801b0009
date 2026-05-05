@@ -58,6 +58,8 @@ export default function VoterList() {
   const [mode, setMode] = useState<"cancel" | "reactivate" | null>(null);
   const [reason, setReason] = useState("");
   const [working, setWorking] = useState(false);
+  const [dues, setDues] = useState<{ savings_balance: number; loan_due: number; irrigation_due: number; share_balance: number } | null>(null);
+  const [duesLoading, setDuesLoading] = useState(false);
 
   useEffect(() => { document.title = `Voter List — ${t("appName")}`; }, [t]);
 
@@ -92,8 +94,36 @@ export default function VoterList() {
 
   const total = rows.length;
 
+  async function loadDues(farmerId: string) {
+    setDuesLoading(true);
+    setDues(null);
+    try {
+      // Aggregate: irrigation due, loan due, savings + share balances
+      const [{ data: irr }, { data: loans }, { data: savings }] = await Promise.all([
+        supabase.from("irrigation_charges").select("due_amount").eq("farmer_id", farmerId).is("deleted_at", null),
+        supabase.from("loans").select("id,total_payable,status,loan_payments(amount)").eq("farmer_id", farmerId).is("deleted_at", null),
+        supabase.from("savings_transactions").select("amount,type,status").eq("farmer_id", farmerId).is("deleted_at", null),
+      ]);
+      const irrigation_due = (irr ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+      const loan_due = (loans ?? []).filter((l: any) => l.status === "approved").reduce((a: number, l: any) => {
+        const paid = (l.loan_payments ?? []).reduce((x: number, p: any) => x + Number(p.amount || 0), 0);
+        return a + Math.max(0, Number(l.total_payable || 0) - paid);
+      }, 0);
+      let savings_balance = 0, share_balance = 0;
+      (savings ?? []).filter((s: any) => s.status === "approved").forEach((s: any) => {
+        const sign = s.type === "deposit" || s.type === "share_collection" ? 1 : s.type === "withdraw" ? -1 : 0;
+        if (s.type === "share_collection") share_balance += Number(s.amount || 0) * sign;
+        else savings_balance += Number(s.amount || 0) * sign;
+      });
+      setDues({ savings_balance, loan_due, irrigation_due, share_balance });
+    } finally {
+      setDuesLoading(false);
+    }
+  }
+
   function openDialog(r: Row, m: "cancel" | "reactivate") {
-    setTarget(r); setMode(m); setReason("");
+    setTarget(r); setMode(m); setReason(""); setDues(null);
+    if (m === "cancel") loadDues(r.id);
   }
 
   async function submitDialog() {
@@ -282,14 +312,31 @@ export default function VoterList() {
           </DialogHeader>
 
           {mode === "cancel" && (
-            <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
-              Cancellation requires:
-              <ul className="list-disc pl-5 mt-1 space-y-0.5">
-                <li>Savings balance must be exactly 0</li>
-                <li>No outstanding loan due</li>
-                <li>No outstanding irrigation due</li>
-              </ul>
-              The system will reject the action otherwise.
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
+                Cancellation requires:
+                <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                  <li>Savings balance must be exactly 0</li>
+                  <li>No outstanding loan due</li>
+                  <li>No outstanding irrigation due</li>
+                </ul>
+              </div>
+              <div className="rounded border p-3 text-sm">
+                <div className="font-medium mb-2">Current balances</div>
+                {duesLoading || !dues ? (
+                  <div className="text-xs text-muted-foreground">Loading dues…</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Stat label="Savings balance" value={dues.savings_balance} bad={dues.savings_balance !== 0} />
+                    <Stat label="Share balance" value={dues.share_balance} />
+                    <Stat label="Loan due" value={dues.loan_due} bad={dues.loan_due > 0} />
+                    <Stat label="Irrigation due" value={dues.irrigation_due} bad={dues.irrigation_due > 0} />
+                  </div>
+                )}
+                {dues && (dues.savings_balance !== 0 || dues.loan_due > 0 || dues.irrigation_due > 0) && (
+                  <div className="mt-2 text-xs text-destructive">Outstanding balances must be cleared before cancelling.</div>
+                )}
+              </div>
             </div>
           )}
 
@@ -312,7 +359,11 @@ export default function VoterList() {
             <Button
               variant={mode === "cancel" ? "destructive" : "default"}
               onClick={submitDialog}
-              disabled={working || reason.trim().length < 3}
+              disabled={
+                working || reason.trim().length < 3 ||
+                (mode === "cancel" && (!dues || duesLoading ||
+                  dues.savings_balance !== 0 || dues.loan_due > 0 || dues.irrigation_due > 0))
+              }
             >
               {working ? "Working…" : mode === "cancel" ? "Confirm Cancel" : "Confirm Reactivate"}
             </Button>
@@ -320,5 +371,15 @@ export default function VoterList() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function Stat({ label, value, bad }: { label: string; value: number; bad?: boolean }) {
+  const fmt = (n: number) => Number(n || 0).toLocaleString();
+  return (
+    <div className="rounded border p-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={"font-mono font-semibold " + (bad ? "text-destructive" : "")}>৳{fmt(value)}</div>
+    </div>
   );
 }

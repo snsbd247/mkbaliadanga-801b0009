@@ -18,12 +18,14 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/exports";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
 
 export default function Savings() {
   const { t, lang } = useLang();
   const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [txns, setTxns] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
@@ -279,13 +281,17 @@ export default function Savings() {
     toast.success("Updated"); setEditTxn(null); load();
   }
   async function deleteTxn(id: string) {
-    if (!window.confirm("Delete this savings transaction?")) return;
+    const ok = await confirm({
+      title: "Delete savings transaction?",
+      description: "This will archive the transaction. Share / savings balance will recompute automatically.",
+      destructive: true, confirmText: "Delete",
+    });
+    if (!ok) return;
     const { error } = await supabase.from("savings_transactions")
       .update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); load();
+    toast.success("Deleted"); await load();
   }
-
   function printReceipt(r: any) {
     exportPaymentReceiptPDF({
       brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
@@ -539,6 +545,7 @@ export default function Savings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </>
   );
 }
