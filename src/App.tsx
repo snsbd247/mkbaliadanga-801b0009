@@ -51,6 +51,8 @@ import ShareCapitalReconciliation from "./pages/ShareCapitalReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
 import ReceiptTemplate from "./pages/ReceiptTemplate";
+import LoanReceiptSettings from "./pages/LoanReceiptSettings";
+import BulkLoanExport from "./pages/BulkLoanExport";
 import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
@@ -146,6 +148,8 @@ const App = () => (
                 <Route path="/admin/qr-rotation" element={<QrRotation />} />
                 <Route path="/admin/bulk-cards" element={<BulkCards />} />
                 <Route path="/admin/receipt-template" element={<ReceiptTemplate />} />
+                <Route path="/admin/loan-receipt-settings" element={<LoanReceiptSettings />} />
+                <Route path="/admin/bulk-loan-export" element={<BulkLoanExport />} />
                 <Route path="/admin/card-designer" element={<CardDesigner />} />
                 <Route path="/admin/role-matrix" element={<RoleMatrix />} />
               </Route>
