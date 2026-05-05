@@ -212,6 +212,18 @@ export default function FarmerDetail() {
     if (error) return toast.error(error.message);
     toast.success("Deleted"); loadAll();
   }
+  async function openLoanView(l: any) {
+    setViewLoan(l);
+    const [ins, pays] = await Promise.all([
+      supabase.from("loan_installments").select("*").eq("loan_id", l.id).order("installment_no"),
+      supabase.from("loan_payments").select("*").eq("loan_id", l.id).order("paid_on", { ascending: false }),
+    ]);
+    setViewLoanInst(ins.data ?? []);
+    setViewLoanPays(pays.data ?? []);
+  }
+  function editLoanGoto(l: any) {
+    nav(`/loans?edit=${l.id}`);
+  }
   async function deleteIrrigation(i: any) {
     if (!window.confirm("Delete this irrigation entry?")) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", i.id);
