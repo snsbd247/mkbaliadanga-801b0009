@@ -280,44 +280,58 @@ export default function FarmerDetail() {
 
     const { default: jsPDF } = await import("jspdf");
     const { default: autoTable } = await import("jspdf-autotable");
+    const { validateLoanTotals, formatLoanReceiptNo } = await import("@/lib/loanReceiptFormat");
+    const validation = validateLoanTotals(l, ins, pays);
+    const receiptNo = formatLoanReceiptNo((brand as any).loan_receipt_no_format, l.id, new Date());
     const doc = new jsPDF();
     const pageW = doc.internal.pageSize.getWidth();
+    const headerExtra = (lang === "bn" ? (brand as any).loan_receipt_header_bn : (brand as any).loan_receipt_header_en) || "";
+    const footerExtra = (lang === "bn" ? (brand as any).loan_receipt_footer_bn : (brand as any).loan_receipt_footer_en) || "";
+    let yTop = 14;
     doc.setFontSize(14); doc.setFont(undefined, "bold");
-    doc.text(brand.company_name || "Loan Details", pageW / 2, 14, { align: "center" });
+    doc.text(brand.company_name || "Loan Details", pageW / 2, yTop, { align: "center" }); yTop += 7;
     doc.setFontSize(11);
-    doc.text(t("loanDetails" as any) || "Loan Details", pageW / 2, 21, { align: "center" });
-    doc.setFontSize(10); doc.setFont(undefined, "normal");
-    doc.text(`${t("farmerName" as any) || "Farmer"}: ${farmer?.name_en ?? ""}  (${farmer?.farmer_code ?? ""})`, 14, 30);
-    doc.text(`${t("issuedOn")}: ${fmtDate(l.issued_on)}`, 14, 36);
-    doc.text(`${t("principal")}: ${money(l.principal)}    ${t("interestRate")}: ${l.interest_rate}%`, 14, 42);
-    doc.text(`${t("totalPayable")}: ${money(l.total_payable)}    ${t("paidAmount")}: ${money(totalPaid)}    ${t("dueAmount")}: ${money(totalDue)}`, 14, 48);
-    if (ins.length) doc.text(`${t("installmentsPaid" as any)}: ${paidCount}/${ins.length}    ${t("installmentsRemaining" as any)}: ${remainCount}`, 14, 54);
+    doc.text(t("loanDetails") || "Loan Details", pageW / 2, yTop, { align: "center" }); yTop += 6;
+    if (headerExtra) { doc.setFontSize(9); doc.setFont(undefined, "normal"); doc.text(headerExtra, pageW / 2, yTop, { align: "center" }); yTop += 5; }
+    doc.setFontSize(9); doc.setFont(undefined, "normal");
+    doc.text(`${t("receiptNo")}: ${receiptNo}`, pageW - 14, yTop, { align: "right" });
+    doc.setFontSize(10);
+    doc.text(`${t("farmerName") || "Farmer"}: ${farmer?.name_en ?? ""}  (${farmer?.farmer_code ?? ""})`, 14, yTop); yTop += 6;
+    doc.text(`${t("issuedOn")}: ${fmtDate(l.issued_on)}`, 14, yTop); yTop += 6;
+    doc.text(`${t("principal")}: ${money(l.principal)}    ${t("interestRate")}: ${l.interest_rate}%`, 14, yTop); yTop += 6;
+    doc.text(`${t("totalPayable")}: ${money(l.total_payable)}    ${t("paidAmount")}: ${money(totalPaid)}    ${t("dueAmount")}: ${money(totalDue)}`, 14, yTop); yTop += 6;
+    if (ins.length) { doc.text(`${t("installmentsPaid")}: ${paidCount}/${ins.length}    ${t("installmentsRemaining")}: ${remainCount}`, 14, yTop); yTop += 6; }
     if (ins.length) {
       const type = l.loan_plans?.installment_type
         || (ins[1]?.due_date
           ? (() => { const d = (new Date(ins[1].due_date).getTime() - new Date(ins[0].due_date).getTime()) / 86400000; return d >= 25 ? "monthly" : d >= 6 ? "weekly" : "daily"; })()
           : "monthly");
-      const lbl = type === "monthly" ? (t("perMonth" as any) || "Per Month") : type === "weekly" ? (t("perWeek" as any) || "Per Week") : (t("perDay" as any) || "Per Day");
+      const lbl = type === "monthly" ? t("perMonth") : type === "weekly" ? t("perWeek") : t("perDay");
       const amounts = ins.map((i: any) => Number(i.amount));
       const minA = Math.min(...amounts), maxA = Math.max(...amounts);
       const disp = minA === maxA ? money(minA) : `${money(minA)} - ${money(maxA)}`;
-      doc.text(`${lbl}: ${disp}`, 14, 60);
+      doc.text(`${lbl}: ${disp}`, 14, yTop); yTop += 6;
       const nd = ins.find((i: any) => i.status !== "paid");
-      if (nd) doc.text(`${t("nextDue" as any) || "Next Due"}: ${fmtDate(nd.due_date)} — ${money(Math.max(0, Number(nd.amount) - Number(nd.paid_amount)))}`, 14, 66);
+      if (nd) { doc.text(`${t("nextDue") || "Next Due"}: ${fmtDate(nd.due_date)} — ${money(Math.max(0, Number(nd.amount) - Number(nd.paid_amount)))}`, 14, yTop); yTop += 6; }
+    }
+    if (!validation.ok) {
+      doc.setTextColor(200, 30, 30); doc.setFont(undefined, "bold");
+      doc.text(`⚠ ${t("totalsMismatch")}: ${validation.mismatch}`, 14, yTop); yTop += 6;
+      doc.setTextColor(0, 0, 0); doc.setFont(undefined, "normal");
     }
 
-    let y = 72;
+    let y = yTop + 2;
     const today = new Date(); today.setHours(0, 0, 0, 0);
     if (ins.length) {
       autoTable(doc, {
         startY: y,
-        head: [[t("installmentNo" as any) || "#", t("dueDate" as any) || t("nextDue"), t("total"), t("paidAmount"), t("status")]],
+        head: [[t("installmentRefId"), t("installmentNo") || "#", t("dueDate") || t("nextDue"), t("total"), t("paidAmount"), t("status")]],
         body: ins.map((i: any) => {
           const isOverdue = i.status !== "paid" && new Date(i.due_date) < today;
-          const statusLbl = isOverdue ? (t("overdue" as any) || "Overdue") : (t(i.status as any) || i.status);
-          return [i.installment_no, fmtDate(i.due_date), money(i.amount), money(i.paid_amount), statusLbl];
+          const statusLbl = isOverdue ? t("overdue") : (t(i.status as any) || i.status);
+          return [String(i.id).slice(0, 8), i.installment_no, fmtDate(i.due_date), money(i.amount), money(i.paid_amount), statusLbl];
         }),
-        styles: { fontSize: 9 },
+        styles: { fontSize: 8 },
         headStyles: { fillColor: [16, 122, 87] },
         didParseCell: (data: any) => {
           if (data.section === "body") {
@@ -331,7 +345,7 @@ export default function FarmerDetail() {
       y = (doc as any).lastAutoTable.finalY + 6;
     }
     if (pays.length) {
-      doc.setFont(undefined, "bold"); doc.text(t("paymentHistory" as any) || t("payments"), 14, y); y += 4;
+      doc.setFont(undefined, "bold"); doc.text(t("paymentHistory") || t("payments"), 14, y); y += 4;
       autoTable(doc, {
         startY: y,
         head: [[t("date"), t("paidAmount"), t("note")]],
@@ -343,7 +357,9 @@ export default function FarmerDetail() {
     const total = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= total; i++) {
       doc.setPage(i); doc.setFontSize(8);
-      doc.text(`Page ${i}/${total}`, pageW - 14, doc.internal.pageSize.getHeight() - 6, { align: "right" });
+      const pageH = doc.internal.pageSize.getHeight();
+      if (footerExtra) doc.text(footerExtra, pageW / 2, pageH - 10, { align: "center" });
+      doc.text(`Page ${i}/${total}`, pageW - 14, pageH - 6, { align: "right" });
     }
     doc.save(`loan-${l.id.slice(0, 8)}.pdf`);
   }
@@ -362,8 +378,11 @@ export default function FarmerDetail() {
       || (ins[1]?.due_date ? (() => { const d = (new Date(ins[1].due_date).getTime() - new Date(ins[0].due_date).getTime()) / 86400000; return d >= 25 ? "monthly" : d >= 6 ? "weekly" : "daily"; })() : "monthly");
     const periodLbl = type === "monthly" ? "Per Month" : type === "weekly" ? "Per Week" : "Per Day";
     const nd = ins.find((i: any) => i.status !== "paid");
+    const { validateLoanTotals } = await import("@/lib/loanReceiptFormat");
+    const v = validateLoanTotals(l, ins, pays);
     const summary = [
       ["Farmer", `${farmer?.name_en ?? ""} (${farmer?.farmer_code ?? ""})`],
+      ["Loan ID", l.id],
       ["Issued On", fmtDate(l.issued_on)],
       ["Principal", Number(l.principal)],
       ["Interest %", Number(l.interest_rate)],
@@ -373,15 +392,16 @@ export default function FarmerDetail() {
       ["Period Type", periodLbl],
       ["Next Due Date", nd ? fmtDate(nd.due_date) : "—"],
       ["Next Due Amount", nd ? Math.max(0, Number(nd.amount) - Number(nd.paid_amount)) : 0],
+      ["Validation", v.ok ? "OK" : `MISMATCH: ${v.mismatch}`],
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Loan Summary"], ...summary]), "Summary");
-    const insRows = [["#", "Due Date", "Amount", "Paid", "Status", "Overdue"], ...ins.map((i: any) => [
-      i.installment_no, fmtDate(i.due_date), Number(i.amount), Number(i.paid_amount), i.status,
+    const insRows = [["Installment Ref ID", "#", "Due Date", "Amount", "Paid", "Status", "Overdue"], ...ins.map((i: any) => [
+      i.id, i.installment_no, fmtDate(i.due_date), Number(i.amount), Number(i.paid_amount), i.status,
       i.status !== "paid" && new Date(i.due_date) < today ? "YES" : "",
     ])];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(insRows), "Installments");
-    const payRows = [["Date", "Amount", "Note"], ...pays.map((p: any) => [fmtDate(p.paid_on), Number(p.amount), p.note ?? ""])];
+    const payRows = [["Payment ID", "Date", "Amount", "Note"], ...pays.map((p: any) => [p.id, fmtDate(p.paid_on), Number(p.amount), p.note ?? ""])];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(payRows), "Payments");
     XLSX.writeFile(wb, `loan-${l.id.slice(0, 8)}.xlsx`);
   }
@@ -945,6 +965,20 @@ export default function FarmerDetail() {
                   {nextDueInst && (
                     <div className="col-span-2"><div className="text-xs text-muted-foreground">{t("nextDue" as any)}</div><div className="font-semibold">{fmtDate(nextDueInst.due_date)} — <span className="due-text">{money(Math.max(0, Number(nextDueInst.amount) - Number(nextDueInst.paid_amount)))}</span></div></div>
                   )}
+                  {(() => {
+                    const schedTotal = viewLoanInst.reduce((s, i) => s + Number(i.amount || 0), 0);
+                    const insPaid = viewLoanInst.reduce((s, i) => s + Number(i.paid_amount || 0), 0);
+                    const tol = 0.5;
+                    const ok = (!viewLoanInst.length || Math.abs(schedTotal - Number(viewLoan.total_payable)) <= tol)
+                      && Math.abs(insPaid - totalPaid) <= tol;
+                    return (
+                      <div className="col-span-4">
+                        <Badge variant={ok ? "secondary" : "destructive"}>
+                          {ok ? `✓ ${t("totalsMatch" as any)}` : `⚠ ${t("totalsMismatch" as any)}`}
+                        </Badge>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {viewLoanInst.length > 0 && (

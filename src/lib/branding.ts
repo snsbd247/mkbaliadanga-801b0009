@@ -15,6 +15,11 @@ export interface CompanyBranding {
   pdf_footer_text?: string | null;
   pdf_footer_show_address?: boolean | null;
   pdf_footer_show_contact?: boolean | null;
+  loan_receipt_header_en?: string | null;
+  loan_receipt_header_bn?: string | null;
+  loan_receipt_footer_en?: string | null;
+  loan_receipt_footer_bn?: string | null;
+  loan_receipt_no_format?: string | null;
 }
 
 const DEFAULTS: CompanyBranding = {
