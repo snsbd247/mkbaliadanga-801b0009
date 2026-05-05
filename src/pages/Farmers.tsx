@@ -441,14 +441,10 @@ export default function Farmers() {
           {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
         </div>
         <div>
-          <Label>Member No <span className="text-xs text-muted-foreground">(manual identifier shown everywhere)</span></Label>
-          <Input value={f.member_no || ""} disabled={disabled} maxLength={50} placeholder="e.g. M-1024"
-            onChange={e => setF({ ...f, member_no: e.target.value })} />
-        </div>
-        <div>
           <Label>Voter / Savings Account</Label>
           <VoterToggleField f={f} setF={setF} disabled={disabled} />
         </div>
+        <MemberNoField f={f} setF={setF} disabled={disabled} isAdmin={isAdmin} currentId={f.id ?? null} />
         <div>
           <Label>{t("office")}</Label>
           <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>
