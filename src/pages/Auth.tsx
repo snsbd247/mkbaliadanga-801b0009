@@ -206,28 +206,15 @@ export default function AuthPage() {
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
           </form>
 
-          {(debug.lookup !== "idle" || debug.errorMessage) && (
-            <div className="mt-4 space-y-2">
-              <div className="rounded-md border bg-muted/40 p-3 text-xs space-y-1.5">
-                <div className="font-semibold text-sm mb-1">Sign-in diagnostics</div>
-                <StepRow label="1. Resolve username → email" status={debug.lookup} extra={debug.resolvedEmail} />
-                <StepRow label="2. Verify password" status={debug.password} />
-                <StepRow label="3. Redirect to dashboard" status={debug.redirect} />
-              </div>
-              {debug.errorMessage && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>
-                    Login failed
-                    {debug.errorCode ? ` · ${debug.errorCode}` : ""}
-                    {debug.errorStatus ? ` · HTTP ${debug.errorStatus}` : ""}
-                  </AlertTitle>
-                  <AlertDescription className="space-y-1">
-                    <div className="font-mono text-xs break-words">{debug.errorMessage}</div>
-                    {debug.hint && <div className="text-xs opacity-90">{debug.hint}</div>}
-                  </AlertDescription>
-                </Alert>
-              )}
+          {debug.errorMessage && (
+            <div className="mt-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Login failed</AlertTitle>
+                <AlertDescription>
+                  <div className="text-sm">{debug.errorMessage}</div>
+                </AlertDescription>
+              </Alert>
             </div>
           )}
         </Card>
