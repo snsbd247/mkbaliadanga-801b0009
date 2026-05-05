@@ -528,7 +528,7 @@ export default function Savings() {
   );
 }
 
-function TxnTable({ rows, t, isAdmin, showDeleted, onDecide, onRestore, onPrint, profiles, historyMode }: any) {
+function TxnTable({ rows, t, isAdmin, isSuper, showDeleted, onDecide, onRestore, onPrint, onEdit, onDelete, profiles, historyMode }: any) {
   return (
     <Card><Table>
       <TableHeader><TableRow>
