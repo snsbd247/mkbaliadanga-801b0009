@@ -205,7 +205,7 @@ export default function FarmerDetail() {
     setLandLocErr(null);
     // Require location chain
     const v = validateLocationChain(landLoc);
-    if (!v.ok) { setLandLocErr({ level: v.level, message: "Please complete the location" }); return; }
+    if (!v.ok) { setLandLocErr({ level: (v as any).level, message: "Please complete the location" }); return; }
     if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: "Mouza required" }); return; }
     if (!land.dag_no.trim()) return toast.error("Dag No required");
     if (!(land.land_size > 0)) return toast.error("Land size required");
