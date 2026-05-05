@@ -397,6 +397,29 @@ export default function ShareCollection() {
         </TabsContent>
       </Tabs>
       {loading && <p className="text-xs text-muted-foreground mt-2">Loading…</p>}
+
+      <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Share Collection</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">{editRow?.farmers?.farmer_code} — {editRow?.farmers?.name_en}</div>
+            <div><Label>Amount (৳)</Label>
+              <Input type="number" min={MIN_AMOUNT} max={MAX_AMOUNT} value={editForm.amount}
+                onChange={e => setEditForm({ ...editForm, amount: e.target.value })} />
+            </div>
+            <div><Label>Date</Label>
+              <Input type="date" value={editForm.txn_date} onChange={e => setEditForm({ ...editForm, txn_date: e.target.value })} />
+            </div>
+            <div><Label>Note</Label>
+              <Input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRow(null)}>Cancel</Button>
+            <Button onClick={saveEdit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
