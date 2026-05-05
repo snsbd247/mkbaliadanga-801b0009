@@ -494,7 +494,7 @@ export default function Farmers() {
       <Card>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Account No</TableHead><TableHead>Voter Number</TableHead><TableHead>{t("farmerName")}</TableHead>
+            <TableHead>Member No</TableHead><TableHead>Voter Number</TableHead><TableHead>{t("farmerName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
             <TableHead className="text-right">{t("dueAmount")}</TableHead>
