@@ -27,6 +27,7 @@ export default function Reports() {
   const [seasonId, setSeasonId] = useState(ALL);
   const [officeId, setOfficeId] = useState(ALL);
   const [farmerId, setFarmerId] = useState(ALL);
+  const [granularity, setGranularity] = useState<"daily" | "monthly">("monthly");
 
   const [irr, setIrr] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
@@ -96,6 +97,9 @@ export default function Reports() {
     total: number;
   };
 
+  const periodKey = (d?: string | null) =>
+    !d ? "" : (granularity === "daily" ? d.slice(0, 10) : d.slice(0, 7));
+
   const monthly: Mrow[] = useMemo(() => {
     const m = new Map<string, Mrow>();
     const get = (k: string) => {
@@ -104,12 +108,12 @@ export default function Reports() {
     };
     for (const r of savings) {
       if (r.status !== "approved") continue;
-      const k = (r.txn_date ?? "").slice(0, 7);
+      const k = periodKey(r.txn_date);
       const g = get(k);
       if (r.type === "deposit") g.deposits += Number(r.amount); else g.withdrawals += Number(r.amount);
     }
     for (const r of loans) {
-      const k = (r.issued_on ?? "").slice(0, 7);
+      const k = periodKey(r.issued_on);
       const g = get(k);
       g.loanIssued += Number(r.principal || 0);
       const paid = (r.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
@@ -117,11 +121,11 @@ export default function Reports() {
       if (r.status === "approved" && due > 0) g.loanDue += due;
     }
     for (const r of loanPayments) {
-      const k = (r.paid_on ?? "").slice(0, 7);
+      const k = periodKey(r.paid_on);
       get(k).loanCollected += Number(r.amount || 0);
     }
     for (const r of irr) {
-      const k = (r.entry_date ?? "").slice(0, 7);
+      const k = periodKey(r.entry_date);
       const g = get(k);
       g.irrCharged += Number(r.total || 0);
       g.irrCollected += Number(r.paid_amount || 0);
@@ -129,7 +133,7 @@ export default function Reports() {
     }
     for (const g of m.values()) g.total = g.deposits - g.withdrawals + g.loanCollected + g.irrCollected;
     return Array.from(m.values()).sort((a, b) => b.period.localeCompare(a.period));
-  }, [savings, loans, loanPayments, irr]);
+  }, [savings, loans, loanPayments, irr, granularity]);
 
   // --- Reconciliation ---
   const recon = useMemo(() => {
