@@ -197,12 +197,17 @@ export default function ShareCollection() {
     load();
   }
   async function deleteRow(r: Row) {
-    if (!window.confirm(`Delete share collection of ${money(r.amount)} for ${r.farmers?.name_en}?`)) return;
+    const ok = await confirm({
+      title: "Delete share collection?",
+      description: <span>Amount <b>{money(r.amount)}</b> for <b>{r.farmers?.name_en}</b>. Share balance will recompute automatically.</span>,
+      destructive: true, confirmText: "Delete",
+    });
+    if (!ok) return;
     const { error } = await supabase.from("savings_transactions")
       .update({ deleted_at: new Date().toISOString() } as any).eq("id", r.id);
     if (error) return toast.error(error.message);
     toast.success("Deleted");
-    load();
+    await load();
   }
 
   const filtered = useMemo(() => {
