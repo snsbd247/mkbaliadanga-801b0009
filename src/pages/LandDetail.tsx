@@ -74,7 +74,7 @@ export default function LandDetail() {
           <span className="text-muted-foreground">Registered owner:</span>{" "}
           {owner ? (
             <Link to={`/farmers/${owner.id}`} className="font-medium underline">
-              {owner.name_en} <span className="text-xs text-muted-foreground">({owner.account_number ?? owner.farmer_code})</span>
+              {owner.name_en} <span className="text-xs text-muted-foreground">({owner.member_no ?? owner.farmer_code})</span>
             </Link>
           ) : "—"}
         </div>
