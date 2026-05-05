@@ -390,17 +390,39 @@ export default function Payments() {
                         <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
                       </>)}
                       {!showDeleted && (
-                        <Button size="icon" variant="ghost" title="Print Receipt" onClick={() => exportPaymentReceiptPDF({
-                          brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
-                          receipt_no: p.id.slice(0, 8).toUpperCase(),
-                          date: p.created_at,
-                          farmer: { name_en: p.farmers?.name_en ?? "—", farmer_code: p.farmers?.farmer_code, mobile: p.farmers?.mobile },
-                          amount: Number(p.amount),
-                          method: p.method ?? "cash",
-                          note: p.note ?? "",
-                          allocations: (p.payment_allocations?.length ? p.payment_allocations : [{ kind: p.kind, amount: Number(p.amount) }])
-                            .map((a: any) => ({ kind: a.kind, amount: Number(a.amount) })),
-                        })}><Printer className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" title={t("printReceipt") || "Print Receipt"} onClick={async () => {
+                          const allocList = (p.payment_allocations?.length ? p.payment_allocations : [{ kind: p.kind, reference_id: p.reference_id, amount: Number(p.amount) }]);
+                          const loanIds = allocList.filter((a: any) => a.kind === "loan" && a.reference_id).map((a: any) => a.reference_id);
+                          const loanContext: any[] = [];
+                          for (const lid of loanIds) {
+                            const [loanRes, insRes, payRes] = await Promise.all([
+                              supabase.from("loans").select("id,total_payable,issued_on").eq("id", lid).maybeSingle(),
+                              supabase.from("loan_installments").select("*").eq("loan_id", lid).order("installment_no"),
+                              supabase.from("loan_payments").select("*").eq("loan_id", lid).order("paid_on"),
+                            ]);
+                            if (!loanRes.data) continue;
+                            const paidToDate = (payRes.data ?? []).reduce((s, x: any) => s + Number(x.amount), 0);
+                            loanContext.push({
+                              label: `${loanRes.data.id.slice(0, 8)} — ${fmtDate(loanRes.data.issued_on)}`,
+                              totalPayable: Number(loanRes.data.total_payable),
+                              paidToDate,
+                              due: Math.max(0, Number(loanRes.data.total_payable) - paidToDate),
+                              installments: (insRes.data ?? []).map((i: any) => ({ no: i.installment_no, due_date: i.due_date, amount: Number(i.amount), paid_amount: Number(i.paid_amount), status: i.status })),
+                              paymentHistory: (payRes.data ?? []).map((x: any) => ({ date: x.paid_on, amount: Number(x.amount), note: x.note })),
+                            });
+                          }
+                          exportPaymentReceiptPDF({
+                            brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
+                            receipt_no: p.receipt_no || p.id.slice(0, 8).toUpperCase(),
+                            date: p.created_at,
+                            farmer: { name_en: p.farmers?.name_en ?? "—", farmer_code: p.farmers?.farmer_code, mobile: p.farmers?.mobile },
+                            amount: Number(p.amount),
+                            method: p.method ?? "cash",
+                            note: p.note ?? "",
+                            allocations: allocList.map((a: any) => ({ kind: a.kind, amount: Number(a.amount) })),
+                            loanContext,
+                          });
+                        }}><Printer className="h-4 w-4" /></Button>
                       )}
                     </div>
                   </TableCell>

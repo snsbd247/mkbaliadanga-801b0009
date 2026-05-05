@@ -46,6 +46,7 @@ export default function FarmerDetail() {
   const [viewLoan, setViewLoan] = useState<any | null>(null);
   const [viewLoanInst, setViewLoanInst] = useState<any[]>([]);
   const [viewLoanPays, setViewLoanPays] = useState<any[]>([]);
+  const [viewInstDetail, setViewInstDetail] = useState<any | null>(null);
   const [editLoanRow, setEditLoanRow] = useState<any | null>(null);
   const [editLoanForm, setEditLoanForm] = useState<{ plan_id: string; principal: number; interest_rate: number; interest_enabled: boolean; issued_on: string; next_due_on: string; note: string }>({ plan_id: "", principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
   const [loanPlans, setLoanPlans] = useState<any[]>([]);
@@ -308,18 +309,31 @@ export default function FarmerDetail() {
     }
 
     let y = 72;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     if (ins.length) {
       autoTable(doc, {
         startY: y,
-        head: [["#", t("nextDue"), t("total"), t("paidAmount"), t("status")]],
-        body: ins.map((i: any) => [i.installment_no, fmtDate(i.due_date), money(i.amount), money(i.paid_amount), i.status]),
+        head: [[t("installmentNo" as any) || "#", t("dueDate" as any) || t("nextDue"), t("total"), t("paidAmount"), t("status")]],
+        body: ins.map((i: any) => {
+          const isOverdue = i.status !== "paid" && new Date(i.due_date) < today;
+          const statusLbl = isOverdue ? (t("overdue" as any) || "Overdue") : (t(i.status as any) || i.status);
+          return [i.installment_no, fmtDate(i.due_date), money(i.amount), money(i.paid_amount), statusLbl];
+        }),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [16, 122, 87] },
+        didParseCell: (data: any) => {
+          if (data.section === "body") {
+            const row = ins[data.row.index];
+            if (row && row.status !== "paid" && new Date(row.due_date) < today) {
+              data.cell.styles.textColor = [200, 30, 30];
+            }
+          }
+        },
       });
       y = (doc as any).lastAutoTable.finalY + 6;
     }
     if (pays.length) {
-      doc.setFont(undefined, "bold"); doc.text(t("payments"), 14, y); y += 4;
+      doc.setFont(undefined, "bold"); doc.text(t("paymentHistory" as any) || t("payments"), 14, y); y += 4;
       autoTable(doc, {
         startY: y,
         head: [[t("date"), t("paidAmount"), t("note")]],
@@ -334,6 +348,44 @@ export default function FarmerDetail() {
       doc.text(`Page ${i}/${total}`, pageW - 14, doc.internal.pageSize.getHeight() - 6, { align: "right" });
     }
     doc.save(`loan-${l.id.slice(0, 8)}.pdf`);
+  }
+  async function exportLoanExcel(l: any) {
+    const XLSX = await import("xlsx");
+    const [insRes, payRes] = await Promise.all([
+      supabase.from("loan_installments").select("*").eq("loan_id", l.id).order("installment_no"),
+      supabase.from("loan_payments").select("*").eq("loan_id", l.id).order("paid_on"),
+    ]);
+    const ins = insRes.data ?? [];
+    const pays = payRes.data ?? [];
+    const totalPaid = pays.reduce((s, p) => s + Number(p.amount), 0);
+    const totalDue = Math.max(0, Number(l.total_payable) - totalPaid);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const type = l.loan_plans?.installment_type
+      || (ins[1]?.due_date ? (() => { const d = (new Date(ins[1].due_date).getTime() - new Date(ins[0].due_date).getTime()) / 86400000; return d >= 25 ? "monthly" : d >= 6 ? "weekly" : "daily"; })() : "monthly");
+    const periodLbl = type === "monthly" ? "Per Month" : type === "weekly" ? "Per Week" : "Per Day";
+    const nd = ins.find((i: any) => i.status !== "paid");
+    const summary = [
+      ["Farmer", `${farmer?.name_en ?? ""} (${farmer?.farmer_code ?? ""})`],
+      ["Issued On", fmtDate(l.issued_on)],
+      ["Principal", Number(l.principal)],
+      ["Interest %", Number(l.interest_rate)],
+      ["Total Payable", Number(l.total_payable)],
+      ["Paid", totalPaid],
+      ["Due", totalDue],
+      ["Period Type", periodLbl],
+      ["Next Due Date", nd ? fmtDate(nd.due_date) : "—"],
+      ["Next Due Amount", nd ? Math.max(0, Number(nd.amount) - Number(nd.paid_amount)) : 0],
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Loan Summary"], ...summary]), "Summary");
+    const insRows = [["#", "Due Date", "Amount", "Paid", "Status", "Overdue"], ...ins.map((i: any) => [
+      i.installment_no, fmtDate(i.due_date), Number(i.amount), Number(i.paid_amount), i.status,
+      i.status !== "paid" && new Date(i.due_date) < today ? "YES" : "",
+    ])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(insRows), "Installments");
+    const payRows = [["Date", "Amount", "Note"], ...pays.map((p: any) => [fmtDate(p.paid_on), Number(p.amount), p.note ?? ""])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(payRows), "Payments");
+    XLSX.writeFile(wb, `loan-${l.id.slice(0, 8)}.xlsx`);
   }
   async function deleteIrrigation(i: any) {
     if (!window.confirm("Delete this irrigation entry?")) return;
@@ -905,14 +957,20 @@ export default function FarmerDetail() {
                       <TableBody>
                         {viewLoanInst.map(it => {
                           const remaining = Math.max(0, Number(it.amount) - Number(it.paid_amount));
+                          const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+                          const isOverdue = it.status !== "paid" && new Date(it.due_date) < today0;
                           return (
-                            <TableRow key={it.id}>
+                            <TableRow key={it.id} className={`cursor-pointer ${isOverdue ? "bg-destructive/5" : ""}`} onClick={() => setViewInstDetail(it)}>
                               <TableCell>{it.installment_no}</TableCell>
-                              <TableCell>{fmtDate(it.due_date)}</TableCell>
+                              <TableCell className={isOverdue ? "due-text font-semibold" : ""}>{fmtDate(it.due_date)}</TableCell>
                               <TableCell className="text-right">{money(it.amount)}</TableCell>
                               <TableCell className="text-right">{money(it.paid_amount)}</TableCell>
-                              <TableCell><Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{it.status}</Badge></TableCell>
-                              <TableCell className="text-right">
+                              <TableCell>
+                                {isOverdue
+                                  ? <Badge variant="destructive">{t("overdue" as any) || "Overdue"}</Badge>
+                                  : <Badge variant={it.status === "paid" ? "secondary" : it.status === "partial" ? "default" : "outline"}>{t(it.status as any) || it.status}</Badge>}
+                              </TableCell>
+                              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 {it.status !== "paid" && (
                                   <Button size="sm" variant="outline" onClick={() => nav(`/payments?farmer=${id}&loan=${viewLoan.id}&amount=${remaining.toFixed(2)}`)}>
                                     <Receipt className="h-3 w-3 mr-1" />{t("pay" as any) || "Pay"}
@@ -946,8 +1004,63 @@ export default function FarmerDetail() {
                 </div>
 
                 <DialogFooter>
+                  <Button variant="outline" onClick={() => exportLoanExcel(viewLoan)}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("exportExcel")}</Button>
                   <Button variant="outline" onClick={() => printLoanFull(viewLoan)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
                   <Button onClick={() => nav(`/payments?farmer=${id}&loan=${viewLoan.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payments")}</Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewInstDetail} onOpenChange={(o) => { if (!o) setViewInstDetail(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{t("installmentDetail" as any) || "Installment Detail"}</DialogTitle></DialogHeader>
+          {viewInstDetail && (() => {
+            const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+            const dueDate = new Date(viewInstDetail.due_date);
+            const isOverdue = viewInstDetail.status !== "paid" && dueDate < today0;
+            const daysLate = isOverdue ? Math.floor((today0.getTime() - dueDate.getTime()) / 86400000) : 0;
+            const remaining = Math.max(0, Number(viewInstDetail.amount) - Number(viewInstDetail.paid_amount));
+            const relPays = viewLoanPays.filter((p: any) => {
+              if (!viewInstDetail.paid_on) return false;
+              return new Date(p.paid_on) <= new Date(viewInstDetail.paid_on || viewInstDetail.due_date);
+            });
+            return (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><div className="text-xs text-muted-foreground">{t("installmentNo" as any)}</div><div className="font-semibold">#{viewInstDetail.installment_no}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("dueDate" as any)}</div><div className={isOverdue ? "due-text font-semibold" : "font-semibold"}>{fmtDate(viewInstDetail.due_date)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("total")}</div><div>{money(viewInstDetail.amount)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("paidAmount")}</div><div className="text-success">{money(viewInstDetail.paid_amount)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("dueAmount")}</div><div className={remaining > 0 ? "due-text font-semibold" : ""}>{money(remaining)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">{t("status")}</div>
+                    <div>{isOverdue
+                      ? <Badge variant="destructive">{t("overdue" as any)} ({daysLate} {t("daysOverdue" as any)})</Badge>
+                      : <Badge>{t(viewInstDetail.status as any) || viewInstDetail.status}</Badge>}</div></div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">{t("timeline" as any)}</div>
+                  <ol className="relative border-l border-muted ml-2 space-y-3">
+                    <li className="ml-4"><span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-primary"></span>
+                      <div className="text-xs text-muted-foreground">{t("dueDate" as any)}</div><div>{fmtDate(viewInstDetail.due_date)} — {money(viewInstDetail.amount)}</div></li>
+                    {relPays.map((p: any) => (
+                      <li key={p.id} className="ml-4"><span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-success"></span>
+                        <div className="text-xs text-muted-foreground">{fmtDate(p.paid_on)}</div><div className="text-success">+{money(p.amount)} {p.note ? `— ${p.note}` : ""}</div></li>
+                    ))}
+                    {viewInstDetail.status === "paid" && viewInstDetail.paid_on && (
+                      <li className="ml-4"><span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-success"></span>
+                        <div className="text-xs text-muted-foreground">{t("paid")}</div><div>{fmtDate(viewInstDetail.paid_on)}</div></li>
+                    )}
+                  </ol>
+                </div>
+                <DialogFooter>
+                  {viewInstDetail.status !== "paid" && (
+                    <Button onClick={() => { setViewInstDetail(null); nav(`/payments?farmer=${id}&loan=${viewLoan.id}&amount=${remaining.toFixed(2)}`); }}>
+                      <Receipt className="h-4 w-4 mr-1" />{t("pay" as any) || "Pay"}
+                    </Button>
+                  )}
                 </DialogFooter>
               </div>
             );
