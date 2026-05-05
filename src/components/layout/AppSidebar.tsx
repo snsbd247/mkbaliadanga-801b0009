@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,9 +36,12 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { t, lang } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, user } = useAuth();
   const brand = useBranding();
   const { can } = usePermissions();
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const queryKey = `sidebar:query:${user?.id ?? "guest"}`;
+
 
   const menu: ParentItem[] = [
     { key: "dashboard", icon: LayoutDashboard, label: t("dashboard"), url: "/admin", permKey: "dashboard" },
