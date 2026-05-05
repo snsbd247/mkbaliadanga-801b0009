@@ -116,7 +116,7 @@ export default function IrrigationRates() {
           .eq("office_id", officeId as string)
           .maybeSingle();
         if (existing?.id) {
-          if (!confirm(t("rateExistsUpdate") || "এই অফিস ও সিজনের জন্য একটি রেট আছে — আপডেট করবেন?")) {
+          if (!confirm("এই অফিস ও সিজনের জন্য একটি রেট আছে — আপডেট করবেন?")) {
             setSaving(false);
             return;
           }
