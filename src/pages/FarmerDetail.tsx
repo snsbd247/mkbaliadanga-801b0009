@@ -349,6 +349,44 @@ export default function FarmerDetail() {
     }
     doc.save(`loan-${l.id.slice(0, 8)}.pdf`);
   }
+  async function exportLoanExcel(l: any) {
+    const XLSX = await import("xlsx");
+    const [insRes, payRes] = await Promise.all([
+      supabase.from("loan_installments").select("*").eq("loan_id", l.id).order("installment_no"),
+      supabase.from("loan_payments").select("*").eq("loan_id", l.id).order("paid_on"),
+    ]);
+    const ins = insRes.data ?? [];
+    const pays = payRes.data ?? [];
+    const totalPaid = pays.reduce((s, p) => s + Number(p.amount), 0);
+    const totalDue = Math.max(0, Number(l.total_payable) - totalPaid);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const type = l.loan_plans?.installment_type
+      || (ins[1]?.due_date ? (() => { const d = (new Date(ins[1].due_date).getTime() - new Date(ins[0].due_date).getTime()) / 86400000; return d >= 25 ? "monthly" : d >= 6 ? "weekly" : "daily"; })() : "monthly");
+    const periodLbl = type === "monthly" ? "Per Month" : type === "weekly" ? "Per Week" : "Per Day";
+    const nd = ins.find((i: any) => i.status !== "paid");
+    const summary = [
+      ["Farmer", `${farmer?.name_en ?? ""} (${farmer?.farmer_code ?? ""})`],
+      ["Issued On", fmtDate(l.issued_on)],
+      ["Principal", Number(l.principal)],
+      ["Interest %", Number(l.interest_rate)],
+      ["Total Payable", Number(l.total_payable)],
+      ["Paid", totalPaid],
+      ["Due", totalDue],
+      ["Period Type", periodLbl],
+      ["Next Due Date", nd ? fmtDate(nd.due_date) : "—"],
+      ["Next Due Amount", nd ? Math.max(0, Number(nd.amount) - Number(nd.paid_amount)) : 0],
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Loan Summary"], ...summary]), "Summary");
+    const insRows = [["#", "Due Date", "Amount", "Paid", "Status", "Overdue"], ...ins.map((i: any) => [
+      i.installment_no, fmtDate(i.due_date), Number(i.amount), Number(i.paid_amount), i.status,
+      i.status !== "paid" && new Date(i.due_date) < today ? "YES" : "",
+    ])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(insRows), "Installments");
+    const payRows = [["Date", "Amount", "Note"], ...pays.map((p: any) => [fmtDate(p.paid_on), Number(p.amount), p.note ?? ""])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(payRows), "Payments");
+    XLSX.writeFile(wb, `loan-${l.id.slice(0, 8)}.xlsx`);
+  }
   async function deleteIrrigation(i: any) {
     if (!window.confirm("Delete this irrigation entry?")) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", i.id);
