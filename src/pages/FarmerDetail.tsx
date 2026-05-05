@@ -129,7 +129,84 @@ export default function FarmerDetail() {
     });
   }
 
-  async function addLand() {
+  function brandObj() {
+    return { company_name: brand.company_name, address: brand.address, mobile: brand.mobile };
+  }
+  function farmerObj() {
+    return {
+      name_en: farmer?.name_en ?? "—",
+      farmer_code: farmer?.farmer_code,
+      member_no: farmer?.member_no,
+      mobile: farmer?.mobile,
+      village: farmer?.village,
+    };
+  }
+  function printSavings(s: any) {
+    exportPaymentReceiptPDF({
+      brand: brandObj(),
+      receipt_no: `SAV-${s.id.slice(0, 8).toUpperCase()}`,
+      date: s.txn_date ?? s.created_at,
+      farmer: farmerObj(),
+      amount: Number(s.amount),
+      method: "cash",
+      note: s.note ?? `Savings ${s.type} (${s.status})`,
+      allocations: [{ kind: `Savings ${s.type}`, amount: Number(s.amount) }],
+    });
+  }
+  function printLoan(l: any) {
+    exportPaymentReceiptPDF({
+      brand: brandObj(),
+      receipt_no: `LOAN-${l.id.slice(0, 8).toUpperCase()}`,
+      date: l.issued_on,
+      farmer: farmerObj(),
+      amount: Number(l.principal),
+      method: "cash",
+      note: `Loan disbursed — Total Payable ${money(l.total_payable)}`,
+      allocations: [{ kind: "Loan Disbursed (Principal)", amount: Number(l.principal) }],
+    });
+  }
+  function printIrrigation(i: any) {
+    exportPaymentReceiptPDF({
+      brand: brandObj(),
+      receipt_no: `IRR-${i.id.slice(0, 8).toUpperCase()}`,
+      date: i.entry_date,
+      farmer: farmerObj(),
+      amount: Number(i.total),
+      method: "cash",
+      note: `Irrigation charge — ${i.seasons?.name ?? ""} ${i.seasons?.year ?? ""}`,
+      allocations: [
+        { kind: "Base", amount: Number(i.base_charge) },
+        { kind: "Canal", amount: Number(i.canal_charge) },
+        { kind: "Maintenance", amount: Number(i.maintenance_charge) },
+        { kind: "Other", amount: Number(i.other_charge) },
+      ].filter(a => a.amount > 0),
+    });
+  }
+  async function deleteSavings(s: any) {
+    if (!window.confirm("Delete this savings transaction?")) return;
+    const { error } = await supabase.from("savings_transactions").update({ deleted_at: new Date().toISOString() } as any).eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); loadAll();
+  }
+  async function deleteLoan(l: any) {
+    if (!window.confirm("Delete this loan?")) return;
+    const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() } as any).eq("id", l.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); loadAll();
+  }
+  async function deleteIrrigation(i: any) {
+    if (!window.confirm("Delete this irrigation entry?")) return;
+    const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", i.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); loadAll();
+  }
+  async function deletePayment(p: any) {
+    if (!window.confirm("Delete this payment?")) return;
+    const { error } = await supabase.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    toast.success("Deleted"); loadAll();
+  }
+
     setLandLocErr(null);
     setSavingLand(true);
     try {
