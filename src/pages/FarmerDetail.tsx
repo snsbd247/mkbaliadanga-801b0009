@@ -203,6 +203,15 @@ export default function FarmerDetail() {
 
   async function addLand() {
     setLandLocErr(null);
+    // Require location chain
+    const v = validateLocationChain(landLoc);
+    if (!v.ok) { setLandLocErr({ level: v.level, message: "Please complete the location" }); return; }
+    if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: "Mouza required" }); return; }
+    if (!land.dag_no.trim()) return toast.error("Dag No required");
+    if (!(land.land_size > 0)) return toast.error("Land size required");
+    if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
+      return toast.error("Owner (জমির মালিক) সিলেক্ট করুন");
+    }
     setSavingLand(true);
     try {
       const { error } = await supabase.from("lands").insert({
@@ -212,6 +221,7 @@ export default function FarmerDetail() {
         land_size: land.land_size,
         owner_type: land.owner_type as any,
         field_type: land.field_type as any,
+        owner_farmer_id: land.owner_type === "borgadar" ? land.owner_farmer_id : null,
       } as any);
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved")); setOpenLand(false);
