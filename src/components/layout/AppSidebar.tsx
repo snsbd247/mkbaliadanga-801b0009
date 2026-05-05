@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Star } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard, Building2, Users, CalendarDays, Wallet,
@@ -211,14 +211,7 @@ export function AppSidebar() {
       .filter(Boolean) as ParentItem[];
   }, [q, menu]);
 
-  // Quick shortcuts (most-used routes), filtered by access
-  const shortcuts: SubItem[] = [
-    { url: "/admin", icon: LayoutDashboard, label: t("dashboard"), permKey: "dashboard" },
-    { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
-    { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
-    { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
-    { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
-  ].filter(allowed);
+
 
   // Highlight matched substring within a label
   const highlight = (text: string) => {
@@ -285,27 +278,6 @@ export function AppSidebar() {
           </div>
         )}
 
-        {!collapsed && !q && shortcuts.length > 0 && (
-          <SidebarGroup>
-            <div className="px-3 pt-2 pb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-sidebar-foreground/60">
-              <Star className="h-3 w-3" /> {t("quickShortcuts")}
-            </div>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {shortcuts.map((s) => (
-                  <SidebarMenuItem key={`sc-${s.url}`}>
-                    <SidebarMenuButton asChild isActive={isActive(s.url)} tooltip={s.label} size="sm">
-                      <NavLink to={s.url}>
-                        <s.icon className="h-4 w-4" />
-                        <span>{s.label}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         <SidebarGroup>
           <SidebarGroupContent>
