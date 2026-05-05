@@ -322,7 +322,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={isActive(parent.url!)} tooltip={parent.label}>
                         <NavLink to={parent.url!} end={parent.url === "/"}>
                           <parent.icon className="h-4 w-4" />
-                          <span>{parent.label}</span>
+                          <span>{highlight(parent.label)}</span>
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -350,7 +350,7 @@ export function AppSidebar() {
                           className="group/parent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1"
                         >
                           <parent.icon className="h-4 w-4" />
-                          <span>{parent.label}</span>
+                          <span>{highlight(parent.label)}</span>
                           <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/parent:rotate-90 data-[state=open]:rotate-90" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
