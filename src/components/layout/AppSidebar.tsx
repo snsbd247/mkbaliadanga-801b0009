@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Star } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   LayoutDashboard, Building2, Users, CalendarDays, Wallet,
