@@ -24,7 +24,7 @@ const DEFAULT_INTEREST = 8.0;
 
 export default function Loans() {
   const { t } = useLang();
-  const { isCommittee, user } = useAuth();
+  const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
