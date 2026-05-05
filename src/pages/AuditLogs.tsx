@@ -44,6 +44,7 @@ export default function AuditLogs() {
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [entityFilter, setEntityFilter] = useState<string>("all");
   const [officeFilter, setOfficeFilter] = useState<string>("all");
+  const [userFilter, setUserFilter] = useState<string>("all");
   const [farmerQuery, setFarmerQuery] = useState("");
   const [farmerId, setFarmerId] = useState<string>("");
   const [dateFrom, setDateFrom] = useState<string>(monthAgo.toISOString().slice(0, 10));
