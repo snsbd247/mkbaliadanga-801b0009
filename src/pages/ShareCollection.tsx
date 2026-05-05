@@ -12,11 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
-import { Plus, Check, X, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { Plus, Check, X, FileSpreadsheet, FileText, Upload, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { toast } from "sonner";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 const MIN_AMOUNT = 50;
 const MAX_AMOUNT = 1000000;
