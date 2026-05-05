@@ -59,9 +59,15 @@ type RowState = {
 const REQUIRED = ["name_en"];
 const ALL_HEADERS = [
   "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
-  "member_no", "status", "village", "post_office", "address",
+  "member_no", "is_voter", "status", "village", "address",
   "division", "district", "upazila", "union", "ward", "village_loc", "mouza",
 ];
+
+// Notes:
+// - account_number is auto-generated (not imported).
+// - member_no is optional; if provided AND is_voter=true, must be unique.
+// - is_voter accepts: true/false/yes/no/1/0 (default false).
+// - post_office removed from template.
 
 // We keep the legacy free-text "village" column as-is, and use "village_loc"
 // for the cascading hierarchy village name (to avoid colliding with the
