@@ -2831,6 +2831,19 @@ export type Database = {
         }
         Returns: string
       }
+      validate_loan_installment_consistency: {
+        Args: { _office?: string }
+        Returns: {
+          amount_mismatch: boolean
+          approved_payments_total: number
+          farmer_id: string
+          installments_paid: number
+          installments_total: number
+          loan_id: string
+          status_mismatch: boolean
+          total_payable: number
+        }[]
+      }
       verify_seed_integrity: { Args: never; Returns: Json }
     }
     Enums: {

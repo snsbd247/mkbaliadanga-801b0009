@@ -64,16 +64,17 @@ export default function FarmerDetail() {
       return;
     }
     setOwnerLandsLoading(true);
-    supabase
+    let qb = supabase
       .from("lands_with_location")
-      .select("id,dag_no,land_size,field_type,division_id,district_id,upazila_id,mouza_name")
+      .select("id,dag_no,land_size,field_type,division_id,district_id,upazila_id,mouza_id,mouza_name,office_id")
       .eq("farmer_id", land.owner_farmer_id)
-      .eq("owner_type", "owner")
-      .then(({ data }) => {
-        setOwnerLands(data ?? []);
-        setOwnerLandsLoading(false);
-      });
-  }, [land.owner_type, land.owner_farmer_id]);
+      .eq("owner_type", "owner");
+    if (farmer?.office_id) qb = qb.eq("office_id", farmer.office_id);
+    qb.then(({ data }) => {
+      setOwnerLands(data ?? []);
+      setOwnerLandsLoading(false);
+    });
+  }, [land.owner_type, land.owner_farmer_id, farmer?.office_id]);
 
   // Edit land dialog
   const [editLand, setEditLand] = useState<LandRow | null>(null);
@@ -225,12 +226,12 @@ export default function FarmerDetail() {
     setLandLocErr(null);
     // Require location chain
     const v = validateLocationChain(landLoc);
-    if (!v.ok) { setLandLocErr({ level: (v as any).level, message: "Please complete the location" }); return; }
-    if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: "Mouza required" }); return; }
-    if (!land.dag_no.trim()) return toast.error("Dag No required");
-    if (!(land.land_size > 0)) return toast.error("Land size required");
+    if (!v.ok) { setLandLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+    if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) }); return; }
+    if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
+    if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
-      return toast.error("Owner (জমির মালিক) সিলেক্ট করুন");
+      return toast.error(t("ownerRequiredForBorgadar" as any));
     }
     setSavingLand(true);
     try {
@@ -415,7 +416,7 @@ export default function FarmerDetail() {
                             value={land.owner_farmer_id || null}
                             onChange={(fid) => { setLand({ ...EMPTY_LAND, owner_type: "borgadar", owner_farmer_id: fid ?? "" }); setLandLoc({}); }}
                             excludeIds={[id!]}
-                            placeholder="মালিক সার্চ করুন (নাম / ID / মোবাইল)"
+                            placeholder={t("selectOwnerSearch" as any)}
                             disabled={savingLand}
                           />
                         ) : (
@@ -453,11 +454,11 @@ export default function FarmerDetail() {
                             }
                           }}
                         >
-                          <SelectTrigger><SelectValue placeholder={ownerLandsLoading ? "লোড হচ্ছে..." : (ownerLands.length ? "মালিকের দাগ সিলেক্ট করুন" : "এই মালিকের কোনো জমি নেই")} /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder={ownerLandsLoading ? t("loading" as any) : (ownerLands.length ? t("selectDagFromOwner" as any) : t("ownerHasNoLands" as any))} /></SelectTrigger>
                           <SelectContent>
                             {ownerLands.map((o) => (
                               <SelectItem key={o.id} value={o.dag_no ?? ""}>
-                                {o.dag_no} — {o.land_size} শতাংশ {o.mouza_name ? `(${o.mouza_name})` : ""}
+                                {o.dag_no} — {o.land_size} {t("decimal" as any)} {o.mouza_name ? `(${o.mouza_name})` : ""}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -493,7 +494,7 @@ export default function FarmerDetail() {
                     {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label>{t("landSize")} (শতাংশ) <span className="text-destructive">*</span></Label>
+                          <Label>{t("landSize")} ({t("decimal" as any)}) <span className="text-destructive">*</span></Label>
                           <Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} />
                         </div>
                         <div>

@@ -63,6 +63,7 @@ import VoterList from "./pages/VoterList";
 import VoterAudit from "./pages/VoterAudit";
 import VoterHistory from "./pages/VoterHistory";
 import IdReconcile from "./pages/admin/IdReconcile";
+import IdReview from "./pages/admin/IdReview";
 import FarmerStatement from "./pages/FarmerStatement";
 
 import LoanPlans from "./pages/LoanPlans";
@@ -113,6 +114,7 @@ const App = () => (
                 <Route path="/reports/voter-audit" element={<RequirePerm module="farmers" action="can_edit"><VoterAudit /></RequirePerm>} />
                 <Route path="/voters/history" element={<RequirePerm module="farmers" action="can_edit"><VoterHistory /></RequirePerm>} />
                 <Route path="/admin/id-reconcile" element={<RequirePerm module="farmers" action="can_edit"><IdReconcile /></RequirePerm>} />
+                <Route path="/admin/id-review" element={<RequirePerm module="farmers" action="can_view"><IdReview /></RequirePerm>} />
                 <Route path="/reports/farmer-statement" element={<FarmerStatement />} />
                 <Route path="/reports/expenses" element={<RequirePerm module="reports" action="can_view"><ExpensesReport /></RequirePerm>} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
