@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { money } from "@/lib/format";
+import { getFarmerDues } from "@/lib/farmerDues";
 
 type SeasonRow = { id: string; name: string; year: number | null };
 
