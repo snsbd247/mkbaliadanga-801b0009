@@ -54,6 +54,27 @@ export default function FarmerDetail() {
   const [landLoc, setLandLoc] = useState<LocationValue>({});
   const [landLocErr, setLandLocErr] = useState<{ level: any; message: string } | null>(null);
   const [savingLand, setSavingLand] = useState(false);
+  const [ownerLands, setOwnerLands] = useState<any[]>([]);
+  const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
+
+  // Load lands of selected owner (for borgadar) so user can pick a Dag
+  useEffect(() => {
+    if (land.owner_type !== "borgadar" || !land.owner_farmer_id) {
+      setOwnerLands([]);
+      return;
+    }
+    setOwnerLandsLoading(true);
+    supabase
+      .from("lands")
+      .select("id,dag_no,land_size,field_type")
+      .eq("farmer_id", land.owner_farmer_id)
+      .eq("owner_type", "owner")
+      .is("deleted_at", null)
+      .then(({ data }) => {
+        setOwnerLands(data ?? []);
+        setOwnerLandsLoading(false);
+      });
+  }, [land.owner_type, land.owner_farmer_id]);
 
   // Edit land dialog
   const [editLand, setEditLand] = useState<LandRow | null>(null);
