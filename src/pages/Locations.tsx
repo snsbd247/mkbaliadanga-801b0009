@@ -48,9 +48,6 @@ const CHAIN: Record<Level, { table: Level; col: string; label: string }[]> = {
     { table: "divisions", col: "division_id", label: "Division" },
     { table: "districts", col: "district_id", label: "District" },
     { table: "upazilas", col: "upazila_id", label: "Upazila" },
-    { table: "unions", col: "union_id", label: "Union" },
-    { table: "wards", col: "ward_id", label: "Ward" },
-    { table: "villages", col: "village_id", label: "Village" },
   ],
 };
 
@@ -61,14 +58,13 @@ const DIRECT_PARENT_COL: Partial<Record<Level, string>> = {
   upazilas: "district_id",
   unions: "upazila_id",
   wards: "union_id",
-  villages: "union_id", // also has ward_id (optional)
-  mouzas: "union_id",   // also has ward_id (optional)
+  villages: "union_id",
+  mouzas: "upazila_id",
 };
 
 // Optional secondary FK on the table (not part of strict chain validation)
 const OPTIONAL_PARENT_COL: Partial<Record<Level, string>> = {
   villages: "ward_id",
-  mouzas: "ward_id",
 };
 
 // Lookup endpoint to fetch children of a parent for cascading dropdowns.
