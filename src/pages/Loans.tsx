@@ -280,6 +280,7 @@ export default function Loans() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </>
   );
 }
