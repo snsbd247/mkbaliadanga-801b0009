@@ -159,10 +159,15 @@ export default function Irrigation() {
   }
 
   async function softDelete(id: string) {
-    if (!window.confirm("Delete this irrigation entry?")) return;
+    const ok = await confirm({
+      title: "Delete irrigation entry?",
+      description: "This will archive the irrigation charge. You can restore it later from Show archived.",
+      destructive: true, confirmText: "Delete",
+    });
+    if (!ok) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); load();
+    toast.success("Deleted"); await load();
   }
 
   const [genSeason, setGenSeason] = useState<string>("");
