@@ -349,9 +349,18 @@ export default function Farmers() {
       setCreateFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMissingParent", v.level) }));
       return;
     }
-    if (form.is_voter && form.member_no) {
+    // Duplicate check on member_no (Farmer ID) — always
+    if (form.member_no) {
       const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(form.member_no).trim(), _exclude_id: null });
       if (dup === true) { toast.error("Duplicate Farmer ID — already used by another farmer."); return; }
+    }
+
+    // Auto-generate Farmer ID if empty (super admin can override above)
+    let memberNo = form.member_no;
+    if (!memberNo) {
+      const { data: gen, error: genErr } = await supabase.rpc("generate_member_no" as any);
+      if (genErr) { toast.error(genErr.message); return; }
+      memberNo = String(gen ?? "");
     }
 
     setSaving(true);
