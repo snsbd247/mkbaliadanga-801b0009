@@ -162,7 +162,7 @@ export default function DemoManager() {
               throw new Error(ev.message);
             } else if (ev.type === "complete") {
               setProgress(100);
-              setCurrentStep("সম্পন্ন");
+              setCurrentStep(t("dmComplete" as any));
               setLastResult(ev.summary);
               succeeded = true;
             }
