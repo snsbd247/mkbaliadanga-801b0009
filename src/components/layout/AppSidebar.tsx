@@ -141,8 +141,10 @@ export function AppSidebar() {
         { url: "/admin/bulk-loan-export", icon: Upload, label: t("bulkExportLoans"), superOnly: true },
         { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
-        { url: "/backup", icon: Database, label: t("backup"), superOnly: true },
-        { url: "/admin/demo-manager", icon: Database, label: "Demo Manager", superOnly: true },
+        { url: "/backup", icon: Database, label: t("backup"), developerOnly: true },
+        { url: "/admin/demo-manager", icon: Database, label: "Demo Manager", developerOnly: true },
+        { url: "/diagnostics", icon: ShieldAlert, label: "Diagnostics", developerOnly: true },
+        { url: "/admin/developer-updates", icon: RefreshCw, label: "Developer Updates", developerOnly: true },
       ],
     },
 
