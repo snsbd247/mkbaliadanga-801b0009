@@ -99,7 +99,7 @@ export default function Irrigation() {
   async function restore(id: string) {
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Restored"); load();
+    toast.success(t("restored")); load();
   }
 
   const total = +form.base_charge + +form.canal_charge + +form.maintenance_charge + +form.other_charge;
@@ -122,8 +122,8 @@ export default function Irrigation() {
   const hasErrors = Object.keys(errors).length > 0;
 
   async function save() {
-    if (hasErrors) return toast.error("Please fix the highlighted errors");
-    if (rateAvailable !== true) return toast.error("Active irrigation rate required for this season + basis.");
+    if (hasErrors) return toast.error(t("fixHighlightedErrors"));
+    if (rateAvailable !== true) return toast.error(t("activeIrrigationRateRequired"));
     const payload: any = {
       farmer_id: form.farmer_id, land_id: form.land_id, season_id: form.season_id,
       basis: form.basis as any, quantity: form.quantity,
@@ -167,7 +167,7 @@ export default function Irrigation() {
     if (!ok) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); await load();
+    toast.success(t("deleted")); await load();
   }
 
   const [genSeason, setGenSeason] = useState<string>("");
@@ -176,7 +176,7 @@ export default function Irrigation() {
   const [genBusy, setGenBusy] = useState(false);
 
   async function generateForSeason() {
-    if (!genSeason) return toast.error("Select a season");
+    if (!genSeason) return toast.error(t("selectASeason"));
     setGenBusy(true);
     try {
       const { data: rate, error: rateErr } = await supabase

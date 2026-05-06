@@ -75,7 +75,7 @@ export default function Savings() {
     return { total, interest, maturity: total + interest, count: n };
   }
   async function enrollPlan() {
-    if (!planForm.farmer_id || !planForm.plan_id) return toast.error("Select farmer and plan");
+    if (!planForm.farmer_id || !planForm.plan_id) return toast.error(t("selectFarmerAndPlan"));
     const plan = plans.find(p => p.id === planForm.plan_id);
     const c = calcMaturity(plan);
     const { error } = await supabase.from("farmer_savings_plans").insert({
@@ -89,7 +89,7 @@ export default function Savings() {
       created_by: user?.id,
     });
     if (error) return toast.error(error.message);
-    toast.success("Enrollment submitted for approval"); setPlanOpen(false); load();
+    toast.success(t("enrollmentSubmittedForApproval")); setPlanOpen(false); load();
   }
   async function approvePlan(id: string) {
     const target = farmerPlans.find(x => x.id === id);
@@ -191,8 +191,8 @@ export default function Savings() {
     const isDepositKind = !isWithdraw;
 
     // Min amount validation
-    if (isShare && form.amount < 50) return toast.error("Minimum share deposit is ৳50");
-    if (!isShare && !isWithdraw && form.amount < 10) return toast.error("Minimum savings deposit is ৳10");
+    if (isShare && form.amount < 50) return toast.error(t("minShareDeposit"));
+    if (!isShare && !isWithdraw && form.amount < 10) return toast.error(t("minSavingsDeposit"));
 
     // Withdraw balance check (savings only)
     if (isWithdraw) {
@@ -265,7 +265,7 @@ export default function Savings() {
   async function restoreTxn(id: string) {
     const { error } = await supabase.from("savings_transactions").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Restored"); load();
+    toast.success(t("restored")); load();
   }
   function startEditTxn(r: any) {
     setEditTxn(r);
@@ -273,12 +273,12 @@ export default function Savings() {
   }
   async function saveEditTxn() {
     if (!editTxn) return;
-    if (editTxnForm.amount <= 0) return toast.error("Amount must be positive");
+    if (editTxnForm.amount <= 0) return toast.error(t("amountMustBePositiveSavings"));
     const { error } = await supabase.from("savings_transactions")
       .update({ amount: editTxnForm.amount, note: editTxnForm.note || null })
       .eq("id", editTxn.id);
     if (error) return toast.error(error.message);
-    toast.success("Updated"); setEditTxn(null); load();
+    toast.success(t("updated")); setEditTxn(null); load();
   }
   async function deleteTxn(id: string) {
     const ok = await confirm({
@@ -290,7 +290,7 @@ export default function Savings() {
     const { error } = await supabase.from("savings_transactions")
       .update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); await load();
+    toast.success(t("deleted")); await load();
   }
   function printReceipt(r: any) {
     exportPaymentReceiptPDF({
