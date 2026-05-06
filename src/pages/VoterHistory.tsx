@@ -110,25 +110,25 @@ export default function VoterHistory() {
       <PageHeader title="Voter Cancel/Reactivate History" description="Audit trail of every voter cancel and reactivate event with reason and operator." />
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-5">
-          <div><Label>Farmer</Label><FarmerSearchSelect value={farmerId} onChange={(id) => setFarmerId(id)} /></div>
+          <div><Label>{t("p5_farmerLabel")}</Label><FarmerSearchSelect value={farmerId} onChange={(id) => setFarmerId(id)} /></div>
           <div>
             <Label>Event</Label>
             <Select value={event} onValueChange={setEvent}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All events</SelectItem>
-                <SelectItem value="cancel">Cancel only</SelectItem>
-                <SelectItem value="reactivate">Reactivate only</SelectItem>
+                <SelectItem value="all">{t("p5c_allEvents")}</SelectItem>
+                <SelectItem value="cancel">{t("p5c_cancelOnly")}</SelectItem>
+                <SelectItem value="reactivate">{t("p5c_reactivateOnly")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {isSuper && (
             <div>
-              <Label>Office</Label>
+              <Label>{t("office")}</Label>
               <Select value={officeId} onValueChange={setOfficeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All offices</SelectItem>
+                  <SelectItem value="all">{t("p5c_allOffices")}</SelectItem>
                   {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
