@@ -190,7 +190,8 @@ export default function Users() {
                   <Select value={form.role} onValueChange={v => setForm({ ...form, role: v as any })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
+                      {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
+                      {isDeveloper && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
                       <SelectItem value="admin">{t("admin")}</SelectItem>
                       <SelectItem value="committee">{t("committee")}</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
