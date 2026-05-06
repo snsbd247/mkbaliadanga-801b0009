@@ -26,6 +26,8 @@ import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
+import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
+import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
 import { useAuth } from "@/auth/AuthProvider";
@@ -97,6 +99,7 @@ export default function FarmerDetail() {
   const [deleting, setDeleting] = useState(false);
 
   const brand = useBranding();
+  const receiptArgs = useReceiptRenderArgs();
 
   useEffect(() => { if (id) loadAll(); }, [id]);
   useEffect(() => {
@@ -142,11 +145,12 @@ export default function FarmerDetail() {
       ...extra,
     };
   }
-  function commonReceipt(): Pick<BnReceiptData, "company_name" | "company_name_bn" | "logo_url"> {
+  function commonReceipt(): Pick<BnReceiptData, "company_name" | "company_name_bn" | "logo_url" | "org"> {
     return {
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
       logo_url: brand.logo_url ?? null,
+      org: receiptArgs.org,
     };
   }
 
@@ -166,7 +170,7 @@ export default function FarmerDetail() {
       farmer: farmerForReceipt(),
       collected_amount: Number(p.amount),
       description,
-    }, copy);
+    }, copy, receiptArgs.options);
   }
 
   function printSavings(s: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
@@ -178,7 +182,7 @@ export default function FarmerDetail() {
       farmer: farmerForReceipt(),
       description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
       collected_amount: Number(s.amount),
-    }, copy);
+    }, copy, receiptArgs.options);
   }
   function printLoan(l: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     downloadBnReceiptPdf({
@@ -190,7 +194,7 @@ export default function FarmerDetail() {
       description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
       outstanding: Number(l.total_payable),
       collected_amount: Number(l.principal),
-    }, copy);
+    }, copy, receiptArgs.options);
   }
   function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id);
@@ -210,7 +214,7 @@ export default function FarmerDetail() {
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
       collected_amount: Number(i.paid_amount || i.total),
-    }, copy);
+    }, copy, receiptArgs.options);
   }
   async function deleteSavings(s: any) {
     if (!window.confirm("Delete this savings transaction?")) return;
@@ -530,6 +534,7 @@ export default function FarmerDetail() {
       <PageHeader title={lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}
         description={`${farmer.member_no ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
+          <ReceiptSettingsButton />
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />Print Card</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>

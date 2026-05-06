@@ -259,6 +259,7 @@ export type Database = {
           penalty_grace_days: number
           penalty_type: string
           penalty_value: number
+          registration_no: string | null
           updated_at: string
         }
         Insert: {
@@ -282,6 +283,7 @@ export type Database = {
           penalty_grace_days?: number
           penalty_type?: string
           penalty_value?: number
+          registration_no?: string | null
           updated_at?: string
         }
         Update: {
@@ -305,6 +307,7 @@ export type Database = {
           penalty_grace_days?: number
           penalty_type?: string
           penalty_value?: number
+          registration_no?: string | null
           updated_at?: string
         }
         Relationships: []

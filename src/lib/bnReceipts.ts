@@ -3,87 +3,186 @@ import html2canvas from "html2canvas";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
+export type ReceiptCopy = "both" | "farmer" | "office";
+export type ReceiptLang = "bn" | "en";
+
+export interface ReceiptOrg {
+  name?: string | null;
+  name_bn?: string | null;
+  address?: string | null;
+  mobile?: string | null;
+  email?: string | null;
+  registration_no?: string | null;
+}
+
+export interface ReceiptOptions {
+  lang?: ReceiptLang;             // default "bn"
+  /** Page margins in mm. Default { t: 10, r: 10, b: 10, l: 10 } */
+  margins?: { t?: number; r?: number; b?: number; l?: number };
+  /** Page format. Default "a4". */
+  paper?: "a4" | "letter";
+  /** Orientation. Default "p" (portrait). */
+  orientation?: "p" | "l";
+}
 
 export interface BnReceiptData {
   kind: ReceiptKind;
   receipt_no: string;
   date: string | Date;
-  bill_info?: string;       // e.g. "ইরি, ২০২৬" or "মাসিক সঞ্চয়, মে ২০২৬"
+  bill_info?: string;
   company_name_bn?: string | null;
   company_name?: string;
   logo_url?: string | null;
+  /** Optional org block printed under the title on every copy. */
+  org?: ReceiptOrg | null;
 
   farmer: {
-    name: string;            // displayed as-is
+    name: string;
     member_no?: string | null;
-    owner_type_bn?: string | null;     // মালিক / বর্গাচাষী
+    owner_type_bn?: string | null;
     father_or_husband?: string | null;
     village?: string | null;
     mobile?: string | null;
     mouza?: string | null;
-    field_type_bn?: string | null;     // নিচু জমি(Low Land)
-    land_size?: number | null;         // in shotok or as-is
+    field_type_bn?: string | null;
+    land_size?: number | null;
     dag_no?: string | null;
   };
 
-  // For irrigation
   rate?: number | null;
   charge_amount?: number | null;
   previous_due?: number | null;
 
-  // For savings/loan
-  description?: string | null;       // free text shown in body
-  outstanding?: number | null;       // remaining balance/loan due (optional)
+  description?: string | null;
+  outstanding?: number | null;
 
-  collected_amount: number;          // total being received now
+  collected_amount: number;
   collector_signature_url?: string | null;
-  office_collector_signature_url?: string | null; // optional override for office copy
+  office_collector_signature_url?: string | null;
 }
-
-export type ReceiptCopy = "both" | "farmer" | "office";
 
 const fmt2 = (n: number) =>
   new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 
-function fmtDateBn(d: string | Date): string {
+function fmtDate(d: string | Date): string {
   const date = new Date(d);
   return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
-function titleFor(kind: ReceiptKind): string {
-  if (kind === "irrigation") return "সেচ চার্জ সংগ্রহের রশিদ";
-  if (kind === "savings") return "সঞ্চয় গ্রহণের রশিদ";
-  return "ঋণের কিস্তি গ্রহণের রশিদ";
+const STR = {
+  bn: {
+    titleIrr: "সেচ চার্জ সংগ্রহের রশিদ",
+    titleSav: "সঞ্চয় গ্রহণের রশিদ",
+    titleLoan: "ঋণের কিস্তি গ্রহণের রশিদ",
+    farmerCopy: "কৃষকের কপি",
+    officeCopy: "অফিস কপি",
+    receiptNo: "রসিদ নম্বরঃ",
+    billInfo: "বিলের তথ্য:",
+    date: "সংগৃহীত তারিখ:",
+    farmerLine: "কৃষকের নাম এবং কৃষক সদস্য নং:",
+    fatherLine: "পিতা/স্বামী নাম:",
+    villageLine: "গ্রাম/মহল্লা/মোবাইল:",
+    mouza: "মৌজা:",
+    landKind: "জমির ধরণ-পরিমান:",
+    dag: "দাগ নং:",
+    rate: "চার্জ রেট:",
+    charge: "চার্জের পরিমাণ:",
+    due: "বকেয়া:",
+    desc: "বিবরণ:",
+    loanDesc: "ঋণের বিবরণ:",
+    balance: "বর্তমান স্থিতি:",
+    remainingLoan: "অবশিষ্ট ঋণ:",
+    totalSav: "জমাকৃত পরিমাণ:",
+    totalLoan: "প্রাপ্ত কিস্তি:",
+    totalIrr: "সংগৃহীত পরিমাণ:",
+    memberSig: "সদস্যের স্বাক্ষর",
+    collectorSig: "আদায়কারীর স্বাক্ষর",
+    regNo: "নিবন্ধন নং:",
+  },
+  en: {
+    titleIrr: "Irrigation Charge Receipt",
+    titleSav: "Savings Deposit Receipt",
+    titleLoan: "Loan Installment Receipt",
+    farmerCopy: "Farmer Copy",
+    officeCopy: "Office Copy",
+    receiptNo: "Receipt No:",
+    billInfo: "Bill info:",
+    date: "Collected on:",
+    farmerLine: "Farmer name & member no:",
+    fatherLine: "Father/Husband:",
+    villageLine: "Village / Mobile:",
+    mouza: "Mouza:",
+    landKind: "Land type-size:",
+    dag: "Dag no:",
+    rate: "Rate:",
+    charge: "Charge amount:",
+    due: "Previous due:",
+    desc: "Description:",
+    loanDesc: "Loan description:",
+    balance: "Current balance:",
+    remainingLoan: "Loan outstanding:",
+    totalSav: "Amount deposited:",
+    totalLoan: "Installment received:",
+    totalIrr: "Amount collected:",
+    memberSig: "Member signature",
+    collectorSig: "Collector signature",
+    regNo: "Reg. No:",
+  },
+} as const;
+
+function titleFor(kind: ReceiptKind, lang: ReceiptLang): string {
+  const t = STR[lang];
+  return kind === "irrigation" ? t.titleIrr : kind === "savings" ? t.titleSav : t.titleLoan;
 }
 
-function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl?: string | null): string {
+function digits(s: string, lang: ReceiptLang): string {
+  return lang === "bn" ? toBnDigits(s) : s;
+}
+
+function orgBlock(org: ReceiptOrg | null | undefined, lang: ReceiptLang): string {
+  if (!org) return "";
+  const name = lang === "bn" ? (org.name_bn ?? org.name ?? "") : (org.name ?? org.name_bn ?? "");
+  const lines = [
+    name && `<div style="font-weight:600;">${name}</div>`,
+    org.address && `<div>${org.address}</div>`,
+    (org.mobile || org.email) && `<div>${[org.mobile, org.email].filter(Boolean).join(" • ")}</div>`,
+    org.registration_no && `<div>${STR[lang].regNo} ${digits(org.registration_no, lang)}</div>`,
+  ].filter(Boolean).join("");
+  return `<div style="text-align:center;font-size:11px;color:#333;margin-top:2px;">${lines}</div>`;
+}
+
+function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang): string {
+  const t = STR[lang];
   const logo = d.logo_url
     ? `<img src="${d.logo_url}" crossorigin="anonymous" style="height:60px;display:block;margin:0 auto 4px;" />`
-    : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${d.company_name_bn ?? d.company_name ?? ""}</div>`;
+    : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
 
   const rows: Array<[string, string]> = [];
-  rows.push(["কৃষকের নাম এবং কৃষক সদস্য নং:", `${d.farmer.name}${d.farmer.member_no ? " - " + d.farmer.member_no : ""}${d.farmer.owner_type_bn ? " (" + d.farmer.owner_type_bn + ")" : ""}`]);
-  if (d.farmer.father_or_husband) rows.push(["পিতা/স্বামী নাম:", d.farmer.father_or_husband]);
-  rows.push(["গ্রাম/মহল্লা/মোবাইল:", `${d.farmer.village ?? "—"}${d.farmer.mobile ? " / " + d.farmer.mobile : ""}`]);
+  rows.push([t.farmerLine, `${d.farmer.name}${d.farmer.member_no ? " - " + d.farmer.member_no : ""}${d.farmer.owner_type_bn ? " (" + d.farmer.owner_type_bn + ")" : ""}`]);
+  if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
+  rows.push([t.villageLine, `${d.farmer.village ?? "—"}${d.farmer.mobile ? " / " + d.farmer.mobile : ""}`]);
 
   if (d.kind === "irrigation") {
-    if (d.farmer.mouza) rows.push(["মৌজা:", d.farmer.mouza]);
+    if (d.farmer.mouza) rows.push([t.mouza, d.farmer.mouza]);
     if (d.farmer.field_type_bn || d.farmer.land_size != null)
-      rows.push(["জমির ধরণ-পরিমান:", `${d.farmer.field_type_bn ?? "—"}${d.farmer.land_size != null ? "-" + Number(d.farmer.land_size).toFixed(6) : ""}`]);
-    if (d.farmer.dag_no) rows.push(["দাগ নং:", d.farmer.dag_no]);
-    if (d.rate != null) rows.push(["চার্জ রেট:", fmt2(Number(d.rate))]);
-    if (d.charge_amount != null) rows.push(["চার্জের পরিমাণ:", fmt2(Number(d.charge_amount))]);
-    rows.push(["বকেয়া:", fmt2(Number(d.previous_due ?? 0))]);
+      rows.push([t.landKind, `${d.farmer.field_type_bn ?? "—"}${d.farmer.land_size != null ? "-" + Number(d.farmer.land_size).toFixed(6) : ""}`]);
+    if (d.farmer.dag_no) rows.push([t.dag, d.farmer.dag_no]);
+    if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
+    if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
+    rows.push([t.due, fmt2(Number(d.previous_due ?? 0))]);
   } else if (d.kind === "savings") {
-    if (d.description) rows.push(["বিবরণ:", d.description]);
-    if (d.outstanding != null) rows.push(["বর্তমান স্থিতি:", fmt2(Number(d.outstanding))]);
+    if (d.description) rows.push([t.desc, d.description]);
+    if (d.outstanding != null) rows.push([t.balance, fmt2(Number(d.outstanding))]);
   } else {
-    if (d.description) rows.push(["ঋণের বিবরণ:", d.description]);
-    if (d.outstanding != null) rows.push(["অবশিষ্ট ঋণ:", fmt2(Number(d.outstanding))]);
+    if (d.description) rows.push([t.loanDesc, d.description]);
+    if (d.outstanding != null) rows.push([t.remainingLoan, fmt2(Number(d.outstanding))]);
   }
 
-  const totalLabel = d.kind === "savings" ? "জমাকৃত পরিমাণ:" : d.kind === "loan" ? "প্রাপ্ত কিস্তি:" : "সংগৃহীত পরিমাণ:";
-  rows.push([totalLabel, `${fmt2(d.collected_amount)} (${bnAmountInWords(d.collected_amount)})`]);
+  const totalLabel = d.kind === "savings" ? t.totalSav : d.kind === "loan" ? t.totalLoan : t.totalIrr;
+  const amountText = lang === "bn"
+    ? `${fmt2(d.collected_amount)} (${bnAmountInWords(d.collected_amount)})`
+    : `${fmt2(d.collected_amount)}`;
+  rows.push([totalLabel, amountText]);
 
   const tableRows = rows.map(([k, v]) => `
     <tr>
@@ -91,21 +190,26 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl?: string | n
       <td style="padding:4px 8px;vertical-align:top;color:#111;">${v}</td>
     </tr>`).join("");
 
+  const fontFamily = lang === "bn"
+    ? `'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif`
+    : `'Inter','Helvetica','Arial',sans-serif`;
+
   return `
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;">
+  <div style="font-family:${fontFamily};color:#111;padding:18px 22px;" data-receipt-copy="${copyLabel}">
     <div style="text-align:center;">
       ${logo}
-      <div style="font-size:18px;font-weight:700;margin-top:2px;">${titleFor(d.kind)}</div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">${titleFor(d.kind, lang)}</div>
+      ${orgBlock(d.org, lang)}
       <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">${copyLabel}</div>
     </div>
 
     <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
       <div>
-        <div>রসিদ নম্বরঃ ${toBnDigits(d.receipt_no)}</div>
-        ${d.bill_info ? `<div>বিলের তথ্য: ${d.bill_info}</div>` : ""}
+        <div>${t.receiptNo} ${digits(d.receipt_no, lang)}</div>
+        ${d.bill_info ? `<div>${t.billInfo} ${d.bill_info}</div>` : ""}
       </div>
       <div style="text-align:right;">
-        <div>সংগৃহীত তারিখ: ${fmtDateBn(d.date)}</div>
+        <div>${t.date} ${fmtDate(d.date)}</div>
       </div>
     </div>
 
@@ -115,22 +219,24 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl?: string | n
 
     <div style="display:flex;justify-content:space-between;margin-top:38px;font-size:13px;">
       <div style="text-align:left;">
-        <div style="border-top:0;padding-top:0;">সদস্যের স্বাক্ষর</div>
+        <div style="border-top:0;padding-top:0;">${t.memberSig}</div>
         <div style="margin-top:18px;font-weight:600;">${d.farmer.name}</div>
       </div>
       <div style="text-align:right;">
-        <div>আদায়কারীর স্বাক্ষর</div>
-        ${signatureUrl ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:36px;margin-top:4px;display:block;margin-left:auto;" />` : `<div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;"></div>`}
+        <div>${t.collectorSig}</div>
+        ${signatureUrl
+          ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:36px;margin-top:4px;display:block;margin-left:auto;" data-sig="filled" />`
+          : `<div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>`}
       </div>
     </div>
   </div>`;
 }
 
-function buildHtml(d: BnReceiptData, copy: ReceiptCopy = "both"): HTMLDivElement {
+function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
-  const farmerCopy = copyHtml(d, "কৃষকের কপি", d.collector_signature_url);
-  const officeCopy = copyHtml(d, "অফিস কপি", d.office_collector_signature_url ?? d.collector_signature_url);
+  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang);
+  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang);
   if (copy === "farmer") wrap.innerHTML = farmerCopy;
   else if (copy === "office") wrap.innerHTML = officeCopy;
   else wrap.innerHTML = `${farmerCopy}<div style="border-top:1px dashed #111;margin:8px 22px;"></div>${officeCopy}`;
@@ -142,36 +248,41 @@ function copySuffix(copy: ReceiptCopy): string {
   return copy === "farmer" ? "_farmer" : copy === "office" ? "_office" : "";
 }
 
-export async function downloadBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both"): Promise<void> {
-  const node = buildHtml(data, copy);
+function resolveOpts(o?: ReceiptOptions) {
+  return {
+    lang: (o?.lang ?? "bn") as ReceiptLang,
+    paper: o?.paper ?? "a4",
+    orientation: o?.orientation ?? "p",
+    margins: { t: o?.margins?.t ?? 10, r: o?.margins?.r ?? 10, b: o?.margins?.b ?? 10, l: o?.margins?.l ?? 10 },
+  };
+}
+
+async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions): Promise<jsPDF> {
+  const opts = resolveOpts(options);
+  const node = buildHtml(data, copy, opts.lang);
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
+    const pdf = new jsPDF({ unit: "mm", format: opts.paper, orientation: opts.orientation });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const imgW = pageW;
-    const imgH = (canvas.height * imgW) / canvas.width;
-    const finalH = Math.min(imgH, pageH);
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, imgW, finalH);
-    pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${copySuffix(copy)}_receipt.pdf`);
+    const innerW = pageW - opts.margins.l - opts.margins.r;
+    const innerH = pageH - opts.margins.t - opts.margins.b;
+    const imgH = (canvas.height * innerW) / canvas.width;
+    const finalH = Math.min(imgH, innerH);
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", opts.margins.l, opts.margins.t, innerW, finalH);
+    return pdf;
   } finally {
     node.remove();
   }
 }
 
-export async function previewBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both"): Promise<string> {
-  const node = buildHtml(data, copy);
-  try {
-    await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const imgW = pageW;
-    const imgH = (canvas.height * imgW) / canvas.width;
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, imgW, imgH);
-    return pdf.output("datauristring");
-  } finally {
-    node.remove();
-  }
+export async function downloadBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both", options?: ReceiptOptions): Promise<void> {
+  const pdf = await renderPdf(data, copy, options);
+  pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${copySuffix(copy)}_receipt.pdf`);
+}
+
+export async function previewBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both", options?: ReceiptOptions): Promise<string> {
+  const pdf = await renderPdf(data, copy, options);
+  return pdf.output("datauristring");
 }

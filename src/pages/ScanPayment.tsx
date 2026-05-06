@@ -13,10 +13,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Camera, X, User, CheckCircle2, FileDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { downloadBnReceiptPdf, previewBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, previewBnReceiptPdf, type BnReceiptData, type ReceiptCopy } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { useBranding } from "@/lib/branding";
 import { useReceiptTemplate } from "@/lib/receiptTemplate";
+import { useReceiptRenderArgs } from "@/lib/receiptOptions";
+import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
+import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
@@ -57,6 +60,7 @@ export default function ScanPayment() {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; method: string; note: string | null; idemKey: string; paidAt: string } | null>(null);
   const brand = useBranding();
+  const receiptArgs = useReceiptRenderArgs();
   const tpl = useReceiptTemplate();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -76,6 +80,7 @@ export default function ScanPayment() {
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
       logo_url: brand.logo_url ?? null,
+      org: receiptArgs.org,
       bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
       farmer: {
         name: resolved.farmer.name,
@@ -204,7 +209,7 @@ export default function ScanPayment() {
 
   return (
     <>
-      <PageHeader title="Scan Payment" description="Scan farmer membership-card QR to collect a payment." />
+      <PageHeader title="Scan Payment" description="Scan farmer membership-card QR to collect a payment." actions={<ReceiptSettingsButton />} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-4">
           <div className="flex items-center justify-between mb-3">
@@ -303,38 +308,19 @@ export default function ScanPayment() {
                   variant="ghost"
                   onClick={async () => {
                     const payload = buildReceiptPayload();
-                    if (payload) setPreviewUrl(await previewBnReceiptPdf(payload));
+                    if (payload) setPreviewUrl(await previewBnReceiptPdf(payload, "both", receiptArgs.options));
                   }}
                 >
                   <Eye className="h-4 w-4" />Preview
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
+                <ReceiptCopyMenu
+                  size="sm"
+                  label="Download receipt"
+                  onSelect={async (copy: ReceiptCopy) => {
                     const payload = buildReceiptPayload();
-                    if (payload) await downloadBnReceiptPdf(payload, "both");
+                    if (payload) await downloadBnReceiptPdf(payload, copy, receiptArgs.options);
                   }}
-                >
-                  <FileDown className="h-4 w-4" />Both copies
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    const payload = buildReceiptPayload();
-                    if (payload) await downloadBnReceiptPdf(payload, "farmer");
-                  }}
-                >
-                  <FileDown className="h-4 w-4" />Farmer copy
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    const payload = buildReceiptPayload();
-                    if (payload) await downloadBnReceiptPdf(payload, "office");
-                  }}
-                >
-                  <FileDown className="h-4 w-4" />Office copy
-                </Button>
+                />
                 <Button onClick={reset}>Scan another</Button>
               </div>
             </div>
