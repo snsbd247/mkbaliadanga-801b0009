@@ -84,6 +84,17 @@ export default function FarmerDashboard() {
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
+  // Auto-logout on session expiry
+  useEffect(() => {
+    if (!expiresAt) return;
+    const ms = Date.parse(expiresAt) - Date.now();
+    if (!Number.isFinite(ms)) return;
+    if (ms <= 0) { logout(t("p5b_sessionExpiredSignIn")); return; }
+    const id = setTimeout(() => logout(t("p5b_sessionExpiredSignIn")), ms + 500);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-surface">
