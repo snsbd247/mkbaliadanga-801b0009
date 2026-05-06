@@ -411,7 +411,7 @@ export default function ShareCollection() {
           </Card>
           <Card className="p-0 overflow-hidden">
             <Table>
-              <TableHeader><TableRow><TableHead>{period === "monthly" ? "Month" : "Date"}</TableHead><TableHead className="text-right">Total Amount</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{period === "monthly" ? t("p5c_monthlySummary") : t("date")}</TableHead><TableHead className="text-right">{t("p5c_totalAmount")}</TableHead></TableRow></TableHeader>
               <TableBody>
                 {grouped.length === 0 && <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">No data</TableCell></TableRow>}
                 {grouped.map(([k, v]) => (
