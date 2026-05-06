@@ -101,13 +101,59 @@ export default function Backup() {
     return summary;
   }
 
-  async function runRestore() {
+  async function buildSnapshot(targetTables: string[]): Promise<{ url: string; name: string }> {
+    const wb = XLSX.utils.book_new();
+    for (const name of targetTables) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const rows = await fetchAll(name);
+        const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ note: "empty" }]);
+        XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+      } catch (e) {
+        // skip restricted
+      }
+    }
+    const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+    const blob = new Blob([out], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const fname = `pre-restore-snapshot-${new Date().toISOString().replace(/[:.]/g, "-")}.xlsx`;
+    return { url, name: fname };
+  }
+
+  async function startRestore() {
     if (!restoreFile) return toast.error(t("p5d_invalidFile"));
+    if (dryRun) {
+      // Dry runs do not need a snapshot — they don't write anything.
+      return runRestore(null);
+    }
+    setConfirmOpen(false);
     setBusy("__restore__");
+    setSnapshotBlob(null);
     setRestoreReport(null);
     try {
+      // 1. Parse upload to know which tables we will touch.
       const buf = await restoreFile.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
+      const targets = wb.SheetNames.map(inferTableFromSheet).filter((x): x is string => !!x);
+      // 2. Snapshot those tables BEFORE writing anything.
+      toast.message(t("p5e_takingSnapshot"));
+      const snap = await buildSnapshot(targets);
+      setSnapshotBlob(snap);
+      toast.success(t("p5e_snapshotReady"));
+      // 3. Run the actual restore. Failure → snapshot stays available for download.
+      await runRestore(wb);
+    } catch (e: any) {
+      toast.error(`${t("p5e_restoreFailed")}: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runRestore(prebuiltWb: XLSX.WorkBook | null) {
+    if (!restoreFile) return;
+    setRestoreReport(null);
+    try {
+      const wb = prebuiltWb ?? XLSX.read(await restoreFile.arrayBuffer(), { type: "array" });
       const summaries: any[] = [];
       for (const sheetName of wb.SheetNames) {
         const tableName = inferTableFromSheet(sheetName);
@@ -122,11 +168,11 @@ export default function Backup() {
         summaries.push(s);
       }
       setRestoreReport(summaries);
-      toast.success(dryRun ? t("p5d_restoreSummary") : t("p5d_restoreDone"));
+      const anyFail = summaries.some(s => s.failed > 0);
+      if (anyFail && !dryRun) toast.error(t("p5e_restoreFailed"));
+      else toast.success(dryRun ? t("p5d_restoreSummary") : t("p5d_restoreDone"));
     } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setBusy(null);
+      toast.error(`${t("p5e_restoreFailed")}: ${e.message}`);
     }
   }
 
