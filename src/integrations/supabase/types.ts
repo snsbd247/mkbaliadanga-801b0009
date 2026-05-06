@@ -2865,6 +2865,8 @@ export type Database = {
         Args: { _date: string; _office: string }
         Returns: boolean
       }
+      is_developer: { Args: { _user_id: string }; Returns: boolean }
+      is_developer_user: { Args: { _user_id: string }; Returns: boolean }
       ledger_integrity_summary: { Args: never; Returns: Json }
       ledger_orphan_refs: {
         Args: never
