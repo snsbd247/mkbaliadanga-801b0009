@@ -159,6 +159,7 @@ const App = () => (
                 <Route path="/admin/role-matrix" element={<RequireRole roles={["admin","super_admin"]}><RoleMatrix /></RequireRole>} />
                 <Route path="/admin/duplicate-receipts" element={<RequireRole roles={["admin","super_admin"]}><DuplicateReceiptAudit /></RequireRole>} />
                 <Route path="/admin/farmer-login-audit" element={<RequireRole roles={["admin","super_admin"]}><FarmerLoginAudit /></RequireRole>} />
+                <Route path="/admin/demo-manager" element={<RequireRole roles={["super_admin"]}><DemoManager /></RequireRole>} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />
