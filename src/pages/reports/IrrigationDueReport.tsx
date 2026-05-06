@@ -40,7 +40,7 @@ export default function IrrigationDueReport() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "Irrigation Due Report";
+    document.title = t("irrigationDueReport");
     Promise.all([
       supabase.from("offices").select("id,name").order("name"),
       supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
