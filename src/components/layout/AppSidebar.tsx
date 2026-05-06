@@ -187,13 +187,10 @@ export function AppSidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Track open groups; default open if any child is active
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    menu.forEach((p) => {
-      if (p.children?.some((c) => isActive(c.url))) init[p.key] = true;
-    });
-    return init;
+  // Accordion: only one group expanded at a time
+  const [openGroup, setOpenGroup] = useState<string | null>(() => {
+    const active = menu.find((p) => p.children?.some((c) => isActive(c.url)));
+    return active?.key ?? null;
   });
 
   // Filter menu by search query (case-insensitive on labels)
@@ -283,13 +280,13 @@ export function AppSidebar() {
                 const visibleChildren = parent.children.filter(allowed);
                 if (visibleChildren.length === 0) return null;
                 const hasActiveChild = visibleChildren.some((c) => isActive(c.url));
-                const isOpen = q ? true : (openGroups[parent.key] ?? hasActiveChild);
+                const isOpen = q ? true : (openGroup === parent.key || (openGroup === null && hasActiveChild));
 
                 return (
                   <Collapsible
                     key={parent.key}
                     open={isOpen}
-                    onOpenChange={(o) => setOpenGroups((prev) => ({ ...prev, [parent.key]: o }))}
+                    onOpenChange={(o) => setOpenGroup(o ? parent.key : (openGroup === parent.key ? null : openGroup))}
                     asChild
                   >
                     <SidebarMenuItem>
