@@ -120,7 +120,11 @@ export default function Users() {
     setResetFor(null); setResetPwd("");
   }
 
-  async function setRole(uid: string, role: "super_admin" | "admin" | "committee" | "staff") {
+  async function setRole(uid: string, role: "developer" | "super_admin" | "admin" | "committee" | "staff") {
+    if (uid === me?.id) return toast.error(t("cannotChangeOwnRole" as any) || "You cannot change your own role");
+    if ((role === "developer" || role === "super_admin") && !isDeveloper) {
+      return toast.error("Only developers can assign this role");
+    }
     await supabase.from("user_roles").delete().eq("user_id", uid);
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role });
     if (error) return toast.error(error.message);
