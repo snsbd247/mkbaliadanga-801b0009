@@ -20,14 +20,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLang = (l: Lang) => setLangState(l);
 
   const warned = (typeof window !== "undefined") ? ((window as any).__i18nWarned ??= new Set<string>()) : new Set<string>();
+  const missing: Map<string, { lang: string; route: string }> =
+    (typeof window !== "undefined") ? ((window as any).__i18nMissing ??= new Map()) : new Map();
   const t = (k: TranslationKey) => {
     const v = (translations[lang] as any)[k];
     if (v != null && v !== "") return v;
     const en = (translations.en as any)[k];
-    if (import.meta.env.DEV && !warned.has(k as string)) {
-      warned.add(k as string);
-      // eslint-disable-next-line no-console
-      console.warn(`[i18n] Missing translation for key "${String(k)}" in lang "${lang}"`);
+    const route = typeof window !== "undefined" ? window.location.pathname : "";
+    if (import.meta.env.DEV) {
+      missing.set(String(k), { lang, route });
+      if (!warned.has(k as string)) {
+        warned.add(k as string);
+        // eslint-disable-next-line no-console
+        console.warn(`[i18n] Missing translation for key "${String(k)}" in lang "${lang}" at ${route}`);
+      }
     }
     return en != null && en !== "" ? en : String(k);
   };

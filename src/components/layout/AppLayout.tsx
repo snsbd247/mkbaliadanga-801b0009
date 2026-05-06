@@ -10,6 +10,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { MenuSearch } from "./MenuSearch";
+import { MenuShortcutsHelp } from "./MenuShortcutsHelp";
+import { MissingI18nPanel } from "@/components/dev/MissingI18nPanel";
 import { useBranding } from "@/lib/branding";
 import { SiteFooter } from "./SiteFooter";
 
