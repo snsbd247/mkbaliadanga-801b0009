@@ -18,10 +18,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [lang]);
 
   const setLang = (l: Lang) => setLangState(l);
+
+  const warned = (typeof window !== "undefined") ? ((window as any).__i18nWarned ??= new Set<string>()) : new Set<string>();
   const t = (k: TranslationKey) => {
     const v = (translations[lang] as any)[k];
     if (v != null && v !== "") return v;
     const en = (translations.en as any)[k];
+    if (import.meta.env.DEV && !warned.has(k as string)) {
+      warned.add(k as string);
+      // eslint-disable-next-line no-console
+      console.warn(`[i18n] Missing translation for key "${String(k)}" in lang "${lang}"`);
+    }
     return en != null && en !== "" ? en : String(k);
   };
 
