@@ -71,12 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => { await supabase.auth.signOut(); };
   const refresh = async () => { if (user) await loadProfile(user.id); };
 
-  const isSuper = roles.includes("super_admin");
+  const isDeveloper = roles.includes("developer");
+  const isSuper = isDeveloper || roles.includes("super_admin");
   const isAdmin = isSuper || roles.includes("admin");
   const isCommittee = isSuper || roles.includes("committee");
 
   return (
-    <Ctx.Provider value={{ user, session, loading, rolesLoaded, roles, officeId, isSuper, isSuperAdmin: isSuper, isAdmin, isCommittee, signOut, refresh }}>
+    <Ctx.Provider value={{ user, session, loading, rolesLoaded, roles, officeId, isDeveloper, isSuper, isSuperAdmin: isSuper, isAdmin, isCommittee, signOut, refresh }}>
       {children}
     </Ctx.Provider>
   );
