@@ -402,22 +402,22 @@ export default function Savings() {
           </Card>
           <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
             <div>
-              <Label className="text-xs">From</Label>
+              <Label className="text-xs">{t("pgFromDate")}</Label>
               <Input type="date" className="h-9" value={reportRange.from} onChange={e => setReportRange({ ...reportRange, from: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">To</Label>
+              <Label className="text-xs">{t("pgToDate")}</Label>
               <Input type="date" className="h-9" value={reportRange.to} onChange={e => setReportRange({ ...reportRange, to: e.target.value })} />
             </div>
-            <Button variant="outline" size="sm" onClick={() => exportPlanReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+            <Button variant="outline" size="sm" onClick={() => exportPlanReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExcel")}</Button>
             <Button variant="outline" size="sm" onClick={() => exportPlanReport("pdf")}><FileText className="h-4 w-4 mr-1" />PDF</Button>
           </Card>
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
               <TableHead className="w-8"></TableHead>
-              <TableHead>Start</TableHead><TableHead>Farmer</TableHead><TableHead>Plan</TableHead>
-              <TableHead>Installment</TableHead><TableHead>Expected Total</TableHead>
-              <TableHead>Interest</TableHead><TableHead>Maturity</TableHead><TableHead>Status</TableHead>
+              <TableHead>{t("pgStartDate")}</TableHead><TableHead>{t("pgFarmer")}</TableHead><TableHead>{t("pgPlan")}</TableHead>
+              <TableHead>{t("pgInstallment")}</TableHead><TableHead>{t("pgExpectedTotal")}</TableHead>
+              <TableHead>{t("pgInterest")}</TableHead><TableHead>{t("pgMaturity")}</TableHead><TableHead>{t("status")}</TableHead>
               <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
