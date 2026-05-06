@@ -797,7 +797,7 @@ export default function FarmerDetail() {
                   <TableCell><Badge>{t(l.status as any)}</Badge></TableCell>
                    <TableCell className="text-right">
                      <Button size="icon" variant="ghost" onClick={() => openLoanView(l)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
-                     <Button size="icon" variant="ghost" onClick={() => printLoanFull(l)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                     <ReceiptCopyMenu onSelect={(c) => printLoan(l, c)} title={t("print")} />
                      {isSuper && <Button size="icon" variant="ghost" onClick={() => editLoanGoto(l)} title={t("edit" as any) || "Edit"}><Pencil className="h-4 w-4" /></Button>}
                      {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                    </TableCell>
