@@ -12,6 +12,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { exportExcel, exportTablePDF } from "@/lib/exports";
 import { useAuth } from "@/auth/AuthProvider";
 import { FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Row = {
   id: string;
