@@ -134,16 +134,16 @@ export default function VoterHistory() {
               </Select>
             </div>
           )}
-          <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
-          <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <div><Label>{t("pgFromDate")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+          <div><Label>{t("pgToDate")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
         </div>
         <div className="flex gap-2 mt-3">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />Refresh
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("refresh" as any)}
           </Button>
           <Button variant="outline" size="sm" disabled={!rows.length}
             onClick={() => exportExcel("voter-history", "Voter History", exportRows, { from, to })}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" />Excel
+            <FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExcel")}
           </Button>
           <Button variant="outline" size="sm" disabled={!rows.length}
             onClick={() => exportTablePDF("Voter Cancel/Reactivate History",
