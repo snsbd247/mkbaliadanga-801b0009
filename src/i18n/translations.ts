@@ -1989,6 +1989,8 @@ export const translations = {
     idReconcileDesc: "সকল কৃষকের Farmer ID, অ্যাকাউন্ট নম্বর ও Farmer Code-এর অসামঞ্জস্য খুঁজে দেখুন।",
     rescan: "পুনঃস্ক্যান",
     excel: "এক্সেল",
+    import: "ইমপোর্ট",
+    pdf: "পিডিএফ",
     farmersWithIssues: "প্রথম ৫,০০০ রেকর্ডের মধ্যে {n} জন কৃষকের অন্তত একটি সমস্যা আছে।",
     allTab: "সব",
     noIssues: "কোনো সমস্যা নেই 🎉",
