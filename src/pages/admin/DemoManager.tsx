@@ -451,9 +451,9 @@ export default function DemoManager() {
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                    {l.ip && <span>IP: {l.ip}</span>}
-                    {l.size != null && <span>Size: {l.size}</span>}
-                    {l.modules?.length > 0 && <span>Modules: {l.modules.join(", ")}</span>}
+                    {l.ip && <span>{t("dmIp" as any)}: {l.ip}</span>}
+                    {l.size != null && <span>{t("dmSizeLbl" as any)}: {l.size}</span>}
+                    {l.modules?.length > 0 && <span>{t("dmModulesLbl" as any)}: {l.modules.map((mid: string) => { const mod = MODULE_KEYS.find(m => m.id === mid); return mod ? t(mod.tk as any) : mid; }).join(", ")}</span>}
                   </div>
                   {l.error_message && (
                     <p className="text-xs text-destructive">{l.error_message}</p>
