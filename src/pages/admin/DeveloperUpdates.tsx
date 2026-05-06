@@ -177,13 +177,13 @@ export default function DeveloperUpdates() {
         </Alert>
       )}
 
-      {(commits.length > 0 || latestRelease) && parsed && (
-        <Tabs defaultValue="commits">
-          <TabsList>
-            <TabsTrigger value="commits"><GitBranch className="h-4 w-4 mr-1" />Recent Commits</TabsTrigger>
-            <TabsTrigger value="release"><CheckCircle2 className="h-4 w-4 mr-1" />Latest Release</TabsTrigger>
-            <TabsTrigger value="download"><Download className="h-4 w-4 mr-1" />Download / Pull</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue={commits.length > 0 || latestRelease ? "commits" : "history"}>
+        <TabsList>
+          <TabsTrigger value="commits" disabled={!parsed || commits.length === 0}><GitBranch className="h-4 w-4 mr-1" />Recent Commits</TabsTrigger>
+          <TabsTrigger value="release" disabled={!parsed}><CheckCircle2 className="h-4 w-4 mr-1" />Latest Release</TabsTrigger>
+          <TabsTrigger value="download" disabled={!parsed}><Download className="h-4 w-4 mr-1" />Download / Pull</TabsTrigger>
+          <TabsTrigger value="history"><History className="h-4 w-4 mr-1" />Update History ({history.length})</TabsTrigger>
+        </TabsList>
 
           <TabsContent value="commits">
             <Card className="p-0 divide-y">
