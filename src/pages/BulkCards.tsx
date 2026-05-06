@@ -81,19 +81,19 @@ export default function BulkCards() {
   }
 
   async function generate() {
-    if (selectedIds.length === 0) { toast.error("Select at least one farmer"); return; }
-    if (selectedIds.length > 100) { toast.error("Please select no more than 100 farmers per batch"); return; }
+    if (selectedIds.length === 0) { toast.error(t("pgBulkSelectAtLeastOne" as any)); return; }
+    if (selectedIds.length > 100) { toast.error(t("pgBulkMaxLimit" as any)); return; }
     setBusy(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Please sign in"); return; }
+      if (!session) { toast.error(t("pgBulkSignInRequired" as any)); return; }
       const res = await fetch(`${FN}/farmer-cards-bulk`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ farmer_ids: selectedIds }),
       });
       const j = await res.json();
-      if (!res.ok) { toast.error(j?.error || "Bulk fetch failed"); return; }
+      if (!res.ok) { toast.error(j?.error || t("pgBulkFetchFailed" as any)); return; }
       const items: any[] = j.items ?? [];
       const ok = items.filter((i) => !i.error);
 
@@ -134,9 +134,10 @@ export default function BulkCards() {
 
       await downloadBulkCardsPdf(roots, `farmer-cards-${ok.length}-${templateId}.pdf`);
       const skipped = items.length - ok.length;
-      toast.success(`Generated ${ok.length} card(s)${skipped ? `, skipped ${skipped}` : ""}.`);
+      const skippedTxt = skipped ? (t("pgBulkSkippedMsg" as any) as string).replace("{n}", String(skipped)) : "";
+      toast.success((t("pgBulkGeneratedMsg" as any) as string).replace("{ok}", String(ok.length)).replace("{skipped}", skippedTxt));
     } catch (e: any) {
-      toast.error(e?.message ?? "PDF export failed");
+      toast.error(e?.message ?? t("pgBulkPdfFailed" as any));
     } finally { setBusy(false); setBulkCards([]); }
   }
 
@@ -233,7 +234,7 @@ export default function BulkCards() {
           </TableBody>
         </Table>
         <div className="px-4 py-2 text-xs text-muted-foreground border-t">
-          Showing first 200 results. Refine search to narrow down. Max 100 cards per PDF.
+          {t("pgBulkShowingHint" as any)}
         </div>
       </Card>
 

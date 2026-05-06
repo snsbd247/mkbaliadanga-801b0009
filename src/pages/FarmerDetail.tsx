@@ -220,13 +220,13 @@ export default function FarmerDetail() {
     if (!window.confirm("Delete this savings transaction?")) return;
     const { error } = await supabase.from("savings_transactions").update({ deleted_at: new Date().toISOString() } as any).eq("id", s.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); loadAll();
+    toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function deleteLoan(l: any) {
     if (!window.confirm("Delete this loan?")) return;
     const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() } as any).eq("id", l.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); loadAll();
+    toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function openLoanView(l: any) {
     const [ins, pays, planRes] = await Promise.all([
@@ -271,7 +271,7 @@ export default function FarmerDetail() {
       if (gErr) toast.error(`Schedule: ${gErr.message}`);
       else toast.success("Updated & schedule regenerated");
     } else {
-      toast.success("Updated");
+      toast.success(t("pgUpdated" as any));
     }
     setEditLoanRow(null); loadAll();
   }
@@ -418,13 +418,13 @@ export default function FarmerDetail() {
     if (!window.confirm("Delete this irrigation entry?")) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", i.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); loadAll();
+    toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function deletePayment(p: any) {
     if (!window.confirm("Delete this payment?")) return;
     const { error } = await supabase.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); loadAll();
+    toast.success(t("pgDeleted" as any)); loadAll();
   }
 
   async function addLand() {
@@ -507,13 +507,13 @@ export default function FarmerDetail() {
       }
       const { error } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", delTarget.id);
       if (error) { toast.error(error.message); return; }
-      toast.success("Land deleted");
+      toast.success(t("pgLandDeleted" as any));
       setDelTarget(null);
       loadAll();
     } finally { setDeleting(false); }
   }
 
-  if (!farmer) return <div className="text-muted-foreground">Loading…</div>;
+  if (!farmer) return <div className="text-muted-foreground">{t("pgLoadingDots" as any)}</div>;
 
   const totalDeposits = savings.filter(s => s.status === "approved" && s.type === "deposit").reduce((a, s) => a + Number(s.amount), 0);
   const totalWithdraws = savings.filter(s => s.status === "approved" && s.type === "withdraw").reduce((a, s) => a + Number(s.amount), 0);
@@ -592,11 +592,11 @@ export default function FarmerDetail() {
             <div className="flex flex-wrap justify-end gap-2 p-3 border-b">
               <Button size="sm" variant="outline" disabled={lands.length === 0}
                 onClick={() => exportLandsPdf({ name_en: farmer.name_en, account_number: farmer.account_number, farmer_code: farmer.farmer_code }, lands)}>
-                <FileText className="h-4 w-4 mr-1" />Export PDF
+                <FileText className="h-4 w-4 mr-1" />{t("pgExportPdf" as any)}
               </Button>
               <Button size="sm" variant="outline" disabled={lands.length === 0}
                 onClick={() => exportLandsExcel({ name_en: farmer.name_en, account_number: farmer.account_number, farmer_code: farmer.farmer_code }, lands)}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" />Export Excel
+                <FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExportExcel" as any)}
               </Button>
               <Dialog open={openLand} onOpenChange={(o) => {
                 setOpenLand(o);
@@ -740,8 +740,8 @@ export default function FarmerDetail() {
                     <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                     <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(l)} title="Edit"><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => setDelTarget(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(l)} title={t("edit")}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => setDelTarget(l)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -768,7 +768,7 @@ export default function FarmerDetail() {
                   <TableCell><Badge>{t(s.status as any)}</Badge></TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu onSelect={(c) => printSavings(s, c)} title={t("print")} />
-                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteSavings(s)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteSavings(s)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
               ))}
@@ -803,8 +803,8 @@ export default function FarmerDetail() {
                    <TableCell className="text-right">
                      <Button size="icon" variant="ghost" onClick={() => openLoanView(l)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
                      <ReceiptCopyMenu onSelect={(c) => printLoan(l, c)} title={t("print")} />
-                     {isSuper && <Button size="icon" variant="ghost" onClick={() => editLoanGoto(l)} title={t("edit" as any) || "Edit"}><Pencil className="h-4 w-4" /></Button>}
-                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                     {isSuper && <Button size="icon" variant="ghost" onClick={() => editLoanGoto(l)} title={t("edit")}><Pencil className="h-4 w-4" /></Button>}
+                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                    </TableCell>
                 </TableRow>
               );
@@ -832,7 +832,7 @@ export default function FarmerDetail() {
                   <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu onSelect={(c) => printIrrigation(i, c)} title={t("print")} />
-                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteIrrigation(i)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteIrrigation(i)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
               ))}
@@ -860,8 +860,8 @@ export default function FarmerDetail() {
                   <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
                   <TableCell className="text-right">
-                    <ReceiptCopyMenu size="sm" label="Download" onSelect={(c) => reprintReceipt(p, c)} />
-                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deletePayment(p)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                    <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={(c) => reprintReceipt(p, c)} />
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deletePayment(p)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
               ))}
@@ -916,10 +916,9 @@ export default function FarmerDetail() {
       <AlertDialog open={!!delTarget} onOpenChange={(o) => { if (!o && !deleting) setDelTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this land?</AlertDialogTitle>
+            <AlertDialogTitle>{t("pgDeleteLandTitle" as any)}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove Dag <span className="font-mono font-semibold">{delTarget?.dag_no}</span>.
-              Linked irrigation entries or relations will block deletion.
+              {(t("pgDeleteLandDesc" as any) as string).replace("{dag}", String(delTarget?.dag_no ?? ""))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1029,7 +1028,7 @@ export default function FarmerDetail() {
                   <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("payments")}</div>
                   {viewLoanPays.length === 0 ? <div className="text-xs text-muted-foreground">{t("noData")}</div> : (
                     <Table>
-                      <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>{t("note")}</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead className="text-right">{t("amount")}</TableHead><TableHead>{t("note")}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {viewLoanPays.map(p => (
                           <TableRow key={p.id}>
@@ -1120,11 +1119,11 @@ export default function FarmerDetail() {
               }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">No plan (manual)</SelectItem>
+                  <SelectItem value="_none">{t("noPlanManual")}</SelectItem>
                   {loanPlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} @ {p.interest_rate}%</SelectItem>)}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">Changing the plan will regenerate the installment schedule.</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pgPlanChangeWarn" as any)}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>{t("principal")}</Label><Input type="number" value={editLoanForm.principal} onChange={e => setEditLoanForm({ ...editLoanForm, principal: +e.target.value })} /></div>
