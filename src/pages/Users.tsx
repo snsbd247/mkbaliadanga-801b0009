@@ -164,38 +164,36 @@ export default function Users() {
       <PageHeader title={t("users")} description={t("onlySuperAdminUsers")} actions={
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-1" />New user</Button>
+            <Button><Plus className="h-4 w-4 mr-1" />{t("newUser")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Create user</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("createUser")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <div><Label>Full name</Label><Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
+              <div><Label>{t("fullName")}</Label><Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Username</Label><Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="3–30 chars" /></div>
-                <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                <div><Label>{t("username")}</Label><Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder={t("usernamePlaceholder")} /></div>
+                <div><Label>{t("email")}</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
               </div>
               <div>
-                <Label>Password</Label>
-                <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={form.role === "super_admin" ? "≥ 12 chars · upper/lower/digit/symbol" : "≥ 10 chars · upper/lower/digit/symbol"} />
+                <Label>{t("password")}</Label>
+                <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={form.role === "super_admin" ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  {form.role === "super_admin"
-                    ? "Super Admin policy: 12+ characters, mixed case, digit and symbol. Leaked passwords are rejected."
-                    : "10+ characters, mixed case, digit and symbol. Leaked passwords are rejected."}
+                  {form.role === "super_admin" ? t("pwSuperHint") : t("pwStaffHint")}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Role</Label>
+                <div><Label>{t("role")}</Label>
                   <Select value={form.role} onValueChange={v => setForm({ ...form, role: v as any })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
                       <SelectItem value="admin">{t("admin")}</SelectItem>
-                      <SelectItem value="committee">Committee</SelectItem>
+                      <SelectItem value="committee">{t("committee")}</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Office</Label>
+                <div><Label>{t("office")}</Label>
                   <Select value={form.office_id} onValueChange={v => setForm({ ...form, office_id: v })}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
@@ -205,7 +203,7 @@ export default function Users() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateOpen(false)}>{t("cancel")}</Button>
-              <Button onClick={createUser} disabled={busy}>{busy ? "…" : "Create"}</Button>
+              <Button onClick={createUser} disabled={busy}>{busy ? "…" : t("create")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
