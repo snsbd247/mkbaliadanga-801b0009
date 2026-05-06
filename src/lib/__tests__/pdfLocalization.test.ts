@@ -3,9 +3,9 @@ import jsPDF from "jspdf";
 import { applyPdfHeaderFooter, finalizePdf } from "@/lib/exports";
 
 function pdfText(doc: jsPDF): string {
-  // jsPDF outputs the PDF as a string — text operators are stored in plain
-  // ASCII, which is enough to verify our static header/footer labels.
-  return doc.output("datauristring");
+  const uri = doc.output("datauristring");
+  const b64 = uri.split(",")[1] ?? "";
+  return Buffer.from(b64, "base64").toString("latin1");
 }
 
 describe("PDF localization (header/footer)", () => {
