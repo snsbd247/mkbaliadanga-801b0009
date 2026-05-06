@@ -185,91 +185,111 @@ export default function DeveloperUpdates() {
           <TabsTrigger value="history"><History className="h-4 w-4 mr-1" />Update History ({history.length})</TabsTrigger>
         </TabsList>
 
-          <TabsContent value="commits">
-            <Card className="p-0 divide-y">
-              {commits.map((c) => (
-                <div key={c.sha} className="p-3 flex items-start gap-3">
-                  <Badge variant="outline" className="font-mono text-[11px]">{c.sha.slice(0, 7)}</Badge>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{c.commit.message.split("\n")[0]}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.commit.author.name} • {new Date(c.commit.author.date).toLocaleString()}
-                    </p>
-                  </div>
-                  <Button asChild size="sm" variant="ghost">
-                    <a href={c.html_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3 w-3" /></a>
-                  </Button>
+        <TabsContent value="commits">
+          <Card className="p-0 divide-y">
+            {commits.map((c) => (
+              <div key={c.sha} className="p-3 flex items-start gap-3">
+                <Badge variant="outline" className="font-mono text-[11px]">{c.sha.slice(0, 7)}</Badge>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{c.commit.message.split("\n")[0]}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {c.commit.author.name} • {new Date(c.commit.author.date).toLocaleString()}
+                  </p>
                 </div>
-              ))}
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="release">
-            {latestRelease ? (
-              <Card className="p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge>{latestRelease.tag_name}</Badge>
-                  <h3 className="font-semibold">{latestRelease.name || latestRelease.tag_name}</h3>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Published {new Date(latestRelease.published_at).toLocaleString()}
-                </p>
-                <pre className="whitespace-pre-wrap text-sm bg-muted p-3 rounded-md max-h-64 overflow-auto">
-                  {latestRelease.body || "(no release notes)"}
-                </pre>
-                <Button asChild variant="outline" size="sm">
-                  <a href={latestRelease.html_url} target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-1" /> View release
-                  </a>
+                <Button size="sm" variant="outline" onClick={() => markApplied(c)} disabled={marking === c.sha}>
+                  <CheckCheck className="h-3 w-3 mr-1" /> Mark applied
                 </Button>
-              </Card>
-            ) : (
-              <Card className="p-4 text-sm text-muted-foreground">No releases found.</Card>
-            )}
-          </TabsContent>
+                <Button asChild size="sm" variant="ghost">
+                  <a href={c.html_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3 w-3" /></a>
+                </Button>
+              </div>
+            ))}
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="download">
+        <TabsContent value="release">
+          {latestRelease ? (
+            <Card className="p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge>{latestRelease.tag_name}</Badge>
+                <h3 className="font-semibold">{latestRelease.name || latestRelease.tag_name}</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Published {new Date(latestRelease.published_at).toLocaleString()}
+              </p>
+              <pre className="whitespace-pre-wrap text-sm bg-muted p-3 rounded-md max-h-64 overflow-auto">
+                {latestRelease.body || "(no release notes)"}
+              </pre>
+              <Button asChild variant="outline" size="sm">
+                <a href={latestRelease.html_url} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-3 w-3 mr-1" /> View release
+                </a>
+              </Button>
+            </Card>
+          ) : (
+            <Card className="p-4 text-sm text-muted-foreground">No releases found.</Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="download">
+          {parsed && (
             <Card className="p-4 space-y-3 text-sm">
               <p className="font-medium">Apply updates on a self-hosted deployment:</p>
               <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
                 <li>SSH into your server and navigate to your project directory.</li>
-                <li>
-                  Run <code className="bg-muted px-1 rounded">git pull origin main</code>
-                </li>
-                <li>
-                  Install deps: <code className="bg-muted px-1 rounded">npm install</code>
-                </li>
-                <li>
-                  Run pending DB migrations on your Supabase/Postgres backend.
-                </li>
-                <li>
-                  Build &amp; restart: <code className="bg-muted px-1 rounded">npm run build &amp;&amp; pm2 restart app</code>
-                </li>
+                <li>Run <code className="bg-muted px-1 rounded">git pull origin main</code></li>
+                <li>Install deps: <code className="bg-muted px-1 rounded">npm install</code></li>
+                <li>Run pending DB migrations on your Supabase/Postgres backend.</li>
+                <li>Build &amp; restart: <code className="bg-muted px-1 rounded">npm run build &amp;&amp; pm2 restart app</code></li>
               </ol>
               <div className="pt-2 flex gap-2 flex-wrap">
                 <Button asChild variant="outline" size="sm">
-                  <a
-                    href={`https://github.com/${parsed.owner}/${parsed.repo}/archive/refs/heads/main.zip`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/archive/refs/heads/main.zip`} target="_blank" rel="noreferrer">
                     <Download className="h-3 w-3 mr-1" /> Download main.zip
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <a
-                    href={`https://github.com/${parsed.owner}/${parsed.repo}/tree/main/supabase/migrations`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/tree/main/supabase/migrations`} target="_blank" rel="noreferrer">
                     <Github className="h-3 w-3 mr-1" /> View migrations
                   </a>
                 </Button>
               </div>
             </Card>
-          </TabsContent>
-        </Tabs>
-      )}
+          )}
+        </TabsContent>
+
+        <TabsContent value="history">
+          <Card>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>When</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Commit</TableHead>
+                <TableHead>Message</TableHead>
+                <TableHead>Release</TableHead>
+                <TableHead>Repo</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {history.map((h) => (
+                  <TableRow key={h.id}>
+                    <TableCell className="text-xs whitespace-nowrap">{new Date(h.created_at).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge variant={h.action === "mark_applied" ? "default" : "outline"}>{h.action}</Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{h.commit_sha?.slice(0, 7) ?? "—"}</TableCell>
+                    <TableCell className="text-xs max-w-[280px] truncate">{h.commit_message ?? "—"}</TableCell>
+                    <TableCell className="text-xs">{h.release_tag ?? "—"}</TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{h.repo_url}</TableCell>
+                  </TableRow>
+                ))}
+                {history.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No update history yet.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
