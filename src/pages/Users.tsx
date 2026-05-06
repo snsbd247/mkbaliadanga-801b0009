@@ -18,14 +18,14 @@ import { useAuth } from "@/auth/AuthProvider";
 import { z } from "zod";
 
 // Stronger password policy. Super admins must use a longer, mixed password.
-function passwordPolicyIssues(pw: string, role: string): string[] {
+function passwordPolicyIssues(pw: string, role: string, t: (k: any) => string): string[] {
   const issues: string[] = [];
   const minLen = role === "super_admin" ? 12 : 10;
-  if (pw.length < minLen) issues.push(`__pwAtLeast__${minLen}`);
-  if (!/[a-z]/.test(pw)) issues.push("__pwLowercase__");
-  if (!/[A-Z]/.test(pw)) issues.push("__pwUppercase__");
-  if (!/[0-9]/.test(pw)) issues.push("__pwDigit__");
-  if (!/[^A-Za-z0-9]/.test(pw)) issues.push("__pwSymbol__");
+  if (pw.length < minLen) issues.push(t("pwAtLeastN").replace("{n}", String(minLen)));
+  if (!/[a-z]/.test(pw)) issues.push(t("pwLowercase"));
+  if (!/[A-Z]/.test(pw)) issues.push(t("pwUppercase"));
+  if (!/[0-9]/.test(pw)) issues.push(t("pwDigit"));
+  if (!/[^A-Za-z0-9]/.test(pw)) issues.push(t("pwSymbol"));
   return issues;
 }
 
