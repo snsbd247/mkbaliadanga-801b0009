@@ -107,7 +107,7 @@ export default function VoterList() {
         share_balance: d.share_balance,
       });
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to load dues");
+      toast.error(e.message ?? t("pgFailedLoadDues" as any));
     } finally {
       setDuesLoading(false);
     }
