@@ -388,28 +388,28 @@ export default function Accounts() {
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost" size="icon" className="h-8 w-8"
-                            title="View Ledger"
+                            title={t("ledger")}
                             onClick={() => navigate(`/ledger?account=${n.id}`)}
                           >
                             <BookOpen className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost" size="icon" className="h-8 w-8"
-                            title="Add Sub-account"
+                            title={t("addAccount")}
                             onClick={() => openCreate(n)}
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost" size="icon" className="h-8 w-8"
-                            title="Edit"
+                            title={t("edit")}
                             onClick={() => openEdit(n)}
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                            title="Delete"
+                            title={t("delete")}
                             disabled={n.is_system}
                             onClick={() => setDeleteId(n.id)}
                           >
@@ -430,35 +430,35 @@ export default function Accounts() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing.id ? "Edit Account" : "Add Account"}</DialogTitle>
+            <DialogTitle>{editing.id ? t("editAccount") : t("addAccount")}</DialogTitle>
             <DialogDescription>
-              {editing.parent_id ? "Sub-account under selected parent" : "Top-level account"}
+              {editing.parent_id ? t("subAccountUnder") : t("topLevel")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Code</Label>
+              <Label>{t("code")}</Label>
               <Input
                 value={editing.code || ""}
                 onChange={(e) => setEditing({ ...editing, code: e.target.value })}
               />
             </div>
             <div>
-              <Label>Type</Label>
+              <Label>{t("typeLabel")}</Label>
               <Select
                 value={editing.type as string}
                 onValueChange={(v) => setEditing({ ...editing, type: v as AccountType })}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(TYPE_META) as AccountType[]).map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  {(Object.keys(TYPE_META) as AccountType[]).map((tk) => (
+                    <SelectItem key={tk} value={tk}>{t(TYPE_META[tk].labelKey)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="col-span-2">
-              <Label>Name</Label>
+              <Label>{t("name")}</Label>
               <Input
                 value={editing.name || ""}
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
@@ -472,14 +472,14 @@ export default function Accounts() {
               />
             </div>
             <div className="col-span-2">
-              <Label>Parent Account</Label>
+              <Label>{t("parentAccount")}</Label>
               <Select
                 value={editing.parent_id || "none"}
                 onValueChange={(v) => setEditing({ ...editing, parent_id: v === "none" ? null : v })}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— None (Top level) —</SelectItem>
+                  <SelectItem value="none">{t("noneTopLevel")}</SelectItem>
                   {rows
                     .filter((r) => r.id !== editing.id)
                     .map((r) => (
@@ -490,8 +490,8 @@ export default function Accounts() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={save}>Save</Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={save}>{t("save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -500,14 +500,14 @@ export default function Accounts() {
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete account?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteAccountQ")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. Accounts with ledger entries cannot be deleted.
+              {t("deleteAccountConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={doDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={doDelete}>{t("delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
