@@ -139,6 +139,7 @@ export function AppSidebar() {
         { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
         { url: "/backup", icon: Database, label: t("backup"), superOnly: true },
+        { url: "/admin/demo-manager", icon: Database, label: "Demo Manager", superOnly: true },
       ],
     },
 

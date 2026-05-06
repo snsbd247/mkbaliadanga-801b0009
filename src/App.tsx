@@ -68,6 +68,7 @@ import IdReconcile from "./pages/admin/IdReconcile";
 import IdReview from "./pages/admin/IdReview";
 import DuplicateReceiptAudit from "./pages/admin/DuplicateReceiptAudit";
 import FarmerLoginAudit from "./pages/admin/FarmerLoginAudit";
+import DemoManager from "./pages/admin/DemoManager";
 import FarmerStatement from "./pages/FarmerStatement";
 
 import LoanPlans from "./pages/LoanPlans";
@@ -158,6 +159,7 @@ const App = () => (
                 <Route path="/admin/role-matrix" element={<RequireRole roles={["admin","super_admin"]}><RoleMatrix /></RequireRole>} />
                 <Route path="/admin/duplicate-receipts" element={<RequireRole roles={["admin","super_admin"]}><DuplicateReceiptAudit /></RequireRole>} />
                 <Route path="/admin/farmer-login-audit" element={<RequireRole roles={["admin","super_admin"]}><FarmerLoginAudit /></RequireRole>} />
+                <Route path="/admin/demo-manager" element={<RequireRole roles={["super_admin"]}><DemoManager /></RequireRole>} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />
