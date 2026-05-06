@@ -766,6 +766,8 @@ export const translations = {
     idReconcileDesc: "Find inconsistencies in Farmer ID, Account Number, and Farmer Code across all farmers.",
     rescan: "Re-scan",
     excel: "Excel",
+    import: "Import",
+    pdf: "PDF",
     farmersWithIssues: "{n} farmer(s) with at least one issue out of the first 5,000 records scanned.",
     allTab: "All",
     noIssues: "No issues 🎉",
