@@ -1167,7 +1167,6 @@ export const translations = {
     pgVoterListTitle: "Voter List",
     pgVotersCount: "{n} voters",
     pgCancellationRequires: "Cancellation requires:",
-    pgCurrentBalances: "Current balances",
     pgLoadingDues: "Loading dues…",
     pgOutstandingMustClear: "Outstanding balances must be cleared before cancelling.",
     pgSavingsBalanceLbl: "Savings balance",
