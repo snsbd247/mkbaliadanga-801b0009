@@ -269,11 +269,11 @@ export default function Cashbook() {
 
         <TabsContent value="cashbook">
           <ExportBar
-            onPdf={() => exportTablePDF("Cash Book",
-              ["Date", "Kind", "Description", "Ref", "Income", "Expense", "Balance"],
+            onPdf={() => exportTablePDF(t("cbCashBook" as any),
+              [t("date"), t("type"), t("cbDescription" as any), t("cbRef" as any), t("income"), t("expense"), t("balance")],
               cashbookEntries.map(r => [fmtDate(r.date), r.kind, r.label, r.ref, r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
               { from, to })}
-            onXlsx={() => exportExcel("cash-book", "Cashbook",
+            onXlsx={() => exportExcel("cash-book", t("cbCashBook" as any),
               cashbookEntries.map(r => ({ Date: r.date, Kind: r.kind, Description: r.label, Ref: r.ref, Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })),
               { from, to })}
           />
