@@ -16,7 +16,7 @@ import { MENU_SHORTCUTS, type MenuShortcut } from "@/lib/menuShortcuts";
 export function MenuSearch() {
   const navigate = useNavigate();
   const { t } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, isDeveloper } = useAuth();
   const { can } = usePermissions();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [q, setQ] = useState("");
@@ -24,6 +24,7 @@ export function MenuSearch() {
   const [active, setActive] = useState(0);
 
   const allowed = (s: MenuShortcut) => {
+    if (s.developerOnly) return isDeveloper;
     if (s.superOnly) return isSuper;
     if (s.permKey) return can(s.permKey as any, "can_view");
     return true;
