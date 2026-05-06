@@ -832,7 +832,7 @@ export default function FarmerDetail() {
                   <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu onSelect={(c) => printIrrigation(i, c)} title={t("print")} />
-                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteIrrigation(i)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteIrrigation(i)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
               ))}
