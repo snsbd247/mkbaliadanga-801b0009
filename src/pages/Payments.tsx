@@ -262,9 +262,11 @@ export default function Payments() {
 
   return (
     <>
-      <PageHeader title={t("payments")} description="Unified payment — splits across loan, savings & irrigation in one entry">
-        <ReceiptSettingsButton />
-      </PageHeader>
+      <PageHeader
+        title={t("payments")}
+        description="Unified payment — splits across loan, savings & irrigation in one entry"
+        actions={<ReceiptSettingsButton />}
+      />
       <DuplicateReceiptWarning />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-1">
