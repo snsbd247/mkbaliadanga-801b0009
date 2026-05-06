@@ -35,14 +35,14 @@ export default function Diagnostics() {
   const [scan, setScan] = useState<any>(null);
   const [scanBusy, setScanBusy] = useState(false);
 
-  useEffect(() => { document.title = "Diagnostics — RLS"; }, []);
+  useEffect(() => { document.title = t("diag_pageTitle" as any); }, [t]);
   useEffect(() => {
     const h = () => setErrors(getRlsErrors());
     window.addEventListener("rls-errors-changed", h);
     return () => window.removeEventListener("rls-errors-changed", h);
   }, []);
 
-  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">{t("diag_loading" as any)}</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   async function runHealthCheck() {
@@ -105,14 +105,14 @@ export default function Diagnostics() {
 
   return (
     <>
-      <PageHeader title="RLS Diagnostics" />
+      <PageHeader title={t("diag_title" as any)} />
 
       <Tabs defaultValue="errors">
         <TabsList>
-          <TabsTrigger value="errors">Recent Errors {errors.length > 0 && <Badge variant="destructive" className="ml-2">{errors.length}</Badge>}</TabsTrigger>
-          <TabsTrigger value="health">RLS Health Check</TabsTrigger>
-          <TabsTrigger value="isolation">Office Isolation</TabsTrigger>
-          <TabsTrigger value="integrity">Data Integrity</TabsTrigger>
+          <TabsTrigger value="errors">{t("diag_recentErrors" as any)} {errors.length > 0 && <Badge variant="destructive" className="ml-2">{errors.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="health">{t("diag_healthCheck" as any)}</TabsTrigger>
+          <TabsTrigger value="isolation">{t("diag_isolation" as any)}</TabsTrigger>
+          <TabsTrigger value="integrity">{t("diag_integrity" as any)}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="errors">
@@ -123,13 +123,13 @@ export default function Diagnostics() {
                   t("recentErrorsSummary").replace("{count}", String(errors.length)).replace("{stats}", Object.entries(errorStats).map(([k, v]) => `${k}:${v}`).join(" · "))}
               </div>
               <Button variant="outline" size="sm" onClick={() => { clearRlsErrors(); setErrors([]); }}>
-                <Trash2 className="h-4 w-4 mr-1" />Clear
+                <Trash2 className="h-4 w-4 mr-1" />{t("diag_clear" as any)}
               </Button>
             </div>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Time</TableHead><TableHead>Table / RPC</TableHead><TableHead>Method</TableHead>
-                <TableHead>Status</TableHead><TableHead>Code</TableHead><TableHead>Message / Hint</TableHead>
+                <TableHead>{t("diag_time" as any)}</TableHead><TableHead>{t("diag_tableRpc" as any)}</TableHead><TableHead>{t("diag_method" as any)}</TableHead>
+                <TableHead>{t("diag_status" as any)}</TableHead><TableHead>{t("diag_code" as any)}</TableHead><TableHead>{t("diag_msgHint" as any)}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {errors.map((e, i) => (
@@ -157,22 +157,22 @@ export default function Diagnostics() {
               <div className="text-sm text-muted-foreground">{t("rlsHealthCheckDesc")}</div>
               <Button onClick={runHealthCheck} disabled={running}>
                 {running ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                Run health check
+                {t("diag_runHealth" as any)}
               </Button>
             </div>
             {probes.length > 0 && (
               <Alert className="mb-3">
                 <ShieldCheck className="h-4 w-4" />
-                <AlertTitle>Result</AlertTitle>
+                <AlertTitle>{t("diag_result" as any)}</AlertTitle>
                 <AlertDescription>
-                  {probes.filter(p => p.ok).length} pass · {probes.filter(p => !p.ok).length} fail
+                  {t("diag_passFail" as any).replace("{pass}", String(probes.filter(p => p.ok).length)).replace("{fail}", String(probes.filter(p => !p.ok).length))}
                 </AlertDescription>
               </Alert>
             )}
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Table</TableHead><TableHead>Op</TableHead>
-                <TableHead>Status</TableHead><TableHead>Rows</TableHead><TableHead>Error</TableHead>
+                <TableHead>{t("diag_table" as any)}</TableHead><TableHead>{t("diag_op" as any)}</TableHead>
+                <TableHead>{t("diag_status" as any)}</TableHead><TableHead>{t("diag_rows" as any)}</TableHead><TableHead>{t("diag_error" as any)}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {probes.map((p, i) => (
@@ -180,8 +180,8 @@ export default function Diagnostics() {
                     <TableCell className="font-mono text-xs">{p.table}</TableCell>
                     <TableCell>{p.op}</TableCell>
                     <TableCell>
-                      {p.ok ? <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" />OK</Badge>
-                            : <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />FAIL</Badge>}
+                      {p.ok ? <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" />{t("diag_ok" as any)}</Badge>
+                            : <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />{t("diag_fail" as any)}</Badge>}
                     </TableCell>
                     <TableCell>{p.rows ?? "—"}</TableCell>
                     <TableCell className="text-xs">{p.code ? `[${p.code}] ${p.message}` : "—"}</TableCell>
@@ -200,30 +200,30 @@ export default function Diagnostics() {
               </div>
               <Button onClick={runIsolationTest} disabled={isoBusy}>
                 {isoBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                Run isolation test
+                {t("diag_runIsolation" as any)}
               </Button>
             </div>
             {iso && (
               <>
                 <Alert>
                   <ShieldCheck className="h-4 w-4" />
-                  <AlertTitle>Verdict</AlertTitle>
+                  <AlertTitle>{t("diag_verdict" as any)}</AlertTitle>
                   <AlertDescription>{iso.verdict}</AlertDescription>
                 </Alert>
                 <div className="text-sm">
-                  <div className="font-semibold mb-2">All offices ({iso.all_offices.length}):</div>
+                  <div className="font-semibold mb-2">{t("diag_allOffices" as any)} ({iso.all_offices.length}):</div>
                   <ul className="text-xs space-y-1 mb-3">
                     {iso.all_offices.map((o: any) => <li key={o.id} className="font-mono">{o.id.slice(0, 8)} — {o.name}</li>)}
                   </ul>
                 </div>
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Table</TableHead><TableHead>Rows</TableHead><TableHead>Distinct office_ids visible</TableHead>
+                    <TableHead>{t("diag_table" as any)}</TableHead><TableHead>{t("diag_rows" as any)}</TableHead><TableHead>{t("diag_distinctOffices" as any)}</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {Object.entries(iso.tables).map(([t, v]: any) => (
-                      <TableRow key={t}>
-                        <TableCell className="font-mono text-xs">{t}</TableCell>
+                    {Object.entries(iso.tables).map(([tn, v]: any) => (
+                      <TableRow key={tn}>
+                        <TableCell className="font-mono text-xs">{tn}</TableCell>
                         <TableCell>{v.error ? <Badge variant="destructive">{v.code}</Badge> : v.rows}</TableCell>
                         <TableCell className="text-xs">
                           {v.error ? v.error :
@@ -253,21 +253,21 @@ export default function Diagnostics() {
               </div>
               <Button onClick={runIntegrityScan} disabled={scanBusy}>
                 {scanBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                Run integrity scan
+                {t("diag_runIntegrity" as any)}
               </Button>
             </div>
             {scan?.error && (
-              <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{scan.error}</AlertDescription></Alert>
+              <Alert variant="destructive"><AlertTitle>{t("diag_error" as any)}</AlertTitle><AlertDescription>{scan.error}</AlertDescription></Alert>
             )}
             {scan && !scan.error && (
               <>
                 <Alert>
                   {scan.healthy ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                  <AlertTitle>{scan.healthy ? "All clear" : `${scan.summary.total_issues} issue(s) found`}</AlertTitle>
-                  <AlertDescription className="text-xs">Generated at {fmtDate(scan.generated_at)}</AlertDescription>
+                  <AlertTitle>{scan.healthy ? t("diag_allClear" as any) : t("diag_issuesFound" as any).replace("{count}", String(scan.summary.total_issues))}</AlertTitle>
+                  <AlertDescription className="text-xs">{t("diag_generatedAt" as any).replace("{date}", fmtDate(scan.generated_at))}</AlertDescription>
                 </Alert>
                 <Table>
-                  <TableHeader><TableRow><TableHead>Check</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>{t("diag_check" as any)}</TableHead><TableHead className="text-right">{t("diag_count" as any)}</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {Object.entries(scan.summary).map(([k, v]) => (
                       <TableRow key={k}>
@@ -283,9 +283,9 @@ export default function Diagnostics() {
                 </Table>
                 {scan.ledger_orphans?.length > 0 && (
                   <div>
-                    <div className="font-semibold text-sm mb-2">Ledger orphan references</div>
+                    <div className="font-semibold text-sm mb-2">{t("diag_ledgerOrphans" as any)}</div>
                     <Table>
-                      <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Reference ID</TableHead><TableHead className="text-right">Entries</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t("diag_type" as any)}</TableHead><TableHead>{t("diag_referenceId" as any)}</TableHead><TableHead className="text-right">{t("diag_entries" as any)}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {scan.ledger_orphans.map((o: any, i: number) => (
                           <TableRow key={i}>
