@@ -4,8 +4,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings2 } from "lucide-react";
-import { setReceiptOptions, useReceiptOptions } from "@/lib/receiptOptions";
+import { Settings2, RotateCcw } from "lucide-react";
+import { setReceiptOptions, useReceiptOptions, resetReceiptOptionsToDemo } from "@/lib/receiptOptions";
 
 export function ReceiptSettingsButton() {
   const opts = useReceiptOptions();
@@ -15,8 +15,20 @@ export function ReceiptSettingsButton() {
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm"><Settings2 className="h-4 w-4 mr-1" />Receipt settings</Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 space-y-3" align="end">
-        <div className="font-semibold text-sm">Receipt layout</div>
+      <PopoverContent className="w-80 space-y-3" align="end">
+        <div className="flex items-center justify-between">
+          <div className="font-semibold text-sm">Receipt layout</div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={resetReceiptOptionsToDemo}
+            title="Reset margin / paper / orientation / language / company block to demo defaults"
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1" />Demo defaults
+          </Button>
+        </div>
         <div className="space-y-1">
           <Label className="text-xs">Language</Label>
           <Select value={opts.lang} onValueChange={(v) => setReceiptOptions({ lang: v as any })}>
@@ -59,6 +71,36 @@ export function ReceiptSettingsButton() {
             value={opts.marginsMm}
             onChange={(e) => setReceiptOptions({ marginsMm: Math.max(0, Math.min(30, Number(e.target.value) || 0)) })}
           />
+        </div>
+
+        <div className="border-t pt-2 space-y-2">
+          <div className="text-xs font-semibold">Company block (header)</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Layout</Label>
+              <Select value={opts.orgLayout} onValueChange={(v) => setReceiptOptions({ orgLayout: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="two-line">Two lines (stacked)</SelectItem>
+                  <SelectItem value="one-line">One line (compact)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Font size</Label>
+              <Select value={opts.orgSize} onValueChange={(v) => setReceiptOptions({ orgSize: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sm">Small</SelectItem>
+                  <SelectItem value="md">Medium</SelectItem>
+                  <SelectItem value="lg">Large</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Same layout is used on both Farmer and Office copies for consistency.
+          </p>
         </div>
       </PopoverContent>
     </Popover>

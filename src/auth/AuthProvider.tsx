@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { hydrateReceiptOptionsFromProfile } from "@/lib/receiptOptions";
 
 export type AppRole = "super_admin" | "admin" | "committee" | "staff";
 
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles((rolesData ?? []).map((r: any) => r.role as AppRole));
     setOfficeId(prof?.office_id ?? null);
     setRolesLoaded(true);
+    void hydrateReceiptOptionsFromProfile();
   };
 
   useEffect(() => {
