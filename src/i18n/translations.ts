@@ -2529,6 +2529,16 @@ export const translations = {
     cbExpenses: "ব্যয়সমূহ",
     cbDescription: "বিবরণ",
     cbRef: "রেফ",
+    rpMonth: "মাস",
+    rpDeposits: "জমা",
+    rpWithdrawals: "উত্তোলন",
+    rpLoanIssued: "ঋণ প্রদান",
+    rpLoanCollected: "ঋণ আদায়",
+    rpIrrCharged: "সেচ চার্জ",
+    rpIrrCollected: "সেচ আদায়",
+    rpLoanDue: "ঋণ বকেয়া",
+    rpIrrDue: "সেচ বকেয়া",
+    rpNetTotal: "নেট মোট",
   },
 } as const;
 
