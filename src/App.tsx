@@ -135,9 +135,9 @@ const App = () => (
                 <Route path="/statement" element={<RequirePerm module="savings"><Statement /></RequirePerm>} />
                 <Route path="/dues" element={<RequirePerm module="reports"><Dues /></RequirePerm>} />
                 <Route path="/dues-audit" element={<RequirePerm module="reports"><DuesAudit /></RequirePerm>} />
-                <Route path="/backup" element={<RequireRole roles={["admin","super_admin"]}><Backup /></RequireRole>} />
-                <Route path="/audit" element={<RequirePerm module="audit"><AuditLogs /></RequirePerm>} />
-                <Route path="/diagnostics" element={<Diagnostics />} />
+                <Route path="/backup" element={<RequireDeveloper><Backup /></RequireDeveloper>} />
+                <Route path="/audit" element={<RequireDeveloper><AuditLogs /></RequireDeveloper>} />
+                <Route path="/diagnostics" element={<RequireDeveloper><Diagnostics /></RequireDeveloper>} />
                 <Route path="/accounts" element={<RequirePerm module="accounting"><Accounts /></RequirePerm>} />
                 <Route path="/ledger" element={<RequirePerm module="accounting"><Ledger /></RequirePerm>} />
                 <Route path="/financial-reports" element={<RequirePerm module="accounting"><FinancialReports /></RequirePerm>} />
