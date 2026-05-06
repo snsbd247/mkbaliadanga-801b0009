@@ -228,7 +228,7 @@ export default function BulkCards() {
               </TableRow>
             ))}
             {!loading && list.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No matching farmers</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("pgNoMatching")}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
