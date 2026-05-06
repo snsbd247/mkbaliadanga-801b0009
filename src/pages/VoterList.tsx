@@ -308,13 +308,12 @@ export default function VoterList() {
               <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
                 Cancellation requires:
                 <ul className="list-disc pl-5 mt-1 space-y-0.5">
-                  <li>Savings balance must be exactly 0</li>
-                  <li>No outstanding loan due</li>
-                  <li>No outstanding irrigation due</li>
+                  <li>{t("pgEligibilityNoLoan")}</li>
+                  <li>{t("pgEligibilityNoIrrigation")}</li>
                 </ul>
               </div>
               <div className="rounded border p-3 text-sm">
-                <div className="font-medium mb-2">Current balances</div>
+                <div className="font-medium mb-2">{t("pgCurrentBalances")}</div>
                 {duesLoading || !dues ? (
                   <div className="text-xs text-muted-foreground">Loading dues…</div>
                 ) : (
