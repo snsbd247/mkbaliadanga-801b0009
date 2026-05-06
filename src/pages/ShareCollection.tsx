@@ -258,7 +258,7 @@ export default function ShareCollection() {
 
   return (
     <>
-      <PageHeader title={t("p5b_batchShareCollection") /* covered */ ? t("shareCollection") || "Share Collection" : "Share Collection"} description="" actions={
+      <PageHeader title="Share Collection" description="" actions={
         <div className="flex gap-2">
           <Dialog open={batchOpen} onOpenChange={(v) => { setBatchOpen(v); if (!v) setBatchReport(null); }}>
             <DialogTrigger asChild><Button variant="outline"><Upload className="h-4 w-4 mr-1" />{t("p5c_batchCsv")}</Button></DialogTrigger>
