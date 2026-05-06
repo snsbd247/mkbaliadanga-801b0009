@@ -94,7 +94,7 @@ export default function Loans() {
       if (loan?.plan_id) {
         const { error: gErr } = await supabase.rpc("generate_loan_installments", { _loan_id: id });
         if (gErr) toast.error(`Schedule: ${gErr.message}`);
-        else toast.success("Installment schedule generated");
+        else toast.success(t("installmentScheduleGenerated"));
       }
     }
     toast.success(t("saved")); load();
@@ -114,7 +114,7 @@ export default function Loans() {
   async function restore(id: string) {
     const { error } = await supabase.from("loans").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Restored"); load();
+    toast.success(t("restored")); load();
   }
   function startEdit(l: any) {
     setEditLoan(l);
@@ -140,7 +140,7 @@ export default function Loans() {
       note: editForm.note,
     }).eq("id", editLoan.id);
     if (error) return toast.error(error.message);
-    toast.success("Updated"); setEditLoan(null); load();
+    toast.success(t("updated")); setEditLoan(null); load();
   }
 
   function printLoanReceipt(loan: any, payment?: any) {
@@ -188,7 +188,7 @@ export default function Loans() {
                   const p = plans.find(x => x.id === v);
                   setForm({ ...form, plan_id: v, interest_rate: p?.interest_rate ?? form.interest_rate });
                 }}>
-                  <SelectTrigger><SelectValue placeholder="No plan (manual)" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("noPlanManual")} /></SelectTrigger>
                   <SelectContent>{plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} @ {p.interest_rate}%</SelectItem>)}</SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">When a plan is selected, an installment schedule is auto-generated upon committee approval.</p>
