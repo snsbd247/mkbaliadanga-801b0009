@@ -13,10 +13,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Camera, X, User, CheckCircle2, FileDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { downloadBnReceiptPdf, previewBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, previewBnReceiptPdf, type BnReceiptData, type ReceiptCopy } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { useBranding } from "@/lib/branding";
 import { useReceiptTemplate } from "@/lib/receiptTemplate";
+import { useReceiptRenderArgs } from "@/lib/receiptOptions";
+import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
+import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
