@@ -88,14 +88,14 @@ export default function LedgerReconciliation() {
     setDetailLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Please sign in"); return; }
+      if (!session) { toast.error(t("p5b_pleaseSignIn")); return; }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ledger-reconcile-monthly`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ mode: "detail", reference_type: referenceType, reference_id: referenceId }),
       });
       const j = await res.json();
-      if (!res.ok) { toast.error(j?.error || "Failed to load detail"); setDetail(null); return; }
+      if (!res.ok) { toast.error(j?.error || t("p5b_failedToLoadDetail")); setDetail(null); return; }
       setDetail(j.detail);
     } finally { setDetailLoading(false); }
   }
