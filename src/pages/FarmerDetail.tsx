@@ -179,7 +179,7 @@ export default function FarmerDetail() {
     downloadBnReceiptPdf({
       kind: "loan",
       ...commonReceipt(),
-      receipt_no: `LOAN-${l.id.slice(0, 8).toUpperCase()}`,
+      receipt_no: l.receipt_no || autoReceiptNo("LOAN", l.id, new Date(l.issued_on)),
       date: l.issued_on,
       farmer: farmerForReceipt(),
       description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
