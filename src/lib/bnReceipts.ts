@@ -23,6 +23,10 @@ export interface ReceiptOptions {
   paper?: "a4" | "letter";
   /** Orientation. Default "p" (portrait). */
   orientation?: "p" | "l";
+  /** Company block layout: stacked ("two-line") or compact inline ("one-line"). */
+  orgLayout?: "one-line" | "two-line";
+  /** Company block font scale. */
+  orgSize?: "sm" | "md" | "lg";
 }
 
 export interface BnReceiptData {
