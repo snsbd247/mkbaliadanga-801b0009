@@ -276,7 +276,7 @@ export default function Loans() {
 
       <Dialog open={!!editLoan} onOpenChange={(o) => !o && setEditLoan(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Loan</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("pgEditLoan")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>{t("principal")}</Label><Input type="number" value={editForm.principal} onChange={e => setEditForm({ ...editForm, principal: +e.target.value })} /></div>
@@ -313,7 +313,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
         <TableHead>{t("principal")}</TableHead><TableHead>{t("interestRate")}</TableHead>
         <TableHead>{t("totalPayable")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
         <TableHead>{t("status")}</TableHead>
-        <TableHead>Approved By</TableHead>
+        <TableHead>{t("pgApprovedBy")}</TableHead>
         <TableHead className="text-right">{t("actions")}</TableHead>
       </TableRow></TableHeader>
       <TableBody>

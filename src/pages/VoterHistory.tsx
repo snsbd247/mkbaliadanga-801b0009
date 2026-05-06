@@ -107,12 +107,12 @@ export default function VoterHistory() {
 
   return (
     <>
-      <PageHeader title="Voter Cancel/Reactivate History" description="Audit trail of every voter cancel and reactivate event with reason and operator." />
+      <PageHeader title={t("p5c_pageTitle" as any)} description={t("p5c_pageDesc" as any)} />
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-5">
           <div><Label>{t("p5_farmerLabel")}</Label><FarmerSearchSelect value={farmerId} onChange={(id) => setFarmerId(id)} /></div>
           <div>
-            <Label>Event</Label>
+            <Label>{t("pgEvent")}</Label>
             <Select value={event} onValueChange={setEvent}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -134,16 +134,16 @@ export default function VoterHistory() {
               </Select>
             </div>
           )}
-          <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
-          <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <div><Label>{t("pgFromDate")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+          <div><Label>{t("pgToDate")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
         </div>
         <div className="flex gap-2 mt-3">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />Refresh
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("refresh" as any)}
           </Button>
           <Button variant="outline" size="sm" disabled={!rows.length}
             onClick={() => exportExcel("voter-history", "Voter History", exportRows, { from, to })}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" />Excel
+            <FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExcel")}
           </Button>
           <Button variant="outline" size="sm" disabled={!rows.length}
             onClick={() => exportTablePDF("Voter Cancel/Reactivate History",
@@ -161,7 +161,7 @@ export default function VoterHistory() {
           <TableHeader>
             <TableRow>
               <TableHead>{t("date")}</TableHead>
-              <TableHead>Event</TableHead>
+              <TableHead>{t("pgEvent")}</TableHead>
               <TableHead>{t("p5_farmerLabel")}</TableHead>
               <TableHead>{t("p5c_farmerId")}</TableHead>
               <TableHead>{t("rejectionReason")}</TableHead>

@@ -336,20 +336,20 @@ export default function ShareCollection() {
                   <Select value={form.method} onValueChange={v => setForm({ ...form, method: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="bank">Bank</SelectItem>
+                      <SelectItem value="cash">{t("pgCash")}</SelectItem>
+                      <SelectItem value="bank">{t("pgBank")}</SelectItem>
                       <SelectItem value="mobile">{t("p5c_mobileBanking")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Note (optional)</Label>
+                <div><Label>{t("pgNote")}</Label>
                   <Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
                 </div>
-                <p className="text-xs text-muted-foreground">Min ৳{MIN_AMOUNT}. One entry per farmer per day. Pending approval required.</p>
+                <p className="text-xs text-muted-foreground">Min ৳{MIN_AMOUNT}.</p>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={save}>Submit</Button>
+                <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
+                <Button onClick={save}>{t("pgSubmit")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -357,17 +357,17 @@ export default function ShareCollection() {
       } />
 
       <Card className="p-3 mb-3 grid gap-3 md:grid-cols-5">
-        <div><Label className="text-xs">From</Label>
+        <div><Label className="text-xs">{t("pgFromDate")}</Label>
           <Input type="date" value={range.from} onChange={e => setRange({ ...range, from: e.target.value })} />
         </div>
-        <div><Label className="text-xs">To</Label>
+        <div><Label className="text-xs">{t("pgToDate")}</Label>
           <Input type="date" value={range.to} onChange={e => setRange({ ...range, to: e.target.value })} />
         </div>
-        <div><Label className="text-xs">Group</Label>
+        <div><Label className="text-xs">{t("pgGroup")}</Label>
           <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Detailed (All rows)</SelectItem>
+              <SelectItem value="all">{t("p5c_allEvents" as any)}</SelectItem>
               <SelectItem value="daily">{t("p5c_dailySummary")}</SelectItem>
               <SelectItem value="monthly">{t("p5c_monthlySummary")}</SelectItem>
             </SelectContent>
@@ -375,8 +375,8 @@ export default function ShareCollection() {
         </div>
         <div className="flex items-end gap-2 md:col-span-2">
           <Button variant="outline" size="sm" onClick={() => exportReport("pdf")}><FileText className="h-4 w-4 mr-1" />PDF</Button>
-          <Button variant="outline" size="sm" onClick={() => exportReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
-          <span className="ml-auto text-sm text-muted-foreground">Approved Total: <strong className="text-foreground">{money(totalApproved)}</strong></span>
+          <Button variant="outline" size="sm" onClick={() => exportReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExcel")}</Button>
+          <span className="ml-auto text-sm text-muted-foreground">{t("p5c_totalAmount" as any)}: <strong className="text-foreground">{money(totalApproved)}</strong></span>
         </div>
       </Card>
 
@@ -394,7 +394,7 @@ export default function ShareCollection() {
           <Card className="p-3">
             <div className="text-sm font-medium mb-2">{period === "monthly" ? "Monthly" : "Daily"} approved totals</div>
             {grouped.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No data</p>
+              <p className="text-sm text-muted-foreground">{t("pgNoData")}</p>
             ) : (
               <div style={{ width: "100%", height: 260 }}>
                 <ResponsiveContainer>
@@ -413,7 +413,7 @@ export default function ShareCollection() {
             <Table>
               <TableHeader><TableRow><TableHead>{period === "monthly" ? t("p5c_monthlySummary") : t("date")}</TableHead><TableHead className="text-right">{t("p5c_totalAmount")}</TableHead></TableRow></TableHeader>
               <TableBody>
-                {grouped.length === 0 && <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">No data</TableCell></TableRow>}
+                {grouped.length === 0 && <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">{t("pgNoData")}</TableCell></TableRow>}
                 {grouped.map(([k, v]) => (
                   <TableRow key={k}><TableCell>{k}</TableCell><TableCell className="text-right">{money(v)}</TableCell></TableRow>
                 ))}
@@ -433,16 +433,16 @@ export default function ShareCollection() {
               <Input type="number" min={MIN_AMOUNT} max={MAX_AMOUNT} value={editForm.amount}
                 onChange={e => setEditForm({ ...editForm, amount: e.target.value })} />
             </div>
-            <div><Label>Date</Label>
+            <div><Label>{t("pgDate")}</Label>
               <Input type="date" value={editForm.txn_date} onChange={e => setEditForm({ ...editForm, txn_date: e.target.value })} />
             </div>
-            <div><Label>Note</Label>
+            <div><Label>{t("pgNote")}</Label>
               <Input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditRow(null)}>Cancel</Button>
-            <Button onClick={saveEdit}>Save</Button>
+            <Button variant="outline" onClick={() => setEditRow(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEdit}>{t("save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

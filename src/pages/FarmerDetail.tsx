@@ -536,7 +536,7 @@ export default function FarmerDetail() {
         actions={<>
           <ReceiptSettingsButton />
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
-          <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />Print Card</Button>
+          <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />{t("pgPrintCard")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
           <Button onClick={() => nav(`/farmers/${farmer.id}/report`)}>
             <FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}
@@ -551,15 +551,15 @@ export default function FarmerDetail() {
             <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{farmer.name_en[0]}</AvatarFallback>
           </Avatar>
           <div className="grid flex-1 grid-cols-2 gap-3 text-sm md:grid-cols-4">
-            <div><div className="text-xs text-muted-foreground">Farmer ID</div><div className="font-mono font-semibold">{farmer.member_no ?? farmer.farmer_code}</div></div>
+            <div><div className="text-xs text-muted-foreground">{t("pgFarmerId")}</div><div className="font-mono font-semibold">{farmer.member_no ?? farmer.farmer_code}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameEn")}</div><div className="font-medium">{farmer.name_en}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameBn")}</div><div className="font-medium">{farmer.name_bn ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("fatherName")}</div><div>{farmer.father_name ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("motherName")}</div><div>{farmer.mother_name ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nid")}</div><div className="font-mono">{farmer.nid ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("mobile")}</div><div>{farmer.mobile ?? "-"}</div></div>
-            <div><div className="text-xs text-muted-foreground">Voter Number</div><div className="font-mono">{farmer.voter_number ?? "—"}</div></div>
-            <div className="col-span-2 md:col-span-4"><div className="text-xs text-muted-foreground">{t("village")} / Location</div><div className="text-sm">{farmerLocationLine(farmer)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{t("pgVoterNumber")}</div><div className="font-mono">{farmer.voter_number ?? "—"}</div></div>
+            <div className="col-span-2 md:col-span-4"><div className="text-xs text-muted-foreground">{t("village")} / {t("pgLocation")}</div><div className="text-sm">{farmerLocationLine(farmer)}</div></div>
           </div>
           <div className="flex flex-col items-center gap-1 rounded-md border bg-card p-2">
             <QRCodeSVG value={`${window.location.origin}/scan?acc=${farmer.member_no ?? farmer.farmer_code}`} size={96} />
@@ -584,7 +584,7 @@ export default function FarmerDetail() {
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           <TabsTrigger value="loans">{t("loans")}</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lands">
@@ -724,7 +724,7 @@ export default function FarmerDetail() {
             </div>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Location</TableHead>
+                <TableHead>{t("pgLocation")}</TableHead>
                 <TableHead>{t("dagNo")}</TableHead>
                 <TableHead>{t("landSize")}</TableHead>
                 <TableHead>{t("ownerType")}</TableHead>
@@ -846,10 +846,10 @@ export default function FarmerDetail() {
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead>
-              <TableHead>Method</TableHead>
+              <TableHead>{t("pgMethod")}</TableHead>
               <TableHead className="text-right">{t("amount")}</TableHead>
-              <TableHead>Office</TableHead>
-              <TableHead className="text-right">Receipt</TableHead>
+              <TableHead>{t("pgOffice")}</TableHead>
+              <TableHead className="text-right">{t("pgReceipt")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {payments.map((p) => (
@@ -876,10 +876,10 @@ export default function FarmerDetail() {
       {/* Edit land dialog */}
       <Dialog open={!!editLand} onOpenChange={(o) => { if (!o && !editSaving) { setEditLand(null); setEditLoc({}); setEditLocErr(null); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Edit Land</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("pgEditLand")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium mb-2 block">Location</Label>
+              <Label className="text-sm font-medium mb-2 block">{t("pgLocation")}</Label>
               <LocationPicker value={editLoc} onChange={(v) => { setEditLoc(v); if (editLocErr) setEditLocErr(null); }}
                 errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} showVillage={false} />
             </div>
@@ -923,9 +923,9 @@ export default function FarmerDetail() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); confirmDelete(); }} disabled={deleting}>
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? "…" : t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1113,7 +1113,7 @@ export default function FarmerDetail() {
           <DialogHeader><DialogTitle>{t("loanDetails" as any)} — {t("edit" as any) || "Edit"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label>Loan Plan</Label>
+              <Label>{t("pgLoanPlan")}</Label>
               <Select value={editLoanForm.plan_id || "_none"} onValueChange={v => {
                 const p = loanPlans.find(x => x.id === v);
                 setEditLoanForm(f => ({ ...f, plan_id: v === "_none" ? "" : v, interest_rate: p?.interest_rate ?? f.interest_rate }));

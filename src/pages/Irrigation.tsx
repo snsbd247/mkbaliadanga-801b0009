@@ -249,20 +249,20 @@ export default function Irrigation() {
         <div className="flex gap-2">
         <Dialog open={genOpen} onOpenChange={setGenOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline"><Sparkles className="h-4 w-4 mr-1" />Generate for Season</Button>
+            <Button variant="outline"><Sparkles className="h-4 w-4 mr-1" />{t("pgGenerateForSeason")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Generate Irrigation Charges</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("pgGenerateIrrigationCharges")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label>Season</Label>
+                <Label>{t("pgSeason")}</Label>
                 <Select value={genSeason} onValueChange={setGenSeason}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>{seasons.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Basis</Label>
+                <Label>{t("pgBasis")}</Label>
                 <Select value={genBasis} onValueChange={setGenBasis}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -273,19 +273,19 @@ export default function Irrigation() {
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Creates one charge per land (skips lands already charged for this season). Uses the active rate from Irrigation Rates × land size.
+                {t("noActiveRateForSeason")}
               </p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setGenOpen(false)}>{t("cancel")}</Button>
-              <Button onClick={generateForSeason} disabled={genBusy || !genSeason}>{genBusy ? "Generating..." : "Generate"}</Button>
+              <Button onClick={generateForSeason} disabled={genBusy || !genSeason}>{genBusy ? "…" : t("pgGenerateForSeason")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setRateAvailable(null); } }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addEntry")}</Button></DialogTrigger>
           <DialogContent className="max-w-xl">
-            <DialogHeader><DialogTitle>{t("irrigation")} — {editId ? "Edit Entry" : t("addEntry")}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("irrigation")} — {editId ? t("edit") : t("addEntry")}</DialogTitle></DialogHeader>
             {form.season_id && rateAvailable === false && (
               <div className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-sm p-2">
                 {t("noActiveRateForSeason")} <a href="/irrigation-rates" className="underline">{t("irrigationRatesLink")}</a> {t("pageFirst")}
@@ -378,11 +378,11 @@ export default function Irrigation() {
               <TableCell className={r.due_amount > 0 ? "due-text" : ""}>{money(r.due_amount)}</TableCell>
               <TableCell className="text-right">
                 {showDeleted ? (
-                  <Button size="sm" variant="outline" onClick={() => restore(r.id)}>Restore</Button>
+                  <Button size="sm" variant="outline" onClick={() => restore(r.id)}>{t("pgRestore")}</Button>
                 ) : isSuper ? (
                   <>
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit">✎</Button>
-                    <Button size="icon" variant="ghost" onClick={() => softDelete(r.id)} title="Delete">🗑</Button>
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title={t("edit")}>✎</Button>
+                    <Button size="icon" variant="ghost" onClick={() => softDelete(r.id)} title={t("delete")}>🗑</Button>
                   </>
                 ) : null}
               </TableCell>

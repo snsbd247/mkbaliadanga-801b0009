@@ -218,13 +218,13 @@ export default function VoterList() {
       <Card className="p-4 mb-4 space-y-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
           <TabsList>
-            <TabsTrigger value="active">Active Voters</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+            <TabsTrigger value="active">{t("pgActiveVoters")}</TabsTrigger>
+            <TabsTrigger value="cancelled">{t("pgCancelled")}</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search by voter #, name, mobile, account…" value={q}
+          <Input placeholder={t("search")} value={q}
             onChange={e => setQ(e.target.value)} className="pl-9" />
         </div>
       </Card>
@@ -233,14 +233,14 @@ export default function VoterList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Voter #</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Account No</TableHead>
-              <TableHead>Mobile</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Office</TableHead>
-              {tab === "cancelled" && <TableHead>Reason</TableHead>}
-              {isSuper && <TableHead className="text-right">Action</TableHead>}
+              <TableHead>{t("pgVoterNumber")} #</TableHead>
+              <TableHead>{t("pgName")}</TableHead>
+              <TableHead>{t("pgAccountNo")}</TableHead>
+              <TableHead>{t("pgMobile")}</TableHead>
+              <TableHead>{t("pgLocation")}</TableHead>
+              <TableHead>{t("pgOffice")}</TableHead>
+              {tab === "cancelled" && <TableHead>{t("pgReason")}</TableHead>}
+              {isSuper && <TableHead className="text-right">{t("pgAction")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -264,11 +264,11 @@ export default function VoterList() {
                   <TableCell className="text-right">
                     {tab === "active" ? (
                       <Button size="sm" variant="destructive" onClick={() => openDialog(r, "cancel")}>
-                        <Ban className="h-4 w-4 mr-1" />Cancel
+                        <Ban className="h-4 w-4 mr-1" />{t("cancel")}
                       </Button>
                     ) : (
                       <Button size="sm" variant="outline" onClick={() => openDialog(r, "reactivate")}>
-                        <RotateCcw className="h-4 w-4 mr-1" />Reactivate
+                        <RotateCcw className="h-4 w-4 mr-1" />{t("p5c_reactivateOnly" as any)}
                       </Button>
                     )}
                   </TableCell>
@@ -278,7 +278,7 @@ export default function VoterList() {
             {rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={isSuper ? (tab === "cancelled" ? 8 : 7) : (tab === "cancelled" ? 7 : 6)} className="text-center text-muted-foreground py-6">
-                  {loading ? "Loading…" : "No voters found"}
+                  {loading ? "…" : t("pgNoRecords")}
                 </TableCell>
               </TableRow>
             )}
@@ -290,7 +290,7 @@ export default function VoterList() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {mode === "cancel" ? "Cancel Voter Membership" : "Reactivate Voter Membership"}
+              {mode === "cancel" ? t("p5c_cancelOnly" as any) : t("p5c_reactivateOnly" as any)}
             </DialogTitle>
             <DialogDescription>
               {target && (
@@ -308,13 +308,12 @@ export default function VoterList() {
               <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
                 Cancellation requires:
                 <ul className="list-disc pl-5 mt-1 space-y-0.5">
-                  <li>Savings balance must be exactly 0</li>
-                  <li>No outstanding loan due</li>
-                  <li>No outstanding irrigation due</li>
+                  <li>{t("pgEligibilityNoLoan")}</li>
+                  <li>{t("pgEligibilityNoIrrigation")}</li>
                 </ul>
               </div>
               <div className="rounded border p-3 text-sm">
-                <div className="font-medium mb-2">Current balances</div>
+                <div className="font-medium mb-2">{t("pgCurrentBalances")}</div>
                 {duesLoading || !dues ? (
                   <div className="text-xs text-muted-foreground">Loading dues…</div>
                 ) : (

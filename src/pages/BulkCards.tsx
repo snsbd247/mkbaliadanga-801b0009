@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Download, Search, ArrowLeft } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { TEMPLATE_LIST, type TemplateId } from "@/components/card/templates";
 import { downloadBulkCardsPdf } from "@/components/card/cardPdf";
@@ -31,6 +32,7 @@ interface FarmerRow {
 
 export default function BulkCards() {
   const { isAdmin } = useAuth();
+  const { t } = useLang();
   const brand = useBranding();
   const cardCfg = useCardSettings();
   const [list, setList] = useState<FarmerRow[]>([]);
@@ -141,8 +143,8 @@ export default function BulkCards() {
   if (!isAdmin) {
     return (
       <>
-        <PageHeader title="Bulk Membership Cards" />
-        <Alert variant="destructive"><AlertDescription>This page is restricted to administrators.</AlertDescription></Alert>
+        <PageHeader title={t("pgBulkCardsTitle")} />
+        <Alert variant="destructive"><AlertDescription>{t("accessDenied" as any)}</AlertDescription></Alert>
       </>
     );
   }
@@ -150,14 +152,14 @@ export default function BulkCards() {
   return (
     <>
       <PageHeader
-        title="Bulk Membership Cards"
-        description="Select multiple farmers and download all their cards as a single PDF."
+        title={t("pgBulkCardsTitle")}
+        description={t("pgBulkCardsDesc")}
         actions={
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm"><Link to="/farmers"><ArrowLeft className="h-4 w-4" />Farmers</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link to="/farmers"><ArrowLeft className="h-4 w-4" />{t("farmers")}</Link></Button>
             <Button size="sm" onClick={generate} disabled={busy || selectedIds.length === 0}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Generate PDF ({selectedIds.length})
+              {t("pgGeneratePdf")} ({selectedIds.length})
             </Button>
           </div>
         }
@@ -166,28 +168,28 @@ export default function BulkCards() {
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-3">
           <div>
-            <Label className="text-xs">Search</Label>
+            <Label className="text-xs">{t("search")}</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Name, code, mobile…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+              <Input placeholder={`${t("pgName")}, ${t("pgCode")}, ${t("pgMobile")}…`} value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
             </div>
           </div>
           <div>
-            <Label className="text-xs">Office</Label>
+            <Label className="text-xs">{t("pgOffice")}</Label>
             <Select value={officeId} onValueChange={setOfficeId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All offices</SelectItem>
+                <SelectItem value="all">{t("pgAllOffices")}</SelectItem>
                 {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Card template</Label>
+            <Label className="text-xs">{t("pgCardTemplate")}</Label>
             <Select value={templateId} onValueChange={(v) => setTemplateId(v as TemplateId)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {TEMPLATE_LIST.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+                {TEMPLATE_LIST.map((tpl) => <SelectItem key={tpl.id} value={tpl.id}>{tpl.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -199,13 +201,13 @@ export default function BulkCards() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
-                <Checkbox checked={allOnPageSelected} onCheckedChange={(v) => toggleAll(!!v)} aria-label="Select all" />
+                <Checkbox checked={allOnPageSelected} onCheckedChange={(v) => toggleAll(!!v)} aria-label={t("search")} />
               </TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Mobile</TableHead>
-              <TableHead>Village</TableHead>
-              <TableHead>Office</TableHead>
+              <TableHead>{t("pgCode")}</TableHead>
+              <TableHead>{t("pgName")}</TableHead>
+              <TableHead>{t("pgMobile")}</TableHead>
+              <TableHead>{t("pgVillage")}</TableHead>
+              <TableHead>{t("pgOffice")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -226,7 +228,7 @@ export default function BulkCards() {
               </TableRow>
             ))}
             {!loading && list.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No matching farmers</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("pgNoMatching")}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>

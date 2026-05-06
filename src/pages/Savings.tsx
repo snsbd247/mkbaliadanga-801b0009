@@ -372,21 +372,21 @@ export default function Savings() {
           <Card className="p-3 mb-3 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">{t("enrollFarmersInPlansText")} <a href="/savings-plans" className="underline">{t("savingsPlansLink")}</a>.</div>
             <Dialog open={planOpen} onOpenChange={setPlanOpen}>
-              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Enroll Farmer</Button></DialogTrigger>
+              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("pgEnrollFarmer")}</Button></DialogTrigger>
               <DialogContent>
-                <DialogHeader><DialogTitle>Enroll in Savings Plan</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{t("pgEnrollSavingsPlan")}</DialogTitle></DialogHeader>
                 <div className="space-y-3">
-                  <div><Label>Farmer</Label>
+                  <div><Label>{t("pgFarmer")}</Label>
                     <FarmerSearchSelect value={planForm.farmer_id || null}
                       onChange={(id) => setPlanForm({ ...planForm, farmer_id: id ?? "" })} />
                   </div>
-                  <div><Label>Plan</Label>
+                  <div><Label>{t("pgPlan")}</Label>
                     <Select value={planForm.plan_id} onValueChange={v => setPlanForm({ ...planForm, plan_id: v })}>
                       <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>{plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} ৳{p.installment_amount} @ {p.interest_rate}% ({p.maturity_type})</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Start Date</Label><Input type="date" value={planForm.start_date} onChange={e => setPlanForm({ ...planForm, start_date: e.target.value })} /></div>
+                  <div><Label>{t("pgStartDate")}</Label><Input type="date" value={planForm.start_date} onChange={e => setPlanForm({ ...planForm, start_date: e.target.value })} /></div>
                   {planForm.plan_id && (() => { const p = plans.find(x => x.id === planForm.plan_id); if (!p) return null; const c = calcMaturity(p); return (
                     <div className="rounded-md bg-muted p-2 text-sm space-y-1">
                       <div>Installments: <b>{c.count}</b></div>
@@ -402,22 +402,22 @@ export default function Savings() {
           </Card>
           <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
             <div>
-              <Label className="text-xs">From</Label>
+              <Label className="text-xs">{t("pgFromDate")}</Label>
               <Input type="date" className="h-9" value={reportRange.from} onChange={e => setReportRange({ ...reportRange, from: e.target.value })} />
             </div>
             <div>
-              <Label className="text-xs">To</Label>
+              <Label className="text-xs">{t("pgToDate")}</Label>
               <Input type="date" className="h-9" value={reportRange.to} onChange={e => setReportRange({ ...reportRange, to: e.target.value })} />
             </div>
-            <Button variant="outline" size="sm" onClick={() => exportPlanReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+            <Button variant="outline" size="sm" onClick={() => exportPlanReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExcel")}</Button>
             <Button variant="outline" size="sm" onClick={() => exportPlanReport("pdf")}><FileText className="h-4 w-4 mr-1" />PDF</Button>
           </Card>
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
               <TableHead className="w-8"></TableHead>
-              <TableHead>Start</TableHead><TableHead>Farmer</TableHead><TableHead>Plan</TableHead>
-              <TableHead>Installment</TableHead><TableHead>Expected Total</TableHead>
-              <TableHead>Interest</TableHead><TableHead>Maturity</TableHead><TableHead>Status</TableHead>
+              <TableHead>{t("pgStartDate")}</TableHead><TableHead>{t("pgFarmer")}</TableHead><TableHead>{t("pgPlan")}</TableHead>
+              <TableHead>{t("pgInstallment")}</TableHead><TableHead>{t("pgExpectedTotal")}</TableHead>
+              <TableHead>{t("pgInterest")}</TableHead><TableHead>{t("pgMaturity")}</TableHead><TableHead>{t("status")}</TableHead>
               <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
@@ -469,7 +469,7 @@ export default function Savings() {
                           </div>
                           <div className="max-h-64 overflow-y-auto">
                             <table className="w-full text-sm">
-                              <thead className="text-xs text-muted-foreground sticky top-0 bg-muted/30"><tr><th className="text-left py-1">#</th><th className="text-left">Due Date</th><th className="text-right">Amount</th></tr></thead>
+                              <thead className="text-xs text-muted-foreground sticky top-0 bg-muted/30"><tr><th className="text-left py-1">#</th><th className="text-left">{t("pgDate")}</th><th className="text-right">{t("amount")}</th></tr></thead>
                               <tbody>
                                 {sched.map(s => (
                                   <tr key={s.no} className="border-t">
@@ -533,11 +533,11 @@ export default function Savings() {
 
       <Dialog open={!!editTxn} onOpenChange={(o) => !o && setEditTxn(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Savings Transaction</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("pgEditSavingsTxn")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="text-sm text-muted-foreground">{editTxn?.farmers?.name_en} — {editTxn?.type}</div>
-            <div><Label>Amount</Label><Input type="number" value={editTxnForm.amount} onChange={e => setEditTxnForm({ ...editTxnForm, amount: +e.target.value })} /></div>
-            <div><Label>Note</Label><Input value={editTxnForm.note} onChange={e => setEditTxnForm({ ...editTxnForm, note: e.target.value })} /></div>
+            <div><Label>{t("amount")}</Label><Input type="number" value={editTxnForm.amount} onChange={e => setEditTxnForm({ ...editTxnForm, amount: +e.target.value })} /></div>
+            <div><Label>{t("pgNote")}</Label><Input value={editTxnForm.note} onChange={e => setEditTxnForm({ ...editTxnForm, note: e.target.value })} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditTxn(null)}>{t("cancel")}</Button>
