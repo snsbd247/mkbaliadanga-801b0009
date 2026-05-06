@@ -43,9 +43,8 @@ async function logAudit(user_id: string, action: string, meta: Record<string, an
 
 export default function Profile() {
   const { user, signOut, refresh } = useAuth();
-  const { lang } = useLang();
+  const { t } = useLang();
   const navigate = useNavigate();
-  const tr = (en: string, bn: string) => (lang === "bn" ? bn : en);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -85,9 +84,8 @@ export default function Profile() {
     const parsed = profileSchema.safeParse({ full_name: fullName, username });
     if (!parsed.success) {
       const first = parsed.error.errors[0]?.message;
-      return toast.error(first ?? tr("Validation failed", "যাচাইকরণ ব্যর্থ"));
+      return toast.error(first ?? t("prof_validationFailed" as any));
     }
-    // Username uniqueness check
     setSaving(true);
     const { data: dup } = await supabase
       .from("profiles")
@@ -97,7 +95,7 @@ export default function Profile() {
       .maybeSingle();
     if (dup) {
       setSaving(false);
-      return toast.error(tr("Username already taken", "এই ইউজারনেম ইতিমধ্যে ব্যবহৃত"));
+      return toast.error(t("prof_usernameTaken" as any));
     }
     const { error } = await supabase
       .from("profiles")
@@ -109,15 +107,15 @@ export default function Profile() {
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     await logAudit(user.id, "profile.update", { full_name: parsed.data.full_name, username: parsed.data.username });
-    toast.success(tr("Profile updated", "প্রোফাইল আপডেট হয়েছে"));
+    toast.success(t("prof_updated" as any));
     refresh();
   };
 
   const changeEmail = async () => {
     if (!user) return;
     const emailParsed = z.string().trim().email().max(255).safeParse(email);
-    if (!emailParsed.success) return toast.error(tr("Invalid email address", "অবৈধ ইমেইল ঠিকানা"));
-    if (emailParsed.data === originalEmail) return toast.info(tr("Email unchanged", "ইমেইল পরিবর্তন হয়নি"));
+    if (!emailParsed.success) return toast.error(t("prof_invalidEmail" as any));
+    if (emailParsed.data === originalEmail) return toast.info(t("prof_emailUnchanged" as any));
 
     setEmailSaving(true);
     const { error } = await supabase.auth.updateUser(
@@ -127,20 +125,14 @@ export default function Profile() {
     setEmailSaving(false);
     if (error) return toast.error(error.message);
     await logAudit(user.id, "profile.email_change_requested", { from: originalEmail, to: emailParsed.data });
-    toast.success(
-      tr(
-        "Verification link sent. Please check both old and new inboxes to confirm the change.",
-        "ভেরিফিকেশন লিংক পাঠানো হয়েছে। পুরোনো ও নতুন দুই ইমেইল ইনবক্স যাচাই করে নিশ্চিত করুন।"
-      ),
-      { duration: 8000 }
-    );
+    toast.success(t("prof_verificationSent" as any), { duration: 8000 });
   };
 
   const changePassword = async () => {
     if (!user) return;
     const issues = passwordIssues(pw, 10);
     if (issues.length) return toast.error(issues.join(" • "));
-    if (pw !== pw2) return toast.error(tr("Passwords do not match", "পাসওয়ার্ড মিলছে না"));
+    if (pw !== pw2) return toast.error(t("prof_passwordsMismatch" as any));
 
     setPwSaving(true);
     const { error } = await supabase.auth.updateUser({ password: pw });
@@ -149,13 +141,7 @@ export default function Profile() {
       return toast.error(error.message);
     }
     await logAudit(user.id, "profile.password_changed", { at: new Date().toISOString() });
-    toast.success(
-      tr(
-        "Password changed. You will be signed out for security — please log in again.",
-        "পাসওয়ার্ড পরিবর্তন হয়েছে। নিরাপত্তার জন্য সাইন-আউট করা হবে — আবার লগইন করুন।"
-      ),
-      { duration: 5000 }
-    );
+    toast.success(t("prof_passwordChanged" as any), { duration: 5000 });
     setPw(""); setPw2("");
     setTimeout(async () => {
       await signOut();
@@ -171,24 +157,24 @@ export default function Profile() {
     <div className="mx-auto max-w-2xl space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> {tr("Your Profile", "আপনার প্রোফাইল")}</CardTitle>
-          <CardDescription>{tr("Update your personal information.", "আপনার ব্যক্তিগত তথ্য আপডেট করুন।")}</CardDescription>
+          <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> {t("prof_yourProfile" as any)}</CardTitle>
+          <CardDescription>{t("prof_updateInfo" as any)}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label>{tr("Full Name", "পূর্ণ নাম")}</Label>
+            <Label>{t("prof_fullName" as any)}</Label>
             <Input value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={120} />
-            <p className="text-xs text-muted-foreground">{tr("2–120 characters; letters, spaces, dots, hyphens.", "২–১২০ অক্ষর; অক্ষর, স্পেস, ডট, হাইফেন।")}</p>
+            <p className="text-xs text-muted-foreground">{t("prof_fullNameHint" as any)}</p>
           </div>
           <div className="grid gap-2">
-            <Label>{tr("Username", "ইউজারনেম")}</Label>
+            <Label>{t("prof_username" as any)}</Label>
             <Input value={username} onChange={(e) => setUsername(e.target.value)} maxLength={30} />
-            <p className="text-xs text-muted-foreground">{tr("3–30 characters; letters, digits, . _ -", "৩–৩০ অক্ষর; অক্ষর, সংখ্যা, . _ -")}</p>
+            <p className="text-xs text-muted-foreground">{t("prof_usernameHint" as any)}</p>
           </div>
           <div className="flex justify-end">
             <Button onClick={saveProfile} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {tr("Save Changes", "সংরক্ষণ করুন")}
+              {t("prof_saveChanges" as any)}
             </Button>
           </div>
         </CardContent>
@@ -196,28 +182,25 @@ export default function Profile() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> {tr("Email Address", "ইমেইল ঠিকানা")}</CardTitle>
-          <CardDescription>{tr("Update your email. A verification link will be sent.", "আপনার ইমেইল আপডেট করুন। ভেরিফিকেশন লিংক পাঠানো হবে।")}</CardDescription>
+          <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> {t("prof_emailAddress" as any)}</CardTitle>
+          <CardDescription>{t("prof_emailDesc" as any)}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label>{tr("Email", "ইমেইল")}</Label>
+            <Label>{t("prof_email" as any)}</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} />
           </div>
           <Alert>
             <ShieldCheck className="h-4 w-4" />
-            <AlertTitle>{tr("Verification required", "ভেরিফিকেশন প্রয়োজন")}</AlertTitle>
+            <AlertTitle>{t("prof_verificationRequired" as any)}</AlertTitle>
             <AlertDescription className="text-xs">
-              {tr(
-                "After saving, confirmation emails will be sent to both your old and new addresses. The change only takes effect after both are confirmed.",
-                "সংরক্ষণের পরে পুরোনো ও নতুন উভয় ইমেইলে নিশ্চিতকরণ লিংক যাবে। উভয় নিশ্চিত হলেই পরিবর্তন কার্যকর হবে।"
-              )}
+              {t("prof_verificationDesc" as any)}
             </AlertDescription>
           </Alert>
           <div className="flex justify-end">
             <Button onClick={changeEmail} disabled={emailSaving || email === originalEmail}>
               {emailSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {tr("Send Verification", "ভেরিফিকেশন পাঠান")}
+              {t("prof_sendVerification" as any)}
             </Button>
           </div>
         </CardContent>
@@ -225,35 +208,32 @@ export default function Profile() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> {tr("Change Password", "পাসওয়ার্ড পরিবর্তন")}</CardTitle>
-          <CardDescription>{tr("Set a new password for your account.", "আপনার অ্যাকাউন্টের নতুন পাসওয়ার্ড সেট করুন।")}</CardDescription>
+          <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> {t("prof_changePassword" as any)}</CardTitle>
+          <CardDescription>{t("prof_changePasswordDesc" as any)}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label>{tr("New Password", "নতুন পাসওয়ার্ড")}</Label>
+            <Label>{t("prof_newPassword" as any)}</Label>
             <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
             <PasswordStrength value={pw} minLen={10} />
           </div>
           <div className="grid gap-2">
-            <Label>{tr("Confirm New Password", "নতুন পাসওয়ার্ড নিশ্চিত করুন")}</Label>
+            <Label>{t("prof_confirmNewPassword" as any)}</Label>
             <Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
             {pw2 && pw !== pw2 && (
-              <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {tr("Passwords do not match", "পাসওয়ার্ড মিলছে না")}</p>
+              <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {t("prof_passwordsMismatch" as any)}</p>
             )}
           </div>
           <Alert>
             <ShieldCheck className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              {tr(
-                "After changing your password, you will be automatically signed out and asked to sign in again.",
-                "পাসওয়ার্ড পরিবর্তনের পরে স্বয়ংক্রিয়ভাবে সাইন-আউট হয়ে আবার লগইন করতে বলা হবে।"
-              )}
+              {t("prof_passwordSignoutNotice" as any)}
             </AlertDescription>
           </Alert>
           <div className="flex justify-end">
             <Button onClick={changePassword} disabled={pwSaving || !pw || !pw2}>
               {pwSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {tr("Update Password", "পাসওয়ার্ড আপডেট")}
+              {t("prof_updatePassword" as any)}
             </Button>
           </div>
         </CardContent>
