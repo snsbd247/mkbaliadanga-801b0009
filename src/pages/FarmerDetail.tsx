@@ -130,81 +130,80 @@ export default function FarmerDetail() {
   }
 
 
-  function reprintReceipt(p: any) {
-    if (!farmer) return;
-    downloadPaymentReceiptPdf({
-      receipt_no: String(p.id).slice(0, 8).toUpperCase(),
-      payment_id: p.id,
-      paid_at: p.created_at,
-      farmer_name: farmer.name_en,
-      farmer_code: farmer.account_number ?? farmer.farmer_code,
-      member_no: farmer.member_no ?? null,
-      mobile_masked: farmer.mobile ? farmer.mobile.replace(/^(\d{3})\d+(\d{2})$/, "$1***$2") : null,
-      village: farmer.village ?? null,
-      token_masked: maskToken("re-print"),
-      token_status: "active",
-      kind: p.kind,
-      amount: Number(p.amount),
-      method: p.method ?? "cash",
-      note: p.note ?? null,
-      idempotency_key: p.idempotency_key ?? "",
-      office_name: p.offices?.name ?? null,
+  function farmerForReceipt(extra: Partial<BnReceiptData["farmer"]> = {}): BnReceiptData["farmer"] {
+    return {
+      name: farmer?.name_bn || farmer?.name_en || "—",
+      member_no: farmer?.member_no ?? farmer?.account_number ?? null,
+      father_or_husband: farmer?.father_name ?? null,
+      village: farmer?.village ?? null,
+      mobile: farmer?.mobile ?? null,
+      ...extra,
+    };
+  }
+  function commonReceipt(): Pick<BnReceiptData, "company_name" | "company_name_bn" | "logo_url"> {
+    return {
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
+      logo_url: brand.logo_url ?? null,
+    };
+  }
+
+  function reprintReceipt(p: any) {
+    if (!farmer) return;
+    const k = (p.kind as string) || "savings";
+    const kind: BnReceiptData["kind"] = k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings";
+    downloadBnReceiptPdf({
+      kind,
+      ...commonReceipt(),
+      receipt_no: p.receipt_no || String(p.id).slice(0, 8).toUpperCase(),
+      date: p.created_at,
+      farmer: farmerForReceipt(),
+      collected_amount: Number(p.amount),
+      description: p.note ?? null,
     });
   }
 
-  function brandObj() {
-    return { company_name: brand.company_name, address: brand.address, mobile: brand.mobile };
-  }
-  function farmerObj() {
-    return {
-      name_en: farmer?.name_en ?? "—",
-      farmer_code: farmer?.farmer_code,
-      member_no: farmer?.member_no,
-      mobile: farmer?.mobile,
-      village: farmer?.village,
-    };
-  }
   function printSavings(s: any) {
-    exportPaymentReceiptPDF({
-      brand: brandObj(),
+    downloadBnReceiptPdf({
+      kind: "savings",
+      ...commonReceipt(),
       receipt_no: `SAV-${s.id.slice(0, 8).toUpperCase()}`,
       date: s.txn_date ?? s.created_at,
-      farmer: farmerObj(),
-      amount: Number(s.amount),
-      method: "cash",
-      note: s.note ?? `Savings ${s.type} (${s.status})`,
-      allocations: [{ kind: `Savings ${s.type}`, amount: Number(s.amount) }],
+      farmer: farmerForReceipt(),
+      description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
+      collected_amount: Number(s.amount),
     });
   }
   function printLoan(l: any) {
-    exportPaymentReceiptPDF({
-      brand: brandObj(),
+    downloadBnReceiptPdf({
+      kind: "loan",
+      ...commonReceipt(),
       receipt_no: `LOAN-${l.id.slice(0, 8).toUpperCase()}`,
       date: l.issued_on,
-      farmer: farmerObj(),
-      amount: Number(l.principal),
-      method: "cash",
-      note: `Loan disbursed — Total Payable ${money(l.total_payable)}`,
-      allocations: [{ kind: "Loan Disbursed (Principal)", amount: Number(l.principal) }],
+      farmer: farmerForReceipt(),
+      description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
+      outstanding: Number(l.total_payable),
+      collected_amount: Number(l.principal),
     });
   }
   function printIrrigation(i: any) {
-    exportPaymentReceiptPDF({
-      brand: brandObj(),
+    const land = (lands || []).find((x: any) => x.id === i.land_id);
+    downloadBnReceiptPdf({
+      kind: "irrigation",
+      ...commonReceipt(),
       receipt_no: `IRR-${i.id.slice(0, 8).toUpperCase()}`,
       date: i.entry_date,
-      farmer: farmerObj(),
-      amount: Number(i.total),
-      method: "cash",
-      note: `Irrigation charge — ${i.seasons?.name ?? ""} ${i.seasons?.year ?? ""}`,
-      allocations: [
-        { kind: "Base", amount: Number(i.base_charge) },
-        { kind: "Canal", amount: Number(i.canal_charge) },
-        { kind: "Maintenance", amount: Number(i.maintenance_charge) },
-        { kind: "Other", amount: Number(i.other_charge) },
-      ].filter(a => a.amount > 0),
+      bill_info: i.seasons ? `${i.seasons.name ?? ""}${i.seasons.year ? ", " + i.seasons.year : ""}` : undefined,
+      farmer: farmerForReceipt({
+        mouza: (land as any)?.mouza_name ?? null,
+        field_type_bn: (land as any)?.field_type ?? null,
+        land_size: (land as any)?.land_size ?? null,
+        dag_no: i.lands?.dag_no ?? (land as any)?.dag_no ?? null,
+      }),
+      rate: Number(i.base_charge) + Number(i.canal_charge) + Number(i.maintenance_charge) + Number(i.other_charge),
+      charge_amount: Number(i.total),
+      previous_due: Number(i.previous_due_brought ?? 0),
+      collected_amount: Number(i.paid_amount || i.total),
     });
   }
   async function deleteSavings(s: any) {
