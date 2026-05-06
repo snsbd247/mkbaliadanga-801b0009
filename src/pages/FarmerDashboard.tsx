@@ -263,7 +263,7 @@ export default function FarmerDashboard() {
         </Tabs>
 
         <p className="text-center text-[11px] text-muted-foreground py-4">
-          Session is valid for 2 hours. Sign out when finished on a shared device.
+          {t("p5b_sessionValidNote")}
         </p>
       </main>
       <SiteFooter />
