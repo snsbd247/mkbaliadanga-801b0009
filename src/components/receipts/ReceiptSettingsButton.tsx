@@ -89,7 +89,7 @@ export function ReceiptSettingsButton() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Font size</Label>
+              <Label className="text-xs">{t("p5b_fontSize")}</Label>
               <Select value={opts.orgSize} onValueChange={(v) => setReceiptOptions({ orgSize: v as any })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
