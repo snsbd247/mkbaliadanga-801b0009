@@ -152,16 +152,16 @@ export default function FarmerDashboard() {
 
         {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <SummaryCard icon={Wallet} label="Savings Balance" value={data.summary.savings_balance} tone="primary" />
-          <SummaryCard icon={HandCoins} label="Loan Due" value={data.summary.loan_due} tone="warning" />
-          <SummaryCard icon={Droplets} label="Irrigation Due" value={data.summary.irrigation_due} tone="info" />
+          <SummaryCard icon={Wallet} label={t("p5b_savingsBalance")} value={data.summary.savings_balance} tone="primary" />
+          <SummaryCard icon={HandCoins} label={t("p5b_loanDue")} value={data.summary.loan_due} tone="warning" />
+          <SummaryCard icon={Droplets} label={t("p5b_irrigationDue")} value={data.summary.irrigation_due} tone="info" />
         </div>
 
         <Tabs defaultValue="savings" className="w-full">
           <TabsList className="grid grid-cols-3 w-full sm:w-auto">
-            <TabsTrigger value="savings">Savings</TabsTrigger>
-            <TabsTrigger value="loans">Loans</TabsTrigger>
-            <TabsTrigger value="irrigation">Irrigation</TabsTrigger>
+            <TabsTrigger value="savings">{t("p5b_savings")}</TabsTrigger>
+            <TabsTrigger value="loans">{t("p5b_loans")}</TabsTrigger>
+            <TabsTrigger value="irrigation">{t("p5b_irrigation")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="savings">
