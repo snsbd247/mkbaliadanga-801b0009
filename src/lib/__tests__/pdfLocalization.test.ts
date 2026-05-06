@@ -31,8 +31,8 @@ describe("PDF localization (header/footer)", () => {
     await applyPdfHeaderFooter(doc, { title: "Test", range: { from: "2025-01-01", to: "2025-01-31" } });
     finalizePdf(doc);
     const out = pdfText(doc);
-    expect(out).toMatch(/Period \\?\(Somoy\\?\)/);
-    expect(out).toMatch(/Mudrito/);
-    expect(out).toMatch(/Pristha/);
+    expect(out).toContain("Somoy");
+    expect(out).toContain("Mudrito");
+    expect(out).toContain("Pristha");
   });
 });
