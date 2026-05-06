@@ -120,7 +120,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl?: string | n
       </div>
       <div style="text-align:right;">
         <div>আদায়কারীর স্বাক্ষর</div>
-        ${d.collector_signature_url ? `<img src="${d.collector_signature_url}" crossorigin="anonymous" style="height:36px;margin-top:4px;" />` : `<div style="margin-top:30px;border-top:1px solid #111;width:140px;display:inline-block;"></div>`}
+        ${signatureUrl ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:36px;margin-top:4px;display:block;margin-left:auto;" />` : `<div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;"></div>`}
       </div>
     </div>
   </div>`;
