@@ -231,6 +231,77 @@ export default function Backup() {
           ))}
         </div>
       </Card>
+
+      {isSuper && (
+        <Card className="p-5 mt-5 border-amber-500/40">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700">
+              <Upload className="h-6 w-6" />
+            </div>
+            <div className="flex-1 space-y-3">
+              <div>
+                <h3 className="font-semibold">{t("p5d_restoreBackup")}</h3>
+                <p className="text-sm text-muted-foreground">{t("p5d_restoreDesc")}</p>
+              </div>
+              <div className="rounded-md border border-amber-500/40 bg-amber-50/40 p-2 text-xs text-amber-800 flex gap-2 items-center">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                {t("p5d_warningRestore")}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  className="hidden"
+                  onChange={(e) => setRestoreFile(e.target.files?.[0] ?? null)}
+                />
+                <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={!!busy}>
+                  <Upload className="h-4 w-4 mr-1" />{t("p5d_chooseFile")}
+                </Button>
+                {restoreFile && <span className="text-xs text-muted-foreground">{restoreFile.name}</span>}
+                <label className="flex items-center gap-2 text-sm ml-auto">
+                  <Checkbox checked={dryRun} onCheckedChange={(v) => setDryRun(!!v)} id="dry" />
+                  <Label htmlFor="dry" className="text-sm cursor-pointer">{t("p5d_dryRun")}</Label>
+                </label>
+                <Button onClick={runRestore} disabled={!restoreFile || !!busy}>
+                  {busy === "__restore__" ? t("p5d_restoreInProgress") : t("p5d_restoreNow")}
+                </Button>
+              </div>
+              {restoreReport && (
+                <div className="rounded-md border bg-muted/30 p-3 max-h-80 overflow-auto">
+                  <div className="text-sm font-medium mb-2">{t("p5d_restoreSummary")}</div>
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>{t("p5d_table")}</TableHead>
+                      <TableHead className="text-right">{t("p5d_inserted")}</TableHead>
+                      <TableHead className="text-right">{t("p5d_updated")}</TableHead>
+                      <TableHead className="text-right">{t("p5d_failed")}</TableHead>
+                      <TableHead className="text-right">{t("p5d_skipped")}</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {restoreReport.map(r => (
+                        <TableRow key={r.table}>
+                          <TableCell className="font-mono text-xs">{r.table}</TableCell>
+                          <TableCell className="text-right">{r.inserted}</TableCell>
+                          <TableCell className="text-right">{r.updated}</TableCell>
+                          <TableCell className="text-right text-destructive">{r.failed}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">{r.skipped}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {restoreReport.flatMap(r => r.errors).length > 0 && (
+                    <ul className="mt-2 text-xs text-destructive list-disc pl-5 space-y-0.5">
+                      {restoreReport.flatMap(r => r.errors.map((e, i) => <li key={`${r.table}-${i}`}>{r.table}: {e}</li>))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
     </>
   );
 }
+
