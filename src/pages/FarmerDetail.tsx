@@ -220,13 +220,13 @@ export default function FarmerDetail() {
     if (!window.confirm("Delete this savings transaction?")) return;
     const { error } = await supabase.from("savings_transactions").update({ deleted_at: new Date().toISOString() } as any).eq("id", s.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); loadAll();
+    toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function deleteLoan(l: any) {
     if (!window.confirm("Delete this loan?")) return;
     const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() } as any).eq("id", l.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); loadAll();
+    toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function openLoanView(l: any) {
     const [ins, pays, planRes] = await Promise.all([
@@ -271,7 +271,7 @@ export default function FarmerDetail() {
       if (gErr) toast.error(`Schedule: ${gErr.message}`);
       else toast.success("Updated & schedule regenerated");
     } else {
-      toast.success("Updated");
+      toast.success(t("pgUpdated" as any));
     }
     setEditLoanRow(null); loadAll();
   }
@@ -418,13 +418,13 @@ export default function FarmerDetail() {
     if (!window.confirm("Delete this irrigation entry?")) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", i.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); loadAll();
+    toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function deletePayment(p: any) {
     if (!window.confirm("Delete this payment?")) return;
     const { error } = await supabase.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); loadAll();
+    toast.success(t("pgDeleted" as any)); loadAll();
   }
 
   async function addLand() {
