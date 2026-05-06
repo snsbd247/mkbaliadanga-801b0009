@@ -55,7 +55,7 @@ export default function CollectionReport() {
   }, [rolesLoaded, isAdmin]);
 
   useEffect(() => {
-    document.title = `Collection Report — ${t("appName")}`;
+    document.title = `${t("collectionReportTitle")} — ${t("appName")}`;
     supabase
       .from("farmers")
       .select("id,name_en,farmer_code,member_no")
@@ -82,7 +82,7 @@ export default function CollectionReport() {
   }, [isAdmin, onlyMine, userId, user?.id]);
 
   function nameForUser(id: string | null | undefined): string {
-    if (!id) return "System";
+    if (!id) return t("systemUser");
     const u = users.find((x) => x.id === id);
     return u?.full_name || u?.email || id.slice(0, 8);
   }
@@ -222,17 +222,13 @@ export default function CollectionReport() {
   };
 
   const sourceLabel = (s: CollectionRow["source"]) =>
-    s === "loan" ? "Loan" : s === "savings" ? "Savings" : "Irrigation";
+    s === "loan" ? t("loanColLabel") : s === "savings" ? t("savingsLabel") : t("irrigationLabel");
 
   return (
     <>
       <PageHeader
-        title="Collection Report"
-        description={
-          isAdmin
-            ? "View and filter all collections by date, farmer, and staff."
-            : "View your own collections. Toggle off to see your office summary if permitted."
-        }
+        title={t("collectionReportTitle")}
+        description={isAdmin ? t("collectionReportAdminDesc") : t("collectionReportUserDesc")}
       />
 
       <Card className="p-4 mb-4">
@@ -261,7 +257,7 @@ export default function CollectionReport() {
           </div>
           {isAdmin && (
             <div>
-              <Label>Staff</Label>
+              <Label>{t("staffLabel")}</Label>
               <Select
                 value={userId}
                 onValueChange={(v) => { setUserId(v); if (v !== ALL) setOnlyMine(false); }}
@@ -285,7 +281,7 @@ export default function CollectionReport() {
               checked={onlyMine}
               onCheckedChange={(v) => { setOnlyMine(v); if (v) setUserId(ALL); }}
             />
-            <Label htmlFor="mine" className="cursor-pointer">My Collections</Label>
+            <Label htmlFor="mine" className="cursor-pointer">{t("myCollections")}</Label>
           </div>
         </div>
       </Card>
@@ -293,25 +289,25 @@ export default function CollectionReport() {
       <Card className="p-4 mb-4">
         <div className="flex flex-wrap items-center gap-6 text-sm">
           <div>
-            <span className="text-muted-foreground">Total Collected:</span>{" "}
+            <span className="text-muted-foreground">{t("totalCollected")}:</span>{" "}
             <span className="font-semibold">{money(total)}</span>
           </div>
           <div>
-            <span className="text-muted-foreground">Entries:</span>{" "}
+            <span className="text-muted-foreground">{t("entries")}:</span>{" "}
             <span className="font-semibold">{rows.length}</span>
           </div>
           <div>
-            <span className="text-muted-foreground">Staff:</span>{" "}
+            <span className="text-muted-foreground">{t("staffLabel")}:</span>{" "}
             <span className="font-semibold">{byUser.length}</span>
           </div>
-          {loading && <span className="text-muted-foreground">Loading…</span>}
+          {loading && <span className="text-muted-foreground">{t("loading")}</span>}
         </div>
       </Card>
 
       <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="all">All Collections</TabsTrigger>
-          <TabsTrigger value="staff">Staff-wise Summary</TabsTrigger>
+          <TabsTrigger value="all">{t("allCollections")}</TabsTrigger>
+          <TabsTrigger value="staff">{t("staffwiseSummary")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -350,12 +346,12 @@ export default function CollectionReport() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Receipt #</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Farmer</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Created By</TableHead>
+                  <TableHead>{t("date")}</TableHead>
+                  <TableHead>{t("receiptHash")}</TableHead>
+                  <TableHead>{t("typeCol")}</TableHead>
+                  <TableHead>{t("farmer")}</TableHead>
+                  <TableHead className="text-right">{t("amount")}</TableHead>
+                  <TableHead>{t("createdBy")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -372,7 +368,7 @@ export default function CollectionReport() {
                 {rows.length === 0 && !loading && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
-                      No collections found for the selected filters.
+                      {t("noCollectionsFiltered")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -409,12 +405,12 @@ export default function CollectionReport() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Staff</TableHead>
-                  <TableHead className="text-right">Entries</TableHead>
-                  <TableHead className="text-right">Loan</TableHead>
-                  <TableHead className="text-right">Savings</TableHead>
-                  <TableHead className="text-right">Irrigation</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>{t("staffLabel")}</TableHead>
+                  <TableHead className="text-right">{t("entries")}</TableHead>
+                  <TableHead className="text-right">{t("loanColLabel")}</TableHead>
+                  <TableHead className="text-right">{t("savingsLabel")}</TableHead>
+                  <TableHead className="text-right">{t("irrigationLabel")}</TableHead>
+                  <TableHead className="text-right">{t("total")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -431,7 +427,7 @@ export default function CollectionReport() {
                 {byUser.length === 0 && !loading && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
-                      No collections found.
+                      {t("noCollections")}
                     </TableCell>
                   </TableRow>
                 )}
