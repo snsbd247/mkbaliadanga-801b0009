@@ -19,7 +19,10 @@ import { Paperclip, Check, X, FileText, Plus, Trash2, Printer } from "lucide-rea
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { downloadBnReceiptPdf, type ReceiptCopy } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
+import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
+import { DuplicateReceiptWarning } from "@/components/receipts/DuplicateReceiptWarning";
+import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 
 type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
