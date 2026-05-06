@@ -24,20 +24,21 @@ interface Row {
   issues: Issue[];
 }
 
-const LABELS: Record<Issue, string> = {
-  missing_member: "Missing Farmer ID",
-  missing_account: "Missing Account No",
-  duplicate_member: "Duplicate Farmer ID",
-  duplicate_account: "Duplicate Account No",
-  duplicate_code: "Duplicate Farmer Code",
+const ISSUE_KEY: Record<Issue, string> = {
+  missing_member: "missingFarmerId",
+  missing_account: "missingAccountNo",
+  duplicate_member: "duplicateFarmerIdIssue",
+  duplicate_account: "duplicateAccountNo",
+  duplicate_code: "duplicateFarmerCode",
 };
 
 export default function IdReconcile() {
+  const { t } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"all" | Issue>("all");
 
-  useEffect(() => { document.title = "ID Reconcile"; load(); }, []);
+  useEffect(() => { document.title = t("idReconcileTitle"); load(); }, [t]);
 
   async function load() {
     setLoading(true);
