@@ -197,20 +197,20 @@ export default function VoterList() {
     doc.save(`voter-list-${tab}-${Date.now()}.pdf`);
   }
 
-  const headerInfo = useMemo(() => `${total} voter${total === 1 ? "" : "s"}`, [total]);
+  const headerInfo = useMemo(() => (t("pgVotersCount" as any) as string).replace("{n}", String(total)), [total, t]);
 
   return (
     <>
-      <PageHeader title="Voter List" description={headerInfo} actions={
+      <PageHeader title={t("pgVoterListTitle" as any)} description={headerInfo} actions={
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={total === 0}>
-            <FileDown className="h-4 w-4 mr-1" />Export CSV
+            <FileDown className="h-4 w-4 mr-1" />{t("pgExportCsv" as any)}
           </Button>
           <Button variant="outline" size="sm" onClick={exportExcel} disabled={total === 0}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" />Export Excel
+            <FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExportExcel" as any)}
           </Button>
           <Button variant="outline" size="sm" onClick={exportPdf} disabled={total === 0}>
-            <FileText className="h-4 w-4 mr-1" />Export PDF
+            <FileText className="h-4 w-4 mr-1" />{t("pgExportPdf" as any)}
           </Button>
         </div>
       } />
