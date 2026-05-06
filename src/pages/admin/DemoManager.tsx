@@ -260,7 +260,7 @@ export default function DemoManager() {
       {loading && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">প্রগ্রেস: {progress}%</CardTitle>
+            <CardTitle className="text-sm">{t("dmProgress" as any)}: {progress}%</CardTitle>
             <CardDescription>{currentStep}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
