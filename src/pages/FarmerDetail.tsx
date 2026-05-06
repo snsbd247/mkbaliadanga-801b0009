@@ -149,22 +149,26 @@ export default function FarmerDetail() {
     };
   }
 
-  function reprintReceipt(p: any) {
+  function reprintReceipt(p: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     if (!farmer) return;
     const k = (p.kind as string) || "savings";
     const kind: BnReceiptData["kind"] = k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings";
+    const prefix = kind === "loan" ? "LOAN" : kind === "irrigation" ? "IRR" : "SAV";
+    const description = p.note
+      ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ" : kind === "savings" ? "সঞ্চয় জমা গ্রহণ" : "সেচ চার্জ গ্রহণ");
     downloadBnReceiptPdf({
       kind,
       ...commonReceipt(),
-      receipt_no: p.receipt_no || String(p.id).slice(0, 8).toUpperCase(),
+      receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
       date: p.created_at,
+      bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
       farmer: farmerForReceipt(),
       collected_amount: Number(p.amount),
-      description: p.note ?? null,
-    });
+      description,
+    }, copy);
   }
 
-  function printSavings(s: any) {
+  function printSavings(s: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     downloadBnReceiptPdf({
       kind: "savings",
       ...commonReceipt(),
@@ -173,9 +177,9 @@ export default function FarmerDetail() {
       farmer: farmerForReceipt(),
       description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
       collected_amount: Number(s.amount),
-    });
+    }, copy);
   }
-  function printLoan(l: any) {
+  function printLoan(l: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     downloadBnReceiptPdf({
       kind: "loan",
       ...commonReceipt(),
@@ -185,9 +189,9 @@ export default function FarmerDetail() {
       description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
       outstanding: Number(l.total_payable),
       collected_amount: Number(l.principal),
-    });
+    }, copy);
   }
-  function printIrrigation(i: any) {
+  function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id);
     downloadBnReceiptPdf({
       kind: "irrigation",
@@ -205,7 +209,7 @@ export default function FarmerDetail() {
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
       collected_amount: Number(i.paid_amount || i.total),
-    });
+    }, copy);
   }
   async function deleteSavings(s: any) {
     if (!window.confirm("Delete this savings transaction?")) return;
