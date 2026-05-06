@@ -288,7 +288,7 @@ export default function Irrigation() {
             <DialogHeader><DialogTitle>{t("irrigation")} — {editId ? "Edit Entry" : t("addEntry")}</DialogTitle></DialogHeader>
             {form.season_id && rateAvailable === false && (
               <div className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-sm p-2">
-                No active rate found for this season + basis. Add it on the <a href="/irrigation-rates" className="underline">Irrigation Rates</a> page first.
+                {t("noActiveRateForSeason")} <a href="/irrigation-rates" className="underline">{t("irrigationRatesLink")}</a> {t("pageFirst")}
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">

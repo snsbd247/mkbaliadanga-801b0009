@@ -370,7 +370,7 @@ export default function Savings() {
         <TabsContent value="history"><TxnTable rows={approved.filter(r => r.approved_by)} t={t} isAdmin={false} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} historyMode /></TabsContent>
         <TabsContent value="plans">
           <Card className="p-3 mb-3 flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">Enroll farmers in defined savings plans. Plans drive maturity calculations and are managed in <a href="/savings-plans" className="underline">Savings Plans</a>.</div>
+            <div className="text-sm text-muted-foreground">{t("enrollFarmersInPlansText")} <a href="/savings-plans" className="underline">{t("savingsPlansLink")}</a>.</div>
             <Dialog open={planOpen} onOpenChange={setPlanOpen}>
               <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Enroll Farmer</Button></DialogTrigger>
               <DialogContent>
