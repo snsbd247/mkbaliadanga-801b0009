@@ -24,6 +24,7 @@ import { LocationPicker, type LocationValue } from "@/components/locations/Locat
 import { validateLocationChain } from "@/lib/locationValidation";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
+import { autoReceiptNo } from "@/lib/receiptNo";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
 import { useAuth } from "@/auth/AuthProvider";
