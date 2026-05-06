@@ -66,6 +66,7 @@ import VoterAudit from "./pages/VoterAudit";
 import VoterHistory from "./pages/VoterHistory";
 import IdReconcile from "./pages/admin/IdReconcile";
 import IdReview from "./pages/admin/IdReview";
+import DuplicateReceiptAudit from "./pages/admin/DuplicateReceiptAudit";
 import FarmerStatement from "./pages/FarmerStatement";
 
 import LoanPlans from "./pages/LoanPlans";
@@ -154,6 +155,7 @@ const App = () => (
                 <Route path="/admin/bulk-loan-export" element={<RequireRole roles={["admin","super_admin"]}><BulkLoanExport /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireRole roles={["admin","super_admin"]}><RoleMatrix /></RequireRole>} />
+                <Route path="/admin/duplicate-receipts" element={<RequireRole roles={["admin","super_admin"]}><DuplicateReceiptAudit /></RequireRole>} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />
