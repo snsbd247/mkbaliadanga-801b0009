@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer } from "lucide-react";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { useBranding } from "@/lib/branding";
 
 type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
