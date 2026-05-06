@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronRight, RefreshCw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type DupKey = `${string}|${string}|${string}`; // kind|date|receipt_no
 
@@ -33,6 +34,7 @@ interface DuplicateGroup {
 const KINDS = ["all", "irrigation", "savings", "loan"] as const;
 
 export default function DuplicateReceiptAudit() {
+  const { t } = useLang();
   const [days, setDays] = useState<number>(90);
   const [kind, setKind] = useState<(typeof KINDS)[number]>("all");
   const [search, setSearch] = useState("");
@@ -85,30 +87,30 @@ export default function DuplicateReceiptAudit() {
   return (
     <div className="space-y-3">
       <PageHeader
-        title="Duplicate receipt audit"
-        description="Receipts that share the same number within the same kind and day."
+        title={t("dupAuditTitle")}
+        description={t("dupAuditDesc")}
         actions={
-          <Button variant="outline" size="sm" onClick={() => setRefreshTick((t) => t + 1)} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />Refresh
+          <Button variant="outline" size="sm" onClick={() => setRefreshTick((x) => x + 1)} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("refresh")}
           </Button>
         }
       />
 
       <Card className="p-3 grid sm:grid-cols-4 gap-2">
         <div>
-          <label className="text-xs text-muted-foreground">Window</label>
+          <label className="text-xs text-muted-foreground">{t("window")}</label>
           <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-              <SelectItem value="365">Last 365 days</SelectItem>
+              <SelectItem value="7">{t("last7")}</SelectItem>
+              <SelectItem value="30">{t("last30")}</SelectItem>
+              <SelectItem value="90">{t("last90")}</SelectItem>
+              <SelectItem value="365">{t("last365")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <label className="text-xs text-muted-foreground">Kind</label>
+          <label className="text-xs text-muted-foreground">{t("kind")}</label>
           <Select value={kind} onValueChange={(v) => setKind(v as any)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -117,29 +119,29 @@ export default function DuplicateReceiptAudit() {
           </Select>
         </div>
         <div className="sm:col-span-2">
-          <label className="text-xs text-muted-foreground">Search receipt no / date</label>
+          <label className="text-xs text-muted-foreground">{t("searchReceiptDate")}</label>
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="e.g. IRR-20260506 or 2026-05-06" />
         </div>
       </Card>
 
       {groups.length === 0 ? (
         <Card className="p-6 text-sm text-muted-foreground text-center">
-          {loading ? "Scanning…" : "No duplicates found in the selected window."}
+          {loading ? t("scanning") : t("noDuplicates")}
         </Card>
       ) : (
         <Card className="p-0 overflow-hidden">
           <div className="px-3 py-2 border-b bg-amber-50 text-amber-800 text-sm flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
-            {groups.length} duplicate group{groups.length === 1 ? "" : "s"} detected. Click a row to expand.
+            {t("duplicateGroupsDetected").replace("{n}", String(groups.length))}
           </div>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8"></TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Receipt no</TableHead>
-                <TableHead className="text-right">Count</TableHead>
+                <TableHead>{t("kind")}</TableHead>
+                <TableHead>{t("date")}</TableHead>
+                <TableHead>{t("receiptNo")}</TableHead>
+                <TableHead className="text-right">{t("count")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -161,10 +163,10 @@ export default function DuplicateReceiptAudit() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Created at</TableHead>
-                                <TableHead>Payment ID</TableHead>
-                                <TableHead>Farmer</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead>{t("createdAt")}</TableHead>
+                                <TableHead>{t("paymentId")}</TableHead>
+                                <TableHead>{t("farmer")}</TableHead>
+                                <TableHead className="text-right">{t("amount")}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>

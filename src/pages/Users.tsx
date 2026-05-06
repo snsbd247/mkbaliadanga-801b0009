@@ -18,14 +18,14 @@ import { useAuth } from "@/auth/AuthProvider";
 import { z } from "zod";
 
 // Stronger password policy. Super admins must use a longer, mixed password.
-function passwordPolicyIssues(pw: string, role: string): string[] {
+function passwordPolicyIssues(pw: string, role: string, t: (k: any) => string): string[] {
   const issues: string[] = [];
   const minLen = role === "super_admin" ? 12 : 10;
-  if (pw.length < minLen) issues.push(`__pwAtLeast__${minLen}`);
-  if (!/[a-z]/.test(pw)) issues.push("__pwLowercase__");
-  if (!/[A-Z]/.test(pw)) issues.push("__pwUppercase__");
-  if (!/[0-9]/.test(pw)) issues.push("__pwDigit__");
-  if (!/[^A-Za-z0-9]/.test(pw)) issues.push("__pwSymbol__");
+  if (pw.length < minLen) issues.push(t("pwAtLeastN").replace("{n}", String(minLen)));
+  if (!/[a-z]/.test(pw)) issues.push(t("pwLowercase"));
+  if (!/[A-Z]/.test(pw)) issues.push(t("pwUppercase"));
+  if (!/[0-9]/.test(pw)) issues.push(t("pwDigit"));
+  if (!/[^A-Za-z0-9]/.test(pw)) issues.push(t("pwSymbol"));
   return issues;
 }
 
@@ -90,8 +90,8 @@ export default function Users() {
       const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
       return toast.error(first ?? t("validationFailed"));
     }
-    const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role);
-    if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
+    const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role, t);
+    if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "create", ...parsed.data });
     if (!ok) return;
     toast.success(t("userCreated"));
@@ -112,8 +112,8 @@ export default function Users() {
   async function resetPassword() {
     if (!resetFor) return;
     const role = (resetFor.roles?.[0] as string) ?? "staff";
-    const policy = passwordPolicyIssues(resetPwd, role);
-    if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
+    const policy = passwordPolicyIssues(resetPwd, role, t);
+    if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "reset_password", user_id: resetFor.id, password: resetPwd });
     if (!ok) return;
     toast.success(t("passwordUpdated"));
@@ -164,38 +164,36 @@ export default function Users() {
       <PageHeader title={t("users")} description={t("onlySuperAdminUsers")} actions={
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-1" />New user</Button>
+            <Button><Plus className="h-4 w-4 mr-1" />{t("newUser")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Create user</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("createUser")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <div><Label>Full name</Label><Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
+              <div><Label>{t("fullName")}</Label><Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Username</Label><Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="3–30 chars" /></div>
-                <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                <div><Label>{t("username")}</Label><Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder={t("usernamePlaceholder")} /></div>
+                <div><Label>{t("email")}</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
               </div>
               <div>
-                <Label>Password</Label>
-                <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={form.role === "super_admin" ? "≥ 12 chars · upper/lower/digit/symbol" : "≥ 10 chars · upper/lower/digit/symbol"} />
+                <Label>{t("password")}</Label>
+                <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={form.role === "super_admin" ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  {form.role === "super_admin"
-                    ? "Super Admin policy: 12+ characters, mixed case, digit and symbol. Leaked passwords are rejected."
-                    : "10+ characters, mixed case, digit and symbol. Leaked passwords are rejected."}
+                  {form.role === "super_admin" ? t("pwSuperHint") : t("pwStaffHint")}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Role</Label>
+                <div><Label>{t("role")}</Label>
                   <Select value={form.role} onValueChange={v => setForm({ ...form, role: v as any })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
                       <SelectItem value="admin">{t("admin")}</SelectItem>
-                      <SelectItem value="committee">Committee</SelectItem>
+                      <SelectItem value="committee">{t("committee")}</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Office</Label>
+                <div><Label>{t("office")}</Label>
                   <Select value={form.office_id} onValueChange={v => setForm({ ...form, office_id: v })}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
@@ -205,7 +203,7 @@ export default function Users() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateOpen(false)}>{t("cancel")}</Button>
-              <Button onClick={createUser} disabled={busy}>{busy ? "…" : "Create"}</Button>
+              <Button onClick={createUser} disabled={busy}>{busy ? "…" : t("create")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -234,7 +232,7 @@ export default function Users() {
                     <SelectContent>
                       <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
                       <SelectItem value="admin">{t("admin")}</SelectItem>
-                      <SelectItem value="committee">Committee</SelectItem>
+                      <SelectItem value="committee">{t("committee")}</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
                     </SelectContent>
                   </Select>
@@ -247,13 +245,13 @@ export default function Users() {
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-xs">{fmtDate(u.created_at)}</TableCell>
                 <TableCell className="text-right space-x-1">
-                  <Button size="sm" variant="outline" onClick={() => openPerms(u)} title="Permissions">
+                  <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
                     <ShieldCheck className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title="Reset password">
+                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => deleteUser(u)} disabled={u.id === me?.id} title="Delete">
+                  <Button size="sm" variant="outline" onClick={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
@@ -301,14 +299,14 @@ export default function Users() {
       {/* Reset password dialog */}
       <Dialog open={!!resetFor} onOpenChange={(o) => !o && setResetFor(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Reset password — {resetFor?.username || resetFor?.email}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("resetPasswordTitle")} — {resetFor?.username || resetFor?.email}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Label>New password</Label>
-            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? "≥ 12 chars · upper/lower/digit/symbol" : "≥ 10 chars · upper/lower/digit/symbol"} />
+            <Label>{t("newPassword")}</Label>
+            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetFor(null)}>{t("cancel")}</Button>
-            <Button onClick={resetPassword} disabled={busy}>{busy ? "…" : "Update"}</Button>
+            <Button onClick={resetPassword} disabled={busy}>{busy ? "…" : t("update")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

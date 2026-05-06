@@ -40,7 +40,7 @@ type AuditEntry = {
 
 export default function IdReview() {
   const { isSuper } = useAuth();
-  const { lang } = useLang();
+  const { t } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,7 @@ export default function IdReview() {
   const [history, setHistory] = useState<AuditEntry[]>([]);
 
   useEffect(() => {
-    document.title = lang === "bn" ? "আইডি রিভিউ" : "ID Review";
+    document.title = t("idReviewTitle");
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -118,7 +118,7 @@ export default function IdReview() {
       meta: { source: "id-review", actor: "super_admin" },
     } as any);
 
-    toast.success(lang === "bn" ? "সংরক্ষণ হয়েছে" : "Saved");
+    toast.success(t("saved"));
     setSaving(false);
     setEditing(null);
     load();
@@ -142,32 +142,26 @@ export default function IdReview() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title={lang === "bn" ? "আইডি রিভিউ (Farmer ID / Savings A/C / Voter No)" : "ID Review (Farmer ID / Savings A/C / Voter No)"}
-        description={lang === "bn"
-          ? "তিনটি আইডি একসাথে দেখুন। শুধু Super Admin ম্যানুয়ালি পরিবর্তন করতে পারে; প্রতিটি পরিবর্তন audit log-এ লিপিবদ্ধ হয়।"
-          : "Review all three IDs together. Only Super Admin can override; every change is recorded in the audit log."}
+        title={t("idReviewTitle")}
+        description={t("idReviewDesc")}
       />
 
       <Card className="p-3 flex items-center gap-2">
         <Search className="h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder={lang === "bn" ? "নাম, Farmer ID, Savings A/C, Voter No দিয়ে খুঁজুন" : "Search by name, Farmer ID, Savings A/C, Voter No"}
+          placeholder={t("idReviewSearchPh")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
         <Button variant="outline" onClick={load} disabled={loading}>
-          {loading ? "…" : (lang === "bn" ? "রিফ্রেশ" : "Refresh")}
+          {loading ? "…" : t("refresh")}
         </Button>
       </Card>
 
       {!isSuper && (
         <Card className="p-3 flex items-center gap-2 border-amber-300 bg-amber-50 text-amber-900">
           <ShieldAlert className="h-4 w-4" />
-          <span className="text-sm">
-            {lang === "bn"
-              ? "শুধু Super Admin পরিবর্তন করতে পারবে। আপনি শুধু দেখতে পারবেন।"
-              : "View-only. Only Super Admin can edit these IDs."}
-          </span>
+          <span className="text-sm">{t("superOnlyEdit")}</span>
         </Card>
       )}
 
@@ -175,12 +169,12 @@ export default function IdReview() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{lang === "bn" ? "নাম" : "Name"}</TableHead>
-              <TableHead>Farmer ID</TableHead>
-              <TableHead>Savings A/C</TableHead>
-              <TableHead>Voter No</TableHead>
-              <TableHead>{lang === "bn" ? "ভোটার?" : "Voter?"}</TableHead>
-              <TableHead className="text-right">{lang === "bn" ? "কাজ" : "Actions"}</TableHead>
+              <TableHead>{t("name")}</TableHead>
+              <TableHead>{t("farmerIdLabel")}</TableHead>
+              <TableHead>{t("savingsAcNo")}</TableHead>
+              <TableHead>{t("voterNo")}</TableHead>
+              <TableHead>{t("voterQ")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -196,14 +190,14 @@ export default function IdReview() {
                 <TableCell className="font-mono text-xs">{r.voter_number || "—"}</TableCell>
                 <TableCell>
                   {r.is_voter
-                    ? <Badge variant="default">{lang === "bn" ? "হ্যাঁ" : "Yes"}</Badge>
-                    : <Badge variant="secondary">{lang === "bn" ? "না" : "No"}</Badge>}
+                    ? <Badge variant="default">{t("yes")}</Badge>
+                    : <Badge variant="secondary">{t("no")}</Badge>}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button size="sm" variant="ghost" onClick={() => openHistory(r)} title="History">
+                  <Button size="sm" variant="ghost" onClick={() => openHistory(r)} title={t("history")}>
                     <HistoryIcon className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="ghost" disabled={!isSuper} onClick={() => openEdit(r)} title="Edit">
+                  <Button size="sm" variant="ghost" disabled={!isSuper} onClick={() => openEdit(r)} title={t("edit")}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                 </TableCell>
@@ -212,7 +206,7 @@ export default function IdReview() {
             {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  {lang === "bn" ? "কোনো রেকর্ড পাওয়া যায়নি" : "No records found"}
+                  {t("noRecordsFound")}
                 </TableCell>
               </TableRow>
             )}
@@ -224,9 +218,7 @@ export default function IdReview() {
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {lang === "bn" ? "Super Admin ওভাররাইড" : "Super Admin Override"}
-            </DialogTitle>
+            <DialogTitle>{t("superOverride")}</DialogTitle>
           </DialogHeader>
           {editing && (
             <div className="space-y-3">
@@ -234,7 +226,7 @@ export default function IdReview() {
                 {editing.name_bn || editing.name_en}
               </div>
               <div>
-                <Label>Farmer ID</Label>
+                <Label>{t("farmerIdLabel")}</Label>
                 <Input
                   value={(draft.member_no ?? "") as string}
                   onChange={(e) => setDraft(d => ({ ...d, member_no: e.target.value }))}
@@ -242,7 +234,7 @@ export default function IdReview() {
                 />
               </div>
               <div>
-                <Label>Savings A/C No</Label>
+                <Label>{t("savingsAcNo")}</Label>
                 <Input
                   value={(draft.account_number ?? "") as string}
                   onChange={(e) => setDraft(d => ({ ...d, account_number: e.target.value.replace(/\D/g, "") }))}
@@ -250,26 +242,20 @@ export default function IdReview() {
                 />
               </div>
               <div>
-                <Label>Voter No</Label>
+                <Label>{t("voterNo")}</Label>
                 <Input
                   value={(draft.voter_number ?? "") as string}
                   onChange={(e) => setDraft(d => ({ ...d, voter_number: e.target.value.replace(/\D/g, "") }))}
                   maxLength={20}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                {lang === "bn"
-                  ? "পরিবর্তন সংরক্ষণ করলে Audit Logs-এ রেকর্ড হবে।"
-                  : "Saving will create an entry in Audit Logs."}
-              </p>
+              <p className="text-xs text-muted-foreground">{t("auditOnSave")}</p>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)}>
-              {lang === "bn" ? "বাতিল" : "Cancel"}
-            </Button>
+            <Button variant="outline" onClick={() => setEditing(null)}>{t("cancel")}</Button>
             <Button onClick={save} disabled={saving}>
-              {saving ? "…" : (lang === "bn" ? "সংরক্ষণ" : "Save")}
+              {saving ? "…" : t("save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -280,17 +266,17 @@ export default function IdReview() {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {lang === "bn" ? "পরিবর্তনের ইতিহাস" : "Change History"} — {historyFor?.name_bn || historyFor?.name_en}
+              {t("changeHistory")} — {historyFor?.name_bn || historyFor?.name_en}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-96 overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{lang === "bn" ? "সময়" : "When"}</TableHead>
-                  <TableHead>{lang === "bn" ? "অ্যাকশন" : "Action"}</TableHead>
-                  <TableHead>{lang === "bn" ? "পুরাতন" : "Old"}</TableHead>
-                  <TableHead>{lang === "bn" ? "নতুন" : "New"}</TableHead>
+                  <TableHead>{t("whenCol")}</TableHead>
+                  <TableHead>{t("actionCol")}</TableHead>
+                  <TableHead>{t("oldVal")}</TableHead>
+                  <TableHead>{t("newVal")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -305,7 +291,7 @@ export default function IdReview() {
                 {history.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
-                      {lang === "bn" ? "কোনো পরিবর্তন নেই" : "No changes recorded"}
+                      {t("noChanges")}
                     </TableCell>
                   </TableRow>
                 )}
