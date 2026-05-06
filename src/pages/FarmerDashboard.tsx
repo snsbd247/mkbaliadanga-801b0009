@@ -55,7 +55,7 @@ export default function FarmerDashboard() {
 
   async function load() {
     if (!token) { nav("/", { replace: true }); return; }
-    if (isExpired()) { logout("Session expired. Please sign in again."); return; }
+    if (isExpired()) { logout(t("p5b_sessionExpiredSignIn")); return; }
     setLoading(true);
     setError(null);
     try {
@@ -66,17 +66,17 @@ export default function FarmerDashboard() {
       });
       const json = await res.json().catch(() => ({}));
       if (res.status === 401) {
-        toast.error("Session expired. Please sign in again.");
+        toast.error(t("p5b_sessionExpiredSignIn"));
         logout();
         return;
       }
       if (!res.ok) {
-        setError(json?.error || "Failed to load data.");
+        setError(json?.error || t("p5b_failedToLoadData"));
         return;
       }
       setData(json);
     } catch {
-      setError("Network error.");
+      setError(t("p5b_networkError"));
     } finally {
       setLoading(false);
     }
