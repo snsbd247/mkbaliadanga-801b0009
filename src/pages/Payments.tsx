@@ -35,6 +35,7 @@ export default function Payments() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const brand = useBranding();
+  const receiptArgs = useReceiptRenderArgs();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [list, setList] = useState<any[]>([]);
   const [farmerId, setFarmerId] = useState(params.get("farmer") ?? "");
