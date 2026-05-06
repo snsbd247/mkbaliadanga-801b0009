@@ -357,6 +357,42 @@ export type Database = {
         }
         Relationships: []
       }
+      developer_update_logs: {
+        Row: {
+          action: string
+          commit_message: string | null
+          commit_sha: string | null
+          created_at: string
+          id: string
+          note: string | null
+          release_tag: string | null
+          repo_url: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          commit_message?: string | null
+          commit_sha?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          release_tag?: string | null
+          repo_url: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          commit_message?: string | null
+          commit_sha?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          release_tag?: string | null
+          repo_url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       districts: {
         Row: {
           code: string | null

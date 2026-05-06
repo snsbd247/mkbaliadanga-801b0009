@@ -43,7 +43,6 @@ async function seedFarmers(admin: any, officeId: string, count: number) {
     mobile: `017${String(10000000 + i).padStart(8, "0")}`,
     nid: `19900${String(1000000000 + i).padStart(10, "0")}`,
     village: pick(VILLAGES, i),
-    mouza: "Baliadanga",
     office_id: officeId,
     status: "active",
     is_voter: i % 3 === 0,
