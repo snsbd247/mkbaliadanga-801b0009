@@ -17,14 +17,6 @@ export function AppLayout() {
   const { lang, setLang, t } = useLang();
   const brand = useBranding();
 
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center text-muted-foreground">Loading…</div>;
-  }
-  if (!user) return <Navigate to="/auth" replace />;
-
-  const initial = (user.email ?? "U").charAt(0).toUpperCase();
-  const roleLabel = roles.includes("super_admin") ? t("superAdmin") : roles.includes("admin") ? t("admin") : t("staff");
-
   const sidebarKey = `sidebar:open:${user?.id ?? "guest"}`;
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
@@ -36,6 +28,14 @@ export function AppLayout() {
   useEffect(() => {
     try { localStorage.setItem(sidebarKey, sidebarOpen ? "1" : "0"); } catch { /* noop */ }
   }, [sidebarOpen, sidebarKey]);
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center text-muted-foreground">Loading…</div>;
+  }
+  if (!user) return <Navigate to="/auth" replace />;
+
+  const initial = (user.email ?? "U").charAt(0).toUpperCase();
+  const roleLabel = roles.includes("super_admin") ? t("superAdmin") : roles.includes("admin") ? t("admin") : t("staff");
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
