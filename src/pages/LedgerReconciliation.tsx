@@ -347,25 +347,25 @@ export default function LedgerReconciliation() {
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Reconciliation drill-down</DialogTitle>
+            <DialogTitle>{t("p5_drillDown")}</DialogTitle>
           </DialogHeader>
           {detailLoading || !detail ? (
-            <div className="py-10 text-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />Loading…</div>
+            <div className="py-10 text-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />{t("p5b_loadingDots")}</div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                <div><div className="text-xs text-muted-foreground">Reference</div><div className="font-mono">{detail.reference_type}</div></div>
+                <div><div className="text-xs text-muted-foreground">{t("p5_referenceCol")}</div><div className="font-mono">{detail.reference_type}</div></div>
                 <div className="md:col-span-3"><div className="text-xs text-muted-foreground">ID</div><div className="font-mono text-xs">{detail.reference_id}</div></div>
-                <div><div className="text-xs text-muted-foreground">Ledger Debit</div><div className="font-mono font-semibold">{fmt(detail.ledger_debit)}</div></div>
-                <div><div className="text-xs text-muted-foreground">Ledger Credit</div><div className="font-mono font-semibold">{fmt(detail.ledger_credit)}</div></div>
+                <div><div className="text-xs text-muted-foreground">{t("p5_ledgerDebit")}</div><div className="font-mono font-semibold">{fmt(detail.ledger_debit)}</div></div>
+                <div><div className="text-xs text-muted-foreground">{t("p5_ledgerCredit")}</div><div className="font-mono font-semibold">{fmt(detail.ledger_credit)}</div></div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Source amount</div>
+                  <div className="text-xs text-muted-foreground">{t("p5_sourceAmount")}</div>
                   <div className="font-mono font-semibold">{detail.source_amount != null ? fmt(detail.source_amount) : "—"}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Source row</div>
+                  <div className="text-xs text-muted-foreground">{t("p5_sourceRow")}</div>
                   <div className={`font-semibold ${detail.source_exists ? "text-success" : "text-destructive"}`}>
-                    {detail.source_exists ? "Exists" : "Missing (orphan)"}
+                    {detail.source_exists ? t("active") : t("p5b_noData")}
                   </div>
                 </div>
               </div>
