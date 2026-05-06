@@ -269,11 +269,11 @@ export default function Cashbook() {
 
         <TabsContent value="cashbook">
           <ExportBar
-            onPdf={() => exportTablePDF("Cash Book",
-              ["Date", "Kind", "Description", "Ref", "Income", "Expense", "Balance"],
+            onPdf={() => exportTablePDF(t("cbCashBook" as any),
+              [t("date"), t("type"), t("cbDescription" as any), t("cbRef" as any), t("income"), t("expense"), t("balance")],
               cashbookEntries.map(r => [fmtDate(r.date), r.kind, r.label, r.ref, r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
               { from, to })}
-            onXlsx={() => exportExcel("cash-book", "Cashbook",
+            onXlsx={() => exportExcel("cash-book", t("cbCashBook" as any),
               cashbookEntries.map(r => ({ Date: r.date, Kind: r.kind, Description: r.label, Ref: r.ref, Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })),
               { from, to })}
           />
@@ -282,7 +282,7 @@ export default function Cashbook() {
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead>
               <TableHead>{t("description")}</TableHead>
-              <TableHead>Ref</TableHead>
+              <TableHead>{t("cbRef" as any)}</TableHead>
               <TableHead className="text-right">{t("income")}</TableHead>
               <TableHead className="text-right">{t("expense")}</TableHead>
               <TableHead className="text-right">{t("runningBalance")}</TableHead>
@@ -320,8 +320,8 @@ export default function Cashbook() {
 
         <TabsContent value="receipts">
           <ExportBar
-            onPdf={() => exportTablePDF("Receipts", ["Receipt #", "Date", "Kind", "Farmer", "Amount", "Method"], receipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), getKindLabel(t, x.kind as Kind), x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
-            onXlsx={() => exportExcel("receipts", "Receipts", receipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: getKindLabel(t, x.kind as Kind), Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
+            onPdf={() => exportTablePDF(t("cbReceipts" as any), [t("receiptNo"), t("date"), t("type"), t("farmerName"), t("amount"), t("method")], receipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), getKindLabel(t, x.kind as Kind), x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
+            onXlsx={() => exportExcel("receipts", t("cbReceipts" as any), receipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: getKindLabel(t, x.kind as Kind), Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
           />
           <Card><Table>
             <TableHeader><TableRow>

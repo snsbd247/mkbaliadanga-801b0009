@@ -163,11 +163,11 @@ export default function Reports() {
     }
 
     return [
-      { metric: "Irrigation collected (ledger)", expected: irrCollected, actual: allocIrr, diff: allocIrr - irrCollected },
-      { metric: "Loan collected (ledger)", expected: loanCollected, actual: allocLoan, diff: allocLoan - loanCollected },
-      { metric: "Savings deposits", expected: savDeposits, actual: allocSav, diff: allocSav - savDeposits },
-      { metric: "Savings withdrawals", expected: savWithdraws, actual: 0, diff: 0 },
-      { metric: "Total payment entries", expected: totalPayments, actual: allocLoan + allocIrr + allocSav, diff: (allocLoan + allocIrr + allocSav) - totalPayments },
+      { metric: t("rpMetricIrrCollected" as any), expected: irrCollected, actual: allocIrr, diff: allocIrr - irrCollected },
+      { metric: t("rpMetricLoanCollected" as any), expected: loanCollected, actual: allocLoan, diff: allocLoan - loanCollected },
+      { metric: t("rpMetricSavDeposits" as any), expected: savDeposits, actual: allocSav, diff: allocSav - savDeposits },
+      { metric: t("rpMetricSavWithdraws" as any), expected: savWithdraws, actual: 0, diff: 0 },
+      { metric: t("rpMetricTotalPayments" as any), expected: totalPayments, actual: allocLoan + allocIrr + allocSav, diff: (allocLoan + allocIrr + allocSav) - totalPayments },
     ];
   }, [irr, loanPayments, savings, payments]);
 
@@ -269,16 +269,16 @@ export default function Reports() {
     const savDep = savings.filter(s => s.status === "approved" && s.type === "deposit").reduce((a, x) => a + Number(x.amount), 0);
     const savWd = savings.filter(s => s.status === "approved" && s.type === "withdraw").reduce((a, x) => a + Number(x.amount), 0);
     return [
-      { label: "Total Income (Approved Payments)", value: income },
-      { label: "Loan Issued (Principal)", value: loanIssued },
-      { label: "Loan Collected", value: loanCollected },
-      { label: "Loan Outstanding Due", value: loanDue },
-      { label: "Irrigation Charged", value: irrCharged },
-      { label: "Irrigation Collected", value: irrCollected },
-      { label: "Irrigation Outstanding Due", value: irrDue },
-      { label: "Savings Deposits", value: savDep },
-      { label: "Savings Withdrawals", value: savWd },
-      { label: "Net Savings Balance", value: savDep - savWd },
+      { label: t("rpLblTotalIncome" as any), value: income },
+      { label: t("rpLblLoanIssued" as any), value: loanIssued },
+      { label: t("rpLblLoanCollected" as any), value: loanCollected },
+      { label: t("rpLblLoanDue" as any), value: loanDue },
+      { label: t("rpLblIrrCharged" as any), value: irrCharged },
+      { label: t("rpLblIrrCollected" as any), value: irrCollected },
+      { label: t("rpLblIrrDue" as any), value: irrDue },
+      { label: t("rpLblSavDeposits" as any), value: savDep },
+      { label: t("rpLblSavWithdraws" as any), value: savWd },
+      { label: t("rpLblNetSavBalance" as any), value: savDep - savWd },
     ];
   }, [payments, loans, loanPayments, irr, savings]);
 
@@ -321,12 +321,12 @@ export default function Reports() {
               <SelectContent><SelectItem value={ALL}>{t("all")}</SelectItem>{seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Granularity</Label>
+          <div><Label>{t("rpGranularity" as any)}</Label>
             <Select value={granularity} onValueChange={(v: any) => setGranularity(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="daily">{t("rpDaily" as any)}</SelectItem>
+                <SelectItem value="monthly">{t("rpMonthly" as any)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -335,15 +335,15 @@ export default function Reports() {
 
       <Tabs defaultValue="monthly">
         <TabsList>
-          <TabsTrigger value="monthly">{granularity === "daily" ? "Daily" : "Monthly"} Financial</TabsTrigger>
-          <TabsTrigger value="recon">Reconciliation</TabsTrigger>
+          <TabsTrigger value="monthly">{granularity === "daily" ? t("rpDaily" as any) : t("rpMonthly" as any)} {t("rpFinancial" as any)}</TabsTrigger>
+          <TabsTrigger value="recon">{t("rpReconciliation" as any)}</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigationReport")}</TabsTrigger>
-          <TabsTrigger value="arrears">Irrigation Arrears</TabsTrigger>
+          <TabsTrigger value="arrears">{t("rpIrrArrears" as any)}</TabsTrigger>
           <TabsTrigger value="loan">{t("loanReport")}</TabsTrigger>
           <TabsTrigger value="savings">{t("savingsReport")}</TabsTrigger>
-          <TabsTrigger value="balances">Savings Balances</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="audit">Audit (Office/Season)</TabsTrigger>
+          <TabsTrigger value="balances">{t("rpSavBalances" as any)}</TabsTrigger>
+          <TabsTrigger value="payments">{t("rpPayments" as any)}</TabsTrigger>
+          <TabsTrigger value="audit">{t("rpAuditTab" as any)}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monthly">
@@ -362,16 +362,16 @@ export default function Reports() {
           <Card className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>{granularity === "daily" ? "Date" : "Month"}</TableHead>
-                <TableHead className="text-right">Deposits</TableHead>
-                <TableHead className="text-right">Withdrawals</TableHead>
-                <TableHead className="text-right">Loan Issued</TableHead>
-                <TableHead className="text-right">Loan Collected</TableHead>
-                <TableHead className="text-right">Irr Charged</TableHead>
-                <TableHead className="text-right">Irr Collected</TableHead>
-                <TableHead className="text-right">Loan Due</TableHead>
-                <TableHead className="text-right">Irr Due</TableHead>
-                <TableHead className="text-right">Net Total</TableHead>
+                <TableHead>{granularity === "daily" ? t("date") : t("rpMonth" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpDeposits" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpWithdrawals" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpLoanIssued" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpLoanCollected" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpIrrCharged" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpIrrCollected" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpLoanDue" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpIrrDue" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpNetTotal" as any)}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {monthly.map((m, i) => (
@@ -388,7 +388,7 @@ export default function Reports() {
                     <TableCell className="text-right font-semibold">{money(m.total)}</TableCell>
                   </TableRow>
                 ))}
-                {monthly.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>}
+                {monthly.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
@@ -401,7 +401,7 @@ export default function Reports() {
           />
           <Card>
             <Table>
-              <TableHeader><TableRow><TableHead>Metric</TableHead><TableHead className="text-right">Ledger</TableHead><TableHead className="text-right">Payment allocations</TableHead><TableHead className="text-right">Diff</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{t("rpMetric" as any)}</TableHead><TableHead className="text-right">{t("rpLedger" as any)}</TableHead><TableHead className="text-right">{t("rpAllocations" as any)}</TableHead><TableHead className="text-right">{t("rpDiff" as any)}</TableHead></TableRow></TableHeader>
               <TableBody>{recon.map((r, i) => (
                 <TableRow key={i}>
                   <TableCell>{r.metric}</TableCell>
@@ -412,7 +412,7 @@ export default function Reports() {
               ))}</TableBody>
             </Table>
           </Card>
-          <p className="text-xs text-muted-foreground mt-2">Compares each module's recorded balances against allocations recorded against payments. Non-zero differences may indicate manual ledger entries (without a payment) or pending receipts.</p>
+          <p className="text-xs text-muted-foreground mt-2">{t("rpReconNote" as any)}</p>
         </TabsContent>
 
         <TabsContent value="irrigation">
@@ -423,7 +423,7 @@ export default function Reports() {
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
-              <TableHead className="text-right">Base</TableHead><TableHead className="text-right">Canal</TableHead><TableHead className="text-right">Maint.</TableHead><TableHead className="text-right">Other</TableHead>
+              <TableHead className="text-right">{t("rpBase" as any)}</TableHead><TableHead className="text-right">{t("rpCanal" as any)}</TableHead><TableHead className="text-right">{t("rpMaint" as any)}</TableHead><TableHead className="text-right">{t("rpOtherCol" as any)}</TableHead>
               <TableHead className="text-right">{t("total")}</TableHead><TableHead className="text-right">{t("paidAmount")}</TableHead><TableHead className="text-right">{t("dueAmount")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>{irr.map((r, i) => (
@@ -478,26 +478,24 @@ export default function Reports() {
             onXlsx={() => exportExcel("irrigation-arrears", "Arrears",
               arrears.map(r => ({ Date: r.date, Code: r.code, Farmer: r.name, Season: r.season, Dag: r.dag, Total: r.total, Paid: r.paid, Due: r.due, AgeDays: r.days, Bucket: r.bucket })))}
           />
-          <p className="text-xs text-muted-foreground mb-2">
-            Filters above (date range, office, farmer, season) apply to this report. Aging buckets are computed in UTC from <span className="font-mono">entry_date</span>.
-          </p>
+          <p className="text-xs text-muted-foreground mb-2">{t("rpArrearsNote" as any)}</p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
             {(["0-30", "31-60", "61-90", "90+"] as const).map(b => {
               const sum = arrears.filter(r => r.bucket === b).reduce((a, r) => a + r.due, 0);
               return (
-                <Card key={b} className="p-3"><div className="text-xs uppercase text-muted-foreground">{b} days</div><div className="text-lg font-bold">{money(sum)}</div></Card>
+                <Card key={b} className="p-3"><div className="text-xs uppercase text-muted-foreground">{b} {t("rpDays" as any)}</div><div className="text-lg font-bold">{money(sum)}</div></Card>
               );
             })}
-            <Card className="p-3 bg-destructive/5"><div className="text-xs uppercase text-destructive">Total Arrears</div><div className="text-lg font-bold text-destructive">{money(arrears.reduce((a, r) => a + r.due, 0))}</div></Card>
+            <Card className="p-3 bg-destructive/5"><div className="text-xs uppercase text-destructive">{t("rpTotalArrears" as any)}</div><div className="text-lg font-bold text-destructive">{money(arrears.reduce((a, r) => a + r.due, 0))}</div></Card>
           </div>
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
-              <TableHead>{t("date")}</TableHead><TableHead>Code</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead>{t("date")}</TableHead><TableHead>{t("rpCode" as any)}</TableHead><TableHead>{t("farmerName")}</TableHead>
               <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
               <TableHead className="text-right">{t("total")}</TableHead>
               <TableHead className="text-right">{t("paidAmount")}</TableHead>
               <TableHead className="text-right">{t("dueAmount")}</TableHead>
-              <TableHead>Age</TableHead><TableHead>Bucket</TableHead>
+              <TableHead>{t("rpAge" as any)}</TableHead><TableHead>{t("rpBucket" as any)}</TableHead>
             </TableRow></TableHeader>
             <TableBody>{arrears.map((r, i) => (
               <TableRow key={i}>
@@ -513,7 +511,7 @@ export default function Reports() {
                 <TableCell>{r.bucket}</TableCell>
               </TableRow>
             ))}
-            {arrears.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">No arrears</TableCell></TableRow>}
+            {arrears.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("rpNoArrears" as any)}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>
@@ -528,9 +526,9 @@ export default function Reports() {
           />
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
-              <TableHead>Code</TableHead><TableHead>{t("farmerName")}</TableHead>
-              <TableHead className="text-right">Total Deposit</TableHead>
-              <TableHead className="text-right">Total Withdraw</TableHead>
+              <TableHead>{t("rpCode" as any)}</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead className="text-right">{t("rpDeposit" as any)}</TableHead>
+              <TableHead className="text-right">{t("rpWithdraw" as any)}</TableHead>
               <TableHead className="text-right">{t("balance")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>{balances.map(r => (
@@ -542,7 +540,7 @@ export default function Reports() {
                 <TableCell className="text-right font-semibold text-primary">{money(r.balance)}</TableCell>
               </TableRow>
             ))}
-            {balances.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>}
+            {balances.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>
@@ -553,7 +551,7 @@ export default function Reports() {
             onXlsx={() => exportExcel("payments", "Payments", payments.map(r => ({ Date: r.created_at, Farmer: r.farmers?.name_en, Kind: r.kind, Amount: r.amount, Method: r.method, Status: r.status })))}
           />
           <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>Kind</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("rpKind" as any)}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
             <TableBody>{payments.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.created_at)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.kind}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.method}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
           </Table></Card>
         </TabsContent>
@@ -562,18 +560,18 @@ export default function Reports() {
           <div className="flex justify-end gap-2 mb-3">
             <Button size="sm" onClick={() => exportAuditReportPDF({
               brand: { company_name: brand.company_name, address: brand.address ?? "" },
-              range: filterTitleSuffix() || "All time",
+              range: filterTitleSuffix() || t("rpAllTime" as any),
               summary: auditSummary,
               byOffice,
               bySeason,
-            })}><FileDown className="h-4 w-4 mr-1" />Audit Report PDF</Button>
+            })}><FileDown className="h-4 w-4 mr-1" />{t("rpAuditReportPdf" as any)}</Button>
             <Button size="sm" variant="outline" onClick={() => exportExcel("audit-by-office", "By Office",
               byOffice.map(o => ({ Office: o.office, Income: o.income, Expense: o.expense, "Loan Issued": o.loanIssued, "Loan Collected": o.loanCollected, "Irrigation Charged": o.irrCharged, "Irrigation Collected": o.irrCollected, "Irrigation Due": o.irrDue, "Savings Balance": o.savBal })))}>
-              <FileSpreadsheet className="h-4 w-4 mr-1" />Office Excel
+              <FileSpreadsheet className="h-4 w-4 mr-1" />{t("rpOfficeExcel" as any)}
             </Button>
             <Button size="sm" variant="outline" onClick={() => exportExcel("audit-by-season", "By Season",
               bySeason.map(s => ({ Season: s.season, Charged: s.charged, Collected: s.collected, Due: s.due })))}>
-              <FileSpreadsheet className="h-4 w-4 mr-1" />Season Excel
+              <FileSpreadsheet className="h-4 w-4 mr-1" />{t("rpSeasonExcel" as any)}
             </Button>
           </div>
 
