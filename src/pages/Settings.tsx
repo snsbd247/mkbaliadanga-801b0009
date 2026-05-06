@@ -99,9 +99,9 @@ export default function Settings() {
                 <div>
                   <Label>{t("penaltyType")}</Label>
                   <select className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={form.penalty_type ?? "flat"} onChange={e => setForm({ ...form, penalty_type: e.target.value })}>
-                    <option value="none">None</option>
-                    <option value="flat">Flat amount</option>
-                    <option value="percent">Percent of due</option>
+                    <option value="none">{t("set_penaltyNone" as any)}</option>
+                    <option value="flat">{t("set_penaltyFlat" as any)}</option>
+                    <option value="percent">{t("set_penaltyPercent" as any)}</option>
                   </select>
                 </div>
                 <div>
