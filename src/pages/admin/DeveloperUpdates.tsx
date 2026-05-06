@@ -31,12 +31,15 @@ function parseRepo(url: string): { owner: string; repo: string } | null {
 }
 
 export default function DeveloperUpdates() {
+  const { user } = useAuth();
   const [repoUrl, setRepoUrl] = useState<string>("");
   const [commits, setCommits] = useState<Commit[]>([]);
   const [latestRelease, setLatestRelease] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [marking, setMarking] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Developer Updates";
@@ -45,7 +48,17 @@ export default function DeveloperUpdates() {
       setRepoUrl(saved);
       void check(saved);
     }
+    void loadHistory();
   }, []);
+
+  async function loadHistory() {
+    const { data } = await supabase
+      .from("developer_update_logs" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setHistory((data as any[]) ?? []);
+  }
 
   async function check(urlOverride?: string) {
     const url = urlOverride ?? repoUrl;
@@ -63,17 +76,45 @@ export default function DeveloperUpdates() {
       if (!commitsRes.ok) throw new Error(`GitHub API: ${commitsRes.status}. Repo must be public.`);
       const commitsData = await commitsRes.json();
       setCommits(commitsData);
-      if (releaseRes.ok) setLatestRelease(await releaseRes.json());
-      else setLatestRelease(null);
+      const release = releaseRes.ok ? await releaseRes.json() : null;
+      setLatestRelease(release);
       localStorage.setItem(STORAGE_KEY, url);
       setLastChecked(new Date().toLocaleString());
       toast.success("Update info fetched");
+      const top = commitsData?.[0];
+      if (top && user) {
+        await supabase.from("developer_update_logs" as any).insert({
+          user_id: user.id,
+          action: "check",
+          repo_url: url,
+          commit_sha: top.sha,
+          commit_message: top.commit?.message?.split("\n")[0] ?? null,
+          release_tag: release?.tag_name ?? null,
+        });
+        void loadHistory();
+      }
     } catch (e: any) {
       setError(e.message);
       toast.error(e.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function markApplied(c: Commit) {
+    if (!user) return;
+    setMarking(c.sha);
+    await supabase.from("developer_update_logs" as any).insert({
+      user_id: user.id,
+      action: "mark_applied",
+      repo_url: repoUrl,
+      commit_sha: c.sha,
+      commit_message: c.commit.message.split("\n")[0],
+      note: "Marked as applied by developer",
+    });
+    setMarking(null);
+    toast.success("Marked as applied");
+    void loadHistory();
   }
 
   const parsed = parseRepo(repoUrl);
