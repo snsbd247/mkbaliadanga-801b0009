@@ -210,7 +210,7 @@ export default function Cashbook() {
               <DialogContent>
                 <DialogHeader><DialogTitle>{t("addNew")} — {t("expenses")}</DialogTitle></DialogHeader>
                 <div className="grid gap-3">
-                  <div><Label>{t("head")}</Label><Input value={e.head} onChange={ev => setE({ ...e, head: ev.target.value })} placeholder="e.g. Salary, Diesel, Repair" /></div>
+                  <div><Label>{t("head")}</Label><Input value={e.head} onChange={ev => setE({ ...e, head: ev.target.value })} placeholder={t("egExpenseHeadPh")} /></div>
                   <div><Label>{t("payee")}</Label><Input value={e.payee} onChange={ev => setE({ ...e, payee: ev.target.value })} /></div>
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label>{t("amount")}</Label><Input type="number" value={e.amount || ""} onChange={ev => setE({ ...e, amount: +ev.target.value })} /></div>
@@ -243,17 +243,17 @@ export default function Cashbook() {
             brand: { company_name: brand.company_name, address: brand.address ?? "" },
             range: rangeLabel(),
             summary: [
-              { label: "Opening Cash", value: Number(openingCash || 0) },
-              { label: "Total Income (Receipts)", value: totals.income },
-              { label: "Total Expense", value: totals.expense },
-              { label: "Closing Cash", value: totals.cashBalance },
-              { label: "Savings Balance", value: totals.savBal },
-              { label: "Loan Issued", value: totals.loanIssued },
-              { label: "Loan Collected", value: totals.loanCollected },
-              { label: "Loan Outstanding Due", value: totals.loanDue },
-              { label: "Irrigation Charged", value: totals.irrCharged },
-              { label: "Irrigation Collected", value: totals.irrCollected },
-              { label: "Irrigation Outstanding Due", value: totals.irrDue },
+              { label: t("openingCash"), value: Number(openingCash || 0) },
+              { label: t("totalIncomeReceipts"), value: totals.income },
+              { label: t("totalExpenseAll"), value: totals.expense },
+              { label: t("closingCash"), value: totals.cashBalance },
+              { label: t("savingsBalance"), value: totals.savBal },
+              { label: t("loanIssued"), value: totals.loanIssued },
+              { label: t("loanCollected"), value: totals.loanCollected },
+              { label: t("loanOutstandingDue"), value: totals.loanDue },
+              { label: t("irrigationCharged"), value: totals.irrCharged },
+              { label: t("irrigationCollected"), value: totals.irrCollected },
+              { label: t("irrigationOutstandingDue"), value: totals.irrDue },
             ],
           })}><FileDown className="h-4 w-4 mr-1" />{t("auditReportPdf")}</Button>
         </div>
@@ -290,7 +290,7 @@ export default function Cashbook() {
             <TableBody>
               <TableRow className="bg-muted/40 font-medium">
                 <TableCell>{from || "—"}</TableCell>
-                <TableCell><Badge variant="outline">opening</Badge></TableCell>
+                <TableCell><Badge variant="outline">{t("openingBadge")}</Badge></TableCell>
                 <TableCell colSpan={2}>{t("openingCashBalance")}</TableCell>
                 <TableCell className="text-right">—</TableCell>
                 <TableCell className="text-right">—</TableCell>
@@ -374,19 +374,19 @@ export default function Cashbook() {
         <TabsContent value="audit">
           <div className="flex justify-end gap-2 mb-3 print:hidden">
             <Button size="sm" variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
-            <Button size="sm" variant="outline" onClick={() => exportTablePDF("Audit Report",
-              ["Section", "Amount"],
+            <Button size="sm" variant="outline" onClick={() => exportTablePDF(t("auditReport"),
+              [t("description"), t("amount")],
               [
-                ["Total Income", totals.income],
-                ["Total Expense", totals.expense],
-                ["Cash Balance", totals.cashBalance],
-                ["Savings Balance", totals.savBal],
-                ["Loan Issued", totals.loanIssued],
-                ["Loan Collected", totals.loanCollected],
-                ["Loan Outstanding (Due)", totals.loanDue],
-                ["Irrigation Charged", totals.irrCharged],
-                ["Irrigation Collected", totals.irrCollected],
-                ["Irrigation Outstanding (Due)", totals.irrDue],
+                [t("totalIncomeReceipts"), totals.income],
+                [t("totalExpenseAll"), totals.expense],
+                [t("closingCash"), totals.cashBalance],
+                [t("savingsBalance"), totals.savBal],
+                [t("loanIssued"), totals.loanIssued],
+                [t("loanCollected"), totals.loanCollected],
+                [t("loanOutstandingDue"), totals.loanDue],
+                [t("irrigationCharged"), totals.irrCharged],
+                [t("irrigationCollected"), totals.irrCollected],
+                [t("irrigationOutstandingDue"), totals.irrDue],
               ],
               { from, to })}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
           </div>
@@ -401,35 +401,35 @@ export default function Cashbook() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <Section title={`${t("income")} & ${t("expense")}`}>
-                <Row label={t("income") + " (Total Receipts)"} value={totals.income} positive />
-                <Row label={t("expense") + " (Total)"} value={totals.expense} negative />
-                <Row label={t("cashbook") + " " + t("balance")} value={totals.cashBalance} bold />
+                <Row label={t("totalIncomeReceipts")} value={totals.income} positive />
+                <Row label={t("totalExpenseAll")} value={totals.expense} negative />
+                <Row label={t("closingCash")} value={totals.cashBalance} bold />
               </Section>
 
               <Section title={t("savings")}>
-                <Row label={t("savings") + " " + t("balance")} value={totals.savBal} bold />
+                <Row label={t("savingsBalance")} value={totals.savBal} bold />
               </Section>
 
               <Section title={t("loans")}>
-                <Row label="Issued (Principal)" value={totals.loanIssued} />
-                <Row label="Collected" value={totals.loanCollected} positive />
-                <Row label="Outstanding (Due)" value={totals.loanDue} bold negative={totals.loanDue > 0} />
+                <Row label={t("issuedPrincipal")} value={totals.loanIssued} />
+                <Row label={t("loanCollected")} value={totals.loanCollected} positive />
+                <Row label={t("loanOutstandingDue")} value={totals.loanDue} bold negative={totals.loanDue > 0} />
               </Section>
 
               <Section title={t("irrigation")}>
-                <Row label="Charged" value={totals.irrCharged} />
-                <Row label="Collected" value={totals.irrCollected} positive />
-                <Row label="Outstanding (Due)" value={totals.irrDue} bold negative={totals.irrDue > 0} />
+                <Row label={t("irrigationCharged")} value={totals.irrCharged} />
+                <Row label={t("irrigationCollected")} value={totals.irrCollected} positive />
+                <Row label={t("irrigationOutstandingDue")} value={totals.irrDue} bold negative={totals.irrDue > 0} />
               </Section>
             </div>
 
             <div className="mt-8 grid grid-cols-3 gap-12 pt-12 print:pt-20">
-              {["Prepared By", "Checked By", "Approved By"].map(s =>
+              {[t("preparedBy"), t("checkedBy"), t("approvedBy")].map(s =>
                 <div key={s} className="text-center">
                   <div className="border-t mt-8 pt-2 text-xs text-muted-foreground">{s}</div>
                 </div>)}
             </div>
-            {!isAdmin && <p className="mt-4 text-xs text-muted-foreground italic">Only Committee/Admins can edit underlying data.</p>}
+            {!isAdmin && <p className="mt-4 text-xs text-muted-foreground italic">{t("onlyCommitteeEdit")}</p>}
           </Card>
         </TabsContent>
       </Tabs>
