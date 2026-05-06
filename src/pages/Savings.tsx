@@ -469,7 +469,7 @@ export default function Savings() {
                           </div>
                           <div className="max-h-64 overflow-y-auto">
                             <table className="w-full text-sm">
-                              <thead className="text-xs text-muted-foreground sticky top-0 bg-muted/30"><tr><th className="text-left py-1">#</th><th className="text-left">Due Date</th><th className="text-right">Amount</th></tr></thead>
+                              <thead className="text-xs text-muted-foreground sticky top-0 bg-muted/30"><tr><th className="text-left py-1">#</th><th className="text-left">{t("pgDate")}</th><th className="text-right">{t("amount")}</th></tr></thead>
                               <tbody>
                                 {sched.map(s => (
                                   <tr key={s.no} className="border-t">
