@@ -259,7 +259,7 @@ export default function Savings() {
       .eq("id", id)
       .eq("status", "pending"); // guard: only pending → decision
     if (error) return toast.error(error.message);
-    toast.success(status === "approved" ? "Withdraw approved" : "Withdraw rejected");
+    toast.success(status === "approved" ? t("pgSavWithdrawApproved" as any) : t("pgSavWithdrawRejected" as any));
     load();
   }
   async function restoreTxn(id: string) {
