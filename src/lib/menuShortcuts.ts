@@ -11,6 +11,7 @@ export type MenuShortcut = {
   parentKey?: TranslationKey; // group label for context
   permKey?: string;
   superOnly?: boolean;
+  developerOnly?: boolean;
   keywords?: string[];   // extra english/bangla aliases
 };
 
