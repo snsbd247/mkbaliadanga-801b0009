@@ -49,6 +49,7 @@ import { History } from "lucide-react";
 function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => void; disabled: boolean }) {
   const [generating, setGenerating] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const { t } = useLang();
   return (
     <>
       <div className="flex items-center gap-3 h-10">
@@ -86,12 +87,12 @@ function VoterToggleField({ f, setF, disabled }: { f: any; setF: (n: any) => voi
         <span className="text-xs text-muted-foreground">
           {generating ? (
             <span className="inline-flex items-center gap-2">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> creating savings account…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("creatingSavingsAccount")}
             </span>
-          ) : f.is_voter ? "Voter / Savings active" : "Toggle to create Savings A/C + Voter No"}
+          ) : f.is_voter ? t("voterSavingsActive") : t("toggleToCreateSavings")}
         </span>
         {f.id && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} title="View history">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setHistoryOpen(true)} title={t("viewHistory")}>
             <History className="h-4 w-4" />
           </Button>
         )}
