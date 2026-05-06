@@ -192,7 +192,7 @@ export default function FarmerDetail() {
     downloadBnReceiptPdf({
       kind: "irrigation",
       ...commonReceipt(),
-      receipt_no: `IRR-${i.id.slice(0, 8).toUpperCase()}`,
+      receipt_no: i.receipt_no || autoReceiptNo("IRR", i.id, new Date(i.entry_date)),
       date: i.entry_date,
       bill_info: i.seasons ? `${i.seasons.name ?? ""}${i.seasons.year ? ", " + i.seasons.year : ""}` : undefined,
       farmer: farmerForReceipt({
