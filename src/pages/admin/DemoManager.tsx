@@ -97,7 +97,7 @@ export default function DemoManager() {
       setPreview(data);
       setPreviewOpen(true);
     } catch (e: any) {
-      toast.error(e?.message ?? "Preview failed");
+      toast.error(e?.message ?? t("dmPreviewFailed" as any));
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ export default function DemoManager() {
 
   const run = async () => {
     if (confirmText !== "RESET") {
-      toast.error("কনফার্ম করতে 'RESET' টাইপ করুন");
+      toast.error(t("dmConfirmRequired" as any));
       return;
     }
     setPreviewOpen(false);
@@ -113,7 +113,7 @@ export default function DemoManager() {
     setLastResult(null);
     setProgress(0);
     setStepLog([]);
-    setCurrentStep("শুরু হচ্ছে...");
+    setCurrentStep(t("dmStarting" as any));
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -175,7 +175,7 @@ export default function DemoManager() {
       if (succeeded) toast.success(`✓ ${t("dmOpDone" as any)}`);
       await loadLogs();
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed");
+      toast.error(e?.message ?? t("dmFailedGeneric" as any));
       setLastResult({ error: e?.message });
       await loadLogs();
     } finally {
@@ -260,7 +260,7 @@ export default function DemoManager() {
       {loading && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">প্রগ্রেস: {progress}%</CardTitle>
+            <CardTitle className="text-sm">{t("dmProgress" as any)}: {progress}%</CardTitle>
             <CardDescription>{currentStep}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -285,10 +285,10 @@ export default function DemoManager() {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" /> অপারেশন কনফার্ম করুন
+              <AlertTriangle className="h-5 w-5 text-destructive" /> {t("dmConfirmTitle" as any)}
             </DialogTitle>
             <DialogDescription>
-              নিচের পরিবর্তনগুলো হবে। ভালো করে দেখে নিন — undo নাই।
+              {t("dmConfirmDesc" as any)}
             </DialogDescription>
           </DialogHeader>
 
@@ -297,10 +297,10 @@ export default function DemoManager() {
               {willWipe && (
                 <div>
                   <h3 className="font-semibold text-destructive flex items-center gap-2 mb-2">
-                    <Trash2 className="h-4 w-4" /> যা মুছে যাবে
+                    <Trash2 className="h-4 w-4" /> {t("dmWillDelete" as any)}
                   </h3>
                   {Object.keys(preview.wipe_preview ?? {}).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">কোনো ডেটা নাই (সব টেবিল খালি)</p>
+                    <p className="text-sm text-muted-foreground">{t("dmNoDataToWipe" as any)}</p>
                   ) : (
                     <div className="border rounded-md divide-y max-h-60 overflow-y-auto">
                       {Object.entries(preview.wipe_preview as Record<string, number>)
@@ -308,7 +308,7 @@ export default function DemoManager() {
                         .map(([table, count]) => (
                           <div key={table} className="flex justify-between px-3 py-2 text-sm">
                             <span className="font-mono">{table}</span>
-                            <Badge variant="destructive">{count} rows</Badge>
+                            <Badge variant="destructive">{count} {t("dmRows" as any)}</Badge>
                           </div>
                         ))}
                     </div>
@@ -319,10 +319,10 @@ export default function DemoManager() {
               {willImport && (
                 <div>
                   <h3 className="font-semibold text-primary flex items-center gap-2 mb-2">
-                    <Database className="h-4 w-4" /> যা ইমপোর্ট হবে (আনুমানিক)
+                    <Database className="h-4 w-4" /> {t("dmWillImport" as any)}
                   </h3>
                   {Object.keys(preview.import_preview ?? {}).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">কোনো মডিউল সিলেক্ট নাই</p>
+                    <p className="text-sm text-muted-foreground">{t("dmNoModuleSelected" as any)}</p>
                   ) : (
                     <div className="border rounded-md divide-y">
                       {Object.entries(preview.import_preview as Record<string, number>).map(([k, v]) => (
@@ -339,7 +339,7 @@ export default function DemoManager() {
               {/* Mandatory typed confirmation */}
               <div className="space-y-2 pt-2 border-t">
                 <Label className="text-destructive">
-                  নিশ্চিত করতে নিচে <code className="font-mono bg-muted px-1 rounded">RESET</code> টাইপ করুন
+                  {t("dmConfirmTypeLabel" as any)}
                 </Label>
                 <Input
                   value={confirmText}
@@ -352,10 +352,10 @@ export default function DemoManager() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={loading}>বাতিল</Button>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={loading}>{t("dmCancel" as any)}</Button>
             <Button variant="destructive" onClick={run} disabled={loading || confirmText !== "RESET"}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-              এক্সিকিউট
+              {t("dmExecute" as any)}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -366,9 +366,9 @@ export default function DemoManager() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               {lastResult.error ? (
-                <><XCircle className="h-5 w-5 text-destructive" /> ব্যর্থ</>
+                <><XCircle className="h-5 w-5 text-destructive" /> {t("dmFailed" as any)}</>
               ) : (
-                <><CheckCircle2 className="h-5 w-5 text-primary" /> সফল</>
+                <><CheckCircle2 className="h-5 w-5 text-primary" /> {t("dmSuccess" as any)}</>
               )}
             </CardTitle>
           </CardHeader>
@@ -384,8 +384,8 @@ export default function DemoManager() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2"><Filter className="h-4 w-4" /> অডিট লগ</CardTitle>
-            <CardDescription>{filteredLogs.length} / {logs.length} টি লগ</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Filter className="h-4 w-4" /> {t("dmAuditTitle" as any)}</CardTitle>
+            <CardDescription>{(t("dmAuditCount" as any) as string).replace("{filtered}", String(filteredLogs.length)).replace("{total}", String(logs.length))}</CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={loadLogs} disabled={logsLoading}>
             <RefreshCw className={`h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} />
@@ -395,23 +395,23 @@ export default function DemoManager() {
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
             <div>
-              <Label className="text-xs">From</Label>
+              <Label className="text-xs">{t("dmFilterFrom" as any)}</Label>
               <Input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">To</Label>
+              <Label className="text-xs">{t("dmFilterTo" as any)}</Label>
               <Input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">User (email)</Label>
-              <Input placeholder="search..." value={filterUser} onChange={(e) => setFilterUser(e.target.value)} />
+              <Label className="text-xs">{t("dmFilterUser" as any)}</Label>
+              <Input placeholder={t("dmFilterSearch" as any)} value={filterUser} onChange={(e) => setFilterUser(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">Action</Label>
+              <Label className="text-xs">{t("dmFilterAction" as any)}</Label>
               <Select value={filterAction} onValueChange={setFilterAction}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">{t("dmFilterAll" as any)}</SelectItem>
                   <SelectItem value="reset">reset</SelectItem>
                   <SelectItem value="import">import</SelectItem>
                   <SelectItem value="both">both</SelectItem>
@@ -419,19 +419,19 @@ export default function DemoManager() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Module</Label>
+              <Label className="text-xs">{t("dmFilterModule" as any)}</Label>
               <Select value={filterModule} onValueChange={setFilterModule}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {MODULE_KEYS.map((m) => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}
+                  <SelectItem value="all">{t("dmFilterAll" as any)}</SelectItem>
+                  {MODULE_KEYS.map((m) => <SelectItem key={m.id} value={m.id}>{t(m.tk as any)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           {filteredLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">কোনো লগ নাই</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t("dmNoLogs" as any)}</p>
           ) : (
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {filteredLogs.map((l) => (
@@ -451,9 +451,9 @@ export default function DemoManager() {
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                    {l.ip && <span>IP: {l.ip}</span>}
-                    {l.size != null && <span>Size: {l.size}</span>}
-                    {l.modules?.length > 0 && <span>Modules: {l.modules.join(", ")}</span>}
+                    {l.ip && <span>{t("dmIp" as any)}: {l.ip}</span>}
+                    {l.size != null && <span>{t("dmSizeLbl" as any)}: {l.size}</span>}
+                    {l.modules?.length > 0 && <span>{t("dmModulesLbl" as any)}: {l.modules.map((mid: string) => { const mod = MODULE_KEYS.find(m => m.id === mid); return mod ? t(mod.tk as any) : mid; }).join(", ")}</span>}
                   </div>
                   {l.error_message && (
                     <p className="text-xs text-destructive">{l.error_message}</p>
