@@ -3,7 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { hydrateReceiptOptionsFromProfile } from "@/lib/receiptOptions";
 
-export type AppRole = "super_admin" | "admin" | "committee" | "staff";
+export type AppRole = "developer" | "super_admin" | "admin" | "committee" | "staff";
 
 interface AuthCtx {
   user: User | null;
@@ -12,11 +12,12 @@ interface AuthCtx {
   rolesLoaded: boolean;
   roles: AppRole[];
   officeId: string | null;
-  isSuper: boolean;
+  isDeveloper: boolean;
+  isSuper: boolean; // developer or super_admin
   /** Alias for isSuper to standardize naming across pages. */
   isSuperAdmin: boolean;
-  isAdmin: boolean; // admin or super
-  isCommittee: boolean; // committee or super
+  isAdmin: boolean; // developer, admin or super
+  isCommittee: boolean; // developer, committee or super
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
