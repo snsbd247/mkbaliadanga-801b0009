@@ -112,8 +112,8 @@ export default function Users() {
   async function resetPassword() {
     if (!resetFor) return;
     const role = (resetFor.roles?.[0] as string) ?? "staff";
-    const policy = passwordPolicyIssues(resetPwd, role);
-    if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
+    const policy = passwordPolicyIssues(resetPwd, role, t);
+    if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "reset_password", user_id: resetFor.id, password: resetPwd });
     if (!ok) return;
     toast.success(t("passwordUpdated"));
