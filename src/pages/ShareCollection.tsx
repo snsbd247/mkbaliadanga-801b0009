@@ -169,8 +169,8 @@ export default function ShareCollection() {
   async function decide(id: string, status: "approved" | "rejected") {
     let reject_reason: string | null = null;
     if (status === "rejected") {
-      reject_reason = window.prompt("Reason for rejection:")?.trim() || null;
-      if (!reject_reason) return toast.error("Reason required");
+      reject_reason = window.prompt(t("pgShareRejectPrompt" as any))?.trim() || null;
+      if (!reject_reason) return toast.error(t("pgShareReasonRequired" as any));
     }
     const patch: any = { status, approved_by: user?.id, decided_at: new Date().toISOString() };
     if (reject_reason) patch.reject_reason = reject_reason;
@@ -180,7 +180,7 @@ export default function ShareCollection() {
       .eq("id", id)
       .eq("status", "pending");
     if (error) return toast.error(error.message);
-    toast.success(`Marked ${status}`);
+    toast.success((t("pgShareMarked" as any) as string).replace("{status}", status));
     load();
   }
 
