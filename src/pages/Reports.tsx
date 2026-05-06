@@ -269,16 +269,16 @@ export default function Reports() {
     const savDep = savings.filter(s => s.status === "approved" && s.type === "deposit").reduce((a, x) => a + Number(x.amount), 0);
     const savWd = savings.filter(s => s.status === "approved" && s.type === "withdraw").reduce((a, x) => a + Number(x.amount), 0);
     return [
-      { label: "Total Income (Approved Payments)", value: income },
-      { label: "Loan Issued (Principal)", value: loanIssued },
-      { label: "Loan Collected", value: loanCollected },
-      { label: "Loan Outstanding Due", value: loanDue },
-      { label: "Irrigation Charged", value: irrCharged },
-      { label: "Irrigation Collected", value: irrCollected },
-      { label: "Irrigation Outstanding Due", value: irrDue },
-      { label: "Savings Deposits", value: savDep },
-      { label: "Savings Withdrawals", value: savWd },
-      { label: "Net Savings Balance", value: savDep - savWd },
+      { label: t("rpLblTotalIncome" as any), value: income },
+      { label: t("rpLblLoanIssued" as any), value: loanIssued },
+      { label: t("rpLblLoanCollected" as any), value: loanCollected },
+      { label: t("rpLblLoanDue" as any), value: loanDue },
+      { label: t("rpLblIrrCharged" as any), value: irrCharged },
+      { label: t("rpLblIrrCollected" as any), value: irrCollected },
+      { label: t("rpLblIrrDue" as any), value: irrDue },
+      { label: t("rpLblSavDeposits" as any), value: savDep },
+      { label: t("rpLblSavWithdraws" as any), value: savWd },
+      { label: t("rpLblNetSavBalance" as any), value: savDep - savWd },
     ];
   }, [payments, loans, loanPayments, irr, savings]);
 
