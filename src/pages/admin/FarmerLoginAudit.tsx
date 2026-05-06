@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, ShieldAlert } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 
 interface Row {
