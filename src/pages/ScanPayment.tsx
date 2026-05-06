@@ -294,18 +294,18 @@ export default function ScanPayment() {
               <div className="flex gap-2 justify-center flex-wrap">
                 <Button
                   variant="ghost"
-                  onClick={() => {
+                  onClick={async () => {
                     const payload = buildReceiptPayload();
-                    if (payload) setPreviewUrl(previewPaymentReceiptPdf(payload, { ...tpl, logo_url: brand.logo_url ?? null }));
+                    if (payload) setPreviewUrl(await previewBnReceiptPdf(payload));
                   }}
                 >
                   <Eye className="h-4 w-4" />Preview
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     const payload = buildReceiptPayload();
-                    if (payload) downloadPaymentReceiptPdf(payload, { ...tpl, logo_url: brand.logo_url ?? null });
+                    if (payload) await downloadBnReceiptPdf(payload);
                   }}
                 >
                   <FileDown className="h-4 w-4" />Download Receipt
