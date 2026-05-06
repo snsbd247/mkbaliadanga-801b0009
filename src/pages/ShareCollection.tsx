@@ -19,6 +19,7 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { toast } from "sonner";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const MIN_AMOUNT = 50;
 const MAX_AMOUNT = 1000000;
