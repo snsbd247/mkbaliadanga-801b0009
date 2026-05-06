@@ -148,7 +148,7 @@ export default function Settings() {
       <Card className="max-w-2xl p-6 mt-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-semibold">RLS Diagnostics</div>
+            <div className="font-semibold">{t("set_rlsDiagnostics" as any)}</div>
             <div className="text-sm text-muted-foreground">{t("rlsDiagnosticsDesc")}</div>
           </div>
           <a href="/diagnostics" className="text-sm font-medium text-primary hover:underline">{t("open")} →</a>
