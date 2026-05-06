@@ -115,7 +115,7 @@ export default function Dues() {
   function copyPhones() {
     const phones = Array.from(new Set(filtered.map(r => r.mobile).filter(Boolean))).join(", ");
     navigator.clipboard.writeText(phones);
-    toast.success(`Copied ${phones.split(",").length} numbers`);
+    toast.success(t("dues_copiedNumbers" as any).replace("{count}", String(phones.split(",").length)));
   }
 
   function exportSmsCsv() {
@@ -130,14 +130,14 @@ export default function Dues() {
       Mobile: g.mobile,
       Name: g.name,
       Due: g.due,
-      Message: `Dear ${g.name}, your outstanding due is BDT ${g.due.toFixed(0)}. Please pay at your earliest. — Cooperative`,
+      Message: t("dues_smsTemplate" as any).replace("{name}", g.name).replace("{amount}", g.due.toFixed(0)),
     }));
     exportExcel("dues-sms-list", "SMS", rowsOut);
   }
 
   return (
     <>
-      <PageHeader title="Dues & Reminders" description="Outstanding amounts with aging buckets" />
+      <PageHeader title={t("dues_title" as any)} description={t("dues_desc" as any)} />
 
       <div className="grid gap-3 md:grid-cols-5 mb-4">
         {(["0-30", "30-60", "60-90", "90+"] as const).map(k => (
