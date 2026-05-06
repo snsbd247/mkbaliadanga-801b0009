@@ -32,7 +32,7 @@ export function ReceiptSettingsButton() {
           </Button>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Language</Label>
+          <Label className="text-xs">{t("p5b_receiptLanguage")}</Label>
           <Select value={opts.lang} onValueChange={(v) => setReceiptOptions({ lang: v as any })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -40,7 +40,7 @@ export function ReceiptSettingsButton() {
               <SelectItem value="en">English</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-[11px] text-muted-foreground">Receipt number format stays the same in both languages.</p>
+          <p className="text-[11px] text-muted-foreground">{t("p5b_receiptNumberSame")}</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
