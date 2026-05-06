@@ -123,13 +123,13 @@ export default function Diagnostics() {
                   t("recentErrorsSummary").replace("{count}", String(errors.length)).replace("{stats}", Object.entries(errorStats).map(([k, v]) => `${k}:${v}`).join(" · "))}
               </div>
               <Button variant="outline" size="sm" onClick={() => { clearRlsErrors(); setErrors([]); }}>
-                <Trash2 className="h-4 w-4 mr-1" />Clear
+                <Trash2 className="h-4 w-4 mr-1" />{t("diag_clear" as any)}
               </Button>
             </div>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Time</TableHead><TableHead>Table / RPC</TableHead><TableHead>Method</TableHead>
-                <TableHead>Status</TableHead><TableHead>Code</TableHead><TableHead>Message / Hint</TableHead>
+                <TableHead>{t("diag_time" as any)}</TableHead><TableHead>{t("diag_tableRpc" as any)}</TableHead><TableHead>{t("diag_method" as any)}</TableHead>
+                <TableHead>{t("diag_status" as any)}</TableHead><TableHead>{t("diag_code" as any)}</TableHead><TableHead>{t("diag_msgHint" as any)}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {errors.map((e, i) => (
