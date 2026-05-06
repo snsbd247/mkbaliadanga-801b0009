@@ -234,8 +234,54 @@ async function ensureOffice(admin: any) {
   return officeId;
 }
 
+// ---- Preview: estimated counts per module given size ----
+function estimateImport(modules: string[], size: number) {
+  const counts: Record<string, number> = {};
+  if (modules.includes("locations")) counts["divisions/districts/upazilas/mouzas"] = 4;
+  if (modules.includes("settings")) counts["company_settings + card_settings"] = 2;
+  if (modules.includes("accounting")) counts["accounts (chart of accounts)"] = 8;
+  if (modules.includes("farmers")) {
+    counts["farmers"] = size;
+    counts["lands"] = size;
+  }
+  if (modules.includes("irrigation")) {
+    counts["seasons"] = 1;
+    counts["irrigation_rates"] = 1;
+    counts["irrigation_charges"] = size;
+  }
+  if (modules.includes("loans")) {
+    const n = Math.ceil(size * 0.4);
+    counts["loan_plans"] = 1;
+    counts["loans"] = n;
+    counts["loan_payments"] = Math.min(3, n);
+  }
+  if (modules.includes("savings")) {
+    const n = Math.ceil(size * 0.6);
+    counts["savings_plans"] = 1;
+    counts["savings_transactions"] = n + Math.ceil(n / 4);
+    counts["shares"] = Math.ceil(size * 0.5);
+  }
+  if (modules.includes("expenses")) counts["expenses"] = 3;
+  return counts;
+}
+
+async function previewWipe(admin: any) {
+  const counts: Record<string, number> = {};
+  for (const t of FULL_WIPE_ORDER) {
+    const { count } = await admin.from(t).select("*", { count: "exact", head: true });
+    if (count) counts[t] = count;
+  }
+  return counts;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+  let body: any = {};
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const ua = req.headers.get("user-agent") ?? null;
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -246,17 +292,26 @@ Deno.serve(async (req) => {
     const userClient = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: authHeader } } });
     const { data: who } = await userClient.auth.getUser();
     if (!who?.user) return json({ error: "Invalid session" }, 401);
+    userId = who.user.id;
+    userEmail = who.user.email ?? null;
 
     const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", who.user.id);
+    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
     if (!(roles ?? []).some((r: any) => r.role === "super_admin")) return json({ error: "Forbidden — super admin only" }, 403);
 
-    const body = await req.json().catch(() => ({}));
-    const action: "reset" | "import" | "both" = body?.action ?? "both";
+    body = await req.json().catch(() => ({}));
+    const action: "preview" | "reset" | "import" | "both" = body?.action ?? "both";
     const modules: string[] = Array.isArray(body?.modules) ? body.modules : [];
     const size: number = Math.max(5, Math.min(500, Number(body?.size) || 50));
-    const confirm = body?.confirm;
-    if (confirm !== "RESET") return json({ error: "Confirmation required (confirm: 'RESET')" }, 400);
+
+    // Preview is read-only, no confirmation needed
+    if (action === "preview") {
+      const wipePreview = await previewWipe(admin);
+      const importPreview = estimateImport(modules, size);
+      return json({ ok: true, action: "preview", wipe_preview: wipePreview, import_preview: importPreview });
+    }
+
+    if (body?.confirm !== "RESET") return json({ error: "Confirmation required (confirm: 'RESET')" }, 400);
 
     const result: any = { action, modules };
 
@@ -266,9 +321,7 @@ Deno.serve(async (req) => {
 
     if (action === "import" || action === "both") {
       const officeId = await ensureOffice(admin);
-      let mouzaId: string | null = null;
-      if (modules.includes("locations")) mouzaId = await seedLocations(admin);
-      else mouzaId = await seedLocations(admin); // always need basic location for farmers
+      const mouzaId = await seedLocations(admin);
       if (modules.includes("settings")) await seedSettings(admin);
       if (modules.includes("accounting")) await seedAccounts(admin);
 
@@ -278,7 +331,6 @@ Deno.serve(async (req) => {
         await seedLands(admin, officeId, farmers, mouzaId);
         result.farmers = farmers.length;
       }
-      // For other modules, need farmers — fetch existing if not just inserted
       if (!farmers.length && (modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings"))) {
         const { data } = await admin.from("farmers").select("id").limit(size);
         farmers = data ?? [];
@@ -289,9 +341,26 @@ Deno.serve(async (req) => {
       if (modules.includes("expenses")) await seedExpenses(admin, officeId);
     }
 
+    await admin.from("demo_operations_log").insert({
+      user_id: userId, user_email: userEmail, action, modules, size, ip, user_agent: ua,
+      success: true, summary: result,
+    });
+
     return json({ ok: true, ...result });
   } catch (e: any) {
     console.error("demo-reset error:", e);
+    try {
+      const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const admin = createClient(SUPABASE_URL, SERVICE);
+      await admin.from("demo_operations_log").insert({
+        user_id: userId, user_email: userEmail,
+        action: body?.action ?? "unknown",
+        modules: Array.isArray(body?.modules) ? body.modules : [],
+        size: body?.size ?? null, ip, user_agent: ua,
+        success: false, error_message: e?.message ?? String(e),
+      });
+    } catch (_) { /* ignore */ }
     return json({ error: e?.message ?? "Server error" }, 500);
   }
 });
