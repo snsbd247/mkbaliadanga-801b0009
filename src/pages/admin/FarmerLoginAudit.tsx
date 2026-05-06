@@ -59,7 +59,7 @@ export default function FarmerLoginAudit() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Farmer Login Audit" description="Successful and failed farmer portal login attempts." icon={ShieldAlert} />
+      <PageHeader title="Farmer Login Audit" description="Successful and failed farmer portal login attempts." />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">Total</div><div className="text-2xl font-semibold">{stats.total}</div></CardContent></Card>
