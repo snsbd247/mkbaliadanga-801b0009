@@ -54,12 +54,12 @@ export function ReceiptSettingsButton() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Orientation</Label>
+            <Label className="text-xs">{t("p5b_orientation")}</Label>
             <Select value={opts.orientation} onValueChange={(v) => setReceiptOptions({ orientation: v as any })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="p">Portrait</SelectItem>
-                <SelectItem value="l">Landscape</SelectItem>
+                <SelectItem value="p">{t("p5b_portrait")}</SelectItem>
+                <SelectItem value="l">{t("p5b_landscape")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
