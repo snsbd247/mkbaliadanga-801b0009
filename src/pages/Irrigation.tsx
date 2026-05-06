@@ -187,13 +187,13 @@ export default function Irrigation() {
         .eq("is_active", true)
         .maybeSingle();
       if (rateErr) throw rateErr;
-      if (!rate) throw new Error("No active rate found for this season+basis. Add one in Irrigation Rates.");
+      if (!rate) throw new Error(t("pgIrrNoActiveRateGen" as any));
 
       const { data: lands, error: landsErr } = await supabase
         .from("lands")
         .select("id, farmer_id, land_size, office_id");
       if (landsErr) throw landsErr;
-      if (!lands?.length) throw new Error("No lands found.");
+      if (!lands?.length) throw new Error(t("pgIrrNoLandsFound" as any));
 
       const { data: existing } = await supabase
         .from("irrigation_charges")
