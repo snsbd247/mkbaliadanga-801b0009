@@ -244,7 +244,7 @@ export default function Savings() {
   async function decide(id: string, status: "approved" | "rejected") {
     let reject_reason: string | null = null;
     if (status === "rejected") {
-      reject_reason = window.prompt("Reason for rejection (optional):") ?? "";
+      reject_reason = window.prompt(t("pgSavRejectPrompt" as any)) ?? "";
       reject_reason = reject_reason.trim() || null;
     }
     const patch: any = {
