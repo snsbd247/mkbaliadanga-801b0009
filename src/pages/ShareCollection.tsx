@@ -336,8 +336,8 @@ export default function ShareCollection() {
                   <Select value={form.method} onValueChange={v => setForm({ ...form, method: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">{t("kindCash") || "Cash"}</SelectItem>
-                      <SelectItem value="bank">{t("kindBank") || "Bank"}</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="bank">Bank</SelectItem>
                       <SelectItem value="mobile">{t("p5c_mobileBanking")}</SelectItem>
                     </SelectContent>
                   </Select>
