@@ -107,17 +107,17 @@ export default function Irrigation() {
   // Inline validation
   const errors: Record<string, string> = {};
   if (open) {
-    if (!form.farmer_id) errors.farmer_id = "Select a farmer";
-    if (!form.land_id) errors.land_id = "Select a land";
-    if (!form.season_id) errors.season_id = "Select a season";
-    if (form.season_id && rateAvailable === false) errors.season_id = "No active irrigation rate found for this season + basis. Please configure it in Irrigation Rates first.";
-    if (!(Number(form.rate) > 0)) errors.rate = "Rate must be greater than 0 (configure in Irrigation Rates)";
-    if (!(Number(form.quantity) > 0)) errors.quantity = "Quantity must be greater than 0";
-    if (Number(form.canal_charge) < 0) errors.canal_charge = "Cannot be negative";
-    if (Number(form.maintenance_charge) < 0) errors.maintenance_charge = "Cannot be negative";
-    if (Number(form.other_charge) < 0) errors.other_charge = "Cannot be negative";
-    if (Number(form.paid_amount) < 0) errors.paid_amount = "Cannot be negative";
-    if (Number(form.paid_amount) > total + prevDue) errors.paid_amount = "Paid cannot exceed total";
+    if (!form.farmer_id) errors.farmer_id = t("pgIrrSelectFarmer" as any);
+    if (!form.land_id) errors.land_id = t("pgIrrSelectLand" as any);
+    if (!form.season_id) errors.season_id = t("pgIrrSelectSeason" as any);
+    if (form.season_id && rateAvailable === false) errors.season_id = t("pgIrrNoActiveRate" as any);
+    if (!(Number(form.rate) > 0)) errors.rate = t("pgIrrRateGt0" as any);
+    if (!(Number(form.quantity) > 0)) errors.quantity = t("pgIrrQtyGt0" as any);
+    if (Number(form.canal_charge) < 0) errors.canal_charge = t("pgIrrCannotNegative" as any);
+    if (Number(form.maintenance_charge) < 0) errors.maintenance_charge = t("pgIrrCannotNegative" as any);
+    if (Number(form.other_charge) < 0) errors.other_charge = t("pgIrrCannotNegative" as any);
+    if (Number(form.paid_amount) < 0) errors.paid_amount = t("pgIrrCannotNegative" as any);
+    if (Number(form.paid_amount) > total + prevDue) errors.paid_amount = t("pgIrrPaidExceedsTotal" as any);
   }
   const hasErrors = Object.keys(errors).length > 0;
 
