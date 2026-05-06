@@ -143,19 +143,31 @@ function digits(s: string, lang: ReceiptLang): string {
   return lang === "bn" ? toBnDigits(s) : s;
 }
 
-function orgBlock(org: ReceiptOrg | null | undefined, lang: ReceiptLang): string {
+function orgBlock(
+  org: ReceiptOrg | null | undefined,
+  lang: ReceiptLang,
+  layout: "one-line" | "two-line" = "two-line",
+  size: "sm" | "md" | "lg" = "sm",
+): string {
   if (!org) return "";
   const name = lang === "bn" ? (org.name_bn ?? org.name ?? "") : (org.name ?? org.name_bn ?? "");
+  const fontPx = size === "lg" ? 13 : size === "md" ? 12 : 11;
+  const namePx = size === "lg" ? 15 : size === "md" ? 13 : 12;
+  if (layout === "one-line") {
+    const parts = [name, org.address, org.mobile, org.email, org.registration_no && `${STR[lang].regNo} ${digits(org.registration_no, lang)}`]
+      .filter(Boolean).join(" • ");
+    return `<div style="text-align:center;font-size:${fontPx}px;color:#333;margin-top:2px;"><span style="font-weight:600;">${name}</span>${parts.replace(name, "") ? ` • ${parts.replace(name + " • ", "")}` : ""}</div>`;
+  }
   const lines = [
-    name && `<div style="font-weight:600;">${name}</div>`,
+    name && `<div style="font-weight:600;font-size:${namePx}px;">${name}</div>`,
     org.address && `<div>${org.address}</div>`,
     (org.mobile || org.email) && `<div>${[org.mobile, org.email].filter(Boolean).join(" • ")}</div>`,
     org.registration_no && `<div>${STR[lang].regNo} ${digits(org.registration_no, lang)}</div>`,
   ].filter(Boolean).join("");
-  return `<div style="text-align:center;font-size:11px;color:#333;margin-top:2px;">${lines}</div>`;
+  return `<div style="text-align:center;font-size:${fontPx}px;color:#333;margin-top:2px;">${lines}</div>`;
 }
 
-function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang): string {
+function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg"): string {
   const t = STR[lang];
   const logo = d.logo_url
     ? `<img src="${d.logo_url}" crossorigin="anonymous" style="height:60px;display:block;margin:0 auto 4px;" />`
@@ -203,7 +215,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     <div style="text-align:center;">
       ${logo}
       <div style="font-size:18px;font-weight:700;margin-top:2px;">${titleFor(d.kind, lang)}</div>
-      ${orgBlock(d.org, lang)}
+      ${orgBlock(d.org, lang, orgLayout, orgSize)}
       <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">${copyLabel}</div>
     </div>
 
