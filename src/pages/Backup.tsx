@@ -57,6 +57,8 @@ export default function Backup() {
   const [progress, setProgress] = useState(0);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [dryRun, setDryRun] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [snapshotBlob, setSnapshotBlob] = useState<{ url: string; name: string } | null>(null);
   const [restoreReport, setRestoreReport] = useState<{ table: string; inserted: number; updated: number; failed: number; skipped: number; errors: string[] }[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
