@@ -87,7 +87,21 @@
     "previousDue",
     "penaltyValue",
     "graceDays",
-    "pageFirst"
+    "pageFirst",
+    "p5e_unusedKeysReport",
+    "profile",
+    "duplicateReceiptAudit",
+    "particulars",
+    "typeAsset",
+    "typeLiability",
+    "typeEquity",
+    "typeIncome",
+    "typeExpense",
+    "assetsSection",
+    "liabilitiesSection",
+    "equitiesSection",
+    "incomesSection",
+    "expensesSection"
   ],
   "missingInEn": [
     "add",

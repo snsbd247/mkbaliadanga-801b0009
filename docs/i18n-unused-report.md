@@ -1,8 +1,9 @@
 # Unused i18n keys
 
-Total keys: **996** · Referenced: **992** · Unused: **4**
+Total keys: **1010** · Referenced: **1005** · Unused: **5**
 
 - `signup`
 - `createAccount`
 - `signUpDesc`
 - `cancelEnrollment`
+- `p5e_unusedKeysReport`
