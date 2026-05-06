@@ -280,13 +280,13 @@ export function AppSidebar() {
                 const visibleChildren = parent.children.filter(allowed);
                 if (visibleChildren.length === 0) return null;
                 const hasActiveChild = visibleChildren.some((c) => isActive(c.url));
-                const isOpen = q ? true : (openGroups[parent.key] ?? hasActiveChild);
+                const isOpen = q ? true : (openGroup === parent.key || (openGroup === null && hasActiveChild));
 
                 return (
                   <Collapsible
                     key={parent.key}
                     open={isOpen}
-                    onOpenChange={(o) => setOpenGroups((prev) => ({ ...prev, [parent.key]: o }))}
+                    onOpenChange={(o) => setOpenGroup(o ? parent.key : (openGroup === parent.key ? null : openGroup))}
                     asChild
                   >
                     <SidebarMenuItem>
