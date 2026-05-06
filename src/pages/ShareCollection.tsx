@@ -114,7 +114,7 @@ export default function ShareCollection() {
     let lines = rawLines.map((l, i) => ({ raw: l, idx: i + 1 })).filter(l => l.raw.trim());
     // Skip header row if present
     if (lines.length && /^\s*farmer_code\s*,/i.test(lines[0].raw)) lines = lines.slice(1);
-    if (!lines.length) return toast.error("Paste at least one line");
+    if (!lines.length) return toast.error(t("pgSharePasteOne" as any));
     const today = new Date().toISOString().slice(0, 10);
 
     const codes = Array.from(new Set(lines.map(l => l.raw.split(",")[0]?.trim()).filter(Boolean)));
@@ -127,18 +127,18 @@ export default function ShareCollection() {
     lines.forEach(({ raw, idx }) => {
       const parts = raw.split(",").map(s => s?.trim() ?? "");
       const [code, amtStr, dateStr, note] = parts;
-      if (!code) { errors.push({ line: idx, raw, reason: "Missing farmer_code" }); return; }
+      if (!code) { errors.push({ line: idx, raw, reason: t("pgShareMissingCode" as any) }); return; }
       const fid = map.get(code);
-      if (!fid) { errors.push({ line: idx, raw, reason: `Unknown farmer_code "${code}"` }); return; }
+      if (!fid) { errors.push({ line: idx, raw, reason: (t("pgShareUnknownCode" as any) as string).replace("{code}", code) }); return; }
       const amt = Number(amtStr);
       const v = validate(amt);
       if (v) { errors.push({ line: idx, raw, reason: v }); return; }
       const d = dateStr || today;
       if (dateStr && !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        errors.push({ line: idx, raw, reason: `Invalid date "${dateStr}" (use YYYY-MM-DD)` }); return;
+        errors.push({ line: idx, raw, reason: (t("pgShareInvalidDate" as any) as string).replace("{date}", dateStr) }); return;
       }
       const key = `${fid}|${d}`;
-      if (seen.has(key)) { errors.push({ line: idx, raw, reason: "Duplicate farmer+date in batch" }); return; }
+      if (seen.has(key)) { errors.push({ line: idx, raw, reason: t("pgShareDuplicateBatch" as any) }); return; }
       seen.add(key);
       payload.push({
         farmer_id: fid, type: "share_collection", amount: amt, txn_date: d,
@@ -148,7 +148,7 @@ export default function ShareCollection() {
 
     if (!payload.length) {
       setBatchReport({ ok: 0, errors });
-      return toast.error(`All ${errors.length} rows failed validation`);
+      return toast.error((t("pgShareAllFailed" as any) as string).replace("{n}", String(errors.length)));
     }
 
     const { error, data } = await supabase.from("savings_transactions").insert(payload).select("id");
@@ -160,7 +160,8 @@ export default function ShareCollection() {
     }
     const ok = data?.length ?? payload.length;
     setBatchReport({ ok, errors });
-    toast.success(`Submitted ${ok} entries${errors.length ? `, ${errors.length} skipped` : ""}`);
+    const skipped = errors.length ? (t("pgShareSkippedN" as any) as string).replace("{n}", String(errors.length)) : "";
+    toast.success((t("pgShareSubmittedN" as any) as string).replace("{ok}", String(ok)).replace("{skipped}", skipped));
     if (!errors.length) { setBatchOpen(false); setBatchText(""); }
     load();
   }
