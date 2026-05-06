@@ -78,6 +78,8 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 import { RequireRole } from "./components/auth/RequireRole";
+import { RequireDeveloper } from "./components/auth/RequireDeveloper";
+import DeveloperUpdates from "./pages/admin/DeveloperUpdates";
 
 const queryClient = new QueryClient();
 
