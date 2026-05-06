@@ -319,10 +319,10 @@ export default function DemoManager() {
               {willImport && (
                 <div>
                   <h3 className="font-semibold text-primary flex items-center gap-2 mb-2">
-                    <Database className="h-4 w-4" /> যা ইমপোর্ট হবে (আনুমানিক)
+                    <Database className="h-4 w-4" /> {t("dmWillImport" as any)}
                   </h3>
                   {Object.keys(preview.import_preview ?? {}).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">কোনো মডিউল সিলেক্ট নাই</p>
+                    <p className="text-sm text-muted-foreground">{t("dmNoModuleSelected" as any)}</p>
                   ) : (
                     <div className="border rounded-md divide-y">
                       {Object.entries(preview.import_preview as Record<string, number>).map(([k, v]) => (
