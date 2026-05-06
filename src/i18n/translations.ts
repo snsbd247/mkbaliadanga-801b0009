@@ -1251,6 +1251,10 @@ export const translations = {
     pgShareUpdated: "Updated",
     pgShareDeleteTitle: "Delete share collection?",
     pgShareDeleted: "Deleted",
+    pgOldVoter: "Old Voter",
+    pgNewVoter: "New Voter",
+    pgVoterHistoryTitle: "Voter Cancel/Reactivate History",
+    pgEventsCount: "{n} event(s)",
   },
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
@@ -2405,6 +2409,10 @@ export const translations = {
     pgShareUpdated: "আপডেট হয়েছে",
     pgShareDeleteTitle: "শেয়ার কালেকশন মুছবেন?",
     pgShareDeleted: "মুছে ফেলা হয়েছে",
+    pgOldVoter: "পুরাতন ভোটার",
+    pgNewVoter: "নতুন ভোটার",
+    pgVoterHistoryTitle: "ভোটার বাতিল/পুনঃসক্রিয় ইতিহাস",
+    pgEventsCount: "{n}টি ইভেন্ট",
   },
 } as const;
 

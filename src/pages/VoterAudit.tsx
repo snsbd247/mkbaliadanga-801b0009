@@ -32,7 +32,7 @@ export default function VoterAudit() {
   const [to, setTo] = useState<string>("");
 
   useEffect(() => {
-    document.title = "Voter Audit Logs";
+    document.title = t("auditLogs" as any);
     supabase.from("offices").select("id,name").order("name").then(r => {
       setOffices((r.data as any[]) ?? []);
       setOfficesMap(Object.fromEntries(((r.data as any[]) ?? []).map(o => [o.id, o])));
@@ -88,12 +88,12 @@ export default function VoterAudit() {
   }
 
   function onExportExcel() {
-    exportExcel("voter-audit-logs", "Voter Audit", buildExportRows(), { from, to });
+    exportExcel("voter-audit-logs", t("auditLogs" as any), buildExportRows(), { from, to });
   }
   function onExportPDF() {
     const data = buildExportRows();
-    exportTablePDF("Voter Audit Logs",
-      ["Date", "Farmer", "Account", "Old Voter", "New Voter", "Changed By", "Office"],
+    exportTablePDF(t("auditLogs" as any),
+      [t("pgDate" as any), t("pgFarmer" as any), t("pgAccount" as any), t("pgOldVoter" as any), t("pgNewVoter" as any), t("pgChangedBy" as any), t("pgOffice" as any)],
       data.map(r => [r.Date, r.Farmer, r.Account, r.OldVoter, r.NewVoter, r.ChangedBy, r.Office]),
       { from, to });
   }
