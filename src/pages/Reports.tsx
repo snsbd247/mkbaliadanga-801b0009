@@ -321,12 +321,12 @@ export default function Reports() {
               <SelectContent><SelectItem value={ALL}>{t("all")}</SelectItem>{seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Granularity</Label>
+          <div><Label>{t("rpGranularity" as any)}</Label>
             <Select value={granularity} onValueChange={(v: any) => setGranularity(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="daily">{t("rpDaily" as any)}</SelectItem>
+                <SelectItem value="monthly">{t("rpMonthly" as any)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -335,15 +335,15 @@ export default function Reports() {
 
       <Tabs defaultValue="monthly">
         <TabsList>
-          <TabsTrigger value="monthly">{granularity === "daily" ? "Daily" : "Monthly"} Financial</TabsTrigger>
-          <TabsTrigger value="recon">Reconciliation</TabsTrigger>
+          <TabsTrigger value="monthly">{granularity === "daily" ? t("rpDaily" as any) : t("rpMonthly" as any)} {t("rpFinancial" as any)}</TabsTrigger>
+          <TabsTrigger value="recon">{t("rpReconciliation" as any)}</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigationReport")}</TabsTrigger>
-          <TabsTrigger value="arrears">Irrigation Arrears</TabsTrigger>
+          <TabsTrigger value="arrears">{t("rpIrrArrears" as any)}</TabsTrigger>
           <TabsTrigger value="loan">{t("loanReport")}</TabsTrigger>
           <TabsTrigger value="savings">{t("savingsReport")}</TabsTrigger>
-          <TabsTrigger value="balances">Savings Balances</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="audit">Audit (Office/Season)</TabsTrigger>
+          <TabsTrigger value="balances">{t("rpSavBalances" as any)}</TabsTrigger>
+          <TabsTrigger value="payments">{t("rpPayments" as any)}</TabsTrigger>
+          <TabsTrigger value="audit">{t("rpAuditTab" as any)}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monthly">
