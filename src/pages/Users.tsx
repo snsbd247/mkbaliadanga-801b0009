@@ -232,10 +232,12 @@ export default function Users() {
                 <TableCell className="font-mono text-xs">{u.email}</TableCell>
                 <TableCell>{u.full_name}</TableCell>
                 <TableCell>
-                  <Select value={u.roles[0] ?? "staff"} onValueChange={(v) => setRole(u.id, v as any)}>
+                  <Select value={u.roles[0] ?? "staff"} onValueChange={(v) => setRole(u.id, v as any)} disabled={u.id === me?.id}>
                     <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
+                      {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
+                      {isDeveloper && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
+                      {!isDeveloper && u.roles[0] === "super_admin" && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
                       <SelectItem value="admin">{t("admin")}</SelectItem>
                       <SelectItem value="committee">{t("committee")}</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
