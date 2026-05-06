@@ -175,7 +175,7 @@ export default function DemoManager() {
       if (succeeded) toast.success(`✓ ${t("dmOpDone" as any)}`);
       await loadLogs();
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed");
+      toast.error(e?.message ?? t("dmFailedGeneric" as any));
       setLastResult({ error: e?.message });
       await loadLogs();
     } finally {
