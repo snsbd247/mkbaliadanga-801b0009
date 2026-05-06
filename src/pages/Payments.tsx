@@ -408,6 +408,7 @@ export default function Payments() {
                           company_name: brand.company_name,
                           company_name_bn: brand.company_name_bn,
                           logo_url: brand.logo_url ?? null,
+                          org: receiptArgs.org,
                           receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
                           date: p.created_at,
                           bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
@@ -419,19 +420,8 @@ export default function Payments() {
                           },
                           collected_amount: Number(p.amount),
                           description,
-                        }, copy);
-                        return (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button size="icon" variant="ghost" title={t("printReceipt") || "Print Receipt"}><Printer className="h-4 w-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => doDownload("both")}>Both copies</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => doDownload("farmer")}>Farmer copy</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => doDownload("office")}>Office copy</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        );
+                        }, copy, receiptArgs.options);
+                        return <ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} />;
                       })()}
                     </div>
                   </TableCell>
