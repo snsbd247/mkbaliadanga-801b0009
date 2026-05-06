@@ -29,17 +29,18 @@ describe("PDF localization (header/footer)", () => {
     expect(out).toContain("Page");
   });
 
-  it("registers Bangla font and emits BN-mode footer when lang=bn", async () => {
+  it("emits BN-mode header without transliterated fallback when lang=bn", async () => {
     localStorage.setItem("lang", "bn");
     const doc = new jsPDF();
-    const addFont = vi.spyOn(doc as any, "addFont");
     await applyPdfHeaderFooter(doc, { title: "Test", range: { from: "2025-01-01", to: "2025-01-31" } });
     finalizePdf(doc);
-    // Font registration is best-effort; if fetch failed we still expect a
-    // valid PDF without ASCII fallback labels like "Mudrito" or "Pristha".
     const out = pdfText(doc);
+    // Font fetch is stubbed to return empty → ensureBanglaFont returns false
+    // → exports.ts falls back to plain English labels (NOT the old
+    // "(Mudrito)"/"(Pristha)" transliteration).
     expect(out).not.toContain("Mudrito");
     expect(out).not.toContain("Pristha");
-    expect(addFont).toHaveBeenCalled();
+    expect(out).not.toContain("Somoy");
+    expect((globalThis as any).fetch).toHaveBeenCalled();
   });
 });
