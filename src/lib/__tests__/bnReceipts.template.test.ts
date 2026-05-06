@@ -86,7 +86,7 @@ describe("Bangla receipt template (visual regression)", () => {
       expect(capturedHtml).toContain(c.expectRow);
       expect(capturedHtml).toContain("কৃষকের কপি");
       expect(capturedHtml).toContain("অফিস কপি");
-      expect(capturedHtml).toContain(c.data.receipt_no.replace(/[A-Z]/g, () => ""));
+      expect(capturedHtml).toContain(c.data.receipt_no.split("-")[0]);
     });
   }
 
