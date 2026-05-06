@@ -2409,6 +2409,10 @@ export const translations = {
     pgShareUpdated: "আপডেট হয়েছে",
     pgShareDeleteTitle: "শেয়ার কালেকশন মুছবেন?",
     pgShareDeleted: "মুছে ফেলা হয়েছে",
+    pgOldVoter: "পুরাতন ভোটার",
+    pgNewVoter: "নতুন ভোটার",
+    pgVoterHistoryTitle: "ভোটার বাতিল/পুনঃসক্রিয় ইতিহাস",
+    pgEventsCount: "{n}টি ইভেন্ট",
   },
 } as const;
 
