@@ -97,7 +97,7 @@ export default function DemoManager() {
       setPreview(data);
       setPreviewOpen(true);
     } catch (e: any) {
-      toast.error(e?.message ?? "Preview failed");
+      toast.error(e?.message ?? t("dmPreviewFailed" as any));
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ export default function DemoManager() {
 
   const run = async () => {
     if (confirmText !== "RESET") {
-      toast.error("কনফার্ম করতে 'RESET' টাইপ করুন");
+      toast.error(t("dmConfirmRequired" as any));
       return;
     }
     setPreviewOpen(false);
@@ -113,7 +113,7 @@ export default function DemoManager() {
     setLastResult(null);
     setProgress(0);
     setStepLog([]);
-    setCurrentStep("শুরু হচ্ছে...");
+    setCurrentStep(t("dmStarting" as any));
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
