@@ -59,26 +59,25 @@ export default function ScanPayment() {
   const tpl = useReceiptTemplate();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  function buildReceiptPayload(): PaymentReceiptData | null {
+  function buildReceiptPayload(): BnReceiptData | null {
     if (!done || !resolved) return null;
+    const k = done.kind;
+    const kind: BnReceiptData["kind"] = k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings";
     return {
+      kind,
       receipt_no: done.paymentId.slice(0, 8).toUpperCase(),
-      payment_id: done.paymentId,
-      paid_at: done.paidAt,
-      farmer_name: resolved.farmer.name,
-      farmer_code: resolved.farmer.farmer_code,
-      member_no: resolved.farmer.member_no,
-      mobile_masked: resolved.farmer.mobile_masked ?? null,
-      village: resolved.farmer.village ?? null,
-      token_masked: maskToken(scannedToken),
-      token_status: "active",
-      kind: done.kind,
-      amount: done.amount,
-      method: done.method,
-      note: done.note,
-      idempotency_key: done.idemKey,
+      date: done.paidAt,
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
+      logo_url: brand.logo_url ?? null,
+      farmer: {
+        name: resolved.farmer.name,
+        member_no: resolved.farmer.member_no ?? resolved.farmer.farmer_code ?? null,
+        village: resolved.farmer.village ?? null,
+        mobile: resolved.farmer.mobile_masked ?? null,
+      },
+      collected_amount: done.amount,
+      description: done.note ?? undefined,
     };
   }
 
