@@ -379,7 +379,7 @@ export default function Accounts() {
                       </td>
                       <td className="px-4 py-3 text-center font-mono text-xs">{n.code}</td>
                       <td className="px-4 py-3 text-center">
-                        <Badge className={TYPE_META[n.type].badgeClass}>{TYPE_META[n.type].label}</Badge>
+                        <Badge className={TYPE_META[n.type].badgeClass}>{t(TYPE_META[n.type].labelKey)}</Badge>
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">{money(n.totalDebit)}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{money(n.totalCredit)}</td>
