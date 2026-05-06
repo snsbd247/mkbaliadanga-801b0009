@@ -197,21 +197,21 @@ export default function ShareCollection() {
       .update({ amount: amt, txn_date: editForm.txn_date, note: editForm.note || null })
       .eq("id", editRow.id);
     if (error) return toast.error(error.message);
-    toast.success("Updated");
+    toast.success(t("pgShareUpdated" as any));
     setEditRow(null);
     load();
   }
   async function deleteRow(r: Row) {
     const ok = await confirm({
-      title: "Delete share collection?",
-      description: <span>Amount <b>{money(r.amount)}</b> for <b>{r.farmers?.name_en}</b>. Share balance will recompute automatically.</span>,
-      destructive: true, confirmText: "Delete",
+      title: t("pgShareDeleteTitle" as any),
+      description: <span>{t("pgAmount" as any)} <b>{money(r.amount)}</b> — <b>{r.farmers?.name_en}</b></span>,
+      destructive: true, confirmText: t("pgDelete" as any),
     });
     if (!ok) return;
     const { error } = await supabase.from("savings_transactions")
       .update({ deleted_at: new Date().toISOString() } as any).eq("id", r.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted");
+    toast.success(t("pgShareDeleted" as any));
     await load();
   }
 
