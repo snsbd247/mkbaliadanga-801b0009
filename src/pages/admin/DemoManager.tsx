@@ -366,9 +366,9 @@ export default function DemoManager() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               {lastResult.error ? (
-                <><XCircle className="h-5 w-5 text-destructive" /> ব্যর্থ</>
+                <><XCircle className="h-5 w-5 text-destructive" /> {t("dmFailed" as any)}</>
               ) : (
-                <><CheckCircle2 className="h-5 w-5 text-primary" /> সফল</>
+                <><CheckCircle2 className="h-5 w-5 text-primary" /> {t("dmSuccess" as any)}</>
               )}
             </CardTitle>
           </CardHeader>
