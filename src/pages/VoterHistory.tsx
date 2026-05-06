@@ -142,17 +142,17 @@ export default function VoterHistory() {
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("refresh" as any)}
           </Button>
           <Button variant="outline" size="sm" disabled={!rows.length}
-            onClick={() => exportExcel("voter-history", "Voter History", exportRows, { from, to })}>
+            onClick={() => exportExcel("voter-history", t("pgVoterHistoryTitle" as any), exportRows, { from, to })}>
             <FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExcel")}
           </Button>
           <Button variant="outline" size="sm" disabled={!rows.length}
-            onClick={() => exportTablePDF("Voter Cancel/Reactivate History",
-              ["Date", "Event", "Farmer", "Farmer ID", "Reason", "Changed By", "Office"],
+            onClick={() => exportTablePDF(t("pgVoterHistoryTitle" as any),
+              [t("pgDate" as any), t("pgEvent" as any), t("pgFarmer" as any), t("pgFarmerId" as any), t("pgReason" as any), t("pgChangedBy" as any), t("pgOffice" as any)],
               exportRows.map(r => [r.Date, r.Event, r.Farmer, r.MemberNo, r.Reason, r.ChangedBy, r.Office]),
               { from, to })}>
             <FileText className="h-4 w-4 mr-1" />PDF
           </Button>
-          <span className="ml-auto text-xs text-muted-foreground self-center">{rows.length} event(s)</span>
+          <span className="ml-auto text-xs text-muted-foreground self-center">{(t("pgEventsCount" as any) as string).replace("{n}", String(rows.length))}</span>
         </div>
       </Card>
 
