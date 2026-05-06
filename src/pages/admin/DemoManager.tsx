@@ -384,8 +384,8 @@ export default function DemoManager() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2"><Filter className="h-4 w-4" /> অডিট লগ</CardTitle>
-            <CardDescription>{filteredLogs.length} / {logs.length} টি লগ</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Filter className="h-4 w-4" /> {t("dmAuditTitle" as any)}</CardTitle>
+            <CardDescription>{(t("dmAuditCount" as any) as string).replace("{filtered}", String(filteredLogs.length)).replace("{total}", String(logs.length))}</CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={loadLogs} disabled={logsLoading}>
             <RefreshCw className={`h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} />
