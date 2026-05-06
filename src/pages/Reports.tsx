@@ -551,7 +551,7 @@ export default function Reports() {
             onXlsx={() => exportExcel("payments", "Payments", payments.map(r => ({ Date: r.created_at, Farmer: r.farmers?.name_en, Kind: r.kind, Amount: r.amount, Method: r.method, Status: r.status })))}
           />
           <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>Kind</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("rpKind" as any)}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
             <TableBody>{payments.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.created_at)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.kind}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.method}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
           </Table></Card>
         </TabsContent>
