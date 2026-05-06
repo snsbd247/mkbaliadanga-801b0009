@@ -2950,7 +2950,7 @@ export type Database = {
     }
     Enums: {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
-      app_role: "super_admin" | "admin" | "staff" | "committee"
+      app_role: "super_admin" | "admin" | "staff" | "committee" | "developer"
       approval_status: "pending" | "approved" | "rejected"
       field_type: "high_land" | "medium_land" | "low_land" | "other"
       installment_status: "due" | "paid" | "missed" | "partial"
@@ -3110,7 +3110,7 @@ export const Constants = {
   public: {
     Enums: {
       account_type: ["asset", "liability", "income", "expense", "equity"],
-      app_role: ["super_admin", "admin", "staff", "committee"],
+      app_role: ["super_admin", "admin", "staff", "committee", "developer"],
       approval_status: ["pending", "approved", "rejected"],
       field_type: ["high_land", "medium_land", "low_land", "other"],
       installment_status: ["due", "paid", "missed", "partial"],
