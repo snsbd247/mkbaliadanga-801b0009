@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
 import { validateLocationChain } from "@/lib/locationValidation";
 import { SavingsStatement } from "@/components/SavingsStatement";
-import { downloadPaymentReceiptPdf, maskToken } from "@/lib/paymentReceiptPdf";
+import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
 import { useAuth } from "@/auth/AuthProvider";
