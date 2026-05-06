@@ -123,11 +123,13 @@ export function AppSidebar() {
       children: [
         { url: "/offices", icon: Building2, label: t("offices"), permKey: "offices" },
         { url: "/users", icon: ShieldCheck, label: t("users"), superOnly: true },
-        { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), superOnly: true },
+        { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), developerOnly: true },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
-        { url: "/audit", icon: ScrollText, label: t("auditLogs"), permKey: "audit" },
-        { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), permKey: "farmers" },
+        { url: "/audit", icon: ScrollText, label: t("auditLogs"), developerOnly: true },
+        { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
+        { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
+        { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
       ],
     },
 
