@@ -395,23 +395,23 @@ export default function DemoManager() {
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
             <div>
-              <Label className="text-xs">From</Label>
+              <Label className="text-xs">{t("dmFilterFrom" as any)}</Label>
               <Input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">To</Label>
+              <Label className="text-xs">{t("dmFilterTo" as any)}</Label>
               <Input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">User (email)</Label>
-              <Input placeholder="search..." value={filterUser} onChange={(e) => setFilterUser(e.target.value)} />
+              <Label className="text-xs">{t("dmFilterUser" as any)}</Label>
+              <Input placeholder={t("dmFilterSearch" as any)} value={filterUser} onChange={(e) => setFilterUser(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">Action</Label>
+              <Label className="text-xs">{t("dmFilterAction" as any)}</Label>
               <Select value={filterAction} onValueChange={setFilterAction}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">{t("dmFilterAll" as any)}</SelectItem>
                   <SelectItem value="reset">reset</SelectItem>
                   <SelectItem value="import">import</SelectItem>
                   <SelectItem value="both">both</SelectItem>
@@ -419,12 +419,12 @@ export default function DemoManager() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Module</Label>
+              <Label className="text-xs">{t("dmFilterModule" as any)}</Label>
               <Select value={filterModule} onValueChange={setFilterModule}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  {MODULE_KEYS.map((m) => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}
+                  <SelectItem value="all">{t("dmFilterAll" as any)}</SelectItem>
+                  {MODULE_KEYS.map((m) => <SelectItem key={m.id} value={m.id}>{t(m.tk as any)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
