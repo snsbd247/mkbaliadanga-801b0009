@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useLang } from "@/i18n/LanguageProvider";
 
 interface AccountRow {
   account_id: string; code: string; name: string; name_bn?: string | null; type: string;
