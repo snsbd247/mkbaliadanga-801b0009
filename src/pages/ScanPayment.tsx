@@ -80,6 +80,7 @@ export default function ScanPayment() {
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
       logo_url: brand.logo_url ?? null,
+      org: receiptArgs.org,
       bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
       farmer: {
         name: resolved.farmer.name,
