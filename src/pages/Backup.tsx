@@ -48,8 +48,81 @@ async function fetchAll(table: string) {
 
 export default function Backup() {
   const { t } = useLang();
+  const { isSuper } = useAuth();
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [dryRun, setDryRun] = useState(true);
+  const [restoreReport, setRestoreReport] = useState<{ table: string; inserted: number; updated: number; failed: number; skipped: number; errors: string[] }[] | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // ---- restore ----
+  const TABLE_NAMES = new Set(TABLES.map(t => t.name));
+
+  function inferTableFromSheet(sheetName: string): string | null {
+    const norm = sheetName.toLowerCase().trim();
+    for (const t of TABLES) {
+      if (t.name === norm) return t.name;
+      if (t.label.toLowerCase() === norm) return t.name;
+      if (t.label.toLowerCase().slice(0, 31) === norm) return t.name;
+    }
+    return null;
+  }
+
+  async function importRows(table: string, rows: any[], dry: boolean) {
+    const summary = { table, inserted: 0, updated: 0, failed: 0, skipped: 0, errors: [] as string[] };
+    if (!rows.length) return summary;
+    // Strip placeholder/empty marker rows
+    const clean = rows.filter(r => !(Object.keys(r).length === 1 && "note" in r));
+    if (!clean.length) { summary.skipped = rows.length; return summary; }
+    if (dry) {
+      summary.inserted = clean.filter(r => !r.id).length;
+      summary.updated = clean.filter(r => r.id).length;
+      return summary;
+    }
+    const CHUNK = 200;
+    for (let i = 0; i < clean.length; i += CHUNK) {
+      const slice = clean.slice(i, i + CHUNK);
+      const { error, data } = await (supabase as any).from(table).upsert(slice, { onConflict: "id" }).select("id");
+      if (error) {
+        summary.failed += slice.length;
+        summary.errors.push(error.message);
+      } else {
+        const n = data?.length ?? slice.length;
+        summary.updated += n;
+      }
+    }
+    return summary;
+  }
+
+  async function runRestore() {
+    if (!restoreFile) return toast.error(t("p5d_invalidFile"));
+    setBusy("__restore__");
+    setRestoreReport(null);
+    try {
+      const buf = await restoreFile.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const summaries: any[] = [];
+      for (const sheetName of wb.SheetNames) {
+        const tableName = inferTableFromSheet(sheetName);
+        if (!tableName) {
+          summaries.push({ table: sheetName, inserted: 0, updated: 0, failed: 0, skipped: 0, errors: ["Unknown sheet, skipped"] });
+          continue;
+        }
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: null });
+        // eslint-disable-next-line no-await-in-loop
+        const s = await importRows(tableName, rows, dryRun);
+        summaries.push(s);
+      }
+      setRestoreReport(summaries);
+      toast.success(dryRun ? t("p5d_restoreSummary") : t("p5d_restoreDone"));
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function downloadOne(name: string, label: string) {
     setBusy(name);
