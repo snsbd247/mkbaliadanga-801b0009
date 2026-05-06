@@ -38,7 +38,7 @@ export default function ExpensesReport() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = `Expenses Report — ${t("appName")}`;
+    document.title = `${t("expensesReport")} — ${t("appName")}`;
   }, [t]);
 
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [from, to, head, method]);
