@@ -37,7 +37,10 @@ export interface BnReceiptData {
 
   collected_amount: number;          // total being received now
   collector_signature_url?: string | null;
+  office_collector_signature_url?: string | null; // optional override for office copy
 }
+
+export type ReceiptCopy = "both" | "farmer" | "office";
 
 const fmt2 = (n: number) =>
   new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
