@@ -279,13 +279,13 @@ export default function LedgerReconciliation() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Opening</TableHead>
-                  <TableHead className="text-right">Debit</TableHead>
-                  <TableHead className="text-right">Credit</TableHead>
-                  <TableHead className="text-right">Closing</TableHead>
+                  <TableHead>{t("p5_shortcutCol")}</TableHead>
+                  <TableHead>{t("p5_accountCol")}</TableHead>
+                  <TableHead>{t("type")}</TableHead>
+                  <TableHead className="text-right">{t("p5_openingCol")}</TableHead>
+                  <TableHead className="text-right">{t("p5_debitCol")}</TableHead>
+                  <TableHead className="text-right">{t("p5_creditCol")}</TableHead>
+                  <TableHead className="text-right">{t("p5_closingCol")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
