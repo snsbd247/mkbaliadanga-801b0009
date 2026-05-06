@@ -511,7 +511,7 @@ export default function Reports() {
                 <TableCell>{r.bucket}</TableCell>
               </TableRow>
             ))}
-            {arrears.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">No arrears</TableCell></TableRow>}
+            {arrears.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("rpNoArrears" as any)}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>
