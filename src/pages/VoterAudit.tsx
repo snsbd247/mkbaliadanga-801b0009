@@ -11,11 +11,13 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
 import { exportExcel, exportTablePDF } from "@/lib/exports";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const PAGE_SIZE = 50;
 
 export default function VoterAudit() {
   const { isSuper } = useAuth();
+  const { t } = useLang();
   const [rows, setRows] = useState<any[]>([]);
   const [farmersMap, setFarmersMap] = useState<Record<string, any>>({});
   const [profilesMap, setProfilesMap] = useState<Record<string, any>>({});
