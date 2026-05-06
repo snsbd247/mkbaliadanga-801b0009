@@ -388,7 +388,7 @@ export default function Reports() {
                     <TableCell className="text-right font-semibold">{money(m.total)}</TableCell>
                   </TableRow>
                 ))}
-                {monthly.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>}
+                {monthly.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
