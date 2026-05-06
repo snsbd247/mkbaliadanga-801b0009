@@ -48,7 +48,7 @@ export default function FarmerRejectionsReport() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = `Rejected Farmer Submissions — ${t("appName")}`;
+    document.title = `${t("rejectedFarmerSubmissionsTitle")} — ${t("appName")}`;
   }, [t]);
 
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function FarmerRejectionsReport() {
   };
 
   const reasonLabel = (r: string) =>
-    r === "missing_parent" ? "Missing parent" : r === "mismatch" ? "Hierarchy mismatch" : r;
+    r === "missing_parent" ? t("missingParent") : r === "mismatch" ? t("hierarchyMismatch") : r;
 
   const tableHead = [
     "Timestamp", "Operation", "Failed Level", "Reason",
@@ -116,7 +116,7 @@ export default function FarmerRejectionsReport() {
   if (rolesLoaded && !isAdmin) {
     return (
       <Card className="p-6 m-4">
-        <p className="text-muted-foreground">You don't have permission to view this report.</p>
+        <p className="text-muted-foreground">{t("noPermissionReport")}</p>
       </Card>
     );
   }
@@ -124,8 +124,8 @@ export default function FarmerRejectionsReport() {
   return (
     <>
       <PageHeader
-        title="Rejected Farmer Submissions"
-        description="Audit trail of farmer save attempts blocked by location hierarchy validation."
+        title={t("rejectedFarmerSubmissionsTitle")}
+        description={t("rejectedFarmerSubmissionsDesc")}
       />
 
       <Card className="p-4 mb-4">
@@ -139,7 +139,7 @@ export default function FarmerRejectionsReport() {
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <div>
-            <Label>Failed Level</Label>
+            <Label>{t("failedLevel")}</Label>
             <Select value={level} onValueChange={setLevel}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -151,19 +151,19 @@ export default function FarmerRejectionsReport() {
             </Select>
           </div>
           <div>
-            <Label>Operation</Label>
+            <Label>{t("operationLabel")}</Label>
             <Select value={op} onValueChange={setOp}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>{t("all")}</SelectItem>
-                <SelectItem value="INSERT">Create</SelectItem>
-                <SelectItem value="UPDATE">Update</SelectItem>
+                <SelectItem value="INSERT">{t("createOp")}</SelectItem>
+                <SelectItem value="UPDATE">{t("updateOp")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="flex items-end">
             <Button variant="outline" onClick={() => { setFrom(""); setTo(""); setLevel(ALL); setOp(ALL); }}>
-              Clear
+              {t("clear")}
             </Button>
           </div>
         </div>
@@ -172,7 +172,7 @@ export default function FarmerRejectionsReport() {
       <Card className="p-4 mb-4">
         <div className="flex flex-wrap items-center gap-4 text-sm">
           <div>
-            <span className="text-muted-foreground">Total rejections:</span>{" "}
+            <span className="text-muted-foreground">{t("totalRejections")}:</span>{" "}
             <span className="font-semibold">{summary.total}</span>
           </div>
           {summary.byLevel.map(([lv, n]) => (
@@ -180,7 +180,7 @@ export default function FarmerRejectionsReport() {
               {levelLabel(lv)}: <span className="ml-1 font-mono">{n}</span>
             </Badge>
           ))}
-          {loading && <span className="text-muted-foreground">Loading…</span>}
+          {loading && <span className="text-muted-foreground">{t("loading")}</span>}
         </div>
       </Card>
 
@@ -210,7 +210,7 @@ export default function FarmerRejectionsReport() {
             })),
             { from, to },
           )}
-        >Export Excel</Button>
+        >{t("exportExcel")}</Button>
         <Button
           variant="outline" size="sm"
           onClick={() => exportTablePDF(
@@ -219,21 +219,21 @@ export default function FarmerRejectionsReport() {
             rows.map(tableRows),
             { from, to },
           )}
-        >Export PDF</Button>
+        >{t("exportPdf")}</Button>
       </div>
 
       <Card className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Timestamp</TableHead>
-              <TableHead>Operation</TableHead>
-              <TableHead>Failed Level</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Attempted Name</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Office</TableHead>
-              <TableHead>Farmer</TableHead>
+              <TableHead>{t("timestamp")}</TableHead>
+              <TableHead>{t("operationLabel")}</TableHead>
+              <TableHead>{t("failedLevel")}</TableHead>
+              <TableHead>{t("reason")}</TableHead>
+              <TableHead>{t("attemptedName")}</TableHead>
+              <TableHead>{t("user")}</TableHead>
+              <TableHead>{t("office")}</TableHead>
+              <TableHead>{t("farmer")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -260,7 +260,7 @@ export default function FarmerRejectionsReport() {
             {rows.length === 0 && !loading && (
               <TableRow>
                 <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
-                  No rejected submissions for the selected filters.
+                  {t("noRejectionsFiltered")}
                 </TableCell>
               </TableRow>
             )}
