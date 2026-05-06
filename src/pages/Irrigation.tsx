@@ -285,7 +285,7 @@ export default function Irrigation() {
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setRateAvailable(null); } }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addEntry")}</Button></DialogTrigger>
           <DialogContent className="max-w-xl">
-            <DialogHeader><DialogTitle>{t("irrigation")} — {editId ? "Edit Entry" : t("addEntry")}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("irrigation")} — {editId ? t("edit") : t("addEntry")}</DialogTitle></DialogHeader>
             {form.season_id && rateAvailable === false && (
               <div className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-sm p-2">
                 {t("noActiveRateForSeason")} <a href="/irrigation-rates" className="underline">{t("irrigationRatesLink")}</a> {t("pageFirst")}
