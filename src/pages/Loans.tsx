@@ -276,7 +276,7 @@ export default function Loans() {
 
       <Dialog open={!!editLoan} onOpenChange={(o) => !o && setEditLoan(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Loan</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("pgEditLoan")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>{t("principal")}</Label><Input type="number" value={editForm.principal} onChange={e => setEditForm({ ...editForm, principal: +e.target.value })} /></div>
