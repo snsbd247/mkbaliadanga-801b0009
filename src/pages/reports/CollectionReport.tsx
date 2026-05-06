@@ -441,19 +441,20 @@ export default function CollectionReport() {
 }
 
 function ExportBar({ onPdf, onXlsx }: { onPdf: () => void; onXlsx: () => void }) {
+  const { t } = useLang();
   return (
     <div className="flex justify-end gap-2 mb-2">
       <button
         onClick={onXlsx}
         className="inline-flex items-center gap-1 text-sm border rounded px-3 py-1 hover:bg-muted"
       >
-        Export Excel
+        {t("exportExcel")}
       </button>
       <button
         onClick={onPdf}
         className="inline-flex items-center gap-1 text-sm border rounded px-3 py-1 hover:bg-muted"
       >
-        Export PDF
+        {t("exportPdf")}
       </button>
     </div>
   );
