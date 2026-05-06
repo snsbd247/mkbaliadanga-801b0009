@@ -279,7 +279,7 @@ export default function ShareCollection() {
                     const a = document.createElement("a");
                     a.href = url; a.download = "share-collection-template.csv"; a.click();
                     URL.revokeObjectURL(url);
-                  }}><FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Download Template</Button>
+                  }}><FileSpreadsheet className="h-3.5 w-3.5 mr-1" />{t("p5c_downloadTemplate")}</Button>
                 </div>
                 <Textarea rows={8} value={batchText} onChange={e => setBatchText(e.target.value)}
                   placeholder={"MK-0001,500,2026-05-05,May share\nMK-0002,500\nMK-0003,1000"} />
