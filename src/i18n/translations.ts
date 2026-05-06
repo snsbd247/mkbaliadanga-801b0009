@@ -942,6 +942,8 @@ export const translations = {
     newVal: "New",
     noChanges: "No changes recorded",
     noRecordsFound: "No records found",
+    profile: "Profile",
+    duplicateReceiptAudit: "Duplicate Receipt Audit",
     // Phase 4 (EN)
     thisMonthCollection: "This Month Collection",
     pendingLower: "pending",
