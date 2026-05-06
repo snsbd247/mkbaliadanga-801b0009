@@ -107,7 +107,7 @@ export default function VoterList() {
         share_balance: d.share_balance,
       });
     } catch (e: any) {
-      toast.error(e.message ?? "Failed to load dues");
+      toast.error(e.message ?? t("pgFailedLoadDues" as any));
     } finally {
       setDuesLoading(false);
     }
@@ -120,7 +120,7 @@ export default function VoterList() {
 
   async function submitDialog() {
     if (!target || !mode) return;
-    if (reason.trim().length < 3) { toast.error("Reason is required (min 3 chars)"); return; }
+    if (reason.trim().length < 3) { toast.error(t("pgReasonRequiredMin" as any)); return; }
     setWorking(true);
     const fn = mode === "cancel" ? "cancel_voter_membership" : "reactivate_voter_membership";
     const { error } = await supabase.rpc(fn as any, { _farmer_id: target.id, _reason: reason.trim() });
@@ -132,8 +132,8 @@ export default function VoterList() {
         try {
           const d = JSON.parse(m[1]);
           const fmt = (n: any) => Number(n || 0).toLocaleString();
-          toast.error("Cannot cancel — clear all dues first", {
-            description: `Savings balance: ৳${fmt(d.savings_balance)} • Loan due: ৳${fmt(d.loan_due)} • Irrigation due: ৳${fmt(d.irrigation_due)}`,
+          toast.error(t("pgCannotCancelClearDues" as any), {
+            description: `${t("pgSavingsBalanceLbl" as any)}: ৳${fmt(d.savings_balance)} • ${t("pgLoanDueLbl" as any)}: ৳${fmt(d.loan_due)} • ${t("pgIrrigationDueLbl" as any)}: ৳${fmt(d.irrigation_due)}`,
             duration: 8000,
           });
           return;
@@ -142,7 +142,7 @@ export default function VoterList() {
       toast.error(msg);
       return;
     }
-    toast.success(mode === "cancel" ? "Voter membership cancelled" : "Voter membership reactivated");
+    toast.success(mode === "cancel" ? t("pgVoterCancelledMsg" as any) : t("pgVoterReactivatedMsg" as any));
     setTarget(null); setMode(null); setReason("");
     load();
   }
@@ -197,20 +197,20 @@ export default function VoterList() {
     doc.save(`voter-list-${tab}-${Date.now()}.pdf`);
   }
 
-  const headerInfo = useMemo(() => `${total} voter${total === 1 ? "" : "s"}`, [total]);
+  const headerInfo = useMemo(() => (t("pgVotersCount" as any) as string).replace("{n}", String(total)), [total, t]);
 
   return (
     <>
-      <PageHeader title="Voter List" description={headerInfo} actions={
+      <PageHeader title={t("pgVoterListTitle" as any)} description={headerInfo} actions={
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={total === 0}>
-            <FileDown className="h-4 w-4 mr-1" />Export CSV
+            <FileDown className="h-4 w-4 mr-1" />{t("pgExportCsv" as any)}
           </Button>
           <Button variant="outline" size="sm" onClick={exportExcel} disabled={total === 0}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" />Export Excel
+            <FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExportExcel" as any)}
           </Button>
           <Button variant="outline" size="sm" onClick={exportPdf} disabled={total === 0}>
-            <FileText className="h-4 w-4 mr-1" />Export PDF
+            <FileText className="h-4 w-4 mr-1" />{t("pgExportPdf" as any)}
           </Button>
         </div>
       } />
@@ -306,7 +306,7 @@ export default function VoterList() {
           {mode === "cancel" && (
             <div className="space-y-2">
               <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
-                Cancellation requires:
+                {t("pgCancellationRequires" as any)}
                 <ul className="list-disc pl-5 mt-1 space-y-0.5">
                   <li>{t("pgEligibilityNoLoan")}</li>
                   <li>{t("pgEligibilityNoIrrigation")}</li>
@@ -315,17 +315,17 @@ export default function VoterList() {
               <div className="rounded border p-3 text-sm">
                 <div className="font-medium mb-2">{t("pgCurrentBalances")}</div>
                 {duesLoading || !dues ? (
-                  <div className="text-xs text-muted-foreground">Loading dues…</div>
+                  <div className="text-xs text-muted-foreground">{t("pgLoadingDues" as any)}</div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
-                    <Stat label="Savings balance" value={dues.savings_balance} bad={dues.savings_balance !== 0} />
-                    <Stat label="Share balance" value={dues.share_balance} />
-                    <Stat label="Loan due" value={dues.loan_due} bad={dues.loan_due > 0} />
-                    <Stat label="Irrigation due" value={dues.irrigation_due} bad={dues.irrigation_due > 0} />
+                    <Stat label={t("pgSavingsBalanceLbl" as any)} value={dues.savings_balance} bad={dues.savings_balance !== 0} />
+                    <Stat label={t("pgShareBalanceLbl" as any)} value={dues.share_balance} />
+                    <Stat label={t("pgLoanDueLbl" as any)} value={dues.loan_due} bad={dues.loan_due > 0} />
+                    <Stat label={t("pgIrrigationDueLbl" as any)} value={dues.irrigation_due} bad={dues.irrigation_due > 0} />
                   </div>
                 )}
                 {dues && (dues.savings_balance !== 0 || dues.loan_due > 0 || dues.irrigation_due > 0) && (
-                  <div className="mt-2 text-xs text-destructive">Outstanding balances must be cleared before cancelling.</div>
+                  <div className="mt-2 text-xs text-destructive">{t("pgOutstandingMustClear" as any)}</div>
                 )}
               </div>
             </div>
@@ -333,11 +333,11 @@ export default function VoterList() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              {mode === "cancel" ? "Cancellation reason" : "Reactivation reason"} <span className="text-destructive">*</span>
+              {mode === "cancel" ? t("pgCancellationReason" as any) : t("pgReactivationReason" as any)} <span className="text-destructive">*</span>
             </label>
             <Textarea
               rows={4}
-              placeholder="Write a clear reason / remark…"
+              placeholder={t("pgReasonPlaceholder" as any)}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
@@ -345,7 +345,7 @@ export default function VoterList() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setTarget(null); setMode(null); }} disabled={working}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               variant={mode === "cancel" ? "destructive" : "default"}
@@ -356,7 +356,7 @@ export default function VoterList() {
                   dues.savings_balance !== 0 || dues.loan_due > 0 || dues.irrigation_due > 0))
               }
             >
-              {working ? "Working…" : mode === "cancel" ? "Confirm Cancel" : "Confirm Reactivate"}
+              {working ? t("pgWorking" as any) : mode === "cancel" ? t("pgConfirmCancel" as any) : t("pgConfirmReactivate" as any)}
             </Button>
           </DialogFooter>
         </DialogContent>
