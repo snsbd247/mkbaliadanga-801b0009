@@ -17,18 +17,21 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-const MODULES = [
-  { id: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা)" },
-  { id: "settings", label: "কোম্পানি সেটিংস + কার্ড" },
-  { id: "accounting", label: "চার্ট অফ একাউন্টস" },
-  { id: "farmers", label: "ফার্মার + জমি" },
-  { id: "irrigation", label: "সেচ (রেট + চার্জ)" },
-  { id: "loans", label: "ঋণ (পরিকল্পনা + ঋণ + পেমেন্ট)" },
-  { id: "savings", label: "সঞ্চয় + শেয়ার" },
-  { id: "expenses", label: "খরচ" },
-];
+import { useLang } from "@/i18n/LanguageProvider";
+
+const MODULE_KEYS = [
+  { id: "locations", tk: "dmModLocations" },
+  { id: "settings", tk: "dmModSettings" },
+  { id: "accounting", tk: "dmModAccounting" },
+  { id: "farmers", tk: "dmModFarmers" },
+  { id: "irrigation", tk: "dmModIrrigation" },
+  { id: "loans", tk: "dmModLoans" },
+  { id: "savings", tk: "dmModSavings" },
+  { id: "expenses", tk: "dmModExpenses" },
+] as const;
 
 type Action = "reset" | "import" | "both";
+
 
 export default function DemoManager() {
   const [action, setAction] = useState<Action>("both");
