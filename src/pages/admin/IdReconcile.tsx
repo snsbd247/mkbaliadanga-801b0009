@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, AlertTriangle, FileSpreadsheet } from "lucide-react";
 import { exportExcel } from "@/lib/exports";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Issue = "missing_member" | "missing_account" | "duplicate_member" | "duplicate_account" | "duplicate_code";
 
