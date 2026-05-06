@@ -35,14 +35,14 @@ export default function Diagnostics() {
   const [scan, setScan] = useState<any>(null);
   const [scanBusy, setScanBusy] = useState(false);
 
-  useEffect(() => { document.title = "Diagnostics — RLS"; }, []);
+  useEffect(() => { document.title = t("diag_pageTitle" as any); }, [t]);
   useEffect(() => {
     const h = () => setErrors(getRlsErrors());
     window.addEventListener("rls-errors-changed", h);
     return () => window.removeEventListener("rls-errors-changed", h);
   }, []);
 
-  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
+  if (!rolesLoaded) return <div className="p-6 text-muted-foreground">{t("diag_loading" as any)}</div>;
   if (!isSuper) return <Navigate to="/" replace />;
 
   async function runHealthCheck() {
