@@ -61,8 +61,15 @@ export default function FarmerPortalLogin() {
         body: JSON.stringify({ identifier: id, password: mob }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        const retryAt = data?.retry_at ? Date.parse(data.retry_at) : Date.now() + (Number(data?.retry_after || 60) * 1000);
+        setCooldownUntil(retryAt);
+        setError(data?.error || "Too many attempts. Try again later.");
+        return;
+      }
       if (!res.ok || !data?.token) {
-        setError(data?.error || t("invalidCredentials") || "Invalid farmer ID or mobile number");
+        const remaining = typeof data?.attempts_remaining === "number" ? ` (${data.attempts_remaining} left)` : "";
+        setError((data?.error || t("invalidCredentials") || "Invalid farmer ID or mobile number") + remaining);
         idInputRef.current?.focus();
         return;
       }
