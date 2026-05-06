@@ -166,18 +166,18 @@ export default function FarmerDashboard() {
 
           <TabsContent value="savings">
             <Card>
-              <CardHeader><CardTitle className="text-base">Savings Transactions</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{t("p5b_savingsTransactions")}</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead><TableHead>Type</TableHead>
-                      <TableHead className="text-right">Amount</TableHead><TableHead>Status</TableHead>
+                      <TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead>
+                      <TableHead className="text-right">{t("amount")}</TableHead><TableHead>{t("status")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.savings.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">No transactions.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">{t("p5b_noTransactions")}</TableCell></TableRow>
                     ) : data.savings.map((s) => (
                       <TableRow key={s.id}>
                         <TableCell className="whitespace-nowrap">{s.txn_date}</TableCell>
