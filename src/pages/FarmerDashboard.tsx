@@ -194,23 +194,23 @@ export default function FarmerDashboard() {
 
           <TabsContent value="loans" className="space-y-3">
             {data.loans.length === 0 ? (
-              <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">No loans.</CardContent></Card>
+              <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">{t("p5b_noLoans")}</CardContent></Card>
             ) : data.loans.map((l) => (
               <Card key={l.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-sm">Loan • {l.issued_on}</CardTitle>
+                    <CardTitle className="text-sm">{t("p5b_loanWord")} • {l.issued_on}</CardTitle>
                     <Badge variant={l.status === "paid" ? "secondary" : "default"}>{l.status}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <Stat label="Principal" value={fmt(Number(l.principal))} />
-                    <Stat label="Interest %" value={String(l.interest_rate)} />
-                    <Stat label="Total Payable" value={fmt(Number(l.total_payable))} />
-                    <Stat label="Paid" value={fmt(Number(l.paid))} />
+                    <Stat label={t("p5b_principal")} value={fmt(Number(l.principal))} />
+                    <Stat label={t("p5b_interestPercent")} value={String(l.interest_rate)} />
+                    <Stat label={t("p5b_totalPayable")} value={fmt(Number(l.total_payable))} />
+                    <Stat label={t("p5b_paid")} value={fmt(Number(l.paid))} />
                   </div>
-                  <div className="text-sm">Remaining: <span className="font-semibold font-mono">{fmt(Number(l.due))}</span></div>
+                  <div className="text-sm">{t("p5b_remaining")}: <span className="font-semibold font-mono">{fmt(Number(l.due))}</span></div>
                   {data.loan_payments.filter((p) => p.loan_id === l.id).length > 0 && (
                     <div className="overflow-x-auto">
                       <Table>
