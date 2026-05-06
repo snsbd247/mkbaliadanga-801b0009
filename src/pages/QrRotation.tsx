@@ -147,15 +147,15 @@ export default function QrRotation() {
       </Card>
 
       <Card className="p-4">
-        <h3 className="font-semibold mb-2">Last run</h3>
+        <h3 className="font-semibold mb-2">{t("p5b_lastRun")}</h3>
         {settings.last_run_at ? (
           <div className="text-sm space-y-1">
-            <div><span className="text-muted-foreground">When:</span> {new Date(settings.last_run_at).toLocaleString()}</div>
-            <div><span className="text-muted-foreground">Rotated:</span> {settings.last_run_summary?.rotated ?? 0}</div>
-            <div><span className="text-muted-foreground">Revoked:</span> {settings.last_run_summary?.revoked ?? 0}</div>
+            <div><span className="text-muted-foreground">{t("p5c_when")}:</span> {new Date(settings.last_run_at).toLocaleString()}</div>
+            <div><span className="text-muted-foreground">{t("p5c_rotated")}:</span> {settings.last_run_summary?.rotated ?? 0}</div>
+            <div><span className="text-muted-foreground">{t("p5c_revoked")}:</span> {settings.last_run_summary?.revoked ?? 0}</div>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">No rotation run yet.</div>
+          <div className="text-sm text-muted-foreground">{t("p5b_noRotationRun")}</div>
         )}
       </Card>
     </>
