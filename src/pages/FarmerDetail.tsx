@@ -507,13 +507,13 @@ export default function FarmerDetail() {
       }
       const { error } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", delTarget.id);
       if (error) { toast.error(error.message); return; }
-      toast.success("Land deleted");
+      toast.success(t("pgLandDeleted" as any));
       setDelTarget(null);
       loadAll();
     } finally { setDeleting(false); }
   }
 
-  if (!farmer) return <div className="text-muted-foreground">Loading…</div>;
+  if (!farmer) return <div className="text-muted-foreground">{t("pgLoadingDots" as any)}</div>;
 
   const totalDeposits = savings.filter(s => s.status === "approved" && s.type === "deposit").reduce((a, s) => a + Number(s.amount), 0);
   const totalWithdraws = savings.filter(s => s.status === "approved" && s.type === "withdraw").reduce((a, s) => a + Number(s.amount), 0);
