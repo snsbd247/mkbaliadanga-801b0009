@@ -8,29 +8,6 @@ const corsHeaders = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-// ---- Tables grouped by module (deletion order matters: children → parents) ----
-const WIPE_GROUPS: Record<string, string[]> = {
-  // transactional
-  payments: ["payment_allocations", "payments"],
-  loans: ["loan_payments", "loan_installments", "loans", "loan_plans"],
-  irrigation: ["irrigation_charges", "irrigation_rates"],
-  savings: ["savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares"],
-  expenses: ["expenses"],
-  accounting: ["journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods", "accounts"],
-  receipts: ["receipts"],
-  sms: ["sms_logs", "sms_office_settings", "sms_provider_secrets", "sms_settings"],
-  audit: ["audit_logs", "voter_audit_logs", "import_audit_logs", "farmer_login_attempts", "farmer_rejections", "notifications"],
-  qr: ["qr_tokens", "qr_rotation_settings"],
-  farmer_portal: ["farmer_portal_sessions", "farmer_otps"],
-  lands: ["land_relations", "lands"],
-  farmers: ["farmers"],
-  seasons: ["seasons"],
-  settings: ["company_settings", "card_settings", "receipt_settings"],
-  locations: ["mouzas", "upazilas", "districts", "divisions"],
-  offices: ["offices"],
-};
-
-// Full wipe order — must reference children before parents
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
   "loan_payments", "loan_installments", "loans", "loan_plans",
@@ -50,23 +27,12 @@ const FULL_WIPE_ORDER = [
   "accounts",
 ];
 
-async function wipeAll(admin: any) {
-  const results: Record<string, string> = {};
-  for (const t of FULL_WIPE_ORDER) {
-    const { error } = await admin.from(t).delete().not("id", "is", null);
-    results[t] = error ? `ERR: ${error.message}` : "ok";
-  }
-  return results;
-}
-
-// ---- Demo seed builders ----
 function pick<T>(arr: T[], i: number): T { return arr[i % arr.length]; }
-
 const VILLAGES = ["Baliadanga", "Dhanyakuria", "Ramnagar", "Shantipur", "Madhupur"];
 const FATHERS = ["Abdul Karim", "Mohammad Ali", "Rahim Uddin", "Hasan Sheikh", "Jasim Mia"];
 const MOTHERS = ["Rahima Begum", "Ayesha Khatun", "Salma Begum", "Roksana Akter", "Hosneara"];
 
-async function seedFarmers(admin: any, officeId: string, count: number, mouzaId: string | null) {
+async function seedFarmers(admin: any, officeId: string, count: number) {
   const farmers = Array.from({ length: count }, (_, i) => ({
     farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
     member_no: String(i + 1).padStart(7, "0"),
@@ -104,7 +70,6 @@ async function seedLands(admin: any, officeId: string, farmers: any[], mouzaId: 
 }
 
 async function seedIrrigation(admin: any, officeId: string, farmers: any[]) {
-  // Need season + rate
   const year = new Date().getFullYear();
   const { data: season } = await admin.from("seasons")
     .upsert({ year, type: "boro", name: `Boro ${year}` }, { onConflict: "year,type" }).select("id").single();
@@ -113,7 +78,6 @@ async function seedIrrigation(admin: any, officeId: string, farmers: any[]) {
     season_id: season.id, office_id: officeId, basis: "per_size",
     base_rate: 1500, canal_charge: 100, maintenance_charge: 50, other_charge: 0,
   });
-  // Get lands for charges
   const { data: lands } = await admin.from("lands").select("id, farmer_id, land_size, office_id").limit(farmers.length);
   if (!lands?.length) return;
   const charges = lands.map((l: any, i: number) => {
@@ -125,8 +89,7 @@ async function seedIrrigation(admin: any, officeId: string, farmers: any[]) {
       season_id: season.id, land_id: l.id, farmer_id: l.farmer_id,
       basis: "per_size", quantity: size,
       base_charge: base, canal_charge: 100 * size, maintenance_charge: 50 * size,
-      total, paid_amount: paid, due_amount: total - paid,
-      office_id: officeId,
+      total, paid_amount: paid, due_amount: total - paid, office_id: officeId,
     };
   });
   await admin.from("irrigation_charges").insert(charges);
@@ -150,7 +113,6 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   });
   if (loanRows.length) {
     const { data: ins } = await admin.from("loans").insert(loanRows).select("id, total_payable, status");
-    // Sample payments on approved loans
     const pays = (ins ?? []).filter((l: any) => l.status === "approved").slice(0, 3).map((l: any) => ({
       loan_id: l.id, amount: Math.round(Number(l.total_payable) * 0.1), office_id: officeId,
     }));
@@ -169,7 +131,6 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
     ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdrawal", amount: 300, status: "approved", office_id: officeId }] : []),
   ]);
   if (txns.length) await admin.from("savings_transactions").insert(txns);
-
   const shareRows = farmers.slice(0, Math.ceil(farmers.length * 0.5)).map((f) => ({
     farmer_id: f.id, balance: 500, office_id: officeId,
   }));
@@ -228,41 +189,21 @@ async function seedLocations(admin: any) {
 async function ensureOffice(admin: any) {
   const officeId = "11111111-1111-1111-1111-111111111111";
   const { data } = await admin.from("offices").select("id").eq("id", officeId).maybeSingle();
-  if (!data) {
-    await admin.from("offices").insert({ id: officeId, name: "Baliadanga Branch", address: "Rangpur" });
-  }
+  if (!data) await admin.from("offices").insert({ id: officeId, name: "Baliadanga Branch", address: "Rangpur" });
   return officeId;
 }
 
-// ---- Preview: estimated counts per module given size ----
 function estimateImport(modules: string[], size: number) {
-  const counts: Record<string, number> = {};
-  if (modules.includes("locations")) counts["divisions/districts/upazilas/mouzas"] = 4;
-  if (modules.includes("settings")) counts["company_settings + card_settings"] = 2;
-  if (modules.includes("accounting")) counts["accounts (chart of accounts)"] = 8;
-  if (modules.includes("farmers")) {
-    counts["farmers"] = size;
-    counts["lands"] = size;
-  }
-  if (modules.includes("irrigation")) {
-    counts["seasons"] = 1;
-    counts["irrigation_rates"] = 1;
-    counts["irrigation_charges"] = size;
-  }
-  if (modules.includes("loans")) {
-    const n = Math.ceil(size * 0.4);
-    counts["loan_plans"] = 1;
-    counts["loans"] = n;
-    counts["loan_payments"] = Math.min(3, n);
-  }
-  if (modules.includes("savings")) {
-    const n = Math.ceil(size * 0.6);
-    counts["savings_plans"] = 1;
-    counts["savings_transactions"] = n + Math.ceil(n / 4);
-    counts["shares"] = Math.ceil(size * 0.5);
-  }
-  if (modules.includes("expenses")) counts["expenses"] = 3;
-  return counts;
+  const c: Record<string, number> = {};
+  if (modules.includes("locations")) c["divisions/districts/upazilas/mouzas"] = 4;
+  if (modules.includes("settings")) c["company_settings + card_settings"] = 2;
+  if (modules.includes("accounting")) c["accounts"] = 8;
+  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; }
+  if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_rates"] = 1; c["irrigation_charges"] = size; }
+  if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 1; c["loans"] = n; c["loan_payments"] = Math.min(3, n); }
+  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 1; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); }
+  if (modules.includes("expenses")) c["expenses"] = 3;
+  return c;
 }
 
 async function previewWipe(admin: any) {
@@ -274,11 +215,105 @@ async function previewWipe(admin: any) {
   return counts;
 }
 
+// ---- Streaming runner ----
+async function runStream(admin: any, action: string, modules: string[], size: number,
+  ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null }) {
+
+  const encoder = new TextEncoder();
+  const summary: any = { action, modules };
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: any) => controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+
+      try {
+        // Build step list
+        const steps: { key: string; label: string; fn: () => Promise<void> }[] = [];
+
+        if (action === "reset" || action === "both") {
+          for (const t of FULL_WIPE_ORDER) {
+            steps.push({
+              key: `wipe:${t}`, label: `মুছছে: ${t}`,
+              fn: async () => {
+                const { error } = await admin.from(t).delete().not("id", "is", null);
+                if (error && !/does not exist/i.test(error.message)) {
+                  send({ type: "warn", step: `wipe:${t}`, message: error.message });
+                }
+              },
+            });
+          }
+        }
+
+        let officeId = "11111111-1111-1111-1111-111111111111";
+        let mouzaId: string | null = null;
+        let farmers: any[] = [];
+
+        if (action === "import" || action === "both") {
+          steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
+          steps.push({ key: "locations", label: "লোকেশন seed", fn: async () => { mouzaId = await seedLocations(admin); } });
+          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
+          if (modules.includes("accounting")) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
+          if (modules.includes("farmers")) {
+            steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি`, fn: async () => {
+              farmers = await seedFarmers(admin, officeId, size); summary.farmers = farmers.length;
+            }});
+            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers, mouzaId); }});
+          }
+          const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
+          if (needFarmers && !modules.includes("farmers")) {
+            steps.push({ key: "farmers:fetch", label: "বিদ্যমান ফার্মার লোড", fn: async () => {
+              const { data } = await admin.from("farmers").select("id").limit(size);
+              farmers = data ?? [];
+            }});
+          }
+          if (modules.includes("irrigation")) steps.push({ key: "irrigation", label: "সেচ চার্জ seed", fn: async () => { if (farmers.length) await seedIrrigation(admin, officeId, farmers); }});
+          if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed", fn: async () => { if (farmers.length) await seedLoans(admin, officeId, farmers); }});
+          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় seed", fn: async () => { if (farmers.length) await seedSavings(admin, officeId, farmers); }});
+          if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
+        }
+
+        const total = steps.length;
+        send({ type: "start", total });
+
+        for (let i = 0; i < steps.length; i++) {
+          const s = steps[i];
+          send({ type: "step", index: i + 1, total, key: s.key, label: s.label, percent: Math.round(((i) / total) * 100) });
+          try {
+            await s.fn();
+            send({ type: "done", index: i + 1, total, key: s.key, percent: Math.round(((i + 1) / total) * 100) });
+          } catch (e: any) {
+            send({ type: "error", step: s.key, message: e?.message ?? String(e) });
+            throw e;
+          }
+        }
+
+        await admin.from("demo_operations_log").insert({
+          user_id: ctx.userId, user_email: ctx.userEmail, action, modules, size,
+          ip: ctx.ip, user_agent: ctx.ua, success: true, summary,
+        });
+
+        send({ type: "complete", percent: 100, summary });
+      } catch (e: any) {
+        try {
+          await admin.from("demo_operations_log").insert({
+            user_id: ctx.userId, user_email: ctx.userEmail, action, modules, size,
+            ip: ctx.ip, user_agent: ctx.ua, success: false, error_message: e?.message ?? String(e),
+          });
+        } catch (_) {/* */}
+        controller.enqueue(encoder.encode(JSON.stringify({ type: "fatal", message: e?.message ?? String(e) }) + "\n"));
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: { ...corsHeaders, "Content-Type": "application/x-ndjson", "Cache-Control": "no-cache" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  let userId: string | null = null;
-  let userEmail: string | null = null;
-  let body: any = {};
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
   const ua = req.headers.get("user-agent") ?? null;
 
@@ -292,19 +327,16 @@ Deno.serve(async (req) => {
     const userClient = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: authHeader } } });
     const { data: who } = await userClient.auth.getUser();
     if (!who?.user) return json({ error: "Invalid session" }, 401);
-    userId = who.user.id;
-    userEmail = who.user.email ?? null;
 
     const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
+    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", who.user.id);
     if (!(roles ?? []).some((r: any) => r.role === "super_admin")) return json({ error: "Forbidden — super admin only" }, 403);
 
-    body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
     const action: "preview" | "reset" | "import" | "both" = body?.action ?? "both";
     const modules: string[] = Array.isArray(body?.modules) ? body.modules : [];
     const size: number = Math.max(5, Math.min(500, Number(body?.size) || 50));
 
-    // Preview is read-only, no confirmation needed
     if (action === "preview") {
       const wipePreview = await previewWipe(admin);
       const importPreview = estimateImport(modules, size);
@@ -313,54 +345,16 @@ Deno.serve(async (req) => {
 
     if (body?.confirm !== "RESET") return json({ error: "Confirmation required (confirm: 'RESET')" }, 400);
 
-    const result: any = { action, modules };
+    const ctx = { userId: who.user.id, userEmail: who.user.email ?? null, ip, ua };
 
-    if (action === "reset" || action === "both") {
-      result.wiped = await wipeAll(admin);
-    }
+    if (body?.stream) return runStream(admin, action, modules, size, ctx);
 
-    if (action === "import" || action === "both") {
-      const officeId = await ensureOffice(admin);
-      const mouzaId = await seedLocations(admin);
-      if (modules.includes("settings")) await seedSettings(admin);
-      if (modules.includes("accounting")) await seedAccounts(admin);
-
-      let farmers: any[] = [];
-      if (modules.includes("farmers")) {
-        farmers = await seedFarmers(admin, officeId, size, mouzaId);
-        await seedLands(admin, officeId, farmers, mouzaId);
-        result.farmers = farmers.length;
-      }
-      if (!farmers.length && (modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings"))) {
-        const { data } = await admin.from("farmers").select("id").limit(size);
-        farmers = data ?? [];
-      }
-      if (modules.includes("irrigation") && farmers.length) await seedIrrigation(admin, officeId, farmers);
-      if (modules.includes("loans") && farmers.length) await seedLoans(admin, officeId, farmers);
-      if (modules.includes("savings") && farmers.length) await seedSavings(admin, officeId, farmers);
-      if (modules.includes("expenses")) await seedExpenses(admin, officeId);
-    }
-
-    await admin.from("demo_operations_log").insert({
-      user_id: userId, user_email: userEmail, action, modules, size, ip, user_agent: ua,
-      success: true, summary: result,
-    });
-
-    return json({ ok: true, ...result });
+    // Non-streaming fallback (collect events from stream)
+    const resp = await runStream(admin, action, modules, size, ctx);
+    const text = await resp.text();
+    return json({ ok: true, log: text.split("\n").filter(Boolean).map((l) => JSON.parse(l)) });
   } catch (e: any) {
     console.error("demo-reset error:", e);
-    try {
-      const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-      const admin = createClient(SUPABASE_URL, SERVICE);
-      await admin.from("demo_operations_log").insert({
-        user_id: userId, user_email: userEmail,
-        action: body?.action ?? "unknown",
-        modules: Array.isArray(body?.modules) ? body.modules : [],
-        size: body?.size ?? null, ip, user_agent: ua,
-        success: false, error_message: e?.message ?? String(e),
-      });
-    } catch (_) { /* ignore */ }
     return json({ error: e?.message ?? "Server error" }, 500);
   }
 });
