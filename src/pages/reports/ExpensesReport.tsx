@@ -118,8 +118,8 @@ export default function ExpensesReport() {
   return (
     <>
       <PageHeader
-        title="Expenses Report"
-        description="Filter expenses by date, head, and payment method. Includes summary totals by head."
+        title={t("expensesReport")}
+        description={t("expensesReportDesc")}
       />
 
       <Card className="p-4 mb-4">
@@ -133,7 +133,7 @@ export default function ExpensesReport() {
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <div>
-            <Label>Head</Label>
+            <Label>{t("head")}</Label>
             <Select value={head} onValueChange={setHead}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -143,7 +143,7 @@ export default function ExpensesReport() {
             </Select>
           </div>
           <div>
-            <Label>Method</Label>
+            <Label>{t("method")}</Label>
             <Select value={method} onValueChange={setMethod}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -165,17 +165,17 @@ export default function ExpensesReport() {
 
       <Card className="p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Summary by Head</h3>
+          <h3 className="font-semibold">{t("summaryByHead")}</h3>
           <Button variant="outline" size="sm" onClick={exportSummaryPdf}>
-            <FileDown className="h-4 w-4 mr-1" />Summary PDF
+            <FileDown className="h-4 w-4 mr-1" />{t("summaryPdf")}
           </Button>
         </div>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Head</TableHead>
-              <TableHead className="text-right">Entries</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead>{t("head")}</TableHead>
+              <TableHead className="text-right">{t("entries")}</TableHead>
+              <TableHead className="text-right">{t("total")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -191,7 +191,7 @@ export default function ExpensesReport() {
             )}
             {byHead.length > 0 && (
               <TableRow className="font-semibold">
-                <TableCell>Total</TableCell>
+                <TableCell>{t("total")}</TableCell>
                 <TableCell className="text-right">{rows.length}</TableCell>
                 <TableCell className="text-right">{money(total)}</TableCell>
               </TableRow>
@@ -201,16 +201,16 @@ export default function ExpensesReport() {
       </Card>
 
       <Card className="p-4">
-        <h3 className="font-semibold mb-3">Detail ({loading ? "loading…" : `${rows.length} entries`})</h3>
+        <h3 className="font-semibold mb-3">{t("detailLabel")} ({loading ? t("loading") : `${rows.length} ${t("entriesWord")}`})</h3>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Head</TableHead>
-              <TableHead>Payee</TableHead>
-              <TableHead>Method</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Note</TableHead>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead>{t("head")}</TableHead>
+              <TableHead>{t("payee")}</TableHead>
+              <TableHead>{t("method")}</TableHead>
+              <TableHead className="text-right">{t("amount")}</TableHead>
+              <TableHead>{t("note")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
