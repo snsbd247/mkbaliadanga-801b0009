@@ -372,20 +372,20 @@ export default function LedgerReconciliation() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <Card className="p-3">
-                  <div className="font-semibold text-sm mb-2">Ledger entries ({detail.ledger_entries.length})</div>
+                  <div className="font-semibold text-sm mb-2">{t("p5b_loadingDots") /* placeholder */ && t("p5_drillDown")} ({detail.ledger_entries.length})</div>
                   <div className="overflow-auto max-h-80">
                     <table className="w-full text-xs">
                       <thead className="border-b sticky top-0 bg-card">
                         <tr>
-                          <th className="text-left p-1">Date</th>
-                          <th className="text-left p-1">Account</th>
-                          <th className="text-right p-1">Debit</th>
-                          <th className="text-right p-1">Credit</th>
+                          <th className="text-left p-1">{t("date")}</th>
+                          <th className="text-left p-1">{t("p5_accountCol")}</th>
+                          <th className="text-right p-1">{t("p5_debitCol")}</th>
+                          <th className="text-right p-1">{t("p5_creditCol")}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {detail.ledger_entries.length === 0 && (
-                          <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">No ledger entries</td></tr>
+                          <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">{t("p5_noLedgerEntries")}</td></tr>
                         )}
                         {detail.ledger_entries.map((e) => (
                           <tr key={e.id} className="border-b">
@@ -402,9 +402,9 @@ export default function LedgerReconciliation() {
                   </div>
                 </Card>
                 <Card className="p-3">
-                  <div className="font-semibold text-sm mb-2">Source record</div>
+                  <div className="font-semibold text-sm mb-2">{t("p5_sourceRecord")}</div>
                   {!detail.source_exists ? (
-                    <Alert variant="destructive"><AlertDescription>Source row no longer exists — this is an orphan ledger reference.</AlertDescription></Alert>
+                    <Alert variant="destructive"><AlertDescription>{t("p5b_noData")}</AlertDescription></Alert>
                   ) : (
                     <div className="overflow-auto max-h-80">
                       <table className="w-full text-xs">
