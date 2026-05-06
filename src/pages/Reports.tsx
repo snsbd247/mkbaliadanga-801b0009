@@ -423,7 +423,7 @@ export default function Reports() {
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
-              <TableHead className="text-right">Base</TableHead><TableHead className="text-right">Canal</TableHead><TableHead className="text-right">Maint.</TableHead><TableHead className="text-right">Other</TableHead>
+              <TableHead className="text-right">{t("rpBase" as any)}</TableHead><TableHead className="text-right">{t("rpCanal" as any)}</TableHead><TableHead className="text-right">{t("rpMaint" as any)}</TableHead><TableHead className="text-right">{t("rpOtherCol" as any)}</TableHead>
               <TableHead className="text-right">{t("total")}</TableHead><TableHead className="text-right">{t("paidAmount")}</TableHead><TableHead className="text-right">{t("dueAmount")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>{irr.map((r, i) => (
