@@ -168,7 +168,7 @@ export default function FarmerDetail() {
     downloadBnReceiptPdf({
       kind: "savings",
       ...commonReceipt(),
-      receipt_no: `SAV-${s.id.slice(0, 8).toUpperCase()}`,
+      receipt_no: s.receipt_no || autoReceiptNo("SAV", s.id, new Date(s.txn_date ?? s.created_at)),
       date: s.txn_date ?? s.created_at,
       farmer: farmerForReceipt(),
       description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
