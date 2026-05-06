@@ -163,11 +163,11 @@ export default function Reports() {
     }
 
     return [
-      { metric: "Irrigation collected (ledger)", expected: irrCollected, actual: allocIrr, diff: allocIrr - irrCollected },
-      { metric: "Loan collected (ledger)", expected: loanCollected, actual: allocLoan, diff: allocLoan - loanCollected },
-      { metric: "Savings deposits", expected: savDeposits, actual: allocSav, diff: allocSav - savDeposits },
-      { metric: "Savings withdrawals", expected: savWithdraws, actual: 0, diff: 0 },
-      { metric: "Total payment entries", expected: totalPayments, actual: allocLoan + allocIrr + allocSav, diff: (allocLoan + allocIrr + allocSav) - totalPayments },
+      { metric: t("rpMetricIrrCollected" as any), expected: irrCollected, actual: allocIrr, diff: allocIrr - irrCollected },
+      { metric: t("rpMetricLoanCollected" as any), expected: loanCollected, actual: allocLoan, diff: allocLoan - loanCollected },
+      { metric: t("rpMetricSavDeposits" as any), expected: savDeposits, actual: allocSav, diff: allocSav - savDeposits },
+      { metric: t("rpMetricSavWithdraws" as any), expected: savWithdraws, actual: 0, diff: 0 },
+      { metric: t("rpMetricTotalPayments" as any), expected: totalPayments, actual: allocLoan + allocIrr + allocSav, diff: (allocLoan + allocIrr + allocSav) - totalPayments },
     ];
   }, [irr, loanPayments, savings, payments]);
 
