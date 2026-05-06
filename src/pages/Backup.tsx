@@ -328,7 +328,6 @@ export default function Backup() {
                   </a>
                 </div>
               )}
-              <div style={{ display: "none" }}></div>
               </div>
               {restoreReport && (
                 <div className="rounded-md border bg-muted/30 p-3 max-h-80 overflow-auto">
