@@ -193,8 +193,8 @@ export default function LedgerReconciliation() {
   if (!isSuper) {
     return (
       <>
-        <PageHeader title="Ledger Reconciliation" />
-        <Alert variant="destructive"><AlertDescription>This page is restricted to administrators.</AlertDescription></Alert>
+        <PageHeader title={t("p5_monthlyReconciliationTitle")} />
+        <Alert variant="destructive"><AlertDescription>{t("p5b_adminOnly")}</AlertDescription></Alert>
       </>
     );
   }
@@ -202,8 +202,8 @@ export default function LedgerReconciliation() {
   return (
     <>
       <PageHeader
-        title="Monthly Ledger Reconciliation"
-        description="Compare opening, period and closing balances per account; highlight mismatches; export by office."
+        title={t("p5_monthlyReconciliationTitle")}
+        description={t("p5_monthlyReconciliationDesc")}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={!report}>
@@ -219,11 +219,11 @@ export default function LedgerReconciliation() {
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-4">
           <div>
-            <Label className="text-xs">Year</Label>
+            <Label className="text-xs">{t("p5_yearLbl")}</Label>
             <Input type="number" min={2000} max={3000} value={year} onChange={(e) => setYear(Number(e.target.value))} />
           </div>
           <div>
-            <Label className="text-xs">Month</Label>
+            <Label className="text-xs">{t("p5_monthLbl")}</Label>
             <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -236,11 +236,11 @@ export default function LedgerReconciliation() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Office</Label>
+            <Label className="text-xs">{t("p5_officeLbl")}</Label>
             <Select value={officeId} onValueChange={setOfficeId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All offices</SelectItem>
+                <SelectItem value="all">{t("p5_allOffices")}</SelectItem>
                 {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -248,7 +248,7 @@ export default function LedgerReconciliation() {
           <div className="flex items-end">
             <Button onClick={run} disabled={loading} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Run reconciliation
+              {t("p5_runReconciliation")}
             </Button>
           </div>
         </div>
