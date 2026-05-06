@@ -306,7 +306,7 @@ export default function VoterList() {
           {mode === "cancel" && (
             <div className="space-y-2">
               <div className="text-xs text-muted-foreground border rounded p-3 bg-muted/40">
-                Cancellation requires:
+                {t("pgCancellationRequires" as any)}
                 <ul className="list-disc pl-5 mt-1 space-y-0.5">
                   <li>{t("pgEligibilityNoLoan")}</li>
                   <li>{t("pgEligibilityNoIrrigation")}</li>
@@ -315,17 +315,17 @@ export default function VoterList() {
               <div className="rounded border p-3 text-sm">
                 <div className="font-medium mb-2">{t("pgCurrentBalances")}</div>
                 {duesLoading || !dues ? (
-                  <div className="text-xs text-muted-foreground">Loading dues…</div>
+                  <div className="text-xs text-muted-foreground">{t("pgLoadingDues" as any)}</div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
-                    <Stat label="Savings balance" value={dues.savings_balance} bad={dues.savings_balance !== 0} />
-                    <Stat label="Share balance" value={dues.share_balance} />
-                    <Stat label="Loan due" value={dues.loan_due} bad={dues.loan_due > 0} />
-                    <Stat label="Irrigation due" value={dues.irrigation_due} bad={dues.irrigation_due > 0} />
+                    <Stat label={t("pgSavingsBalanceLbl" as any)} value={dues.savings_balance} bad={dues.savings_balance !== 0} />
+                    <Stat label={t("pgShareBalanceLbl" as any)} value={dues.share_balance} />
+                    <Stat label={t("pgLoanDueLbl" as any)} value={dues.loan_due} bad={dues.loan_due > 0} />
+                    <Stat label={t("pgIrrigationDueLbl" as any)} value={dues.irrigation_due} bad={dues.irrigation_due > 0} />
                   </div>
                 )}
                 {dues && (dues.savings_balance !== 0 || dues.loan_due > 0 || dues.irrigation_due > 0) && (
-                  <div className="mt-2 text-xs text-destructive">Outstanding balances must be cleared before cancelling.</div>
+                  <div className="mt-2 text-xs text-destructive">{t("pgOutstandingMustClear" as any)}</div>
                 )}
               </div>
             </div>
@@ -333,11 +333,11 @@ export default function VoterList() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              {mode === "cancel" ? "Cancellation reason" : "Reactivation reason"} <span className="text-destructive">*</span>
+              {mode === "cancel" ? t("pgCancellationReason" as any) : t("pgReactivationReason" as any)} <span className="text-destructive">*</span>
             </label>
             <Textarea
               rows={4}
-              placeholder="Write a clear reason / remark…"
+              placeholder={t("pgReasonPlaceholder" as any)}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
@@ -345,7 +345,7 @@ export default function VoterList() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setTarget(null); setMode(null); }} disabled={working}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               variant={mode === "cancel" ? "destructive" : "default"}
@@ -356,7 +356,7 @@ export default function VoterList() {
                   dues.savings_balance !== 0 || dues.loan_due > 0 || dues.irrigation_due > 0))
               }
             >
-              {working ? "Working…" : mode === "cancel" ? "Confirm Cancel" : "Confirm Reactivate"}
+              {working ? t("pgWorking" as any) : mode === "cancel" ? t("pgConfirmCancel" as any) : t("pgConfirmReactivate" as any)}
             </Button>
           </DialogFooter>
         </DialogContent>
