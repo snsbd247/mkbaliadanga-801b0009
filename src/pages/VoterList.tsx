@@ -120,7 +120,7 @@ export default function VoterList() {
 
   async function submitDialog() {
     if (!target || !mode) return;
-    if (reason.trim().length < 3) { toast.error("Reason is required (min 3 chars)"); return; }
+    if (reason.trim().length < 3) { toast.error(t("pgReasonRequiredMin" as any)); return; }
     setWorking(true);
     const fn = mode === "cancel" ? "cancel_voter_membership" : "reactivate_voter_membership";
     const { error } = await supabase.rpc(fn as any, { _farmer_id: target.id, _reason: reason.trim() });
@@ -132,8 +132,8 @@ export default function VoterList() {
         try {
           const d = JSON.parse(m[1]);
           const fmt = (n: any) => Number(n || 0).toLocaleString();
-          toast.error("Cannot cancel — clear all dues first", {
-            description: `Savings balance: ৳${fmt(d.savings_balance)} • Loan due: ৳${fmt(d.loan_due)} • Irrigation due: ৳${fmt(d.irrigation_due)}`,
+          toast.error(t("pgCannotCancelClearDues" as any), {
+            description: `${t("pgSavingsBalanceLbl" as any)}: ৳${fmt(d.savings_balance)} • ${t("pgLoanDueLbl" as any)}: ৳${fmt(d.loan_due)} • ${t("pgIrrigationDueLbl" as any)}: ৳${fmt(d.irrigation_due)}`,
             duration: 8000,
           });
           return;
@@ -142,7 +142,7 @@ export default function VoterList() {
       toast.error(msg);
       return;
     }
-    toast.success(mode === "cancel" ? "Voter membership cancelled" : "Voter membership reactivated");
+    toast.success(mode === "cancel" ? t("pgVoterCancelledMsg" as any) : t("pgVoterReactivatedMsg" as any));
     setTarget(null); setMode(null); setReason("");
     load();
   }
