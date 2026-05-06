@@ -339,7 +339,7 @@ export default function DemoManager() {
               {/* Mandatory typed confirmation */}
               <div className="space-y-2 pt-2 border-t">
                 <Label className="text-destructive">
-                  নিশ্চিত করতে নিচে <code className="font-mono bg-muted px-1 rounded">RESET</code> টাইপ করুন
+                  {t("dmConfirmTypeLabel" as any)}
                 </Label>
                 <Input
                   value={confirmText}
