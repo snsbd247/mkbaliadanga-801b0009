@@ -108,7 +108,7 @@ export default function Payments() {
     const ext = receiptFile.name.split(".").pop();
     const path = `${user?.id}/${paymentId}.${ext}`;
     const { error } = await supabase.storage.from("payment-receipts").upload(path, receiptFile, { upsert: true });
-    if (error) { toast.error("Receipt upload failed: " + error.message); return null; }
+    if (error) { toast.error(t("receiptUploadFailed").replace("{msg}", error.message)); return null; }
     const { data } = await supabase.storage.from("payment-receipts").createSignedUrl(path, 60 * 60 * 24 * 365);
     return data?.signedUrl ?? path;
   }
@@ -156,7 +156,7 @@ export default function Payments() {
       // Insert allocations
       const allocRows = allocs.map(a => ({ payment_id: inserted!.id, kind: a.kind, reference_id: a.reference_id || null, amount: Number(a.amount) }));
       const { error: aErr } = await supabase.from("payment_allocations").insert(allocRows);
-      if (aErr) toast.error("Allocations: " + aErr.message);
+      if (aErr) toast.error(t("allocationsErr").replace("{msg}", aErr.message));
 
       if (receiptFile) {
         const url = await uploadReceipt(inserted.id);
