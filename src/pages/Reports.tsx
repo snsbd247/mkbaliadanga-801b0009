@@ -526,9 +526,9 @@ export default function Reports() {
           />
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
-              <TableHead>Code</TableHead><TableHead>{t("farmerName")}</TableHead>
-              <TableHead className="text-right">Total Deposit</TableHead>
-              <TableHead className="text-right">Total Withdraw</TableHead>
+              <TableHead>{t("rpCode" as any)}</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead className="text-right">{t("rpDeposit" as any)}</TableHead>
+              <TableHead className="text-right">{t("rpWithdraw" as any)}</TableHead>
               <TableHead className="text-right">{t("balance")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>{balances.map(r => (
@@ -540,7 +540,7 @@ export default function Reports() {
                 <TableCell className="text-right font-semibold text-primary">{money(r.balance)}</TableCell>
               </TableRow>
             ))}
-            {balances.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>}
+            {balances.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>
