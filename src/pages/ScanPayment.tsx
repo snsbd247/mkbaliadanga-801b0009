@@ -308,38 +308,19 @@ export default function ScanPayment() {
                   variant="ghost"
                   onClick={async () => {
                     const payload = buildReceiptPayload();
-                    if (payload) setPreviewUrl(await previewBnReceiptPdf(payload));
+                    if (payload) setPreviewUrl(await previewBnReceiptPdf(payload, "both", receiptArgs.options));
                   }}
                 >
                   <Eye className="h-4 w-4" />Preview
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
+                <ReceiptCopyMenu
+                  size="sm"
+                  label="Download receipt"
+                  onSelect={async (copy: ReceiptCopy) => {
                     const payload = buildReceiptPayload();
-                    if (payload) await downloadBnReceiptPdf(payload, "both");
+                    if (payload) await downloadBnReceiptPdf(payload, copy, receiptArgs.options);
                   }}
-                >
-                  <FileDown className="h-4 w-4" />Both copies
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    const payload = buildReceiptPayload();
-                    if (payload) await downloadBnReceiptPdf(payload, "farmer");
-                  }}
-                >
-                  <FileDown className="h-4 w-4" />Farmer copy
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    const payload = buildReceiptPayload();
-                    if (payload) await downloadBnReceiptPdf(payload, "office");
-                  }}
-                >
-                  <FileDown className="h-4 w-4" />Office copy
-                </Button>
+                />
                 <Button onClick={reset}>Scan another</Button>
               </div>
             </div>
