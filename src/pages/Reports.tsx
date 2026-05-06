@@ -478,26 +478,24 @@ export default function Reports() {
             onXlsx={() => exportExcel("irrigation-arrears", "Arrears",
               arrears.map(r => ({ Date: r.date, Code: r.code, Farmer: r.name, Season: r.season, Dag: r.dag, Total: r.total, Paid: r.paid, Due: r.due, AgeDays: r.days, Bucket: r.bucket })))}
           />
-          <p className="text-xs text-muted-foreground mb-2">
-            Filters above (date range, office, farmer, season) apply to this report. Aging buckets are computed in UTC from <span className="font-mono">entry_date</span>.
-          </p>
+          <p className="text-xs text-muted-foreground mb-2">{t("rpArrearsNote" as any)}</p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
             {(["0-30", "31-60", "61-90", "90+"] as const).map(b => {
               const sum = arrears.filter(r => r.bucket === b).reduce((a, r) => a + r.due, 0);
               return (
-                <Card key={b} className="p-3"><div className="text-xs uppercase text-muted-foreground">{b} days</div><div className="text-lg font-bold">{money(sum)}</div></Card>
+                <Card key={b} className="p-3"><div className="text-xs uppercase text-muted-foreground">{b} {t("rpDays" as any)}</div><div className="text-lg font-bold">{money(sum)}</div></Card>
               );
             })}
-            <Card className="p-3 bg-destructive/5"><div className="text-xs uppercase text-destructive">Total Arrears</div><div className="text-lg font-bold text-destructive">{money(arrears.reduce((a, r) => a + r.due, 0))}</div></Card>
+            <Card className="p-3 bg-destructive/5"><div className="text-xs uppercase text-destructive">{t("rpTotalArrears" as any)}</div><div className="text-lg font-bold text-destructive">{money(arrears.reduce((a, r) => a + r.due, 0))}</div></Card>
           </div>
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
-              <TableHead>{t("date")}</TableHead><TableHead>Code</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead>{t("date")}</TableHead><TableHead>{t("rpCode" as any)}</TableHead><TableHead>{t("farmerName")}</TableHead>
               <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
               <TableHead className="text-right">{t("total")}</TableHead>
               <TableHead className="text-right">{t("paidAmount")}</TableHead>
               <TableHead className="text-right">{t("dueAmount")}</TableHead>
-              <TableHead>Age</TableHead><TableHead>Bucket</TableHead>
+              <TableHead>{t("rpAge" as any)}</TableHead><TableHead>{t("rpBucket" as any)}</TableHead>
             </TableRow></TableHeader>
             <TableBody>{arrears.map((r, i) => (
               <TableRow key={i}>
