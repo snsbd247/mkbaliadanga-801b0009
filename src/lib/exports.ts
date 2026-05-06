@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { money, moneyPdf, fmtDate } from "./format";
 import { loadBranding } from "./branding";
+import { ensureBanglaFont, BANGLA_FONT } from "./pdfFonts";
 
 
 // Resolve current PDF language from the app's persisted user choice. Reports
