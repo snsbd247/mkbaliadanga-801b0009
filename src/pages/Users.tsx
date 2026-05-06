@@ -40,7 +40,7 @@ const createSchema = z.object({
 
 export default function Users() {
   const { t } = useLang();
-  const { user: me } = useAuth();
+  const { user: me, isDeveloper } = useAuth();
   const [list, setList] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
   const [permFor, setPermFor] = useState<any | null>(null);
@@ -52,7 +52,7 @@ export default function Users() {
 
   const [form, setForm] = useState({
     username: "", email: "", full_name: "", password: "",
-    role: "staff" as "super_admin" | "admin" | "committee" | "staff", office_id: "",
+    role: "staff" as "developer" | "super_admin" | "admin" | "committee" | "staff", office_id: "",
   });
 
   useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, []);
