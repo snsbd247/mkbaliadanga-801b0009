@@ -1251,6 +1251,10 @@ export const translations = {
     pgShareUpdated: "Updated",
     pgShareDeleteTitle: "Delete share collection?",
     pgShareDeleted: "Deleted",
+    pgOldVoter: "Old Voter",
+    pgNewVoter: "New Voter",
+    pgVoterHistoryTitle: "Voter Cancel/Reactivate History",
+    pgEventsCount: "{n} event(s)",
   },
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
