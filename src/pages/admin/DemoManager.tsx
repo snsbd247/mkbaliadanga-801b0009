@@ -424,7 +424,7 @@ export default function DemoManager() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  {MODULES.map((m) => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}
+                  {MODULE_KEYS.map((m) => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
