@@ -6,18 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, RotateCcw } from "lucide-react";
 import { setReceiptOptions, useReceiptOptions, resetReceiptOptionsToDemo } from "@/lib/receiptOptions";
+import { useLang } from "@/i18n/LanguageProvider";
 
 export function ReceiptSettingsButton() {
   const opts = useReceiptOptions();
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm"><Settings2 className="h-4 w-4 mr-1" />Receipt settings</Button>
+        <Button variant="outline" size="sm"><Settings2 className="h-4 w-4 mr-1" />{t("p5b_receiptSettings")}</Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 space-y-3" align="end">
         <div className="flex items-center justify-between">
-          <div className="font-semibold text-sm">Receipt layout</div>
+          <div className="font-semibold text-sm">{t("p5b_receiptLayout")}</div>
           <Button
             type="button"
             variant="ghost"
@@ -30,7 +32,7 @@ export function ReceiptSettingsButton() {
           </Button>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Language</Label>
+          <Label className="text-xs">{t("p5b_receiptLanguage")}</Label>
           <Select value={opts.lang} onValueChange={(v) => setReceiptOptions({ lang: v as any })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -38,7 +40,7 @@ export function ReceiptSettingsButton() {
               <SelectItem value="en">English</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-[11px] text-muted-foreground">Receipt number format stays the same in both languages.</p>
+          <p className="text-[11px] text-muted-foreground">{t("p5b_receiptNumberSame")}</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -52,12 +54,12 @@ export function ReceiptSettingsButton() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Orientation</Label>
+            <Label className="text-xs">{t("p5b_orientation")}</Label>
             <Select value={opts.orientation} onValueChange={(v) => setReceiptOptions({ orientation: v as any })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="p">Portrait</SelectItem>
-                <SelectItem value="l">Landscape</SelectItem>
+                <SelectItem value="p">{t("p5b_portrait")}</SelectItem>
+                <SelectItem value="l">{t("p5b_landscape")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -87,7 +89,7 @@ export function ReceiptSettingsButton() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Font size</Label>
+              <Label className="text-xs">{t("p5b_fontSize")}</Label>
               <Select value={opts.orgSize} onValueChange={(v) => setReceiptOptions({ orgSize: v as any })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

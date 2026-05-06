@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useLang } from "@/i18n/LanguageProvider";
 
 interface AccountRow {
   account_id: string; code: string; name: string; name_bn?: string | null; type: string;
@@ -46,6 +47,7 @@ interface Detail {
 
 export default function LedgerReconciliation() {
   const { isSuper } = useAuth();
+  const { t } = useLang();
   const today = new Date();
   const [year, setYear] = useState<number>(today.getFullYear());
   const [month, setMonth] = useState<number>(today.getMonth() + 1);
@@ -62,21 +64,21 @@ export default function LedgerReconciliation() {
   }, []);
 
   const officeName = useMemo(() =>
-    officeId === "all" ? "All offices" : (offices.find((o) => o.id === officeId)?.name ?? officeId),
-    [officeId, offices]);
+    officeId === "all" ? t("p5_allOffices") : (offices.find((o) => o.id === officeId)?.name ?? officeId),
+    [officeId, offices, t]);
 
   async function run() {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Please sign in"); return; }
+      if (!session) { toast.error(t("p5b_pleaseSignIn")); return; }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ledger-reconcile-monthly`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ year, month, office_id: officeId === "all" ? null : officeId }),
       });
       const j = await res.json();
-      if (!res.ok) { toast.error(j?.error || "Failed"); return; }
+      if (!res.ok) { toast.error(j?.error || t("p5b_failed")); return; }
       setReport(j);
     } finally { setLoading(false); }
   }
@@ -86,14 +88,14 @@ export default function LedgerReconciliation() {
     setDetailLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Please sign in"); return; }
+      if (!session) { toast.error(t("p5b_pleaseSignIn")); return; }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ledger-reconcile-monthly`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ mode: "detail", reference_type: referenceType, reference_id: referenceId }),
       });
       const j = await res.json();
-      if (!res.ok) { toast.error(j?.error || "Failed to load detail"); setDetail(null); return; }
+      if (!res.ok) { toast.error(j?.error || t("p5b_failedToLoadDetail")); setDetail(null); return; }
       setDetail(j.detail);
     } finally { setDetailLoading(false); }
   }
@@ -191,8 +193,8 @@ export default function LedgerReconciliation() {
   if (!isSuper) {
     return (
       <>
-        <PageHeader title="Ledger Reconciliation" />
-        <Alert variant="destructive"><AlertDescription>This page is restricted to administrators.</AlertDescription></Alert>
+        <PageHeader title={t("p5_monthlyReconciliationTitle")} />
+        <Alert variant="destructive"><AlertDescription>{t("p5b_adminOnly")}</AlertDescription></Alert>
       </>
     );
   }
@@ -200,8 +202,8 @@ export default function LedgerReconciliation() {
   return (
     <>
       <PageHeader
-        title="Monthly Ledger Reconciliation"
-        description="Compare opening, period and closing balances per account; highlight mismatches; export by office."
+        title={t("p5_monthlyReconciliationTitle")}
+        description={t("p5_monthlyReconciliationDesc")}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={!report}>
@@ -217,11 +219,11 @@ export default function LedgerReconciliation() {
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-4">
           <div>
-            <Label className="text-xs">Year</Label>
+            <Label className="text-xs">{t("p5_yearLbl")}</Label>
             <Input type="number" min={2000} max={3000} value={year} onChange={(e) => setYear(Number(e.target.value))} />
           </div>
           <div>
-            <Label className="text-xs">Month</Label>
+            <Label className="text-xs">{t("p5_monthLbl")}</Label>
             <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -234,11 +236,11 @@ export default function LedgerReconciliation() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Office</Label>
+            <Label className="text-xs">{t("p5_officeLbl")}</Label>
             <Select value={officeId} onValueChange={setOfficeId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All offices</SelectItem>
+                <SelectItem value="all">{t("p5_allOffices")}</SelectItem>
                 {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -246,7 +248,7 @@ export default function LedgerReconciliation() {
           <div className="flex items-end">
             <Button onClick={run} disabled={loading} className="w-full">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Run reconciliation
+              {t("p5_runReconciliation")}
             </Button>
           </div>
         </div>
@@ -256,16 +258,16 @@ export default function LedgerReconciliation() {
         <>
           <Card className="p-4 mb-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div><div className="text-xs text-muted-foreground">Total Debit</div><div className="font-mono font-semibold">{fmt(report.summary.total_debit)}</div></div>
-              <div><div className="text-xs text-muted-foreground">Total Credit</div><div className="font-mono font-semibold">{fmt(report.summary.total_credit)}</div></div>
+              <div><div className="text-xs text-muted-foreground">{t("p5_totalDebit")}</div><div className="font-mono font-semibold">{fmt(report.summary.total_debit)}</div></div>
+              <div><div className="text-xs text-muted-foreground">{t("p5_totalCredit")}</div><div className="font-mono font-semibold">{fmt(report.summary.total_credit)}</div></div>
               <div>
-                <div className="text-xs text-muted-foreground">Difference</div>
+                <div className="text-xs text-muted-foreground">{t("p5_difference")}</div>
                 <div className={`font-mono font-semibold ${Math.abs(report.summary.diff) > 0.01 ? "text-destructive" : "text-success"}`}>
                   {fmt(report.summary.diff)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Mismatches</div>
+                <div className="text-xs text-muted-foreground">{t("p5_mismatches")}</div>
                 <div className={`font-semibold ${report.mismatches.length > 0 ? "text-destructive" : "text-success"}`}>
                   {report.mismatches.length}
                 </div>
@@ -277,13 +279,13 @@ export default function LedgerReconciliation() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Opening</TableHead>
-                  <TableHead className="text-right">Debit</TableHead>
-                  <TableHead className="text-right">Credit</TableHead>
-                  <TableHead className="text-right">Closing</TableHead>
+                  <TableHead>{t("p5_shortcutCol")}</TableHead>
+                  <TableHead>{t("p5_accountCol")}</TableHead>
+                  <TableHead>{t("type")}</TableHead>
+                  <TableHead className="text-right">{t("p5_openingCol")}</TableHead>
+                  <TableHead className="text-right">{t("p5_debitCol")}</TableHead>
+                  <TableHead className="text-right">{t("p5_creditCol")}</TableHead>
+                  <TableHead className="text-right">{t("p5_closingCol")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -306,18 +308,18 @@ export default function LedgerReconciliation() {
             <Card className="p-4 border-destructive/50">
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle className="h-4 w-4 text-destructive" />
-                <h3 className="font-semibold text-destructive">Mismatches ({report.mismatches.length})</h3>
+                <h3 className="font-semibold text-destructive">{t("p5_mismatches")} ({report.mismatches.length})</h3>
               </div>
               <div className="overflow-auto">
                 <table className="w-full text-xs">
                   <thead className="border-b">
                     <tr>
-                      <th className="text-left p-2">Kind</th>
-                      <th className="text-left p-2">Reference</th>
-                      <th className="text-right p-2">Debit</th>
-                      <th className="text-right p-2">Credit</th>
-                      <th className="text-right p-2">Diff</th>
-                      <th className="text-right p-2">Entries</th>
+                      <th className="text-left p-2">{t("type")}</th>
+                      <th className="text-left p-2">{t("p5_referenceCol")}</th>
+                      <th className="text-right p-2">{t("p5_debitCol")}</th>
+                      <th className="text-right p-2">{t("p5_creditCol")}</th>
+                      <th className="text-right p-2">{t("p5_difference")}</th>
+                      <th className="text-right p-2">{t("p5_entriesCol")}</th>
                       <th className="p-2"></th>
                     </tr>
                   </thead>
@@ -336,7 +338,7 @@ export default function LedgerReconciliation() {
                   </tbody>
                 </table>
               </div>
-              <div className="text-xs text-muted-foreground mt-2">Click a row to see ledger entries vs the source record side-by-side.</div>
+              <div className="text-xs text-muted-foreground mt-2">{t("p5_clickRowDetail")}</div>
             </Card>
           )}
         </>
@@ -345,45 +347,45 @@ export default function LedgerReconciliation() {
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Reconciliation drill-down</DialogTitle>
+            <DialogTitle>{t("p5_drillDown")}</DialogTitle>
           </DialogHeader>
           {detailLoading || !detail ? (
-            <div className="py-10 text-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />Loading…</div>
+            <div className="py-10 text-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin inline mr-2" />{t("p5b_loadingDots")}</div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                <div><div className="text-xs text-muted-foreground">Reference</div><div className="font-mono">{detail.reference_type}</div></div>
+                <div><div className="text-xs text-muted-foreground">{t("p5_referenceCol")}</div><div className="font-mono">{detail.reference_type}</div></div>
                 <div className="md:col-span-3"><div className="text-xs text-muted-foreground">ID</div><div className="font-mono text-xs">{detail.reference_id}</div></div>
-                <div><div className="text-xs text-muted-foreground">Ledger Debit</div><div className="font-mono font-semibold">{fmt(detail.ledger_debit)}</div></div>
-                <div><div className="text-xs text-muted-foreground">Ledger Credit</div><div className="font-mono font-semibold">{fmt(detail.ledger_credit)}</div></div>
+                <div><div className="text-xs text-muted-foreground">{t("p5_ledgerDebit")}</div><div className="font-mono font-semibold">{fmt(detail.ledger_debit)}</div></div>
+                <div><div className="text-xs text-muted-foreground">{t("p5_ledgerCredit")}</div><div className="font-mono font-semibold">{fmt(detail.ledger_credit)}</div></div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Source amount</div>
+                  <div className="text-xs text-muted-foreground">{t("p5_sourceAmount")}</div>
                   <div className="font-mono font-semibold">{detail.source_amount != null ? fmt(detail.source_amount) : "—"}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Source row</div>
+                  <div className="text-xs text-muted-foreground">{t("p5_sourceRow")}</div>
                   <div className={`font-semibold ${detail.source_exists ? "text-success" : "text-destructive"}`}>
-                    {detail.source_exists ? "Exists" : "Missing (orphan)"}
+                    {detail.source_exists ? t("active") : t("p5b_noData")}
                   </div>
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <Card className="p-3">
-                  <div className="font-semibold text-sm mb-2">Ledger entries ({detail.ledger_entries.length})</div>
+                  <div className="font-semibold text-sm mb-2">{t("p5_drillDown")} ({detail.ledger_entries.length})</div>
                   <div className="overflow-auto max-h-80">
                     <table className="w-full text-xs">
                       <thead className="border-b sticky top-0 bg-card">
                         <tr>
-                          <th className="text-left p-1">Date</th>
-                          <th className="text-left p-1">Account</th>
-                          <th className="text-right p-1">Debit</th>
-                          <th className="text-right p-1">Credit</th>
+                          <th className="text-left p-1">{t("date")}</th>
+                          <th className="text-left p-1">{t("p5_accountCol")}</th>
+                          <th className="text-right p-1">{t("p5_debitCol")}</th>
+                          <th className="text-right p-1">{t("p5_creditCol")}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {detail.ledger_entries.length === 0 && (
-                          <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">No ledger entries</td></tr>
+                          <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">{t("p5_noLedgerEntries")}</td></tr>
                         )}
                         {detail.ledger_entries.map((e) => (
                           <tr key={e.id} className="border-b">
@@ -400,9 +402,9 @@ export default function LedgerReconciliation() {
                   </div>
                 </Card>
                 <Card className="p-3">
-                  <div className="font-semibold text-sm mb-2">Source record</div>
+                  <div className="font-semibold text-sm mb-2">{t("p5_sourceRecord")}</div>
                   {!detail.source_exists ? (
-                    <Alert variant="destructive"><AlertDescription>Source row no longer exists — this is an orphan ledger reference.</AlertDescription></Alert>
+                    <Alert variant="destructive"><AlertDescription>{t("p5b_noData")}</AlertDescription></Alert>
                   ) : (
                     <div className="overflow-auto max-h-80">
                       <table className="w-full text-xs">

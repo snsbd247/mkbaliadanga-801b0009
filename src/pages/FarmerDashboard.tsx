@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useBranding } from "@/lib/branding";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -30,6 +31,7 @@ function fmt(n: number) {
 export default function FarmerDashboard() {
   const nav = useNavigate();
   const brand = useBranding();
+  const { t } = useLang();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PortalData | null>(null);
@@ -53,7 +55,7 @@ export default function FarmerDashboard() {
 
   async function load() {
     if (!token) { nav("/", { replace: true }); return; }
-    if (isExpired()) { logout("Session expired. Please sign in again."); return; }
+    if (isExpired()) { logout(t("p5b_sessionExpiredSignIn")); return; }
     setLoading(true);
     setError(null);
     try {
@@ -64,17 +66,17 @@ export default function FarmerDashboard() {
       });
       const json = await res.json().catch(() => ({}));
       if (res.status === 401) {
-        toast.error("Session expired. Please sign in again.");
+        toast.error(t("p5b_sessionExpiredSignIn"));
         logout();
         return;
       }
       if (!res.ok) {
-        setError(json?.error || "Failed to load data.");
+        setError(json?.error || t("p5b_failedToLoadData"));
         return;
       }
       setData(json);
     } catch {
-      setError("Network error.");
+      setError(t("p5b_networkError"));
     } finally {
       setLoading(false);
     }
@@ -98,10 +100,10 @@ export default function FarmerDashboard() {
       <div className="min-h-screen flex flex-col bg-gradient-surface">
         <div className="flex-1 flex items-center justify-center p-4">
           <Card className="max-w-md w-full p-6">
-            <Alert variant="destructive"><AlertDescription>{error || "No data."}</AlertDescription></Alert>
+            <Alert variant="destructive"><AlertDescription>{error || t("p5b_noData")}</AlertDescription></Alert>
             <div className="mt-4 flex gap-2">
-              <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />Retry</Button>
-              <Button onClick={() => logout()} className="flex-1">Sign out</Button>
+              <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />{t("p5b_retry")}</Button>
+              <Button onClick={() => logout()} className="flex-1">{t("p5b_signOut")}</Button>
             </div>
           </Card>
         </div>
@@ -122,10 +124,10 @@ export default function FarmerDashboard() {
             ) : (
               <div className="h-8 w-8 rounded-md bg-gradient-primary text-primary-foreground flex items-center justify-center"><Sprout className="h-4 w-4" /></div>
             )}
-            <span className="text-sm font-medium truncate">Farmer Portal</span>
+            <span className="text-sm font-medium truncate">{t("p5b_farmerPortal")}</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => logout()}>
-            <LogOut className="h-4 w-4" /> Sign out
+            <LogOut className="h-4 w-4" /> {t("p5b_signOut")}
           </Button>
         </div>
       </header>
@@ -150,32 +152,32 @@ export default function FarmerDashboard() {
 
         {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <SummaryCard icon={Wallet} label="Savings Balance" value={data.summary.savings_balance} tone="primary" />
-          <SummaryCard icon={HandCoins} label="Loan Due" value={data.summary.loan_due} tone="warning" />
-          <SummaryCard icon={Droplets} label="Irrigation Due" value={data.summary.irrigation_due} tone="info" />
+          <SummaryCard icon={Wallet} label={t("p5b_savingsBalance")} value={data.summary.savings_balance} tone="primary" />
+          <SummaryCard icon={HandCoins} label={t("p5b_loanDue")} value={data.summary.loan_due} tone="warning" />
+          <SummaryCard icon={Droplets} label={t("p5b_irrigationDue")} value={data.summary.irrigation_due} tone="info" />
         </div>
 
         <Tabs defaultValue="savings" className="w-full">
           <TabsList className="grid grid-cols-3 w-full sm:w-auto">
-            <TabsTrigger value="savings">Savings</TabsTrigger>
-            <TabsTrigger value="loans">Loans</TabsTrigger>
-            <TabsTrigger value="irrigation">Irrigation</TabsTrigger>
+            <TabsTrigger value="savings">{t("p5b_savings")}</TabsTrigger>
+            <TabsTrigger value="loans">{t("p5b_loans")}</TabsTrigger>
+            <TabsTrigger value="irrigation">{t("p5b_irrigation")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="savings">
             <Card>
-              <CardHeader><CardTitle className="text-base">Savings Transactions</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{t("p5b_savingsTransactions")}</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead><TableHead>Type</TableHead>
-                      <TableHead className="text-right">Amount</TableHead><TableHead>Status</TableHead>
+                      <TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead>
+                      <TableHead className="text-right">{t("amount")}</TableHead><TableHead>{t("status")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.savings.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">No transactions.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">{t("p5b_noTransactions")}</TableCell></TableRow>
                     ) : data.savings.map((s) => (
                       <TableRow key={s.id}>
                         <TableCell className="whitespace-nowrap">{s.txn_date}</TableCell>
@@ -192,27 +194,27 @@ export default function FarmerDashboard() {
 
           <TabsContent value="loans" className="space-y-3">
             {data.loans.length === 0 ? (
-              <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">No loans.</CardContent></Card>
+              <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">{t("p5b_noLoans")}</CardContent></Card>
             ) : data.loans.map((l) => (
               <Card key={l.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-sm">Loan • {l.issued_on}</CardTitle>
+                    <CardTitle className="text-sm">{t("p5b_loanWord")} • {l.issued_on}</CardTitle>
                     <Badge variant={l.status === "paid" ? "secondary" : "default"}>{l.status}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <Stat label="Principal" value={fmt(Number(l.principal))} />
-                    <Stat label="Interest %" value={String(l.interest_rate)} />
-                    <Stat label="Total Payable" value={fmt(Number(l.total_payable))} />
-                    <Stat label="Paid" value={fmt(Number(l.paid))} />
+                    <Stat label={t("p5b_principal")} value={fmt(Number(l.principal))} />
+                    <Stat label={t("p5b_interestPercent")} value={String(l.interest_rate)} />
+                    <Stat label={t("p5b_totalPayable")} value={fmt(Number(l.total_payable))} />
+                    <Stat label={t("p5b_paid")} value={fmt(Number(l.paid))} />
                   </div>
-                  <div className="text-sm">Remaining: <span className="font-semibold font-mono">{fmt(Number(l.due))}</span></div>
+                  <div className="text-sm">{t("p5b_remaining")}: <span className="font-semibold font-mono">{fmt(Number(l.due))}</span></div>
                   {data.loan_payments.filter((p) => p.loan_id === l.id).length > 0 && (
                     <div className="overflow-x-auto">
                       <Table>
-                        <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead className="text-right">{t("amount")}</TableHead></TableRow></TableHeader>
                         <TableBody>
                           {data.loan_payments.filter((p) => p.loan_id === l.id).map((p) => (
                             <TableRow key={p.id}>
@@ -231,20 +233,20 @@ export default function FarmerDashboard() {
 
           <TabsContent value="irrigation">
             <Card>
-              <CardHeader><CardTitle className="text-base">Irrigation Charges</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{t("p5b_irrigationCharges")}</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-right">Paid</TableHead>
-                      <TableHead className="text-right">Due</TableHead>
+                      <TableHead>{t("date")}</TableHead>
+                      <TableHead className="text-right">{t("total")}</TableHead>
+                      <TableHead className="text-right">{t("p5b_paid")}</TableHead>
+                      <TableHead className="text-right">{t("p5_dueCol")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.irrigation.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">No charges.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">{t("p5b_noCharges")}</TableCell></TableRow>
                     ) : data.irrigation.map((i) => (
                       <TableRow key={i.id}>
                         <TableCell className="whitespace-nowrap">{i.entry_date}</TableCell>
@@ -261,7 +263,7 @@ export default function FarmerDashboard() {
         </Tabs>
 
         <p className="text-center text-[11px] text-muted-foreground py-4">
-          Session is valid for 2 hours. Sign out when finished on a shared device.
+          {t("p5b_sessionValidNote")}
         </p>
       </main>
       <SiteFooter />
