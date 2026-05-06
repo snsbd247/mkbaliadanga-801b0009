@@ -99,6 +99,7 @@ export default function FarmerDetail() {
   const [deleting, setDeleting] = useState(false);
 
   const brand = useBranding();
+  const receiptArgs = useReceiptRenderArgs();
 
   useEffect(() => { if (id) loadAll(); }, [id]);
   useEffect(() => {
