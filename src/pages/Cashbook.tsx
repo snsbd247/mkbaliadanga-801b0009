@@ -24,18 +24,21 @@ const RECEIPT_KINDS = [
 ] as const;
 type Kind = typeof RECEIPT_KINDS[number];
 
-const KIND_LABEL: Record<Kind, string> = {
-  irrigation: "Irrigation",
-  bigha_rent: "Bigha Rent",
-  pond: "Pond Income",
-  crop_sale: "Crop Sale",
-  scrap: "Scrap",
-  loan_taken: "Loan Taken",
-  donation: "Donation",
-  savings_deposit: "Savings Deposit",
-  share: "Share",
-  other: "Other",
-};
+function getKindLabel(t: (k: any) => string, k: Kind): string {
+  const map: Record<Kind, string> = {
+    irrigation: t("kindIrrigation"),
+    bigha_rent: t("kindBighaRent"),
+    pond: t("kindPond"),
+    crop_sale: t("kindCropSale"),
+    scrap: t("kindScrap"),
+    loan_taken: t("kindLoanTaken"),
+    donation: t("kindDonation"),
+    savings_deposit: t("savingsDeposit"),
+    share: t("kindShare"),
+    other: t("kindOther"),
+  };
+  return map[k] ?? k;
+}
 
 const ALL = "__all__";
 
