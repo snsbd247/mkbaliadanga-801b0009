@@ -372,21 +372,21 @@ export default function Savings() {
           <Card className="p-3 mb-3 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">{t("enrollFarmersInPlansText")} <a href="/savings-plans" className="underline">{t("savingsPlansLink")}</a>.</div>
             <Dialog open={planOpen} onOpenChange={setPlanOpen}>
-              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Enroll Farmer</Button></DialogTrigger>
+              <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{t("pgEnrollFarmer")}</Button></DialogTrigger>
               <DialogContent>
-                <DialogHeader><DialogTitle>Enroll in Savings Plan</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{t("pgEnrollSavingsPlan")}</DialogTitle></DialogHeader>
                 <div className="space-y-3">
-                  <div><Label>Farmer</Label>
+                  <div><Label>{t("pgFarmer")}</Label>
                     <FarmerSearchSelect value={planForm.farmer_id || null}
                       onChange={(id) => setPlanForm({ ...planForm, farmer_id: id ?? "" })} />
                   </div>
-                  <div><Label>Plan</Label>
+                  <div><Label>{t("pgPlan")}</Label>
                     <Select value={planForm.plan_id} onValueChange={v => setPlanForm({ ...planForm, plan_id: v })}>
                       <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>{plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} ৳{p.installment_amount} @ {p.interest_rate}% ({p.maturity_type})</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Start Date</Label><Input type="date" value={planForm.start_date} onChange={e => setPlanForm({ ...planForm, start_date: e.target.value })} /></div>
+                  <div><Label>{t("pgStartDate")}</Label><Input type="date" value={planForm.start_date} onChange={e => setPlanForm({ ...planForm, start_date: e.target.value })} /></div>
                   {planForm.plan_id && (() => { const p = plans.find(x => x.id === planForm.plan_id); if (!p) return null; const c = calcMaturity(p); return (
                     <div className="rounded-md bg-muted p-2 text-sm space-y-1">
                       <div>Installments: <b>{c.count}</b></div>
