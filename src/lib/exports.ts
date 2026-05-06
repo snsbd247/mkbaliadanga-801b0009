@@ -40,7 +40,7 @@ export async function applyPdfHeaderFooter(
   doc.text(opts.title || "", pageW / 2, 24, { align: "center" });
   if (opts.range?.from || opts.range?.to) {
     doc.setFontSize(9); doc.setFont(undefined, "normal");
-    doc.text(`Period: ${opts.range.from || "—"} to ${opts.range.to || "—"}`, pageW / 2, 29, { align: "center" });
+    doc.text(`${tPdf("Period", "Period (Somoy)")}: ${opts.range.from || "—"} to ${opts.range.to || "—"}`, pageW / 2, 29, { align: "center" });
   }
   // Footer drawer — call drawFooters() AFTER all content is added.
   (doc as any).__drawFooters = () => {
@@ -48,8 +48,8 @@ export async function applyPdfHeaderFooter(
     for (let i = 1; i <= total; i++) {
       doc.setPage(i);
       doc.setFontSize(8); doc.setFont(undefined, "normal");
-      doc.text(`Printed: ${new Date().toLocaleString()}`, 14, pageH - 6);
-      doc.text(`Page ${i} of ${total}`, pageW - 14, pageH - 6, { align: "right" });
+      doc.text(`${tPdf("Printed", "Printed (Mudrito)")}: ${new Date().toLocaleString()}`, 14, pageH - 6);
+      doc.text(`${tPdf("Page", "Page (Pristha)")} ${i} ${tPdf("of", "/")} ${total}`, pageW - 14, pageH - 6, { align: "right" });
     }
   };
   return opts.range?.from || opts.range?.to ? 33 : 28;
