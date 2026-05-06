@@ -10,6 +10,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { MenuSearch } from "./MenuSearch";
+import { MenuShortcutsHelp } from "./MenuShortcutsHelp";
+import { MissingI18nPanel } from "@/components/dev/MissingI18nPanel";
 import { useBranding } from "@/lib/branding";
 import { SiteFooter } from "./SiteFooter";
 
@@ -55,6 +57,7 @@ export function AppLayout() {
               <div className="flex-1 min-w-0 max-w-md">
                 <MenuSearch />
               </div>
+              <MenuShortcutsHelp />
             </div>
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <NotificationBell />
@@ -121,6 +124,7 @@ export function AppLayout() {
           </main>
           <SiteFooter />
         </div>
+        <MissingI18nPanel />
       </div>
     </SidebarProvider>
   );
