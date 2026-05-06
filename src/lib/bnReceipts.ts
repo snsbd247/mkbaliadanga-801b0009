@@ -56,7 +56,7 @@ function titleFor(kind: ReceiptKind): string {
   return "ঋণের কিস্তি গ্রহণের রশিদ";
 }
 
-function copyHtml(d: BnReceiptData, copyLabel: string): string {
+function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl?: string | null): string {
   const logo = d.logo_url
     ? `<img src="${d.logo_url}" crossorigin="anonymous" style="height:60px;display:block;margin:0 auto 4px;" />`
     : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${d.company_name_bn ?? d.company_name ?? ""}</div>`;
