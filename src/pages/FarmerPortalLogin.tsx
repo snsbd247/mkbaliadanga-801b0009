@@ -25,7 +25,19 @@ export default function FarmerPortalLogin() {
   const [mobile, setMobile] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const idInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const i = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(i);
+  }, [cooldownUntil]);
+  const cooldownLeftSec = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000)) : 0;
+  useEffect(() => {
+    if (cooldownUntil && cooldownLeftSec === 0) setCooldownUntil(null);
+  }, [cooldownLeftSec, cooldownUntil]);
 
   useEffect(() => {
     if (!rolesLoaded || !user) return;
@@ -49,8 +61,15 @@ export default function FarmerPortalLogin() {
         body: JSON.stringify({ identifier: id, password: mob }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        const retryAt = data?.retry_at ? Date.parse(data.retry_at) : Date.now() + (Number(data?.retry_after || 60) * 1000);
+        setCooldownUntil(retryAt);
+        setError(data?.error || "Too many attempts. Try again later.");
+        return;
+      }
       if (!res.ok || !data?.token) {
-        setError(data?.error || t("invalidCredentials") || "Invalid farmer ID or mobile number");
+        const remaining = typeof data?.attempts_remaining === "number" ? ` (${data.attempts_remaining} left)` : "";
+        setError((data?.error || t("invalidCredentials") || "Invalid farmer ID or mobile number") + remaining);
         idInputRef.current?.focus();
         return;
       }
@@ -122,7 +141,7 @@ export default function FarmerPortalLogin() {
                   ref={idInputRef}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={t("farmerIdPlaceholder")}
+                  placeholder="0000001"
                   autoComplete="username"
                   autoFocus
                   disabled={busy}
@@ -145,12 +164,21 @@ export default function FarmerPortalLogin() {
               </div>
               {error && (
                 <Alert variant="destructive" id="portal-error" role="alert" aria-live="assertive" aria-atomic="true">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {error}
+                    {cooldownLeftSec > 0 && (
+                      <div className="mt-1 font-mono text-xs">
+                        Try again in {Math.floor(cooldownLeftSec / 60)}:{String(cooldownLeftSec % 60).padStart(2, "0")}
+                      </div>
+                    )}
+                  </AlertDescription>
                 </Alert>
               )}
-              <Button type="submit" className="w-full" disabled={busy} aria-busy={busy}>
+              <Button type="submit" className="w-full" disabled={busy || cooldownLeftSec > 0} aria-busy={busy}>
                 {busy ? (
                   <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t("sending")}</>
+                ) : cooldownLeftSec > 0 ? (
+                  <>Locked • {Math.floor(cooldownLeftSec / 60)}:{String(cooldownLeftSec % 60).padStart(2, "0")}</>
                 ) : (
                   <><LogIn className="h-4 w-4" aria-hidden="true" /> {t("login")}</>
                 )}
