@@ -328,7 +328,6 @@ export default function Backup() {
                   </a>
                 </div>
               )}
-              </div>
               {restoreReport && (
                 <div className="rounded-md border bg-muted/30 p-3 max-h-80 overflow-auto">
                   <div className="text-sm font-medium mb-2">{t("p5d_restoreSummary")}</div>
@@ -363,6 +362,19 @@ export default function Backup() {
           </div>
         </Card>
       )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("p5e_confirmRestoreTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("p5e_confirmRestoreDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("p5e_no")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => startRestore()}>{t("p5e_yesRestore")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
