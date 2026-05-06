@@ -124,6 +124,7 @@ export function AppLayout() {
           </main>
           <SiteFooter />
         </div>
+        <MissingI18nPanel />
       </div>
     </SidebarProvider>
   );
