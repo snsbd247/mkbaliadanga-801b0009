@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,11 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Loader2, AlertTriangle, Database, Trash2, Eye, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, AlertTriangle, Database, Trash2, Eye, RefreshCw, CheckCircle2, XCircle, Filter } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const MODULES = [
   { id: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা)" },
@@ -33,9 +37,22 @@ export default function DemoManager() {
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [preview, setPreview] = useState<any>(null);
+  const [confirmText, setConfirmText] = useState("");
+
+  // progress
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState<string>("");
+  const [stepLog, setStepLog] = useState<{ label: string; status: "running" | "done" | "error"; message?: string }[]>([]);
+  const [lastResult, setLastResult] = useState<any>(null);
+
+  // logs + filters
   const [logs, setLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
-  const [lastResult, setLastResult] = useState<any>(null);
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+  const [filterUser, setFilterUser] = useState("");
+  const [filterAction, setFilterAction] = useState<string>("all");
+  const [filterModule, setFilterModule] = useState<string>("all");
 
   const toggle = (id: string) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -46,15 +63,27 @@ export default function DemoManager() {
       .from("demo_operations_log" as any)
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(100);
     setLogs((data as any) ?? []);
     setLogsLoading(false);
   };
 
   useEffect(() => { loadLogs(); }, []);
 
+  const filteredLogs = useMemo(() => {
+    return logs.filter((l) => {
+      if (filterFrom && new Date(l.created_at) < new Date(filterFrom)) return false;
+      if (filterTo && new Date(l.created_at) > new Date(filterTo + "T23:59:59")) return false;
+      if (filterUser && !(l.user_email ?? "").toLowerCase().includes(filterUser.toLowerCase())) return false;
+      if (filterAction !== "all" && l.action !== filterAction) return false;
+      if (filterModule !== "all" && !(l.modules ?? []).includes(filterModule)) return false;
+      return true;
+    });
+  }, [logs, filterFrom, filterTo, filterUser, filterAction, filterModule]);
+
   const fetchPreview = async () => {
     setLoading(true);
+    setConfirmText("");
     try {
       const { data, error } = await supabase.functions.invoke("demo-reset", {
         body: { action: "preview", modules: selected, size },
@@ -71,17 +100,75 @@ export default function DemoManager() {
   };
 
   const run = async () => {
+    if (confirmText !== "RESET") {
+      toast.error("কনফার্ম করতে 'RESET' টাইপ করুন");
+      return;
+    }
     setPreviewOpen(false);
     setLoading(true);
     setLastResult(null);
+    setProgress(0);
+    setStepLog([]);
+    setCurrentStep("শুরু হচ্ছে...");
+
     try {
-      const { data, error } = await supabase.functions.invoke("demo-reset", {
-        body: { action, modules: selected, size, confirm: "RESET" },
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/demo-reset`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ action, modules: selected, size, confirm: "RESET", stream: true }),
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      setLastResult(data);
-      toast.success("✓ অপারেশন সম্পন্ন হয়েছে");
+
+      if (!resp.ok || !resp.body) {
+        const txt = await resp.text();
+        throw new Error(txt || `HTTP ${resp.status}`);
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let succeeded = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const ev = JSON.parse(line);
+            if (ev.type === "step") {
+              setCurrentStep(ev.label);
+              setProgress(ev.percent ?? 0);
+              setStepLog((s) => [...s, { label: ev.label, status: "running" }]);
+            } else if (ev.type === "done") {
+              setProgress(ev.percent ?? 0);
+              setStepLog((s) => s.map((x, i) => i === s.length - 1 ? { ...x, status: "done" } : x));
+            } else if (ev.type === "warn") {
+              setStepLog((s) => [...s, { label: ev.step, status: "error", message: ev.message }]);
+            } else if (ev.type === "error" || ev.type === "fatal") {
+              setStepLog((s) => [...s, { label: ev.step ?? "fatal", status: "error", message: ev.message }]);
+              throw new Error(ev.message);
+            } else if (ev.type === "complete") {
+              setProgress(100);
+              setCurrentStep("সম্পন্ন");
+              setLastResult(ev.summary);
+              succeeded = true;
+            }
+          } catch (parseErr) {
+            console.error("parse line:", line, parseErr);
+          }
+        }
+      }
+
+      if (succeeded) toast.success("✓ অপারেশন সম্পন্ন");
       await loadLogs();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
@@ -89,6 +176,7 @@ export default function DemoManager() {
       await loadLogs();
     } finally {
       setLoading(false);
+      setConfirmText("");
     }
   };
 
@@ -162,15 +250,37 @@ export default function DemoManager() {
         </Card>
       )}
 
-      <div className="flex gap-2">
-        <Button onClick={fetchPreview} disabled={loading} variant="outline" className="flex-1" size="lg">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-          প্রিভিউ + কনফার্ম
-        </Button>
-      </div>
+      <Button onClick={fetchPreview} disabled={loading} variant="outline" className="w-full" size="lg">
+        {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+        প্রিভিউ + কনফার্ম
+      </Button>
+
+      {/* Live progress */}
+      {loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">প্রগ্রেস: {progress}%</CardTitle>
+            <CardDescription>{currentStep}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Progress value={progress} />
+            <div className="max-h-64 overflow-y-auto space-y-1 text-xs">
+              {stepLog.slice(-30).map((s, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  {s.status === "running" && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                  {s.status === "done" && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                  {s.status === "error" && <XCircle className="h-3 w-3 text-destructive" />}
+                  <span className={s.status === "error" ? "text-destructive" : ""}>{s.label}</span>
+                  {s.message && <span className="text-destructive">— {s.message}</span>}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Preview / Confirmation Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+      <Dialog open={previewOpen} onOpenChange={(o) => { if (!loading) setPreviewOpen(o); if (!o) setConfirmText(""); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -191,7 +301,7 @@ export default function DemoManager() {
                   {Object.keys(preview.wipe_preview ?? {}).length === 0 ? (
                     <p className="text-sm text-muted-foreground">কোনো ডেটা নাই (সব টেবিল খালি)</p>
                   ) : (
-                    <div className="border rounded-md divide-y">
+                    <div className="border rounded-md divide-y max-h-60 overflow-y-auto">
                       {Object.entries(preview.wipe_preview as Record<string, number>)
                         .sort((a, b) => b[1] - a[1])
                         .map(([table, count]) => (
@@ -224,20 +334,33 @@ export default function DemoManager() {
                   )}
                 </div>
               )}
+
+              {/* Mandatory typed confirmation */}
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="text-destructive">
+                  নিশ্চিত করতে নিচে <code className="font-mono bg-muted px-1 rounded">RESET</code> টাইপ করুন
+                </Label>
+                <Input
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  placeholder="RESET"
+                  autoComplete="off"
+                />
+              </div>
             </div>
           )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={loading}>বাতিল</Button>
-            <Button variant="destructive" onClick={run} disabled={loading}>
+            <Button variant="destructive" onClick={run} disabled={loading || confirmText !== "RESET"}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-              হ্যাঁ, এক্সিকিউট করুন
+              এক্সিকিউট
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {lastResult && (
+      {lastResult && !loading && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -249,7 +372,7 @@ export default function DemoManager() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <pre className="text-xs overflow-auto bg-muted p-3 rounded max-h-80">
+            <pre className="text-xs overflow-auto bg-muted p-3 rounded max-h-60">
               {JSON.stringify(lastResult, null, 2)}
             </pre>
           </CardContent>
@@ -260,19 +383,57 @@ export default function DemoManager() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
-            <CardTitle>অডিট লগ</CardTitle>
-            <CardDescription>সর্বশেষ ২০টি ডেমো অপারেশন</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Filter className="h-4 w-4" /> অডিট লগ</CardTitle>
+            <CardDescription>{filteredLogs.length} / {logs.length} টি লগ</CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={loadLogs} disabled={logsLoading}>
             <RefreshCw className={`h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} />
           </Button>
         </CardHeader>
-        <CardContent>
-          {logs.length === 0 ? (
+        <CardContent className="space-y-4">
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+            <div>
+              <Label className="text-xs">From</Label>
+              <Input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">To</Label>
+              <Input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">User (email)</Label>
+              <Input placeholder="search..." value={filterUser} onChange={(e) => setFilterUser(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Action</Label>
+              <Select value={filterAction} onValueChange={setFilterAction}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="reset">reset</SelectItem>
+                  <SelectItem value="import">import</SelectItem>
+                  <SelectItem value="both">both</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Module</Label>
+              <Select value={filterModule} onValueChange={setFilterModule}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {MODULES.map((m) => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {filteredLogs.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">কোনো লগ নাই</p>
           ) : (
-            <div className="space-y-2">
-              {logs.map((l) => (
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+              {filteredLogs.map((l) => (
                 <div key={l.id} className="border rounded-md p-3 text-sm space-y-1">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
@@ -290,7 +451,7 @@ export default function DemoManager() {
                   </div>
                   <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
                     {l.ip && <span>IP: {l.ip}</span>}
-                    {l.size && <span>Size: {l.size}</span>}
+                    {l.size != null && <span>Size: {l.size}</span>}
                     {l.modules?.length > 0 && <span>Modules: {l.modules.join(", ")}</span>}
                   </div>
                   {l.error_message && (
