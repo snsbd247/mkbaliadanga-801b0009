@@ -234,7 +234,7 @@ export default function BulkCards() {
           </TableBody>
         </Table>
         <div className="px-4 py-2 text-xs text-muted-foreground border-t">
-          Showing first 200 results. Refine search to narrow down. Max 100 cards per PDF.
+          {t("pgBulkShowingHint" as any)}
         </div>
       </Card>
 
