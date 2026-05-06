@@ -187,13 +187,10 @@ export function AppSidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Track open groups; default open if any child is active
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    menu.forEach((p) => {
-      if (p.children?.some((c) => isActive(c.url))) init[p.key] = true;
-    });
-    return init;
+  // Accordion: only one group expanded at a time
+  const [openGroup, setOpenGroup] = useState<string | null>(() => {
+    const active = menu.find((p) => p.children?.some((c) => isActive(c.url)));
+    return active?.key ?? null;
   });
 
   // Filter menu by search query (case-insensitive on labels)
