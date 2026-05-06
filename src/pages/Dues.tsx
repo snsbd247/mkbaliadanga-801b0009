@@ -39,7 +39,7 @@ export default function Dues() {
   const [src, setSrc] = useState<"all" | "irrigation" | "loan">("all");
   const [bkt, setBkt] = useState<"all" | "0-30" | "30-60" | "60-90" | "90+">("all");
 
-  useEffect(() => { document.title = `Dues — ${t("appName")}`; load(); }, []);
+  useEffect(() => { document.title = `${t("dues_pageTitle" as any)} — ${t("appName")}`; load(); }, [t]);
 
   async function load() {
     const today = Date.now();
