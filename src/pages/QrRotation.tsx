@@ -22,6 +22,7 @@ interface Settings {
 
 export default function QrRotation() {
   const { isSuper } = useAuth();
+  const { t } = useLang();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
