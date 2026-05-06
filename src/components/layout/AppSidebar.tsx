@@ -37,7 +37,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { t, lang } = useLang();
-  const { isSuper, user } = useAuth();
+  const { isSuper, isDeveloper, user } = useAuth();
   const brand = useBranding();
   const { can } = usePermissions();
   const searchRef = useRef<HTMLInputElement | null>(null);
