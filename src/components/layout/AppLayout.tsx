@@ -57,6 +57,7 @@ export function AppLayout() {
               <div className="flex-1 min-w-0 max-w-md">
                 <MenuSearch />
               </div>
+              <MenuShortcutsHelp />
             </div>
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <NotificationBell />
