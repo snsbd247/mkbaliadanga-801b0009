@@ -43,9 +43,8 @@ async function logAudit(user_id: string, action: string, meta: Record<string, an
 
 export default function Profile() {
   const { user, signOut, refresh } = useAuth();
-  const { lang } = useLang();
+  const { t } = useLang();
   const navigate = useNavigate();
-  const tr = (en: string, bn: string) => (lang === "bn" ? bn : en);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
