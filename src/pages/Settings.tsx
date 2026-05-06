@@ -115,28 +115,28 @@ export default function Settings() {
               </div>
             </div>
             <div className="sm:col-span-2 border-t pt-4 mt-2">
-              <h3 className="font-semibold mb-2">PDF Footer</h3>
+              <h3 className="font-semibold mb-2">{t("set_pdfFooter" as any)}</h3>
               <div className="grid gap-3">
                 <div>
-                  <Label>Return Instruction / Footer Text</Label>
+                  <Label>{t("set_returnInstruction" as any)}</Label>
                   <textarea
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm min-h-20"
                     value={form.pdf_footer_text ?? ""}
                     onChange={e => setForm({ ...form, pdf_footer_text: e.target.value })}
-                    placeholder="e.g. If found, please return to the issuing office."
+                    placeholder={t("set_returnInstructionPh" as any)}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Shown in the footer of every generated PDF report.</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("set_returnInstructionHint" as any)}</p>
                 </div>
                 <div className="flex flex-wrap gap-4">
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={!!form.pdf_footer_show_address}
                       onChange={e => setForm({ ...form, pdf_footer_show_address: e.target.checked })} />
-                    Show office address in footer
+                    {t("set_showAddressInFooter" as any)}
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={!!form.pdf_footer_show_contact}
                       onChange={e => setForm({ ...form, pdf_footer_show_contact: e.target.checked })} />
-                    Show mobile / email in footer
+                    {t("set_showContactInFooter" as any)}
                   </label>
                 </div>
               </div>
