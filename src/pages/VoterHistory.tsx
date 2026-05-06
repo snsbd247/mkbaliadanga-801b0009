@@ -107,12 +107,12 @@ export default function VoterHistory() {
 
   return (
     <>
-      <PageHeader title="Voter Cancel/Reactivate History" description="Audit trail of every voter cancel and reactivate event with reason and operator." />
+      <PageHeader title={t("p5c_pageTitle" as any)} description={t("p5c_pageDesc" as any)} />
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-5">
           <div><Label>{t("p5_farmerLabel")}</Label><FarmerSearchSelect value={farmerId} onChange={(id) => setFarmerId(id)} /></div>
           <div>
-            <Label>Event</Label>
+            <Label>{t("pgEvent")}</Label>
             <Select value={event} onValueChange={setEvent}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
