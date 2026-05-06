@@ -185,7 +185,7 @@ export default function Cashbook() {
                   <div><Label>{t("type")}</Label>
                     <Select value={r.kind} onValueChange={(v: any) => setR({ ...r, kind: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{RECEIPT_KINDS.map(k => <SelectItem key={k} value={k}>{KIND_LABEL[k]}</SelectItem>)}</SelectContent>
+                      <SelectContent>{RECEIPT_KINDS.map(k => <SelectItem key={k} value={k}>{getKindLabel(t, k)}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div><Label>{t("farmerName")} <span className="text-xs text-muted-foreground">(optional)</span></Label>
