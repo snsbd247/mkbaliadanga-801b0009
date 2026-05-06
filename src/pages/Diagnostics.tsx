@@ -253,21 +253,21 @@ export default function Diagnostics() {
               </div>
               <Button onClick={runIntegrityScan} disabled={scanBusy}>
                 {scanBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                Run integrity scan
+                {t("diag_runIntegrity" as any)}
               </Button>
             </div>
             {scan?.error && (
-              <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{scan.error}</AlertDescription></Alert>
+              <Alert variant="destructive"><AlertTitle>{t("diag_error" as any)}</AlertTitle><AlertDescription>{scan.error}</AlertDescription></Alert>
             )}
             {scan && !scan.error && (
               <>
                 <Alert>
                   {scan.healthy ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                  <AlertTitle>{scan.healthy ? "All clear" : `${scan.summary.total_issues} issue(s) found`}</AlertTitle>
-                  <AlertDescription className="text-xs">Generated at {fmtDate(scan.generated_at)}</AlertDescription>
+                  <AlertTitle>{scan.healthy ? t("diag_allClear" as any) : t("diag_issuesFound" as any).replace("{count}", String(scan.summary.total_issues))}</AlertTitle>
+                  <AlertDescription className="text-xs">{t("diag_generatedAt" as any).replace("{date}", fmtDate(scan.generated_at))}</AlertDescription>
                 </Alert>
                 <Table>
-                  <TableHeader><TableRow><TableHead>Check</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>{t("diag_check" as any)}</TableHead><TableHead className="text-right">{t("diag_count" as any)}</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {Object.entries(scan.summary).map(([k, v]) => (
                       <TableRow key={k}>
@@ -283,9 +283,9 @@ export default function Diagnostics() {
                 </Table>
                 {scan.ledger_orphans?.length > 0 && (
                   <div>
-                    <div className="font-semibold text-sm mb-2">Ledger orphan references</div>
+                    <div className="font-semibold text-sm mb-2">{t("diag_ledgerOrphans" as any)}</div>
                     <Table>
-                      <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Reference ID</TableHead><TableHead className="text-right">Entries</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t("diag_type" as any)}</TableHead><TableHead>{t("diag_referenceId" as any)}</TableHead><TableHead className="text-right">{t("diag_entries" as any)}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {scan.ledger_orphans.map((o: any, i: number) => (
                           <TableRow key={i}>
