@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 
 const empty = {
@@ -28,12 +29,13 @@ type Row = typeof empty & { created_at?: string };
 
 export default function LoanPlans() {
   const { officeId, isAdmin } = useAuth();
+  const { t } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Row>(empty);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { document.title = "Loan Plans"; load(); }, []);
+  useEffect(() => { document.title = t("p5_loanPlansTitle"); load(); }, [t]);
 
   async function load() {
     const { data, error } = await (supabase.from as any)("loan_plans").select("*").order("created_at", { ascending: false });
@@ -45,8 +47,8 @@ export default function LoanPlans() {
   function openEdit(r: Row) { setForm({ ...empty, ...r }); setOpen(true); }
 
   async function save() {
-    if (!form.name.trim()) return toast.error("Name required");
-    if (!(form.duration_months > 0)) return toast.error("Duration must be > 0");
+    if (!form.name.trim()) return toast.error(t("p5_nameRequired"));
+    if (!(form.duration_months > 0)) return toast.error(t("p5_durationGtZero"));
     setSaving(true);
     try {
       const payload = {
@@ -64,13 +66,13 @@ export default function LoanPlans() {
         ? await (supabase.from as any)("loan_plans").update(payload).eq("id", form.id)
         : await (supabase.from as any)("loan_plans").insert(payload);
       if (error) throw error;
-      toast.success("Saved"); setOpen(false); load();
+      toast.success(t("saved")); setOpen(false); load();
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
   }
 
   async function del(id: string) {
-    if (!confirm("Delete this plan?")) return;
+    if (!confirm(t("p5_deletePlanConfirm"))) return;
     const { error } = await (supabase.from as any)("loan_plans").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
@@ -78,43 +80,43 @@ export default function LoanPlans() {
 
   return (
     <>
-      <PageHeader title="Loan Plans" description="Define loan schedules with installments and penalties" actions={
+      <PageHeader title={t("p5_loanPlansTitle")} description={t("p5_loanPlansDesc")} actions={
         isAdmin && (
           <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
-            <DialogTrigger asChild><Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Add Plan</Button></DialogTrigger>
+            <DialogTrigger asChild><Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />{t("p5_addPlan")}</Button></DialogTrigger>
             <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>{form.id ? "Edit" : "Add"} Loan Plan</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{form.id ? t("p5_editLoanPlan") : t("p5_addLoanPlan")}</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2"><Label>Name *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. 12-month monthly" /></div>
-                <div className="col-span-2"><Label>Name (Bangla)</Label><Input value={form.name_bn} onChange={e => setForm({ ...form, name_bn: e.target.value })} /></div>
-                <div><Label>Duration (months)</Label><Input type="number" min={1} value={form.duration_months} onChange={e => setForm({ ...form, duration_months: +e.target.value })} /></div>
-                <div><Label>Installment Type</Label>
+                <div className="col-span-2"><Label>{t("p5_nameLabel")} *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={t("p5_namePh")} /></div>
+                <div className="col-span-2"><Label>{t("p5_nameBangla")}</Label><Input value={form.name_bn} onChange={e => setForm({ ...form, name_bn: e.target.value })} /></div>
+                <div><Label>{t("p5_durationMonths")}</Label><Input type="number" min={1} value={form.duration_months} onChange={e => setForm({ ...form, duration_months: +e.target.value })} /></div>
+                <div><Label>{t("p5_installmentType")}</Label>
                   <Select value={form.installment_type} onValueChange={(v: any) => setForm({ ...form, installment_type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="daily">{t("p5_daily")}</SelectItem>
+                      <SelectItem value="weekly">{t("p5_weekly")}</SelectItem>
+                      <SelectItem value="monthly">{t("p5_monthly")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Interest Rate (%)</Label><Input type="number" min={0} step="0.01" value={form.interest_rate} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
-                <div><Label>Grace Period (days)</Label><Input type="number" min={0} value={form.grace_period_days} onChange={e => setForm({ ...form, grace_period_days: +e.target.value })} /></div>
-                <div><Label>Penalty Type</Label>
+                <div><Label>{t("p5_interestRate")}</Label><Input type="number" min={0} step="0.01" value={form.interest_rate} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
+                <div><Label>{t("p5_gracePeriodDays")}</Label><Input type="number" min={0} value={form.grace_period_days} onChange={e => setForm({ ...form, grace_period_days: +e.target.value })} /></div>
+                <div><Label>{t("p5_penaltyType")}</Label>
                   <Select value={form.penalty_type} onValueChange={(v: any) => setForm({ ...form, penalty_type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="percentage">% of installment</SelectItem><SelectItem value="fixed">Fixed amount</SelectItem></SelectContent>
+                    <SelectContent><SelectItem value="percentage">{t("p5_penaltyPercent")}</SelectItem><SelectItem value="fixed">{t("p5_penaltyFixed")}</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <div><Label>Penalty Value</Label><Input type="number" min={0} step="0.01" value={form.penalty_value} onChange={e => setForm({ ...form, penalty_value: +e.target.value })} /></div>
+                <div><Label>{t("p5_penaltyValue")}</Label><Input type="number" min={0} step="0.01" value={form.penalty_value} onChange={e => setForm({ ...form, penalty_value: +e.target.value })} /></div>
                 <div className="flex items-center justify-between rounded-md border p-2 col-span-2">
-                  <Label>Active</Label>
+                  <Label>{t("p5_activeBadge")}</Label>
                   <Switch checked={form.is_active} onCheckedChange={v => setForm({ ...form, is_active: v })} />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
-                <Button onClick={save} disabled={saving}>{saving ? "…" : "Save"}</Button>
+                <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{t("cancel")}</Button>
+                <Button onClick={save} disabled={saving}>{saving ? "…" : t("save")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -123,20 +125,20 @@ export default function LoanPlans() {
       <Card>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Name</TableHead><TableHead>Duration</TableHead><TableHead>Installment</TableHead>
-            <TableHead>Interest</TableHead><TableHead>Penalty</TableHead><TableHead>Grace</TableHead>
-            <TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t("p5_nameLabel")}</TableHead><TableHead>{t("p5_duration")}</TableHead><TableHead>{t("p5_installmentType")}</TableHead>
+            <TableHead>{t("p5_interest")}</TableHead><TableHead>{t("p5_penalty")}</TableHead><TableHead>{t("p5_grace")}</TableHead>
+            <TableHead>{t("p5_statusCol")}</TableHead><TableHead className="text-right">{t("p5_actionsCol")}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {rows.map(r => (
               <TableRow key={r.id}>
                 <TableCell><div className="font-medium">{r.name}</div>{r.name_bn && <div className="text-xs text-muted-foreground">{r.name_bn}</div>}</TableCell>
-                <TableCell>{r.duration_months} mo</TableCell>
-                <TableCell><Badge variant="outline">{r.installment_type}</Badge></TableCell>
+                <TableCell>{r.duration_months} {t("p5_monthsShort")}</TableCell>
+                <TableCell><Badge variant="outline">{t(("p5_" + r.installment_type) as any) || r.installment_type}</Badge></TableCell>
                 <TableCell>{r.interest_rate}%</TableCell>
                 <TableCell>{r.penalty_type === "percentage" ? `${r.penalty_value}%` : `৳${r.penalty_value}`}</TableCell>
-                <TableCell>{r.grace_period_days}d</TableCell>
-                <TableCell><Badge variant={r.is_active ? "default" : "secondary"}>{r.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                <TableCell>{r.grace_period_days}{t("p5_daysShort")}</TableCell>
+                <TableCell><Badge variant={r.is_active ? "default" : "secondary"}>{r.is_active ? t("p5_activeBadge") : t("p5_inactiveBadge")}</Badge></TableCell>
                 <TableCell className="text-right">
                   {isAdmin && (<>
                     <Button size="icon" variant="ghost" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
@@ -145,7 +147,7 @@ export default function LoanPlans() {
                 </TableCell>
               </TableRow>
             ))}
-            {rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">No plans yet.</TableCell></TableRow>}
+            {rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("p5_noPlansYet")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
