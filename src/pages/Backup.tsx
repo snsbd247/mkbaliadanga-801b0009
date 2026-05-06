@@ -7,8 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useLang } from "@/i18n/LanguageProvider";
-import { Download, Database, FileSpreadsheet, Upload, AlertTriangle } from "lucide-react";
+import { Download, Database, FileSpreadsheet, Upload, AlertTriangle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -53,6 +57,8 @@ export default function Backup() {
   const [progress, setProgress] = useState(0);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [dryRun, setDryRun] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [snapshotBlob, setSnapshotBlob] = useState<{ url: string; name: string } | null>(null);
   const [restoreReport, setRestoreReport] = useState<{ table: string; inserted: number; updated: number; failed: number; skipped: number; errors: string[] }[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -95,13 +101,59 @@ export default function Backup() {
     return summary;
   }
 
-  async function runRestore() {
+  async function buildSnapshot(targetTables: string[]): Promise<{ url: string; name: string }> {
+    const wb = XLSX.utils.book_new();
+    for (const name of targetTables) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const rows = await fetchAll(name);
+        const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ note: "empty" }]);
+        XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+      } catch (e) {
+        // skip restricted
+      }
+    }
+    const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+    const blob = new Blob([out], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const fname = `pre-restore-snapshot-${new Date().toISOString().replace(/[:.]/g, "-")}.xlsx`;
+    return { url, name: fname };
+  }
+
+  async function startRestore() {
     if (!restoreFile) return toast.error(t("p5d_invalidFile"));
+    if (dryRun) {
+      // Dry runs do not need a snapshot — they don't write anything.
+      return runRestore(null);
+    }
+    setConfirmOpen(false);
     setBusy("__restore__");
+    setSnapshotBlob(null);
     setRestoreReport(null);
     try {
+      // 1. Parse upload to know which tables we will touch.
       const buf = await restoreFile.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
+      const targets = wb.SheetNames.map(inferTableFromSheet).filter((x): x is string => !!x);
+      // 2. Snapshot those tables BEFORE writing anything.
+      toast.message(t("p5e_takingSnapshot"));
+      const snap = await buildSnapshot(targets);
+      setSnapshotBlob(snap);
+      toast.success(t("p5e_snapshotReady"));
+      // 3. Run the actual restore. Failure → snapshot stays available for download.
+      await runRestore(wb);
+    } catch (e: any) {
+      toast.error(`${t("p5e_restoreFailed")}: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runRestore(prebuiltWb: XLSX.WorkBook | null) {
+    if (!restoreFile) return;
+    setRestoreReport(null);
+    try {
+      const wb = prebuiltWb ?? XLSX.read(await restoreFile.arrayBuffer(), { type: "array" });
       const summaries: any[] = [];
       for (const sheetName of wb.SheetNames) {
         const tableName = inferTableFromSheet(sheetName);
@@ -116,11 +168,11 @@ export default function Backup() {
         summaries.push(s);
       }
       setRestoreReport(summaries);
-      toast.success(dryRun ? t("p5d_restoreSummary") : t("p5d_restoreDone"));
+      const anyFail = summaries.some(s => s.failed > 0);
+      if (anyFail && !dryRun) toast.error(t("p5e_restoreFailed"));
+      else toast.success(dryRun ? t("p5d_restoreSummary") : t("p5d_restoreDone"));
     } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setBusy(null);
+      toast.error(`${t("p5e_restoreFailed")}: ${e.message}`);
     }
   }
 
@@ -263,10 +315,19 @@ export default function Backup() {
                   <Checkbox checked={dryRun} onCheckedChange={(v) => setDryRun(!!v)} id="dry" />
                   <Label htmlFor="dry" className="text-sm cursor-pointer">{t("p5d_dryRun")}</Label>
                 </label>
-                <Button onClick={runRestore} disabled={!restoreFile || !!busy}>
+                <Button onClick={() => (dryRun ? startRestore() : setConfirmOpen(true))} disabled={!restoreFile || !!busy}>
                   {busy === "__restore__" ? t("p5d_restoreInProgress") : t("p5d_restoreNow")}
                 </Button>
               </div>
+              {snapshotBlob && (
+                <div className="rounded-md border bg-emerald-50/40 border-emerald-500/40 p-2 text-xs text-emerald-800 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{t("p5e_rollbackHint")}</span>
+                  <a href={snapshotBlob.url} download={snapshotBlob.name} className="underline font-medium">
+                    {t("p5e_downloadSnapshot")}
+                  </a>
+                </div>
+              )}
               {restoreReport && (
                 <div className="rounded-md border bg-muted/30 p-3 max-h-80 overflow-auto">
                   <div className="text-sm font-medium mb-2">{t("p5d_restoreSummary")}</div>
@@ -301,6 +362,19 @@ export default function Backup() {
           </div>
         </Card>
       )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("p5e_confirmRestoreTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("p5e_confirmRestoreDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("p5e_no")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => startRestore()}>{t("p5e_yesRestore")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
