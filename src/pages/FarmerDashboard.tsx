@@ -100,10 +100,10 @@ export default function FarmerDashboard() {
       <div className="min-h-screen flex flex-col bg-gradient-surface">
         <div className="flex-1 flex items-center justify-center p-4">
           <Card className="max-w-md w-full p-6">
-            <Alert variant="destructive"><AlertDescription>{error || "No data."}</AlertDescription></Alert>
+            <Alert variant="destructive"><AlertDescription>{error || t("p5b_noData")}</AlertDescription></Alert>
             <div className="mt-4 flex gap-2">
-              <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />Retry</Button>
-              <Button onClick={() => logout()} className="flex-1">Sign out</Button>
+              <Button onClick={load} variant="outline" className="flex-1"><RefreshCw className="h-4 w-4" />{t("p5b_retry")}</Button>
+              <Button onClick={() => logout()} className="flex-1">{t("p5b_signOut")}</Button>
             </div>
           </Card>
         </div>
