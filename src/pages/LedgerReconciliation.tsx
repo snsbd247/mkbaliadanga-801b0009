@@ -338,7 +338,7 @@ export default function LedgerReconciliation() {
                   </tbody>
                 </table>
               </div>
-              <div className="text-xs text-muted-foreground mt-2">Click a row to see ledger entries vs the source record side-by-side.</div>
+              <div className="text-xs text-muted-foreground mt-2">{t("p5_clickRowDetail")}</div>
             </Card>
           )}
         </>
