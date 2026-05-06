@@ -245,13 +245,13 @@ export default function Users() {
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-xs">{fmtDate(u.created_at)}</TableCell>
                 <TableCell className="text-right space-x-1">
-                  <Button size="sm" variant="outline" onClick={() => openPerms(u)} title="Permissions">
+                  <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
                     <ShieldCheck className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title="Reset password">
+                  <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => deleteUser(u)} disabled={u.id === me?.id} title="Delete">
+                  <Button size="sm" variant="outline" onClick={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
