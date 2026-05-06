@@ -299,14 +299,14 @@ export default function Users() {
       {/* Reset password dialog */}
       <Dialog open={!!resetFor} onOpenChange={(o) => !o && setResetFor(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Reset password — {resetFor?.username || resetFor?.email}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("resetPasswordTitle")} — {resetFor?.username || resetFor?.email}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Label>New password</Label>
-            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? "≥ 12 chars · upper/lower/digit/symbol" : "≥ 10 chars · upper/lower/digit/symbol"} />
+            <Label>{t("newPassword")}</Label>
+            <Input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder={resetFor?.roles?.includes("super_admin") ? t("pwPlaceholderSuper") : t("pwPlaceholderStaff")} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetFor(null)}>{t("cancel")}</Button>
-            <Button onClick={resetPassword} disabled={busy}>{busy ? "…" : "Update"}</Button>
+            <Button onClick={resetPassword} disabled={busy}>{busy ? "…" : t("update")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
