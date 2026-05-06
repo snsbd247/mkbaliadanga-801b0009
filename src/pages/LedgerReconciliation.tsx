@@ -308,7 +308,7 @@ export default function LedgerReconciliation() {
             <Card className="p-4 border-destructive/50">
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle className="h-4 w-4 text-destructive" />
-                <h3 className="font-semibold text-destructive">Mismatches ({report.mismatches.length})</h3>
+                <h3 className="font-semibold text-destructive">{t("p5_mismatches")} ({report.mismatches.length})</h3>
               </div>
               <div className="overflow-auto">
                 <table className="w-full text-xs">
