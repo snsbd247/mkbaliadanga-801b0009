@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { money, moneyPdf, fmtDate } from "./format";
 import { loadBranding } from "./branding";
-import { translations } from "@/i18n/translations";
+
 
 // Resolve current PDF language from the app's persisted user choice. Reports
 // then translate their static labels (Period / Printed / Page) automatically.
