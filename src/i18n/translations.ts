@@ -1804,7 +1804,7 @@ export const translations = {
     nextDueOn: "পরবর্তী বকেয়া",
     approvedPayments: "অনুমোদিত পেমেন্ট",
     entryDate: "এন্ট্রি তারিখ",
-    canalCharge: "ক্যানেল চার্জ",
+    canalChargeLabel: "ক্যানেল চার্জ",
     maintenance: "রক্ষণাবেক্ষণ",
     retryBtn: "পুনরায়",
     retried: "পুনরায় চেষ্টা হয়েছে",
