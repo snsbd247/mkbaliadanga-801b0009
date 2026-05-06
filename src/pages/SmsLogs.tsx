@@ -252,6 +252,7 @@ export default function SmsLogs() {
 
   function clearFilters() {
     setStatusFilter("all"); setEventFilter("all"); setOfficeFilter("all");
+    setUserFilter("all");
     setFarmerSearch(""); setFromDate(""); setToDate("");
   }
 
@@ -278,7 +279,7 @@ export default function SmsLogs() {
         <TabsContent value="logs" className="mt-4 space-y-3">
           <Card>
             <CardContent className="p-3 sm:p-4">
-              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
                 <div>
                   <Label className="text-xs">{t("status")}</Label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -304,6 +305,16 @@ export default function SmsLogs() {
                     <SelectContent>
                       <SelectItem value="all">{t("allOffices")}</SelectItem>
                       {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">{t("p5d_user")}</Label>
+                  <Select value={userFilter} onValueChange={setUserFilter}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("p5d_allUsers")}</SelectItem>
+                      {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name || u.email || u.id.slice(0, 8)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
