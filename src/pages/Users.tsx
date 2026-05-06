@@ -90,8 +90,8 @@ export default function Users() {
       const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
       return toast.error(first ?? t("validationFailed"));
     }
-    const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role);
-    if (policy.length) return toast.error(`Password policy: ${policy.join(", ")}`);
+    const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role, t);
+    if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "create", ...parsed.data });
     if (!ok) return;
     toast.success(t("userCreated"));
