@@ -1119,11 +1119,11 @@ export default function FarmerDetail() {
               }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">No plan (manual)</SelectItem>
+                  <SelectItem value="_none">{t("noPlanManual")}</SelectItem>
                   {loanPlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} @ {p.interest_rate}%</SelectItem>)}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">Changing the plan will regenerate the installment schedule.</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pgPlanChangeWarn" as any)}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>{t("principal")}</Label><Input type="number" value={editLoanForm.principal} onChange={e => setEditLoanForm({ ...editLoanForm, principal: +e.target.value })} /></div>
