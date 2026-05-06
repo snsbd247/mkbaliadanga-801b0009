@@ -34,6 +34,8 @@ type Log = {
   reference_id: string | null;
   farmer_name?: string | null;
   office_name?: string | null;
+  created_by?: string | null;
+  user_name?: string | null;
 };
 type DrawerData = {
   log: Log;
@@ -67,6 +69,7 @@ export default function SmsLogs() {
   const allowed = isAdmin || isSuper;
   const [logs, setLogs] = useState<Log[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
+  const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [drawer, setDrawer] = useState<DrawerData | null>(null);
@@ -75,6 +78,7 @@ export default function SmsLogs() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [officeFilter, setOfficeFilter] = useState<string>("all");
+  const [userFilter, setUserFilter] = useState<string>("all");
   const [farmerSearch, setFarmerSearch] = useState<string>(""); // mobile or farmer code text match
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
@@ -87,9 +91,10 @@ export default function SmsLogs() {
     document.title = "SMS Logs";
     if (!allowed) return;
     supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data as any) ?? []));
+    supabase.from("profiles").select("id,full_name,email").order("full_name").then(({ data }) => setUsers((data as any) ?? []));
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowed, statusFilter, eventFilter, officeFilter, fromDate, toDate]);
+  }, [allowed, statusFilter, eventFilter, officeFilter, userFilter, fromDate, toDate]);
 
   async function load() {
     setLoading(true);
@@ -97,6 +102,7 @@ export default function SmsLogs() {
     if (statusFilter !== "all") q = q.eq("status", statusFilter);
     if (eventFilter !== "all") q = q.eq("event_type", eventFilter);
     if (officeFilter !== "all") q = q.eq("office_id", officeFilter);
+    if (userFilter !== "all") q = q.eq("created_by", userFilter);
     if (fromDate) q = q.gte("created_at", new Date(fromDate).toISOString());
     if (toDate) {
       const end = new Date(toDate); end.setHours(23, 59, 59, 999);
@@ -107,25 +113,31 @@ export default function SmsLogs() {
     if (error) return toast.error(error.message);
     const rows = (data as any[]) ?? [];
 
-    // Enrich with farmer + office names (sms_logs has no FK so we batch-fetch)
+    // Enrich with farmer + office + user names (sms_logs has no FK so we batch-fetch)
     const farmerIds = Array.from(new Set(rows.map((r) => r.farmer_id).filter(Boolean)));
     const officeIds = Array.from(new Set(rows.map((r) => r.office_id).filter(Boolean)));
-    const [farmersRes, officesRes] = await Promise.all([
+    const userIds = Array.from(new Set(rows.map((r) => r.created_by).filter(Boolean)));
+    const [farmersRes, officesRes, usersRes] = await Promise.all([
       farmerIds.length
         ? supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", farmerIds)
         : Promise.resolve({ data: [] as any[] }),
       officeIds.length
         ? supabase.from("offices").select("id,name").in("id", officeIds)
         : Promise.resolve({ data: [] as any[] }),
+      userIds.length
+        ? supabase.from("profiles").select("id,full_name,email").in("id", userIds)
+        : Promise.resolve({ data: [] as any[] }),
     ]);
     const fmap = new Map<string, any>(((farmersRes as any).data ?? []).map((f: any) => [f.id, f]));
     const omap = new Map<string, string>(((officesRes as any).data ?? []).map((o: any) => [o.id, o.name]));
+    const umap = new Map<string, string>(((usersRes as any).data ?? []).map((u: any) => [u.id, u.full_name || u.email || u.id]));
     setLogs(rows.map((r) => {
       const f = r.farmer_id ? fmap.get(r.farmer_id) : null;
       return {
         ...r,
         farmer_name: f ? (f.name_en || f.name_bn || f.farmer_code) : null,
         office_name: r.office_id ? omap.get(r.office_id) ?? null : null,
+        user_name: r.created_by ? umap.get(r.created_by) ?? null : null,
       };
     }));
   }
@@ -240,6 +252,7 @@ export default function SmsLogs() {
 
   function clearFilters() {
     setStatusFilter("all"); setEventFilter("all"); setOfficeFilter("all");
+    setUserFilter("all");
     setFarmerSearch(""); setFromDate(""); setToDate("");
   }
 
@@ -266,7 +279,7 @@ export default function SmsLogs() {
         <TabsContent value="logs" className="mt-4 space-y-3">
           <Card>
             <CardContent className="p-3 sm:p-4">
-              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
                 <div>
                   <Label className="text-xs">{t("status")}</Label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -292,6 +305,16 @@ export default function SmsLogs() {
                     <SelectContent>
                       <SelectItem value="all">{t("allOffices")}</SelectItem>
                       {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">{t("p5d_user")}</Label>
+                  <Select value={userFilter} onValueChange={setUserFilter}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("p5d_allUsers")}</SelectItem>
+                      {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name || u.email || u.id.slice(0, 8)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

@@ -10,7 +10,11 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "i18n:scan": "node scripts/i18n-scan.mjs",
+    "i18n:check": "node scripts/i18n-check.mjs",
+    "i18n:check:update": "node scripts/i18n-check.mjs --update",
+    "ci": "npm run i18n:check && npm run test"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
