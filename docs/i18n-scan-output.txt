@@ -1,0 +1,294 @@
+⚠ 258 hardcoded UI string(s) found:
+
+  src/pages/Accounts.tsx
+    L274  [bn]  { code: "1000", name: "Assets", name_bn: "সম্পদ", type: "asset", parent_code: "", is_active: "yes" },
+    L275  [bn]  { code: "1100", name: "Cash", name_bn: "নগদ", type: "asset", parent_code: "1000", is_active: "yes" },
+  src/pages/AuditLogs.tsx
+    L148  [bn]  const headersBn = ["তারিখ/সময়", "কার্যক্রম", "বিষয়", "অফিস", "কৃষক কোড", "কৃষকের নাম", "ব্যবহারকারী", "রেকর্ড আইডি", "পুরাতন তথ্য", "নতুন 
+  src/pages/BulkCards.tsx
+    L145  [en]  This page is restricted to administrators.
+    L180  [en]  All offices
+    L186  [en]  Card template
+    L229  [en]  No matching farmers
+  src/pages/CardDesigner.tsx
+    L21  [bn]  company_name_bn: "স্মার্ট সেচ ও সমবায়",
+    L83  [en]  This page is restricted to super administrators.
+    L112  [en]  Template
+    L121  [en]  Accent color
+    L133  [en]  Font scale
+    L167  [en]  Visible fields
+    L177  [en]  Live preview
+    L178  [en]  Sample data
+  src/pages/DataImport.tsx
+    L628  [en]  Access denied
+    L651  [en]  Loan Payments
+    L652  [en]  Savings Transactions
+    L654  [en]  Irrigation Charges
+    L755  [en]  Ledger posting verification
+    L758  [en]  Record ID
+    L759  [en]  Ledger Entry IDs
+    L781  [en]  Processed
+  src/pages/DuesAudit.tsx
+    L72  [en]  All seasons
+  src/pages/FarmerCard.tsx
+    L155  [en]  Revoke this farmer's QR token?
+    L180  [en]  Card template
+    L189  [en]  PDF download uses the selected template.
+    L202  [en]  Rotate QR
+  src/pages/FarmerDetail.tsx
+    L163  [bn]  ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ" : kind === "savings" ? "সঞ্চয় জমা গ্রহণ" : "সেচ চার্জ গ্রহণ");
+    L169  [bn]  bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
+    L183  [bn]  description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
+    L194  [bn]  description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
+  src/pages/FarmerProfileReport.tsx
+    L73  [bn]  case "high_land": return "উঁচু জমি(High Land)";
+    L74  [bn]  case "medium_land": return "মাঝারি জমি(Medium Land)";
+    L75  [bn]  case "low_land": return "নিচু জমি(Low Land)";
+    L76  [bn]  case "other": return "বিবিধ";
+    L85  [bn]  const ownerTypeText = isBorga ? "বর্গাদার" : "মালিক";
+    L180  [en]  Loading report...
+    L184  [en]  Farmer not found.
+    L385  [bn]  <div className="farmer-report-rule">এক নজরে কৃষকের তথ্য</div>
+    L387  [en]  Farmer Information
+    L407  [en]  Father Name
+    L408  [en]  Mother Name
+    L410  [en]  Mobile No
+    L434  [en]  Savings Deposit Information
+    L444  [en]  Account No
+    L445  [en]  Active Status
+    L446  [en]  Total Amount
+    L447  [en]  Share Amount
+    L460  [en]  Irrigation Charge Information
+    L476  [bn]  <div className="farmer-year-row">সেচ বর্ষ: {year}</div>
+    L498  [en]  Owner Type
+    L499  [en]  Owner Name - FID
+    L500  [en]  Land Size
+    L501  [en]  Field Type
+    L502  [en]  Charge Rate
+    L503  [en]  Canal Charge
+    L504  [en]  Maintenance Charge
+    L505  [en]  Other Charges
+    L546  [en]  Loan Information
+    L559  [en]  Loan Account
+    L560  [en]  Loan Amount
+    L561  [en]  Interest Rate
+    L562  [en]  Total Loan Amt
+    L563  [en]  Issue Date
+    L564  [en]  Next Due Date
+  src/pages/Farmers.tsx
+    L30  [bn]  "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000",
+    L118  [bn]  {!isSuper && <p className="mt-1 text-xs text-muted-foreground">শুধু Super Admin পরিবর্তন করতে পারবে।</p>}
+    L150  [bn]  if (!error && data === true) setDupErr("এই Farmer ID আগে থেকেই ব্যবহৃত।");
+    L157  [bn]  Farmer ID * <span className="text-xs text-muted-foreground">(অটো-জেনারেট, Super Admin পরিবর্তন করতে পারবে)</span>
+    L169  [bn]  {!isSuper && <p className="mt-1 text-xs text-muted-foreground">শুধু Super Admin পরিবর্তন করতে পারবে।</p>}
+  src/pages/FarmersImport.tsx
+    L133  [bn]  "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000",
+  src/pages/Irrigation.tsx
+    L303  [bn]  <SelectContent>{lands.map(l => <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} ({l.land_size} শতক)</SelectItem>)}</SelectContent>
+  src/pages/IrrigationRates.tsx
+    L119  [bn]  if (!confirm("এই অফিস ও সিজনের জন্য একটি রেট আছে — আপডেট করবেন?")) {
+  src/pages/LandDetail.tsx
+    L53  [en]  Land not found
+    L101  [en]  Valid From
+    L114  [en]  No relations recorded.
+    L120  [en]  Recent irrigation charges
+    L136  [en]  No charges yet.
+  src/pages/LedgerReconciliation.tsx
+    L106  [bn]  const headersBn = ["কোড", "হিসাব", "ধরন", "প্রারম্ভিক স্থিতি", "মাস ডেবিট", "মাস ক্রেডিট", "সমাপনী স্থিতি"];
+  src/pages/Payments.tsx
+    L409  [bn]  ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ"
+    L410  [bn]  : kind === "savings" ? "সঞ্চয় জমা গ্রহণ"
+    L411  [bn]  : "সেচ চার্জ গ্রহণ");
+    L420  [bn]  bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
+  src/pages/Profile.tsx
+    L88  [bn]  return toast.error(first ?? tr("Validation failed", "যাচাইকরণ ব্যর্থ"));
+    L100  [bn]  return toast.error(tr("Username already taken", "এই ইউজারনেম ইতিমধ্যে ব্যবহৃত"));
+    L112  [bn]  toast.success(tr("Profile updated", "প্রোফাইল আপডেট হয়েছে"));
+    L119  [bn]  if (!emailParsed.success) return toast.error(tr("Invalid email address", "অবৈধ ইমেইল ঠিকানা"));
+    L120  [bn]  if (emailParsed.data === originalEmail) return toast.info(tr("Email unchanged", "ইমেইল পরিবর্তন হয়নি"));
+    L133  [bn]  "ভেরিফিকেশন লিংক পাঠানো হয়েছে। পুরোনো ও নতুন দুই ইমেইল ইনবক্স যাচাই করে নিশ্চিত করুন।"
+    L143  [bn]  if (pw !== pw2) return toast.error(tr("Passwords do not match", "পাসওয়ার্ড মিলছে না"));
+    L155  [bn]  "পাসওয়ার্ড পরিবর্তন হয়েছে। নিরাপত্তার জন্য সাইন-আউট করা হবে — আবার লগইন করুন।"
+    L174  [bn]  <CardTitle className="flex items-center gap-2"><UserIcon className="h-5 w-5" /> {tr("Your Profile", "আপনার প্রোফাইল")}</CardTitle>
+    L175  [bn]  <CardDescription>{tr("Update your personal information.", "আপনার ব্যক্তিগত তথ্য আপডেট করুন।")}</CardDescription>
+    L179  [bn]  <Label>{tr("Full Name", "পূর্ণ নাম")}</Label>
+    L181  [bn]  <p className="text-xs text-muted-foreground">{tr("2–120 characters; letters, spaces, dots, hyphens.", "২–১২০ অক্ষর; অক্ষর, স্পেস, ডট, হাইফেন
+    L184  [bn]  <Label>{tr("Username", "ইউজারনেম")}</Label>
+    L186  [bn]  <p className="text-xs text-muted-foreground">{tr("3–30 characters; letters, digits, . _ -", "৩–৩০ অক্ষর; অক্ষর, সংখ্যা, . _ -")}</p>
+    L191  [bn]  {tr("Save Changes", "সংরক্ষণ করুন")}
+    L199  [bn]  <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" /> {tr("Email Address", "ইমেইল ঠিকানা")}</CardTitle>
+    L200  [bn]  <CardDescription>{tr("Update your email. A verification link will be sent.", "আপনার ইমেইল আপডেট করুন। ভেরিফিকেশন লিংক পাঠানো হবে।")}</CardDe
+    L204  [bn]  <Label>{tr("Email", "ইমেইল")}</Label>
+    L209  [bn]  <AlertTitle>{tr("Verification required", "ভেরিফিকেশন প্রয়োজন")}</AlertTitle>
+    L213  [bn]  "সংরক্ষণের পরে পুরোনো ও নতুন উভয় ইমেইলে নিশ্চিতকরণ লিংক যাবে। উভয় নিশ্চিত হলেই পরিবর্তন কার্যকর হবে।"
+    L220  [bn]  {tr("Send Verification", "ভেরিফিকেশন পাঠান")}
+    L228  [bn]  <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> {tr("Change Password", "পাসওয়ার্ড পরিবর্তন")}</CardTitle>
+    L229  [bn]  <CardDescription>{tr("Set a new password for your account.", "আপনার অ্যাকাউন্টের নতুন পাসওয়ার্ড সেট করুন।")}</CardDescription>
+    L233  [bn]  <Label>{tr("New Password", "নতুন পাসওয়ার্ড")}</Label>
+    L238  [bn]  <Label>{tr("Confirm New Password", "নতুন পাসওয়ার্ড নিশ্চিত করুন")}</Label>
+    L241  [bn]  <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {tr("Passwords do not match", "পাসওয়ার্
+    L249  [bn]  "পাসওয়ার্ড পরিবর্তনের পরে স্বয়ংক্রিয়ভাবে সাইন-আউট হয়ে আবার লগইন করতে বলা হবে।"
+    L256  [bn]  {tr("Update Password", "পাসওয়ার্ড আপডেট")}
+  src/pages/ReceiptTemplate.tsx
+    L43  [bn]  company_name_bn: "স্মার্ট সেচ ও সমবায়",
+    L110  [en]  This page is restricted to super administrators.
+    L140  [en]  Language
+    L152  [en]  Paper size
+    L163  [en]  Header alignment
+    L174  [en]  Accent color
+    L183  [en]  Sections
+    L191  [en]  Footer note
+    L205  [en]  Live preview
+  src/pages/ResetPassword.tsx
+    L102  [en]  Reset your password
+    L113  [en]  New password
+    L125  [en]  Confirm new password
+  src/pages/ScanPayment.tsx
+    L73  [bn]  ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ"
+    L74  [bn]  : kind === "savings" ? "সঞ্চয় জমা গ্রহণ"
+    L75  [bn]  : "সেচ চার্জ গ্রহণ");
+    L84  [bn]  bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
+  src/pages/SmsSettings.tsx
+    L68  [bn]  type: "Loan / ঋণ",
+    L98  [bn]  tpl_savings_deposit: "প্রিয় গ্রাহক, আপনার সঞ্চয়ে ৳{amount} জমা হয়েছে। বর্তমান ব্যালেন্স: ৳{balance}। ধন্যবাদ।",
+    L99  [bn]  tpl_savings_withdraw: "প্রিয় গ্রাহক, আপনার সঞ্চয় থেকে ৳{amount} উত্তোলন হয়েছে। বর্তমান ব্যালেন্স: ৳{balance}।",
+    L100  [bn]  tpl_loan_approved: "অভিনন্দন! আপনার ঋণ ৳{amount} অনুমোদিত হয়েছে। মোট পরিশোধযোগ্য: ৳{payable}।",
+    L101  [bn]  tpl_loan_payment: "আপনার ঋণ পরিশোধ ৳{amount} গৃহীত হয়েছে। অবশিষ্ট বকেয়া: ৳{due}। ধন্যবাদ।",
+    L102  [bn]  tpl_irrigation_payment: "আপনার সেচ ফি ৳{amount} গৃহীত হয়েছে। ধন্যবাদ।",
+    L103  [bn]  tpl_due_reminder: "স্মরণিকা: আপনার {type} বকেয়া ৳{due} পরিশোধের তারিখ {date}। অনুগ্রহ করে যথাসময়ে পরিশোধ করুন।",
+    L150  [bn]  bangla: "বাংলা (Bangla)",
+    L214  [bn]  pageTitle: "এসএমএস সেটিংস",
+    L215  [bn]  pageDesc: "গ্রিনওয়েব বাল্ক এসএমএস নোটিফিকেশন কনফিগার করুন",
+    L216  [bn]  provider: "প্রোভাইডার",
+    L217  [bn]  enableSms: "এসএমএস সক্রিয় করুন",
+    L218  [bn]  enableSmsHint: "সমস্ত এসএমএস নোটিফিকেশনের প্রধান সুইচ।",
+    L219  [bn]  senderId: "সেন্ডার আইডি (ঐচ্ছিক)",
+    L220  [bn]  defaultLanguage: "ডিফল্ট ভাষা",
+    L221  [bn]  defaultLanguageHint: "বকেয়া স্মরণিকার জন্য ব্যবহৃত।",
+    L222  [bn]  reminderDaysBefore: "বকেয়ার আগে স্মরণিকা (দিন)",
+    L223  [bn]  secretsHint: "API টোকেন ব্যাকএন্ড সিক্রেটে নিরাপদে রাখা আছে এবং ফ্রন্টএন্ডে দেখানো হয় না। স্মরণিকা প্রতিদিন চলে এবং প্রতিটি বকেয়ার জন্য এক
+    L224  [bn]  triggers: "ট্রিগার ইভেন্ট",
+    L225  [bn]  trg_savings_deposit: "সঞ্চয় জমা",
+    L226  [bn]  trg_savings_withdraw: "সঞ্চয় উত্তোলন",
+    L227  [bn]  trg_loan_approved: "ঋণ অনুমোদিত",
+    L228  [bn]  trg_loan_payment: "ঋণ পরিশোধ গৃহীত",
+    L229  [bn]  trg_irrigation_payment: "সেচ পেমেন্ট",
+    L230  [bn]  trg_due_reminder: "বকেয়া স্মরণিকা",
+    L231  [bn]  perOffice: "অফিস-ভিত্তিক ওভাররাইড",
+    L232  [bn]  perOfficeHint: "নির্দিষ্ট অফিসের জন্য এসএমএস বন্ধ করুন বা ভিন্ন সেন্ডার আইডি ব্যবহার করুন। সেন্ডার আইডি খালি রাখলে গ্লোবাল সেটিং প্রযোজ্য হব
+    L233  [bn]  office: "অফিস",
+    L234  [bn]  smsEnabled: "এসএমএস সক্রিয়",
+    L235  [bn]  senderIdOverride: "সেন্ডার আইডি (ওভাররাইড)",
+    L236  [bn]  noOffices: "কোনো অফিস কনফিগার করা নেই।",
+    L237  [bn]  templates: "মেসেজ টেমপ্লেট",
+    L238  [bn]  templatesHint: "বাংলা / ইংরেজি টগল করুন। লাইভ প্রিভিউ স্যাম্পল ভ্যালু সহ মেসেজ দেখায়।",
+    L239  [bn]  sampleValues: "প্রিভিউয়ের জন্য স্যাম্পল মান",
+    L240  [bn]  reset: "রিসেট",
+    L241  [bn]  sampleHint: "উপরের মান পরিবর্তন করুন এবং নিচে প্রিভিউ লাইভ আপডেট দেখুন। এগুলো সংরক্ষিত হয় না — শুধু প্রিভিউয়ের জন্য।",
+    L242  [bn]  testPhone: "টেস্ট ফোন নম্বর",
+    L243  [bn]  testPhoneHint: "প্রতিটি টেমপ্লেটের টেস্ট বোতাম এই নম্বরে রেন্ডার করা প্রিভিউ পাঠাবে।",
+    L244  [bn]  bangla: "বাংলা",
+    L246  [bn]  preview: "প্রিভিউ",
+    L247  [bn]  chars: "অক্ষর",
+    L248  [bn]  emptyTpl: "খালি টেমপ্লেট",
+    L249  [bn]  missing: "অনুপস্থিত প্লেসহোল্ডার",
+    L250  [bn]  missingPlural: "অনুপস্থিত প্লেসহোল্ডার",
+    L251  [bn]  missingTail: "। ওভাররাইড চালু না করলে সংরক্ষণ করা যাবে না।",
+    L252  [bn]  autoFill: "অটো-ফিল",
+    L253  [bn]  autoFillTitle: "অনুপস্থিত প্লেসহোল্ডার টেমপ্লেটে যুক্ত করুন",
+    L254  [bn]  resetDefault: "ডিফল্টে ফেরান",
+    L255  [bn]  alreadyDefault: "ইতিমধ্যে ডিফল্ট",
+    L256  [bn]  restoreWording: "ডিফল্ট লেখা ফিরিয়ে আনুন",
+    L257  [bn]  testSend: "টেস্ট পাঠান",
+    L258  [bn]  sending: "পাঠানো হচ্ছে…",
+    L259  [bn]  enterTestPhone: "উপরে টেস্ট ফোন নম্বর দিন",
+    L260  [bn]  sendRenderedPreview: "প্রিভিউ টেস্ট নম্বরে পাঠান",
+    L261  [bn]  scheduler: "ম্যানুয়াল বকেয়া স্মরণিকা শিডিউলার",
+    L262  [bn]  schedulerHint: "নির্দিষ্ট তারিখ পরিসরে ঋণ/সেচ বকেয়ার জন্য স্মরণিকা পাঠান। একই আইটেমের জন্য পুনরাবৃত্ত স্মরণিকা স্বয়ংক্রিয়ভাবে এড়ানো হয়।
+    L263  [bn]  fromDate: "শুরু তারিখ",
+    L264  [bn]  toDate: "শেষ তারিখ",
+    L265  [bn]  allOffices: "সব অফিস",
+    L266  [bn]  today: "আজ",
+    L267  [bn]  runReminders: "এখন স্মরণিকা চালান",
+    L268  [bn]  running: "চলছে…",
+    L269  [bn]  sendTestCard: "টেস্ট এসএমএস পাঠান",
+    L270  [bn]  mobile: "মোবাইল",
+    L271  [bn]  message: "মেসেজ",
+    L272  [bn]  sendTestBtn: "টেস্ট পাঠান",
+    L273  [bn]  saveSettings: "সেটিংস সংরক্ষণ",
+    L274  [bn]  saving: "সংরক্ষণ হচ্ছে…",
+    L275  [bn]  overrideMissing: "প্রয়োজনীয় প্লেসহোল্ডার অনুপস্থিত থাকলেও সংরক্ষণের অনুমতি দিন",
+    L276  [bn]  overrideHint: "বন্ধ: কোনো সক্রিয় টেমপ্লেটে প্রয়োজনীয় ট্যাগ অনুপস্থিত থাকলে সংরক্ষণ ব্লক হবে। চালু: সতর্কতা থাকবে কিন্তু সংরক্ষণ করা যাবে।
+    L277  [bn]  blockedSave: "সংরক্ষণ করা যাবে না: কিছু টেমপ্লেটে প্রয়োজনীয় প্লেসহোল্ডার নেই। তবুও সংরক্ষণ করতে ওভাররাইড চালু করুন।",
+    L278  [bn]  saved: "সংরক্ষিত হয়েছে",
+    L279  [bn]  confirmTitle: "টেস্ট এসএমএস পাঠাবেন?",
+    L280  [bn]  confirmDescPrefix: "একটি প্রকৃত এসএমএস পাঠানো হবে",
+    L281  [bn]  confirmDescTpl: "টেমপ্লেট",
+    L282  [bn]  confirmDescPreview: "প্রিভিউ",
+    L283  [bn]  confirm: "এসএমএস পাঠান",
+    L284  [bn]  cancel: "বাতিল",
+    L285  [bn]  invalidPhone: "সঠিক ফোন নম্বর দিন (১০–১৫ ডিজিট)",
+    L286  [bn]  testSent: "টেস্ট এসএমএস পাঠানো হয়েছে ✓",
+    L287  [bn]  testFailed: "ব্যর্থ",
+    L288  [bn]  testLogTitle: "টেস্ট ফলাফল লগ",
+    L289  [bn]  testLogHint: "সাম্প্রতিক ওয়ান-ক্লিক টেস্টগুলো এখানে দেখানো হয়েছে।",
+    L290  [bn]  clearLog: "মুছুন",
+    L291  [bn]  noTests: "এখনো কোনো টেস্ট পাঠানো হয়নি।",
+    L292  [bn]  time: "সময়",
+    L293  [bn]  template: "টেমপ্লেট",
+    L294  [bn]  target: "প্রাপক",
+    L295  [bn]  status: "অবস্থা",
+    L296  [bn]  success: "সফল",
+    L297  [bn]  failed: "ব্যর্থ",
+    L298  [bn]  autoFilled: "অনুপস্থিত প্লেসহোল্ডার যুক্ত হয়েছে — সংরক্ষণ করুন",
+    L299  [bn]  nothingToFill: "যোগ করার কিছু নেই — সব প্লেসহোল্ডার ইতিমধ্যে আছে",
+    L300  [bn]  resetToastSaved: "ডিফল্টে ফেরানো হয়েছে — সংরক্ষণ করতে ভুলবেন না",
+    L301  [bn]  enterMobile: "মোবাইল দিন",
+    L302  [bn]  enterTestNumberFirst: "টেস্টের জন্য উপরে একটি ফোন নম্বর দিন",
+    L303  [bn]  tplEmpty: "টেমপ্লেট খালি",
+    L304  [bn]  pickBothDates: "দুটি তারিখই নির্বাচন করুন",
+    L305  [bn]  fromBeforeTo: "শুরু তারিখ শেষ তারিখের আগে হতে হবে",
+    L348  [bn]  const [testMsg, setTestMsg] = useState("পরীক্ষামূলক বার্তা — Smart Irrigation");
+  src/pages/VoterAudit.tsx
+    L114  [en]  All offices
+    L145  [en]  Is Voter
+    L146  [en]  Changed By
+    L152  [en]  No records
+  src/pages/accounts/CoaImportDialog.tsx
+    L308  [en]  Import Chart of Accounts
+    L318  [en]  Choose a .csv, .xlsx or .xls file
+    L372  [en]  Import complete
+  src/components/LanguageToggle.tsx
+    L32  [bn]  aria-label="বাংলায় পরিবর্তন করুন (Switch to Bengali)"
+    L34  [bn]  বাংলা
+  src/components/NotificationBell.tsx
+    L142  [en]  Notifications
+    L147  [en]  Mark all read
+    L161  [en]  Couldn't load notifications
+    L178  [en]  No notifications
+  src/components/auth/AccessDenied.tsx
+    L10  [bn]  ? "এই পেজটি দেখার অনুমতি আপনার নেই। প্রয়োজন হলে অ্যাডমিনের সাথে যোগাযোগ করুন।"
+  src/components/auth/PasswordStrength.tsx
+    L21  [bn]  {tr("Strength", "শক্তি")}: <span className="font-medium text-foreground">{tr(label, labelBn)}</span>
+  src/components/card/MembershipCard.tsx
+    L98  [en]  Farmer ID
+    L168  [en]  Scan to pay
+  src/components/farmers/FarmerSearchSelect.tsx
+    L145  [en]  No farmer found
+  src/components/farmers/VoterHistoryDialog.tsx
+    L45  [en]  Voter Number History
+    L53  [en]  No history yet
+    L61  [en]  Is Voter
+    L62  [en]  Changed by
+  src/components/receipts/ReceiptCopyMenu.tsx
+    L28  [en]  Both copies
+    L29  [en]  Farmer copy
+    L30  [en]  Office copy
+  src/components/ui/carousel.tsx
+    L189  [en]  Previous slide
+    L217  [en]  Next slide
+  src/components/ui/pagination.tsx
+    L52  [en]  Previous
+    L68  [en]  More pages
+  src/components/ui/sidebar.tsx
+    L237  [en]  Toggle Sidebar
