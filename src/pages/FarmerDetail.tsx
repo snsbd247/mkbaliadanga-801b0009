@@ -855,9 +855,7 @@ export default function FarmerDetail() {
                   <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => reprintReceipt(p)}>
-                      <FileDown className="h-3 w-3 mr-1" />Download
-                    </Button>
+                    <ReceiptCopyMenu size="sm" label="Download" onSelect={(c) => reprintReceipt(p, c)} />
                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deletePayment(p)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
