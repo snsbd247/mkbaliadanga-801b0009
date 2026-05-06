@@ -1028,7 +1028,7 @@ export default function FarmerDetail() {
                   <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("payments")}</div>
                   {viewLoanPays.length === 0 ? <div className="text-xs text-muted-foreground">{t("noData")}</div> : (
                     <Table>
-                      <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>{t("note")}</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead className="text-right">{t("amount")}</TableHead><TableHead>{t("note")}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {viewLoanPays.map(p => (
                           <TableRow key={p.id}>
