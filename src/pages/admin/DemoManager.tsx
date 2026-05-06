@@ -172,7 +172,7 @@ export default function DemoManager() {
         }
       }
 
-      if (succeeded) toast.success("✓ অপারেশন সম্পন্ন");
+      if (succeeded) toast.success(`✓ ${t("dmOpDone" as any)}`);
       await loadLogs();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
