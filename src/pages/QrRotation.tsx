@@ -80,8 +80,8 @@ export default function QrRotation() {
   if (!isSuper) {
     return (
       <>
-        <PageHeader title="QR Token Rotation" />
-        <Alert variant="destructive"><AlertDescription>This page is restricted to super administrators.</AlertDescription></Alert>
+        <PageHeader title={t("p5c_qrRotationTitle")} />
+        <Alert variant="destructive"><AlertDescription>{t("p5b_superAdminOnly")}</AlertDescription></Alert>
       </>
     );
   }
@@ -93,10 +93,10 @@ export default function QrRotation() {
   return (
     <>
       <PageHeader
-        title="QR Token Rotation"
-        description="Automatically reissue farmer QR tokens on a schedule and safely revoke old ones after a grace period."
+        title={t("p5c_qrRotationTitle")}
+        description={t("p5c_qrRotationDesc")}
         actions={
-          <Button variant="outline" size="sm" onClick={load}><RefreshCw className="h-4 w-4" />Refresh</Button>
+          <Button variant="outline" size="sm" onClick={load}><RefreshCw className="h-4 w-4" />{t("p5c_refresh")}</Button>
         }
       />
 
