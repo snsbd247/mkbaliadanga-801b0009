@@ -1,5 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { useDuplicateReceiptAudit } from "@/lib/duplicateReceiptAudit";
 
@@ -12,7 +13,10 @@ export function DuplicateReceiptWarning() {
   return (
     <Alert variant="destructive" className="mb-3">
       <AlertTriangle className="h-4 w-4" />
-      <AlertTitle>Duplicate receipt numbers detected ({rows.length})</AlertTitle>
+      <AlertTitle className="flex items-center justify-between gap-2">
+        <span>Duplicate receipt numbers detected ({rows.length})</span>
+        <Link to="/admin/duplicate-receipts" className="text-xs underline font-normal">View audit →</Link>
+      </AlertTitle>
       <AlertDescription>
         <ul className="text-xs mt-1 space-y-0.5">
           {top.map((r) => (
