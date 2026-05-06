@@ -285,10 +285,10 @@ export default function DemoManager() {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" /> অপারেশন কনফার্ম করুন
+              <AlertTriangle className="h-5 w-5 text-destructive" /> {t("dmConfirmTitle" as any)}
             </DialogTitle>
             <DialogDescription>
-              নিচের পরিবর্তনগুলো হবে। ভালো করে দেখে নিন — undo নাই।
+              {t("dmConfirmDesc" as any)}
             </DialogDescription>
           </DialogHeader>
 
