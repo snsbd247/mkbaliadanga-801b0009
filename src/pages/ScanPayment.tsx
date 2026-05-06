@@ -312,10 +312,28 @@ export default function ScanPayment() {
                   variant="outline"
                   onClick={async () => {
                     const payload = buildReceiptPayload();
-                    if (payload) await downloadBnReceiptPdf(payload);
+                    if (payload) await downloadBnReceiptPdf(payload, "both");
                   }}
                 >
-                  <FileDown className="h-4 w-4" />Download Receipt
+                  <FileDown className="h-4 w-4" />Both copies
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    const payload = buildReceiptPayload();
+                    if (payload) await downloadBnReceiptPdf(payload, "farmer");
+                  }}
+                >
+                  <FileDown className="h-4 w-4" />Farmer copy
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    const payload = buildReceiptPayload();
+                    if (payload) await downloadBnReceiptPdf(payload, "office");
+                  }}
+                >
+                  <FileDown className="h-4 w-4" />Office copy
                 </Button>
                 <Button onClick={reset}>Scan another</Button>
               </div>
