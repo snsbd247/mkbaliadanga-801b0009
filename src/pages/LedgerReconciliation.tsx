@@ -64,8 +64,8 @@ export default function LedgerReconciliation() {
   }, []);
 
   const officeName = useMemo(() =>
-    officeId === "all" ? "All offices" : (offices.find((o) => o.id === officeId)?.name ?? officeId),
-    [officeId, offices]);
+    officeId === "all" ? t("p5_allOffices") : (offices.find((o) => o.id === officeId)?.name ?? officeId),
+    [officeId, offices, t]);
 
   async function run() {
     setLoading(true);
