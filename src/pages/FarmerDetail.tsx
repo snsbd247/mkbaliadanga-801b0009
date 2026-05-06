@@ -551,15 +551,15 @@ export default function FarmerDetail() {
             <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{farmer.name_en[0]}</AvatarFallback>
           </Avatar>
           <div className="grid flex-1 grid-cols-2 gap-3 text-sm md:grid-cols-4">
-            <div><div className="text-xs text-muted-foreground">Farmer ID</div><div className="font-mono font-semibold">{farmer.member_no ?? farmer.farmer_code}</div></div>
+            <div><div className="text-xs text-muted-foreground">{t("pgFarmerId")}</div><div className="font-mono font-semibold">{farmer.member_no ?? farmer.farmer_code}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameEn")}</div><div className="font-medium">{farmer.name_en}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nameBn")}</div><div className="font-medium">{farmer.name_bn ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("fatherName")}</div><div>{farmer.father_name ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("motherName")}</div><div>{farmer.mother_name ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("nid")}</div><div className="font-mono">{farmer.nid ?? "-"}</div></div>
             <div><div className="text-xs text-muted-foreground">{t("mobile")}</div><div>{farmer.mobile ?? "-"}</div></div>
-            <div><div className="text-xs text-muted-foreground">Voter Number</div><div className="font-mono">{farmer.voter_number ?? "—"}</div></div>
-            <div className="col-span-2 md:col-span-4"><div className="text-xs text-muted-foreground">{t("village")} / Location</div><div className="text-sm">{farmerLocationLine(farmer)}</div></div>
+            <div><div className="text-xs text-muted-foreground">{t("pgVoterNumber")}</div><div className="font-mono">{farmer.voter_number ?? "—"}</div></div>
+            <div className="col-span-2 md:col-span-4"><div className="text-xs text-muted-foreground">{t("village")} / {t("pgLocation")}</div><div className="text-sm">{farmerLocationLine(farmer)}</div></div>
           </div>
           <div className="flex flex-col items-center gap-1 rounded-md border bg-card p-2">
             <QRCodeSVG value={`${window.location.origin}/scan?acc=${farmer.member_no ?? farmer.farmer_code}`} size={96} />
