@@ -592,11 +592,11 @@ export default function FarmerDetail() {
             <div className="flex flex-wrap justify-end gap-2 p-3 border-b">
               <Button size="sm" variant="outline" disabled={lands.length === 0}
                 onClick={() => exportLandsPdf({ name_en: farmer.name_en, account_number: farmer.account_number, farmer_code: farmer.farmer_code }, lands)}>
-                <FileText className="h-4 w-4 mr-1" />Export PDF
+                <FileText className="h-4 w-4 mr-1" />{t("pgExportPdf" as any)}
               </Button>
               <Button size="sm" variant="outline" disabled={lands.length === 0}
                 onClick={() => exportLandsExcel({ name_en: farmer.name_en, account_number: farmer.account_number, farmer_code: farmer.farmer_code }, lands)}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" />Export Excel
+                <FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExportExcel" as any)}
               </Button>
               <Dialog open={openLand} onOpenChange={(o) => {
                 setOpenLand(o);
