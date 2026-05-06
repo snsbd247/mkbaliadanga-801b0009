@@ -56,7 +56,7 @@ export default function QrRotation() {
         })
         .eq("id", 1);
       if (error) { toast.error(error.message); return; }
-      toast.success("Settings saved");
+      toast.success(t("p5c_settingsSaved"));
     } finally { setSaving(false); }
   }
 
@@ -64,15 +64,15 @@ export default function QrRotation() {
     setRunning(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Please sign in"); return; }
+      if (!session) { toast.error(t("p5b_pleaseSignIn")); return; }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/qr-rotate-scheduled`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ force: true }),
       });
       const j = await res.json();
-      if (!res.ok) { toast.error(j?.error || "Failed"); return; }
-      toast.success(`Rotated ${j.rotated} • Revoked ${j.revoked}`);
+      if (!res.ok) { toast.error(j?.error || t("p5b_failed")); return; }
+      toast.success(`${t("p5c_rotated")} ${j.rotated} • ${t("p5c_revoked")} ${j.revoked}`);
       await load();
     } finally { setRunning(false); }
   }
