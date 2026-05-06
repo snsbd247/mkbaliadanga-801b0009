@@ -428,6 +428,42 @@ export type Database = {
         }
         Relationships: []
       }
+      farmer_login_attempts: {
+        Row: {
+          created_at: string
+          error_reason: string | null
+          farmer_id: string | null
+          id: string
+          identifier: string
+          ip: string | null
+          office_id: string | null
+          success: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_reason?: string | null
+          farmer_id?: string | null
+          id?: string
+          identifier: string
+          ip?: string | null
+          office_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_reason?: string | null
+          farmer_id?: string | null
+          id?: string
+          identifier?: string
+          ip?: string | null
+          office_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       farmer_otps: {
         Row: {
           attempts: number
