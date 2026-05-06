@@ -249,20 +249,20 @@ export default function Irrigation() {
         <div className="flex gap-2">
         <Dialog open={genOpen} onOpenChange={setGenOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline"><Sparkles className="h-4 w-4 mr-1" />Generate for Season</Button>
+            <Button variant="outline"><Sparkles className="h-4 w-4 mr-1" />{t("pgGenerateForSeason")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Generate Irrigation Charges</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("pgGenerateIrrigationCharges")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label>Season</Label>
+                <Label>{t("pgSeason")}</Label>
                 <Select value={genSeason} onValueChange={setGenSeason}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>{seasons.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Basis</Label>
+                <Label>{t("pgBasis")}</Label>
                 <Select value={genBasis} onValueChange={setGenBasis}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -273,12 +273,12 @@ export default function Irrigation() {
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Creates one charge per land (skips lands already charged for this season). Uses the active rate from Irrigation Rates × land size.
+                {t("noActiveRateForSeason")}
               </p>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setGenOpen(false)}>{t("cancel")}</Button>
-              <Button onClick={generateForSeason} disabled={genBusy || !genSeason}>{genBusy ? "Generating..." : "Generate"}</Button>
+              <Button onClick={generateForSeason} disabled={genBusy || !genSeason}>{genBusy ? "…" : t("pgGenerateForSeason")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
