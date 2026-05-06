@@ -24,6 +24,7 @@ async function fetchFontBase64(): Promise<string> {
     const res = await fetch(FONT_URL);
     if (!res.ok) throw new Error(`Failed to load Bangla font (${res.status})`);
     const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.length < 1024) throw new Error("Bangla font payload too small");
     let bin = "";
     for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
     cachedBase64 = btoa(bin);
@@ -32,17 +33,19 @@ async function fetchFontBase64(): Promise<string> {
   return inflight;
 }
 
-/** Register the font on the given jsPDF instance. Safe to call multiple times. */
-export async function ensureBanglaFont(doc: jsPDF): Promise<void> {
-  if (registered.has(doc)) return;
+/** Register the font on the given jsPDF instance. Returns true on success. */
+export async function ensureBanglaFont(doc: jsPDF): Promise<boolean> {
+  if (registered.has(doc)) return true;
   try {
     const b64 = await fetchFontBase64();
     (doc as any).addFileToVFS(FONT_VFS_NAME, b64);
     (doc as any).addFont(FONT_VFS_NAME, FONT_FAMILY, "normal");
     registered.add(doc);
+    return true;
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn("[pdf] Bangla font unavailable, falling back to default:", e);
+    return false;
   }
 }
 
