@@ -297,10 +297,10 @@ export default function DemoManager() {
               {willWipe && (
                 <div>
                   <h3 className="font-semibold text-destructive flex items-center gap-2 mb-2">
-                    <Trash2 className="h-4 w-4" /> যা মুছে যাবে
+                    <Trash2 className="h-4 w-4" /> {t("dmWillDelete" as any)}
                   </h3>
                   {Object.keys(preview.wipe_preview ?? {}).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">কোনো ডেটা নাই (সব টেবিল খালি)</p>
+                    <p className="text-sm text-muted-foreground">{t("dmNoDataToWipe" as any)}</p>
                   ) : (
                     <div className="border rounded-md divide-y max-h-60 overflow-y-auto">
                       {Object.entries(preview.wipe_preview as Record<string, number>)
@@ -308,7 +308,7 @@ export default function DemoManager() {
                         .map(([table, count]) => (
                           <div key={table} className="flex justify-between px-3 py-2 text-sm">
                             <span className="font-mono">{table}</span>
-                            <Badge variant="destructive">{count} rows</Badge>
+                            <Badge variant="destructive">{count} {t("dmRows" as any)}</Badge>
                           </div>
                         ))}
                     </div>
