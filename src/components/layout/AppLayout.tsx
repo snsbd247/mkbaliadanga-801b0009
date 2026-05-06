@@ -9,6 +9,7 @@ import { LogOut, Languages, UserCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
+import { MenuSearch } from "./MenuSearch";
 import { useBranding } from "@/lib/branding";
 import { SiteFooter } from "./SiteFooter";
 
@@ -48,9 +49,12 @@ export function AppLayout() {
                 aria-label="Toggle menu"
                 className="shrink-0 sidebar-trigger-mobile md:h-9 md:w-9 md:rounded-md md:border md:bg-card md:shadow-sm md:hover:bg-accent/10"
               />
-              <span className="truncate text-sm font-medium text-foreground">
+              <span className="hidden md:inline truncate text-sm font-medium text-foreground max-w-[180px] lg:max-w-[240px]">
                 {lang === "bn" && brand.company_name_bn ? brand.company_name_bn : brand.company_name}
               </span>
+              <div className="flex-1 min-w-0 max-w-md">
+                <MenuSearch />
+              </div>
             </div>
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <NotificationBell />
