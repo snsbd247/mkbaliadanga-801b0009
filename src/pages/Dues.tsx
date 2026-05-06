@@ -206,7 +206,7 @@ export default function Dues() {
                   <TableCell className="font-mono text-xs">{r.code}</TableCell>
                   <TableCell>{r.name}</TableCell>
                   <TableCell>{r.mobile ?? "—"}</TableCell>
-                  <TableCell><Badge variant="outline">{r.source}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{r.source === "irrigation" ? t("dues_srcIrrigation" as any) : t("dues_srcLoan" as any)}</Badge></TableCell>
                   <TableCell className="text-xs">{r.reference}</TableCell>
                   <TableCell className="text-xs">{fmtDate(r.oldest)}</TableCell>
                   <TableCell>
