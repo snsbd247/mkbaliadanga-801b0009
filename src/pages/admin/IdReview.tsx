@@ -40,7 +40,7 @@ type AuditEntry = {
 
 export default function IdReview() {
   const { isSuper } = useAuth();
-  const { lang, t } = useLang();
+  const { t } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
