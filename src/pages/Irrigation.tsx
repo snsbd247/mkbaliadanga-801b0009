@@ -378,11 +378,11 @@ export default function Irrigation() {
               <TableCell className={r.due_amount > 0 ? "due-text" : ""}>{money(r.due_amount)}</TableCell>
               <TableCell className="text-right">
                 {showDeleted ? (
-                  <Button size="sm" variant="outline" onClick={() => restore(r.id)}>Restore</Button>
+                  <Button size="sm" variant="outline" onClick={() => restore(r.id)}>{t("pgRestore")}</Button>
                 ) : isSuper ? (
                   <>
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit">✎</Button>
-                    <Button size="icon" variant="ghost" onClick={() => softDelete(r.id)} title="Delete">🗑</Button>
+                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title={t("edit")}>✎</Button>
+                    <Button size="icon" variant="ghost" onClick={() => softDelete(r.id)} title={t("delete")}>🗑</Button>
                   </>
                 ) : null}
               </TableCell>
