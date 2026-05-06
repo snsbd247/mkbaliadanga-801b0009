@@ -1201,7 +1201,7 @@ export const translations = {
     signInWithOtp: "ওটিপি দিয়ে সাইন ইন",
     farmerOtpDesc: "আপনার ফার্মার আইডি লিখুন। আমরা আপনার নিবন্ধিত মোবাইলে ৬-সংখ্যার একটি কোড পাঠাব।",
     farmerIdOrMemberNo: "ফার্মার আইডি",
-    farmerIdPlaceholder: "যেমন ২০২৬-০০০০০১২৩ বা M-000123",
+    farmerIdPlaceholder: "যেমন ০০০০০১২",
     sendOtp: "ওটিপি পাঠান",
     sending: "পাঠানো হচ্ছে…",
     enterVerificationCode: "যাচাই কোড লিখুন",
