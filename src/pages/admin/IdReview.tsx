@@ -40,7 +40,7 @@ type AuditEntry = {
 
 export default function IdReview() {
   const { isSuper } = useAuth();
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,7 @@ export default function IdReview() {
   const [history, setHistory] = useState<AuditEntry[]>([]);
 
   useEffect(() => {
-    document.title = lang === "bn" ? "আইডি রিভিউ" : "ID Review";
+    document.title = t("idReviewTitle");
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
