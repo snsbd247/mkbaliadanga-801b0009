@@ -25,7 +25,19 @@ export default function FarmerPortalLogin() {
   const [mobile, setMobile] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const idInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const i = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(i);
+  }, [cooldownUntil]);
+  const cooldownLeftSec = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000)) : 0;
+  useEffect(() => {
+    if (cooldownUntil && cooldownLeftSec === 0) setCooldownUntil(null);
+  }, [cooldownLeftSec, cooldownUntil]);
 
   useEffect(() => {
     if (!rolesLoaded || !user) return;
