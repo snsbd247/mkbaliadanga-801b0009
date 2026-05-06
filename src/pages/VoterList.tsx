@@ -218,13 +218,13 @@ export default function VoterList() {
       <Card className="p-4 mb-4 space-y-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
           <TabsList>
-            <TabsTrigger value="active">Active Voters</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+            <TabsTrigger value="active">{t("pgActiveVoters")}</TabsTrigger>
+            <TabsTrigger value="cancelled">{t("pgCancelled")}</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search by voter #, name, mobile, account…" value={q}
+          <Input placeholder={t("search")} value={q}
             onChange={e => setQ(e.target.value)} className="pl-9" />
         </div>
       </Card>
@@ -233,14 +233,14 @@ export default function VoterList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Voter #</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Account No</TableHead>
-              <TableHead>Mobile</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Office</TableHead>
-              {tab === "cancelled" && <TableHead>Reason</TableHead>}
-              {isSuper && <TableHead className="text-right">Action</TableHead>}
+              <TableHead>{t("pgVoterNumber")} #</TableHead>
+              <TableHead>{t("pgName")}</TableHead>
+              <TableHead>{t("pgAccountNo")}</TableHead>
+              <TableHead>{t("pgMobile")}</TableHead>
+              <TableHead>{t("pgLocation")}</TableHead>
+              <TableHead>{t("pgOffice")}</TableHead>
+              {tab === "cancelled" && <TableHead>{t("pgReason")}</TableHead>}
+              {isSuper && <TableHead className="text-right">{t("pgAction")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
