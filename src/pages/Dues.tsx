@@ -86,7 +86,7 @@ export default function Dues() {
         code: l.farmers?.farmer_code ?? "—",
         mobile: l.farmers?.mobile ?? null,
         source: "loan",
-        reference: `Loan ${l.id.slice(0, 6)}`,
+        reference: `${t("dues_loanRefPrefix" as any)} ${l.id.slice(0, 6)}`,
         due,
         oldest: l.issued_on,
         ageDays: days,
