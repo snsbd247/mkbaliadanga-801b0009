@@ -32,7 +32,7 @@ export default function VoterAudit() {
   const [to, setTo] = useState<string>("");
 
   useEffect(() => {
-    document.title = "Voter Audit Logs";
+    document.title = t("auditLogs" as any);
     supabase.from("offices").select("id,name").order("name").then(r => {
       setOffices((r.data as any[]) ?? []);
       setOfficesMap(Object.fromEntries(((r.data as any[]) ?? []).map(o => [o.id, o])));
