@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Camera, X, User, CheckCircle2, FileDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { downloadPaymentReceiptPdf, previewPaymentReceiptPdf, maskToken, type PaymentReceiptData } from "@/lib/paymentReceiptPdf";
+import { downloadBnReceiptPdf, previewBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { useBranding } from "@/lib/branding";
 import { useReceiptTemplate } from "@/lib/receiptTemplate";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
