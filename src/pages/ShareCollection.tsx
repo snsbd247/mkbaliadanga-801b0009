@@ -336,20 +336,20 @@ export default function ShareCollection() {
                   <Select value={form.method} onValueChange={v => setForm({ ...form, method: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="bank">Bank</SelectItem>
+                      <SelectItem value="cash">{t("pgCash")}</SelectItem>
+                      <SelectItem value="bank">{t("pgBank")}</SelectItem>
                       <SelectItem value="mobile">{t("p5c_mobileBanking")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Note (optional)</Label>
+                <div><Label>{t("pgNote")}</Label>
                   <Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
                 </div>
-                <p className="text-xs text-muted-foreground">Min ৳{MIN_AMOUNT}. One entry per farmer per day. Pending approval required.</p>
+                <p className="text-xs text-muted-foreground">Min ৳{MIN_AMOUNT}.</p>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={save}>Submit</Button>
+                <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
+                <Button onClick={save}>{t("pgSubmit")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
