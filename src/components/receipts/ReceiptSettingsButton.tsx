@@ -6,14 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, RotateCcw } from "lucide-react";
 import { setReceiptOptions, useReceiptOptions, resetReceiptOptionsToDemo } from "@/lib/receiptOptions";
+import { useLang } from "@/i18n/LanguageProvider";
 
 export function ReceiptSettingsButton() {
   const opts = useReceiptOptions();
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm"><Settings2 className="h-4 w-4 mr-1" />Receipt settings</Button>
+        <Button variant="outline" size="sm"><Settings2 className="h-4 w-4 mr-1" />{t("p5b_receiptSettings")}</Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 space-y-3" align="end">
         <div className="flex items-center justify-between">
