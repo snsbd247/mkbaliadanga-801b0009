@@ -68,6 +68,7 @@ import IdReconcile from "./pages/admin/IdReconcile";
 import IdReview from "./pages/admin/IdReview";
 import DuplicateReceiptAudit from "./pages/admin/DuplicateReceiptAudit";
 import FarmerLoginAudit from "./pages/admin/FarmerLoginAudit";
+import DemoManager from "./pages/admin/DemoManager";
 import FarmerStatement from "./pages/FarmerStatement";
 
 import LoanPlans from "./pages/LoanPlans";
