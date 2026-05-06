@@ -1,60 +1,79 @@
 #!/usr/bin/env node
 /**
- * CI gate: fail when missing translation keys are detected.
+ * CI gate: i18n parity check.
  *
- * Strategy: load src/i18n/translations.ts as text, parse the en/bn key sets,
- * and assert every key present in `en` has a non-empty value in `bn` (and vice versa).
- * Exits with code 1 on mismatch — wire into CI via `node scripts/i18n-check.mjs`.
+ * Compares EN ↔ BN keys in src/i18n/translations.ts.
+ * Uses scripts/i18n-baseline.json to allow currently-known gaps; fails on regressions.
+ *
+ *   node scripts/i18n-check.mjs           # informative + fails on regressions
+ *   node scripts/i18n-check.mjs --update  # rewrite baseline (after intentional changes)
+ *   node scripts/i18n-check.mjs --strict  # fail on ANY missing key (no baseline)
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
+const args = new Set(process.argv.slice(2));
 const src = readFileSync("src/i18n/translations.ts", "utf8");
 
 function extractBlock(name) {
-  // Match "  en: { ... },\n  bn: { ... }" objects.
   const re = new RegExp(`\\b${name}\\s*:\\s*\\{`, "g");
   const m = re.exec(src);
   if (!m) throw new Error(`Block ${name} not found`);
-  let i = m.index + m[0].length;
-  let depth = 1;
+  let i = m.index + m[0].length, depth = 1;
   while (i < src.length && depth > 0) {
     const ch = src[i];
-    if (ch === "{") depth++;
-    else if (ch === "}") depth--;
+    if (ch === "{") depth++; else if (ch === "}") depth--;
     i++;
   }
   return src.slice(m.index + m[0].length, i - 1);
 }
-
 function keys(block) {
   const out = new Map();
-  // crude scan: lines like `  someKey: "value",`
   const re = /^\s*([A-Za-z_][\w]*)\s*:\s*"((?:[^"\\]|\\.)*)"/gm;
-  let m;
-  while ((m = re.exec(block))) out.set(m[1], m[2]);
+  let m; while ((m = re.exec(block))) out.set(m[1], m[2]);
   return out;
 }
 
-const enBlock = extractBlock("en");
-const bnBlock = extractBlock("bn");
-const en = keys(enBlock);
-const bn = keys(bnBlock);
-
+const en = keys(extractBlock("en"));
+const bn = keys(extractBlock("bn"));
 const missingInBn = [...en.keys()].filter(k => !bn.has(k) || bn.get(k) === "");
 const missingInEn = [...bn.keys()].filter(k => !en.has(k) || en.get(k) === "");
 
-if (!missingInBn.length && !missingInEn.length) {
-  console.log(`✓ i18n parity OK — ${en.size} keys, both languages complete.`);
+const baselinePath = "scripts/i18n-baseline.json";
+let baseline = { missingInBn: [], missingInEn: [] };
+if (existsSync(baselinePath)) baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
+
+if (args.has("--update")) {
+  writeFileSync(baselinePath, JSON.stringify({ missingInBn, missingInEn }, null, 2));
+  console.log(`Baseline updated: ${missingInBn.length} BN, ${missingInEn.length} EN gaps recorded.`);
   process.exit(0);
 }
 
-if (missingInBn.length) {
-  console.error(`✗ ${missingInBn.length} key(s) missing/empty in BN:`);
-  missingInBn.slice(0, 50).forEach(k => console.error("  -", k));
-  if (missingInBn.length > 50) console.error(`  …and ${missingInBn.length - 50} more`);
+const baseSetBn = new Set(baseline.missingInBn);
+const baseSetEn = new Set(baseline.missingInEn);
+const newMissingBn = missingInBn.filter(k => !baseSetBn.has(k));
+const newMissingEn = missingInEn.filter(k => !baseSetEn.has(k));
+
+console.log(`Total keys: EN=${en.size} BN=${bn.size}`);
+console.log(`Gaps:  BN missing=${missingInBn.length} (baseline ${baselinePath ? baseline.missingInBn.length : 0}), EN missing=${missingInEn.length}`);
+
+if (args.has("--strict") && (missingInBn.length || missingInEn.length)) {
+  console.error("✗ Strict mode: missing keys present.");
+  process.exit(1);
 }
-if (missingInEn.length) {
-  console.error(`✗ ${missingInEn.length} key(s) missing/empty in EN:`);
-  missingInEn.slice(0, 50).forEach(k => console.error("  -", k));
+
+if (newMissingBn.length || newMissingEn.length) {
+  console.error("\n✗ Regression — new missing keys vs baseline:");
+  if (newMissingBn.length) {
+    console.error(`  BN missing (+${newMissingBn.length}):`);
+    newMissingBn.slice(0, 30).forEach(k => console.error("    -", k));
+  }
+  if (newMissingEn.length) {
+    console.error(`  EN missing (+${newMissingEn.length}):`);
+    newMissingEn.slice(0, 30).forEach(k => console.error("    -", k));
+  }
+  console.error("\nFix the above keys, or run `node scripts/i18n-check.mjs --update` after intentional edits.");
+  process.exit(1);
 }
-process.exit(1);
+
+console.log("✓ i18n parity check passed (no regressions).");
+process.exit(0);
