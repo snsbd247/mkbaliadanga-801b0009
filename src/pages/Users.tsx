@@ -34,7 +34,7 @@ const createSchema = z.object({
   email: z.string().trim().email().max(255),
   full_name: z.string().trim().min(1).max(120),
   password: z.string().min(10, "At least 10 characters").max(72),
-  role: z.enum(["super_admin", "admin", "committee", "staff"]),
+  role: z.enum(["developer", "super_admin", "admin", "committee", "staff"]),
   office_id: z.string().nullable(),
 });
 
