@@ -34,9 +34,10 @@ type Action = "reset" | "import" | "both";
 
 
 export default function DemoManager() {
+  const { t } = useLang();
   const [action, setAction] = useState<Action>("both");
   const [size, setSize] = useState(50);
-  const [selected, setSelected] = useState<string[]>(MODULES.map((m) => m.id));
+  const [selected, setSelected] = useState<string[]>(MODULE_KEYS.map((m) => m.id));
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [preview, setPreview] = useState<any>(null);
