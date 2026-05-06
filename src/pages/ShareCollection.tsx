@@ -75,9 +75,9 @@ export default function ShareCollection() {
   }
 
   function validate(amount: number): string | null {
-    if (!Number.isFinite(amount) || amount <= 0) return "Amount must be positive";
-    if (amount < MIN_AMOUNT) return `Minimum amount is ৳${MIN_AMOUNT}`;
-    if (amount > MAX_AMOUNT) return `Maximum amount is ৳${MAX_AMOUNT.toLocaleString()}`;
+    if (!Number.isFinite(amount) || amount <= 0) return t("pgShareAmtPositive" as any);
+    if (amount < MIN_AMOUNT) return (t("pgShareMinAmount" as any) as string).replace("{amt}", String(MIN_AMOUNT));
+    if (amount > MAX_AMOUNT) return (t("pgShareMaxAmount" as any) as string).replace("{amt}", MAX_AMOUNT.toLocaleString());
     return null;
   }
 
@@ -85,7 +85,7 @@ export default function ShareCollection() {
     const amt = Number(form.amount);
     const err = validate(amt);
     if (err) return toast.error(err);
-    if (!form.farmer_id) return toast.error("Select a farmer");
+    if (!form.farmer_id) return toast.error(t("pgShareSelectFarmer" as any));
 
     const { error } = await supabase.from("savings_transactions").insert({
       farmer_id: form.farmer_id,
@@ -98,10 +98,10 @@ export default function ShareCollection() {
     });
     if (error) {
       if (error.code === "23505" || /duplicate/i.test(error.message))
-        return toast.error("This farmer already has a share collection on this date");
+        return toast.error(t("pgShareDuplicateDate" as any));
       return toast.error(error.message);
     }
-    toast.success("Submitted for approval");
+    toast.success(t("pgShareSubmitted" as any));
     setOpen(false);
     setForm({ farmer_id: "", amount: "", txn_date: form.txn_date, method: "cash", note: "" });
     load();
