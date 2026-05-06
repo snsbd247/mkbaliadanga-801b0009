@@ -613,7 +613,7 @@ export const translations = {
     signInWithOtp: "Sign in with OTP",
     farmerOtpDesc: "Enter your Farmer ID or Farmer ID. We'll send a 6-digit code to your registered mobile.",
     farmerIdOrMemberNo: "Farmer ID",
-    farmerIdPlaceholder: "e.g. 2026-00000123 or M-000123",
+    farmerIdPlaceholder: "e.g. 0000012",
     sendOtp: "Send OTP",
     sending: "Sending…",
     enterVerificationCode: "Enter verification code",
