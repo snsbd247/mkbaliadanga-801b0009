@@ -171,7 +171,7 @@ export default function AuthPage() {
             </div>
           )}
           <h1 className="text-2xl font-bold">{lang === "bn" && brand.company_name_bn ? brand.company_name_bn : brand.company_name}</h1>
-          <p className="text-sm text-muted-foreground mt-1">Cooperative Management System</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("cooperativeMgmtSystem")}</p>
         </div>
 
         <Card className="p-6 shadow-elegant">
@@ -179,20 +179,20 @@ export default function AuthPage() {
           <p className="text-sm text-muted-foreground mb-4">{t("signInDesc")}</p>
           <form onSubmit={signIn} className="space-y-3">
             <div>
-              <Label>Username</Label>
+              <Label>{t("username")}</Label>
               <Input
                 required
                 autoComplete="username"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="username"
+                placeholder={t("username")}
               />
             </div>
             <div>
               <div className="flex items-center justify-between">
                 <Label>{t("password")}</Label>
                 <button type="button" onClick={() => { setForgotInput(username); setForgotOpen(true); }} className="text-xs text-primary hover:underline">
-                  Forgot password?
+                  {t("forgotPassword")}
                 </button>
               </div>
               <Input
@@ -210,7 +210,7 @@ export default function AuthPage() {
             <div className="mt-4">
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Login failed</AlertTitle>
+                <AlertTitle>{t("loginFailed")}</AlertTitle>
                 <AlertDescription>
                   <div className="text-sm">{debug.errorMessage}</div>
                 </AlertDescription>
@@ -223,13 +223,13 @@ export default function AuthPage() {
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Mail className="h-4 w-4" />Reset your password</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Mail className="h-4 w-4" />{t("resetYourPassword")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Enter your username or email. If we find a matching account, we'll send you a reset link.</p>
+            <p className="text-sm text-muted-foreground">{t("resetEmailDesc")}</p>
             <div>
-              <Label>Username or email</Label>
-              <Input value={forgotInput} onChange={e => setForgotInput(e.target.value)} placeholder="superadmin or you@example.com" autoFocus />
+              <Label>{t("usernameOrEmail")}</Label>
+              <Input value={forgotInput} onChange={e => setForgotInput(e.target.value)} placeholder={t("usernameOrEmailPh")} autoFocus />
             </div>
           </div>
           <DialogFooter>
