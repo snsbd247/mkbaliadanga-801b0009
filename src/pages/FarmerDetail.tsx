@@ -803,8 +803,8 @@ export default function FarmerDetail() {
                    <TableCell className="text-right">
                      <Button size="icon" variant="ghost" onClick={() => openLoanView(l)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
                      <ReceiptCopyMenu onSelect={(c) => printLoan(l, c)} title={t("print")} />
-                     {isSuper && <Button size="icon" variant="ghost" onClick={() => editLoanGoto(l)} title={t("edit" as any) || "Edit"}><Pencil className="h-4 w-4" /></Button>}
-                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                     {isSuper && <Button size="icon" variant="ghost" onClick={() => editLoanGoto(l)} title={t("edit")}><Pencil className="h-4 w-4" /></Button>}
+                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                    </TableCell>
                 </TableRow>
               );
