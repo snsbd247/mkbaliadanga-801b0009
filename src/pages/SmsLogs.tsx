@@ -148,7 +148,7 @@ export default function SmsLogs() {
     const { error } = await supabase.functions.invoke("send-sms", { body: { retry: true, ids: [id] } });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Retried");
+    toast.success(t("retried"));
     load();
   }
 
@@ -157,7 +157,7 @@ export default function SmsLogs() {
     const { error } = await supabase.functions.invoke("send-sms", { body: { retry: true } });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Retry batch sent");
+    toast.success(t("retryBatchSent"));
     load();
   }
 
@@ -167,7 +167,7 @@ export default function SmsLogs() {
     setBusy(false);
     if (error) return toast.error(error.message);
     const r = data as any;
-    toast.success(`Reminders queued — loan: ${r?.loan ?? 0}, irrigation: ${r?.irrigation ?? 0}, dedup-skipped: ${r?.skipped_dup ?? 0}`);
+    toast.success(t("remindersQueued").replace("{l}", String(r?.loan ?? 0)).replace("{i}", String(r?.irrigation ?? 0)).replace("{s}", String(r?.skipped_dup ?? 0)));
     load();
   }
 
@@ -179,7 +179,7 @@ export default function SmsLogs() {
     setDrawer({ log: l, loading: true, kind, record: null, paid: 0, due: 0 });
 
     if (!kind || !l.reference_id) {
-      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: "No underlying reference recorded for this SMS." });
+      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: t("noUnderlyingRef") });
       return;
     }
 
@@ -195,7 +195,7 @@ export default function SmsLogs() {
           farmerPromise,
         ]);
         if (loanRes.error || !loanRes.data) {
-          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: loanRes.error?.message ?? "Loan not found (may be deleted)." });
+          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: loanRes.error?.message ?? t("loanNotFound") });
           return;
         }
         const paid = (paySumRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
@@ -207,7 +207,7 @@ export default function SmsLogs() {
           farmerPromise,
         ]);
         if (irrRes.error || !irrRes.data) {
-          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: irrRes.error?.message ?? "Irrigation charge not found (may be deleted)." });
+          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: irrRes.error?.message ?? t("irrChargeNotFound") });
           return;
         }
         const paid = Number(irrRes.data.paid_amount || 0);
@@ -215,19 +215,19 @@ export default function SmsLogs() {
         setDrawer({ log: l, loading: false, kind, record: irrRes.data, paid, due, farmer: (farmerRes as any).data });
       }
     } catch (e: any) {
-      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: e?.message ?? "Failed to load details" });
+      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: e?.message ?? t("failedLoadDetails") });
     }
   }
 
   async function sendBulk() {
     const mobiles = bulkMobiles.split(/[\s,;\n]+/).map((m) => m.trim()).filter(Boolean);
-    if (!mobiles.length) return toast.error("Enter at least one mobile");
-    if (!bulkMessage.trim()) return toast.error("Enter a message");
+    if (!mobiles.length) return toast.error(t("enterAtLeastOneMobile"));
+    if (!bulkMessage.trim()) return toast.error(t("enterMessage"));
     setBusy(true);
     const { data, error } = await supabase.functions.invoke("send-sms", { body: { mobiles, message: bulkMessage } });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`Queued ${(data as any)?.queued ?? mobiles.length} messages`);
+    toast.success(t("queuedMsgs").replace("{n}", String((data as any)?.queued ?? mobiles.length)));
     setBulkMobiles(""); setBulkMessage("");
     load();
   }
@@ -402,12 +402,12 @@ export default function SmsLogs() {
                         <TableCell>
                           <div className="flex items-center gap-1">
                             {(l.event_type === "due_reminder_loan" || l.event_type === "due_reminder_irrigation") && (
-                              <Button size="sm" variant="ghost" onClick={() => openDetails(l)} title="View underlying record">
+                              <Button size="sm" variant="ghost" onClick={() => openDetails(l)} title={t("viewReceipt")}>
                                 <Eye className="h-4 w-4"/>
                               </Button>
                             )}
                             {l.status !== "sent" && (
-                              <Button size="sm" variant="ghost" onClick={() => retryOne(l.id)} disabled={busy}>Retry</Button>
+                              <Button size="sm" variant="ghost" onClick={() => retryOne(l.id)} disabled={busy}>{t("retryBtn")}</Button>
                             )}
                           </div>
                         </TableCell>
@@ -422,24 +422,24 @@ export default function SmsLogs() {
 
         <TabsContent value="bulk" className="mt-4">
           <Card>
-            <CardHeader><CardTitle className="text-base">Bulk Announcement</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{t("bulkAnnouncement")}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <Label className="text-sm font-medium">Mobile numbers</Label>
+                <Label className="text-sm font-medium">{t("mobileNumbers")}</Label>
                 <Textarea
                   rows={4}
-                  placeholder="017XXXXXXXX, 018XXXXXXXX  (or one per line)"
+                  placeholder={t("mobilesPh")}
                   value={bulkMobiles}
                   onChange={(e) => setBulkMobiles(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Comma, space, or newline separated.</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("mobilesSeparated")}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium">Message</Label>
-                <Textarea rows={4} value={bulkMessage} onChange={(e) => setBulkMessage(e.target.value)} placeholder="Announcement text…" />
+                <Label className="text-sm font-medium">{t("message")}</Label>
+                <Textarea rows={4} value={bulkMessage} onChange={(e) => setBulkMessage(e.target.value)} placeholder={t("announcementPh")} />
               </div>
               <Button onClick={sendBulk} disabled={busy} className="w-full sm:w-auto">
-                <Send className="mr-1 h-4 w-4"/>Send Bulk
+                <Send className="mr-1 h-4 w-4"/>{t("sendBulkBtn")}
               </Button>
             </CardContent>
           </Card>
@@ -449,9 +449,9 @@ export default function SmsLogs() {
       <Sheet open={!!drawer} onOpenChange={(o) => { if (!o) setDrawer(null); }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Reminder Details</SheetTitle>
+            <SheetTitle>{t("reminderDetails")}</SheetTitle>
             <SheetDescription>
-              {drawer?.kind === "loan" ? "Underlying loan record and computed due." : drawer?.kind === "irrigation" ? "Underlying irrigation charge and computed due." : "SMS log details."}
+              {drawer?.kind === "loan" ? t("underlyingLoan") : drawer?.kind === "irrigation" ? t("underlyingIrrigation") : t("smsLogDetails")}
             </SheetDescription>
           </SheetHeader>
 
@@ -463,18 +463,18 @@ export default function SmsLogs() {
                   <span className="text-xs text-muted-foreground">SMS</span>
                   {statusBadge(drawer.log.status)}
                 </div>
-                <div><span className="text-muted-foreground">Sent to:</span> <span className="font-mono">{drawer.log.mobile}</span></div>
-                <div><span className="text-muted-foreground">Time:</span> {new Date(drawer.log.created_at).toLocaleString()}</div>
-                <div><span className="text-muted-foreground">Event:</span> <Badge variant="outline" className="text-[10px]">{drawer.log.event_type ?? "-"}</Badge></div>
+                <div><span className="text-muted-foreground">{t("sentTo")}</span> <span className="font-mono">{drawer.log.mobile}</span></div>
+                <div><span className="text-muted-foreground">{t("time")}:</span> {new Date(drawer.log.created_at).toLocaleString()}</div>
+                <div><span className="text-muted-foreground">{t("event")}:</span> <Badge variant="outline" className="text-[10px]">{drawer.log.event_type ?? "-"}</Badge></div>
                 <div className="text-xs bg-muted/40 rounded p-2 mt-2 whitespace-pre-wrap break-words">{drawer.log.message}</div>
                 {drawer.log.provider_response && (
-                  <div className="text-xs text-muted-foreground"><span className="font-medium">Provider:</span> {drawer.log.provider_response}</div>
+                  <div className="text-xs text-muted-foreground"><span className="font-medium">{t("providerLabel")}</span> {drawer.log.provider_response}</div>
                 )}
               </div>
 
               {drawer.loading ? (
                 <div className="flex items-center justify-center py-8 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2"/>Loading record…
+                  <Loader2 className="h-4 w-4 animate-spin mr-2"/>{t("loadingRecord")}
                 </div>
               ) : drawer.error ? (
                 <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-destructive text-xs">
@@ -485,10 +485,10 @@ export default function SmsLogs() {
                   {/* Farmer */}
                   {drawer.farmer && (
                     <div className="rounded-md border p-3 space-y-1">
-                      <div className="text-xs text-muted-foreground">Farmer</div>
+                      <div className="text-xs text-muted-foreground">{t("farmer")}</div>
                       <div className="font-medium">{drawer.farmer.name_en || drawer.farmer.name_bn}</div>
                       <div className="text-xs text-muted-foreground">
-                        Code: <span className="font-mono">{drawer.farmer.farmer_code}</span>
+                        {t("farmerCode")}: <span className="font-mono">{drawer.farmer.farmer_code}</span>
                         {drawer.farmer.village ? <> · {drawer.farmer.village}</> : null}
                       </div>
                       {drawer.farmer.mobile && <div className="text-xs font-mono">{drawer.farmer.mobile}</div>}
@@ -498,7 +498,7 @@ export default function SmsLogs() {
                   {/* Computed due summary */}
                   <div className="rounded-md border p-3 grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <div className="text-[10px] uppercase text-muted-foreground">Total</div>
+                      <div className="text-[10px] uppercase text-muted-foreground">{t("total")}</div>
                       <div className="font-semibold">
                         {drawer.kind === "loan"
                           ? Number(drawer.record.total_payable || 0).toLocaleString()
@@ -506,11 +506,11 @@ export default function SmsLogs() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase text-muted-foreground">Paid</div>
+                      <div className="text-[10px] uppercase text-muted-foreground">{t("paidLabel")}</div>
                       <div className="font-semibold text-success">{drawer.paid.toLocaleString()}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase text-muted-foreground">Due</div>
+                      <div className="text-[10px] uppercase text-muted-foreground">{t("dueLabel")}</div>
                       <div className="font-semibold text-destructive">{drawer.due.toLocaleString()}</div>
                     </div>
                   </div>
@@ -518,18 +518,18 @@ export default function SmsLogs() {
                   {/* Record specifics */}
                   {drawer.kind === "loan" ? (
                     <div className="rounded-md border p-3 space-y-1.5">
-                      <div className="text-xs text-muted-foreground mb-1">Loan</div>
+                      <div className="text-xs text-muted-foreground mb-1">{t("loanRecordLabel")}</div>
                       <div className="grid grid-cols-2 gap-y-1 text-xs">
-                        <div className="text-muted-foreground">Principal</div><div>{Number(drawer.record.principal || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">Interest rate</div><div>{drawer.record.interest_rate}% {drawer.record.interest_enabled ? "" : "(off)"}</div>
-                        <div className="text-muted-foreground">Total payable</div><div>{Number(drawer.record.total_payable || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">Issued on</div><div>{drawer.record.issued_on}</div>
-                        <div className="text-muted-foreground">Next due on</div><div className="font-medium">{drawer.record.next_due_on ?? "—"}</div>
-                        <div className="text-muted-foreground">Status</div><div><Badge variant="outline" className="text-[10px]">{drawer.record.status}</Badge></div>
+                        <div className="text-muted-foreground">{t("principal")}</div><div>{Number(drawer.record.principal || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("interestRate")}</div><div>{drawer.record.interest_rate}% {drawer.record.interest_enabled ? "" : "(off)"}</div>
+                        <div className="text-muted-foreground">{t("totalPayable")}</div><div>{Number(drawer.record.total_payable || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("issuedOn")}</div><div>{drawer.record.issued_on}</div>
+                        <div className="text-muted-foreground">{t("nextDueOn")}</div><div className="font-medium">{drawer.record.next_due_on ?? "—"}</div>
+                        <div className="text-muted-foreground">{t("status")}</div><div><Badge variant="outline" className="text-[10px]">{drawer.record.status}</Badge></div>
                       </div>
                       {drawer.payments && drawer.payments.length > 0 && (
                         <div className="mt-2">
-                          <div className="text-xs text-muted-foreground mb-1">Approved payments ({drawer.payments.length})</div>
+                          <div className="text-xs text-muted-foreground mb-1">{t("approvedPayments")} ({drawer.payments.length})</div>
                           <div className="max-h-32 overflow-y-auto text-xs space-y-0.5">
                             {drawer.payments.map((p, i) => (
                               <div key={i} className="flex justify-between border-b last:border-0 py-0.5">
@@ -543,18 +543,18 @@ export default function SmsLogs() {
                     </div>
                   ) : (
                     <div className="rounded-md border p-3 space-y-1.5">
-                      <div className="text-xs text-muted-foreground mb-1">Irrigation Charge</div>
+                      <div className="text-xs text-muted-foreground mb-1">{t("irrigationChargeLabel")}</div>
                       <div className="grid grid-cols-2 gap-y-1 text-xs">
-                        <div className="text-muted-foreground">Entry date</div><div>{drawer.record.entry_date}</div>
-                        <div className="text-muted-foreground">Basis</div><div>{drawer.record.basis}</div>
-                        <div className="text-muted-foreground">Quantity</div><div>{drawer.record.quantity}</div>
-                        <div className="text-muted-foreground">Base charge</div><div>{Number(drawer.record.base_charge || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">Canal charge</div><div>{Number(drawer.record.canal_charge || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">Maintenance</div><div>{Number(drawer.record.maintenance_charge || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">Other</div><div>{Number(drawer.record.other_charge || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">Penalty</div><div>{Number(drawer.record.penalty_amount || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">Previous due</div><div>{Number(drawer.record.previous_due_brought || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">Total</div><div className="font-medium">{Number(drawer.record.total || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("entryDate")}</div><div>{drawer.record.entry_date}</div>
+                        <div className="text-muted-foreground">{t("basis")}</div><div>{drawer.record.basis}</div>
+                        <div className="text-muted-foreground">{t("quantity")}</div><div>{drawer.record.quantity}</div>
+                        <div className="text-muted-foreground">{t("baseCharge")}</div><div>{Number(drawer.record.base_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("canalChargeLabel")}</div><div>{Number(drawer.record.canal_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("maintenanceCharge")}</div><div>{Number(drawer.record.maintenance_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("other")}</div><div>{Number(drawer.record.other_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("penalty")}</div><div>{Number(drawer.record.penalty_amount || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("previousDue")}</div><div>{Number(drawer.record.previous_due_brought || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("total")}</div><div className="font-medium">{Number(drawer.record.total || 0).toLocaleString()}</div>
                       </div>
                       {drawer.record.note && <div className="text-xs text-muted-foreground italic">"{drawer.record.note}"</div>}
                     </div>

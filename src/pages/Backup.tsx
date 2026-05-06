@@ -55,7 +55,7 @@ export default function Backup() {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, label.slice(0, 31));
       XLSX.writeFile(wb, `${name}-${new Date().toISOString().slice(0, 10)}.xlsx`);
-      toast.success(`${label}: ${rows.length} rows`);
+      toast.success(t("rowsCount").replace("{label}", label).replace("{n}", String(rows.length)));
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -75,7 +75,7 @@ export default function Backup() {
       a.href = url; a.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`${label}: ${rows.length} rows`);
+      toast.success(t("rowsCount").replace("{label}", label).replace("{n}", String(rows.length)));
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -102,7 +102,7 @@ export default function Backup() {
         setProgress(Math.round((i / TABLES.length) * 100));
       }
       XLSX.writeFile(wb, `cooperative-backup-${new Date().toISOString().slice(0, 10)}.xlsx`);
-      toast.success("Full backup downloaded");
+      toast.success(t("fullBackupDownloaded"));
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -113,7 +113,7 @@ export default function Backup() {
 
   return (
     <>
-      <PageHeader title="Backup & Export Center" description="Download a complete copy of your cooperative data" />
+      <PageHeader title={t("backupTitle")} description={t("backupDesc")} />
 
       <Card className="p-5 mb-5 bg-gradient-to-br from-primary/5 to-accent/5">
         <div className="flex items-start gap-4">
@@ -121,8 +121,8 @@ export default function Backup() {
             <Database className="h-6 w-6" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold">Full Workbook Backup</h3>
-            <p className="text-sm text-muted-foreground mb-3">All tables in one Excel file (one sheet per table). Subject to your access permissions.</p>
+            <h3 className="font-semibold">{t("fullWorkbookBackup")}</h3>
+            <p className="text-sm text-muted-foreground mb-3">{t("fullWorkbookDesc")}</p>
             {busy === "__all__" && (
               <div className="mb-2 h-2 w-full rounded bg-muted overflow-hidden">
                 <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
@@ -130,14 +130,14 @@ export default function Backup() {
             )}
             <Button onClick={downloadAll} disabled={!!busy}>
               <Download className="h-4 w-4 mr-2" />
-              {busy === "__all__" ? `Backing up… ${progress}%` : "Download full backup (.xlsx)"}
+              {busy === "__all__" ? `${t("backingUp")} ${progress}%` : t("downloadFullBackup")}
             </Button>
           </div>
         </div>
       </Card>
 
       <Card className="p-5">
-        <h3 className="font-semibold mb-3">Per-table exports</h3>
+        <h3 className="font-semibold mb-3">{t("perTableExports")}</h3>
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
           {TABLES.map(tb => (
             <div key={tb.name} className="flex items-center justify-between gap-2 rounded-md border p-3">

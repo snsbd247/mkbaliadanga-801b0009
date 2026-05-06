@@ -74,7 +74,7 @@ export default function Dashboard() {
       { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins },
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success" },
-      { label: "This Month Collection", value: money(monthCollect), icon: CalendarClock },
+      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock },
       { label: t("totalDue"), value: money(totalDue), icon: AlertTriangle, tone: "danger" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
     ]);
@@ -246,11 +246,11 @@ export default function Dashboard() {
                     <div className="font-medium flex items-center gap-2">
                       {p.farmers?.name_en} <span className="text-xs text-muted-foreground">({p.farmers?.farmer_code})</span>
                       {p.receipt_url && (
-                        <a href={p.receipt_url} target="_blank" rel="noreferrer" title="View receipt" className="text-primary hover:text-primary/70">
+                        <a href={p.receipt_url} target="_blank" rel="noreferrer" title={t("viewReceipt")} className="text-primary hover:text-primary/70">
                           <FileText className="h-3.5 w-3.5" />
                         </a>
                       )}
-                      {p.status === "pending" && <Badge variant="secondary" className="text-[10px]">pending</Badge>}
+                      {p.status === "pending" && <Badge variant="secondary" className="text-[10px]">{t("pendingLower")}</Badge>}
                     </div>
                     <div className="text-xs text-muted-foreground">{p.kind} • {fmtDate(p.created_at)}</div>
                   </div>
