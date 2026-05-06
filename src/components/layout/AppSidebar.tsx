@@ -161,7 +161,8 @@ export function AppSidebar() {
     },
   ];
 
-  const allowed = (i: { permKey?: string; superOnly?: boolean }) => {
+  const allowed = (i: { permKey?: string; superOnly?: boolean; developerOnly?: boolean }) => {
+    if (i.developerOnly) return isDeveloper;
     if (i.superOnly) return isSuper;
     if (i.permKey) return can(i.permKey as any, "can_view");
     return true;
