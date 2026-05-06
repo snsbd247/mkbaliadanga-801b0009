@@ -314,12 +314,12 @@ export default function LedgerReconciliation() {
                 <table className="w-full text-xs">
                   <thead className="border-b">
                     <tr>
-                      <th className="text-left p-2">Kind</th>
-                      <th className="text-left p-2">Reference</th>
-                      <th className="text-right p-2">Debit</th>
-                      <th className="text-right p-2">Credit</th>
-                      <th className="text-right p-2">Diff</th>
-                      <th className="text-right p-2">Entries</th>
+                      <th className="text-left p-2">{t("type")}</th>
+                      <th className="text-left p-2">{t("p5_referenceCol")}</th>
+                      <th className="text-right p-2">{t("p5_debitCol")}</th>
+                      <th className="text-right p-2">{t("p5_creditCol")}</th>
+                      <th className="text-right p-2">{t("p5_difference")}</th>
+                      <th className="text-right p-2">{t("p5_entriesCol")}</th>
                       <th className="p-2"></th>
                     </tr>
                   </thead>
