@@ -739,7 +739,7 @@ export const translations = {
     restore: "Restore",
     restored: "Restored",
     updated: "Updated",
-    approved: "Approved",
+    approvedToast: "Approved",
     rejectedToast: "Rejected",
     pickFarmer: "Pick a farmer",
     totalMustBePositive: "Total must be > 0",
