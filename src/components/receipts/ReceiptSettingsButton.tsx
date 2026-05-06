@@ -19,7 +19,7 @@ export function ReceiptSettingsButton() {
       </PopoverTrigger>
       <PopoverContent className="w-80 space-y-3" align="end">
         <div className="flex items-center justify-between">
-          <div className="font-semibold text-sm">Receipt layout</div>
+          <div className="font-semibold text-sm">{t("p5b_receiptLayout")}</div>
           <Button
             type="button"
             variant="ghost"
