@@ -160,18 +160,18 @@ export default function VoterHistory() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
+              <TableHead>{t("date")}</TableHead>
               <TableHead>Event</TableHead>
-              <TableHead>Farmer</TableHead>
-              <TableHead>Farmer ID</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Changed By</TableHead>
-              <TableHead>Office</TableHead>
+              <TableHead>{t("p5_farmerLabel")}</TableHead>
+              <TableHead>{t("p5c_farmerId")}</TableHead>
+              <TableHead>{t("rejectionReason")}</TableHead>
+              <TableHead>{t("p5c_changedBy")}</TableHead>
+              <TableHead>{t("office")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!rows.length && (
-              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">No events</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">{t("p5c_noEvents")}</TableCell></TableRow>
             )}
             {rows.map(r => {
               const f = farmersMap[r.farmer_id] ?? {};
