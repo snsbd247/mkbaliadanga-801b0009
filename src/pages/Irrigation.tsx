@@ -266,9 +266,9 @@ export default function Irrigation() {
                 <Select value={genBasis} onValueChange={setGenBasis}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="per_size">Per land size</SelectItem>
-                    <SelectItem value="per_day">Per day</SelectItem>
-                    <SelectItem value="per_hour">Per hour</SelectItem>
+                    <SelectItem value="per_size">{t("perLandSize")}</SelectItem>
+                    <SelectItem value="per_day">{t("perDayLong")}</SelectItem>
+                    <SelectItem value="per_hour">{t("perHourLong")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -295,7 +295,7 @@ export default function Irrigation() {
               <div className="col-span-2"><Label>{t("selectFarmer")}</Label>
                 <FarmerSearchSelect value={form.farmer_id || null}
                   onChange={(id) => setForm({ ...form, farmer_id: id ?? "", land_id: "" })}
-                  placeholder="Search farmer (name / ID / mobile)" />
+                  placeholder={t("searchFarmerNameIdMobile")} />
               </div>
               <div><Label>{t("lands")}</Label>
                 <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
@@ -364,7 +364,7 @@ export default function Irrigation() {
           <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
           <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
           <TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="text-right">{t("actions")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {rows.map(r => (

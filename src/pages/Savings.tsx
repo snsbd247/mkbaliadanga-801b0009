@@ -333,7 +333,7 @@ export default function Savings() {
                   <SelectContent>
                     <SelectItem value="deposit">Savings Deposit (min ৳10)</SelectItem>
                     <SelectItem value="share_deposit">Share Deposit (min ৳50)</SelectItem>
-                    <SelectItem value="withdraw">Withdraw</SelectItem>
+                    <SelectItem value="withdraw">{t("withdraw")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -578,7 +578,7 @@ function TxnTable({ rows, t, isAdmin, isSuper, showDeleted, onDecide, onRestore,
             </TableCell>
             <TableCell className="text-right">
               {showDeleted && isAdmin && (
-                <Button size="sm" variant="outline" onClick={() => onRestore(r.id)} title="Restore">Restore</Button>
+                <Button size="sm" variant="outline" onClick={() => onRestore(r.id)} title={t("restore")}>{t("restore")}</Button>
               )}
               {!showDeleted && isAdmin && r.status === "pending" && (<>
                 <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "approved")} title={t("approveAction")}><Check className="h-4 w-4 text-success" /></Button>
