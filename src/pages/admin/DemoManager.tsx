@@ -431,7 +431,7 @@ export default function DemoManager() {
           </div>
 
           {filteredLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">কোনো লগ নাই</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t("dmNoLogs" as any)}</p>
           ) : (
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {filteredLogs.map((l) => (
