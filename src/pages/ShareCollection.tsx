@@ -394,7 +394,7 @@ export default function ShareCollection() {
           <Card className="p-3">
             <div className="text-sm font-medium mb-2">{period === "monthly" ? "Monthly" : "Daily"} approved totals</div>
             {grouped.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No data</p>
+              <p className="text-sm text-muted-foreground">{t("pgNoData")}</p>
             ) : (
               <div style={{ width: "100%", height: 260 }}>
                 <ResponsiveContainer>
