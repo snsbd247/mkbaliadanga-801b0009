@@ -8,9 +8,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fmtDate } from "@/lib/format";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 
 export default function LandDetail() {
   const { id } = useParams();
+  const { t } = useLang();
   const [loading, setLoading] = useState(true);
   const [land, setLand] = useState<any>(null);
   const [loc, setLoc] = useState<any>(null);
@@ -49,8 +51,8 @@ export default function LandDetail() {
     })();
   }, [id]);
 
-  if (loading) return <div className="p-8 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
-  if (!land) return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Land not found</AlertTitle><AlertDescription>The land parcel does not exist or you don't have access.</AlertDescription></Alert>;
+  if (loading) return <div className="p-8 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> {t("ld_loading" as any)}</div>;
+  if (!land) return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>{t("ld_landNotFound" as any)}</AlertTitle><AlertDescription>{t("ld_landNotFoundDesc" as any)}</AlertDescription></Alert>;
 
   const activeRels = relations.filter((r) => !r.valid_to);
   const totalActiveShare = activeRels.reduce((s, r) => s + Number(r.share_percentage || 0), 0);
@@ -58,20 +60,20 @@ export default function LandDetail() {
 
   return (
     <>
-      <PageHeader title={`Land · Dag ${land.dag_no ?? "—"}`} />
+      <PageHeader title={`${t("ld_titlePrefix" as any)} ${land.dag_no ?? "—"}`} />
 
       <Card className="p-4 mt-2 grid gap-2 md:grid-cols-3 text-sm">
-        <div><span className="text-muted-foreground">Dag:</span> <strong>{land.dag_no ?? "—"}</strong></div>
-        <div><span className="text-muted-foreground">Size:</span> <strong>{land.land_size}</strong></div>
-        <div><span className="text-muted-foreground">Type:</span> {land.field_type} / {land.owner_type}</div>
-        <div><span className="text-muted-foreground">Mouza:</span> {loc?.mouza_name ?? land.mouza ?? "—"}</div>
-        <div><span className="text-muted-foreground">Village:</span> {loc?.village_name ?? "—"}</div>
-        <div><span className="text-muted-foreground">Ward:</span> {loc?.ward_name ?? "—"}</div>
-        <div><span className="text-muted-foreground">Union:</span> {loc?.union_name ?? "—"}</div>
-        <div><span className="text-muted-foreground">Upazila:</span> {loc?.upazila_name ?? "—"}</div>
-        <div><span className="text-muted-foreground">District:</span> {loc?.district_name ?? "—"}</div>
+        <div><span className="text-muted-foreground">{t("ld_dag" as any)}:</span> <strong>{land.dag_no ?? "—"}</strong></div>
+        <div><span className="text-muted-foreground">{t("ld_size" as any)}:</span> <strong>{land.land_size}</strong></div>
+        <div><span className="text-muted-foreground">{t("ld_type" as any)}:</span> {land.field_type} / {land.owner_type}</div>
+        <div><span className="text-muted-foreground">{t("ld_mouza" as any)}:</span> {loc?.mouza_name ?? land.mouza ?? "—"}</div>
+        <div><span className="text-muted-foreground">{t("ld_village" as any)}:</span> {loc?.village_name ?? "—"}</div>
+        <div><span className="text-muted-foreground">{t("ld_ward" as any)}:</span> {loc?.ward_name ?? "—"}</div>
+        <div><span className="text-muted-foreground">{t("ld_union" as any)}:</span> {loc?.union_name ?? "—"}</div>
+        <div><span className="text-muted-foreground">{t("ld_upazila" as any)}:</span> {loc?.upazila_name ?? "—"}</div>
+        <div><span className="text-muted-foreground">{t("ld_district" as any)}:</span> {loc?.district_name ?? "—"}</div>
         <div className="md:col-span-3 pt-2 border-t mt-2">
-          <span className="text-muted-foreground">Registered owner:</span>{" "}
+          <span className="text-muted-foreground">{t("ld_registeredOwner" as any)}:</span>{" "}
           {owner ? (
             <Link to={`/farmers/${owner.id}`} className="font-medium underline">
               {owner.name_en} <span className="text-xs text-muted-foreground">({owner.member_no ?? owner.farmer_code})</span>
@@ -82,23 +84,23 @@ export default function LandDetail() {
 
       <Card className="mt-4">
         <div className="p-3 border-b flex items-center justify-between">
-          <div className="font-medium">Land Relations (owner ↔ tenant)</div>
+          <div className="font-medium">{t("ld_relationsTitle" as any)}</div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Active total:</span>
+            <span className="text-muted-foreground">{t("ld_activeTotal" as any)}</span>
             <Badge variant={overShare ? "destructive" : "default"}>{totalActiveShare}%</Badge>
           </div>
         </div>
         {overShare && (
           <Alert variant="destructive" className="m-3">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Share exceeds 100%</AlertTitle>
-            <AlertDescription>The currently active relations sum to more than 100%. Please review and end stale relations.</AlertDescription>
+            <AlertTitle>{t("ld_shareExceeds" as any)}</AlertTitle>
+            <AlertDescription>{t("ld_shareExceedsDesc" as any)}</AlertDescription>
           </Alert>
         )}
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Owner</TableHead><TableHead>Tenant</TableHead><TableHead>Share %</TableHead>
-            <TableHead>Valid From</TableHead><TableHead>Valid To</TableHead><TableHead>Status</TableHead>
+            <TableHead>{t("ld_owner" as any)}</TableHead><TableHead>{t("ld_tenant" as any)}</TableHead><TableHead>{t("ld_sharePct" as any)}</TableHead>
+            <TableHead>{t("ld_validFrom" as any)}</TableHead><TableHead>{t("ld_validTo" as any)}</TableHead><TableHead>{t("ld_status" as any)}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {relations.map((r) => (
@@ -108,20 +110,20 @@ export default function LandDetail() {
                 <TableCell>{r.share_percentage}%</TableCell>
                 <TableCell>{fmtDate(r.valid_from)}</TableCell>
                 <TableCell>{r.valid_to ? fmtDate(r.valid_to) : "—"}</TableCell>
-                <TableCell><Badge variant={r.valid_to ? "secondary" : "default"}>{r.valid_to ? "historic" : "active"}</Badge></TableCell>
+                <TableCell><Badge variant={r.valid_to ? "secondary" : "default"}>{r.valid_to ? t("ld_historic" as any) : t("ld_active" as any)}</Badge></TableCell>
               </TableRow>
             ))}
-            {relations.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No relations recorded.</TableCell></TableRow>}
+            {relations.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("ld_noRelations" as any)}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
 
       <Card className="mt-4">
-        <div className="p-3 border-b font-medium">Recent irrigation charges</div>
+        <div className="p-3 border-b font-medium">{t("ld_recentCharges" as any)}</div>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Date</TableHead><TableHead>Season</TableHead><TableHead>Total</TableHead>
-            <TableHead>Paid</TableHead><TableHead>Due</TableHead>
+            <TableHead>{t("date")}</TableHead><TableHead>{t("season")}</TableHead><TableHead>{t("ld_total" as any)}</TableHead>
+            <TableHead>{t("ld_paid" as any)}</TableHead><TableHead>{t("ld_due" as any)}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {charges.map((c) => (
@@ -133,7 +135,7 @@ export default function LandDetail() {
                 <TableCell>{c.due_amount}</TableCell>
               </TableRow>
             ))}
-            {charges.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No charges yet.</TableCell></TableRow>}
+            {charges.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{t("ld_noCharges" as any)}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
