@@ -560,18 +560,18 @@ export default function Reports() {
           <div className="flex justify-end gap-2 mb-3">
             <Button size="sm" onClick={() => exportAuditReportPDF({
               brand: { company_name: brand.company_name, address: brand.address ?? "" },
-              range: filterTitleSuffix() || "All time",
+              range: filterTitleSuffix() || t("rpAllTime" as any),
               summary: auditSummary,
               byOffice,
               bySeason,
-            })}><FileDown className="h-4 w-4 mr-1" />Audit Report PDF</Button>
+            })}><FileDown className="h-4 w-4 mr-1" />{t("rpAuditReportPdf" as any)}</Button>
             <Button size="sm" variant="outline" onClick={() => exportExcel("audit-by-office", "By Office",
               byOffice.map(o => ({ Office: o.office, Income: o.income, Expense: o.expense, "Loan Issued": o.loanIssued, "Loan Collected": o.loanCollected, "Irrigation Charged": o.irrCharged, "Irrigation Collected": o.irrCollected, "Irrigation Due": o.irrDue, "Savings Balance": o.savBal })))}>
-              <FileSpreadsheet className="h-4 w-4 mr-1" />Office Excel
+              <FileSpreadsheet className="h-4 w-4 mr-1" />{t("rpOfficeExcel" as any)}
             </Button>
             <Button size="sm" variant="outline" onClick={() => exportExcel("audit-by-season", "By Season",
               bySeason.map(s => ({ Season: s.season, Charged: s.charged, Collected: s.collected, Due: s.due })))}>
-              <FileSpreadsheet className="h-4 w-4 mr-1" />Season Excel
+              <FileSpreadsheet className="h-4 w-4 mr-1" />{t("rpSeasonExcel" as any)}
             </Button>
           </div>
 
