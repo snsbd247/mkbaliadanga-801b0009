@@ -362,16 +362,16 @@ export default function Reports() {
           <Card className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>{granularity === "daily" ? "Date" : "Month"}</TableHead>
-                <TableHead className="text-right">Deposits</TableHead>
-                <TableHead className="text-right">Withdrawals</TableHead>
-                <TableHead className="text-right">Loan Issued</TableHead>
-                <TableHead className="text-right">Loan Collected</TableHead>
-                <TableHead className="text-right">Irr Charged</TableHead>
-                <TableHead className="text-right">Irr Collected</TableHead>
-                <TableHead className="text-right">Loan Due</TableHead>
-                <TableHead className="text-right">Irr Due</TableHead>
-                <TableHead className="text-right">Net Total</TableHead>
+                <TableHead>{granularity === "daily" ? t("date") : t("rpMonth" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpDeposits" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpWithdrawals" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpLoanIssued" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpLoanCollected" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpIrrCharged" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpIrrCollected" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpLoanDue" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpIrrDue" as any)}</TableHead>
+                <TableHead className="text-right">{t("rpNetTotal" as any)}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {monthly.map((m, i) => (
