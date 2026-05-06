@@ -51,7 +51,7 @@ export default function AuthPage() {
     const u = username.trim();
     if (!u || !password) {
       setDebug({ ...initialDebug, hint: "Both username and password are required." });
-      return toast.error("Username and password required");
+      return toast.error(t("usernameAndPasswordRequired"));
     }
     setBusy(true);
     const d: DebugInfo = { lookup: "running", password: "idle", redirect: "idle" };
@@ -68,7 +68,7 @@ export default function AuthPage() {
           errorCode: error.code, errorMessage: error.message,
           hint: "Username lookup failed at the backend (RPC error). Check that the RPC is callable.",
         });
-        return toast.error("Username lookup failed");
+        return toast.error(t("usernameLookupFailed"));
       }
       if (!data) {
         setBusy(false);
@@ -77,7 +77,7 @@ export default function AuthPage() {
           errorMessage: `No account found for username "${u}"`,
           hint: "The username does not exist. Check spelling, or use email instead.",
         });
-        return toast.error(`No account found for "${u}"`);
+        return toast.error(t("noAccountFor").replace("{u}", u));
       }
       email = data as string;
     }
@@ -104,7 +104,7 @@ export default function AuthPage() {
             ? "The email address has not been confirmed yet."
             : "See backend message above.",
       });
-      return toast.error(error.message || "Invalid password");
+      return toast.error(error.message || t("invalidPassword"));
     }
 
     d.password = "ok";
@@ -127,7 +127,7 @@ export default function AuthPage() {
 
   async function sendReset() {
     const v = forgotInput.trim();
-    if (!v) return toast.error("Enter your username or email");
+    if (!v) return toast.error(t("usernameOrEmail"));
     setForgotBusy(true);
     let email = v;
     // If it doesn't look like an email, treat it as a username and resolve.
@@ -136,7 +136,7 @@ export default function AuthPage() {
       if (error || !data) {
         setForgotBusy(false);
         // Show a generic success message either way to avoid account enumeration.
-        toast.success("If an account exists, a reset link has been sent.");
+        toast.success(t("ifAccountExistsResetSent"));
         setForgotOpen(false);
         return;
       }
@@ -149,7 +149,7 @@ export default function AuthPage() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("If an account exists, a reset link has been sent.");
+        toast.success(t("ifAccountExistsResetSent"));
       setForgotOpen(false);
       setForgotInput("");
     }
@@ -171,7 +171,7 @@ export default function AuthPage() {
             </div>
           )}
           <h1 className="text-2xl font-bold">{lang === "bn" && brand.company_name_bn ? brand.company_name_bn : brand.company_name}</h1>
-          <p className="text-sm text-muted-foreground mt-1">Cooperative Management System</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("cooperativeMgmtSystem")}</p>
         </div>
 
         <Card className="p-6 shadow-elegant">
@@ -179,20 +179,20 @@ export default function AuthPage() {
           <p className="text-sm text-muted-foreground mb-4">{t("signInDesc")}</p>
           <form onSubmit={signIn} className="space-y-3">
             <div>
-              <Label>Username</Label>
+              <Label>{t("username")}</Label>
               <Input
                 required
                 autoComplete="username"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="username"
+                placeholder={t("username")}
               />
             </div>
             <div>
               <div className="flex items-center justify-between">
                 <Label>{t("password")}</Label>
                 <button type="button" onClick={() => { setForgotInput(username); setForgotOpen(true); }} className="text-xs text-primary hover:underline">
-                  Forgot password?
+                  {t("forgotPassword")}
                 </button>
               </div>
               <Input
@@ -210,7 +210,7 @@ export default function AuthPage() {
             <div className="mt-4">
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Login failed</AlertTitle>
+                <AlertTitle>{t("loginFailed")}</AlertTitle>
                 <AlertDescription>
                   <div className="text-sm">{debug.errorMessage}</div>
                 </AlertDescription>
@@ -223,18 +223,18 @@ export default function AuthPage() {
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Mail className="h-4 w-4" />Reset your password</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Mail className="h-4 w-4" />{t("resetYourPassword")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Enter your username or email. If we find a matching account, we'll send you a reset link.</p>
+            <p className="text-sm text-muted-foreground">{t("resetEmailDesc")}</p>
             <div>
-              <Label>Username or email</Label>
-              <Input value={forgotInput} onChange={e => setForgotInput(e.target.value)} placeholder="superadmin or you@example.com" autoFocus />
+              <Label>{t("usernameOrEmail")}</Label>
+              <Input value={forgotInput} onChange={e => setForgotInput(e.target.value)} placeholder={t("usernameOrEmailPh")} autoFocus />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setForgotOpen(false)} disabled={forgotBusy}>Cancel</Button>
-            <Button onClick={sendReset} disabled={forgotBusy}>{forgotBusy ? "Sending…" : "Send reset link"}</Button>
+            <Button variant="outline" onClick={() => setForgotOpen(false)} disabled={forgotBusy}>{t("cancel")}</Button>
+            <Button onClick={sendReset} disabled={forgotBusy}>{forgotBusy ? t("sendingDots") : t("sendResetLink")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

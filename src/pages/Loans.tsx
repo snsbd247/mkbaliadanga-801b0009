@@ -94,7 +94,7 @@ export default function Loans() {
       if (loan?.plan_id) {
         const { error: gErr } = await supabase.rpc("generate_loan_installments", { _loan_id: id });
         if (gErr) toast.error(`Schedule: ${gErr.message}`);
-        else toast.success("Installment schedule generated");
+        else toast.success(t("installmentScheduleGenerated"));
       }
     }
     toast.success(t("saved")); load();
@@ -114,7 +114,7 @@ export default function Loans() {
   async function restore(id: string) {
     const { error } = await supabase.from("loans").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Restored"); load();
+    toast.success(t("restored")); load();
   }
   function startEdit(l: any) {
     setEditLoan(l);
@@ -140,7 +140,7 @@ export default function Loans() {
       note: editForm.note,
     }).eq("id", editLoan.id);
     if (error) return toast.error(error.message);
-    toast.success("Updated"); setEditLoan(null); load();
+    toast.success(t("updated")); setEditLoan(null); load();
   }
 
   function printLoanReceipt(loan: any, payment?: any) {
@@ -188,7 +188,7 @@ export default function Loans() {
                   const p = plans.find(x => x.id === v);
                   setForm({ ...form, plan_id: v, interest_rate: p?.interest_rate ?? form.interest_rate });
                 }}>
-                  <SelectTrigger><SelectValue placeholder="No plan (manual)" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("noPlanManual")} /></SelectTrigger>
                   <SelectContent>{plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name} — {p.duration_months}mo / {p.installment_type} @ {p.interest_rate}%</SelectItem>)}</SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">When a plan is selected, an installment schedule is auto-generated upon committee approval.</p>
@@ -352,18 +352,18 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                 </TableCell>
                 <TableCell className="text-right">
                   {showDeleted && isCommittee && (
-                    <Button size="sm" variant="outline" onClick={() => onRestore(l.id)} title="Restore">Restore</Button>
+                    <Button size="sm" variant="outline" onClick={() => onRestore(l.id)} title={t("restore")}>{t("restore")}</Button>
                   )}
                   {!showDeleted && isCommittee && l.status === "pending" && (<>
-                    <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "approved")} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "rejected")} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "approved")} title={t("approve")}><Check className="h-4 w-4 text-success" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "rejected")} title={t("reject")}><X className="h-4 w-4 text-destructive" /></Button>
                   </>)}
                   {!showDeleted && (l.status === "approved" || l.status === "paid") && (
-                    <Button size="icon" variant="ghost" onClick={() => onPrint(l)} title="Print disbursement receipt"><Printer className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => onPrint(l)} title={t("printDisbursementReceipt")}><Printer className="h-4 w-4" /></Button>
                   )}
                   {!showDeleted && isSuper && (<>
-                    <Button size="icon" variant="ghost" onClick={() => onEdit(l)} title="Edit"><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => onDelete(l.id)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => onEdit(l)} title={t("editTip")}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => onDelete(l.id)} title={t("deleteTipShort")}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </>)}
                 </TableCell>
               </TableRow>
@@ -380,7 +380,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                           <div className="text-xs text-muted-foreground">No installments generated yet.</div>
                         ) : (
                           <table className="w-full text-sm">
-                            <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">#</th><th className="text-left">Due</th><th className="text-right">Amount</th><th className="text-right">Paid</th><th className="text-right">Penalty</th><th>Status</th></tr></thead>
+                            <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">#</th><th className="text-left">{t("dueCol")}</th><th className="text-right">{t("amount")}</th><th className="text-right">{t("paidCol")}</th><th className="text-right">{t("penaltyCol")}</th><th>{t("status")}</th></tr></thead>
                             <tbody>
                               {sched.map((it: any) => (
                                 <tr key={it.id} className="border-t">
@@ -399,9 +399,9 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                     )}
                     {hasPayments && (
                       <div>
-                        <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">Repayments</div>
+                        <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">{t("repaymentsHeader")}</div>
                         <table className="w-full text-sm">
-                          <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">Date</th><th className="text-right">Amount</th><th className="text-left pl-3">Collected by</th><th className="text-right">Receipt</th></tr></thead>
+                          <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">{t("date")}</th><th className="text-right">{t("amount")}</th><th className="text-left pl-3">{t("collectedByCol")}</th><th className="text-right">{t("receiptColLabel")}</th></tr></thead>
                           <tbody>
                             {(l.loan_payments ?? []).slice().sort((a: any, b: any) => (b.paid_on ?? "").localeCompare(a.paid_on ?? "")).map((p: any) => (
                               <tr key={p.id} className="border-t">
@@ -409,7 +409,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                                 <td className="py-1 text-right text-success font-semibold">{money(p.amount)}</td>
                                 <td className="py-1 pl-3">{p.collected_by ? (profiles?.[p.collected_by] ?? p.collected_by.slice(0, 6)) : "—"}</td>
                                 <td className="py-1 text-right">
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPrint(l, p)} title="Print payment receipt"><Printer className="h-3.5 w-3.5" /></Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPrint(l, p)} title={t("printPaymentReceipt")}><Printer className="h-3.5 w-3.5" /></Button>
                                 </td>
                               </tr>
                             ))}

@@ -91,7 +91,7 @@ export default function Payments() {
   async function restorePayment(id: string) {
     const { error } = await supabase.from("payments").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Restored"); load();
+    toast.success(t("restored")); load();
   }
   async function loadDues() {
     const [l, i] = await Promise.all([
@@ -108,7 +108,7 @@ export default function Payments() {
     const ext = receiptFile.name.split(".").pop();
     const path = `${user?.id}/${paymentId}.${ext}`;
     const { error } = await supabase.storage.from("payment-receipts").upload(path, receiptFile, { upsert: true });
-    if (error) { toast.error("Receipt upload failed: " + error.message); return null; }
+    if (error) { toast.error(t("receiptUploadFailed").replace("{msg}", error.message)); return null; }
     const { data } = await supabase.storage.from("payment-receipts").createSignedUrl(path, 60 * 60 * 24 * 365);
     return data?.signedUrl ?? path;
   }
@@ -120,10 +120,10 @@ export default function Payments() {
 
   async function pay() {
     if (submitting) return;
-    if (!farmerId) return toast.error("Pick a farmer");
-    if (totalAmount <= 0) return toast.error("Total must be > 0");
+    if (!farmerId) return toast.error(t("pickFarmer"));
+    if (totalAmount <= 0) return toast.error(t("totalMustBePositive"));
     for (const a of allocs) {
-      if (Number(a.amount) <= 0) return toast.error("Each allocation must be > 0");
+      if (Number(a.amount) <= 0) return toast.error(t("eachAllocationMustBePositive"));
       if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
 
@@ -147,7 +147,7 @@ export default function Payments() {
       const { data: inserted, error } = await supabase.from("payments").insert(payload).select("id").single();
       if (error) {
         if ((error as any).code === "23505" || /duplicate/i.test(error.message)) {
-          toast.error("Duplicate submission detected — this payment was already recorded.");
+          toast.error(t("duplicateSubmissionDetected"));
           return;
         }
         return toast.error(error.message);
@@ -156,7 +156,7 @@ export default function Payments() {
       // Insert allocations
       const allocRows = allocs.map(a => ({ payment_id: inserted!.id, kind: a.kind, reference_id: a.reference_id || null, amount: Number(a.amount) }));
       const { error: aErr } = await supabase.from("payment_allocations").insert(allocRows);
-      if (aErr) toast.error("Allocations: " + aErr.message);
+      if (aErr) toast.error(t("allocationsErr").replace("{msg}", aErr.message));
 
       if (receiptFile) {
         const url = await uploadReceipt(inserted.id);
@@ -196,14 +196,14 @@ export default function Payments() {
       : [{ kind: p.kind, reference_id: p.reference_id ?? "", amount: Number(p.amount) }];
 
     await applyAllocationsToLedgers(p.id, p.farmer_id, allocList, p.note);
-    toast.success("Approved");
+    toast.success(t("approvedToast"));
     load();
   }
 
   async function rejectPayment(p: any) {
     const { error } = await supabase.from("payments").update({ status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", p.id);
     if (error) return toast.error(error.message);
-    toast.success("Rejected");
+    toast.success(t("rejectedToast"));
     load();
   }
 
@@ -213,8 +213,8 @@ export default function Payments() {
 
   function autoAllocate() {
     const amt = Number(autoAmount);
-    if (!farmerId) return toast.error("Pick a farmer");
-    if (!(amt > 0)) return toast.error("Enter amount to auto-allocate");
+    if (!farmerId) return toast.error(t("pickFarmer"));
+    if (!(amt > 0)) return toast.error(t("enterAmountToAutoAllocate"));
 
     // Build queue per priority with oldest-first dues
     const queues: Record<string, { reference_id: string; due: number }[]> = {
@@ -255,7 +255,7 @@ export default function Payments() {
       // Surplus → savings deposit
       out.push({ kind: "savings", reference_id: "", amount: +remaining.toFixed(2) });
     }
-    if (!out.length) return toast.error("No outstanding dues to allocate");
+    if (!out.length) return toast.error(t("noOutstandingDuesToAllocate"));
     setAllocs(out);
     toast.success(`Allocated to ${out.length} target(s) using office priority: ${priority.join(" → ")}`);
   }
@@ -291,7 +291,7 @@ export default function Payments() {
               <div className="rounded-md border border-dashed p-2 space-y-2">
                 <div className="text-[10px] uppercase font-semibold text-muted-foreground">Auto-allocate (priority: {priority.join(" → ")})</div>
                 <div className="flex gap-2">
-                  <Input type="number" min="0" placeholder="Total amount" value={autoAmount || ""} onChange={(e) => setAutoAmount(+e.target.value)} />
+                  <Input type="number" min="0" placeholder={t("totalAmountPh")} value={autoAmount || ""} onChange={(e) => setAutoAmount(+e.target.value)} />
                   <Button type="button" variant="secondary" onClick={autoAllocate}>{t("apply")}</Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground">Configurable per office in Settings → Offices.</p>
@@ -337,7 +337,7 @@ export default function Payments() {
                       <SelectContent>{openIrr.map(ic => <SelectItem key={ic.id} value={ic.id}>{fmtDate(ic.entry_date)} — Due {money(ic.due_amount)}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
-                  <Input type="number" placeholder="Amount" value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
+                  <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
                 </div>
               ))}
               <div className="text-right text-sm font-semibold">Total: {money(totalAmount)}</div>
@@ -363,7 +363,7 @@ export default function Payments() {
             <h2 className="font-semibold">{t("recentTransactions")}</h2>
             <Label className="text-sm flex items-center gap-2 cursor-pointer">
               <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
-              <span className="text-xs">Show archived</span>
+              <span className="text-xs">{t("showArchived")}</span>
             </Label>
           </div>
           <Table>
@@ -395,11 +395,11 @@ export default function Payments() {
                   <TableCell>
                     <div className="flex gap-1">
                       {showDeleted && isAdmin && (
-                        <Button size="sm" variant="outline" onClick={() => restorePayment(p.id)} title="Restore">Restore</Button>
+                        <Button size="sm" variant="outline" onClick={() => restorePayment(p.id)} title={t("restore")}>{t("restore")}</Button>
                       )}
                       {!showDeleted && isAdmin && p.status === "pending" && (<>
-                        <Button size="icon" variant="ghost" onClick={() => approvePayment(p)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => approvePayment(p)} title={t("approve")}><Check className="h-4 w-4 text-success" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title={t("reject")}><X className="h-4 w-4 text-destructive" /></Button>
                       </>)}
                       {!showDeleted && (() => {
                         const k = (p.kind as string) || "savings";

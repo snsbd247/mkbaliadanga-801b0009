@@ -99,7 +99,7 @@ export default function Irrigation() {
   async function restore(id: string) {
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Restored"); load();
+    toast.success(t("restored")); load();
   }
 
   const total = +form.base_charge + +form.canal_charge + +form.maintenance_charge + +form.other_charge;
@@ -122,8 +122,8 @@ export default function Irrigation() {
   const hasErrors = Object.keys(errors).length > 0;
 
   async function save() {
-    if (hasErrors) return toast.error("Please fix the highlighted errors");
-    if (rateAvailable !== true) return toast.error("Active irrigation rate required for this season + basis.");
+    if (hasErrors) return toast.error(t("fixHighlightedErrors"));
+    if (rateAvailable !== true) return toast.error(t("activeIrrigationRateRequired"));
     const payload: any = {
       farmer_id: form.farmer_id, land_id: form.land_id, season_id: form.season_id,
       basis: form.basis as any, quantity: form.quantity,
@@ -167,7 +167,7 @@ export default function Irrigation() {
     if (!ok) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted"); await load();
+    toast.success(t("deleted")); await load();
   }
 
   const [genSeason, setGenSeason] = useState<string>("");
@@ -176,7 +176,7 @@ export default function Irrigation() {
   const [genBusy, setGenBusy] = useState(false);
 
   async function generateForSeason() {
-    if (!genSeason) return toast.error("Select a season");
+    if (!genSeason) return toast.error(t("selectASeason"));
     setGenBusy(true);
     try {
       const { data: rate, error: rateErr } = await supabase
@@ -266,9 +266,9 @@ export default function Irrigation() {
                 <Select value={genBasis} onValueChange={setGenBasis}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="per_size">Per land size</SelectItem>
-                    <SelectItem value="per_day">Per day</SelectItem>
-                    <SelectItem value="per_hour">Per hour</SelectItem>
+                    <SelectItem value="per_size">{t("perLandSize")}</SelectItem>
+                    <SelectItem value="per_day">{t("perDayLong")}</SelectItem>
+                    <SelectItem value="per_hour">{t("perHourLong")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -288,14 +288,14 @@ export default function Irrigation() {
             <DialogHeader><DialogTitle>{t("irrigation")} — {editId ? "Edit Entry" : t("addEntry")}</DialogTitle></DialogHeader>
             {form.season_id && rateAvailable === false && (
               <div className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-sm p-2">
-                No active rate found for this season + basis. Add it on the <a href="/irrigation-rates" className="underline">Irrigation Rates</a> page first.
+                {t("noActiveRateForSeason")} <a href="/irrigation-rates" className="underline">{t("irrigationRatesLink")}</a> {t("pageFirst")}
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>{t("selectFarmer")}</Label>
                 <FarmerSearchSelect value={form.farmer_id || null}
                   onChange={(id) => setForm({ ...form, farmer_id: id ?? "", land_id: "" })}
-                  placeholder="Search farmer (name / ID / mobile)" />
+                  placeholder={t("searchFarmerNameIdMobile")} />
               </div>
               <div><Label>{t("lands")}</Label>
                 <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
@@ -364,7 +364,7 @@ export default function Irrigation() {
           <TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead>
           <TableHead>{t("season")}</TableHead><TableHead>{t("dagNo")}</TableHead>
           <TableHead>{t("total")}</TableHead><TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="text-right">{t("actions")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {rows.map(r => (
