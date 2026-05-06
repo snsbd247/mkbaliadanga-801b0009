@@ -46,9 +46,14 @@ function walk(dir, out = []) {
 const files = walk("src");
 const used = new Set();
 const callRe = /\bt\(\s*["'`]([A-Za-z_][\w]*)["'`]\s*[\),]/g;
+// Also treat any string literal that looks like an i18n key referenced as
+// `labelKey: "..."`, `key: "..."`, or inside a TYPE_META/SUMMARY map as used.
+const refRe = /\b(labelKey|messageKey|titleKey|i18nKey)\s*:\s*["']([A-Za-z_][\w]*)["']/g;
 for (const f of files) {
   const src = readFileSync(f, "utf8");
-  let m; while ((m = callRe.exec(src))) used.add(m[1]);
+  let m;
+  while ((m = callRe.exec(src))) used.add(m[1]);
+  while ((m = refRe.exec(src))) used.add(m[2]);
 }
 
 const unused = KEYS.filter(k => !used.has(k));

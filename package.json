@@ -16,7 +16,8 @@
     "i18n:check:update": "node scripts/i18n-check.mjs --update",
     "i18n:unused": "node scripts/i18n-unused.mjs",
     "i18n:unused:warn": "node scripts/i18n-unused.mjs --warn",
-    "i18n:unused:ci": "node scripts/i18n-unused.mjs --fail --threshold=350",
+    "i18n:unused:ci": "node scripts/i18n-unused.mjs --fail --threshold=10",
+    "i18n:prune": "node scripts/i18n-prune.mjs",
     "ci": "npm run i18n:check && npm run i18n:unused:ci && npm run test"
   },
   "dependencies": {
