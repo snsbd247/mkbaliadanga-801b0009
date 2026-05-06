@@ -37,7 +37,10 @@ export interface BnReceiptData {
 
   collected_amount: number;          // total being received now
   collector_signature_url?: string | null;
+  office_collector_signature_url?: string | null; // optional override for office copy
 }
+
+export type ReceiptCopy = "both" | "farmer" | "office";
 
 const fmt2 = (n: number) =>
   new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
@@ -53,7 +56,7 @@ function titleFor(kind: ReceiptKind): string {
   return "ঋণের কিস্তি গ্রহণের রশিদ";
 }
 
-function copyHtml(d: BnReceiptData, copyLabel: string): string {
+function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl?: string | null): string {
   const logo = d.logo_url
     ? `<img src="${d.logo_url}" crossorigin="anonymous" style="height:60px;display:block;margin:0 auto 4px;" />`
     : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${d.company_name_bn ?? d.company_name ?? ""}</div>`;
@@ -117,28 +120,31 @@ function copyHtml(d: BnReceiptData, copyLabel: string): string {
       </div>
       <div style="text-align:right;">
         <div>আদায়কারীর স্বাক্ষর</div>
-        ${d.collector_signature_url ? `<img src="${d.collector_signature_url}" crossorigin="anonymous" style="height:36px;margin-top:4px;" />` : `<div style="margin-top:30px;border-top:1px solid #111;width:140px;display:inline-block;"></div>`}
+        ${signatureUrl ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:36px;margin-top:4px;display:block;margin-left:auto;" />` : `<div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;"></div>`}
       </div>
     </div>
   </div>`;
 }
 
-function buildHtml(d: BnReceiptData): HTMLDivElement {
+function buildHtml(d: BnReceiptData, copy: ReceiptCopy = "both"): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
-  wrap.innerHTML = `
-    ${copyHtml(d, "কৃষকের কপি")}
-    <div style="border-top:1px dashed #111;margin:8px 22px;"></div>
-    ${copyHtml(d, "অফিস কপি")}
-  `;
+  const farmerCopy = copyHtml(d, "কৃষকের কপি", d.collector_signature_url);
+  const officeCopy = copyHtml(d, "অফিস কপি", d.office_collector_signature_url ?? d.collector_signature_url);
+  if (copy === "farmer") wrap.innerHTML = farmerCopy;
+  else if (copy === "office") wrap.innerHTML = officeCopy;
+  else wrap.innerHTML = `${farmerCopy}<div style="border-top:1px dashed #111;margin:8px 22px;"></div>${officeCopy}`;
   document.body.appendChild(wrap);
   return wrap;
 }
 
-export async function downloadBnReceiptPdf(data: BnReceiptData): Promise<void> {
-  const node = buildHtml(data);
+function copySuffix(copy: ReceiptCopy): string {
+  return copy === "farmer" ? "_farmer" : copy === "office" ? "_office" : "";
+}
+
+export async function downloadBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both"): Promise<void> {
+  const node = buildHtml(data, copy);
   try {
-    // Wait a tick so images can start loading
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
@@ -148,14 +154,14 @@ export async function downloadBnReceiptPdf(data: BnReceiptData): Promise<void> {
     const imgH = (canvas.height * imgW) / canvas.width;
     const finalH = Math.min(imgH, pageH);
     pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, imgW, finalH);
-    pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}_receipt.pdf`);
+    pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${copySuffix(copy)}_receipt.pdf`);
   } finally {
     node.remove();
   }
 }
 
-export async function previewBnReceiptPdf(data: BnReceiptData): Promise<string> {
-  const node = buildHtml(data);
+export async function previewBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both"): Promise<string> {
+  const node = buildHtml(data, copy);
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });

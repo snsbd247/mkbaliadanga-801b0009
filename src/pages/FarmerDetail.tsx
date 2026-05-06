@@ -24,6 +24,7 @@ import { LocationPicker, type LocationValue } from "@/components/locations/Locat
 import { validateLocationChain } from "@/lib/locationValidation";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
+import { autoReceiptNo } from "@/lib/receiptNo";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
 import { useAuth } from "@/auth/AuthProvider";
@@ -167,7 +168,7 @@ export default function FarmerDetail() {
     downloadBnReceiptPdf({
       kind: "savings",
       ...commonReceipt(),
-      receipt_no: `SAV-${s.id.slice(0, 8).toUpperCase()}`,
+      receipt_no: s.receipt_no || autoReceiptNo("SAV", s.id, new Date(s.txn_date ?? s.created_at)),
       date: s.txn_date ?? s.created_at,
       farmer: farmerForReceipt(),
       description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
@@ -178,7 +179,7 @@ export default function FarmerDetail() {
     downloadBnReceiptPdf({
       kind: "loan",
       ...commonReceipt(),
-      receipt_no: `LOAN-${l.id.slice(0, 8).toUpperCase()}`,
+      receipt_no: l.receipt_no || autoReceiptNo("LOAN", l.id, new Date(l.issued_on)),
       date: l.issued_on,
       farmer: farmerForReceipt(),
       description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
@@ -191,7 +192,7 @@ export default function FarmerDetail() {
     downloadBnReceiptPdf({
       kind: "irrigation",
       ...commonReceipt(),
-      receipt_no: `IRR-${i.id.slice(0, 8).toUpperCase()}`,
+      receipt_no: i.receipt_no || autoReceiptNo("IRR", i.id, new Date(i.entry_date)),
       date: i.entry_date,
       bill_info: i.seasons ? `${i.seasons.name ?? ""}${i.seasons.year ? ", " + i.seasons.year : ""}` : undefined,
       farmer: farmerForReceipt({
