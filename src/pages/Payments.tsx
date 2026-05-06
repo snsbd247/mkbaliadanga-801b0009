@@ -291,7 +291,7 @@ export default function Payments() {
               <div className="rounded-md border border-dashed p-2 space-y-2">
                 <div className="text-[10px] uppercase font-semibold text-muted-foreground">Auto-allocate (priority: {priority.join(" → ")})</div>
                 <div className="flex gap-2">
-                  <Input type="number" min="0" placeholder="Total amount" value={autoAmount || ""} onChange={(e) => setAutoAmount(+e.target.value)} />
+                  <Input type="number" min="0" placeholder={t("totalAmountPh")} value={autoAmount || ""} onChange={(e) => setAutoAmount(+e.target.value)} />
                   <Button type="button" variant="secondary" onClick={autoAllocate}>{t("apply")}</Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground">Configurable per office in Settings → Offices.</p>
@@ -337,7 +337,7 @@ export default function Payments() {
                       <SelectContent>{openIrr.map(ic => <SelectItem key={ic.id} value={ic.id}>{fmtDate(ic.entry_date)} — Due {money(ic.due_amount)}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
-                  <Input type="number" placeholder="Amount" value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
+                  <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
                 </div>
               ))}
               <div className="text-right text-sm font-semibold">Total: {money(totalAmount)}</div>
@@ -363,7 +363,7 @@ export default function Payments() {
             <h2 className="font-semibold">{t("recentTransactions")}</h2>
             <Label className="text-sm flex items-center gap-2 cursor-pointer">
               <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
-              <span className="text-xs">Show archived</span>
+              <span className="text-xs">{t("showArchived")}</span>
             </Label>
           </div>
           <Table>
@@ -395,11 +395,11 @@ export default function Payments() {
                   <TableCell>
                     <div className="flex gap-1">
                       {showDeleted && isAdmin && (
-                        <Button size="sm" variant="outline" onClick={() => restorePayment(p.id)} title="Restore">Restore</Button>
+                        <Button size="sm" variant="outline" onClick={() => restorePayment(p.id)} title={t("restore")}>{t("restore")}</Button>
                       )}
                       {!showDeleted && isAdmin && p.status === "pending" && (<>
-                        <Button size="icon" variant="ghost" onClick={() => approvePayment(p)} title="Approve"><Check className="h-4 w-4 text-success" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title="Reject"><X className="h-4 w-4 text-destructive" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => approvePayment(p)} title={t("approve")}><Check className="h-4 w-4 text-success" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title={t("reject")}><X className="h-4 w-4 text-destructive" /></Button>
                       </>)}
                       {!showDeleted && (() => {
                         const k = (p.kind as string) || "savings";
