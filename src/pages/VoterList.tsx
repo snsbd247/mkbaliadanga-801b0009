@@ -290,7 +290,7 @@ export default function VoterList() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {mode === "cancel" ? "Cancel Voter Membership" : "Reactivate Voter Membership"}
+              {mode === "cancel" ? t("p5c_cancelOnly" as any) : t("p5c_reactivateOnly" as any)}
             </DialogTitle>
             <DialogDescription>
               {target && (
