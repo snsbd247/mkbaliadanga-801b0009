@@ -17,23 +17,27 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-const MODULES = [
-  { id: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা)" },
-  { id: "settings", label: "কোম্পানি সেটিংস + কার্ড" },
-  { id: "accounting", label: "চার্ট অফ একাউন্টস" },
-  { id: "farmers", label: "ফার্মার + জমি" },
-  { id: "irrigation", label: "সেচ (রেট + চার্জ)" },
-  { id: "loans", label: "ঋণ (পরিকল্পনা + ঋণ + পেমেন্ট)" },
-  { id: "savings", label: "সঞ্চয় + শেয়ার" },
-  { id: "expenses", label: "খরচ" },
-];
+import { useLang } from "@/i18n/LanguageProvider";
+
+const MODULE_KEYS = [
+  { id: "locations", tk: "dmModLocations" },
+  { id: "settings", tk: "dmModSettings" },
+  { id: "accounting", tk: "dmModAccounting" },
+  { id: "farmers", tk: "dmModFarmers" },
+  { id: "irrigation", tk: "dmModIrrigation" },
+  { id: "loans", tk: "dmModLoans" },
+  { id: "savings", tk: "dmModSavings" },
+  { id: "expenses", tk: "dmModExpenses" },
+] as const;
 
 type Action = "reset" | "import" | "both";
 
+
 export default function DemoManager() {
+  const { t } = useLang();
   const [action, setAction] = useState<Action>("both");
   const [size, setSize] = useState(50);
-  const [selected, setSelected] = useState<string[]>(MODULES.map((m) => m.id));
+  const [selected, setSelected] = useState<string[]>(MODULE_KEYS.map((m) => m.id));
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [preview, setPreview] = useState<any>(null);
@@ -158,7 +162,7 @@ export default function DemoManager() {
               throw new Error(ev.message);
             } else if (ev.type === "complete") {
               setProgress(100);
-              setCurrentStep("সম্পন্ন");
+              setCurrentStep(t("dmComplete" as any));
               setLastResult(ev.summary);
               succeeded = true;
             }
@@ -168,7 +172,7 @@ export default function DemoManager() {
         }
       }
 
-      if (succeeded) toast.success("✓ অপারেশন সম্পন্ন");
+      if (succeeded) toast.success(`✓ ${t("dmOpDone" as any)}`);
       await loadLogs();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed");
@@ -187,45 +191,41 @@ export default function DemoManager() {
     <div className="container max-w-5xl py-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Database className="h-6 w-6" /> ডেমো ডেটা ম্যানেজার
+          <Database className="h-6 w-6" /> {t("dmTitle" as any)}
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          ডেমো ডেটা ইমপোর্ট অথবা সম্পূর্ণ রিসেট করুন। শুধুমাত্র super admin।
-        </p>
+        <p className="text-muted-foreground text-sm mt-1">{t("dmSubtitle" as any)}</p>
       </div>
 
       <Card className="border-destructive/40">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" /> সতর্কতা
+            <AlertTriangle className="h-5 w-5" /> {t("dmWarningTitle" as any)}
           </CardTitle>
-          <CardDescription>
-            রিসেট করলে auth ইউজার, রোল ও পার্মিশন ছাড়া বাকি সব transactional ডেটা মুছে যাবে। undo নাই।
-          </CardDescription>
+          <CardDescription>{t("dmWarningDesc" as any)}</CardDescription>
         </CardHeader>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>অপারেশন</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("dmOperation" as any)}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <RadioGroup value={action} onValueChange={(v: any) => setAction(v)}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="both" id="r-both" />
-              <Label htmlFor="r-both">রিসেট + ডেমো ইমপোর্ট</Label>
+              <Label htmlFor="r-both">{t("dmActionBoth" as any)}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="reset" id="r-reset" />
-              <Label htmlFor="r-reset">শুধু রিসেট (ডেটা মুছবে)</Label>
+              <Label htmlFor="r-reset">{t("dmActionReset" as any)}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="import" id="r-import" />
-              <Label htmlFor="r-import">শুধু ইমপোর্ট</Label>
+              <Label htmlFor="r-import">{t("dmActionImport" as any)}</Label>
             </div>
           </RadioGroup>
 
           {willImport && (
             <div className="space-y-2">
-              <Label>ডেমো ডেটার আকার (ফার্মার সংখ্যা)</Label>
+              <Label>{t("dmSize" as any)}</Label>
               <Input type="number" min={5} max={500} value={size}
                 onChange={(e) => setSize(Number(e.target.value) || 50)} />
             </div>
@@ -236,14 +236,14 @@ export default function DemoManager() {
       {willImport && (
         <Card>
           <CardHeader>
-            <CardTitle>মডিউল সিলেক্ট</CardTitle>
-            <CardDescription>কোন কোন মডিউলের জন্য ডেমো ডেটা ইমপোর্ট হবে</CardDescription>
+            <CardTitle>{t("dmModulesTitle" as any)}</CardTitle>
+            <CardDescription>{t("dmModulesDesc" as any)}</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {MODULES.map((m) => (
+            {MODULE_KEYS.map((m) => (
               <label key={m.id} className="flex items-center gap-2 cursor-pointer">
                 <Checkbox checked={selected.includes(m.id)} onCheckedChange={() => toggle(m.id)} />
-                <span className="text-sm">{m.label}</span>
+                <span className="text-sm">{t(m.tk as any)}</span>
               </label>
             ))}
           </CardContent>
@@ -252,8 +252,9 @@ export default function DemoManager() {
 
       <Button onClick={fetchPreview} disabled={loading} variant="outline" className="w-full" size="lg">
         {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-        প্রিভিউ + কনফার্ম
+        {t("dmPreviewBtn" as any)}
       </Button>
+
 
       {/* Live progress */}
       {loading && (
@@ -423,7 +424,7 @@ export default function DemoManager() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  {MODULES.map((m) => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}
+                  {MODULE_KEYS.map((m) => <SelectItem key={m.id} value={m.id}>{m.id}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
