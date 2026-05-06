@@ -34,6 +34,7 @@ interface DuplicateGroup {
 const KINDS = ["all", "irrigation", "savings", "loan"] as const;
 
 export default function DuplicateReceiptAudit() {
+  const { t } = useLang();
   const [days, setDays] = useState<number>(90);
   const [kind, setKind] = useState<(typeof KINDS)[number]>("all");
   const [search, setSearch] = useState("");
