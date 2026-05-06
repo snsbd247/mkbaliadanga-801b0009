@@ -91,7 +91,7 @@ export default function Payments() {
   async function restorePayment(id: string) {
     const { error } = await supabase.from("payments").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Restored"); load();
+    toast.success(t("restored")); load();
   }
   async function loadDues() {
     const [l, i] = await Promise.all([
@@ -120,10 +120,10 @@ export default function Payments() {
 
   async function pay() {
     if (submitting) return;
-    if (!farmerId) return toast.error("Pick a farmer");
-    if (totalAmount <= 0) return toast.error("Total must be > 0");
+    if (!farmerId) return toast.error(t("pickFarmer"));
+    if (totalAmount <= 0) return toast.error(t("totalMustBePositive"));
     for (const a of allocs) {
-      if (Number(a.amount) <= 0) return toast.error("Each allocation must be > 0");
+      if (Number(a.amount) <= 0) return toast.error(t("eachAllocationMustBePositive"));
       if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
 
@@ -147,7 +147,7 @@ export default function Payments() {
       const { data: inserted, error } = await supabase.from("payments").insert(payload).select("id").single();
       if (error) {
         if ((error as any).code === "23505" || /duplicate/i.test(error.message)) {
-          toast.error("Duplicate submission detected — this payment was already recorded.");
+          toast.error(t("duplicateSubmissionDetected"));
           return;
         }
         return toast.error(error.message);
@@ -196,14 +196,14 @@ export default function Payments() {
       : [{ kind: p.kind, reference_id: p.reference_id ?? "", amount: Number(p.amount) }];
 
     await applyAllocationsToLedgers(p.id, p.farmer_id, allocList, p.note);
-    toast.success("Approved");
+    toast.success(t("approvedToast"));
     load();
   }
 
   async function rejectPayment(p: any) {
     const { error } = await supabase.from("payments").update({ status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", p.id);
     if (error) return toast.error(error.message);
-    toast.success("Rejected");
+    toast.success(t("rejectedToast"));
     load();
   }
 
@@ -213,8 +213,8 @@ export default function Payments() {
 
   function autoAllocate() {
     const amt = Number(autoAmount);
-    if (!farmerId) return toast.error("Pick a farmer");
-    if (!(amt > 0)) return toast.error("Enter amount to auto-allocate");
+    if (!farmerId) return toast.error(t("pickFarmer"));
+    if (!(amt > 0)) return toast.error(t("enterAmountToAutoAllocate"));
 
     // Build queue per priority with oldest-first dues
     const queues: Record<string, { reference_id: string; due: number }[]> = {
@@ -255,7 +255,7 @@ export default function Payments() {
       // Surplus → savings deposit
       out.push({ kind: "savings", reference_id: "", amount: +remaining.toFixed(2) });
     }
-    if (!out.length) return toast.error("No outstanding dues to allocate");
+    if (!out.length) return toast.error(t("noOutstandingDuesToAllocate"));
     setAllocs(out);
     toast.success(`Allocated to ${out.length} target(s) using office priority: ${priority.join(" → ")}`);
   }
