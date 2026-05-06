@@ -105,14 +105,14 @@ export default function Diagnostics() {
 
   return (
     <>
-      <PageHeader title="RLS Diagnostics" />
+      <PageHeader title={t("diag_title" as any)} />
 
       <Tabs defaultValue="errors">
         <TabsList>
-          <TabsTrigger value="errors">Recent Errors {errors.length > 0 && <Badge variant="destructive" className="ml-2">{errors.length}</Badge>}</TabsTrigger>
-          <TabsTrigger value="health">RLS Health Check</TabsTrigger>
-          <TabsTrigger value="isolation">Office Isolation</TabsTrigger>
-          <TabsTrigger value="integrity">Data Integrity</TabsTrigger>
+          <TabsTrigger value="errors">{t("diag_recentErrors" as any)} {errors.length > 0 && <Badge variant="destructive" className="ml-2">{errors.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="health">{t("diag_healthCheck" as any)}</TabsTrigger>
+          <TabsTrigger value="isolation">{t("diag_isolation" as any)}</TabsTrigger>
+          <TabsTrigger value="integrity">{t("diag_integrity" as any)}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="errors">
