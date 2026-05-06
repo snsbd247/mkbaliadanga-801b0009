@@ -11,6 +11,7 @@ export type MenuShortcut = {
   parentKey?: TranslationKey; // group label for context
   permKey?: string;
   superOnly?: boolean;
+  developerOnly?: boolean;
   keywords?: string[];   // extra english/bangla aliases
 };
 
@@ -65,12 +66,13 @@ export const MENU_SHORTCUTS: MenuShortcut[] = [
   // Administration
   { code: "M61", url: "/offices",                                 labelKey: "offices",          parentKey: "adminGroup", permKey: "offices", keywords: ["অফিস"] },
   { code: "M62", url: "/users",                                   labelKey: "users",            parentKey: "adminGroup", superOnly: true },
-  { code: "M63", url: "/admin/role-matrix",                       labelKey: "roleMatrix",       parentKey: "adminGroup", superOnly: true },
+  { code: "M63", url: "/admin/role-matrix",                       labelKey: "roleMatrix",       parentKey: "adminGroup", developerOnly: true },
   { code: "M64", url: "/locations",                               labelKey: "locations",        parentKey: "adminGroup", permKey: "locations" },
-  { code: "M65", url: "/audit",                                   labelKey: "auditLogs",        parentKey: "adminGroup", permKey: "audit" },
-  { code: "M66", url: "/admin/id-reconcile",                      labelKey: "idReconcile",      parentKey: "adminGroup", permKey: "farmers" },
+  { code: "M65", url: "/audit",                                   labelKey: "auditLogs",        parentKey: "adminGroup", developerOnly: true },
+  { code: "M66", url: "/admin/id-reconcile",                      labelKey: "idReconcile",      parentKey: "adminGroup", developerOnly: true },
   { code: "M67", url: "/admin/id-review",                         labelKey: "idReview",         parentKey: "adminGroup", permKey: "farmers" },
-  { code: "M68", url: "/admin/duplicate-receipt-audit",           labelKey: "duplicateReceiptAudit", parentKey: "adminGroup", permKey: "audit", keywords: ["dup","ডুপ্লিকেট"] },
+  { code: "M68", url: "/admin/duplicate-receipts",                labelKey: "duplicateReceiptAudit", parentKey: "adminGroup", developerOnly: true, keywords: ["dup","ডুপ্লিকেট"] },
+  { code: "M69", url: "/admin/farmer-login-audit",                labelKey: "farmerLoginAudit", parentKey: "adminGroup", developerOnly: true },
 
   // Tools & Imports
   { code: "M71", url: "/import",                                  labelKey: "universalImport",  parentKey: "toolsImports", permKey: "farmers" },

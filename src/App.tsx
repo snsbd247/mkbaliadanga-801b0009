@@ -78,6 +78,8 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 import { RequireRole } from "./components/auth/RequireRole";
+import { RequireDeveloper } from "./components/auth/RequireDeveloper";
+import DeveloperUpdates from "./pages/admin/DeveloperUpdates";
 
 const queryClient = new QueryClient();
 
@@ -120,7 +122,7 @@ const App = () => (
                 <Route path="/reports/farmer-rejections" element={<RequirePerm module="farmers" action="can_edit"><FarmerRejectionsReport /></RequirePerm>} />
                 <Route path="/reports/voter-audit" element={<RequirePerm module="farmers" action="can_edit"><VoterAudit /></RequirePerm>} />
                 <Route path="/voters/history" element={<RequirePerm module="farmers" action="can_edit"><VoterHistory /></RequirePerm>} />
-                <Route path="/admin/id-reconcile" element={<RequirePerm module="farmers" action="can_edit"><IdReconcile /></RequirePerm>} />
+                <Route path="/admin/id-reconcile" element={<RequireDeveloper><IdReconcile /></RequireDeveloper>} />
                 <Route path="/admin/id-review" element={<RequirePerm module="farmers" action="can_view"><IdReview /></RequirePerm>} />
                 <Route path="/reports/farmer-statement" element={<RequirePerm module="reports"><FarmerStatement /></RequirePerm>} />
                 <Route path="/reports/expenses" element={<RequirePerm module="reports" action="can_view"><ExpensesReport /></RequirePerm>} />
@@ -133,9 +135,9 @@ const App = () => (
                 <Route path="/statement" element={<RequirePerm module="savings"><Statement /></RequirePerm>} />
                 <Route path="/dues" element={<RequirePerm module="reports"><Dues /></RequirePerm>} />
                 <Route path="/dues-audit" element={<RequirePerm module="reports"><DuesAudit /></RequirePerm>} />
-                <Route path="/backup" element={<RequireRole roles={["admin","super_admin"]}><Backup /></RequireRole>} />
-                <Route path="/audit" element={<RequirePerm module="audit"><AuditLogs /></RequirePerm>} />
-                <Route path="/diagnostics" element={<Diagnostics />} />
+                <Route path="/backup" element={<RequireDeveloper><Backup /></RequireDeveloper>} />
+                <Route path="/audit" element={<RequireDeveloper><AuditLogs /></RequireDeveloper>} />
+                <Route path="/diagnostics" element={<RequireDeveloper><Diagnostics /></RequireDeveloper>} />
                 <Route path="/accounts" element={<RequirePerm module="accounting"><Accounts /></RequirePerm>} />
                 <Route path="/ledger" element={<RequirePerm module="accounting"><Ledger /></RequirePerm>} />
                 <Route path="/financial-reports" element={<RequirePerm module="accounting"><FinancialReports /></RequirePerm>} />
@@ -156,10 +158,11 @@ const App = () => (
                 <Route path="/admin/loan-receipt-settings" element={<RequireRole roles={["admin","super_admin"]}><LoanReceiptSettings /></RequireRole>} />
                 <Route path="/admin/bulk-loan-export" element={<RequireRole roles={["admin","super_admin"]}><BulkLoanExport /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
-                <Route path="/admin/role-matrix" element={<RequireRole roles={["admin","super_admin"]}><RoleMatrix /></RequireRole>} />
-                <Route path="/admin/duplicate-receipts" element={<RequireRole roles={["admin","super_admin"]}><DuplicateReceiptAudit /></RequireRole>} />
-                <Route path="/admin/farmer-login-audit" element={<RequireRole roles={["admin","super_admin"]}><FarmerLoginAudit /></RequireRole>} />
-                <Route path="/admin/demo-manager" element={<RequireRole roles={["super_admin"]}><DemoManager /></RequireRole>} />
+                <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
+                <Route path="/admin/duplicate-receipts" element={<RequireDeveloper><DuplicateReceiptAudit /></RequireDeveloper>} />
+                <Route path="/admin/farmer-login-audit" element={<RequireDeveloper><FarmerLoginAudit /></RequireDeveloper>} />
+                <Route path="/admin/demo-manager" element={<RequireDeveloper><DemoManager /></RequireDeveloper>} />
+                <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />

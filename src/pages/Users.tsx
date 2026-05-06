@@ -34,13 +34,13 @@ const createSchema = z.object({
   email: z.string().trim().email().max(255),
   full_name: z.string().trim().min(1).max(120),
   password: z.string().min(10, "At least 10 characters").max(72),
-  role: z.enum(["super_admin", "admin", "committee", "staff"]),
+  role: z.enum(["developer", "super_admin", "admin", "committee", "staff"]),
   office_id: z.string().nullable(),
 });
 
 export default function Users() {
   const { t } = useLang();
-  const { user: me } = useAuth();
+  const { user: me, isDeveloper } = useAuth();
   const [list, setList] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
   const [permFor, setPermFor] = useState<any | null>(null);
@@ -52,7 +52,7 @@ export default function Users() {
 
   const [form, setForm] = useState({
     username: "", email: "", full_name: "", password: "",
-    role: "staff" as "super_admin" | "admin" | "committee" | "staff", office_id: "",
+    role: "staff" as "developer" | "super_admin" | "admin" | "committee" | "staff", office_id: "",
   });
 
   useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, []);
@@ -64,7 +64,7 @@ export default function Users() {
       supabase.from("offices").select("id,name"),
     ]);
     setOffices(o.data ?? []);
-    const ROLE_RANK: Record<string, number> = { super_admin: 4, admin: 3, committee: 2, staff: 1 };
+    const ROLE_RANK: Record<string, number> = { developer: 5, super_admin: 4, admin: 3, committee: 2, staff: 1 };
     const rolesByUser: Record<string, string[]> = {};
     (r.data ?? []).forEach((x: any) => { (rolesByUser[x.user_id] ??= []).push(x.role); });
     Object.keys(rolesByUser).forEach((uid) => {
@@ -120,7 +120,11 @@ export default function Users() {
     setResetFor(null); setResetPwd("");
   }
 
-  async function setRole(uid: string, role: "super_admin" | "admin" | "committee" | "staff") {
+  async function setRole(uid: string, role: "developer" | "super_admin" | "admin" | "committee" | "staff") {
+    if (uid === me?.id) return toast.error(t("cannotChangeOwnRole" as any) || "You cannot change your own role");
+    if ((role === "developer" || role === "super_admin") && !isDeveloper) {
+      return toast.error("Only developers can assign this role");
+    }
     await supabase.from("user_roles").delete().eq("user_id", uid);
     const { error } = await supabase.from("user_roles").insert({ user_id: uid, role });
     if (error) return toast.error(error.message);
@@ -186,7 +190,8 @@ export default function Users() {
                   <Select value={form.role} onValueChange={v => setForm({ ...form, role: v as any })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
+                      {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
+                      {isDeveloper && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
                       <SelectItem value="admin">{t("admin")}</SelectItem>
                       <SelectItem value="committee">{t("committee")}</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>
@@ -227,10 +232,12 @@ export default function Users() {
                 <TableCell className="font-mono text-xs">{u.email}</TableCell>
                 <TableCell>{u.full_name}</TableCell>
                 <TableCell>
-                  <Select value={u.roles[0] ?? "staff"} onValueChange={(v) => setRole(u.id, v as any)}>
+                  <Select value={u.roles[0] ?? "staff"} onValueChange={(v) => setRole(u.id, v as any)} disabled={u.id === me?.id}>
                     <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>
+                      {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
+                      {isDeveloper && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
+                      {!isDeveloper && u.roles[0] === "super_admin" && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
                       <SelectItem value="admin">{t("admin")}</SelectItem>
                       <SelectItem value="committee">{t("committee")}</SelectItem>
                       <SelectItem value="staff">{t("staff")}</SelectItem>

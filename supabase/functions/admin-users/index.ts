@@ -12,7 +12,7 @@ interface CreateBody {
   email: string;
   password: string;
   full_name?: string;
-  role: "super_admin" | "admin" | "committee" | "staff";
+  role: "developer" | "super_admin" | "admin" | "committee" | "staff";
   office_id?: string | null;
 }
 interface DeleteBody { action: "delete"; user_id: string; }
@@ -41,7 +41,9 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", who.user.id);
-    const isSuper = (roles ?? []).some((r: any) => r.role === "super_admin");
+    const myRoles = (roles ?? []).map((r: any) => r.role);
+    const isDeveloper = myRoles.includes("developer");
+    const isSuper = isDeveloper || myRoles.includes("super_admin");
     if (!isSuper) return json({ error: "Forbidden — super admin only" }, 403);
 
     const body = (await req.json()) as Body;
@@ -51,6 +53,9 @@ Deno.serve(async (req) => {
       if (!username || !email || !password || !role) return json({ error: "Missing fields" }, 400);
       if (password.length < 8) return json({ error: "Password must be at least 8 characters" }, 400);
       if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(username)) return json({ error: "Invalid username (3–30 chars, letters/digits/._-)" }, 400);
+      if ((role === "developer" || role === "super_admin") && !isDeveloper) {
+        return json({ error: "Only developers can create developer or super admin accounts" }, 403);
+      }
 
       // Check username uniqueness
       const { data: existing } = await admin.from("profiles").select("id").ilike("username", username).maybeSingle();
@@ -72,6 +77,13 @@ Deno.serve(async (req) => {
 
     if (body.action === "delete") {
       if (body.user_id === who.user.id) return json({ error: "You cannot delete yourself" }, 400);
+      // Prevent non-developers from deleting developer accounts
+      if (!isDeveloper) {
+        const { data: targetRoles } = await admin.from("user_roles").select("role").eq("user_id", body.user_id);
+        if ((targetRoles ?? []).some((r: any) => r.role === "developer")) {
+          return json({ error: "Only developers can delete developer accounts" }, 403);
+        }
+      }
       const { error } = await admin.auth.admin.deleteUser(body.user_id);
       if (error) return json({ error: error.message }, 400);
       return json({ ok: true });

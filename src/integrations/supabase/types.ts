@@ -2865,6 +2865,8 @@ export type Database = {
         Args: { _date: string; _office: string }
         Returns: boolean
       }
+      is_developer: { Args: { _user_id: string }; Returns: boolean }
+      is_developer_user: { Args: { _user_id: string }; Returns: boolean }
       ledger_integrity_summary: { Args: never; Returns: Json }
       ledger_orphan_refs: {
         Args: never
@@ -2950,7 +2952,7 @@ export type Database = {
     }
     Enums: {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
-      app_role: "super_admin" | "admin" | "staff" | "committee"
+      app_role: "super_admin" | "admin" | "staff" | "committee" | "developer"
       approval_status: "pending" | "approved" | "rejected"
       field_type: "high_land" | "medium_land" | "low_land" | "other"
       installment_status: "due" | "paid" | "missed" | "partial"
@@ -3110,7 +3112,7 @@ export const Constants = {
   public: {
     Enums: {
       account_type: ["asset", "liability", "income", "expense", "equity"],
-      app_role: ["super_admin", "admin", "staff", "committee"],
+      app_role: ["super_admin", "admin", "staff", "committee", "developer"],
       approval_status: ["pending", "approved", "rejected"],
       field_type: ["high_land", "medium_land", "low_land", "other"],
       installment_status: ["due", "paid", "missed", "partial"],

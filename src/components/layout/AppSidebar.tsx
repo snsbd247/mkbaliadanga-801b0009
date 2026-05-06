@@ -20,7 +20,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useBranding } from "@/lib/branding";
 import { usePermissions } from "@/lib/permissions";
 
-type SubItem = { url: string; icon: any; label: string; permKey?: string; superOnly?: boolean };
+type SubItem = { url: string; icon: any; label: string; permKey?: string; superOnly?: boolean; developerOnly?: boolean };
 type ParentItem = {
   key: string;
   icon: any;
@@ -28,6 +28,7 @@ type ParentItem = {
   url?: string;
   permKey?: string;
   superOnly?: boolean;
+  developerOnly?: boolean;
   children?: SubItem[];
 };
 
@@ -36,7 +37,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { t, lang } = useLang();
-  const { isSuper, user } = useAuth();
+  const { isSuper, isDeveloper, user } = useAuth();
   const brand = useBranding();
   const { can } = usePermissions();
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -122,11 +123,13 @@ export function AppSidebar() {
       children: [
         { url: "/offices", icon: Building2, label: t("offices"), permKey: "offices" },
         { url: "/users", icon: ShieldCheck, label: t("users"), superOnly: true },
-        { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), superOnly: true },
+        { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), developerOnly: true },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
-        { url: "/audit", icon: ScrollText, label: t("auditLogs"), permKey: "audit" },
-        { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), permKey: "farmers" },
+        { url: "/audit", icon: ScrollText, label: t("auditLogs"), developerOnly: true },
+        { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
+        { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
+        { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
       ],
     },
 
@@ -138,8 +141,10 @@ export function AppSidebar() {
         { url: "/admin/bulk-loan-export", icon: Upload, label: t("bulkExportLoans"), superOnly: true },
         { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
-        { url: "/backup", icon: Database, label: t("backup"), superOnly: true },
-        { url: "/admin/demo-manager", icon: Database, label: "Demo Manager", superOnly: true },
+        { url: "/backup", icon: Database, label: t("backup"), developerOnly: true },
+        { url: "/admin/demo-manager", icon: Database, label: "Demo Manager", developerOnly: true },
+        { url: "/diagnostics", icon: ShieldAlert, label: "Diagnostics", developerOnly: true },
+        { url: "/admin/developer-updates", icon: RefreshCw, label: "Developer Updates", developerOnly: true },
       ],
     },
 
@@ -156,7 +161,8 @@ export function AppSidebar() {
     },
   ];
 
-  const allowed = (i: { permKey?: string; superOnly?: boolean }) => {
+  const allowed = (i: { permKey?: string; superOnly?: boolean; developerOnly?: boolean }) => {
+    if (i.developerOnly) return isDeveloper;
     if (i.superOnly) return isSuper;
     if (i.permKey) return can(i.permKey as any, "can_view");
     return true;
