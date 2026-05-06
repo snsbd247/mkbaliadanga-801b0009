@@ -368,8 +368,8 @@ export default function ShareCollection() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Detailed (All rows)</SelectItem>
-              <SelectItem value="daily">Daily Summary</SelectItem>
-              <SelectItem value="monthly">Monthly Summary</SelectItem>
+              <SelectItem value="daily">{t("p5c_dailySummary")}</SelectItem>
+              <SelectItem value="monthly">{t("p5c_monthlySummary")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
