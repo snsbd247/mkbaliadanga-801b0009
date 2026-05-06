@@ -127,7 +127,7 @@ export default function Cashbook() {
   // Cash book entries (combined, sorted asc for running balance)
   const cashbookEntries = useMemo(() => {
     const rows: any[] = [
-      ...receipts.map(x => ({ date: x.receipt_date, kind: "income", label: KIND_LABEL[x.kind as Kind] ?? x.kind, ref: x.receipt_no, amount: Number(x.amount), note: x.note })),
+      ...receipts.map(x => ({ date: x.receipt_date, kind: "income", label: getKindLabel(t, x.kind as Kind), ref: x.receipt_no, amount: Number(x.amount), note: x.note })),
       ...expenses.map(x => ({ date: x.expense_date, kind: "expense", label: x.head, ref: x.payee ?? "", amount: Number(x.amount), note: x.note })),
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(openingCash || 0);
@@ -320,8 +320,8 @@ export default function Cashbook() {
 
         <TabsContent value="receipts">
           <ExportBar
-            onPdf={() => exportTablePDF("Receipts", ["Receipt #", "Date", "Kind", "Farmer", "Amount", "Method"], receipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), KIND_LABEL[x.kind as Kind] ?? x.kind, x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
-            onXlsx={() => exportExcel("receipts", "Receipts", receipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: KIND_LABEL[x.kind as Kind] ?? x.kind, Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
+            onPdf={() => exportTablePDF("Receipts", ["Receipt #", "Date", "Kind", "Farmer", "Amount", "Method"], receipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), getKindLabel(t, x.kind as Kind), x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
+            onXlsx={() => exportExcel("receipts", "Receipts", receipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: getKindLabel(t, x.kind as Kind), Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
           />
           <Card><Table>
             <TableHeader><TableRow>
@@ -334,7 +334,7 @@ export default function Cashbook() {
                 <TableRow key={x.id}>
                   <TableCell className="font-mono text-xs">{x.receipt_no}</TableCell>
                   <TableCell>{fmtDate(x.receipt_date)}</TableCell>
-                  <TableCell><Badge variant="outline">{KIND_LABEL[x.kind as Kind] ?? x.kind}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{getKindLabel(t, x.kind as Kind)}</Badge></TableCell>
                   <TableCell>{x.farmers?.name_en ?? <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="text-right font-semibold text-success">{money(x.amount)}</TableCell>
                   <TableCell>{x.method}</TableCell>
