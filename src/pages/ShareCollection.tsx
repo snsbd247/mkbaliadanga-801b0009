@@ -433,16 +433,16 @@ export default function ShareCollection() {
               <Input type="number" min={MIN_AMOUNT} max={MAX_AMOUNT} value={editForm.amount}
                 onChange={e => setEditForm({ ...editForm, amount: e.target.value })} />
             </div>
-            <div><Label>Date</Label>
+            <div><Label>{t("pgDate")}</Label>
               <Input type="date" value={editForm.txn_date} onChange={e => setEditForm({ ...editForm, txn_date: e.target.value })} />
             </div>
-            <div><Label>Note</Label>
+            <div><Label>{t("pgNote")}</Label>
               <Input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditRow(null)}>Cancel</Button>
-            <Button onClick={saveEdit}>Save</Button>
+            <Button variant="outline" onClick={() => setEditRow(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEdit}>{t("save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
