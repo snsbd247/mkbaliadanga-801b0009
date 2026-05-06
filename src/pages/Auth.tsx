@@ -233,8 +233,8 @@ export default function AuthPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setForgotOpen(false)} disabled={forgotBusy}>Cancel</Button>
-            <Button onClick={sendReset} disabled={forgotBusy}>{forgotBusy ? "Sending…" : "Send reset link"}</Button>
+            <Button variant="outline" onClick={() => setForgotOpen(false)} disabled={forgotBusy}>{t("cancel")}</Button>
+            <Button onClick={sendReset} disabled={forgotBusy}>{forgotBusy ? t("sendingDots") : t("sendResetLink")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
