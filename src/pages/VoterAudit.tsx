@@ -100,39 +100,39 @@ export default function VoterAudit() {
 
   return (
     <>
-      <PageHeader title="Voter Audit Logs" description="History of every voter number assignment / change." />
+      <PageHeader title={t("auditLogs")} description={t("pgEvent")} />
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-4">
           <div>
-            <Label>Farmer</Label>
+            <Label>{t("pgFarmer")}</Label>
             <FarmerSearchSelect value={farmerId} onChange={(id) => setFarmerId(id)} />
           </div>
           {isSuper && (
             <div>
-              <Label>Office</Label>
+              <Label>{t("pgOffice")}</Label>
               <Select value={officeId} onValueChange={setOfficeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All offices</SelectItem>
+                  <SelectItem value="all">{t("pgAllOffices")}</SelectItem>
                   {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           )}
-          <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
-          <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <div><Label>{t("pgFromDate")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+          <div><Label>{t("pgToDate")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
         </div>
         <div className="flex gap-2 mt-3">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />Refresh
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("refresh" as any)}
           </Button>
           <Button variant="outline" size="sm" onClick={onExportExcel} disabled={!rows.length}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" />Excel
+            <FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExcel")}
           </Button>
           <Button variant="outline" size="sm" onClick={onExportPDF} disabled={!rows.length}>
             <FileText className="h-4 w-4 mr-1" />PDF
           </Button>
-          <span className="ml-auto text-xs text-muted-foreground self-center">{rows.length} record(s)</span>
+          <span className="ml-auto text-xs text-muted-foreground self-center">{rows.length}</span>
         </div>
       </Card>
 
@@ -140,18 +140,18 @@ export default function VoterAudit() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Farmer</TableHead>
-              <TableHead>Account</TableHead>
-              <TableHead>Old → New Voter</TableHead>
-              <TableHead>Is Voter</TableHead>
-              <TableHead>Changed By</TableHead>
-              <TableHead>Office</TableHead>
+              <TableHead>{t("pgDate")}</TableHead>
+              <TableHead>{t("pgFarmer")}</TableHead>
+              <TableHead>{t("pgAccount")}</TableHead>
+              <TableHead>{t("pgVoterNumber")}</TableHead>
+              <TableHead>{t("pgIsVoter")}</TableHead>
+              <TableHead>{t("pgChangedBy")}</TableHead>
+              <TableHead>{t("pgOffice")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {pageRows.length === 0 && (
-              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">No records</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">{t("pgNoRecords")}</TableCell></TableRow>
             )}
             {pageRows.map(r => {
               const f = farmersMap[r.farmer_id] ?? {};
@@ -173,10 +173,10 @@ export default function VoterAudit() {
         </Table>
         {totalPages > 1 && (
           <div className="flex items-center justify-between p-2 border-t text-xs">
-            <span>Page {page + 1} / {totalPages}</span>
+            <span>{page + 1} / {totalPages}</span>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</Button>
-              <Button size="sm" variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+              <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>{t("pgPrev")}</Button>
+              <Button size="sm" variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>{t("pgNext")}</Button>
             </div>
           </div>
         )}
