@@ -353,7 +353,7 @@ export default function Farmers() {
     // Duplicate check on member_no (Farmer ID) — always
     if (form.member_no) {
       const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(form.member_no).trim(), _exclude_id: null });
-      if (dup === true) { toast.error("Duplicate Farmer ID — already used by another farmer."); return; }
+      if (dup === true) { toast.error(t("duplicateFarmerId")); return; }
     }
 
     // Auto-generate Farmer ID if empty (super admin can override above)
@@ -383,7 +383,7 @@ export default function Farmers() {
     }
     if (data) await supabase.from("shares").insert({ farmer_id: data.id, balance: 0 });
     setSaving(false);
-    toast.success("Farmer added");
+    toast.success(t("farmerAdded"));
     resetCreateForm();
     load();
   }
@@ -411,7 +411,7 @@ export default function Farmers() {
     }
     if (editForm.member_no) {
       const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(editForm.member_no).trim(), _exclude_id: (editForm as any).id ?? null });
-      if (dup === true) { toast.error("Duplicate Farmer ID — already used by another farmer."); return; }
+      if (dup === true) { toast.error(t("duplicateFarmerId")); return; }
     }
 
     setSaving(true);
@@ -444,21 +444,21 @@ export default function Farmers() {
       .maybeSingle();
     if (fresh) setList((prev) => prev.map((r) => (r.id === id ? fresh : r)));
     setSaving(false);
-    toast.success("Farmer updated");
+    toast.success(t("farmerUpdated"));
     resetEditForm();
   }
 
   async function remove(id: string) {
     const { error } = await supabase.from("farmers").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Farmer archived (soft delete)");
+    toast.success(t("farmerArchived"));
     load();
   }
 
   async function restore(id: string) {
     const { error } = await supabase.from("farmers").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Farmer restored");
+    toast.success(t("farmerRestored"));
     load();
   }
 
@@ -505,7 +505,7 @@ export default function Farmers() {
         </div>
         <FarmerIdField f={f} setF={setF} disabled={disabled} isSuper={isSuper} currentId={f.id ?? null} />
         <div>
-          <Label>Voter / Savings Account</Label>
+          <Label>{t("voterSavingsAccount")}</Label>
           <VoterToggleField f={f} setF={setF} disabled={disabled} />
         </div>
         <SavingsVoterFields f={f} setF={setF} disabled={disabled} isSuper={isSuper} />
@@ -520,7 +520,7 @@ export default function Farmers() {
 
         <div className="col-span-2 border-t pt-3 mt-1">
           <div className="text-xs font-medium text-muted-foreground mb-2">
-            Location (strict cascading: division → district → upazila → union → ward → village → mouza)
+            {t("locationStrictHint")}
           </div>
           {(err || fieldErrors.location) && (
             <Alert variant="destructive" className="mb-3" role="alert" aria-live="assertive">
@@ -553,11 +553,11 @@ export default function Farmers() {
     <>
       <PageHeader title={t("farmers")} actions={
         <div className="flex items-center gap-2 flex-wrap">
-          <Button type="button" variant="outline" size="sm" onClick={downloadFarmerTemplate} title="Download bulk import template">
-            <Download className="h-4 w-4 mr-1" /> Template
+          <Button type="button" variant="outline" size="sm" onClick={downloadFarmerTemplate} title={t("downloadTemplateTip")}>
+            <Download className="h-4 w-4 mr-1" /> {t("template")}
           </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => nav("/farmers/import")} title="Open bulk importer">
-            <Upload className="h-4 w-4 mr-1" /> Bulk Import
+          <Button type="button" variant="outline" size="sm" onClick={() => nav("/farmers/import")} title={t("openBulkImporterTip")}>
+            <Upload className="h-4 w-4 mr-1" /> {t("bulkImport")}
           </Button>
           <Dialog open={open} onOpenChange={(o) => { if (!o && !saving) resetCreateForm(); else setOpen(o); }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button></DialogTrigger>
@@ -599,7 +599,7 @@ export default function Farmers() {
           {isSuper && (
             <label className="flex items-center gap-2 text-sm">
               <Switch checked={showDeleted} onCheckedChange={(v) => { setShowDeleted(v); setPage(0); }} />
-              <span>Show archived</span>
+              <span>{t("showArchived")}</span>
             </label>
           )}
         </div>
@@ -608,7 +608,7 @@ export default function Farmers() {
       <Card>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Farmer ID</TableHead><TableHead>Voter Number</TableHead><TableHead>{t("farmerName")}</TableHead>
+            <TableHead>{t("farmerIdLabel")}</TableHead><TableHead>{t("voterNumber")}</TableHead><TableHead>{t("farmerName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
             <TableHead className="text-right">{t("dueAmount")}</TableHead>
@@ -636,26 +636,26 @@ export default function Farmers() {
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
-                    <Button size="icon" variant="ghost" title="View" onClick={() => nav(`/farmers/${f.id}`)}><Eye className="h-4 w-4" /></Button>
-                    {!f.deleted_at && <Button size="icon" variant="ghost" title="Edit" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>}
+                    <Button size="icon" variant="ghost" title={t("viewTip")} onClick={() => nav(`/farmers/${f.id}`)}><Eye className="h-4 w-4" /></Button>
+                    {!f.deleted_at && <Button size="icon" variant="ghost" title={t("editTip")} onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>}
                     {isSuper && f.deleted_at && (
-                      <Button size="sm" variant="outline" onClick={() => restore(f.id)}>Restore</Button>
+                      <Button size="sm" variant="outline" onClick={() => restore(f.id)}>{t("restore")}</Button>
                     )}
                     {isSuper && !f.deleted_at && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" title={t("deleteTipShort")}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Archive farmer?</AlertDialogTitle>
+                            <AlertDialogTitle>{t("archiveFarmerTitle")}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This archives <span className="font-mono">{f.farmer_code}</span>. Linked records remain intact and the farmer can be restored later.
+                              {t("archiveFarmerDesc").replace("{code}", String(f.farmer_code ?? f.member_no ?? ""))}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => remove(f.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Archive</AlertDialogAction>
+                            <AlertDialogAction onClick={() => remove(f.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("archive")}</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -668,7 +668,7 @@ export default function Farmers() {
           </TableBody>
         </Table>
         <div className="flex items-center justify-between p-3 border-t">
-          <div className="text-xs text-muted-foreground">Page {page + 1}</div>
+          <div className="text-xs text-muted-foreground">{t("pageNum").replace("{n}", String(page + 1))}</div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>{t("prev")}</Button>
             <Button size="sm" variant="outline" disabled={list.length < PAGE} onClick={() => setPage(p => p + 1)}>{t("next")}</Button>
