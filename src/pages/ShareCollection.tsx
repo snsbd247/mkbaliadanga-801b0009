@@ -426,7 +426,7 @@ export default function ShareCollection() {
 
       <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Share Collection</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("p5c_editShareCollection")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="text-sm text-muted-foreground">{editRow?.farmers?.farmer_code} — {editRow?.farmers?.name_en}</div>
             <div><Label>Amount (৳)</Label>
