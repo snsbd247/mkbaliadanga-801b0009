@@ -26,6 +26,7 @@ type Row = {
 
 export default function VoterHistory() {
   const { isSuper } = useAuth();
+  const { t } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [farmersMap, setFarmersMap] = useState<Record<string, any>>({});
   const [profilesMap, setProfilesMap] = useState<Record<string, any>>({});
