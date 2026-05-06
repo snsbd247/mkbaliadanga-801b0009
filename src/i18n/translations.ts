@@ -942,6 +942,8 @@ export const translations = {
     newVal: "New",
     noChanges: "No changes recorded",
     noRecordsFound: "No records found",
+    profile: "Profile",
+    duplicateReceiptAudit: "Duplicate Receipt Audit",
     // Phase 4 (EN)
     thisMonthCollection: "This Month Collection",
     pendingLower: "pending",
@@ -1818,6 +1820,8 @@ export const translations = {
     newVal: "নতুন",
     noChanges: "কোনো পরিবর্তন নেই",
     noRecordsFound: "কোনো রেকর্ড পাওয়া যায়নি",
+    profile: "প্রোফাইল",
+    duplicateReceiptAudit: "ডুপ্লিকেট রসিদ অডিট",
     // Phase 4 (BN)
     thisMonthCollection: "এই মাসের কালেকশন",
     pendingLower: "অপেক্ষমাণ",

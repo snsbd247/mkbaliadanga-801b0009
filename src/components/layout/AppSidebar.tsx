@@ -253,36 +253,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {!collapsed && (
-          <div className="px-2 pt-2">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sidebar-foreground/60" />
-              <Input
-                ref={searchRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setQuery("");
-                    searchRef.current?.blur();
-                  }
-                }}
-                placeholder={`${t("searchMenu")}  (Ctrl+K)`}
-                className="h-8 pl-7 text-xs bg-sidebar-accent/40 border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/60"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-sidebar-foreground/60 hover:text-sidebar-foreground px-1"
-                  aria-label="Clear"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Menu search moved to the global header (MenuSearch) */}
 
 
         <SidebarGroup>
