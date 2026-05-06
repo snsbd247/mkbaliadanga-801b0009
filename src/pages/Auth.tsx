@@ -51,7 +51,7 @@ export default function AuthPage() {
     const u = username.trim();
     if (!u || !password) {
       setDebug({ ...initialDebug, hint: "Both username and password are required." });
-      return toast.error("Username and password required");
+      return toast.error(t("usernameAndPasswordRequired"));
     }
     setBusy(true);
     const d: DebugInfo = { lookup: "running", password: "idle", redirect: "idle" };
@@ -68,7 +68,7 @@ export default function AuthPage() {
           errorCode: error.code, errorMessage: error.message,
           hint: "Username lookup failed at the backend (RPC error). Check that the RPC is callable.",
         });
-        return toast.error("Username lookup failed");
+        return toast.error(t("usernameLookupFailed"));
       }
       if (!data) {
         setBusy(false);
@@ -77,7 +77,7 @@ export default function AuthPage() {
           errorMessage: `No account found for username "${u}"`,
           hint: "The username does not exist. Check spelling, or use email instead.",
         });
-        return toast.error(`No account found for "${u}"`);
+        return toast.error(t("noAccountFor").replace("{u}", u));
       }
       email = data as string;
     }
@@ -104,7 +104,7 @@ export default function AuthPage() {
             ? "The email address has not been confirmed yet."
             : "See backend message above.",
       });
-      return toast.error(error.message || "Invalid password");
+      return toast.error(error.message || t("invalidPassword"));
     }
 
     d.password = "ok";
@@ -127,7 +127,7 @@ export default function AuthPage() {
 
   async function sendReset() {
     const v = forgotInput.trim();
-    if (!v) return toast.error("Enter your username or email");
+    if (!v) return toast.error(t("usernameOrEmail"));
     setForgotBusy(true);
     let email = v;
     // If it doesn't look like an email, treat it as a username and resolve.
@@ -136,7 +136,7 @@ export default function AuthPage() {
       if (error || !data) {
         setForgotBusy(false);
         // Show a generic success message either way to avoid account enumeration.
-        toast.success("If an account exists, a reset link has been sent.");
+        toast.success(t("ifAccountExistsResetSent"));
         setForgotOpen(false);
         return;
       }
@@ -149,7 +149,7 @@ export default function AuthPage() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("If an account exists, a reset link has been sent.");
+        toast.success(t("ifAccountExistsResetSent"));
       setForgotOpen(false);
       setForgotInput("");
     }
