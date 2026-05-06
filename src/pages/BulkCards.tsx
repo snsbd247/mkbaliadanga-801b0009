@@ -81,19 +81,19 @@ export default function BulkCards() {
   }
 
   async function generate() {
-    if (selectedIds.length === 0) { toast.error("Select at least one farmer"); return; }
-    if (selectedIds.length > 100) { toast.error("Please select no more than 100 farmers per batch"); return; }
+    if (selectedIds.length === 0) { toast.error(t("pgBulkSelectAtLeastOne" as any)); return; }
+    if (selectedIds.length > 100) { toast.error(t("pgBulkMaxLimit" as any)); return; }
     setBusy(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Please sign in"); return; }
+      if (!session) { toast.error(t("pgBulkSignInRequired" as any)); return; }
       const res = await fetch(`${FN}/farmer-cards-bulk`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ farmer_ids: selectedIds }),
       });
       const j = await res.json();
-      if (!res.ok) { toast.error(j?.error || "Bulk fetch failed"); return; }
+      if (!res.ok) { toast.error(j?.error || t("pgBulkFetchFailed" as any)); return; }
       const items: any[] = j.items ?? [];
       const ok = items.filter((i) => !i.error);
 
