@@ -315,9 +315,20 @@ export default function Backup() {
                   <Checkbox checked={dryRun} onCheckedChange={(v) => setDryRun(!!v)} id="dry" />
                   <Label htmlFor="dry" className="text-sm cursor-pointer">{t("p5d_dryRun")}</Label>
                 </label>
-                <Button onClick={runRestore} disabled={!restoreFile || !!busy}>
+                <Button onClick={() => (dryRun ? startRestore() : setConfirmOpen(true))} disabled={!restoreFile || !!busy}>
                   {busy === "__restore__" ? t("p5d_restoreInProgress") : t("p5d_restoreNow")}
                 </Button>
+              </div>
+              {snapshotBlob && (
+                <div className="rounded-md border bg-emerald-50/40 border-emerald-500/40 p-2 text-xs text-emerald-800 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{t("p5e_rollbackHint")}</span>
+                  <a href={snapshotBlob.url} download={snapshotBlob.name} className="underline font-medium">
+                    {t("p5e_downloadSnapshot")}
+                  </a>
+                </div>
+              )}
+              <div style={{ display: "none" }}></div>
               </div>
               {restoreReport && (
                 <div className="rounded-md border bg-muted/30 p-3 max-h-80 overflow-auto">
