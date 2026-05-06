@@ -401,7 +401,7 @@ export default function Reports() {
           />
           <Card>
             <Table>
-              <TableHeader><TableRow><TableHead>Metric</TableHead><TableHead className="text-right">Ledger</TableHead><TableHead className="text-right">Payment allocations</TableHead><TableHead className="text-right">Diff</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{t("rpMetric" as any)}</TableHead><TableHead className="text-right">{t("rpLedger" as any)}</TableHead><TableHead className="text-right">{t("rpAllocations" as any)}</TableHead><TableHead className="text-right">{t("rpDiff" as any)}</TableHead></TableRow></TableHeader>
               <TableBody>{recon.map((r, i) => (
                 <TableRow key={i}>
                   <TableCell>{r.metric}</TableCell>
@@ -412,7 +412,7 @@ export default function Reports() {
               ))}</TableBody>
             </Table>
           </Card>
-          <p className="text-xs text-muted-foreground mt-2">Compares each module's recorded balances against allocations recorded against payments. Non-zero differences may indicate manual ledger entries (without a payment) or pending receipts.</p>
+          <p className="text-xs text-muted-foreground mt-2">{t("rpReconNote" as any)}</p>
         </TabsContent>
 
         <TabsContent value="irrigation">
