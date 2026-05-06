@@ -3,6 +3,20 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { money, moneyPdf, fmtDate } from "./format";
 import { loadBranding } from "./branding";
+import { translations } from "@/i18n/translations";
+
+// Resolve current PDF language from the app's persisted user choice. Reports
+// then translate their static labels (Period / Printed / Page) automatically.
+function pdfLang(): "en" | "bn" {
+  if (typeof window === "undefined") return "en";
+  const v = localStorage.getItem("lang");
+  return v === "bn" ? "bn" : "en";
+}
+function tPdf(enKey: string, bnKey: string): string {
+  const lang = pdfLang();
+  if (lang === "bn") return bnKey;
+  return enKey;
+}
 
 // Shared A4 PDF header/footer. Adds branded company name + period at top, and
 // "Page X of Y · printed at" footer on every page. Returns the Y position
