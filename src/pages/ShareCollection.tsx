@@ -309,36 +309,36 @@ export default function ShareCollection() {
                 )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setBatchOpen(false)}>Close</Button>
-                <Button onClick={batchSubmit}>Submit Batch</Button>
+                <Button variant="outline" onClick={() => setBatchOpen(false)}>{t("cancel")}</Button>
+                <Button onClick={batchSubmit}>{t("p5c_submitBatch")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />New Collection</Button></DialogTrigger>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("p5c_newCollection")}</Button></DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Share Collection Entry</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{t("p5c_shareCollectionEntry")}</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>Farmer</Label>
+                <div><Label>{t("p5_farmerLabel")}</Label>
                   <FarmerSearchSelect value={form.farmer_id || null} onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Amount (৳)</Label>
+                  <div><Label>{t("amount")} (৳)</Label>
                     <Input type="number" min={MIN_AMOUNT} max={MAX_AMOUNT} value={form.amount}
                       onChange={e => setForm({ ...form, amount: e.target.value })} />
                   </div>
-                  <div><Label>Date</Label>
+                  <div><Label>{t("date")}</Label>
                     <Input type="date" value={form.txn_date} onChange={e => setForm({ ...form, txn_date: e.target.value })} />
                   </div>
                 </div>
-                <div><Label>Payment Method</Label>
+                <div><Label>{t("p5c_paymentMethod")}</Label>
                   <Select value={form.method} onValueChange={v => setForm({ ...form, method: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="bank">Bank</SelectItem>
-                      <SelectItem value="mobile">Mobile Banking</SelectItem>
+                      <SelectItem value="cash">{t("kindCash") || "Cash"}</SelectItem>
+                      <SelectItem value="bank">{t("kindBank") || "Bank"}</SelectItem>
+                      <SelectItem value="mobile">{t("p5c_mobileBanking")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
