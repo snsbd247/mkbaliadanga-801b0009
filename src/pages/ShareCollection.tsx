@@ -19,6 +19,7 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { toast } from "sonner";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const MIN_AMOUNT = 50;
 const MAX_AMOUNT = 1000000;
@@ -37,6 +38,7 @@ type Row = {
 
 export default function ShareCollection() {
   const { user, isCommittee, isSuper } = useAuth();
+  const { t } = useLang();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -256,12 +258,12 @@ export default function ShareCollection() {
 
   return (
     <>
-      <PageHeader title="Share Collection" description="Collect and track share capital contributions from farmers." actions={
+      <PageHeader title="Share Collection" description="" actions={
         <div className="flex gap-2">
           <Dialog open={batchOpen} onOpenChange={(v) => { setBatchOpen(v); if (!v) setBatchReport(null); }}>
-            <DialogTrigger asChild><Button variant="outline"><Upload className="h-4 w-4 mr-1" />Batch CSV</Button></DialogTrigger>
+            <DialogTrigger asChild><Button variant="outline"><Upload className="h-4 w-4 mr-1" />{t("p5c_batchCsv")}</Button></DialogTrigger>
             <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>Batch Share Collection</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{t("p5c_batchShareCollection")}</DialogTitle></DialogHeader>
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <Label>One entry per line: <code className="text-xs">farmer_code,amount,date(YYYY-MM-DD,optional),note(optional)</code></Label>
@@ -277,7 +279,7 @@ export default function ShareCollection() {
                     const a = document.createElement("a");
                     a.href = url; a.download = "share-collection-template.csv"; a.click();
                     URL.revokeObjectURL(url);
-                  }}><FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Download Template</Button>
+                  }}><FileSpreadsheet className="h-3.5 w-3.5 mr-1" />{t("p5c_downloadTemplate")}</Button>
                 </div>
                 <Textarea rows={8} value={batchText} onChange={e => setBatchText(e.target.value)}
                   placeholder={"MK-0001,500,2026-05-05,May share\nMK-0002,500\nMK-0003,1000"} />
@@ -307,36 +309,36 @@ export default function ShareCollection() {
                 )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setBatchOpen(false)}>Close</Button>
-                <Button onClick={batchSubmit}>Submit Batch</Button>
+                <Button variant="outline" onClick={() => setBatchOpen(false)}>{t("cancel")}</Button>
+                <Button onClick={batchSubmit}>{t("p5c_submitBatch")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />New Collection</Button></DialogTrigger>
+            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("p5c_newCollection")}</Button></DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Share Collection Entry</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{t("p5c_shareCollectionEntry")}</DialogTitle></DialogHeader>
               <div className="space-y-3">
-                <div><Label>Farmer</Label>
+                <div><Label>{t("p5_farmerLabel")}</Label>
                   <FarmerSearchSelect value={form.farmer_id || null} onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Amount (৳)</Label>
+                  <div><Label>{t("amount")} (৳)</Label>
                     <Input type="number" min={MIN_AMOUNT} max={MAX_AMOUNT} value={form.amount}
                       onChange={e => setForm({ ...form, amount: e.target.value })} />
                   </div>
-                  <div><Label>Date</Label>
+                  <div><Label>{t("date")}</Label>
                     <Input type="date" value={form.txn_date} onChange={e => setForm({ ...form, txn_date: e.target.value })} />
                   </div>
                 </div>
-                <div><Label>Payment Method</Label>
+                <div><Label>{t("p5c_paymentMethod")}</Label>
                   <Select value={form.method} onValueChange={v => setForm({ ...form, method: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cash">Cash</SelectItem>
                       <SelectItem value="bank">Bank</SelectItem>
-                      <SelectItem value="mobile">Mobile Banking</SelectItem>
+                      <SelectItem value="mobile">{t("p5c_mobileBanking")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -366,8 +368,8 @@ export default function ShareCollection() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Detailed (All rows)</SelectItem>
-              <SelectItem value="daily">Daily Summary</SelectItem>
-              <SelectItem value="monthly">Monthly Summary</SelectItem>
+              <SelectItem value="daily">{t("p5c_dailySummary")}</SelectItem>
+              <SelectItem value="monthly">{t("p5c_monthlySummary")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -409,7 +411,7 @@ export default function ShareCollection() {
           </Card>
           <Card className="p-0 overflow-hidden">
             <Table>
-              <TableHeader><TableRow><TableHead>{period === "monthly" ? "Month" : "Date"}</TableHead><TableHead className="text-right">Total Amount</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{period === "monthly" ? t("p5c_monthlySummary") : t("date")}</TableHead><TableHead className="text-right">{t("p5c_totalAmount")}</TableHead></TableRow></TableHeader>
               <TableBody>
                 {grouped.length === 0 && <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">No data</TableCell></TableRow>}
                 {grouped.map(([k, v]) => (
@@ -424,7 +426,7 @@ export default function ShareCollection() {
 
       <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Share Collection</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("p5c_editShareCollection")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="text-sm text-muted-foreground">{editRow?.farmers?.farmer_code} — {editRow?.farmers?.name_en}</div>
             <div><Label>Amount (৳)</Label>

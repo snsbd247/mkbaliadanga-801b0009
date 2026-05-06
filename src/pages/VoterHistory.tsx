@@ -12,6 +12,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { exportExcel, exportTablePDF } from "@/lib/exports";
 import { useAuth } from "@/auth/AuthProvider";
 import { FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Row = {
   id: string;
@@ -25,6 +26,7 @@ type Row = {
 
 export default function VoterHistory() {
   const { isSuper } = useAuth();
+  const { t } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [farmersMap, setFarmersMap] = useState<Record<string, any>>({});
   const [profilesMap, setProfilesMap] = useState<Record<string, any>>({});
@@ -108,25 +110,25 @@ export default function VoterHistory() {
       <PageHeader title="Voter Cancel/Reactivate History" description="Audit trail of every voter cancel and reactivate event with reason and operator." />
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-5">
-          <div><Label>Farmer</Label><FarmerSearchSelect value={farmerId} onChange={(id) => setFarmerId(id)} /></div>
+          <div><Label>{t("p5_farmerLabel")}</Label><FarmerSearchSelect value={farmerId} onChange={(id) => setFarmerId(id)} /></div>
           <div>
             <Label>Event</Label>
             <Select value={event} onValueChange={setEvent}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All events</SelectItem>
-                <SelectItem value="cancel">Cancel only</SelectItem>
-                <SelectItem value="reactivate">Reactivate only</SelectItem>
+                <SelectItem value="all">{t("p5c_allEvents")}</SelectItem>
+                <SelectItem value="cancel">{t("p5c_cancelOnly")}</SelectItem>
+                <SelectItem value="reactivate">{t("p5c_reactivateOnly")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {isSuper && (
             <div>
-              <Label>Office</Label>
+              <Label>{t("office")}</Label>
               <Select value={officeId} onValueChange={setOfficeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All offices</SelectItem>
+                  <SelectItem value="all">{t("p5c_allOffices")}</SelectItem>
                   {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -158,18 +160,18 @@ export default function VoterHistory() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
+              <TableHead>{t("date")}</TableHead>
               <TableHead>Event</TableHead>
-              <TableHead>Farmer</TableHead>
-              <TableHead>Farmer ID</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead>Changed By</TableHead>
-              <TableHead>Office</TableHead>
+              <TableHead>{t("p5_farmerLabel")}</TableHead>
+              <TableHead>{t("p5c_farmerId")}</TableHead>
+              <TableHead>{t("rejectionReason")}</TableHead>
+              <TableHead>{t("p5c_changedBy")}</TableHead>
+              <TableHead>{t("office")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!rows.length && (
-              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">No events</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">{t("p5c_noEvents")}</TableCell></TableRow>
             )}
             {rows.map(r => {
               const f = farmersMap[r.farmer_id] ?? {};

@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 interface Settings {
   enabled: boolean;
@@ -21,6 +22,7 @@ interface Settings {
 
 export default function QrRotation() {
   const { isSuper } = useAuth();
+  const { t } = useLang();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,7 +56,7 @@ export default function QrRotation() {
         })
         .eq("id", 1);
       if (error) { toast.error(error.message); return; }
-      toast.success("Settings saved");
+      toast.success(t("p5c_settingsSaved"));
     } finally { setSaving(false); }
   }
 
@@ -62,15 +64,15 @@ export default function QrRotation() {
     setRunning(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Please sign in"); return; }
+      if (!session) { toast.error(t("p5b_pleaseSignIn")); return; }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/qr-rotate-scheduled`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ force: true }),
       });
       const j = await res.json();
-      if (!res.ok) { toast.error(j?.error || "Failed"); return; }
-      toast.success(`Rotated ${j.rotated} • Revoked ${j.revoked}`);
+      if (!res.ok) { toast.error(j?.error || t("p5b_failed")); return; }
+      toast.success(`${t("p5c_rotated")} ${j.rotated} • ${t("p5c_revoked")} ${j.revoked}`);
       await load();
     } finally { setRunning(false); }
   }
@@ -78,8 +80,8 @@ export default function QrRotation() {
   if (!isSuper) {
     return (
       <>
-        <PageHeader title="QR Token Rotation" />
-        <Alert variant="destructive"><AlertDescription>This page is restricted to super administrators.</AlertDescription></Alert>
+        <PageHeader title={t("p5c_qrRotationTitle")} />
+        <Alert variant="destructive"><AlertDescription>{t("p5b_superAdminOnly")}</AlertDescription></Alert>
       </>
     );
   }
@@ -91,10 +93,10 @@ export default function QrRotation() {
   return (
     <>
       <PageHeader
-        title="QR Token Rotation"
-        description="Automatically reissue farmer QR tokens on a schedule and safely revoke old ones after a grace period."
+        title={t("p5c_qrRotationTitle")}
+        description={t("p5c_qrRotationDesc")}
         actions={
-          <Button variant="outline" size="sm" onClick={load}><RefreshCw className="h-4 w-4" />Refresh</Button>
+          <Button variant="outline" size="sm" onClick={load}><RefreshCw className="h-4 w-4" />{t("p5c_refresh")}</Button>
         }
       />
 
@@ -102,8 +104,8 @@ export default function QrRotation() {
         <div className="space-y-4 max-w-xl">
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="enabled" className="font-semibold">Enable scheduled rotation</Label>
-              <p className="text-xs text-muted-foreground">When enabled, the daily cron job rotates tokens older than the interval below.</p>
+              <Label htmlFor="enabled" className="font-semibold">{t("p5b_enableScheduledRotation")}</Label>
+              <p className="text-xs text-muted-foreground">{t("p5c_dailyCronHint")}</p>
             </div>
             <Switch
               id="enabled"
@@ -114,46 +116,46 @@ export default function QrRotation() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <Label>Rotation interval (days)</Label>
+              <Label>{t("p5c_rotationInterval")}</Label>
               <Input
                 type="number" min={1} max={3650}
                 value={settings.interval_days}
                 onChange={(e) => setSettings({ ...settings, interval_days: Math.max(1, Number(e.target.value) || 90) })}
               />
-              <p className="text-xs text-muted-foreground mt-1">Tokens older than this are reissued.</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("p5b_tokensOlderReissued")}</p>
             </div>
             <div>
-              <Label>Grace window (hours)</Label>
+              <Label>{t("p5c_graceWindow")}</Label>
               <Input
                 type="number" min={0} max={720}
                 value={settings.grace_hours}
                 onChange={(e) => setSettings({ ...settings, grace_hours: Math.max(0, Number(e.target.value) || 24) })}
               />
-              <p className="text-xs text-muted-foreground mt-1">Old token keeps working for this long before being revoked.</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("p5b_oldTokenGracePeriod")}</p>
             </div>
           </div>
 
           <div className="flex gap-2 pt-2">
             <Button onClick={save} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save settings
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{t("p5c_saveSettings")}
             </Button>
             <Button variant="outline" onClick={runNow} disabled={running}>
-              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Run now
+              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}{t("p5c_runNow")}
             </Button>
           </div>
         </div>
       </Card>
 
       <Card className="p-4">
-        <h3 className="font-semibold mb-2">Last run</h3>
+        <h3 className="font-semibold mb-2">{t("p5b_lastRun")}</h3>
         {settings.last_run_at ? (
           <div className="text-sm space-y-1">
-            <div><span className="text-muted-foreground">When:</span> {new Date(settings.last_run_at).toLocaleString()}</div>
-            <div><span className="text-muted-foreground">Rotated:</span> {settings.last_run_summary?.rotated ?? 0}</div>
-            <div><span className="text-muted-foreground">Revoked:</span> {settings.last_run_summary?.revoked ?? 0}</div>
+            <div><span className="text-muted-foreground">{t("p5c_when")}:</span> {new Date(settings.last_run_at).toLocaleString()}</div>
+            <div><span className="text-muted-foreground">{t("p5c_rotated")}:</span> {settings.last_run_summary?.rotated ?? 0}</div>
+            <div><span className="text-muted-foreground">{t("p5c_revoked")}:</span> {settings.last_run_summary?.revoked ?? 0}</div>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">No rotation run yet.</div>
+          <div className="text-sm text-muted-foreground">{t("p5b_noRotationRun")}</div>
         )}
       </Card>
     </>
