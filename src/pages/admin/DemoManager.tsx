@@ -352,10 +352,10 @@ export default function DemoManager() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={loading}>বাতিল</Button>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={loading}>{t("dmCancel" as any)}</Button>
             <Button variant="destructive" onClick={run} disabled={loading || confirmText !== "RESET"}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-              এক্সিকিউট
+              {t("dmExecute" as any)}
             </Button>
           </DialogFooter>
         </DialogContent>
