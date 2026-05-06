@@ -50,20 +50,20 @@ type AccountNode = Account & {
 
 type LedgerSum = { account_id: string; debit: number; credit: number };
 
-const TYPE_META: Record<AccountType, { label: string; badgeClass: string }> = {
-  asset:     { label: "asset",     badgeClass: "bg-sky-100 text-sky-700 hover:bg-sky-100 border-transparent" },
-  liability: { label: "liability", badgeClass: "bg-rose-100 text-rose-700 hover:bg-rose-100 border-transparent" },
-  equity:    { label: "equity",    badgeClass: "bg-violet-100 text-violet-700 hover:bg-violet-100 border-transparent" },
-  income:    { label: "income",    badgeClass: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-transparent" },
-  expense:   { label: "expense",   badgeClass: "bg-orange-100 text-orange-700 hover:bg-orange-100 border-transparent" },
+const TYPE_META: Record<AccountType, { labelKey: "typeAsset" | "typeLiability" | "typeEquity" | "typeIncome" | "typeExpense"; badgeClass: string }> = {
+  asset:     { labelKey: "typeAsset",     badgeClass: "bg-sky-100 text-sky-700 hover:bg-sky-100 border-transparent" },
+  liability: { labelKey: "typeLiability", badgeClass: "bg-rose-100 text-rose-700 hover:bg-rose-100 border-transparent" },
+  equity:    { labelKey: "typeEquity",    badgeClass: "bg-violet-100 text-violet-700 hover:bg-violet-100 border-transparent" },
+  income:    { labelKey: "typeIncome",    badgeClass: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-transparent" },
+  expense:   { labelKey: "typeExpense",   badgeClass: "bg-orange-100 text-orange-700 hover:bg-orange-100 border-transparent" },
 };
 
-const SUMMARY_ORDER: { key: AccountType; label: string }[] = [
-  { key: "asset", label: "Assets" },
-  { key: "liability", label: "Liabilities" },
-  { key: "equity", label: "Equitys" },
-  { key: "income", label: "Incomes" },
-  { key: "expense", label: "Expenses" },
+const SUMMARY_ORDER: { key: AccountType; labelKey: "assetsSection" | "liabilitiesSection" | "equitiesSection" | "incomesSection" | "expensesSection" }[] = [
+  { key: "asset", labelKey: "assetsSection" },
+  { key: "liability", labelKey: "liabilitiesSection" },
+  { key: "equity", labelKey: "equitiesSection" },
+  { key: "income", labelKey: "incomesSection" },
+  { key: "expense", labelKey: "expensesSection" },
 ];
 
 const money = (n: number) =>
@@ -201,11 +201,11 @@ export default function Accounts() {
     if (editing.id) {
       const { error } = await supabase.from("accounts").update(payload).eq("id", editing.id);
       if (error) return toast.error(error.message);
-      toast.success("Account updated");
+      toast.success(t("accountUpdated"));
     } else {
       const { error } = await supabase.from("accounts").insert(payload);
       if (error) return toast.error(error.message);
-      toast.success("Account created");
+      toast.success(t("accountCreated"));
     }
     setEditOpen(false);
     await load();
@@ -215,14 +215,14 @@ export default function Accounts() {
     if (!deleteId) return;
     const { error } = await supabase.from("accounts").delete().eq("id", deleteId);
     if (error) toast.error(error.message);
-    else toast.success("Account deleted");
+    else toast.success(t("accountDeleted"));
     setDeleteId(null);
     await load();
   };
 
   const recalc = async () => {
     await load();
-    toast.success("Balances recalculated");
+    toast.success(t("balancesRecalculated"));
   };
 
   // ---------- CSV / Excel Export ----------
@@ -294,29 +294,29 @@ export default function Accounts() {
   return (
     <div className="container mx-auto p-4 space-y-4">
       <PageHeader
-        title="Chart of Accounts"
-        description="Hierarchical account structure with double-entry support"
+        title={t("chartOfAccounts")}
+        description={t("chartOfAccountsDesc")}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={expandAll}>Expand All</Button>
-            <Button variant="outline" size="sm" onClick={collapseAll}>Collapse All</Button>
+            <Button variant="outline" size="sm" onClick={expandAll}>{t("expandAll")}</Button>
+            <Button variant="outline" size="sm" onClick={collapseAll}>{t("collapseAll")}</Button>
             <Button variant="outline" size="sm" onClick={recalc}>
-              <RefreshCw className="w-4 h-4 mr-1" /> Recalculate
+              <RefreshCw className="w-4 h-4 mr-1" /> {t("recalculate")}
             </Button>
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
-              <Download className="w-4 h-4 mr-1" /> Template
+              <Download className="w-4 h-4 mr-1" /> {t("template")}
             </Button>
             <Button variant="outline" size="sm" onClick={exportCSV}>
-              <Download className="w-4 h-4 mr-1" /> CSV
+              <Download className="w-4 h-4 mr-1" /> {t("csv")}
             </Button>
             <Button variant="outline" size="sm" onClick={exportXLSX}>
-              <Download className="w-4 h-4 mr-1" /> Excel
+              <Download className="w-4 h-4 mr-1" /> {t("excel" as any) || "Excel"}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-              <Upload className="w-4 h-4 mr-1" /> Import
+              <Upload className="w-4 h-4 mr-1" /> {t("import" as any) || "Import"}
             </Button>
             <Button size="sm" onClick={() => openCreate()}>
-              <Plus className="w-4 h-4 mr-1" /> Add Account
+              <Plus className="w-4 h-4 mr-1" /> {t("addAccount")}
             </Button>
           </div>
         }
@@ -327,7 +327,7 @@ export default function Accounts() {
         {SUMMARY_ORDER.map((s) => (
           <Card key={s.key} className="border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
             <CardContent className="p-4">
-              <div className="text-xs text-muted-foreground">{s.label}</div>
+              <div className="text-xs text-muted-foreground">{t(s.labelKey)}</div>
               <div className="text-xl font-semibold mt-1">{money(summary[s.key] || 0)}</div>
             </CardContent>
           </Card>
@@ -341,20 +341,20 @@ export default function Accounts() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted-foreground border-b">
-                  <th className="text-left font-medium px-4 py-3">Account Name</th>
-                  <th className="text-center font-medium px-4 py-3 w-24">Code</th>
-                  <th className="text-center font-medium px-4 py-3 w-28">Type</th>
-                  <th className="text-right font-medium px-4 py-3 w-32">Total Debit</th>
-                  <th className="text-right font-medium px-4 py-3 w-32">Total Credit</th>
-                  <th className="text-right font-medium px-4 py-3 w-36">Closing Balance</th>
-                  <th className="text-right font-medium px-4 py-3 w-40">Actions</th>
+                  <th className="text-left font-medium px-4 py-3">{t("accountName")}</th>
+                  <th className="text-center font-medium px-4 py-3 w-24">{t("code")}</th>
+                  <th className="text-center font-medium px-4 py-3 w-28">{t("typeLabel")}</th>
+                  <th className="text-right font-medium px-4 py-3 w-32">{t("totalDebit")}</th>
+                  <th className="text-right font-medium px-4 py-3 w-32">{t("totalCredit")}</th>
+                  <th className="text-right font-medium px-4 py-3 w-36">{t("closingBalanceCol")}</th>
+                  <th className="text-right font-medium px-4 py-3 w-40">{t("actionsCol")}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Loading...</td></tr>
+                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{t("loading")}</td></tr>
                 ) : visible.length === 0 ? (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No accounts</td></tr>
+                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{t("noAccounts")}</td></tr>
                 ) : visible.map((n) => {
                   const hasChildren = n.children.length > 0;
                   const isOpen = expanded.has(n.id);
