@@ -126,22 +126,25 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl?: string | n
   </div>`;
 }
 
-function buildHtml(d: BnReceiptData): HTMLDivElement {
+function buildHtml(d: BnReceiptData, copy: ReceiptCopy = "both"): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
-  wrap.innerHTML = `
-    ${copyHtml(d, "কৃষকের কপি")}
-    <div style="border-top:1px dashed #111;margin:8px 22px;"></div>
-    ${copyHtml(d, "অফিস কপি")}
-  `;
+  const farmerCopy = copyHtml(d, "কৃষকের কপি", d.collector_signature_url);
+  const officeCopy = copyHtml(d, "অফিস কপি", d.office_collector_signature_url ?? d.collector_signature_url);
+  if (copy === "farmer") wrap.innerHTML = farmerCopy;
+  else if (copy === "office") wrap.innerHTML = officeCopy;
+  else wrap.innerHTML = `${farmerCopy}<div style="border-top:1px dashed #111;margin:8px 22px;"></div>${officeCopy}`;
   document.body.appendChild(wrap);
   return wrap;
 }
 
-export async function downloadBnReceiptPdf(data: BnReceiptData): Promise<void> {
-  const node = buildHtml(data);
+function copySuffix(copy: ReceiptCopy): string {
+  return copy === "farmer" ? "_farmer" : copy === "office" ? "_office" : "";
+}
+
+export async function downloadBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both"): Promise<void> {
+  const node = buildHtml(data, copy);
   try {
-    // Wait a tick so images can start loading
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
@@ -151,14 +154,14 @@ export async function downloadBnReceiptPdf(data: BnReceiptData): Promise<void> {
     const imgH = (canvas.height * imgW) / canvas.width;
     const finalH = Math.min(imgH, pageH);
     pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, imgW, finalH);
-    pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}_receipt.pdf`);
+    pdf.save(`${data.farmer.name.replace(/\s+/g, "_")}_${data.receipt_no}_${data.kind}${copySuffix(copy)}_receipt.pdf`);
   } finally {
     node.remove();
   }
 }
 
-export async function previewBnReceiptPdf(data: BnReceiptData): Promise<string> {
-  const node = buildHtml(data);
+export async function previewBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy = "both"): Promise<string> {
+  const node = buildHtml(data, copy);
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
