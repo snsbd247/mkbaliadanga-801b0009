@@ -157,22 +157,22 @@ export default function Diagnostics() {
               <div className="text-sm text-muted-foreground">{t("rlsHealthCheckDesc")}</div>
               <Button onClick={runHealthCheck} disabled={running}>
                 {running ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                Run health check
+                {t("diag_runHealth" as any)}
               </Button>
             </div>
             {probes.length > 0 && (
               <Alert className="mb-3">
                 <ShieldCheck className="h-4 w-4" />
-                <AlertTitle>Result</AlertTitle>
+                <AlertTitle>{t("diag_result" as any)}</AlertTitle>
                 <AlertDescription>
-                  {probes.filter(p => p.ok).length} pass · {probes.filter(p => !p.ok).length} fail
+                  {t("diag_passFail" as any).replace("{pass}", String(probes.filter(p => p.ok).length)).replace("{fail}", String(probes.filter(p => !p.ok).length))}
                 </AlertDescription>
               </Alert>
             )}
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Table</TableHead><TableHead>Op</TableHead>
-                <TableHead>Status</TableHead><TableHead>Rows</TableHead><TableHead>Error</TableHead>
+                <TableHead>{t("diag_table" as any)}</TableHead><TableHead>{t("diag_op" as any)}</TableHead>
+                <TableHead>{t("diag_status" as any)}</TableHead><TableHead>{t("diag_rows" as any)}</TableHead><TableHead>{t("diag_error" as any)}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {probes.map((p, i) => (
@@ -180,8 +180,8 @@ export default function Diagnostics() {
                     <TableCell className="font-mono text-xs">{p.table}</TableCell>
                     <TableCell>{p.op}</TableCell>
                     <TableCell>
-                      {p.ok ? <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" />OK</Badge>
-                            : <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />FAIL</Badge>}
+                      {p.ok ? <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" />{t("diag_ok" as any)}</Badge>
+                            : <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />{t("diag_fail" as any)}</Badge>}
                     </TableCell>
                     <TableCell>{p.rows ?? "—"}</TableCell>
                     <TableCell className="text-xs">{p.code ? `[${p.code}] ${p.message}` : "—"}</TableCell>
