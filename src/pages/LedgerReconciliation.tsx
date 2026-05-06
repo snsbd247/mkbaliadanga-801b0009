@@ -372,7 +372,7 @@ export default function LedgerReconciliation() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <Card className="p-3">
-                  <div className="font-semibold text-sm mb-2">{t("p5b_loadingDots") /* placeholder */ && t("p5_drillDown")} ({detail.ledger_entries.length})</div>
+                  <div className="font-semibold text-sm mb-2">{t("p5_drillDown")} ({detail.ledger_entries.length})</div>
                   <div className="overflow-auto max-h-80">
                     <table className="w-full text-xs">
                       <thead className="border-b sticky top-0 bg-card">
