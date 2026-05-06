@@ -357,17 +357,17 @@ export default function ShareCollection() {
       } />
 
       <Card className="p-3 mb-3 grid gap-3 md:grid-cols-5">
-        <div><Label className="text-xs">From</Label>
+        <div><Label className="text-xs">{t("pgFromDate")}</Label>
           <Input type="date" value={range.from} onChange={e => setRange({ ...range, from: e.target.value })} />
         </div>
-        <div><Label className="text-xs">To</Label>
+        <div><Label className="text-xs">{t("pgToDate")}</Label>
           <Input type="date" value={range.to} onChange={e => setRange({ ...range, to: e.target.value })} />
         </div>
-        <div><Label className="text-xs">Group</Label>
+        <div><Label className="text-xs">{t("pgGroup")}</Label>
           <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Detailed (All rows)</SelectItem>
+              <SelectItem value="all">{t("p5c_allEvents" as any)}</SelectItem>
               <SelectItem value="daily">{t("p5c_dailySummary")}</SelectItem>
               <SelectItem value="monthly">{t("p5c_monthlySummary")}</SelectItem>
             </SelectContent>
@@ -375,8 +375,8 @@ export default function ShareCollection() {
         </div>
         <div className="flex items-end gap-2 md:col-span-2">
           <Button variant="outline" size="sm" onClick={() => exportReport("pdf")}><FileText className="h-4 w-4 mr-1" />PDF</Button>
-          <Button variant="outline" size="sm" onClick={() => exportReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
-          <span className="ml-auto text-sm text-muted-foreground">Approved Total: <strong className="text-foreground">{money(totalApproved)}</strong></span>
+          <Button variant="outline" size="sm" onClick={() => exportReport("xlsx")}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("pgExcel")}</Button>
+          <span className="ml-auto text-sm text-muted-foreground">{t("p5c_totalAmount" as any)}: <strong className="text-foreground">{money(totalApproved)}</strong></span>
         </div>
       </Card>
 
