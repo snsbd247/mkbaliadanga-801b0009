@@ -160,9 +160,9 @@ export default function Irrigation() {
 
   async function softDelete(id: string) {
     const ok = await confirm({
-      title: "Delete irrigation entry?",
-      description: "This will archive the irrigation charge. You can restore it later from Show archived.",
-      destructive: true, confirmText: "Delete",
+      title: t("pgIrrDeleteTitle" as any),
+      description: t("pgIrrDeleteDesc" as any),
+      destructive: true, confirmText: t("pgDelete" as any),
     });
     if (!ok) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
