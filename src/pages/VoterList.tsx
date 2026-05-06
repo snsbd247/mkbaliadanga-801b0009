@@ -278,7 +278,7 @@ export default function VoterList() {
             {rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={isSuper ? (tab === "cancelled" ? 8 : 7) : (tab === "cancelled" ? 7 : 6)} className="text-center text-muted-foreground py-6">
-                  {loading ? "Loading…" : "No voters found"}
+                  {loading ? "…" : t("pgNoRecords")}
                 </TableCell>
               </TableRow>
             )}
