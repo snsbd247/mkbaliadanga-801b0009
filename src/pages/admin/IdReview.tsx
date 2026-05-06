@@ -118,7 +118,7 @@ export default function IdReview() {
       meta: { source: "id-review", actor: "super_admin" },
     } as any);
 
-    toast.success(lang === "bn" ? "সংরক্ষণ হয়েছে" : "Saved");
+    toast.success(t("saved"));
     setSaving(false);
     setEditing(null);
     load();
