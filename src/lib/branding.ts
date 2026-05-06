@@ -20,6 +20,7 @@ export interface CompanyBranding {
   loan_receipt_footer_en?: string | null;
   loan_receipt_footer_bn?: string | null;
   loan_receipt_no_format?: string | null;
+  registration_no?: string | null;
 }
 
 const DEFAULTS: CompanyBranding = {
