@@ -142,32 +142,26 @@ export default function IdReview() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title={lang === "bn" ? "আইডি রিভিউ (Farmer ID / Savings A/C / Voter No)" : "ID Review (Farmer ID / Savings A/C / Voter No)"}
-        description={lang === "bn"
-          ? "তিনটি আইডি একসাথে দেখুন। শুধু Super Admin ম্যানুয়ালি পরিবর্তন করতে পারে; প্রতিটি পরিবর্তন audit log-এ লিপিবদ্ধ হয়।"
-          : "Review all three IDs together. Only Super Admin can override; every change is recorded in the audit log."}
+        title={t("idReviewTitle")}
+        description={t("idReviewDesc")}
       />
 
       <Card className="p-3 flex items-center gap-2">
         <Search className="h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder={lang === "bn" ? "নাম, Farmer ID, Savings A/C, Voter No দিয়ে খুঁজুন" : "Search by name, Farmer ID, Savings A/C, Voter No"}
+          placeholder={t("idReviewSearchPh")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
         <Button variant="outline" onClick={load} disabled={loading}>
-          {loading ? "…" : (lang === "bn" ? "রিফ্রেশ" : "Refresh")}
+          {loading ? "…" : t("refresh")}
         </Button>
       </Card>
 
       {!isSuper && (
         <Card className="p-3 flex items-center gap-2 border-amber-300 bg-amber-50 text-amber-900">
           <ShieldAlert className="h-4 w-4" />
-          <span className="text-sm">
-            {lang === "bn"
-              ? "শুধু Super Admin পরিবর্তন করতে পারবে। আপনি শুধু দেখতে পারবেন।"
-              : "View-only. Only Super Admin can edit these IDs."}
-          </span>
+          <span className="text-sm">{t("superOnlyEdit")}</span>
         </Card>
       )}
 
