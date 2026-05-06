@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 interface Settings {
   enabled: boolean;
