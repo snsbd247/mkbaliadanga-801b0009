@@ -550,7 +550,7 @@ export default function SmsLogs() {
                         <div className="text-muted-foreground">{t("quantity")}</div><div>{drawer.record.quantity}</div>
                         <div className="text-muted-foreground">{t("baseCharge")}</div><div>{Number(drawer.record.base_charge || 0).toLocaleString()}</div>
                         <div className="text-muted-foreground">{t("canalChargeLabel")}</div><div>{Number(drawer.record.canal_charge || 0).toLocaleString()}</div>
-                        <div className="text-muted-foreground">{t("maintenance")}</div><div>{Number(drawer.record.maintenance_charge || 0).toLocaleString()}</div>
+                        <div className="text-muted-foreground">{t("maintenanceCharge")}</div><div>{Number(drawer.record.maintenance_charge || 0).toLocaleString()}</div>
                         <div className="text-muted-foreground">{t("other")}</div><div>{Number(drawer.record.other_charge || 0).toLocaleString()}</div>
                         <div className="text-muted-foreground">{t("penalty")}</div><div>{Number(drawer.record.penalty_amount || 0).toLocaleString()}</div>
                         <div className="text-muted-foreground">{t("previousDue")}</div><div>{Number(drawer.record.previous_due_brought || 0).toLocaleString()}</div>
