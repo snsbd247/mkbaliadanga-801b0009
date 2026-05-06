@@ -148,7 +148,7 @@ export default function SmsLogs() {
     const { error } = await supabase.functions.invoke("send-sms", { body: { retry: true, ids: [id] } });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Retried");
+    toast.success(t("retried"));
     load();
   }
 
@@ -157,7 +157,7 @@ export default function SmsLogs() {
     const { error } = await supabase.functions.invoke("send-sms", { body: { retry: true } });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Retry batch sent");
+    toast.success(t("retryBatchSent"));
     load();
   }
 
@@ -167,7 +167,7 @@ export default function SmsLogs() {
     setBusy(false);
     if (error) return toast.error(error.message);
     const r = data as any;
-    toast.success(`Reminders queued — loan: ${r?.loan ?? 0}, irrigation: ${r?.irrigation ?? 0}, dedup-skipped: ${r?.skipped_dup ?? 0}`);
+    toast.success(t("remindersQueued").replace("{l}", String(r?.loan ?? 0)).replace("{i}", String(r?.irrigation ?? 0)).replace("{s}", String(r?.skipped_dup ?? 0)));
     load();
   }
 
@@ -179,7 +179,7 @@ export default function SmsLogs() {
     setDrawer({ log: l, loading: true, kind, record: null, paid: 0, due: 0 });
 
     if (!kind || !l.reference_id) {
-      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: "No underlying reference recorded for this SMS." });
+      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: t("noUnderlyingRef") });
       return;
     }
 
@@ -195,7 +195,7 @@ export default function SmsLogs() {
           farmerPromise,
         ]);
         if (loanRes.error || !loanRes.data) {
-          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: loanRes.error?.message ?? "Loan not found (may be deleted)." });
+          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: loanRes.error?.message ?? t("loanNotFound") });
           return;
         }
         const paid = (paySumRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
@@ -207,7 +207,7 @@ export default function SmsLogs() {
           farmerPromise,
         ]);
         if (irrRes.error || !irrRes.data) {
-          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: irrRes.error?.message ?? "Irrigation charge not found (may be deleted)." });
+          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: irrRes.error?.message ?? t("irrChargeNotFound") });
           return;
         }
         const paid = Number(irrRes.data.paid_amount || 0);
@@ -215,19 +215,19 @@ export default function SmsLogs() {
         setDrawer({ log: l, loading: false, kind, record: irrRes.data, paid, due, farmer: (farmerRes as any).data });
       }
     } catch (e: any) {
-      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: e?.message ?? "Failed to load details" });
+      setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: e?.message ?? t("failedLoadDetails") });
     }
   }
 
   async function sendBulk() {
     const mobiles = bulkMobiles.split(/[\s,;\n]+/).map((m) => m.trim()).filter(Boolean);
-    if (!mobiles.length) return toast.error("Enter at least one mobile");
-    if (!bulkMessage.trim()) return toast.error("Enter a message");
+    if (!mobiles.length) return toast.error(t("enterAtLeastOneMobile"));
+    if (!bulkMessage.trim()) return toast.error(t("enterMessage"));
     setBusy(true);
     const { data, error } = await supabase.functions.invoke("send-sms", { body: { mobiles, message: bulkMessage } });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`Queued ${(data as any)?.queued ?? mobiles.length} messages`);
+    toast.success(t("queuedMsgs").replace("{n}", String((data as any)?.queued ?? mobiles.length)));
     setBulkMobiles(""); setBulkMessage("");
     load();
   }
