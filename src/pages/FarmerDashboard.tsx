@@ -233,20 +233,20 @@ export default function FarmerDashboard() {
 
           <TabsContent value="irrigation">
             <Card>
-              <CardHeader><CardTitle className="text-base">Irrigation Charges</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{t("p5b_irrigationCharges")}</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-right">Paid</TableHead>
-                      <TableHead className="text-right">Due</TableHead>
+                      <TableHead>{t("date")}</TableHead>
+                      <TableHead className="text-right">{t("total")}</TableHead>
+                      <TableHead className="text-right">{t("p5b_paid")}</TableHead>
+                      <TableHead className="text-right">{t("p5_dueCol")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.irrigation.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">No charges.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">{t("p5b_noCharges")}</TableCell></TableRow>
                     ) : data.irrigation.map((i) => (
                       <TableRow key={i.id}>
                         <TableCell className="whitespace-nowrap">{i.entry_date}</TableCell>
