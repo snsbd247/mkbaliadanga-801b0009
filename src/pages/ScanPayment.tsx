@@ -64,13 +64,19 @@ export default function ScanPayment() {
     if (!done || !resolved) return null;
     const k = done.kind;
     const kind: BnReceiptData["kind"] = k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings";
+    const prefix = kind === "loan" ? "LOAN" : kind === "irrigation" ? "IRR" : "SAV";
+    const description = done.note
+      ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ"
+        : kind === "savings" ? "সঞ্চয় জমা গ্রহণ"
+        : "সেচ চার্জ গ্রহণ");
     return {
       kind,
-      receipt_no: done.paymentId.slice(0, 8).toUpperCase(),
+      receipt_no: autoReceiptNo(prefix as any, done.paymentId, new Date(done.paidAt)),
       date: done.paidAt,
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
       logo_url: brand.logo_url ?? null,
+      bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
       farmer: {
         name: resolved.farmer.name,
         member_no: resolved.farmer.member_no ?? resolved.farmer.farmer_code ?? null,
@@ -78,7 +84,7 @@ export default function ScanPayment() {
         mobile: resolved.farmer.mobile_masked ?? null,
       },
       collected_amount: done.amount,
-      description: done.note ?? undefined,
+      description,
     };
   }
 
