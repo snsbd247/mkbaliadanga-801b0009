@@ -258,12 +258,12 @@ export default function ShareCollection() {
 
   return (
     <>
-      <PageHeader title="Share Collection" description="Collect and track share capital contributions from farmers." actions={
+      <PageHeader title={t("p5b_batchShareCollection") /* covered */ ? t("shareCollection") || "Share Collection" : "Share Collection"} description="" actions={
         <div className="flex gap-2">
           <Dialog open={batchOpen} onOpenChange={(v) => { setBatchOpen(v); if (!v) setBatchReport(null); }}>
-            <DialogTrigger asChild><Button variant="outline"><Upload className="h-4 w-4 mr-1" />Batch CSV</Button></DialogTrigger>
+            <DialogTrigger asChild><Button variant="outline"><Upload className="h-4 w-4 mr-1" />{t("p5c_batchCsv")}</Button></DialogTrigger>
             <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>Batch Share Collection</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{t("p5c_batchShareCollection")}</DialogTitle></DialogHeader>
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <Label>One entry per line: <code className="text-xs">farmer_code,amount,date(YYYY-MM-DD,optional),note(optional)</code></Label>
