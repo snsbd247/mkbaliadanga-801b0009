@@ -30,27 +30,38 @@ export async function applyPdfHeaderFooter(
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
-  // Header (drawn only on page 1; subsequent pages get a slim title bar via hook)
-  doc.setFontSize(13); doc.setFont(undefined, "bold");
-  doc.text(brand?.company_name || "Report", pageW / 2, 12, { align: "center" });
+  const lang = pdfLang();
+  if (lang === "bn") await ensureBanglaFont(doc);
+  const useBn = lang === "bn";
+  const setLangFont = (style: "normal" | "bold" = "normal") => {
+    if (useBn) doc.setFont(BANGLA_FONT, "normal");
+    else doc.setFont(undefined, style);
+  };
+
+  doc.setFontSize(13); setLangFont("bold");
+  doc.text(brand?.company_name || (useBn ? "প্রতিবেদন" : "Report"), pageW / 2, 12, { align: "center" });
   if (brand?.address) {
-    doc.setFontSize(9); doc.setFont(undefined, "normal");
+    doc.setFontSize(9); setLangFont("normal");
     doc.text(brand.address, pageW / 2, 17, { align: "center" });
   }
-  doc.setFontSize(12); doc.setFont(undefined, "bold");
+  doc.setFontSize(12); setLangFont("bold");
   doc.text(opts.title || "", pageW / 2, 24, { align: "center" });
   if (opts.range?.from || opts.range?.to) {
-    doc.setFontSize(9); doc.setFont(undefined, "normal");
-    doc.text(`${tPdf("Period", "Period (Somoy)")}: ${opts.range.from || "—"} to ${opts.range.to || "—"}`, pageW / 2, 29, { align: "center" });
+    doc.setFontSize(9); setLangFont("normal");
+    const periodLabel = useBn ? "সময়কাল" : "Period";
+    const toWord = useBn ? "থেকে" : "to";
+    doc.text(`${periodLabel}: ${opts.range.from || "—"} ${toWord} ${opts.range.to || "—"}`, pageW / 2, 29, { align: "center" });
   }
-  // Footer drawer — call drawFooters() AFTER all content is added.
   (doc as any).__drawFooters = () => {
     const total = (doc as any).internal.getNumberOfPages();
+    const printedLabel = useBn ? "মুদ্রিত" : "Printed";
+    const pageLabel = useBn ? "পৃষ্ঠা" : "Page";
+    const ofWord = useBn ? "/" : "of";
     for (let i = 1; i <= total; i++) {
       doc.setPage(i);
-      doc.setFontSize(8); doc.setFont(undefined, "normal");
-      doc.text(`${tPdf("Printed", "Printed (Mudrito)")}: ${new Date().toLocaleString()}`, 14, pageH - 6);
-      doc.text(`${tPdf("Page", "Page (Pristha)")} ${i} ${tPdf("of", "/")} ${total}`, pageW - 14, pageH - 6, { align: "right" });
+      doc.setFontSize(8); setLangFont("normal");
+      doc.text(`${printedLabel}: ${new Date().toLocaleString()}`, 14, pageH - 6);
+      doc.text(`${pageLabel} ${i} ${ofWord} ${total}`, pageW - 14, pageH - 6, { align: "right" });
     }
   };
   return opts.range?.from || opts.range?.to ? 33 : 28;
