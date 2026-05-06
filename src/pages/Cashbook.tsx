@@ -282,7 +282,7 @@ export default function Cashbook() {
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead>
               <TableHead>{t("description")}</TableHead>
-              <TableHead>Ref</TableHead>
+              <TableHead>{t("cbRef" as any)}</TableHead>
               <TableHead className="text-right">{t("income")}</TableHead>
               <TableHead className="text-right">{t("expense")}</TableHead>
               <TableHead className="text-right">{t("runningBalance")}</TableHead>
