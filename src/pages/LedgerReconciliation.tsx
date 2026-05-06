@@ -47,6 +47,7 @@ interface Detail {
 
 export default function LedgerReconciliation() {
   const { isSuper } = useAuth();
+  const { t } = useLang();
   const today = new Date();
   const [year, setYear] = useState<number>(today.getFullYear());
   const [month, setMonth] = useState<number>(today.getMonth() + 1);
