@@ -170,7 +170,7 @@ export default function FarmerDetail() {
       farmer: farmerForReceipt(),
       collected_amount: Number(p.amount),
       description,
-    }, copy);
+    }, copy, receiptArgs.options);
   }
 
   function printSavings(s: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
@@ -182,7 +182,7 @@ export default function FarmerDetail() {
       farmer: farmerForReceipt(),
       description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
       collected_amount: Number(s.amount),
-    }, copy);
+    }, copy, receiptArgs.options);
   }
   function printLoan(l: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     downloadBnReceiptPdf({
@@ -194,7 +194,7 @@ export default function FarmerDetail() {
       description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
       outstanding: Number(l.total_payable),
       collected_amount: Number(l.principal),
-    }, copy);
+    }, copy, receiptArgs.options);
   }
   function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id);
@@ -214,7 +214,7 @@ export default function FarmerDetail() {
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
       collected_amount: Number(i.paid_amount || i.total),
-    }, copy);
+    }, copy, receiptArgs.options);
   }
   async function deleteSavings(s: any) {
     if (!window.confirm("Delete this savings transaction?")) return;
