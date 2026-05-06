@@ -236,7 +236,7 @@ export default function Savings() {
         link: "/savings",
       });
     }
-    toast.success(isWithdraw ? "Withdraw request submitted for approval" : "Saved");
+    toast.success(isWithdraw ? t("pgSavWithdrawSubmitted" as any) : t("pgSavSaved" as any));
     setOpen(false);
     setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "" });
     load();
@@ -244,7 +244,7 @@ export default function Savings() {
   async function decide(id: string, status: "approved" | "rejected") {
     let reject_reason: string | null = null;
     if (status === "rejected") {
-      reject_reason = window.prompt("Reason for rejection (optional):") ?? "";
+      reject_reason = window.prompt(t("pgSavRejectPrompt" as any)) ?? "";
       reject_reason = reject_reason.trim() || null;
     }
     const patch: any = {
@@ -259,7 +259,7 @@ export default function Savings() {
       .eq("id", id)
       .eq("status", "pending"); // guard: only pending → decision
     if (error) return toast.error(error.message);
-    toast.success(status === "approved" ? "Withdraw approved" : "Withdraw rejected");
+    toast.success(status === "approved" ? t("pgSavWithdrawApproved" as any) : t("pgSavWithdrawRejected" as any));
     load();
   }
   async function restoreTxn(id: string) {
@@ -282,9 +282,9 @@ export default function Savings() {
   }
   async function deleteTxn(id: string) {
     const ok = await confirm({
-      title: "Delete savings transaction?",
-      description: "This will archive the transaction. Share / savings balance will recompute automatically.",
-      destructive: true, confirmText: "Delete",
+      title: t("pgSavDeleteTitle" as any),
+      description: t("pgSavDeleteDesc" as any),
+      destructive: true, confirmText: t("pgDelete" as any),
     });
     if (!ok) return;
     const { error } = await supabase.from("savings_transactions")

@@ -107,17 +107,17 @@ export default function Irrigation() {
   // Inline validation
   const errors: Record<string, string> = {};
   if (open) {
-    if (!form.farmer_id) errors.farmer_id = "Select a farmer";
-    if (!form.land_id) errors.land_id = "Select a land";
-    if (!form.season_id) errors.season_id = "Select a season";
-    if (form.season_id && rateAvailable === false) errors.season_id = "No active irrigation rate found for this season + basis. Please configure it in Irrigation Rates first.";
-    if (!(Number(form.rate) > 0)) errors.rate = "Rate must be greater than 0 (configure in Irrigation Rates)";
-    if (!(Number(form.quantity) > 0)) errors.quantity = "Quantity must be greater than 0";
-    if (Number(form.canal_charge) < 0) errors.canal_charge = "Cannot be negative";
-    if (Number(form.maintenance_charge) < 0) errors.maintenance_charge = "Cannot be negative";
-    if (Number(form.other_charge) < 0) errors.other_charge = "Cannot be negative";
-    if (Number(form.paid_amount) < 0) errors.paid_amount = "Cannot be negative";
-    if (Number(form.paid_amount) > total + prevDue) errors.paid_amount = "Paid cannot exceed total";
+    if (!form.farmer_id) errors.farmer_id = t("pgIrrSelectFarmer" as any);
+    if (!form.land_id) errors.land_id = t("pgIrrSelectLand" as any);
+    if (!form.season_id) errors.season_id = t("pgIrrSelectSeason" as any);
+    if (form.season_id && rateAvailable === false) errors.season_id = t("pgIrrNoActiveRate" as any);
+    if (!(Number(form.rate) > 0)) errors.rate = t("pgIrrRateGt0" as any);
+    if (!(Number(form.quantity) > 0)) errors.quantity = t("pgIrrQtyGt0" as any);
+    if (Number(form.canal_charge) < 0) errors.canal_charge = t("pgIrrCannotNegative" as any);
+    if (Number(form.maintenance_charge) < 0) errors.maintenance_charge = t("pgIrrCannotNegative" as any);
+    if (Number(form.other_charge) < 0) errors.other_charge = t("pgIrrCannotNegative" as any);
+    if (Number(form.paid_amount) < 0) errors.paid_amount = t("pgIrrCannotNegative" as any);
+    if (Number(form.paid_amount) > total + prevDue) errors.paid_amount = t("pgIrrPaidExceedsTotal" as any);
   }
   const hasErrors = Object.keys(errors).length > 0;
 
@@ -160,9 +160,9 @@ export default function Irrigation() {
 
   async function softDelete(id: string) {
     const ok = await confirm({
-      title: "Delete irrigation entry?",
-      description: "This will archive the irrigation charge. You can restore it later from Show archived.",
-      destructive: true, confirmText: "Delete",
+      title: t("pgIrrDeleteTitle" as any),
+      description: t("pgIrrDeleteDesc" as any),
+      destructive: true, confirmText: t("pgDelete" as any),
     });
     if (!ok) return;
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
@@ -187,13 +187,13 @@ export default function Irrigation() {
         .eq("is_active", true)
         .maybeSingle();
       if (rateErr) throw rateErr;
-      if (!rate) throw new Error("No active rate found for this season+basis. Add one in Irrigation Rates.");
+      if (!rate) throw new Error(t("pgIrrNoActiveRateGen" as any));
 
       const { data: lands, error: landsErr } = await supabase
         .from("lands")
         .select("id, farmer_id, land_size, office_id");
       if (landsErr) throw landsErr;
-      if (!lands?.length) throw new Error("No lands found.");
+      if (!lands?.length) throw new Error(t("pgIrrNoLandsFound" as any));
 
       const { data: existing } = await supabase
         .from("irrigation_charges")

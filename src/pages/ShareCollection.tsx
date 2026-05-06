@@ -75,9 +75,9 @@ export default function ShareCollection() {
   }
 
   function validate(amount: number): string | null {
-    if (!Number.isFinite(amount) || amount <= 0) return "Amount must be positive";
-    if (amount < MIN_AMOUNT) return `Minimum amount is ৳${MIN_AMOUNT}`;
-    if (amount > MAX_AMOUNT) return `Maximum amount is ৳${MAX_AMOUNT.toLocaleString()}`;
+    if (!Number.isFinite(amount) || amount <= 0) return t("pgShareAmtPositive" as any);
+    if (amount < MIN_AMOUNT) return (t("pgShareMinAmount" as any) as string).replace("{amt}", String(MIN_AMOUNT));
+    if (amount > MAX_AMOUNT) return (t("pgShareMaxAmount" as any) as string).replace("{amt}", MAX_AMOUNT.toLocaleString());
     return null;
   }
 
@@ -85,7 +85,7 @@ export default function ShareCollection() {
     const amt = Number(form.amount);
     const err = validate(amt);
     if (err) return toast.error(err);
-    if (!form.farmer_id) return toast.error("Select a farmer");
+    if (!form.farmer_id) return toast.error(t("pgShareSelectFarmer" as any));
 
     const { error } = await supabase.from("savings_transactions").insert({
       farmer_id: form.farmer_id,
@@ -98,10 +98,10 @@ export default function ShareCollection() {
     });
     if (error) {
       if (error.code === "23505" || /duplicate/i.test(error.message))
-        return toast.error("This farmer already has a share collection on this date");
+        return toast.error(t("pgShareDuplicateDate" as any));
       return toast.error(error.message);
     }
-    toast.success("Submitted for approval");
+    toast.success(t("pgShareSubmitted" as any));
     setOpen(false);
     setForm({ farmer_id: "", amount: "", txn_date: form.txn_date, method: "cash", note: "" });
     load();
@@ -114,7 +114,7 @@ export default function ShareCollection() {
     let lines = rawLines.map((l, i) => ({ raw: l, idx: i + 1 })).filter(l => l.raw.trim());
     // Skip header row if present
     if (lines.length && /^\s*farmer_code\s*,/i.test(lines[0].raw)) lines = lines.slice(1);
-    if (!lines.length) return toast.error("Paste at least one line");
+    if (!lines.length) return toast.error(t("pgSharePasteOne" as any));
     const today = new Date().toISOString().slice(0, 10);
 
     const codes = Array.from(new Set(lines.map(l => l.raw.split(",")[0]?.trim()).filter(Boolean)));
@@ -127,18 +127,18 @@ export default function ShareCollection() {
     lines.forEach(({ raw, idx }) => {
       const parts = raw.split(",").map(s => s?.trim() ?? "");
       const [code, amtStr, dateStr, note] = parts;
-      if (!code) { errors.push({ line: idx, raw, reason: "Missing farmer_code" }); return; }
+      if (!code) { errors.push({ line: idx, raw, reason: t("pgShareMissingCode" as any) }); return; }
       const fid = map.get(code);
-      if (!fid) { errors.push({ line: idx, raw, reason: `Unknown farmer_code "${code}"` }); return; }
+      if (!fid) { errors.push({ line: idx, raw, reason: (t("pgShareUnknownCode" as any) as string).replace("{code}", code) }); return; }
       const amt = Number(amtStr);
       const v = validate(amt);
       if (v) { errors.push({ line: idx, raw, reason: v }); return; }
       const d = dateStr || today;
       if (dateStr && !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        errors.push({ line: idx, raw, reason: `Invalid date "${dateStr}" (use YYYY-MM-DD)` }); return;
+        errors.push({ line: idx, raw, reason: (t("pgShareInvalidDate" as any) as string).replace("{date}", dateStr) }); return;
       }
       const key = `${fid}|${d}`;
-      if (seen.has(key)) { errors.push({ line: idx, raw, reason: "Duplicate farmer+date in batch" }); return; }
+      if (seen.has(key)) { errors.push({ line: idx, raw, reason: t("pgShareDuplicateBatch" as any) }); return; }
       seen.add(key);
       payload.push({
         farmer_id: fid, type: "share_collection", amount: amt, txn_date: d,
@@ -148,7 +148,7 @@ export default function ShareCollection() {
 
     if (!payload.length) {
       setBatchReport({ ok: 0, errors });
-      return toast.error(`All ${errors.length} rows failed validation`);
+      return toast.error((t("pgShareAllFailed" as any) as string).replace("{n}", String(errors.length)));
     }
 
     const { error, data } = await supabase.from("savings_transactions").insert(payload).select("id");
@@ -160,7 +160,8 @@ export default function ShareCollection() {
     }
     const ok = data?.length ?? payload.length;
     setBatchReport({ ok, errors });
-    toast.success(`Submitted ${ok} entries${errors.length ? `, ${errors.length} skipped` : ""}`);
+    const skipped = errors.length ? (t("pgShareSkippedN" as any) as string).replace("{n}", String(errors.length)) : "";
+    toast.success((t("pgShareSubmittedN" as any) as string).replace("{ok}", String(ok)).replace("{skipped}", skipped));
     if (!errors.length) { setBatchOpen(false); setBatchText(""); }
     load();
   }
@@ -168,8 +169,8 @@ export default function ShareCollection() {
   async function decide(id: string, status: "approved" | "rejected") {
     let reject_reason: string | null = null;
     if (status === "rejected") {
-      reject_reason = window.prompt("Reason for rejection:")?.trim() || null;
-      if (!reject_reason) return toast.error("Reason required");
+      reject_reason = window.prompt(t("pgShareRejectPrompt" as any))?.trim() || null;
+      if (!reject_reason) return toast.error(t("pgShareReasonRequired" as any));
     }
     const patch: any = { status, approved_by: user?.id, decided_at: new Date().toISOString() };
     if (reject_reason) patch.reject_reason = reject_reason;
@@ -179,7 +180,7 @@ export default function ShareCollection() {
       .eq("id", id)
       .eq("status", "pending");
     if (error) return toast.error(error.message);
-    toast.success(`Marked ${status}`);
+    toast.success((t("pgShareMarked" as any) as string).replace("{status}", status));
     load();
   }
 
@@ -196,21 +197,21 @@ export default function ShareCollection() {
       .update({ amount: amt, txn_date: editForm.txn_date, note: editForm.note || null })
       .eq("id", editRow.id);
     if (error) return toast.error(error.message);
-    toast.success("Updated");
+    toast.success(t("pgShareUpdated" as any));
     setEditRow(null);
     load();
   }
   async function deleteRow(r: Row) {
     const ok = await confirm({
-      title: "Delete share collection?",
-      description: <span>Amount <b>{money(r.amount)}</b> for <b>{r.farmers?.name_en}</b>. Share balance will recompute automatically.</span>,
-      destructive: true, confirmText: "Delete",
+      title: t("pgShareDeleteTitle" as any),
+      description: <span>{t("pgAmount" as any)} <b>{money(r.amount)}</b> — <b>{r.farmers?.name_en}</b></span>,
+      destructive: true, confirmText: t("pgDelete" as any),
     });
     if (!ok) return;
     const { error } = await supabase.from("savings_transactions")
       .update({ deleted_at: new Date().toISOString() } as any).eq("id", r.id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted");
+    toast.success(t("pgShareDeleted" as any));
     await load();
   }
 
