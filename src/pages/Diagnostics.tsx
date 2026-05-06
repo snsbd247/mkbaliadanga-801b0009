@@ -200,30 +200,30 @@ export default function Diagnostics() {
               </div>
               <Button onClick={runIsolationTest} disabled={isoBusy}>
                 {isoBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                Run isolation test
+                {t("diag_runIsolation" as any)}
               </Button>
             </div>
             {iso && (
               <>
                 <Alert>
                   <ShieldCheck className="h-4 w-4" />
-                  <AlertTitle>Verdict</AlertTitle>
+                  <AlertTitle>{t("diag_verdict" as any)}</AlertTitle>
                   <AlertDescription>{iso.verdict}</AlertDescription>
                 </Alert>
                 <div className="text-sm">
-                  <div className="font-semibold mb-2">All offices ({iso.all_offices.length}):</div>
+                  <div className="font-semibold mb-2">{t("diag_allOffices" as any)} ({iso.all_offices.length}):</div>
                   <ul className="text-xs space-y-1 mb-3">
                     {iso.all_offices.map((o: any) => <li key={o.id} className="font-mono">{o.id.slice(0, 8)} — {o.name}</li>)}
                   </ul>
                 </div>
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Table</TableHead><TableHead>Rows</TableHead><TableHead>Distinct office_ids visible</TableHead>
+                    <TableHead>{t("diag_table" as any)}</TableHead><TableHead>{t("diag_rows" as any)}</TableHead><TableHead>{t("diag_distinctOffices" as any)}</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {Object.entries(iso.tables).map(([t, v]: any) => (
-                      <TableRow key={t}>
-                        <TableCell className="font-mono text-xs">{t}</TableCell>
+                    {Object.entries(iso.tables).map(([tn, v]: any) => (
+                      <TableRow key={tn}>
+                        <TableCell className="font-mono text-xs">{tn}</TableCell>
                         <TableCell>{v.error ? <Badge variant="destructive">{v.code}</Badge> : v.rows}</TableCell>
                         <TableCell className="text-xs">
                           {v.error ? v.error :
