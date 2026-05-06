@@ -17,7 +17,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer } from "lucide-react";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
-import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, type ReceiptCopy } from "@/lib/bnReceipts";
+import { autoReceiptNo } from "@/lib/receiptNo";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useBranding } from "@/lib/branding";
 
 type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
