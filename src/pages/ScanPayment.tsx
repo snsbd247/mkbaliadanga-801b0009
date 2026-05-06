@@ -60,6 +60,7 @@ export default function ScanPayment() {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; method: string; note: string | null; idemKey: string; paidAt: string } | null>(null);
   const brand = useBranding();
+  const receiptArgs = useReceiptRenderArgs();
   const tpl = useReceiptTemplate();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
