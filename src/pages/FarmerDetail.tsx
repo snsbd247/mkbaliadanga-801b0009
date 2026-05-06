@@ -916,10 +916,9 @@ export default function FarmerDetail() {
       <AlertDialog open={!!delTarget} onOpenChange={(o) => { if (!o && !deleting) setDelTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this land?</AlertDialogTitle>
+            <AlertDialogTitle>{t("pgDeleteLandTitle" as any)}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove Dag <span className="font-mono font-semibold">{delTarget?.dag_no}</span>.
-              Linked irrigation entries or relations will block deletion.
+              {(t("pgDeleteLandDesc" as any) as string).replace("{dag}", String(delTarget?.dag_no ?? ""))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
