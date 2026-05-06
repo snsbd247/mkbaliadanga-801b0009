@@ -141,7 +141,7 @@ export default function FarmerPortalLogin() {
                   ref={idInputRef}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={t("farmerIdPlaceholder")}
+                  placeholder="0000001"
                   autoComplete="username"
                   autoFocus
                   disabled={busy}
@@ -164,12 +164,21 @@ export default function FarmerPortalLogin() {
               </div>
               {error && (
                 <Alert variant="destructive" id="portal-error" role="alert" aria-live="assertive" aria-atomic="true">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {error}
+                    {cooldownLeftSec > 0 && (
+                      <div className="mt-1 font-mono text-xs">
+                        Try again in {Math.floor(cooldownLeftSec / 60)}:{String(cooldownLeftSec % 60).padStart(2, "0")}
+                      </div>
+                    )}
+                  </AlertDescription>
                 </Alert>
               )}
-              <Button type="submit" className="w-full" disabled={busy} aria-busy={busy}>
+              <Button type="submit" className="w-full" disabled={busy || cooldownLeftSec > 0} aria-busy={busy}>
                 {busy ? (
                   <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t("sending")}</>
+                ) : cooldownLeftSec > 0 ? (
+                  <>Locked • {Math.floor(cooldownLeftSec / 60)}:{String(cooldownLeftSec % 60).padStart(2, "0")}</>
                 ) : (
                   <><LogIn className="h-4 w-4" aria-hidden="true" /> {t("login")}</>
                 )}
