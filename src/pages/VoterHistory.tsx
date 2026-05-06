@@ -161,7 +161,7 @@ export default function VoterHistory() {
           <TableHeader>
             <TableRow>
               <TableHead>{t("date")}</TableHead>
-              <TableHead>Event</TableHead>
+              <TableHead>{t("pgEvent")}</TableHead>
               <TableHead>{t("p5_farmerLabel")}</TableHead>
               <TableHead>{t("p5c_farmerId")}</TableHead>
               <TableHead>{t("rejectionReason")}</TableHead>
