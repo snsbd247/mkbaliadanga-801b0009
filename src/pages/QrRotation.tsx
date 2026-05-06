@@ -104,8 +104,8 @@ export default function QrRotation() {
         <div className="space-y-4 max-w-xl">
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="enabled" className="font-semibold">Enable scheduled rotation</Label>
-              <p className="text-xs text-muted-foreground">When enabled, the daily cron job rotates tokens older than the interval below.</p>
+              <Label htmlFor="enabled" className="font-semibold">{t("p5b_enableScheduledRotation")}</Label>
+              <p className="text-xs text-muted-foreground">{t("p5c_dailyCronHint")}</p>
             </div>
             <Switch
               id="enabled"
@@ -116,31 +116,31 @@ export default function QrRotation() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <Label>Rotation interval (days)</Label>
+              <Label>{t("p5c_rotationInterval")}</Label>
               <Input
                 type="number" min={1} max={3650}
                 value={settings.interval_days}
                 onChange={(e) => setSettings({ ...settings, interval_days: Math.max(1, Number(e.target.value) || 90) })}
               />
-              <p className="text-xs text-muted-foreground mt-1">Tokens older than this are reissued.</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("p5b_tokensOlderReissued")}</p>
             </div>
             <div>
-              <Label>Grace window (hours)</Label>
+              <Label>{t("p5c_graceWindow")}</Label>
               <Input
                 type="number" min={0} max={720}
                 value={settings.grace_hours}
                 onChange={(e) => setSettings({ ...settings, grace_hours: Math.max(0, Number(e.target.value) || 24) })}
               />
-              <p className="text-xs text-muted-foreground mt-1">Old token keeps working for this long before being revoked.</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("p5b_oldTokenGracePeriod")}</p>
             </div>
           </div>
 
           <div className="flex gap-2 pt-2">
             <Button onClick={save} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save settings
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{t("p5c_saveSettings")}
             </Button>
             <Button variant="outline" onClick={runNow} disabled={running}>
-              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}Run now
+              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}{t("p5c_runNow")}
             </Button>
           </div>
         </div>
