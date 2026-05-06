@@ -214,7 +214,7 @@ export default function FarmerDashboard() {
                   {data.loan_payments.filter((p) => p.loan_id === l.id).length > 0 && (
                     <div className="overflow-x-auto">
                       <Table>
-                        <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead className="text-right">{t("amount")}</TableHead></TableRow></TableHeader>
                         <TableBody>
                           {data.loan_payments.filter((p) => p.loan_id === l.id).map((p) => (
                             <TableRow key={p.id}>
