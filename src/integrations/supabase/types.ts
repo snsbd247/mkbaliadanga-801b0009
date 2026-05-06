@@ -312,6 +312,51 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_operations_log: {
+        Row: {
+          action: string
+          created_at: string
+          error_message: string | null
+          id: string
+          ip: string | null
+          modules: string[]
+          size: number | null
+          success: boolean
+          summary: Json | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip?: string | null
+          modules?: string[]
+          size?: number | null
+          success?: boolean
+          summary?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip?: string | null
+          modules?: string[]
+          size?: number | null
+          success?: boolean
+          summary?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       districts: {
         Row: {
           code: string | null
