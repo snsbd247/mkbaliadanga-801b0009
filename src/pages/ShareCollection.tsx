@@ -466,7 +466,7 @@ function RowsTable({ rows, canDecide, onDecide, canManage, onEdit, onDelete }: {
           {showActions && <TableHead></TableHead>}
         </TableRow></TableHeader>
         <TableBody>
-          {rows.length === 0 && <TableRow><TableCell colSpan={showActions ? 6 : 5} className="text-center text-muted-foreground">{t("p5c_noEntries")}</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={showActions ? 6 : 5} className="text-center text-muted-foreground">No entries</TableCell></TableRow>}
           {rows.map(r => (
             <TableRow key={r.id}>
               <TableCell>{fmtDate(r.txn_date)}</TableCell>
