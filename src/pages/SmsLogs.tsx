@@ -34,6 +34,8 @@ type Log = {
   reference_id: string | null;
   farmer_name?: string | null;
   office_name?: string | null;
+  created_by?: string | null;
+  user_name?: string | null;
 };
 type DrawerData = {
   log: Log;
