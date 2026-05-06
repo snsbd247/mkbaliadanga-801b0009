@@ -258,16 +258,16 @@ export default function LedgerReconciliation() {
         <>
           <Card className="p-4 mb-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div><div className="text-xs text-muted-foreground">Total Debit</div><div className="font-mono font-semibold">{fmt(report.summary.total_debit)}</div></div>
-              <div><div className="text-xs text-muted-foreground">Total Credit</div><div className="font-mono font-semibold">{fmt(report.summary.total_credit)}</div></div>
+              <div><div className="text-xs text-muted-foreground">{t("p5_totalDebit")}</div><div className="font-mono font-semibold">{fmt(report.summary.total_debit)}</div></div>
+              <div><div className="text-xs text-muted-foreground">{t("p5_totalCredit")}</div><div className="font-mono font-semibold">{fmt(report.summary.total_credit)}</div></div>
               <div>
-                <div className="text-xs text-muted-foreground">Difference</div>
+                <div className="text-xs text-muted-foreground">{t("p5_difference")}</div>
                 <div className={`font-mono font-semibold ${Math.abs(report.summary.diff) > 0.01 ? "text-destructive" : "text-success"}`}>
                   {fmt(report.summary.diff)}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Mismatches</div>
+                <div className="text-xs text-muted-foreground">{t("p5_mismatches")}</div>
                 <div className={`font-semibold ${report.mismatches.length > 0 ? "text-destructive" : "text-success"}`}>
                   {report.mismatches.length}
                 </div>
