@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronRight, RefreshCw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type DupKey = `${string}|${string}|${string}`; // kind|date|receipt_no
 
