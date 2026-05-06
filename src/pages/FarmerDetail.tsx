@@ -25,6 +25,7 @@ import { validateLocationChain } from "@/lib/locationValidation";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
+import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
 import { useAuth } from "@/auth/AuthProvider";
@@ -149,22 +150,26 @@ export default function FarmerDetail() {
     };
   }
 
-  function reprintReceipt(p: any) {
+  function reprintReceipt(p: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     if (!farmer) return;
     const k = (p.kind as string) || "savings";
     const kind: BnReceiptData["kind"] = k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings";
+    const prefix = kind === "loan" ? "LOAN" : kind === "irrigation" ? "IRR" : "SAV";
+    const description = p.note
+      ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ" : kind === "savings" ? "সঞ্চয় জমা গ্রহণ" : "সেচ চার্জ গ্রহণ");
     downloadBnReceiptPdf({
       kind,
       ...commonReceipt(),
-      receipt_no: p.receipt_no || String(p.id).slice(0, 8).toUpperCase(),
+      receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
       date: p.created_at,
+      bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
       farmer: farmerForReceipt(),
       collected_amount: Number(p.amount),
-      description: p.note ?? null,
-    });
+      description,
+    }, copy);
   }
 
-  function printSavings(s: any) {
+  function printSavings(s: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     downloadBnReceiptPdf({
       kind: "savings",
       ...commonReceipt(),
@@ -173,9 +178,9 @@ export default function FarmerDetail() {
       farmer: farmerForReceipt(),
       description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
       collected_amount: Number(s.amount),
-    });
+    }, copy);
   }
-  function printLoan(l: any) {
+  function printLoan(l: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     downloadBnReceiptPdf({
       kind: "loan",
       ...commonReceipt(),
@@ -185,9 +190,9 @@ export default function FarmerDetail() {
       description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
       outstanding: Number(l.total_payable),
       collected_amount: Number(l.principal),
-    });
+    }, copy);
   }
-  function printIrrigation(i: any) {
+  function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id);
     downloadBnReceiptPdf({
       kind: "irrigation",
@@ -205,7 +210,7 @@ export default function FarmerDetail() {
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
       collected_amount: Number(i.paid_amount || i.total),
-    });
+    }, copy);
   }
   async function deleteSavings(s: any) {
     if (!window.confirm("Delete this savings transaction?")) return;
@@ -757,7 +762,7 @@ export default function FarmerDetail() {
                   <TableCell>{money(s.amount)}</TableCell>
                   <TableCell><Badge>{t(s.status as any)}</Badge></TableCell>
                   <TableCell className="text-right">
-                    <Button size="icon" variant="ghost" onClick={() => printSavings(s)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                    <ReceiptCopyMenu onSelect={(c) => printSavings(s, c)} title={t("print")} />
                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteSavings(s)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
@@ -792,7 +797,7 @@ export default function FarmerDetail() {
                   <TableCell><Badge>{t(l.status as any)}</Badge></TableCell>
                    <TableCell className="text-right">
                      <Button size="icon" variant="ghost" onClick={() => openLoanView(l)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
-                     <Button size="icon" variant="ghost" onClick={() => printLoanFull(l)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                     <ReceiptCopyMenu onSelect={(c) => printLoan(l, c)} title={t("print")} />
                      {isSuper && <Button size="icon" variant="ghost" onClick={() => editLoanGoto(l)} title={t("edit" as any) || "Edit"}><Pencil className="h-4 w-4" /></Button>}
                      {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                    </TableCell>
@@ -821,7 +826,7 @@ export default function FarmerDetail() {
                   <TableCell>{money(i.paid_amount)}</TableCell>
                   <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
                   <TableCell className="text-right">
-                    <Button size="icon" variant="ghost" onClick={() => printIrrigation(i)} title={t("print")}><Printer className="h-4 w-4" /></Button>
+                    <ReceiptCopyMenu onSelect={(c) => printIrrigation(i, c)} title={t("print")} />
                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteIrrigation(i)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
@@ -850,9 +855,7 @@ export default function FarmerDetail() {
                   <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => reprintReceipt(p)}>
-                      <FileDown className="h-3 w-3 mr-1" />Download
-                    </Button>
+                    <ReceiptCopyMenu size="sm" label="Download" onSelect={(c) => reprintReceipt(p, c)} />
                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deletePayment(p)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                   </TableCell>
                 </TableRow>
