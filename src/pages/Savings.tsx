@@ -282,9 +282,9 @@ export default function Savings() {
   }
   async function deleteTxn(id: string) {
     const ok = await confirm({
-      title: "Delete savings transaction?",
-      description: "This will archive the transaction. Share / savings balance will recompute automatically.",
-      destructive: true, confirmText: "Delete",
+      title: t("pgSavDeleteTitle" as any),
+      description: t("pgSavDeleteDesc" as any),
+      destructive: true, confirmText: t("pgDelete" as any),
     });
     if (!ok) return;
     const { error } = await supabase.from("savings_transactions")
