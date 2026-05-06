@@ -236,7 +236,7 @@ export default function Savings() {
         link: "/savings",
       });
     }
-    toast.success(isWithdraw ? "Withdraw request submitted for approval" : "Saved");
+    toast.success(isWithdraw ? t("pgSavWithdrawSubmitted" as any) : t("pgSavSaved" as any));
     setOpen(false);
     setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "" });
     load();
