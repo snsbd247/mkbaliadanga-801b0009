@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Download, Search, ArrowLeft } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { TEMPLATE_LIST, type TemplateId } from "@/components/card/templates";
 import { downloadBulkCardsPdf } from "@/components/card/cardPdf";
