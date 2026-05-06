@@ -142,12 +142,12 @@ export default function Dues() {
       <div className="grid gap-3 md:grid-cols-5 mb-4">
         {(["0-30", "30-60", "60-90", "90+"] as const).map(k => (
           <Card key={k} className="p-4">
-            <div className="text-xs uppercase text-muted-foreground">{k} days</div>
+            <div className="text-xs uppercase text-muted-foreground">{k} {t("dues_days" as any)}</div>
             <div className="mt-1 text-xl font-bold">{money((buckets as any)[k])}</div>
           </Card>
         ))}
         <Card className="p-4 bg-destructive/5 border-destructive/30">
-          <div className="text-xs uppercase text-destructive">Total Due</div>
+          <div className="text-xs uppercase text-destructive">{t("dues_totalDue" as any)}</div>
           <div className="mt-1 text-xl font-bold text-destructive">{money(total)}</div>
         </Card>
       </div>
@@ -160,7 +160,7 @@ export default function Dues() {
           <Select value={src} onValueChange={(v: any) => setSrc(v)}>
             <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All sources</SelectItem>
+              <SelectItem value="all">{t("dues_allSources" as any)}</SelectItem>
               <SelectItem value="irrigation">{t("irrigation")}</SelectItem>
               <SelectItem value="loan">{t("loans")}</SelectItem>
             </SelectContent>
@@ -168,19 +168,19 @@ export default function Dues() {
           <Select value={bkt} onValueChange={(v: any) => setBkt(v)}>
             <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All ages</SelectItem>
+              <SelectItem value="all">{t("dues_allAges" as any)}</SelectItem>
               <SelectItem value="0-30">0-30</SelectItem>
               <SelectItem value="30-60">30-60</SelectItem>
               <SelectItem value="60-90">60-90</SelectItem>
               <SelectItem value="90+">90+</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={copyPhones}><MessageSquare className="h-4 w-4 mr-1" />Copy phones</Button>
-          <Button variant="outline" size="sm" onClick={exportSmsCsv}><Download className="h-4 w-4 mr-1" />SMS list</Button>
-          <Button variant="outline" size="sm" onClick={() => exportTablePDF("Dues Report",
-            ["Code", "Name", "Mobile", "Source", "Reference", "Age", "Due"],
+          <Button variant="outline" size="sm" onClick={copyPhones}><MessageSquare className="h-4 w-4 mr-1" />{t("dues_copyPhones" as any)}</Button>
+          <Button variant="outline" size="sm" onClick={exportSmsCsv}><Download className="h-4 w-4 mr-1" />{t("dues_smsList" as any)}</Button>
+          <Button variant="outline" size="sm" onClick={() => exportTablePDF(t("dues_pdfTitle" as any),
+            [t("dues_colCode" as any), t("dues_colName" as any), t("dues_colMobile" as any), t("dues_colSource" as any), t("dues_colReference" as any), t("dues_colAge" as any), t("dues_colDue" as any)],
             filtered.map(r => [r.code, r.name, r.mobile ?? "—", r.source, r.reference, `${r.ageDays}d`, money(r.due)]))}>
-            <FileText className="h-4 w-4 mr-1" />PDF
+            <FileText className="h-4 w-4 mr-1" />{t("dues_pdf" as any)}
           </Button>
         </div>
 
@@ -191,10 +191,10 @@ export default function Dues() {
                 <TableHead>{t("farmerCode")}</TableHead>
                 <TableHead>{t("farmerName")}</TableHead>
                 <TableHead>{t("mobile")}</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Oldest</TableHead>
-                <TableHead>Bucket</TableHead>
+                <TableHead>{t("dues_source" as any)}</TableHead>
+                <TableHead>{t("dues_reference" as any)}</TableHead>
+                <TableHead>{t("dues_oldest" as any)}</TableHead>
+                <TableHead>{t("dues_bucket" as any)}</TableHead>
                 <TableHead className="text-right">{t("dueAmount")}</TableHead>
               </TableRow>
             </TableHeader>
