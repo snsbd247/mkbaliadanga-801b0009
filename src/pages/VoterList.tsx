@@ -264,11 +264,11 @@ export default function VoterList() {
                   <TableCell className="text-right">
                     {tab === "active" ? (
                       <Button size="sm" variant="destructive" onClick={() => openDialog(r, "cancel")}>
-                        <Ban className="h-4 w-4 mr-1" />Cancel
+                        <Ban className="h-4 w-4 mr-1" />{t("cancel")}
                       </Button>
                     ) : (
                       <Button size="sm" variant="outline" onClick={() => openDialog(r, "reactivate")}>
-                        <RotateCcw className="h-4 w-4 mr-1" />Reactivate
+                        <RotateCcw className="h-4 w-4 mr-1" />{t("p5c_reactivateOnly" as any)}
                       </Button>
                     )}
                   </TableCell>
