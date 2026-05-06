@@ -134,9 +134,10 @@ export default function BulkCards() {
 
       await downloadBulkCardsPdf(roots, `farmer-cards-${ok.length}-${templateId}.pdf`);
       const skipped = items.length - ok.length;
-      toast.success(`Generated ${ok.length} card(s)${skipped ? `, skipped ${skipped}` : ""}.`);
+      const skippedTxt = skipped ? (t("pgBulkSkippedMsg" as any) as string).replace("{n}", String(skipped)) : "";
+      toast.success((t("pgBulkGeneratedMsg" as any) as string).replace("{ok}", String(ok.length)).replace("{skipped}", skippedTxt));
     } catch (e: any) {
-      toast.error(e?.message ?? "PDF export failed");
+      toast.error(e?.message ?? t("pgBulkPdfFailed" as any));
     } finally { setBusy(false); setBulkCards([]); }
   }
 
