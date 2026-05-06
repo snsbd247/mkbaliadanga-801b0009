@@ -124,10 +124,10 @@ export default function FarmerDashboard() {
             ) : (
               <div className="h-8 w-8 rounded-md bg-gradient-primary text-primary-foreground flex items-center justify-center"><Sprout className="h-4 w-4" /></div>
             )}
-            <span className="text-sm font-medium truncate">Farmer Portal</span>
+            <span className="text-sm font-medium truncate">{t("p5b_farmerPortal")}</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => logout()}>
-            <LogOut className="h-4 w-4" /> Sign out
+            <LogOut className="h-4 w-4" /> {t("p5b_signOut")}
           </Button>
         </div>
       </header>
