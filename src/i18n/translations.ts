@@ -1040,6 +1040,7 @@ export const translations = {
     p5e_unusedKeysReport: "Unused translation key report",
     profile: "Profile",
     duplicateReceiptAudit: "Duplicate Receipt Audit",
+    farmerLoginAudit: "Farmer Login Audit",
     particulars: "Particulars",
     typeAsset: "Asset",
     typeLiability: "Liability",
