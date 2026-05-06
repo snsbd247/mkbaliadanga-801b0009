@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Camera, X, User, CheckCircle2, FileDown, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { downloadPaymentReceiptPdf, previewPaymentReceiptPdf, maskToken, type PaymentReceiptData } from "@/lib/paymentReceiptPdf";
+import { downloadBnReceiptPdf, previewBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { useBranding } from "@/lib/branding";
 import { useReceiptTemplate } from "@/lib/receiptTemplate";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -59,26 +59,25 @@ export default function ScanPayment() {
   const tpl = useReceiptTemplate();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  function buildReceiptPayload(): PaymentReceiptData | null {
+  function buildReceiptPayload(): BnReceiptData | null {
     if (!done || !resolved) return null;
+    const k = done.kind;
+    const kind: BnReceiptData["kind"] = k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings";
     return {
+      kind,
       receipt_no: done.paymentId.slice(0, 8).toUpperCase(),
-      payment_id: done.paymentId,
-      paid_at: done.paidAt,
-      farmer_name: resolved.farmer.name,
-      farmer_code: resolved.farmer.farmer_code,
-      member_no: resolved.farmer.member_no,
-      mobile_masked: resolved.farmer.mobile_masked ?? null,
-      village: resolved.farmer.village ?? null,
-      token_masked: maskToken(scannedToken),
-      token_status: "active",
-      kind: done.kind,
-      amount: done.amount,
-      method: done.method,
-      note: done.note,
-      idempotency_key: done.idemKey,
+      date: done.paidAt,
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
+      logo_url: brand.logo_url ?? null,
+      farmer: {
+        name: resolved.farmer.name,
+        member_no: resolved.farmer.member_no ?? resolved.farmer.farmer_code ?? null,
+        village: resolved.farmer.village ?? null,
+        mobile: resolved.farmer.mobile_masked ?? null,
+      },
+      collected_amount: done.amount,
+      description: done.note ?? undefined,
     };
   }
 
@@ -295,18 +294,18 @@ export default function ScanPayment() {
               <div className="flex gap-2 justify-center flex-wrap">
                 <Button
                   variant="ghost"
-                  onClick={() => {
+                  onClick={async () => {
                     const payload = buildReceiptPayload();
-                    if (payload) setPreviewUrl(previewPaymentReceiptPdf(payload, { ...tpl, logo_url: brand.logo_url ?? null }));
+                    if (payload) setPreviewUrl(await previewBnReceiptPdf(payload));
                   }}
                 >
                   <Eye className="h-4 w-4" />Preview
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     const payload = buildReceiptPayload();
-                    if (payload) downloadPaymentReceiptPdf(payload, { ...tpl, logo_url: brand.logo_url ?? null });
+                    if (payload) await downloadBnReceiptPdf(payload);
                   }}
                 >
                   <FileDown className="h-4 w-4" />Download Receipt
