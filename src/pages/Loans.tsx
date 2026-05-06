@@ -313,7 +313,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
         <TableHead>{t("principal")}</TableHead><TableHead>{t("interestRate")}</TableHead>
         <TableHead>{t("totalPayable")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
         <TableHead>{t("status")}</TableHead>
-        <TableHead>Approved By</TableHead>
+        <TableHead>{t("pgApprovedBy")}</TableHead>
         <TableHead className="text-right">{t("actions")}</TableHead>
       </TableRow></TableHeader>
       <TableBody>
