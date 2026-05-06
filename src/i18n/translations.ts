@@ -2424,6 +2424,7 @@ export const translations = {
     p5e_unusedKeysReport: "অব্যবহৃত translation key রিপোর্ট",
     profile: "প্রোফাইল",
     duplicateReceiptAudit: "ডুপ্লিকেট রসিদ অডিট",
+    farmerLoginAudit: "কৃষক লগইন অডিট",
     particulars: "বিবরণ",
     typeAsset: "সম্পদ",
     typeLiability: "দায়",
