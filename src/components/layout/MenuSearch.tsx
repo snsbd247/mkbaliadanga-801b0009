@@ -22,6 +22,7 @@ export function MenuSearch() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [flash, setFlash] = useState(false);
 
   const allowed = (s: MenuShortcut) => {
     if (s.developerOnly) return isDeveloper;
