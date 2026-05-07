@@ -55,7 +55,9 @@ export function MenuSearch() {
 
   useEffect(() => { setActive(0); }, [q]);
 
-  // Ctrl/Cmd+K — focus header search (capture phase to beat other handlers)
+  // Ctrl/Cmd+K — focus header search (capture phase to beat other handlers,
+  // including modal focus traps). Stores the previously-focused element so
+  // Escape can return focus to where the user was.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") {
@@ -63,10 +65,12 @@ export function MenuSearch() {
         e.stopPropagation();
         const el = inputRef.current;
         if (el) {
+          const active = document.activeElement as HTMLElement | null;
+          if (active && active !== el) prevFocusRef.current = active;
           el.focus();
           el.select();
           setFlash(true);
-          window.setTimeout(() => setFlash(false), 600);
+          window.setTimeout(() => setFlash(false), 1200);
         }
       }
     };
