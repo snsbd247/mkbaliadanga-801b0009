@@ -468,7 +468,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               summary.farmers = farmers.length;
               summary.voters = farmers.filter((f: any) => f.is_voter).length;
             }});
-            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers, mouzaId); }});
+            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers); }});
           }
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
           if (needFarmers && !modules.includes("farmers")) {
