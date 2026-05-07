@@ -138,7 +138,7 @@ function formatToken(fmt: string, ctx: { seq: number; office: string; year: numb
     .replace(/\{year\}/g, String(ctx.year));
 }
 
-async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg) {
+async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[]) {
   const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
   const year = new Date().getFullYear();
   const officeShort = officeId.slice(0, 4).toUpperCase();
@@ -147,36 +147,44 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
     const isVoter = i % ratio === 0;
     if (isVoter) voterSeq++;
     const tokenCtx = { seq: voterSeq, office: officeShort, year };
+    const isFemale = i % 7 === 0;
+    const name = isFemale ? pick(FEMALE_NAMES, i) : pick(MALE_NAMES, i);
+    const father = pick(FATHERS, i + 3);
+    const mother = pick(MOTHERS, i + 5);
+    const loc = locs.length ? locs[i % locs.length] : null;
     return {
       farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
       member_no: String(i + 1).padStart(7, "0"),
-      name_en: `Demo Farmer ${i + 1}`,
-      name_bn: `ডেমো কৃষক ${i + 1}`,
-      father_name: pick(FATHERS, i),
-      mother_name: pick(MOTHERS, i),
+      name_en: name.en,
+      name_bn: name.bn,
+      father_name: father.en,
+      mother_name: mother.en,
       mobile: `017${String(10000000 + i).padStart(8, "0")}`,
       nid: `19900${String(1000000000 + i).padStart(10, "0")}`,
-      village: pick(VILLAGES, i),
+      village: loc?.mouza_name ?? pick(VILLAGES, i),
       office_id: officeId,
       status: "active",
       is_voter: isVoter,
       voter_number: isVoter ? formatToken(cfg.voterNumberFormat, tokenCtx) : null,
       account_number: isVoter ? formatToken(cfg.accountNumberFormat, tokenCtx) : null,
+      division_id: loc?.division_id ?? null,
+      district_id: loc?.district_id ?? null,
+      upazila_id: loc?.upazila_id ?? null,
+      mouza_id: loc?.mouza_id ?? null,
     };
   });
   const { data, error } = await admin.from("farmers")
     .insert(farmers)
-    .select("id, farmer_code, is_voter, voter_number, account_number");
+    .select("id, farmer_code, is_voter, voter_number, account_number, mouza_id");
   if (error) throw new Error(`farmers: ${error.message}`);
   return data ?? [];
 }
 
-async function seedLands(admin: any, officeId: string, farmers: any[], mouzaId: string | null) {
+async function seedLands(admin: any, officeId: string, farmers: any[]) {
   const lands = farmers.map((f, i) => ({
     farmer_id: f.id,
     land_size: 0.25 + (i % 8) * 0.25,
-    mouza: "Baliadanga",
-    mouza_id: mouzaId,
+    mouza_id: f.mouza_id ?? null,
     dag_no: `D${100 + i}`,
     field_type: i % 3 === 0 ? "high_land" : i % 3 === 1 ? "medium_land" : "low_land",
     owner_type: "owner",
