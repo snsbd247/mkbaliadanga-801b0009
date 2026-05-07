@@ -32,9 +32,98 @@ const FULL_WIPE_ORDER = [
 ];
 
 function pick<T>(arr: T[], i: number): T { return arr[i % arr.length]; }
-const VILLAGES = ["Baliadanga", "Dhanyakuria", "Ramnagar", "Shantipur", "Madhupur"];
-const FATHERS = ["Abdul Karim", "Mohammad Ali", "Rahim Uddin", "Hasan Sheikh", "Jasim Mia"];
-const MOTHERS = ["Rahima Begum", "Ayesha Khatun", "Salma Begum", "Roksana Akter", "Hosneara"];
+const VILLAGES = ["Baliadanga", "Dhanyakuria", "Ramnagar", "Shantipur", "Madhupur", "Kismatpur", "Char Bhabanipur", "Uttar Para", "Dakshin Para", "Naya Bazar"];
+
+// Realistic Bangladeshi names (English + Bangla pairs)
+const MALE_NAMES: { en: string; bn: string }[] = [
+  { en: "Md. Abdur Rahman", bn: "মোঃ আব্দুর রহমান" },
+  { en: "Md. Karim Uddin", bn: "মোঃ করিম উদ্দিন" },
+  { en: "Mohammad Ali Hossain", bn: "মোহাম্মদ আলী হোসেন" },
+  { en: "Md. Jashim Uddin", bn: "মোঃ জসিম উদ্দিন" },
+  { en: "Md. Shahidul Islam", bn: "মোঃ শহিদুল ইসলাম" },
+  { en: "Md. Nurul Hoque", bn: "মোঃ নুরুল হক" },
+  { en: "Abdul Mannan", bn: "আব্দুল মান্নান" },
+  { en: "Md. Faruk Hossain", bn: "মোঃ ফারুক হোসেন" },
+  { en: "Md. Anwar Hossain", bn: "মোঃ আনোয়ার হোসেন" },
+  { en: "Md. Liton Mia", bn: "মোঃ লিটন মিয়া" },
+  { en: "Md. Kamal Hossain", bn: "মোঃ কামাল হোসেন" },
+  { en: "Md. Rafiqul Islam", bn: "মোঃ রফিকুল ইসলাম" },
+  { en: "Md. Saiful Islam", bn: "মোঃ সাইফুল ইসলাম" },
+  { en: "Md. Bablu Mia", bn: "মোঃ বাবলু মিয়া" },
+  { en: "Md. Sohel Rana", bn: "মোঃ সোহেল রানা" },
+  { en: "Md. Habibur Rahman", bn: "মোঃ হাবিবুর রহমান" },
+  { en: "Md. Mizanur Rahman", bn: "মোঃ মিজানুর রহমান" },
+  { en: "Md. Ashraful Alam", bn: "মোঃ আশরাফুল আলম" },
+  { en: "Md. Tofazzal Hossain", bn: "মোঃ তোফাজ্জল হোসেন" },
+  { en: "Md. Mokbul Hossain", bn: "মোঃ মকবুল হোসেন" },
+  { en: "Md. Jamal Uddin", bn: "মোঃ জামাল উদ্দিন" },
+  { en: "Md. Selim Reza", bn: "মোঃ সেলিম রেজা" },
+  { en: "Md. Rokon Mia", bn: "মোঃ রকন মিয়া" },
+  { en: "Md. Kabir Hossain", bn: "মোঃ কবির হোসেন" },
+  { en: "Md. Belal Hossain", bn: "মোঃ বেলাল হোসেন" },
+  { en: "Md. Monir Hossain", bn: "মোঃ মনির হোসেন" },
+  { en: "Md. Ruhul Amin", bn: "মোঃ রুহুল আমিন" },
+  { en: "Md. Aminul Islam", bn: "মোঃ আমিনুল ইসলাম" },
+  { en: "Md. Nazrul Islam", bn: "মোঃ নজরুল ইসলাম" },
+  { en: "Md. Mosharraf Hossain", bn: "মোঃ মোশাররফ হোসেন" },
+];
+const FEMALE_NAMES: { en: string; bn: string }[] = [
+  { en: "Mst. Rahima Khatun", bn: "মোসাঃ রহিমা খাতুন" },
+  { en: "Mst. Ayesha Begum", bn: "মোসাঃ আয়েশা বেগম" },
+  { en: "Mst. Salma Akter", bn: "মোসাঃ সালমা আক্তার" },
+  { en: "Mst. Roksana Begum", bn: "মোসাঃ রোকসানা বেগম" },
+  { en: "Mst. Hosneara Begum", bn: "মোসাঃ হোসনেয়ারা বেগম" },
+  { en: "Mst. Shahanaz Parvin", bn: "মোসাঃ শাহানাজ পারভিন" },
+  { en: "Mst. Rabeya Khatun", bn: "মোসাঃ রাবেয়া খাতুন" },
+  { en: "Mst. Jorina Begum", bn: "মোসাঃ জরিনা বেগম" },
+  { en: "Mst. Nasima Akter", bn: "মোসাঃ নাসিমা আক্তার" },
+  { en: "Mst. Mariam Begum", bn: "মোসাঃ মরিয়ম বেগম" },
+];
+const FATHERS = MALE_NAMES;
+const MOTHERS = FEMALE_NAMES;
+
+// Real Bangladesh location data (sub-set, Rangpur division)
+const LOCATION_TREE = {
+  division: { name: "Rangpur", name_bn: "রংপুর", code: "RAN" },
+  districts: [
+    { name: "Rangpur", name_bn: "রংপুর", code: "RAN-D",
+      upazilas: [
+        { name: "Pirgachha", name_bn: "পীরগাছা", mouzas: [
+          { name: "Baliadanga", name_bn: "বালিয়াডাঙ্গা" },
+          { name: "Kandi", name_bn: "কান্দি" },
+          { name: "Annadanagar", name_bn: "অন্নদানগর" },
+        ]},
+        { name: "Mithapukur", name_bn: "মিঠাপুকুর", mouzas: [
+          { name: "Balua Masimpur", name_bn: "বালুয়া মাসিমপুর" },
+          { name: "Payrabondh", name_bn: "পায়রাবন্দ" },
+        ]},
+        { name: "Badarganj", name_bn: "বদরগঞ্জ", mouzas: [
+          { name: "Damodarpur", name_bn: "দামোদরপুর" },
+          { name: "Lohanipara", name_bn: "লোহানীপাড়া" },
+        ]},
+      ]},
+    { name: "Gaibandha", name_bn: "গাইবান্ধা", code: "GAI-D",
+      upazilas: [
+        { name: "Sundarganj", name_bn: "সুন্দরগঞ্জ", mouzas: [
+          { name: "Belka", name_bn: "বেলকা" },
+          { name: "Tarapur", name_bn: "তারাপুর" },
+        ]},
+        { name: "Palashbari", name_bn: "পলাশবাড়ী", mouzas: [
+          { name: "Kishoreganj", name_bn: "কিশোরগঞ্জ" },
+          { name: "Hosenpur", name_bn: "হোসেনপুর" },
+        ]},
+      ]},
+    { name: "Kurigram", name_bn: "কুড়িগ্রাম", code: "KUR-D",
+      upazilas: [
+        { name: "Ulipur", name_bn: "উলিপুর", mouzas: [
+          { name: "Tetultala", name_bn: "তেতুলতলা" },
+          { name: "Buraburi", name_bn: "বুড়াবুড়ী" },
+        ]},
+      ]},
+  ],
+} as const;
+
+type LocPick = { division_id: string; district_id: string; upazila_id: string; mouza_id: string; mouza_name: string };
 
 type VoterCfg = {
   voterRatio: number;            // e.g. 3 -> every 3rd farmer is a voter (1/3)
