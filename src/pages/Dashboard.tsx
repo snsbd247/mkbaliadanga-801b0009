@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +26,9 @@ export default function Dashboard() {
   const [topDues, setTopDues] = useState<any[]>([]);
   const [composition, setComposition] = useState<any[]>([]);
 
-  useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, []);
+  const [votersOnly, setVotersOnly] = useState(false);
+
+  useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, [votersOnly]);
 
   useEffect(() => {
     if (!officeId) { setOfficeName(""); return; }
@@ -36,15 +40,23 @@ export default function Dashboard() {
 
   async function load() {
     const today = new Date().toISOString().slice(0, 10);
+    let voterIds: string[] | null = null;
+    if (votersOnly) {
+      const { data: vf } = await supabase.from("farmers").select("id").eq("is_voter", true).is("deleted_at", null);
+      voterIds = (vf ?? []).map((r: any) => r.id);
+      if (voterIds.length === 0) voterIds = ["00000000-0000-0000-0000-000000000000"];
+    }
+    const inV = (q: any) => voterIds ? q.in("farmer_id", voterIds) : q;
+
     const [farmers, savings, shares, loans, irrigations, payments, pendingW, pendingL] = await Promise.all([
-      supabase.from("farmers").select("id,status").is("deleted_at", null),
-      supabase.from("savings_transactions").select("type,amount,status").is("deleted_at", null),
-      supabase.from("shares").select("balance"),
-      supabase.from("loans").select("principal,total_payable,status").is("deleted_at", null),
-      supabase.from("irrigation_charges").select("total,paid_amount,due_amount").is("deleted_at", null),
-      supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
-      supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw"),
-      supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending"),
+      supabase.from("farmers").select("id,status,is_voter").is("deleted_at", null),
+      inV(supabase.from("savings_transactions").select("type,amount,status,farmer_id").is("deleted_at", null)),
+      inV(supabase.from("shares").select("balance,farmer_id")),
+      inV(supabase.from("loans").select("principal,total_payable,status,farmer_id").is("deleted_at", null)),
+      inV(supabase.from("irrigation_charges").select("total,paid_amount,due_amount,farmer_id").is("deleted_at", null)),
+      inV(supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8)),
+      inV(supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw")),
+      inV(supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending")),
     ]);
 
     const farmersData = farmers.data ?? [];
@@ -66,9 +78,10 @@ export default function Dashboard() {
     const monthCollect = sum(monthPayAll ?? [], "amount");
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
+    const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
     setStats([
-      { label: t("totalFarmers"), value: String(farmersData.length), icon: Users },
-      { label: t("activeFarmers"), value: String(farmersData.filter(f => f.status === "active").length), icon: UserCheck, tone: "success" },
+      { label: t("totalFarmers") + (votersOnly ? " (Voter)" : ""), value: String(farmersList.length), icon: Users },
+      { label: t("activeFarmers"), value: String(farmersList.filter((f: any) => f.status === "active").length), icon: UserCheck, tone: "success" },
       { label: t("totalSavings"), value: money(totalSavings), icon: Wallet },
       { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins },
       { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins },
@@ -141,11 +154,15 @@ export default function Dashboard() {
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
       <NoOfficeBanner />
-      <div className="mb-3 flex items-center gap-2 text-xs">
+      <div className="mb-3 flex items-center gap-2 text-xs flex-wrap">
         <Badge variant={isSuper ? "secondary" : "default"}>
           {isSuper ? t("viewingAllOffices") : `${t("officeLabel")}: ${officeName || "—"}`}
         </Badge>
-        <span className="text-muted-foreground">{t("officeAccessNote")}</span>
+        <span className="text-muted-foreground flex-1">{t("officeAccessNote")}</span>
+        <div className="flex items-center gap-2">
+          <Switch id="voters-only" checked={votersOnly} onCheckedChange={setVotersOnly} />
+          <Label htmlFor="voters-only" className="cursor-pointer">Voter farmers only</Label>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
