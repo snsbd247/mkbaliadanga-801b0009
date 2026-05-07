@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select";
 
 import { useLang } from "@/i18n/LanguageProvider";
+import * as XLSX from "xlsx";
+import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 
 const MODULE_KEYS = [
   { id: "locations", tk: "dmModLocations" },
