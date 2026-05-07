@@ -322,7 +322,7 @@ export default function ShareCollection() {
               <DialogHeader><DialogTitle>{t("p5c_shareCollectionEntry")}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div><Label>{t("p5_farmerLabel")}</Label>
-                  <FarmerSearchSelect value={form.farmer_id || null} onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
+                  <FarmerSearchSelect votersOnly value={form.farmer_id || null} onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>{t("amount")} (৳)</Label>

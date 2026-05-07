@@ -180,7 +180,7 @@ export default function Loans() {
             <DialogHeader><DialogTitle>{t("issueLoan")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>{t("selectFarmer")}</Label>
-                <FarmerSearchSelect value={form.farmer_id || null}
+                <FarmerSearchSelect votersOnly value={form.farmer_id || null}
                   onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
               </div>
               <div><Label>Loan Plan (optional)</Label>

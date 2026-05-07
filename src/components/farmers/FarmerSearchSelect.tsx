@@ -15,6 +15,7 @@ export type FarmerLite = {
   account_number?: string | null;
   mobile?: string | null;
   voter_number?: string | null;
+  is_voter?: boolean | null;
 };
 
 interface Props {
@@ -24,9 +25,11 @@ interface Props {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  /** Only allow farmers with is_voter = true (used for savings/loans/shares). */
+  votersOnly?: boolean;
 }
 
-const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number";
+const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter";
 const MIN_SEARCH = 2;
 
 function highlight(text: string | null | undefined, q: string): React.ReactNode {
@@ -44,7 +47,7 @@ function highlight(text: string | null | undefined, q: string): React.ReactNode 
 }
 
 /** Searchable, debounced farmer combobox. Searches name / code / account / mobile / voter / member. */
-export function FarmerSearchSelect({ value, onChange, excludeIds = [], placeholder = "Search farmer…", disabled, className }: Props) {
+export function FarmerSearchSelect({ value, onChange, excludeIds = [], placeholder = "Search farmer…", disabled, className, votersOnly = false }: Props) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,6 +83,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       const myReq = ++reqIdRef.current;
       if (!cached) setLoading(true);
       let qy = supabase.from("farmers").select(SELECT_COLS).order("name_en").limit(20);
+      if (votersOnly) qy = qy.eq("is_voter", true);
       if (term) {
         const esc = term.replace(/[%,()]/g, " ");
         qy = qy.or(`name_en.ilike.%${esc}%,name_bn.ilike.%${esc}%,farmer_code.ilike.%${esc}%,account_number.ilike.%${esc}%,member_no.ilike.%${esc}%,mobile.ilike.%${esc}%,voter_number.ilike.%${esc}%`);
