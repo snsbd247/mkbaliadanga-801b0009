@@ -178,7 +178,7 @@ export default function ScanPayment() {
         office_id: resolved.farmer.office_id ?? null,
         idempotency_key: idemKey,
       };
-      const { data: ins, error } = await supabase.from("payments").insert(payload).select("id").single();
+      const { data: ins, error } = await supabase.from("payments").insert(payload).select("id, verify_token").single();
       if (error) {
         if ((error as any).code === "23505" || /duplicate/i.test(error.message)) {
           setErrMsg(
@@ -197,6 +197,7 @@ export default function ScanPayment() {
         note: parsed.data.note ?? null,
         idemKey,
         paidAt: new Date().toISOString(),
+        verifyToken: (ins as any)?.verify_token ?? null,
       });
       toast.success("Payment recorded — SMS notification queued");
     } catch (e: any) {
