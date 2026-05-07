@@ -152,7 +152,8 @@ async function seedPayments(admin: any, officeId: string, farmers: any[]) {
   const today = new Date().toISOString();
   const yesterday = new Date(Date.now() - 86400000).toISOString();
   const earlierMonth = new Date(Date.now() - 10 * 86400000).toISOString();
-  const rows = farmers.flatMap((f, i) => {
+  const voters = farmers.filter((f: any) => f.is_voter);
+  const rows = voters.flatMap((f, i) => {
     const out: any[] = [];
     // today's collections
     if (i % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: today });
