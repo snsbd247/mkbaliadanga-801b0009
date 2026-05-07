@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -241,6 +241,21 @@ export default function Farmers() {
 
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
+
+  // Open the edit dialog when navigated with ?edit=<farmerId>
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId || editOpen) return;
+    (async () => {
+      const { data } = await supabase.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
+      if (data) openEdit(data);
+      const next = new URLSearchParams(searchParams);
+      next.delete("edit");
+      setSearchParams(next, { replace: true });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Scroll the failing dropdown into view when a hierarchy error appears.
   useEffect(() => {
