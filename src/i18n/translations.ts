@@ -2877,8 +2877,6 @@ export const translations = {
     high_land: "উঁচু জমি",
     medium_land: "মাঝারি জমি",
     low_land: "নিচু জমি",
-    installmentDetail: "কিস্তির বিস্তারিত",
-    view: "দেখুন",
     locationsManagementDesc: "বিভাগ, জেলা, উপজেলা, ইউনিয়ন, ওয়ার্ড, গ্রাম এবং মৌজা ব্যবস্থাপনা করুন।",
     locationsHierarchyNote: "প্রতিটি স্তর তার মূল স্তরের অধীনে হতে হবে। নিষ্ক্রিয় মূল স্তরের সন্তান লুকানো থাকবে।",
   },
