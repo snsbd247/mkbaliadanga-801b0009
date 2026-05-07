@@ -235,10 +235,7 @@ export default function FarmersImport() {
       { lvl: "division", table: "divisions", name: r.loc.division },
       { lvl: "district", table: "districts", name: r.loc.district, parentCol: "division_id", parentKey: "division_id" },
       { lvl: "upazila",  table: "upazilas",  name: r.loc.upazila,  parentCol: "district_id", parentKey: "district_id" },
-      { lvl: "union",    table: "unions",    name: r.loc.union,    parentCol: "upazila_id",  parentKey: "upazila_id" },
-      { lvl: "ward",     table: "wards",     name: r.loc.ward,     parentCol: "union_id",    parentKey: "union_id" },
-      { lvl: "village",  table: "villages",  name: r.loc.village,  parentCol: "ward_id",     parentKey: "ward_id" },
-      { lvl: "mouza",    table: "mouzas",    name: r.loc.mouza,    parentCol: "union_id",    parentKey: "union_id" },
+      { lvl: "mouza",    table: "mouzas",    name: r.loc.mouza,    parentCol: "upazila_id",  parentKey: "upazila_id" },
     ];
 
     for (const step of chain) {
