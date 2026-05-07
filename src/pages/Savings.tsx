@@ -377,7 +377,7 @@ export default function Savings() {
                 <DialogHeader><DialogTitle>{t("pgEnrollSavingsPlan")}</DialogTitle></DialogHeader>
                 <div className="space-y-3">
                   <div><Label>{t("pgFarmer")}</Label>
-                    <FarmerSearchSelect value={planForm.farmer_id || null}
+                    <FarmerSearchSelect votersOnly value={planForm.farmer_id || null}
                       onChange={(id) => setPlanForm({ ...planForm, farmer_id: id ?? "" })} />
                   </div>
                   <div><Label>{t("pgPlan")}</Label>
