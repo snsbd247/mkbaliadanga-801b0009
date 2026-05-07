@@ -486,7 +486,70 @@ export default function DemoManager() {
         </Card>
       )}
 
-      {seedLog.length > 0 && !loading && (
+      {locationVerification && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {locationVerification.ok ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <XCircle className="h-5 w-5 text-destructive" />}
+              Location Count Verification
+            </CardTitle>
+            <CardDescription>{locationVerification.ok ? "সব Division/District/Upazila/Mouza ঠিকঠাক sit হয়েছে।" : `${locationVerification.missing.length} টি গরমিল`}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-xs border rounded">
+              <thead className="bg-muted">
+                <tr><th className="p-2 text-left">Table</th><th className="p-2 text-right">Expected</th><th className="p-2 text-right">Actual</th></tr>
+              </thead>
+              <tbody>
+                {Object.keys(locationVerification.expected).map((k) => (
+                  <tr key={k} className="border-t">
+                    <td className="p-2 font-mono">{k}</td>
+                    <td className="p-2 text-right">≥{locationVerification.expected[k]}</td>
+                    <td className={`p-2 text-right ${locationVerification.actual[k] < locationVerification.expected[k] ? "text-destructive font-semibold" : ""}`}>{locationVerification.actual[k]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!locationVerification.ok && (
+              <ul className="mt-2 text-xs text-destructive list-disc pl-5">
+                {locationVerification.missing.map((m: string, i: number) => <li key={i}>{m}</li>)}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {farmerSamples.length > 0 && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Import Summary — Farmer Samples ({farmerSamples.length})</CardTitle>
+            <CardDescription>প্রথম কয়েকজন farmer-এর নাম (EN/BN) এবং mouza_id দেখুন।</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-xs border rounded">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="p-2 text-left">Code</th>
+                  <th className="p-2 text-left">Name (EN)</th>
+                  <th className="p-2 text-left" lang="bn">Name (BN)</th>
+                  <th className="p-2 text-left">Mouza ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {farmerSamples.map((f, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="p-2 font-mono">{f.farmer_code}</td>
+                    <td className="p-2">{f.name_en}</td>
+                    <td className="p-2" lang="bn">{f.name_bn}</td>
+                    <td className="p-2 font-mono text-[10px]">{f.mouza_id?.slice(0, 8) ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
         <Card>
           <CardHeader>
             <CardTitle>Per-Farmer Seed Log ({seedLog.length})</CardTitle>
