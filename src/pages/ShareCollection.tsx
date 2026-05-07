@@ -86,6 +86,8 @@ export default function ShareCollection() {
     const err = validate(amt);
     if (err) return toast.error(err);
     if (!form.farmer_id) return toast.error(t("pgShareSelectFarmer" as any));
+    const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
+    if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? "এই ফার্মার"} এর Voter / Savings A/C এনাবল নেই — শেয়ার সংগ্রহ করা যাবে না।`);
 
     const { error } = await supabase.from("savings_transactions").insert({
       farmer_id: form.farmer_id,
