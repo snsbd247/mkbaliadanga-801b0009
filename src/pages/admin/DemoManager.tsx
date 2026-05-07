@@ -47,8 +47,8 @@ export default function DemoManager() {
 
   // voter config
   const [voterRatio, setVoterRatio] = useState(3);
-  const [voterNumberFormat, setVoterNumberFormat] = useState("V-{seq:5}");
-  const [accountNumberFormat, setAccountNumberFormat] = useState("SAV-{seq:6}");
+  const [voterNumberFormat, setVoterNumberFormat] = useState("{seq:12}");
+  const [accountNumberFormat, setAccountNumberFormat] = useState("{seq:12}");
 
   // progress
   const [progress, setProgress] = useState(0);
