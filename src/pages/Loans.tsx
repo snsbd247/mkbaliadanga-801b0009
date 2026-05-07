@@ -64,6 +64,8 @@ export default function Loans() {
   async function save() {
     if (!form.farmer_id || form.principal <= 0) return toast.error(t("pickFarmerAndAmount"));
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
+    const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
+    if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? "এই ফার্মার"} এর Voter / Savings A/C এনাবল নেই — ঋণ এন্ট্রি করা যাবে না।`);
     const plan = plans.find((p: any) => p.id === form.plan_id);
     const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
     const total_payable = form.principal * (1 + interest_rate / 100);

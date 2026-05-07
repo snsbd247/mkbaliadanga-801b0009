@@ -186,11 +186,13 @@ export default function Savings() {
 
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
+    // Voter guard: farmer must be is_voter=true to record savings/share txns
+    const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
+    if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? "এই ফার্মার"} এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।`);
     const isWithdraw = form.type === "withdraw";
     const isShare = form.type === "share_deposit" || form.type === "share_collection";
     const isDepositKind = !isWithdraw;
 
-    // Min amount validation
     if (isShare && form.amount < 50) return toast.error(t("minShareDeposit"));
     if (!isShare && !isWithdraw && form.amount < 10) return toast.error(t("minSavingsDeposit"));
 

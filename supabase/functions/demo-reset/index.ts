@@ -36,9 +36,28 @@ const VILLAGES = ["Baliadanga", "Dhanyakuria", "Ramnagar", "Shantipur", "Madhupu
 const FATHERS = ["Abdul Karim", "Mohammad Ali", "Rahim Uddin", "Hasan Sheikh", "Jasim Mia"];
 const MOTHERS = ["Rahima Begum", "Ayesha Khatun", "Salma Begum", "Roksana Akter", "Hosneara"];
 
-async function seedFarmers(admin: any, officeId: string, count: number) {
+type VoterCfg = {
+  voterRatio: number;            // e.g. 3 -> every 3rd farmer is a voter (1/3)
+  voterNumberFormat: string;     // tokens: {seq:N} {office} {year}
+  accountNumberFormat: string;   // tokens: {seq:N} {office} {year}
+};
+
+function formatToken(fmt: string, ctx: { seq: number; office: string; year: number }): string {
+  return fmt
+    .replace(/\{seq(?::(\d+))?\}/g, (_, n) => String(ctx.seq).padStart(Number(n || 5), "0"))
+    .replace(/\{office\}/g, ctx.office)
+    .replace(/\{year\}/g, String(ctx.year));
+}
+
+async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg) {
+  const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
+  const year = new Date().getFullYear();
+  const officeShort = officeId.slice(0, 4).toUpperCase();
+  let voterSeq = 0;
   const farmers = Array.from({ length: count }, (_, i) => {
-    const isVoter = i % 3 === 0;
+    const isVoter = i % ratio === 0;
+    if (isVoter) voterSeq++;
+    const tokenCtx = { seq: voterSeq, office: officeShort, year };
     return {
       farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
       member_no: String(i + 1).padStart(7, "0"),
@@ -52,11 +71,13 @@ async function seedFarmers(admin: any, officeId: string, count: number) {
       office_id: officeId,
       status: "active",
       is_voter: isVoter,
-      voter_number: isVoter ? `V-${String(i + 1).padStart(5, "0")}` : null,
-      account_number: isVoter ? `SAV-${String(i + 1).padStart(6, "0")}` : null,
+      voter_number: isVoter ? formatToken(cfg.voterNumberFormat, tokenCtx) : null,
+      account_number: isVoter ? formatToken(cfg.accountNumberFormat, tokenCtx) : null,
     };
   });
-  const { data, error } = await admin.from("farmers").insert(farmers).select("id, is_voter");
+  const { data, error } = await admin.from("farmers")
+    .insert(farmers)
+    .select("id, farmer_code, is_voter, voter_number, account_number");
   if (error) throw new Error(`farmers: ${error.message}`);
   return data ?? [];
 }
@@ -105,15 +126,18 @@ async function seedIrrigation(admin: any, officeId: string, farmers: any[]) {
 
 async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   const voters = farmers.filter((f: any) => f.is_voter);
+  const seeded: string[] = [];
   const { data: plan } = await admin.from("loan_plans").insert({
     name: "Standard 12mo", name_bn: "১২ মাসের সাধারণ", office_id: officeId,
     duration_months: 12, interest_rate: 12, installment_type: "monthly",
     penalty_type: "percentage", penalty_value: 2, grace_period_days: 7, is_active: true,
   }).select("id").single();
   const planId = plan?.id ?? null;
-  const loanRows = voters.slice(0, Math.ceil(voters.length * 0.4)).map((f, i) => {
+  const targets = voters.slice(0, Math.ceil(voters.length * 0.4));
+  const loanRows = targets.map((f, i) => {
     const principal = 10000 + (i % 5) * 5000;
     const totalPay = principal * 1.12;
+    seeded.push(f.id);
     return {
       farmer_id: f.id, principal, interest_rate: 12, total_payable: totalPay, total_due: totalPay,
       installment_amount: totalPay / 12, plan_id: planId,
@@ -127,29 +151,35 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
     }));
     if (pays.length) await admin.from("loan_payments").insert(pays);
   }
+  return seeded;
 }
 
 async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   const voters = farmers.filter((f: any) => f.is_voter);
+  const savingsSeeded: string[] = [];
+  const sharesSeeded: string[] = [];
   await admin.from("savings_plans").insert({
     name: "DPS 24", name_bn: "ডিপিএস ২৪", office_id: officeId,
     duration_months: 24, installment_type: "monthly", installment_amount: 500,
     interest_rate: 6, maturity_type: "simple", is_active: true,
   });
-  const txns = voters.slice(0, Math.ceil(voters.length * 0.6)).flatMap((f, i) => [
-    { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId },
-    ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId }] : []),
-    // Share collection transactions so the Share Details tab has rows
-    ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection" }] : []),
-  ]);
+  const targets = voters.slice(0, Math.ceil(voters.length * 0.6));
+  const txns = targets.flatMap((f, i) => {
+    savingsSeeded.push(f.id);
+    return [
+      { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId },
+      ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId }] : []),
+      ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection" }] : []),
+    ];
+  });
   if (txns.length) {
     const { error } = await admin.from("savings_transactions").insert(txns);
     if (error) throw new Error(`savings_transactions: ${error.message}`);
   }
-  const shareRows = voters.slice(0, Math.ceil(voters.length * 0.5)).map((f) => ({
-    farmer_id: f.id, balance: 500, office_id: officeId,
-  }));
+  const shareTargets = voters.slice(0, Math.ceil(voters.length * 0.5));
+  const shareRows = shareTargets.map((f) => { sharesSeeded.push(f.id); return { farmer_id: f.id, balance: 500, office_id: officeId }; });
   if (shareRows.length) await admin.from("shares").insert(shareRows);
+  return { savingsSeeded, sharesSeeded };
 }
 
 async function seedPayments(admin: any, officeId: string, farmers: any[]) {
@@ -160,10 +190,8 @@ async function seedPayments(admin: any, officeId: string, farmers: any[]) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const rows = voters.flatMap((f, i) => {
     const out: any[] = [];
-    // today's collections
     if (i % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: today });
     if (i % 5 === 0) out.push({ farmer_id: f.id, kind: "loan", amount: 1000, status: "approved", office_id: officeId, created_at: today });
-    // earlier in month
     if (i % 2 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 800, status: "approved", office_id: officeId, created_at: earlierMonth });
     if (i % 4 === 0) out.push({ farmer_id: f.id, kind: "savings", amount: 500, status: "approved", office_id: officeId, created_at: yesterday });
     return out;
@@ -172,6 +200,26 @@ async function seedPayments(admin: any, officeId: string, farmers: any[]) {
     const { error } = await admin.from("payments").insert(rows);
     if (error) throw new Error(`payments: ${error.message}`);
   }
+}
+
+// After import, verify integrity: every farmer with savings/loans/shares MUST have is_voter=true,
+// and every voter MUST have voter_number + account_number.
+async function verifyVoterIntegrity(admin: any): Promise<{ ok: boolean; issues: string[] }> {
+  const issues: string[] = [];
+  const { data: badSav } = await admin.from("savings_transactions")
+    .select("farmer_id, farmers!inner(farmer_code, is_voter)").eq("farmers.is_voter", false).limit(10);
+  if (badSav?.length) issues.push(`${badSav.length}+ savings_transactions for non-voter farmers`);
+  const { data: badLoan } = await admin.from("loans")
+    .select("farmer_id, farmers!inner(farmer_code, is_voter)").eq("farmers.is_voter", false).limit(10);
+  if (badLoan?.length) issues.push(`${badLoan.length}+ loans for non-voter farmers`);
+  const { data: badShare } = await admin.from("shares")
+    .select("farmer_id, farmers!inner(farmer_code, is_voter)").eq("farmers.is_voter", false).limit(10);
+  if (badShare?.length) issues.push(`${badShare.length}+ shares for non-voter farmers`);
+  const { data: missingNo } = await admin.from("farmers")
+    .select("farmer_code, voter_number, account_number").eq("is_voter", true)
+    .or("voter_number.is.null,account_number.is.null").limit(10);
+  if (missingNo?.length) issues.push(`${missingNo.length}+ voter farmers missing voter_number/account_number`);
+  return { ok: issues.length === 0, issues };
 }
 
 async function seedExpenses(admin: any, officeId: string) {
@@ -262,18 +310,17 @@ async function previewWipe(admin: any) {
 }
 
 // ---- Streaming runner ----
-async function runStream(admin: any, action: string, modules: string[], size: number,
+async function runStream(admin: any, action: string, modules: string[], size: number, voterCfg: VoterCfg,
   ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null }) {
 
   const encoder = new TextEncoder();
-  const summary: any = { action, modules };
+  const summary: any = { action, modules, voterCfg };
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: any) => controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
 
       try {
-        // Build step list
         const steps: { key: string; label: string; fn: () => Promise<void> }[] = [];
 
         if (action === "reset" || action === "both") {
@@ -293,38 +340,54 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
         let officeId = "11111111-1111-1111-1111-111111111111";
         let mouzaId: string | null = null;
         let farmers: any[] = [];
+        const loanFarmerIds = new Set<string>();
+        const savingsFarmerIds = new Set<string>();
+        const sharesFarmerIds = new Set<string>();
 
         if (action === "import" || action === "both") {
           steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
           steps.push({ key: "locations", label: "লোকেশন seed", fn: async () => { mouzaId = await seedLocations(admin); } });
           if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
-          // Always seed chart-of-accounts before any module that posts ledger entries,
-          // otherwise triggers fail with "null value in column account_id ... violates not-null".
           const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
             modules.includes("savings") || modules.includes("irrigation") ||
             modules.includes("expenses") || modules.includes("farmers");
           if (needsAccounts) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
           if (modules.includes("farmers")) {
-            steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি`, fn: async () => {
-              farmers = await seedFarmers(admin, officeId, size); summary.farmers = farmers.length;
+            steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি (ভোটার অনুপাত 1/${voterCfg.voterRatio})`, fn: async () => {
+              farmers = await seedFarmers(admin, officeId, size, voterCfg);
+              summary.farmers = farmers.length;
+              summary.voters = farmers.filter((f: any) => f.is_voter).length;
             }});
             steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers, mouzaId); }});
           }
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
           if (needFarmers && !modules.includes("farmers")) {
             steps.push({ key: "farmers:fetch", label: "বিদ্যমান ফার্মার লোড", fn: async () => {
-              const { data } = await admin.from("farmers").select("id, is_voter").limit(size);
+              const { data } = await admin.from("farmers").select("id, farmer_code, is_voter, voter_number, account_number").limit(size);
               farmers = data ?? [];
             }});
           }
           if (modules.includes("irrigation")) steps.push({ key: "irrigation", label: "সেচ চার্জ seed", fn: async () => { if (farmers.length) await seedIrrigation(admin, officeId, farmers); }});
-          if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed", fn: async () => { if (farmers.length) await seedLoans(admin, officeId, farmers); }});
-          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় seed", fn: async () => { if (farmers.length) await seedSavings(admin, officeId, farmers); }});
+          if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed (শুধু ভোটার)", fn: async () => {
+            if (!farmers.length) return;
+            const ids = await seedLoans(admin, officeId, farmers);
+            ids.forEach((x) => loanFarmerIds.add(x));
+          }});
+          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় + শেয়ার seed (শুধু ভোটার)", fn: async () => {
+            if (!farmers.length) return;
+            const out = await seedSavings(admin, officeId, farmers);
+            out.savingsSeeded.forEach((x) => savingsFarmerIds.add(x));
+            out.sharesSeeded.forEach((x) => sharesFarmerIds.add(x));
+          }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
-          // Always seed payments so today's & this-month collection cards show data
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
           }
+          steps.push({ key: "verify", label: "ভোটার ইন্টিগ্রিটি যাচাই", fn: async () => {
+            const v = await verifyVoterIntegrity(admin);
+            summary.verification = v;
+            if (!v.ok) send({ type: "warn", step: "verify", message: v.issues.join("; ") });
+          }});
         }
 
         const total = steps.length;
@@ -340,6 +403,21 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
             send({ type: "error", step: s.key, message: e?.message ?? String(e) });
             throw e;
           }
+        }
+
+        // Per-farmer seed log: every farmer with code, voter_number, account_number, and what was seeded
+        if (farmers.length) {
+          const seedLog = farmers.map((f: any) => ({
+            farmer_code: f.farmer_code,
+            is_voter: !!f.is_voter,
+            voter_number: f.voter_number ?? null,
+            account_number: f.account_number ?? null,
+            savings_seeded: savingsFarmerIds.has(f.id),
+            loans_seeded: loanFarmerIds.has(f.id),
+            shares_seeded: sharesFarmerIds.has(f.id),
+          }));
+          summary.seed_log = seedLog;
+          send({ type: "seed_log", rows: seedLog });
         }
 
         await admin.from("demo_operations_log").insert({
@@ -367,6 +445,21 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
   });
 }
 
+const AUDIT_LOG_TABLES = [
+  "audit_logs", "voter_audit_logs", "import_audit_logs",
+  "farmer_login_attempts", "farmer_rejections", "demo_operations_log",
+];
+
+async function clearAuditLogs(admin: any): Promise<Record<string, number | string>> {
+  const out: Record<string, number | string> = {};
+  for (const t of AUDIT_LOG_TABLES) {
+    const { count: before } = await admin.from(t).select("*", { count: "exact", head: true });
+    const { error } = await admin.from(t).delete().not("id", "is", null);
+    out[t] = error ? `error: ${error.message}` : (before ?? 0);
+  }
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
@@ -388,9 +481,16 @@ Deno.serve(async (req) => {
     if (!(roles ?? []).some((r: any) => r.role === "super_admin" || r.role === "developer")) return json({ error: "Forbidden — developer or super admin only" }, 403);
 
     const body = await req.json().catch(() => ({}));
-    const action: "preview" | "reset" | "import" | "both" = body?.action ?? "both";
+    const action: "preview" | "reset" | "import" | "both" | "clear_audit" = body?.action ?? "both";
     const modules: string[] = Array.isArray(body?.modules) ? body.modules : [];
     const size: number = Math.max(5, Math.min(500, Number(body?.size) || 50));
+    const voterCfg: VoterCfg = {
+      voterRatio: Math.max(2, Math.min(20, Number(body?.voterCfg?.voterRatio) || 3)),
+      voterNumberFormat: typeof body?.voterCfg?.voterNumberFormat === "string" && body.voterCfg.voterNumberFormat.trim()
+        ? body.voterCfg.voterNumberFormat.trim().slice(0, 80) : "V-{seq:5}",
+      accountNumberFormat: typeof body?.voterCfg?.accountNumberFormat === "string" && body.voterCfg.accountNumberFormat.trim()
+        ? body.voterCfg.accountNumberFormat.trim().slice(0, 80) : "SAV-{seq:6}",
+    };
 
     if (action === "preview") {
       const wipePreview = await previewWipe(admin);
@@ -398,14 +498,19 @@ Deno.serve(async (req) => {
       return json({ ok: true, action: "preview", wipe_preview: wipePreview, import_preview: importPreview });
     }
 
+    if (action === "clear_audit") {
+      if (body?.confirm !== "CLEAR") return json({ error: "Confirmation required (confirm: 'CLEAR')" }, 400);
+      const result = await clearAuditLogs(admin);
+      return json({ ok: true, action: "clear_audit", cleared: result });
+    }
+
     if (body?.confirm !== "RESET") return json({ error: "Confirmation required (confirm: 'RESET')" }, 400);
 
     const ctx = { userId: who.user.id, userEmail: who.user.email ?? null, ip, ua };
 
-    if (body?.stream) return runStream(admin, action, modules, size, ctx);
+    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx);
 
-    // Non-streaming fallback (collect events from stream)
-    const resp = await runStream(admin, action, modules, size, ctx);
+    const resp = await runStream(admin, action, modules, size, voterCfg, ctx);
     const text = await resp.text();
     return json({ ok: true, log: text.split("\n").filter(Boolean).map((l) => JSON.parse(l)) });
   } catch (e: any) {
