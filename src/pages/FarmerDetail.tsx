@@ -872,6 +872,43 @@ export default function FarmerDetail() {
             </TableBody>
           </Table></Card>
         </TabsContent>
+
+        <TabsContent value="shares">
+          <Card>
+            <div className="px-4 py-3 border-b flex flex-wrap items-center gap-3">
+              <div className="text-sm">
+                <span className="text-muted-foreground">{t("shareBalance")}: </span>
+                <span className="font-bold">{money(share?.balance ?? 0)}</span>
+              </div>
+              <Button asChild size="sm" variant="outline" className="ml-auto">
+                <Link to={`/share-collection?farmer=${id}`}><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Link>
+              </Button>
+            </div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{t("date")}</TableHead>
+                <TableHead>{t("type")}</TableHead>
+                <TableHead className="text-right">{t("amount")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("note")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {savings.filter((s: any) => s.type === "share_collection" || s.type === "share_deposit").map((s: any) => (
+                  <TableRow key={s.id}>
+                    <TableCell>{fmtDate(s.txn_date ?? s.created_at)}</TableCell>
+                    <TableCell><Badge variant="secondary">{s.type}</Badge></TableCell>
+                    <TableCell className="text-right tabular-nums font-mono">{money(s.amount)}</TableCell>
+                    <TableCell><Badge variant={s.status === "approved" ? "default" : "outline"}>{s.status}</Badge></TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{s.note ?? "-"}</TableCell>
+                  </TableRow>
+                ))}
+                {savings.filter((s: any) => s.type === "share_collection" || s.type === "share_deposit").length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Edit land dialog */}
