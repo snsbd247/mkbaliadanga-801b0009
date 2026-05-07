@@ -487,7 +487,7 @@ export default function DemoManager() {
               if (!confirm("সব audit log মুছে ফেলবেন? এটা ফেরানো যাবে না।")) return;
               setClearing(true);
               try {
-                const { data, error } = await supabase.functions.invoke("demo-reset", { body: { action: "clear_audit" } });
+                const { data, error } = await supabase.functions.invoke("demo-reset", { body: { action: "clear_audit", confirm: "CLEAR" } });
                 if (error) throw error;
                 if ((data as any)?.error) throw new Error((data as any).error);
                 toast.success("Audit logs cleared");
