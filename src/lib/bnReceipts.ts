@@ -28,6 +28,8 @@ export interface ReceiptOptions {
   orgLayout?: "one-line" | "two-line";
   /** Company block font scale. */
   orgSize?: "sm" | "md" | "lg";
+  /** When true, also print the verify URL (with token) as text under the QR. */
+  showVerifyUrl?: boolean;
 }
 
 export interface BnReceiptData {
@@ -170,7 +172,7 @@ function orgBlock(
   return `<div style="text-align:center;font-size:${fontPx}px;color:#333;margin-top:2px;">${lines}</div>`;
 }
 
-function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null): string {
+function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean): string {
   const t = STR[lang];
   const logo = d.logo_url
     ? `<img src="${d.logo_url}" crossorigin="anonymous" style="height:60px;display:block;margin:0 auto 4px;" />`
@@ -245,6 +247,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       <div style="text-align:center;">
         <img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin:0 auto;" />
         <div style="font-size:9px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>
+        ${showVerifyUrl && d.verify_url ? `<div style="font-size:8px;color:#444;margin-top:1px;word-break:break-all;max-width:160px;font-family:monospace;">${d.verify_url}</div>` : ""}
       </div>` : ""}
       <div style="text-align:right;">
         <div>${t.collectorSig}</div>
@@ -256,11 +259,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   </div>`;
 }
 
-function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null): HTMLDivElement {
+function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
-  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl);
-  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl);
+  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl);
+  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl);
   if (copy === "farmer") wrap.innerHTML = farmerCopy;
   else if (copy === "office") wrap.innerHTML = officeCopy;
   else wrap.innerHTML = `${farmerCopy}<div style="border-top:1px dashed #111;margin:8px 22px;"></div>${officeCopy}`;
@@ -280,6 +283,7 @@ function resolveOpts(o?: ReceiptOptions) {
     margins: { t: o?.margins?.t ?? 10, r: o?.margins?.r ?? 10, b: o?.margins?.b ?? 10, l: o?.margins?.l ?? 10 },
     orgLayout: (o?.orgLayout ?? "two-line") as "one-line" | "two-line",
     orgSize: (o?.orgSize ?? "sm") as "sm" | "md" | "lg",
+    showVerifyUrl: !!o?.showVerifyUrl,
   };
 }
 
@@ -289,7 +293,7 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   if (data.verify_url) {
     try { qrDataUrl = await QRCode.toDataURL(data.verify_url, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
-  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl);
+  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl);
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });

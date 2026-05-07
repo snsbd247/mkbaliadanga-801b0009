@@ -536,6 +536,7 @@ export default function FarmerDetail() {
         description={`${farmer.member_no ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <ReceiptSettingsButton />
+          <Button variant="outline" onClick={() => nav(`/farmers?edit=${farmer.id}`)}><Pencil className="h-4 w-4 mr-1" />{t("edit")}</Button>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />{t("pgPrintCard")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
