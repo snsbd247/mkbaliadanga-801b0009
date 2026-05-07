@@ -297,6 +297,10 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed", fn: async () => { if (farmers.length) await seedLoans(admin, officeId, farmers); }});
           if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় seed", fn: async () => { if (farmers.length) await seedSavings(admin, officeId, farmers); }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
+          // Always seed payments so today's & this-month collection cards show data
+          if (modules.includes("farmers") || needFarmers) {
+            steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
+          }
         }
 
         const total = steps.length;
