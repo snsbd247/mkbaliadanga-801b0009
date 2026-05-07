@@ -26,7 +26,9 @@ export default function Dashboard() {
   const [topDues, setTopDues] = useState<any[]>([]);
   const [composition, setComposition] = useState<any[]>([]);
 
-  useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, []);
+  const [votersOnly, setVotersOnly] = useState(false);
+
+  useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, [votersOnly]);
 
   useEffect(() => {
     if (!officeId) { setOfficeName(""); return; }
