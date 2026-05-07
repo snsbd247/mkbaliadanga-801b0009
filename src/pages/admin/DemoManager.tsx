@@ -55,6 +55,10 @@ export default function DemoManager() {
   const [lastResult, setLastResult] = useState<any>(null);
   const [seedLog, setSeedLog] = useState<any[]>([]);
   const [verification, setVerification] = useState<{ ok: boolean; issues: string[] } | null>(null);
+  const [locationVerification, setLocationVerification] = useState<any>(null);
+  const [farmerSamples, setFarmerSamples] = useState<any[]>([]);
+  const [customNames, setCustomNames] = useState<any[] | null>(null);
+  const [csvFileName, setCsvFileName] = useState<string>("");
   const [clearing, setClearing] = useState(false);
 
   // logs + filters
