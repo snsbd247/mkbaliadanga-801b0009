@@ -8,6 +8,7 @@ const corsHeaders = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+// Wipe everything EXCEPT: profiles, user_roles, role_permissions, user_permissions, demo_operations_log, developer_update_logs
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
   "loan_payments", "loan_installments", "loans", "loan_plans",
@@ -15,16 +16,19 @@ const FULL_WIPE_ORDER = [
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
-  "receipts",
-  "sms_logs", "sms_office_settings",
+  "receipts", "receipt_settings",
+  "sms_logs", "sms_office_settings", "sms_provider_secrets", "sms_settings",
+  "qr_tokens", "qr_rotation_settings",
   "audit_logs", "voter_audit_logs", "import_audit_logs",
   "farmer_login_attempts", "farmer_rejections", "notifications",
-  "qr_tokens",
   "farmer_portal_sessions", "farmer_otps",
   "land_relations", "lands",
   "farmers",
   "seasons",
   "accounts",
+  "card_settings", "company_settings",
+  "mouzas", "upazilas", "districts", "divisions",
+  "offices",
 ];
 
 function pick<T>(arr: T[], i: number): T { return arr[i % arr.length]; }
@@ -127,13 +131,37 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   });
   const txns = farmers.slice(0, Math.ceil(farmers.length * 0.6)).flatMap((f, i) => [
     { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId },
-    ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdrawal", amount: 300, status: "approved", office_id: officeId }] : []),
+    ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId }] : []),
   ]);
-  if (txns.length) await admin.from("savings_transactions").insert(txns);
+  if (txns.length) {
+    const { error } = await admin.from("savings_transactions").insert(txns);
+    if (error) throw new Error(`savings_transactions: ${error.message}`);
+  }
   const shareRows = farmers.slice(0, Math.ceil(farmers.length * 0.5)).map((f) => ({
     farmer_id: f.id, balance: 500, office_id: officeId,
   }));
   if (shareRows.length) await admin.from("shares").insert(shareRows);
+}
+
+async function seedPayments(admin: any, officeId: string, farmers: any[]) {
+  if (!farmers.length) return;
+  const today = new Date().toISOString();
+  const yesterday = new Date(Date.now() - 86400000).toISOString();
+  const earlierMonth = new Date(Date.now() - 10 * 86400000).toISOString();
+  const rows = farmers.flatMap((f, i) => {
+    const out: any[] = [];
+    // today's collections
+    if (i % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: today });
+    if (i % 5 === 0) out.push({ farmer_id: f.id, kind: "loan", amount: 1000, status: "approved", office_id: officeId, created_at: today });
+    // earlier in month
+    if (i % 2 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 800, status: "approved", office_id: officeId, created_at: earlierMonth });
+    if (i % 4 === 0) out.push({ farmer_id: f.id, kind: "savings", amount: 500, status: "approved", office_id: officeId, created_at: yesterday });
+    return out;
+  });
+  if (rows.length) {
+    const { error } = await admin.from("payments").insert(rows);
+    if (error) throw new Error(`payments: ${error.message}`);
+  }
 }
 
 async function seedExpenses(admin: any, officeId: string) {
@@ -269,6 +297,10 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed", fn: async () => { if (farmers.length) await seedLoans(admin, officeId, farmers); }});
           if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় seed", fn: async () => { if (farmers.length) await seedSavings(admin, officeId, farmers); }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
+          // Always seed payments so today's & this-month collection cards show data
+          if (modules.includes("farmers") || needFarmers) {
+            steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
+          }
         }
 
         const total = steps.length;
