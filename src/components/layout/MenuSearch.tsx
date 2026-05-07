@@ -96,7 +96,7 @@ export function MenuSearch() {
           else if (e.key === "Enter" && matches[active]) { e.preventDefault(); go(matches[active]); }
         }}
         placeholder={`${t("searchMenu")} — M11, ${t("farmers")}…  (Ctrl+K)`}
-        className="h-9 pl-7 pr-2 text-sm"
+        className={`h-9 pl-7 pr-2 text-sm transition-shadow ${flash ? "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse" : ""}`}
         aria-label={t("searchMenu")}
       />
       {open && q && (
