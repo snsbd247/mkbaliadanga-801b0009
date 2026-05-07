@@ -83,6 +83,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       const myReq = ++reqIdRef.current;
       if (!cached) setLoading(true);
       let qy = supabase.from("farmers").select(SELECT_COLS).order("name_en").limit(20);
+      if (votersOnly) qy = qy.eq("is_voter", true);
       if (term) {
         const esc = term.replace(/[%,()]/g, " ");
         qy = qy.or(`name_en.ilike.%${esc}%,name_bn.ilike.%${esc}%,farmer_code.ilike.%${esc}%,account_number.ilike.%${esc}%,member_no.ilike.%${esc}%,mobile.ilike.%${esc}%,voter_number.ilike.%${esc}%`);
