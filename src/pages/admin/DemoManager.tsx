@@ -417,6 +417,64 @@ export default function DemoManager() {
         </Card>
       )}
 
+      {verification && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {verification.ok ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <XCircle className="h-5 w-5 text-destructive" />}
+              Voter Integrity Verification
+            </CardTitle>
+            <CardDescription>{verification.ok ? "সব ফার্মার ঠিকঠাক — non-voter দের কোনো সেভিং/লোন/শেয়ার নেই।" : `${verification.issues.length} টি সমস্যা পাওয়া গেছে`}</CardDescription>
+          </CardHeader>
+          {!verification.ok && (
+            <CardContent>
+              <ul className="text-xs text-destructive space-y-1 max-h-40 overflow-y-auto list-disc pl-5">
+                {verification.issues.map((iss, i) => <li key={i}>{iss}</li>)}
+              </ul>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
+      {seedLog.length > 0 && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Per-Farmer Seed Log ({seedLog.length})</CardTitle>
+            <CardDescription>প্রতিটি ফার্মারের voter status এবং কোন মডিউলে seed হয়েছে</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="max-h-80 overflow-auto border rounded">
+              <table className="w-full text-xs">
+                <thead className="bg-muted sticky top-0">
+                  <tr>
+                    <th className="text-left p-2">Farmer Code</th>
+                    <th className="text-left p-2">Voter</th>
+                    <th className="text-left p-2">Voter No</th>
+                    <th className="text-left p-2">Account No</th>
+                    <th className="text-center p-2">Savings</th>
+                    <th className="text-center p-2">Loans</th>
+                    <th className="text-center p-2">Shares</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {seedLog.map((r, i) => (
+                    <tr key={i} className="border-t">
+                      <td className="p-2 font-mono">{r.farmer_code}</td>
+                      <td className="p-2">{r.is_voter ? "✓" : "—"}</td>
+                      <td className="p-2 font-mono">{r.voter_number ?? "—"}</td>
+                      <td className="p-2 font-mono">{r.account_number ?? "—"}</td>
+                      <td className="p-2 text-center">{r.savings_seeded ? "✓" : "—"}</td>
+                      <td className="p-2 text-center">{r.loans_seeded ? "✓" : "—"}</td>
+                      <td className="p-2 text-center">{r.shares_seeded ? "✓" : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Audit log */}
       <Card>
         <CardHeader className="flex-row items-center justify-between">
@@ -424,9 +482,27 @@ export default function DemoManager() {
             <CardTitle className="flex items-center gap-2"><Filter className="h-4 w-4" /> {t("dmAuditTitle" as any)}</CardTitle>
             <CardDescription>{(t("dmAuditCount" as any) as string).replace("{filtered}", String(filteredLogs.length)).replace("{total}", String(logs.length))}</CardDescription>
           </div>
-          <Button variant="ghost" size="sm" onClick={loadLogs} disabled={logsLoading}>
-            <RefreshCw className={`h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="destructive" size="sm" disabled={clearing} onClick={async () => {
+              if (!confirm("সব audit log মুছে ফেলবেন? এটা ফেরানো যাবে না।")) return;
+              setClearing(true);
+              try {
+                const { data, error } = await supabase.functions.invoke("demo-reset", { body: { action: "clear_audit" } });
+                if (error) throw error;
+                if ((data as any)?.error) throw new Error((data as any).error);
+                toast.success("Audit logs cleared");
+                await loadLogs();
+              } catch (e: any) {
+                toast.error(e?.message ?? "Clear failed");
+              } finally { setClearing(false); }
+            }}>
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Clear All Audit Logs
+            </Button>
+            <Button variant="ghost" size="sm" onClick={loadLogs} disabled={logsLoading}>
+              <RefreshCw className={`h-4 w-4 ${logsLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
