@@ -19,6 +19,7 @@ export function MenuSearch() {
   const { isSuper, isDeveloper } = useAuth();
   const { can } = usePermissions();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -54,7 +55,9 @@ export function MenuSearch() {
 
   useEffect(() => { setActive(0); }, [q]);
 
-  // Ctrl/Cmd+K — focus header search (capture phase to beat other handlers)
+  // Ctrl/Cmd+K — focus header search (capture phase to beat other handlers,
+  // including modal focus traps). Stores the previously-focused element so
+  // Escape can return focus to where the user was.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") {
@@ -62,10 +65,12 @@ export function MenuSearch() {
         e.stopPropagation();
         const el = inputRef.current;
         if (el) {
+          const active = document.activeElement as HTMLElement | null;
+          if (active && active !== el) prevFocusRef.current = active;
           el.focus();
           el.select();
           setFlash(true);
-          window.setTimeout(() => setFlash(false), 600);
+          window.setTimeout(() => setFlash(false), 1200);
         }
       }
     };
@@ -85,20 +90,43 @@ export function MenuSearch() {
       <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
       <Input
         ref={inputRef}
+        id="global-menu-search"
         value={q}
         onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         onKeyDown={(e) => {
-          if (e.key === "Escape") { setQ(""); setOpen(false); inputRef.current?.blur(); }
+          if (e.key === "Escape") {
+            setQ(""); setOpen(false);
+            // Return focus to the element that had it before Ctrl+K
+            const prev = prevFocusRef.current;
+            inputRef.current?.blur();
+            if (prev && document.contains(prev)) {
+              try { prev.focus(); } catch { /* noop */ }
+            }
+            prevFocusRef.current = null;
+          }
           else if (e.key === "ArrowDown") { e.preventDefault(); setActive(a => Math.min(a + 1, matches.length - 1)); }
           else if (e.key === "ArrowUp") { e.preventDefault(); setActive(a => Math.max(a - 1, 0)); }
           else if (e.key === "Enter" && matches[active]) { e.preventDefault(); go(matches[active]); }
         }}
         placeholder={`${t("searchMenu")} — M11, ${t("farmers")}…  (Ctrl+K)`}
-        className={`h-9 pl-7 pr-2 text-sm transition-shadow ${flash ? "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse" : ""}`}
+        className={`h-9 pl-7 pr-2 text-sm transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${flash ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
         aria-label={t("searchMenu")}
+        aria-keyshortcuts="Control+K Meta+K"
+        role="searchbox"
+        autoComplete="off"
       />
+      {/* Temporary tooltip-style label shown when Ctrl/Cmd+K focuses the input */}
+      {flash && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1 z-50 rounded-md bg-foreground text-background text-[11px] px-2 py-1 shadow-md animate-in fade-in slide-in-from-top-1"
+        >
+          {t("searchMenu")}
+        </div>
+      )}
       {open && q && (
         <div className="absolute left-0 right-0 top-full mt-1 max-h-80 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md z-50">
           {matches.length === 0 ? (
