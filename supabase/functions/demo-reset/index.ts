@@ -511,10 +511,13 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
             modules.includes("expenses") || modules.includes("farmers");
           if (needsAccounts) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
           if (modules.includes("farmers")) {
-            steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি (ভোটার অনুপাত 1/${voterCfg.voterRatio})`, fn: async () => {
-              farmers = await seedFarmers(admin, officeId, size, voterCfg, locs);
+            steps.push({ key: "farmers", label: `${customNames?.length ? customNames.length : size} জন ফার্মার তৈরি (ভোটার অনুপাত 1/${voterCfg.voterRatio})${customNames?.length ? " — CSV থেকে" : ""}`, fn: async () => {
+              farmers = await seedFarmers(admin, officeId, size, voterCfg, locs, customNames);
               summary.farmers = farmers.length;
               summary.voters = farmers.filter((f: any) => f.is_voter).length;
+              summary.farmer_samples = farmers.slice(0, 10).map((f: any) => ({
+                farmer_code: f.farmer_code, name_en: f.name_en, name_bn: f.name_bn, mouza_id: f.mouza_id,
+              }));
             }});
             steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers); }});
           }
