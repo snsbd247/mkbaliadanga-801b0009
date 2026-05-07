@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
@@ -63,6 +64,8 @@ export interface BnReceiptData {
   collected_amount: number;
   collector_signature_url?: string | null;
   office_collector_signature_url?: string | null;
+  /** Public URL for QR-based receipt verification */
+  verify_url?: string | null;
 }
 
 const fmt2 = (n: number) =>
