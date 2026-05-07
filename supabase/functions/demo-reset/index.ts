@@ -36,9 +36,28 @@ const VILLAGES = ["Baliadanga", "Dhanyakuria", "Ramnagar", "Shantipur", "Madhupu
 const FATHERS = ["Abdul Karim", "Mohammad Ali", "Rahim Uddin", "Hasan Sheikh", "Jasim Mia"];
 const MOTHERS = ["Rahima Begum", "Ayesha Khatun", "Salma Begum", "Roksana Akter", "Hosneara"];
 
-async function seedFarmers(admin: any, officeId: string, count: number) {
+type VoterCfg = {
+  voterRatio: number;            // e.g. 3 -> every 3rd farmer is a voter (1/3)
+  voterNumberFormat: string;     // tokens: {seq:N} {office} {year}
+  accountNumberFormat: string;   // tokens: {seq:N} {office} {year}
+};
+
+function formatToken(fmt: string, ctx: { seq: number; office: string; year: number }): string {
+  return fmt
+    .replace(/\{seq(?::(\d+))?\}/g, (_, n) => String(ctx.seq).padStart(Number(n || 5), "0"))
+    .replace(/\{office\}/g, ctx.office)
+    .replace(/\{year\}/g, String(ctx.year));
+}
+
+async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg) {
+  const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
+  const year = new Date().getFullYear();
+  const officeShort = officeId.slice(0, 4).toUpperCase();
+  let voterSeq = 0;
   const farmers = Array.from({ length: count }, (_, i) => {
-    const isVoter = i % 3 === 0;
+    const isVoter = i % ratio === 0;
+    if (isVoter) voterSeq++;
+    const tokenCtx = { seq: voterSeq, office: officeShort, year };
     return {
       farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
       member_no: String(i + 1).padStart(7, "0"),
@@ -52,11 +71,13 @@ async function seedFarmers(admin: any, officeId: string, count: number) {
       office_id: officeId,
       status: "active",
       is_voter: isVoter,
-      voter_number: isVoter ? `V-${String(i + 1).padStart(5, "0")}` : null,
-      account_number: isVoter ? `SAV-${String(i + 1).padStart(6, "0")}` : null,
+      voter_number: isVoter ? formatToken(cfg.voterNumberFormat, tokenCtx) : null,
+      account_number: isVoter ? formatToken(cfg.accountNumberFormat, tokenCtx) : null,
     };
   });
-  const { data, error } = await admin.from("farmers").insert(farmers).select("id, is_voter");
+  const { data, error } = await admin.from("farmers")
+    .insert(farmers)
+    .select("id, farmer_code, is_voter, voter_number, account_number");
   if (error) throw new Error(`farmers: ${error.message}`);
   return data ?? [];
 }
