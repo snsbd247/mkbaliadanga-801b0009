@@ -310,18 +310,17 @@ async function previewWipe(admin: any) {
 }
 
 // ---- Streaming runner ----
-async function runStream(admin: any, action: string, modules: string[], size: number,
+async function runStream(admin: any, action: string, modules: string[], size: number, voterCfg: VoterCfg,
   ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null }) {
 
   const encoder = new TextEncoder();
-  const summary: any = { action, modules };
+  const summary: any = { action, modules, voterCfg };
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: any) => controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
 
       try {
-        // Build step list
         const steps: { key: string; label: string; fn: () => Promise<void> }[] = [];
 
         if (action === "reset" || action === "both") {
@@ -341,38 +340,54 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
         let officeId = "11111111-1111-1111-1111-111111111111";
         let mouzaId: string | null = null;
         let farmers: any[] = [];
+        const loanFarmerIds = new Set<string>();
+        const savingsFarmerIds = new Set<string>();
+        const sharesFarmerIds = new Set<string>();
 
         if (action === "import" || action === "both") {
           steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
           steps.push({ key: "locations", label: "লোকেশন seed", fn: async () => { mouzaId = await seedLocations(admin); } });
           if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
-          // Always seed chart-of-accounts before any module that posts ledger entries,
-          // otherwise triggers fail with "null value in column account_id ... violates not-null".
           const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
             modules.includes("savings") || modules.includes("irrigation") ||
             modules.includes("expenses") || modules.includes("farmers");
           if (needsAccounts) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
           if (modules.includes("farmers")) {
-            steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি`, fn: async () => {
-              farmers = await seedFarmers(admin, officeId, size); summary.farmers = farmers.length;
+            steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি (ভোটার অনুপাত 1/${voterCfg.voterRatio})`, fn: async () => {
+              farmers = await seedFarmers(admin, officeId, size, voterCfg);
+              summary.farmers = farmers.length;
+              summary.voters = farmers.filter((f: any) => f.is_voter).length;
             }});
             steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers, mouzaId); }});
           }
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
           if (needFarmers && !modules.includes("farmers")) {
             steps.push({ key: "farmers:fetch", label: "বিদ্যমান ফার্মার লোড", fn: async () => {
-              const { data } = await admin.from("farmers").select("id, is_voter").limit(size);
+              const { data } = await admin.from("farmers").select("id, farmer_code, is_voter, voter_number, account_number").limit(size);
               farmers = data ?? [];
             }});
           }
           if (modules.includes("irrigation")) steps.push({ key: "irrigation", label: "সেচ চার্জ seed", fn: async () => { if (farmers.length) await seedIrrigation(admin, officeId, farmers); }});
-          if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed", fn: async () => { if (farmers.length) await seedLoans(admin, officeId, farmers); }});
-          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় seed", fn: async () => { if (farmers.length) await seedSavings(admin, officeId, farmers); }});
+          if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed (শুধু ভোটার)", fn: async () => {
+            if (!farmers.length) return;
+            const ids = await seedLoans(admin, officeId, farmers);
+            ids.forEach((x) => loanFarmerIds.add(x));
+          }});
+          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় + শেয়ার seed (শুধু ভোটার)", fn: async () => {
+            if (!farmers.length) return;
+            const out = await seedSavings(admin, officeId, farmers);
+            out.savingsSeeded.forEach((x) => savingsFarmerIds.add(x));
+            out.sharesSeeded.forEach((x) => sharesFarmerIds.add(x));
+          }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
-          // Always seed payments so today's & this-month collection cards show data
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
           }
+          steps.push({ key: "verify", label: "ভোটার ইন্টিগ্রিটি যাচাই", fn: async () => {
+            const v = await verifyVoterIntegrity(admin);
+            summary.verification = v;
+            if (!v.ok) send({ type: "warn", step: "verify", message: v.issues.join("; ") });
+          }});
         }
 
         const total = steps.length;
@@ -388,6 +403,21 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
             send({ type: "error", step: s.key, message: e?.message ?? String(e) });
             throw e;
           }
+        }
+
+        // Per-farmer seed log: every farmer with code, voter_number, account_number, and what was seeded
+        if (farmers.length) {
+          const seedLog = farmers.map((f: any) => ({
+            farmer_code: f.farmer_code,
+            is_voter: !!f.is_voter,
+            voter_number: f.voter_number ?? null,
+            account_number: f.account_number ?? null,
+            savings_seeded: savingsFarmerIds.has(f.id),
+            loans_seeded: loanFarmerIds.has(f.id),
+            shares_seeded: sharesFarmerIds.has(f.id),
+          }));
+          summary.seed_log = seedLog;
+          send({ type: "seed_log", rows: seedLog });
         }
 
         await admin.from("demo_operations_log").insert({
@@ -413,6 +443,21 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
   return new Response(stream, {
     headers: { ...corsHeaders, "Content-Type": "application/x-ndjson", "Cache-Control": "no-cache" },
   });
+}
+
+const AUDIT_LOG_TABLES = [
+  "audit_logs", "voter_audit_logs", "import_audit_logs",
+  "farmer_login_attempts", "farmer_rejections", "demo_operations_log",
+];
+
+async function clearAuditLogs(admin: any): Promise<Record<string, number | string>> {
+  const out: Record<string, number | string> = {};
+  for (const t of AUDIT_LOG_TABLES) {
+    const { count: before } = await admin.from(t).select("*", { count: "exact", head: true });
+    const { error } = await admin.from(t).delete().not("id", "is", null);
+    out[t] = error ? `error: ${error.message}` : (before ?? 0);
+  }
+  return out;
 }
 
 Deno.serve(async (req) => {
