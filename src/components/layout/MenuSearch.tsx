@@ -54,17 +54,23 @@ export function MenuSearch() {
 
   useEffect(() => { setActive(0); }, [q]);
 
-  // Ctrl/Cmd+K
+  // Ctrl/Cmd+K — focus header search (capture phase to beat other handlers)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        inputRef.current?.focus();
-        inputRef.current?.select();
+        e.stopPropagation();
+        const el = inputRef.current;
+        if (el) {
+          el.focus();
+          el.select();
+          setFlash(true);
+          window.setTimeout(() => setFlash(false), 600);
+        }
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 
   const go = (s: MenuShortcut) => {
