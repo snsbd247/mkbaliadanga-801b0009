@@ -22,6 +22,7 @@ export function MenuSearch() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [flash, setFlash] = useState(false);
 
   const allowed = (s: MenuShortcut) => {
     if (s.developerOnly) return isDeveloper;
@@ -53,17 +54,23 @@ export function MenuSearch() {
 
   useEffect(() => { setActive(0); }, [q]);
 
-  // Ctrl/Cmd+K
+  // Ctrl/Cmd+K — focus header search (capture phase to beat other handlers)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        inputRef.current?.focus();
-        inputRef.current?.select();
+        e.stopPropagation();
+        const el = inputRef.current;
+        if (el) {
+          el.focus();
+          el.select();
+          setFlash(true);
+          window.setTimeout(() => setFlash(false), 600);
+        }
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 
   const go = (s: MenuShortcut) => {
@@ -89,7 +96,7 @@ export function MenuSearch() {
           else if (e.key === "Enter" && matches[active]) { e.preventDefault(); go(matches[active]); }
         }}
         placeholder={`${t("searchMenu")} — M11, ${t("farmers")}…  (Ctrl+K)`}
-        className="h-9 pl-7 pr-2 text-sm"
+        className={`h-9 pl-7 pr-2 text-sm transition-shadow ${flash ? "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse" : ""}`}
         aria-label={t("searchMenu")}
       />
       {open && q && (
