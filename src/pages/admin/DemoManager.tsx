@@ -43,11 +43,19 @@ export default function DemoManager() {
   const [preview, setPreview] = useState<any>(null);
   const [confirmText, setConfirmText] = useState("");
 
+  // voter config
+  const [voterRatio, setVoterRatio] = useState(3);
+  const [voterNumberFormat, setVoterNumberFormat] = useState("V-{seq:5}");
+  const [accountNumberFormat, setAccountNumberFormat] = useState("SAV-{seq:6}");
+
   // progress
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<string>("");
   const [stepLog, setStepLog] = useState<{ label: string; status: "running" | "done" | "error"; message?: string }[]>([]);
   const [lastResult, setLastResult] = useState<any>(null);
+  const [seedLog, setSeedLog] = useState<any[]>([]);
+  const [verification, setVerification] = useState<{ ok: boolean; issues: string[] } | null>(null);
+  const [clearing, setClearing] = useState(false);
 
   // logs + filters
   const [logs, setLogs] = useState<any[]>([]);
