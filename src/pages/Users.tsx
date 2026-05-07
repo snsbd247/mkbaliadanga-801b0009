@@ -85,11 +85,15 @@ export default function Users() {
   }
 
   async function createUser() {
-    const parsed = createSchema.safeParse({ ...form, office_id: form.office_id || null });
+    // developer & super_admin are global — no office assignment required
+    const requiresOffice = !(form.role === "developer" || form.role === "super_admin");
+    const office_id = requiresOffice ? (form.office_id || null) : null;
+    const parsed = createSchema.safeParse({ ...form, office_id });
     if (!parsed.success) {
       const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
       return toast.error(first ?? t("validationFailed"));
     }
+    if (requiresOffice && !office_id) return toast.error(t("office") + " required");
     const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role, t);
     if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "create", ...parsed.data });
@@ -138,11 +142,17 @@ export default function Users() {
 
   async function openPerms(u: any) {
     setPermFor(u);
+    const role = (u.roles?.[0] as string) ?? "staff";
+    const isGlobal = role === "developer" || role === "super_admin";
     const { data } = await supabase.from("user_permissions").select("*").eq("user_id", u.id);
     const map: Record<string, any> = {};
     (data ?? []).forEach((r: any) => { map[r.module] = r; });
     ALL_MODULES.forEach((m) => {
-      if (!map[m]) map[m] = { module: m, can_view: true, can_add: false, can_edit: false, can_delete: false };
+      if (isGlobal) {
+        map[m] = { module: m, can_view: true, can_add: true, can_edit: true, can_delete: true };
+      } else if (!map[m]) {
+        map[m] = { module: m, can_view: true, can_add: false, can_edit: false, can_delete: false };
+      }
     });
     setPerms(map);
   }
@@ -198,12 +208,14 @@ export default function Users() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>{t("office")}</Label>
-                  <Select value={form.office_id} onValueChange={v => setForm({ ...form, office_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
+                {!(form.role === "developer" || form.role === "super_admin") && (
+                  <div><Label>{t("office")}</Label>
+                    <Select value={form.office_id} onValueChange={v => setForm({ ...form, office_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
@@ -231,25 +243,38 @@ export default function Users() {
                 <TableCell className="font-mono text-xs">{u.username ?? "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{u.email}</TableCell>
                 <TableCell>{u.full_name}</TableCell>
-                <TableCell>
-                  <Select value={u.roles[0] ?? "staff"} onValueChange={(v) => setRole(u.id, v as any)} disabled={u.id === me?.id}>
-                    <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
-                      {isDeveloper && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
-                      {!isDeveloper && u.roles[0] === "super_admin" && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
-                      <SelectItem value="admin">{t("admin")}</SelectItem>
-                      <SelectItem value="committee">{t("committee")}</SelectItem>
-                      <SelectItem value="staff">{t("staff")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select value={u.office_id ?? ""} onValueChange={(v) => setOffice(u.id, v)}>
-                    <SelectTrigger className="w-[200px]"><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </TableCell>
+                {(() => {
+                  const role = u.roles[0] ?? "staff";
+                  const isGlobal = role === "developer" || role === "super_admin";
+                  const lockRole = u.id === me?.id || role === "developer";
+                  return (
+                    <>
+                      <TableCell>
+                        <Select value={role} onValueChange={(v) => setRole(u.id, v as any)} disabled={lockRole}>
+                          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
+                            {isDeveloper && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
+                            {!isDeveloper && role === "super_admin" && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
+                            <SelectItem value="admin">{t("admin")}</SelectItem>
+                            <SelectItem value="committee">{t("committee")}</SelectItem>
+                            <SelectItem value="staff">{t("staff")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        {isGlobal ? (
+                          <span className="text-xs text-muted-foreground">All offices</span>
+                        ) : (
+                          <Select value={u.office_id ?? ""} onValueChange={(v) => setOffice(u.id, v)}>
+                            <SelectTrigger className="w-[200px]"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                          </Select>
+                        )}
+                      </TableCell>
+                    </>
+                  );
+                })()}
                 <TableCell className="whitespace-nowrap text-xs">{fmtDate(u.created_at)}</TableCell>
                 <TableCell className="text-right space-x-1">
                   <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
@@ -275,27 +300,40 @@ export default function Users() {
           <DialogHeader>
             <DialogTitle>{t("permissions")} — {permFor?.full_name || permFor?.email}</DialogTitle>
           </DialogHeader>
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead>{t("module")}</TableHead>
-              <TableHead className="text-center">{t("canView")}</TableHead>
-              <TableHead className="text-center">{t("canAdd")}</TableHead>
-              <TableHead className="text-center">{t("canEdit")}</TableHead>
-              <TableHead className="text-center">{t("canDelete")}</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {ALL_MODULES.map((m) => (
-                <TableRow key={m}>
-                  <TableCell className="font-medium capitalize">{m}</TableCell>
-                  {(["can_view","can_add","can_edit","can_delete"] as const).map((k) => (
-                    <TableCell key={k} className="text-center">
-                      <Checkbox checked={!!perms[m]?.[k]} onCheckedChange={() => togglePerm(m, k)} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {(() => {
+            const role = (permFor?.roles?.[0] as string) ?? "staff";
+            const isGlobal = role === "developer" || role === "super_admin";
+            return (
+              <>
+                {isGlobal && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {role === "developer" ? "Developer" : t("superAdmin")} has full access to all modules across all offices. Permissions cannot be restricted.
+                  </p>
+                )}
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>{t("module")}</TableHead>
+                    <TableHead className="text-center">{t("canView")}</TableHead>
+                    <TableHead className="text-center">{t("canAdd")}</TableHead>
+                    <TableHead className="text-center">{t("canEdit")}</TableHead>
+                    <TableHead className="text-center">{t("canDelete")}</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {ALL_MODULES.map((m) => (
+                      <TableRow key={m}>
+                        <TableCell className="font-medium capitalize">{m}</TableCell>
+                        {(["can_view","can_add","can_edit","can_delete"] as const).map((k) => (
+                          <TableCell key={k} className="text-center">
+                            <Checkbox checked={isGlobal ? true : !!perms[m]?.[k]} disabled={isGlobal} onCheckedChange={() => togglePerm(m, k)} />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </>
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPermFor(null)}>{t("cancel")}</Button>
             <Button onClick={savePerms}>{t("save")}</Button>

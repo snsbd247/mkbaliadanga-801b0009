@@ -47,8 +47,7 @@ type RowState = {
   raw: RowMap;
   // Editable copies of the location names so the user can correct in-place.
   loc: {
-    division: string; district: string; upazila: string;
-    union: string; ward: string; village: string; mouza: string;
+    division: string; district: string; upazila: string; mouza: string;
   };
   resolved: LocResolved;
   failedLevel: LocationLevel | null;
@@ -60,7 +59,7 @@ const REQUIRED = ["name_en"];
 const ALL_HEADERS = [
   "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
   "member_no", "is_voter", "status", "village", "address",
-  "division", "district", "upazila", "union", "ward", "village_loc", "mouza",
+  "division", "district", "upazila", "mouza",
 ];
 
 // Notes:
@@ -130,13 +129,37 @@ export default function FarmersImport() {
     const ws = XLSX.utils.aoa_to_sheet([
       ALL_HEADERS,
       [
-        "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000",
-        "", "false", "active", "Free-text village", "Holding/road",
-        "Dhaka", "Dhaka", "Savar", "Aminbazar", "Ward 1", "Bagbari", "Mouza A",
+        "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Salma Begum",
+        "1234567890123", "01711000000", "", "true", "active",
+        "Bagbari (free text)", "Holding 12, Road 3",
+        "Rajshahi", "Chapainawabganj", "Chapainawabganj Sadar", "Mouza A",
       ],
+      [
+        "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim Uddin", "Mst. Khaleda",
+        "9876543210987", "01811000000", "", "false", "active",
+        "", "",
+        "Rajshahi", "Chapainawabganj", "Shibganj", "Mouza B",
+      ],
+    ]);
+    // Add a notes sheet so users know which columns are required.
+    const notes = XLSX.utils.aoa_to_sheet([
+      ["Column", "Required", "Notes"],
+      ["name_en", "Yes", "Farmer name in English"],
+      ["name_bn", "No", "Farmer name in Bangla"],
+      ["father_name", "No", ""],
+      ["mother_name", "No", ""],
+      ["nid", "No", "10 / 13 / 17 digits"],
+      ["mobile", "No", "11-digit BD number, e.g. 017XXXXXXXX"],
+      ["member_no", "No", "Required only if is_voter=true"],
+      ["is_voter", "No", "true / false (default false)"],
+      ["status", "No", "active / inactive (default active)"],
+      ["village", "No", "Free-text village (legacy)"],
+      ["address", "No", "Holding / road / address"],
+      ["division / district / upazila / mouza", "No", "Must match an existing location and belong to its parent."],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Farmers");
+    XLSX.utils.book_append_sheet(wb, notes, "Instructions");
     XLSX.writeFile(wb, "farmer-import-template.xlsx");
   }
 
@@ -153,9 +176,6 @@ export default function FarmersImport() {
           division: String(raw.division ?? ""),
           district: String(raw.district ?? ""),
           upazila:  String(raw.upazila  ?? ""),
-          union:    String(raw.union    ?? ""),
-          ward:     String(raw.ward     ?? ""),
-          village:  String(raw.village_loc ?? ""),
           mouza:    String(raw.mouza    ?? ""),
         },
         resolved: {},
@@ -211,10 +231,7 @@ export default function FarmersImport() {
       { lvl: "division", table: "divisions", name: r.loc.division },
       { lvl: "district", table: "districts", name: r.loc.district, parentCol: "division_id", parentKey: "division_id" },
       { lvl: "upazila",  table: "upazilas",  name: r.loc.upazila,  parentCol: "district_id", parentKey: "district_id" },
-      { lvl: "union",    table: "unions",    name: r.loc.union,    parentCol: "upazila_id",  parentKey: "upazila_id" },
-      { lvl: "ward",     table: "wards",     name: r.loc.ward,     parentCol: "union_id",    parentKey: "union_id" },
-      { lvl: "village",  table: "villages",  name: r.loc.village,  parentCol: "ward_id",     parentKey: "ward_id" },
-      { lvl: "mouza",    table: "mouzas",    name: r.loc.mouza,    parentCol: "union_id",    parentKey: "union_id" },
+      { lvl: "mouza",    table: "mouzas",    name: r.loc.mouza,    parentCol: "upazila_id",  parentKey: "upazila_id" },
     ];
 
     for (const step of chain) {
@@ -373,7 +390,7 @@ export default function FarmersImport() {
         </div>
         <p className="text-xs text-muted-foreground mt-2">
           Required column: <code>name_en</code>. Hierarchy columns:{" "}
-          <code>division, district, upazila, union, ward, village_loc, mouza</code>.
+          <code>division, district, upazila, mouza</code>.
           Each level must belong to the parent above it.
         </p>
       </Card>
@@ -412,9 +429,6 @@ export default function FarmersImport() {
                 <TableHead>Division</TableHead>
                 <TableHead>District</TableHead>
                 <TableHead>Upazila</TableHead>
-                <TableHead>Union</TableHead>
-                <TableHead>Ward</TableHead>
-                <TableHead>Village</TableHead>
                 <TableHead>Mouza</TableHead>
                 <TableHead>Issue</TableHead>
                 <TableHead></TableHead>
@@ -447,7 +461,7 @@ export default function FarmersImport() {
                     </TableCell>
                     <TableCell className="text-xs">{String(r.raw.mobile ?? "")}</TableCell>
 
-                    {(["division","district","upazila","union","ward","village","mouza"] as LocationLevel[]).map((lvl) => (
+                    {(["division","district","upazila","mouza"] as LocationLevel[]).map((lvl) => (
                       <TableCell key={lvl} className="min-w-[140px]">
                         <Input
                           className={cellCls(lvl)}
