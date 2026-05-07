@@ -37,20 +37,25 @@ const FATHERS = ["Abdul Karim", "Mohammad Ali", "Rahim Uddin", "Hasan Sheikh", "
 const MOTHERS = ["Rahima Begum", "Ayesha Khatun", "Salma Begum", "Roksana Akter", "Hosneara"];
 
 async function seedFarmers(admin: any, officeId: string, count: number) {
-  const farmers = Array.from({ length: count }, (_, i) => ({
-    farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
-    member_no: String(i + 1).padStart(7, "0"),
-    name_en: `Demo Farmer ${i + 1}`,
-    name_bn: `ডেমো কৃষক ${i + 1}`,
-    father_name: pick(FATHERS, i),
-    mother_name: pick(MOTHERS, i),
-    mobile: `017${String(10000000 + i).padStart(8, "0")}`,
-    nid: `19900${String(1000000000 + i).padStart(10, "0")}`,
-    village: pick(VILLAGES, i),
-    office_id: officeId,
-    status: "active",
-    is_voter: i % 3 === 0,
-  }));
+  const farmers = Array.from({ length: count }, (_, i) => {
+    const isVoter = i % 3 === 0;
+    return {
+      farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
+      member_no: String(i + 1).padStart(7, "0"),
+      name_en: `Demo Farmer ${i + 1}`,
+      name_bn: `ডেমো কৃষক ${i + 1}`,
+      father_name: pick(FATHERS, i),
+      mother_name: pick(MOTHERS, i),
+      mobile: `017${String(10000000 + i).padStart(8, "0")}`,
+      nid: `19900${String(1000000000 + i).padStart(10, "0")}`,
+      village: pick(VILLAGES, i),
+      office_id: officeId,
+      status: "active",
+      is_voter: isVoter,
+      voter_number: isVoter ? `V-${String(i + 1).padStart(5, "0")}` : null,
+      account_number: isVoter ? `SAV-${String(i + 1).padStart(6, "0")}` : null,
+    };
+  });
   const { data, error } = await admin.from("farmers").insert(farmers).select("id, is_voter");
   if (error) throw new Error(`farmers: ${error.message}`);
   return data ?? [];
