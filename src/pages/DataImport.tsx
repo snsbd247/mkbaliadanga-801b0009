@@ -93,13 +93,25 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
 };
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
+  const isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error);
     reader.onload = () => {
       try {
-        const wb = XLSX.read(reader.result as ArrayBuffer, { type: "array" });
-        resolve(wb);
+        if (isCsv) {
+          const buf = reader.result as ArrayBuffer;
+          let text: string;
+          try {
+            text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
+          } catch {
+            text = new TextDecoder("windows-1252").decode(buf);
+          }
+          if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+          resolve(XLSX.read(text, { type: "string", raw: true }));
+        } else {
+          resolve(XLSX.read(reader.result as ArrayBuffer, { type: "array" }));
+        }
       } catch (e) { reject(e); }
     };
     reader.readAsArrayBuffer(file);
