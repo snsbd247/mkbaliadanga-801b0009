@@ -32,9 +32,98 @@ const FULL_WIPE_ORDER = [
 ];
 
 function pick<T>(arr: T[], i: number): T { return arr[i % arr.length]; }
-const VILLAGES = ["Baliadanga", "Dhanyakuria", "Ramnagar", "Shantipur", "Madhupur"];
-const FATHERS = ["Abdul Karim", "Mohammad Ali", "Rahim Uddin", "Hasan Sheikh", "Jasim Mia"];
-const MOTHERS = ["Rahima Begum", "Ayesha Khatun", "Salma Begum", "Roksana Akter", "Hosneara"];
+const VILLAGES = ["Baliadanga", "Dhanyakuria", "Ramnagar", "Shantipur", "Madhupur", "Kismatpur", "Char Bhabanipur", "Uttar Para", "Dakshin Para", "Naya Bazar"];
+
+// Realistic Bangladeshi names (English + Bangla pairs)
+const MALE_NAMES: { en: string; bn: string }[] = [
+  { en: "Md. Abdur Rahman", bn: "মোঃ আব্দুর রহমান" },
+  { en: "Md. Karim Uddin", bn: "মোঃ করিম উদ্দিন" },
+  { en: "Mohammad Ali Hossain", bn: "মোহাম্মদ আলী হোসেন" },
+  { en: "Md. Jashim Uddin", bn: "মোঃ জসিম উদ্দিন" },
+  { en: "Md. Shahidul Islam", bn: "মোঃ শহিদুল ইসলাম" },
+  { en: "Md. Nurul Hoque", bn: "মোঃ নুরুল হক" },
+  { en: "Abdul Mannan", bn: "আব্দুল মান্নান" },
+  { en: "Md. Faruk Hossain", bn: "মোঃ ফারুক হোসেন" },
+  { en: "Md. Anwar Hossain", bn: "মোঃ আনোয়ার হোসেন" },
+  { en: "Md. Liton Mia", bn: "মোঃ লিটন মিয়া" },
+  { en: "Md. Kamal Hossain", bn: "মোঃ কামাল হোসেন" },
+  { en: "Md. Rafiqul Islam", bn: "মোঃ রফিকুল ইসলাম" },
+  { en: "Md. Saiful Islam", bn: "মোঃ সাইফুল ইসলাম" },
+  { en: "Md. Bablu Mia", bn: "মোঃ বাবলু মিয়া" },
+  { en: "Md. Sohel Rana", bn: "মোঃ সোহেল রানা" },
+  { en: "Md. Habibur Rahman", bn: "মোঃ হাবিবুর রহমান" },
+  { en: "Md. Mizanur Rahman", bn: "মোঃ মিজানুর রহমান" },
+  { en: "Md. Ashraful Alam", bn: "মোঃ আশরাফুল আলম" },
+  { en: "Md. Tofazzal Hossain", bn: "মোঃ তোফাজ্জল হোসেন" },
+  { en: "Md. Mokbul Hossain", bn: "মোঃ মকবুল হোসেন" },
+  { en: "Md. Jamal Uddin", bn: "মোঃ জামাল উদ্দিন" },
+  { en: "Md. Selim Reza", bn: "মোঃ সেলিম রেজা" },
+  { en: "Md. Rokon Mia", bn: "মোঃ রকন মিয়া" },
+  { en: "Md. Kabir Hossain", bn: "মোঃ কবির হোসেন" },
+  { en: "Md. Belal Hossain", bn: "মোঃ বেলাল হোসেন" },
+  { en: "Md. Monir Hossain", bn: "মোঃ মনির হোসেন" },
+  { en: "Md. Ruhul Amin", bn: "মোঃ রুহুল আমিন" },
+  { en: "Md. Aminul Islam", bn: "মোঃ আমিনুল ইসলাম" },
+  { en: "Md. Nazrul Islam", bn: "মোঃ নজরুল ইসলাম" },
+  { en: "Md. Mosharraf Hossain", bn: "মোঃ মোশাররফ হোসেন" },
+];
+const FEMALE_NAMES: { en: string; bn: string }[] = [
+  { en: "Mst. Rahima Khatun", bn: "মোসাঃ রহিমা খাতুন" },
+  { en: "Mst. Ayesha Begum", bn: "মোসাঃ আয়েশা বেগম" },
+  { en: "Mst. Salma Akter", bn: "মোসাঃ সালমা আক্তার" },
+  { en: "Mst. Roksana Begum", bn: "মোসাঃ রোকসানা বেগম" },
+  { en: "Mst. Hosneara Begum", bn: "মোসাঃ হোসনেয়ারা বেগম" },
+  { en: "Mst. Shahanaz Parvin", bn: "মোসাঃ শাহানাজ পারভিন" },
+  { en: "Mst. Rabeya Khatun", bn: "মোসাঃ রাবেয়া খাতুন" },
+  { en: "Mst. Jorina Begum", bn: "মোসাঃ জরিনা বেগম" },
+  { en: "Mst. Nasima Akter", bn: "মোসাঃ নাসিমা আক্তার" },
+  { en: "Mst. Mariam Begum", bn: "মোসাঃ মরিয়ম বেগম" },
+];
+const FATHERS = MALE_NAMES;
+const MOTHERS = FEMALE_NAMES;
+
+// Real Bangladesh location data (sub-set, Rangpur division)
+const LOCATION_TREE = {
+  division: { name: "Rangpur", name_bn: "রংপুর", code: "RAN" },
+  districts: [
+    { name: "Rangpur", name_bn: "রংপুর", code: "RAN-D",
+      upazilas: [
+        { name: "Pirgachha", name_bn: "পীরগাছা", mouzas: [
+          { name: "Baliadanga", name_bn: "বালিয়াডাঙ্গা" },
+          { name: "Kandi", name_bn: "কান্দি" },
+          { name: "Annadanagar", name_bn: "অন্নদানগর" },
+        ]},
+        { name: "Mithapukur", name_bn: "মিঠাপুকুর", mouzas: [
+          { name: "Balua Masimpur", name_bn: "বালুয়া মাসিমপুর" },
+          { name: "Payrabondh", name_bn: "পায়রাবন্দ" },
+        ]},
+        { name: "Badarganj", name_bn: "বদরগঞ্জ", mouzas: [
+          { name: "Damodarpur", name_bn: "দামোদরপুর" },
+          { name: "Lohanipara", name_bn: "লোহানীপাড়া" },
+        ]},
+      ]},
+    { name: "Gaibandha", name_bn: "গাইবান্ধা", code: "GAI-D",
+      upazilas: [
+        { name: "Sundarganj", name_bn: "সুন্দরগঞ্জ", mouzas: [
+          { name: "Belka", name_bn: "বেলকা" },
+          { name: "Tarapur", name_bn: "তারাপুর" },
+        ]},
+        { name: "Palashbari", name_bn: "পলাশবাড়ী", mouzas: [
+          { name: "Kishoreganj", name_bn: "কিশোরগঞ্জ" },
+          { name: "Hosenpur", name_bn: "হোসেনপুর" },
+        ]},
+      ]},
+    { name: "Kurigram", name_bn: "কুড়িগ্রাম", code: "KUR-D",
+      upazilas: [
+        { name: "Ulipur", name_bn: "উলিপুর", mouzas: [
+          { name: "Tetultala", name_bn: "তেতুলতলা" },
+          { name: "Buraburi", name_bn: "বুড়াবুড়ী" },
+        ]},
+      ]},
+  ],
+} as const;
+
+type LocPick = { division_id: string; district_id: string; upazila_id: string; mouza_id: string; mouza_name: string };
 
 type VoterCfg = {
   voterRatio: number;            // e.g. 3 -> every 3rd farmer is a voter (1/3)
@@ -49,7 +138,7 @@ function formatToken(fmt: string, ctx: { seq: number; office: string; year: numb
     .replace(/\{year\}/g, String(ctx.year));
 }
 
-async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg) {
+async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[]) {
   const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
   const year = new Date().getFullYear();
   const officeShort = officeId.slice(0, 4).toUpperCase();
@@ -58,36 +147,44 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
     const isVoter = i % ratio === 0;
     if (isVoter) voterSeq++;
     const tokenCtx = { seq: voterSeq, office: officeShort, year };
+    const isFemale = i % 7 === 0;
+    const name = isFemale ? pick(FEMALE_NAMES, i) : pick(MALE_NAMES, i);
+    const father = pick(FATHERS, i + 3);
+    const mother = pick(MOTHERS, i + 5);
+    const loc = locs.length ? locs[i % locs.length] : null;
     return {
       farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
       member_no: String(i + 1).padStart(7, "0"),
-      name_en: `Demo Farmer ${i + 1}`,
-      name_bn: `ডেমো কৃষক ${i + 1}`,
-      father_name: pick(FATHERS, i),
-      mother_name: pick(MOTHERS, i),
+      name_en: name.en,
+      name_bn: name.bn,
+      father_name: father.en,
+      mother_name: mother.en,
       mobile: `017${String(10000000 + i).padStart(8, "0")}`,
       nid: `19900${String(1000000000 + i).padStart(10, "0")}`,
-      village: pick(VILLAGES, i),
+      village: loc?.mouza_name ?? pick(VILLAGES, i),
       office_id: officeId,
       status: "active",
       is_voter: isVoter,
       voter_number: isVoter ? formatToken(cfg.voterNumberFormat, tokenCtx) : null,
       account_number: isVoter ? formatToken(cfg.accountNumberFormat, tokenCtx) : null,
+      division_id: loc?.division_id ?? null,
+      district_id: loc?.district_id ?? null,
+      upazila_id: loc?.upazila_id ?? null,
+      mouza_id: loc?.mouza_id ?? null,
     };
   });
   const { data, error } = await admin.from("farmers")
     .insert(farmers)
-    .select("id, farmer_code, is_voter, voter_number, account_number");
+    .select("id, farmer_code, is_voter, voter_number, account_number, mouza_id");
   if (error) throw new Error(`farmers: ${error.message}`);
   return data ?? [];
 }
 
-async function seedLands(admin: any, officeId: string, farmers: any[], mouzaId: string | null) {
+async function seedLands(admin: any, officeId: string, farmers: any[]) {
   const lands = farmers.map((f, i) => ({
     farmer_id: f.id,
     land_size: 0.25 + (i % 8) * 0.25,
-    mouza: "Baliadanga",
-    mouza_id: mouzaId,
+    mouza_id: f.mouza_id ?? null,
     dag_no: `D${100 + i}`,
     field_type: i % 3 === 0 ? "high_land" : i % 3 === 1 ? "medium_land" : "low_land",
     owner_type: "owner",
@@ -261,23 +358,36 @@ async function seedSettings(admin: any) {
   await admin.from("card_settings").upsert({ id: 1 });
 }
 
-async function seedLocations(admin: any) {
-  const { data: div } = await admin.from("divisions")
-    .upsert({ name: "Rangpur", name_bn: "রংপুর", code: "RAN" }, { onConflict: "name" })
-    .select("id").single();
-  if (!div) return null;
-  const { data: dist } = await admin.from("districts")
-    .upsert({ name: "Rangpur", name_bn: "রংপুর", code: "RAN-D", division_id: div.id }, { onConflict: "name" })
-    .select("id").single();
-  if (!dist) return null;
-  const { data: upa } = await admin.from("upazilas")
-    .upsert({ name: "Pirgachha", name_bn: "পীরগাছা", district_id: dist.id }, { onConflict: "name" })
-    .select("id").maybeSingle();
-  if (!upa) return null;
-  const { data: mouza } = await admin.from("mouzas")
-    .upsert({ name: "Baliadanga", name_bn: "বালিয়াডাঙ্গা", upazila_id: upa.id }, { onConflict: "name" })
-    .select("id").single();
-  return mouza?.id ?? null;
+async function findOrInsert(admin: any, table: string, match: Record<string, any>, insertExtra: Record<string, any> = {}) {
+  let q: any = admin.from(table).select("id");
+  for (const [k, v] of Object.entries(match)) q = v == null ? q.is(k, null) : q.eq(k, v);
+  const { data: found } = await q.maybeSingle();
+  if (found?.id) return found.id as string;
+  const { data, error } = await admin.from(table).insert({ ...match, ...insertExtra }).select("id").single();
+  if (error) throw new Error(`${table}: ${error.message}`);
+  return data.id as string;
+}
+
+async function seedLocations(admin: any): Promise<LocPick[]> {
+  const out: LocPick[] = [];
+  const divId = await findOrInsert(admin, "divisions",
+    { name: LOCATION_TREE.division.name },
+    { name_bn: LOCATION_TREE.division.name_bn, code: LOCATION_TREE.division.code });
+  for (const d of LOCATION_TREE.districts) {
+    const distId = await findOrInsert(admin, "districts",
+      { name: d.name, division_id: divId },
+      { name_bn: d.name_bn, code: d.code });
+    for (const u of d.upazilas) {
+      const upaId = await findOrInsert(admin, "upazilas",
+        { name: u.name, district_id: distId }, { name_bn: u.name_bn });
+      for (const m of u.mouzas) {
+        const mouzaId = await findOrInsert(admin, "mouzas",
+          { name: m.name, upazila_id: upaId }, { name_bn: m.name_bn });
+        out.push({ division_id: divId, district_id: distId, upazila_id: upaId, mouza_id: mouzaId, mouza_name: m.name });
+      }
+    }
+  }
+  return out;
 }
 
 async function ensureOffice(admin: any) {
@@ -338,7 +448,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
         }
 
         let officeId = "11111111-1111-1111-1111-111111111111";
-        let mouzaId: string | null = null;
+        let locs: LocPick[] = [];
         let farmers: any[] = [];
         const loanFarmerIds = new Set<string>();
         const savingsFarmerIds = new Set<string>();
@@ -346,7 +456,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
 
         if (action === "import" || action === "both") {
           steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
-          steps.push({ key: "locations", label: "লোকেশন seed", fn: async () => { mouzaId = await seedLocations(admin); } });
+          steps.push({ key: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা) seed", fn: async () => { locs = await seedLocations(admin); summary.locations = locs.length; } });
           if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
           const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
             modules.includes("savings") || modules.includes("irrigation") ||
@@ -354,11 +464,11 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (needsAccounts) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
           if (modules.includes("farmers")) {
             steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি (ভোটার অনুপাত 1/${voterCfg.voterRatio})`, fn: async () => {
-              farmers = await seedFarmers(admin, officeId, size, voterCfg);
+              farmers = await seedFarmers(admin, officeId, size, voterCfg, locs);
               summary.farmers = farmers.length;
               summary.voters = farmers.filter((f: any) => f.is_voter).length;
             }});
-            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers, mouzaId); }});
+            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers); }});
           }
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
           if (needFarmers && !modules.includes("farmers")) {
