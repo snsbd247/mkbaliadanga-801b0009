@@ -130,13 +130,37 @@ export default function FarmersImport() {
     const ws = XLSX.utils.aoa_to_sheet([
       ALL_HEADERS,
       [
-        "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000",
-        "", "false", "active", "Free-text village", "Holding/road",
-        "Dhaka", "Dhaka", "Savar", "Aminbazar", "Ward 1", "Bagbari", "Mouza A",
+        "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Salma Begum",
+        "1234567890123", "01711000000", "", "true", "active",
+        "Bagbari (free text)", "Holding 12, Road 3",
+        "Rajshahi", "Chapainawabganj", "Chapainawabganj Sadar", "", "", "", "Mouza A",
       ],
+      [
+        "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim Uddin", "Mst. Khaleda",
+        "9876543210987", "01811000000", "", "false", "active",
+        "", "",
+        "Rajshahi", "Chapainawabganj", "Shibganj", "", "", "", "Mouza B",
+      ],
+    ]);
+    // Add a notes sheet so users know which columns are required.
+    const notes = XLSX.utils.aoa_to_sheet([
+      ["Column", "Required", "Notes"],
+      ["name_en", "Yes", "Farmer name in English"],
+      ["name_bn", "No", "Farmer name in Bangla"],
+      ["father_name", "No", ""],
+      ["mother_name", "No", ""],
+      ["nid", "No", "10 / 13 / 17 digits"],
+      ["mobile", "No", "11-digit BD number, e.g. 017XXXXXXXX"],
+      ["member_no", "No", "Required only if is_voter=true"],
+      ["is_voter", "No", "true / false (default false)"],
+      ["status", "No", "active / inactive (default active)"],
+      ["village", "No", "Free-text village (legacy)"],
+      ["address", "No", "Holding / road / address"],
+      ["division / district / upazila / union / ward / village_loc / mouza", "No", "Must match an existing location and belong to its parent."],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Farmers");
+    XLSX.utils.book_append_sheet(wb, notes, "Instructions");
     XLSX.writeFile(wb, "farmer-import-template.xlsx");
   }
 
