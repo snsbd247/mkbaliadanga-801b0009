@@ -131,13 +131,37 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   });
   const txns = farmers.slice(0, Math.ceil(farmers.length * 0.6)).flatMap((f, i) => [
     { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId },
-    ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdrawal", amount: 300, status: "approved", office_id: officeId }] : []),
+    ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId }] : []),
   ]);
-  if (txns.length) await admin.from("savings_transactions").insert(txns);
+  if (txns.length) {
+    const { error } = await admin.from("savings_transactions").insert(txns);
+    if (error) throw new Error(`savings_transactions: ${error.message}`);
+  }
   const shareRows = farmers.slice(0, Math.ceil(farmers.length * 0.5)).map((f) => ({
     farmer_id: f.id, balance: 500, office_id: officeId,
   }));
   if (shareRows.length) await admin.from("shares").insert(shareRows);
+}
+
+async function seedPayments(admin: any, officeId: string, farmers: any[]) {
+  if (!farmers.length) return;
+  const today = new Date().toISOString();
+  const yesterday = new Date(Date.now() - 86400000).toISOString();
+  const earlierMonth = new Date(Date.now() - 10 * 86400000).toISOString();
+  const rows = farmers.flatMap((f, i) => {
+    const out: any[] = [];
+    // today's collections
+    if (i % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: today });
+    if (i % 5 === 0) out.push({ farmer_id: f.id, kind: "loan", amount: 1000, status: "approved", office_id: officeId, created_at: today });
+    // earlier in month
+    if (i % 2 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 800, status: "approved", office_id: officeId, created_at: earlierMonth });
+    if (i % 4 === 0) out.push({ farmer_id: f.id, kind: "savings", amount: 500, status: "approved", office_id: officeId, created_at: yesterday });
+    return out;
+  });
+  if (rows.length) {
+    const { error } = await admin.from("payments").insert(rows);
+    if (error) throw new Error(`payments: ${error.message}`);
+  }
 }
 
 async function seedExpenses(admin: any, officeId: string) {
