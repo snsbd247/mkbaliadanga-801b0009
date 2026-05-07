@@ -154,11 +154,15 @@ export default function Dashboard() {
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
       <NoOfficeBanner />
-      <div className="mb-3 flex items-center gap-2 text-xs">
+      <div className="mb-3 flex items-center gap-2 text-xs flex-wrap">
         <Badge variant={isSuper ? "secondary" : "default"}>
           {isSuper ? t("viewingAllOffices") : `${t("officeLabel")}: ${officeName || "—"}`}
         </Badge>
-        <span className="text-muted-foreground">{t("officeAccessNote")}</span>
+        <span className="text-muted-foreground flex-1">{t("officeAccessNote")}</span>
+        <div className="flex items-center gap-2">
+          <Switch id="voters-only" checked={votersOnly} onCheckedChange={setVotersOnly} />
+          <Label htmlFor="voters-only" className="cursor-pointer">Voter farmers only</Label>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
