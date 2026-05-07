@@ -329,7 +329,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", who.user.id);
-    if (!(roles ?? []).some((r: any) => r.role === "super_admin")) return json({ error: "Forbidden — super admin only" }, 403);
+    if (!(roles ?? []).some((r: any) => r.role === "super_admin" || r.role === "developer")) return json({ error: "Forbidden — developer or super admin only" }, 403);
 
     const body = await req.json().catch(() => ({}));
     const action: "preview" | "reset" | "import" | "both" = body?.action ?? "both";
