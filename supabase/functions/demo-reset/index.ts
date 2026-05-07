@@ -294,7 +294,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
           if (needFarmers && !modules.includes("farmers")) {
             steps.push({ key: "farmers:fetch", label: "বিদ্যমান ফার্মার লোড", fn: async () => {
-              const { data } = await admin.from("farmers").select("id").limit(size);
+              const { data } = await admin.from("farmers").select("id, is_voter").limit(size);
               farmers = data ?? [];
             }});
           }
