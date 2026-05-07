@@ -40,15 +40,23 @@ export default function Dashboard() {
 
   async function load() {
     const today = new Date().toISOString().slice(0, 10);
+    let voterIds: string[] | null = null;
+    if (votersOnly) {
+      const { data: vf } = await supabase.from("farmers").select("id").eq("is_voter", true).is("deleted_at", null);
+      voterIds = (vf ?? []).map((r: any) => r.id);
+      if (voterIds.length === 0) voterIds = ["00000000-0000-0000-0000-000000000000"];
+    }
+    const inV = (q: any) => voterIds ? q.in("farmer_id", voterIds) : q;
+
     const [farmers, savings, shares, loans, irrigations, payments, pendingW, pendingL] = await Promise.all([
-      supabase.from("farmers").select("id,status").is("deleted_at", null),
-      supabase.from("savings_transactions").select("type,amount,status").is("deleted_at", null),
-      supabase.from("shares").select("balance"),
-      supabase.from("loans").select("principal,total_payable,status").is("deleted_at", null),
-      supabase.from("irrigation_charges").select("total,paid_amount,due_amount").is("deleted_at", null),
-      supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
-      supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw"),
-      supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending"),
+      supabase.from("farmers").select("id,status,is_voter").is("deleted_at", null),
+      inV(supabase.from("savings_transactions").select("type,amount,status,farmer_id").is("deleted_at", null)),
+      inV(supabase.from("shares").select("balance,farmer_id")),
+      inV(supabase.from("loans").select("principal,total_payable,status,farmer_id").is("deleted_at", null)),
+      inV(supabase.from("irrigation_charges").select("total,paid_amount,due_amount,farmer_id").is("deleted_at", null)),
+      inV(supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8)),
+      inV(supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw")),
+      inV(supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending")),
     ]);
 
     const farmersData = farmers.data ?? [];
