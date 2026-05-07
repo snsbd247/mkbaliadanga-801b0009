@@ -85,11 +85,15 @@ export default function Users() {
   }
 
   async function createUser() {
-    const parsed = createSchema.safeParse({ ...form, office_id: form.office_id || null });
+    // developer & super_admin are global — no office assignment required
+    const requiresOffice = !(form.role === "developer" || form.role === "super_admin");
+    const office_id = requiresOffice ? (form.office_id || null) : null;
+    const parsed = createSchema.safeParse({ ...form, office_id });
     if (!parsed.success) {
       const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
       return toast.error(first ?? t("validationFailed"));
     }
+    if (requiresOffice && !office_id) return toast.error(t("office") + " required");
     const policy = passwordPolicyIssues(parsed.data.password, parsed.data.role, t);
     if (policy.length) return toast.error(`${t("pwPolicyPrefix")}: ${policy.join(", ")}`);
     const ok = await callAdmin({ action: "create", ...parsed.data });
@@ -138,11 +142,17 @@ export default function Users() {
 
   async function openPerms(u: any) {
     setPermFor(u);
+    const role = (u.roles?.[0] as string) ?? "staff";
+    const isGlobal = role === "developer" || role === "super_admin";
     const { data } = await supabase.from("user_permissions").select("*").eq("user_id", u.id);
     const map: Record<string, any> = {};
     (data ?? []).forEach((r: any) => { map[r.module] = r; });
     ALL_MODULES.forEach((m) => {
-      if (!map[m]) map[m] = { module: m, can_view: true, can_add: false, can_edit: false, can_delete: false };
+      if (isGlobal) {
+        map[m] = { module: m, can_view: true, can_add: true, can_edit: true, can_delete: true };
+      } else if (!map[m]) {
+        map[m] = { module: m, can_view: true, can_add: false, can_edit: false, can_delete: false };
+      }
     });
     setPerms(map);
   }
