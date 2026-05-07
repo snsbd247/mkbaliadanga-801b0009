@@ -92,22 +92,17 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   },
 };
 
+import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
+
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
-  const isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
+  const isText = /\.(csv|txt|tsv)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error);
     reader.onload = () => {
       try {
-        if (isCsv) {
-          const buf = reader.result as ArrayBuffer;
-          let text: string;
-          try {
-            text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
-          } catch {
-            text = new TextDecoder("windows-1252").decode(buf);
-          }
-          if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+        if (isText) {
+          const text = decodeSpreadsheetBuffer(reader.result as ArrayBuffer);
           resolve(XLSX.read(text, { type: "string", raw: true }));
         } else {
           resolve(XLSX.read(reader.result as ArrayBuffer, { type: "array" }));
