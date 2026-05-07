@@ -17,8 +17,8 @@ const FULL_WIPE_ORDER = [
   "expenses",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
   "receipts", "receipt_settings",
-  "sms_logs", "sms_office_settings", "sms_provider_secrets", "sms_settings",
-  "qr_tokens", "qr_rotation_settings",
+  "sms_logs", "sms_office_settings", "sms_provider_secrets",
+  "qr_tokens",
   "audit_logs", "voter_audit_logs", "import_audit_logs",
   "farmer_login_attempts", "farmer_rejections", "notifications",
   "farmer_portal_sessions", "farmer_otps",
@@ -26,7 +26,7 @@ const FULL_WIPE_ORDER = [
   "farmers",
   "seasons",
   "accounts",
-  "card_settings", "company_settings",
+  
   "mouzas", "upazilas", "districts", "divisions",
   "offices",
 ];

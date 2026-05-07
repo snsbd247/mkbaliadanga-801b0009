@@ -441,7 +441,12 @@ export default function SmsSettings() {
         .limit(20),
     ]);
     if (settingsRes.error) return toast.error(settingsRes.error.message);
-    setS(settingsRes.data as any);
+    if (!settingsRes.data) {
+      const ins = await supabase.from("sms_settings").insert({ id: 1 } as any).select("*").maybeSingle();
+      setS(ins.data as any);
+    } else {
+      setS(settingsRes.data as any);
+    }
     setOffices(((officesRes.data as any) ?? []) as Office[]);
     const map: Record<string, OfficeOverride> = {};
     for (const o of ((overridesRes.data as any) ?? []) as OfficeOverride[]) map[o.office_id] = o;
