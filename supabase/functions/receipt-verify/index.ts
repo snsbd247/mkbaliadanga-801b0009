@@ -18,8 +18,73 @@ function maskMobile(m?: string | null) {
   return m.length <= 4 ? "***" : m.slice(0, 3) + "****" + m.slice(-3);
 }
 
+// --- Ad-hoc in-memory rate limiting (per edge instance) ---
+// Per IP: max 30 requests / 60s window AND brute-force lockout
+// after 10 failed (404/400) attempts in 5 minutes.
+type Bucket = { hits: number[]; fails: number[]; lockedUntil: number };
+const buckets = new Map<string, Bucket>();
+const WINDOW_MS = 60_000;
+const MAX_PER_WINDOW = 30;
+const FAIL_WINDOW_MS = 5 * 60_000;
+const MAX_FAILS = 10;
+const LOCK_MS = 10 * 60_000;
+
+function clientIp(req: Request): string {
+  const xf = req.headers.get("x-forwarded-for") || "";
+  return xf.split(",")[0].trim() || req.headers.get("cf-connecting-ip") || "unknown";
+}
+
+function getBucket(ip: string): Bucket {
+  let b = buckets.get(ip);
+  if (!b) { b = { hits: [], fails: [], lockedUntil: 0 }; buckets.set(ip, b); }
+  return b;
+}
+
+function checkLimit(ip: string): { ok: true } | { ok: false; reason: string; retryAfter: number } {
+  const now = Date.now();
+  const b = getBucket(ip);
+  if (b.lockedUntil > now) {
+    return { ok: false, reason: "Too many failed attempts. Try later.", retryAfter: Math.ceil((b.lockedUntil - now) / 1000) };
+  }
+  b.hits = b.hits.filter((t) => now - t < WINDOW_MS);
+  if (b.hits.length >= MAX_PER_WINDOW) {
+    return { ok: false, reason: "Rate limit exceeded. Slow down.", retryAfter: 60 };
+  }
+  b.hits.push(now);
+  return { ok: true };
+}
+
+function recordFail(ip: string) {
+  const now = Date.now();
+  const b = getBucket(ip);
+  b.fails = b.fails.filter((t) => now - t < FAIL_WINDOW_MS);
+  b.fails.push(now);
+  if (b.fails.length >= MAX_FAILS) {
+    b.lockedUntil = now + LOCK_MS;
+    b.fails = [];
+  }
+}
+
+// Periodic cleanup
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, b] of buckets) {
+    if (b.lockedUntil < now && b.hits.length === 0 && b.fails.length === 0) buckets.delete(ip);
+  }
+}, 60_000);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const ip = clientIp(req);
+  const limit = checkLimit(ip);
+  if (!limit.ok) {
+    return new Response(JSON.stringify({ ok: false, error: limit.reason }), {
+      status: 429,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(limit.retryAfter) },
+    });
+  }
+
   try {
     const url = new URL(req.url);
     let token = url.searchParams.get("token") ?? "";
@@ -29,6 +94,7 @@ Deno.serve(async (req) => {
     }
     token = token.trim();
     if (!/^[a-f0-9]{16,64}$/i.test(token)) {
+      recordFail(ip);
       return new Response(JSON.stringify({ ok: false, error: "Invalid token" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -41,7 +107,15 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!p || p.deleted_at) {
-      return new Response(JSON.stringify({ ok: false, error: "Receipt not found" }), {
+      recordFail(ip);
+      // Surface void/cancel info even after soft-delete
+      const voided = p && p.deleted_at;
+      return new Response(JSON.stringify({
+        ok: false,
+        error: voided ? "Receipt voided" : "Receipt not found",
+        voided: !!voided,
+        voided_at: voided ? p.deleted_at : null,
+      }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -63,7 +137,7 @@ Deno.serve(async (req) => {
         method: p.method,
         note: p.note,
         date: p.created_at,
-        status: p.status,
+        status: p.status, // pending | approved | rejected
       },
       farmer: f ? {
         name: f.name_bn || f.name_en,
