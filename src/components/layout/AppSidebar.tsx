@@ -180,18 +180,8 @@ export function AppSidebar() {
     try { localStorage.setItem(queryKey, query); } catch { /* noop */ }
   }, [query, queryKey]);
 
-  // Ctrl+K / Cmd+K to focus the menu search
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        searchRef.current?.focus();
-        searchRef.current?.select();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  // Note: global Ctrl/Cmd+K is handled by the header MenuSearch component.
+  // The sidebar's local search can still be focused by clicking it directly.
 
   // Accordion: only one group expanded at a time
   const [openGroup, setOpenGroup] = useState<string | null>(() => {
