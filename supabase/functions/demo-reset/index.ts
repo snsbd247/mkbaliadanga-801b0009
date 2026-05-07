@@ -673,10 +673,13 @@ Deno.serve(async (req) => {
     if (body?.confirm !== "RESET") return json({ error: "Confirmation required (confirm: 'RESET')" }, 400);
 
     const ctx = { userId: who.user.id, userEmail: who.user.email ?? null, ip, ua };
+    const customNames = Array.isArray(body?.customNames)
+      ? body.customNames.filter((r: any) => r && typeof r.en === "string" && r.en.trim()).slice(0, 1000)
+      : undefined;
 
-    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx);
+    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx, customNames);
 
-    const resp = await runStream(admin, action, modules, size, voterCfg, ctx);
+    const resp = await runStream(admin, action, modules, size, voterCfg, ctx, customNames);
     const text = await resp.text();
     return json({ ok: true, log: text.split("\n").filter(Boolean).map((l) => JSON.parse(l)) });
   } catch (e: any) {
