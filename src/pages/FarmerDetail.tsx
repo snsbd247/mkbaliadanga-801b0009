@@ -569,23 +569,28 @@ export default function FarmerDetail() {
         </div>
       </Card>
 
+      {!farmer.is_voter && (
+        <Card className="p-3 mb-4 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 text-sm">
+          ⚠️ এই ফার্মার Voter / Savings A/C হিসেবে এনাবল নেই। সঞ্চয়, ঋণ এবং শেয়ার সংক্রান্ত কোন তথ্য বা ট্রাঞ্জেকশন থাকবে না। এনাবল করতে উপরে Edit থেকে Voter টগল চালু করুন।
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-4 mb-4">
-        <div className="stat-card"><div className="text-xs text-muted-foreground">{t("totalSavings")}</div><div className="text-xl font-bold mt-1">{money(savingsBal)}</div></div>
-        <div className="stat-card"><div className="text-xs text-muted-foreground">{t("shareBalance")}</div><div className="text-xl font-bold mt-1">{money(share?.balance ?? 0)}</div></div>
-        <div className="stat-card"><div className="text-xs text-muted-foreground">{t("totalLoan")} {t("dueAmount")}</div><div className={"text-xl font-bold mt-1 " + (loanDue > 0 ? "due-text" : "")}>{money(loanDue)}</div></div>
+        {farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("totalSavings")}</div><div className="text-xl font-bold mt-1">{money(savingsBal)}</div></div>}
+        {farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("shareBalance")}</div><div className="text-xl font-bold mt-1">{money(share?.balance ?? 0)}</div></div>}
+        {farmer.is_voter && <div className="stat-card"><div className="text-xs text-muted-foreground">{t("totalLoan")} {t("dueAmount")}</div><div className={"text-xl font-bold mt-1 " + (loanDue > 0 ? "due-text" : "")}>{money(loanDue)}</div></div>}
         <div className="stat-card"><div className="text-xs text-muted-foreground">{t("irrigation")} {t("dueAmount")}</div><div className={"text-xl font-bold mt-1 " + (irrDue > 0 ? "due-text" : "")}>{money(irrDue)}</div></div>
       </div>
 
       <Tabs defaultValue="lands">
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
-          
-          <TabsTrigger value="savings">{t("savings")}</TabsTrigger>
+          {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
-          <TabsTrigger value="loans">{t("loans")}</TabsTrigger>
+          {farmer.is_voter && <TabsTrigger value="loans">{t("loans")}</TabsTrigger>}
           <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
-          <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>
+          {farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="lands">
