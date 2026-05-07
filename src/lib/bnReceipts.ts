@@ -259,11 +259,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   </div>`;
 }
 
-function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null): HTMLDivElement {
+function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
-  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl);
-  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl);
+  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl);
+  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl);
   if (copy === "farmer") wrap.innerHTML = farmerCopy;
   else if (copy === "office") wrap.innerHTML = officeCopy;
   else wrap.innerHTML = `${farmerCopy}<div style="border-top:1px dashed #111;margin:8px 22px;"></div>${officeCopy}`;
@@ -283,6 +283,7 @@ function resolveOpts(o?: ReceiptOptions) {
     margins: { t: o?.margins?.t ?? 10, r: o?.margins?.r ?? 10, b: o?.margins?.b ?? 10, l: o?.margins?.l ?? 10 },
     orgLayout: (o?.orgLayout ?? "two-line") as "one-line" | "two-line",
     orgSize: (o?.orgSize ?? "sm") as "sm" | "md" | "lg",
+    showVerifyUrl: !!o?.showVerifyUrl,
   };
 }
 
@@ -292,7 +293,7 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   if (data.verify_url) {
     try { qrDataUrl = await QRCode.toDataURL(data.verify_url, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
-  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl);
+  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl);
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
