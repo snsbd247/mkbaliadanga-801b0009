@@ -47,7 +47,6 @@ type RowState = {
   raw: RowMap;
   // Editable copies of the location names so the user can correct in-place.
   loc: {
-    division: string; district: string; upazila: string;
     division: string; district: string; upazila: string; mouza: string;
   };
   resolved: LocResolved;
