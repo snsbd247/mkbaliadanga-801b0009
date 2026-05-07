@@ -104,6 +104,20 @@ export function ReceiptSettingsButton() {
             Same layout is used on both Farmer and Office copies for consistency.
           </p>
         </div>
+
+        <div className="border-t pt-2 space-y-1">
+          <label className="flex items-center gap-2 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!opts.showVerifyUrl}
+              onChange={(e) => setReceiptOptions({ showVerifyUrl: e.target.checked })}
+            />
+            <span>Show verify link (with token) under QR</span>
+          </label>
+          <p className="text-[11px] text-muted-foreground">
+            Useful when the QR cannot be scanned — recipients can type the URL.
+          </p>
+        </div>
       </PopoverContent>
     </Popover>
   );

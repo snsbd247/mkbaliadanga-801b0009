@@ -15,6 +15,7 @@ export interface ReceiptUserOptions {
   orientation: "p" | "l";
   orgLayout: OrgBlockLayout;
   orgSize: OrgBlockSize;
+  showVerifyUrl: boolean;
 }
 
 /** Defaults tuned to match the original demo template spacing. */
@@ -25,6 +26,7 @@ export const DEMO_DEFAULTS: ReceiptUserOptions = {
   orientation: "p",
   orgLayout: "two-line",
   orgSize: "sm",
+  showVerifyUrl: false,
 };
 
 function read(): ReceiptUserOptions {
@@ -98,6 +100,7 @@ export function useReceiptRenderArgs(): {
       margins: { t: opts.marginsMm, r: opts.marginsMm, b: opts.marginsMm, l: opts.marginsMm },
       orgLayout: opts.orgLayout,
       orgSize: opts.orgSize,
+      showVerifyUrl: opts.showVerifyUrl,
     },
     org: {
       name: brand.company_name,
