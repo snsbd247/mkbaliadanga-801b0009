@@ -544,6 +544,11 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
           }
+          steps.push({ key: "verify_locations", label: "লোকেশন কাউন্ট যাচাই", fn: async () => {
+            const v = await verifyLocations(admin);
+            summary.location_verification = v;
+            if (!v.ok) send({ type: "warn", step: "verify_locations", message: v.missing.join("; ") });
+          }});
           steps.push({ key: "verify", label: "ভোটার ইন্টিগ্রিটি যাচাই", fn: async () => {
             const v = await verifyVoterIntegrity(admin);
             summary.verification = v;
