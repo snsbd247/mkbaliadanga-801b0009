@@ -15,6 +15,7 @@ export type FarmerLite = {
   account_number?: string | null;
   mobile?: string | null;
   voter_number?: string | null;
+  is_voter?: boolean | null;
 };
 
 interface Props {
@@ -24,9 +25,11 @@ interface Props {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  /** Only allow farmers with is_voter = true (used for savings/loans/shares). */
+  votersOnly?: boolean;
 }
 
-const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number";
+const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter";
 const MIN_SEARCH = 2;
 
 function highlight(text: string | null | undefined, q: string): React.ReactNode {
