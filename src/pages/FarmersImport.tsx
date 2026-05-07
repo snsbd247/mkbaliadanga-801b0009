@@ -133,13 +133,13 @@ export default function FarmersImport() {
         "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Salma Begum",
         "1234567890123", "01711000000", "", "true", "active",
         "Bagbari (free text)", "Holding 12, Road 3",
-        "Rajshahi", "Chapainawabganj", "Chapainawabganj Sadar", "", "", "", "Mouza A",
+        "Rajshahi", "Chapainawabganj", "Chapainawabganj Sadar", "Mouza A",
       ],
       [
         "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim Uddin", "Mst. Khaleda",
         "9876543210987", "01811000000", "", "false", "active",
         "", "",
-        "Rajshahi", "Chapainawabganj", "Shibganj", "", "", "", "Mouza B",
+        "Rajshahi", "Chapainawabganj", "Shibganj", "Mouza B",
       ],
     ]);
     // Add a notes sheet so users know which columns are required.
@@ -156,7 +156,7 @@ export default function FarmersImport() {
       ["status", "No", "active / inactive (default active)"],
       ["village", "No", "Free-text village (legacy)"],
       ["address", "No", "Holding / road / address"],
-      ["division / district / upazila / union / ward / village_loc / mouza", "No", "Must match an existing location and belong to its parent."],
+      ["division / district / upazila / mouza", "No", "Must match an existing location and belong to its parent."],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Farmers");
