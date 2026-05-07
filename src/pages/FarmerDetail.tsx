@@ -115,7 +115,7 @@ export default function FarmerDetail() {
       supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).is("deleted_at", null).order("issued_on", { ascending: false }),
       supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no)").eq("farmer_id", id!).is("deleted_at", null).order("entry_date", { ascending: false }),
       supabase.from("shares").select("balance").eq("farmer_id", id!).maybeSingle(),
-      supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, offices(name)").eq("farmer_id", id!).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
+      supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, verify_token, receipt_no, offices(name)").eq("farmer_id", id!).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
     ]);
     setFarmer(f.data); setLands((l.data as any) ?? []); setSavings(s.data ?? []);
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
@@ -170,6 +170,7 @@ export default function FarmerDetail() {
       farmer: farmerForReceipt(),
       collected_amount: Number(p.amount),
       description,
+      verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
     }, copy, receiptArgs.options);
   }
 

@@ -426,6 +426,7 @@ export default function Payments() {
                           },
                           collected_amount: Number(p.amount),
                           description,
+                          verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
                         }, copy, receiptArgs.options);
                         return <ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} />;
                       })()}

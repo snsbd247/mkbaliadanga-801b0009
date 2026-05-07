@@ -58,7 +58,7 @@ export default function ScanPayment() {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
-  const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; method: string; note: string | null; idemKey: string; paidAt: string } | null>(null);
+  const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; method: string; note: string | null; idemKey: string; paidAt: string; verifyToken?: string | null } | null>(null);
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
   const tpl = useReceiptTemplate();
@@ -90,6 +90,7 @@ export default function ScanPayment() {
       },
       collected_amount: done.amount,
       description,
+      verify_url: done.verifyToken ? `${window.location.origin}/r/${done.verifyToken}` : null,
     };
   }
 
@@ -177,7 +178,7 @@ export default function ScanPayment() {
         office_id: resolved.farmer.office_id ?? null,
         idempotency_key: idemKey,
       };
-      const { data: ins, error } = await supabase.from("payments").insert(payload).select("id").single();
+      const { data: ins, error } = await supabase.from("payments").insert(payload).select("id, verify_token").single();
       if (error) {
         if ((error as any).code === "23505" || /duplicate/i.test(error.message)) {
           setErrMsg(
@@ -196,6 +197,7 @@ export default function ScanPayment() {
         note: parsed.data.note ?? null,
         idemKey,
         paidAt: new Date().toISOString(),
+        verifyToken: (ins as any)?.verify_token ?? null,
       });
       toast.success("Payment recorded — SMS notification queued");
     } catch (e: any) {
