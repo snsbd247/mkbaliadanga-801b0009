@@ -80,6 +80,7 @@ import { RequirePerm } from "./components/auth/RequirePerm";
 import { RequireRole } from "./components/auth/RequireRole";
 import { RequireDeveloper } from "./components/auth/RequireDeveloper";
 import DeveloperUpdates from "./pages/admin/DeveloperUpdates";
+import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,8 @@ const App = () => (
               <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify/:token" element={<VerifyReceipt />} />
+              <Route path="/r/:token" element={<VerifyReceipt />} />
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
