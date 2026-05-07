@@ -72,30 +72,22 @@ const ALL_HEADERS = [
 // for the cascading hierarchy village name (to avoid colliding with the
 // existing free-text village field on the farmers table).
 
+import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
+
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
-  const isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
+  // Treat .csv and .txt (Excel "Unicode Text" export, tab-delimited UTF-16) as text.
+  const isText = /\.(csv|txt|tsv)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error);
     reader.onload = () => {
       try {
-        if (isCsv) {
-          // Decode as UTF-8 (required for Bangla). Strip BOM if present.
-          // Fallback to windows-1252 only if UTF-8 strict decoding fails.
-          const buf = reader.result as ArrayBuffer;
-          let text: string;
-          try {
-            text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
-          } catch {
-            text = new TextDecoder("windows-1252").decode(buf);
-          }
-          if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-          const wb = XLSX.read(text, { type: "string", raw: true });
-          resolve(wb);
+        if (isText) {
+          const text = decodeSpreadsheetBuffer(reader.result as ArrayBuffer);
+          // XLSX auto-detects delimiter (comma / tab) when raw text is passed.
+          resolve(XLSX.read(text, { type: "string", raw: true }));
         } else {
-          const data = reader.result as ArrayBuffer;
-          const wb = XLSX.read(data, { type: "array" });
-          resolve(wb);
+          resolve(XLSX.read(reader.result as ArrayBuffer, { type: "array" }));
         }
       } catch (e) { reject(e); }
     };
@@ -388,7 +380,7 @@ export default function FarmersImport() {
             <Input
               ref={fileRef}
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.xlsx,.xls,.txt,.tsv"
               onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
             />
           </div>
