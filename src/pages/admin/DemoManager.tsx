@@ -294,6 +294,49 @@ export default function DemoManager() {
         </Card>
       )}
 
+      {willImport && selected.includes("farmers") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Real Farmer Names (CSV — Optional)</CardTitle>
+            <CardDescription>
+              CSV আপলোড করলে demo নামের বদলে এই নামগুলো ব্যবহার হবে। কলাম: <code>name_en, name_bn, father_name, mother_name, mobile, nid</code> (শুধু <code>name_en</code> বাধ্যতামূলক)। ডুপ্লিকেট NID/farmer_code স্বয়ংক্রিয়ভাবে স্কিপ হবে।
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Input type="file" accept=".csv,text/csv" onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) { setCustomNames(null); setCsvFileName(""); return; }
+              const txt = await f.text();
+              const lines = txt.split(/\r?\n/).filter((l) => l.trim());
+              if (!lines.length) { toast.error("CSV খালি"); return; }
+              const header = lines[0].split(",").map((s) => s.trim().toLowerCase().replace(/^"|"$/g, ""));
+              const idx = (k: string) => header.indexOf(k);
+              const rows = lines.slice(1).map((line) => {
+                const cols = line.split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
+                return {
+                  en: cols[idx("name_en")] ?? "",
+                  bn: cols[idx("name_bn")] ?? "",
+                  father: cols[idx("father_name")] ?? "",
+                  mother: cols[idx("mother_name")] ?? "",
+                  mobile: cols[idx("mobile")] ?? "",
+                  nid: cols[idx("nid")] ?? "",
+                };
+              }).filter((r) => r.en);
+              if (!rows.length) { toast.error("name_en কলাম পাওয়া যায়নি"); return; }
+              setCustomNames(rows);
+              setCsvFileName(f.name);
+              toast.success(`${rows.length} জন farmer নাম লোড হয়েছে`);
+            }} />
+            {customNames && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <Badge>{customNames.length} নাম লোড: {csvFileName}</Badge>
+                <Button size="sm" variant="ghost" onClick={() => { setCustomNames(null); setCsvFileName(""); }}>সরান</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Button onClick={fetchPreview} disabled={loading} variant="outline" className="w-full" size="lg">
         {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
         {t("dmPreviewBtn" as any)}
