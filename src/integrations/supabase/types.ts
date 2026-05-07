@@ -1800,6 +1800,7 @@ export type Database = {
           receipt_url: string | null
           reference_id: string | null
           status: Database["public"]["Enums"]["payment_status"]
+          verify_token: string
         }
         Insert: {
           amount: number
@@ -1819,6 +1820,7 @@ export type Database = {
           receipt_url?: string | null
           reference_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
+          verify_token?: string
         }
         Update: {
           amount?: number
@@ -1838,6 +1840,7 @@ export type Database = {
           receipt_url?: string | null
           reference_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
+          verify_token?: string
         }
         Relationships: [
           {
