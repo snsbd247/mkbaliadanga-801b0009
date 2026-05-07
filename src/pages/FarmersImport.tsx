@@ -48,7 +48,7 @@ type RowState = {
   // Editable copies of the location names so the user can correct in-place.
   loc: {
     division: string; district: string; upazila: string;
-    union: string; ward: string; village: string; mouza: string;
+    division: string; district: string; upazila: string; mouza: string;
   };
   resolved: LocResolved;
   failedLevel: LocationLevel | null;
@@ -177,9 +177,6 @@ export default function FarmersImport() {
           division: String(raw.division ?? ""),
           district: String(raw.district ?? ""),
           upazila:  String(raw.upazila  ?? ""),
-          union:    String(raw.union    ?? ""),
-          ward:     String(raw.ward     ?? ""),
-          village:  String(raw.village_loc ?? ""),
           mouza:    String(raw.mouza    ?? ""),
         },
         resolved: {},
@@ -394,7 +391,7 @@ export default function FarmersImport() {
         </div>
         <p className="text-xs text-muted-foreground mt-2">
           Required column: <code>name_en</code>. Hierarchy columns:{" "}
-          <code>division, district, upazila, union, ward, village_loc, mouza</code>.
+          <code>division, district, upazila, mouza</code>.
           Each level must belong to the parent above it.
         </p>
       </Card>
@@ -433,9 +430,6 @@ export default function FarmersImport() {
                 <TableHead>Division</TableHead>
                 <TableHead>District</TableHead>
                 <TableHead>Upazila</TableHead>
-                <TableHead>Union</TableHead>
-                <TableHead>Ward</TableHead>
-                <TableHead>Village</TableHead>
                 <TableHead>Mouza</TableHead>
                 <TableHead>Issue</TableHead>
                 <TableHead></TableHead>
@@ -468,7 +462,7 @@ export default function FarmersImport() {
                     </TableCell>
                     <TableCell className="text-xs">{String(r.raw.mobile ?? "")}</TableCell>
 
-                    {(["division","district","upazila","union","ward","village","mouza"] as LocationLevel[]).map((lvl) => (
+                    {(["division","district","upazila","mouza"] as LocationLevel[]).map((lvl) => (
                       <TableCell key={lvl} className="min-w-[140px]">
                         <Input
                           className={cellCls(lvl)}
