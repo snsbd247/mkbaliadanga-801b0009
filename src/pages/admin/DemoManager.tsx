@@ -169,10 +169,14 @@ export default function DemoManager() {
             } else if (ev.type === "error" || ev.type === "fatal") {
               setStepLog((s) => [...s, { label: ev.step ?? "fatal", status: "error", message: ev.message }]);
               throw new Error(ev.message);
+            } else if (ev.type === "seed_log") {
+              setSeedLog(ev.rows ?? []);
             } else if (ev.type === "complete") {
               setProgress(100);
               setCurrentStep(t("dmComplete" as any));
               setLastResult(ev.summary);
+              if (ev.summary?.verification) setVerification(ev.summary.verification);
+              if (ev.summary?.seed_log) setSeedLog(ev.summary.seed_log);
               succeeded = true;
             }
           } catch (parseErr) {
