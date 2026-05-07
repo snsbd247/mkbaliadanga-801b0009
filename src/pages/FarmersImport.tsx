@@ -380,7 +380,7 @@ export default function FarmersImport() {
             <Input
               ref={fileRef}
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.xlsx,.xls,.txt,.tsv"
               onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
             />
           </div>
