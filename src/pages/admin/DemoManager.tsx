@@ -181,6 +181,8 @@ export default function DemoManager() {
               setCurrentStep(t("dmComplete" as any));
               setLastResult(ev.summary);
               if (ev.summary?.verification) setVerification(ev.summary.verification);
+              if (ev.summary?.location_verification) setLocationVerification(ev.summary.location_verification);
+              if (ev.summary?.farmer_samples) setFarmerSamples(ev.summary.farmer_samples);
               if (ev.summary?.seed_log) setSeedLog(ev.summary.seed_log);
               succeeded = true;
             }
