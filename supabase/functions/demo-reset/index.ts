@@ -189,7 +189,7 @@ async function seedAccounts(admin: any) {
     { code: "2010", name: "Savings Payable", type: "liability", is_system: true },
     { code: "3020", name: "Share Capital", type: "equity", is_system: true },
     { code: "4010", name: "Irrigation Income", type: "income", is_system: true },
-    { code: "4020", name: "Loan Interest Income", type: "income" },
+    { code: "4020", name: "Loan Interest Income", type: "income", is_system: false },
     { code: "5010", name: "Maintenance", type: "expense", is_system: true },
     { code: "5020", name: "Electricity", type: "expense", is_system: true },
     { code: "5030", name: "Salary", type: "expense", is_system: true },
