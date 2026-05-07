@@ -324,7 +324,7 @@ export default function Savings() {
             <DialogHeader><DialogTitle>{t("savings")} — {t("addEntry")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div><Label>{t("selectFarmer")}</Label>
-                <FarmerSearchSelect value={form.farmer_id || null}
+                <FarmerSearchSelect votersOnly value={form.farmer_id || null}
                   onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
               </div>
               <div><Label>{t("type")}</Label>
