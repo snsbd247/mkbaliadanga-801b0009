@@ -677,7 +677,7 @@ export default function DataImport() {
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.xlsx,.xls,.txt,.tsv"
               className="hidden"
               onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
             />
