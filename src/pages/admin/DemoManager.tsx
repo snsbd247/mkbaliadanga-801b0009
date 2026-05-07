@@ -550,6 +550,7 @@ export default function DemoManager() {
         </Card>
       )}
 
+      {seedLog.length > 0 && !loading && (
         <Card>
           <CardHeader>
             <CardTitle>Per-Farmer Seed Log ({seedLog.length})</CardTitle>
