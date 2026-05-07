@@ -82,42 +82,41 @@ const FEMALE_NAMES: { en: string; bn: string }[] = [
 const FATHERS = MALE_NAMES;
 const MOTHERS = FEMALE_NAMES;
 
-// Real Bangladesh location data (sub-set, Rangpur division)
+// Real Bangladesh location data (Rajshahi division → Chapainawabganj district)
 const LOCATION_TREE = {
-  division: { name: "Rangpur", name_bn: "রংপুর", code: "RAN" },
+  division: { name: "Rajshahi", name_bn: "রাজশাহী", code: "RAJ" },
   districts: [
-    { name: "Rangpur", name_bn: "রংপুর", code: "RAN-D",
+    { name: "Chapainawabganj", name_bn: "চাঁপাইনবাবগঞ্জ", code: "CHN-D",
       upazilas: [
-        { name: "Pirgachha", name_bn: "পীরগাছা", mouzas: [
-          { name: "Baliadanga", name_bn: "বালিয়াডাঙ্গা" },
-          { name: "Kandi", name_bn: "কান্দি" },
-          { name: "Annadanagar", name_bn: "অন্নদানগর" },
+        { name: "Chapainawabganj Sadar", name_bn: "চাঁপাইনবাবগঞ্জ সদর", mouzas: [
+          { name: "Baroghoria", name_bn: "বারঘরিয়া" },
+          { name: "Maharajpur", name_bn: "মহারাজপুর" },
+          { name: "Jhilim", name_bn: "ঝিলিম" },
+          { name: "Ranihati", name_bn: "রানীহাটি" },
+          { name: "Shyampur", name_bn: "শ্যামপুর" },
         ]},
-        { name: "Mithapukur", name_bn: "মিঠাপুকুর", mouzas: [
-          { name: "Balua Masimpur", name_bn: "বালুয়া মাসিমপুর" },
-          { name: "Payrabondh", name_bn: "পায়রাবন্দ" },
+        { name: "Shibganj", name_bn: "শিবগঞ্জ", mouzas: [
+          { name: "Kansat", name_bn: "কানসাট" },
+          { name: "Binodpur", name_bn: "বিনোদপুর" },
+          { name: "Monakasha", name_bn: "মনাকষা" },
+          { name: "Durlovpur", name_bn: "দুর্লভপুর" },
+          { name: "Chak Kirti", name_bn: "চক কীর্তি" },
         ]},
-        { name: "Badarganj", name_bn: "বদরগঞ্জ", mouzas: [
-          { name: "Damodarpur", name_bn: "দামোদরপুর" },
-          { name: "Lohanipara", name_bn: "লোহানীপাড়া" },
+        { name: "Gomastapur", name_bn: "গোমস্তাপুর", mouzas: [
+          { name: "Rohanpur", name_bn: "রহনপুর" },
+          { name: "Boalia", name_bn: "বোয়ালিয়া" },
+          { name: "Radhanagar", name_bn: "রাধানগর" },
+          { name: "Parbatipur", name_bn: "পার্বতীপুর" },
         ]},
-      ]},
-    { name: "Gaibandha", name_bn: "গাইবান্ধা", code: "GAI-D",
-      upazilas: [
-        { name: "Sundarganj", name_bn: "সুন্দরগঞ্জ", mouzas: [
-          { name: "Belka", name_bn: "বেলকা" },
-          { name: "Tarapur", name_bn: "তারাপুর" },
+        { name: "Nachole", name_bn: "নাচোল", mouzas: [
+          { name: "Kasba", name_bn: "কসবা" },
+          { name: "Nezampur", name_bn: "নেজামপুর" },
+          { name: "Fatehpur", name_bn: "ফতেপুর" },
         ]},
-        { name: "Palashbari", name_bn: "পলাশবাড়ী", mouzas: [
-          { name: "Kishoreganj", name_bn: "কিশোরগঞ্জ" },
-          { name: "Hosenpur", name_bn: "হোসেনপুর" },
-        ]},
-      ]},
-    { name: "Kurigram", name_bn: "কুড়িগ্রাম", code: "KUR-D",
-      upazilas: [
-        { name: "Ulipur", name_bn: "উলিপুর", mouzas: [
-          { name: "Tetultala", name_bn: "তেতুলতলা" },
-          { name: "Buraburi", name_bn: "বুড়াবুড়ী" },
+        { name: "Bholahat", name_bn: "ভোলাহাট", mouzas: [
+          { name: "Bholahat", name_bn: "ভোলাহাট" },
+          { name: "Gohalbari", name_bn: "গোহালবাড়ী" },
+          { name: "Jambaria", name_bn: "জামবাড়িয়া" },
         ]},
       ]},
   ],
