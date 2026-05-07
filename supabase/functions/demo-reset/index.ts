@@ -358,23 +358,36 @@ async function seedSettings(admin: any) {
   await admin.from("card_settings").upsert({ id: 1 });
 }
 
-async function seedLocations(admin: any) {
-  const { data: div } = await admin.from("divisions")
-    .upsert({ name: "Rangpur", name_bn: "রংপুর", code: "RAN" }, { onConflict: "name" })
-    .select("id").single();
-  if (!div) return null;
-  const { data: dist } = await admin.from("districts")
-    .upsert({ name: "Rangpur", name_bn: "রংপুর", code: "RAN-D", division_id: div.id }, { onConflict: "name" })
-    .select("id").single();
-  if (!dist) return null;
-  const { data: upa } = await admin.from("upazilas")
-    .upsert({ name: "Pirgachha", name_bn: "পীরগাছা", district_id: dist.id }, { onConflict: "name" })
-    .select("id").maybeSingle();
-  if (!upa) return null;
-  const { data: mouza } = await admin.from("mouzas")
-    .upsert({ name: "Baliadanga", name_bn: "বালিয়াডাঙ্গা", upazila_id: upa.id }, { onConflict: "name" })
-    .select("id").single();
-  return mouza?.id ?? null;
+async function findOrInsert(admin: any, table: string, match: Record<string, any>, insertExtra: Record<string, any> = {}) {
+  let q: any = admin.from(table).select("id");
+  for (const [k, v] of Object.entries(match)) q = v == null ? q.is(k, null) : q.eq(k, v);
+  const { data: found } = await q.maybeSingle();
+  if (found?.id) return found.id as string;
+  const { data, error } = await admin.from(table).insert({ ...match, ...insertExtra }).select("id").single();
+  if (error) throw new Error(`${table}: ${error.message}`);
+  return data.id as string;
+}
+
+async function seedLocations(admin: any): Promise<LocPick[]> {
+  const out: LocPick[] = [];
+  const divId = await findOrInsert(admin, "divisions",
+    { name: LOCATION_TREE.division.name },
+    { name_bn: LOCATION_TREE.division.name_bn, code: LOCATION_TREE.division.code });
+  for (const d of LOCATION_TREE.districts) {
+    const distId = await findOrInsert(admin, "districts",
+      { name: d.name, division_id: divId },
+      { name_bn: d.name_bn, code: d.code });
+    for (const u of d.upazilas) {
+      const upaId = await findOrInsert(admin, "upazilas",
+        { name: u.name, district_id: distId }, { name_bn: u.name_bn });
+      for (const m of u.mouzas) {
+        const mouzaId = await findOrInsert(admin, "mouzas",
+          { name: m.name, upazila_id: upaId }, { name_bn: m.name_bn });
+        out.push({ division_id: divId, district_id: distId, upazila_id: upaId, mouza_id: mouzaId, mouza_name: m.name });
+      }
+    }
+  }
+  return out;
 }
 
 async function ensureOffice(admin: any) {
