@@ -481,9 +481,16 @@ Deno.serve(async (req) => {
     if (!(roles ?? []).some((r: any) => r.role === "super_admin" || r.role === "developer")) return json({ error: "Forbidden — developer or super admin only" }, 403);
 
     const body = await req.json().catch(() => ({}));
-    const action: "preview" | "reset" | "import" | "both" = body?.action ?? "both";
+    const action: "preview" | "reset" | "import" | "both" | "clear_audit" = body?.action ?? "both";
     const modules: string[] = Array.isArray(body?.modules) ? body.modules : [];
     const size: number = Math.max(5, Math.min(500, Number(body?.size) || 50));
+    const voterCfg: VoterCfg = {
+      voterRatio: Math.max(2, Math.min(20, Number(body?.voterCfg?.voterRatio) || 3)),
+      voterNumberFormat: typeof body?.voterCfg?.voterNumberFormat === "string" && body.voterCfg.voterNumberFormat.trim()
+        ? body.voterCfg.voterNumberFormat.trim().slice(0, 80) : "V-{seq:5}",
+      accountNumberFormat: typeof body?.voterCfg?.accountNumberFormat === "string" && body.voterCfg.accountNumberFormat.trim()
+        ? body.voterCfg.accountNumberFormat.trim().slice(0, 80) : "SAV-{seq:6}",
+    };
 
     if (action === "preview") {
       const wipePreview = await previewWipe(admin);
@@ -491,14 +498,19 @@ Deno.serve(async (req) => {
       return json({ ok: true, action: "preview", wipe_preview: wipePreview, import_preview: importPreview });
     }
 
+    if (action === "clear_audit") {
+      if (body?.confirm !== "CLEAR") return json({ error: "Confirmation required (confirm: 'CLEAR')" }, 400);
+      const result = await clearAuditLogs(admin);
+      return json({ ok: true, action: "clear_audit", cleared: result });
+    }
+
     if (body?.confirm !== "RESET") return json({ error: "Confirmation required (confirm: 'RESET')" }, 400);
 
     const ctx = { userId: who.user.id, userEmail: who.user.email ?? null, ip, ua };
 
-    if (body?.stream) return runStream(admin, action, modules, size, ctx);
+    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx);
 
-    // Non-streaming fallback (collect events from stream)
-    const resp = await runStream(admin, action, modules, size, ctx);
+    const resp = await runStream(admin, action, modules, size, voterCfg, ctx);
     const text = await resp.text();
     return json({ ok: true, log: text.split("\n").filter(Boolean).map((l) => JSON.parse(l)) });
   } catch (e: any) {
