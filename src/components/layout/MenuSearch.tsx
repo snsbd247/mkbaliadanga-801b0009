@@ -19,6 +19,7 @@ export function MenuSearch() {
   const { isSuper, isDeveloper } = useAuth();
   const { can } = usePermissions();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const prevFocusRef = useRef<HTMLElement | null>(null);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
