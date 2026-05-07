@@ -178,17 +178,26 @@ async function seedExpenses(admin: any, officeId: string) {
 }
 
 async function seedAccounts(admin: any) {
+  // Codes MUST match what ledger triggers (_acct) look up.
+  // Triggers reference: 1010 (cash), 1040 (loans receivable), 2010 (savings payable),
+  // 3020 (share capital), 4010 (irrigation income),
+  // 5010/5020/5030/5040/5090 (expense heads).
   const accts = [
-    { code: "1000", name: "Cash", type: "asset", is_system: true },
-    { code: "1100", name: "Bank", type: "asset", is_system: true },
-    { code: "1200", name: "Loans Receivable", type: "asset" },
-    { code: "2000", name: "Savings Payable", type: "liability" },
-    { code: "3000", name: "Share Capital", type: "equity" },
-    { code: "4000", name: "Irrigation Income", type: "income" },
-    { code: "4100", name: "Loan Interest Income", type: "income" },
-    { code: "5000", name: "Operating Expenses", type: "expense" },
+    { code: "1010", name: "Cash", type: "asset", is_system: true },
+    { code: "1020", name: "Bank", type: "asset", is_system: true },
+    { code: "1040", name: "Loans Receivable", type: "asset", is_system: true },
+    { code: "2010", name: "Savings Payable", type: "liability", is_system: true },
+    { code: "3020", name: "Share Capital", type: "equity", is_system: true },
+    { code: "4010", name: "Irrigation Income", type: "income", is_system: true },
+    { code: "4020", name: "Loan Interest Income", type: "income" },
+    { code: "5010", name: "Maintenance", type: "expense", is_system: true },
+    { code: "5020", name: "Electricity", type: "expense", is_system: true },
+    { code: "5030", name: "Salary", type: "expense", is_system: true },
+    { code: "5040", name: "Repair", type: "expense", is_system: true },
+    { code: "5090", name: "Other Expenses", type: "expense", is_system: true },
   ];
-  await admin.from("accounts").upsert(accts, { onConflict: "code" });
+  const { error } = await admin.from("accounts").upsert(accts, { onConflict: "code" });
+  if (error) throw error;
 }
 
 async function seedSettings(admin: any) {
@@ -284,7 +293,12 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
           steps.push({ key: "locations", label: "লোকেশন seed", fn: async () => { mouzaId = await seedLocations(admin); } });
           if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
-          if (modules.includes("accounting")) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
+          // Always seed chart-of-accounts before any module that posts ledger entries,
+          // otherwise triggers fail with "null value in column account_id ... violates not-null".
+          const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
+            modules.includes("savings") || modules.includes("irrigation") ||
+            modules.includes("expenses") || modules.includes("farmers");
+          if (needsAccounts) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
           if (modules.includes("farmers")) {
             steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি`, fn: async () => {
               farmers = await seedFarmers(admin, officeId, size); summary.farmers = farmers.length;
