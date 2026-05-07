@@ -447,9 +447,29 @@ async function previewWipe(admin: any) {
   return counts;
 }
 
+async function verifyLocations(admin: any) {
+  const expected = {
+    divisions: 1,
+    districts: LOCATION_TREE.districts.length,
+    upazilas: LOCATION_TREE.districts.reduce((s, d) => s + d.upazilas.length, 0),
+    mouzas: LOCATION_TREE.districts.reduce((s, d) => s + d.upazilas.reduce((u, x) => u + x.mouzas.length, 0), 0),
+  };
+  const actual: Record<string, number> = {};
+  for (const t of ["divisions", "districts", "upazilas", "mouzas"]) {
+    const { count } = await admin.from(t).select("*", { count: "exact", head: true });
+    actual[t] = count ?? 0;
+  }
+  const missing: string[] = [];
+  for (const [k, v] of Object.entries(expected)) {
+    if (actual[k] < v) missing.push(`${k}: expected ≥${v}, found ${actual[k]}`);
+  }
+  return { ok: missing.length === 0, expected, actual, missing };
+}
+
 // ---- Streaming runner ----
 async function runStream(admin: any, action: string, modules: string[], size: number, voterCfg: VoterCfg,
-  ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null }) {
+  ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null },
+  customNames?: any[]) {
 
   const encoder = new TextEncoder();
   const summary: any = { action, modules, voterCfg };
