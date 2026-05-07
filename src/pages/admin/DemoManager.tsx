@@ -305,29 +305,37 @@ export default function DemoManager() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Input type="file" accept=".csv,text/csv" onChange={async (e) => {
+            <Input type="file" accept=".csv,.xlsx,.xls,.txt,.tsv,text/csv" onChange={async (e) => {
               const f = e.target.files?.[0];
               if (!f) { setCustomNames(null); setCsvFileName(""); return; }
-              const txt = await f.text();
-              const lines = txt.split(/\r?\n/).filter((l) => l.trim());
-              if (!lines.length) { toast.error("CSV খালি"); return; }
-              const header = lines[0].split(",").map((s) => s.trim().toLowerCase().replace(/^"|"$/g, ""));
-              const idx = (k: string) => header.indexOf(k);
-              const rows = lines.slice(1).map((line) => {
-                const cols = line.split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
-                return {
-                  en: cols[idx("name_en")] ?? "",
-                  bn: cols[idx("name_bn")] ?? "",
-                  father: cols[idx("father_name")] ?? "",
-                  mother: cols[idx("mother_name")] ?? "",
-                  mobile: cols[idx("mobile")] ?? "",
-                  nid: cols[idx("nid")] ?? "",
-                };
-              }).filter((r) => r.en);
-              if (!rows.length) { toast.error("name_en কলাম পাওয়া যায়নি"); return; }
-              setCustomNames(rows);
-              setCsvFileName(f.name);
-              toast.success(`${rows.length} জন farmer নাম লোড হয়েছে`);
+              try {
+                const buf = await f.arrayBuffer();
+                const isText = /\.(csv|txt|tsv)$/i.test(f.name);
+                const wb = isText
+                  ? XLSX.read(decodeSpreadsheetBuffer(buf), { type: "string", raw: true })
+                  : XLSX.read(buf, { type: "array" });
+                const sheet = wb.Sheets[wb.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
+                const norm = (k: string) => k.trim().toLowerCase().replace(/\s+/g, "_");
+                const rows = json.map((r) => {
+                  const o: Record<string, string> = {};
+                  for (const k of Object.keys(r)) o[norm(k)] = String(r[k] ?? "").trim();
+                  return {
+                    en: o["name_en"] ?? "",
+                    bn: o["name_bn"] ?? "",
+                    father: o["father_name"] ?? "",
+                    mother: o["mother_name"] ?? "",
+                    mobile: o["mobile"] ?? "",
+                    nid: o["nid"] ?? "",
+                  };
+                }).filter((r) => r.en);
+                if (!rows.length) { toast.error("name_en কলাম পাওয়া যায়নি"); return; }
+                setCustomNames(rows);
+                setCsvFileName(f.name);
+                toast.success(`${rows.length} জন farmer নাম লোড হয়েছে`);
+              } catch (err: any) {
+                toast.error("ফাইল পড়া যায়নি: " + (err?.message ?? "unknown"));
+              }
             }} />
             {customNames && (
               <div className="text-xs text-muted-foreground flex items-center gap-2">
