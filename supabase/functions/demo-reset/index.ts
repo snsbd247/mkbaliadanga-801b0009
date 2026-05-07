@@ -99,13 +99,14 @@ async function seedIrrigation(admin: any, officeId: string, farmers: any[]) {
 }
 
 async function seedLoans(admin: any, officeId: string, farmers: any[]) {
+  const voters = farmers.filter((f: any) => f.is_voter);
   const { data: plan } = await admin.from("loan_plans").insert({
     name: "Standard 12mo", name_bn: "১২ মাসের সাধারণ", office_id: officeId,
     duration_months: 12, interest_rate: 12, installment_type: "monthly",
     penalty_type: "percentage", penalty_value: 2, grace_period_days: 7, is_active: true,
   }).select("id").single();
   const planId = plan?.id ?? null;
-  const loanRows = farmers.slice(0, Math.ceil(farmers.length * 0.4)).map((f, i) => {
+  const loanRows = voters.slice(0, Math.ceil(voters.length * 0.4)).map((f, i) => {
     const principal = 10000 + (i % 5) * 5000;
     const totalPay = principal * 1.12;
     return {
@@ -124,20 +125,23 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
 }
 
 async function seedSavings(admin: any, officeId: string, farmers: any[]) {
+  const voters = farmers.filter((f: any) => f.is_voter);
   await admin.from("savings_plans").insert({
     name: "DPS 24", name_bn: "ডিপিএস ২৪", office_id: officeId,
     duration_months: 24, installment_type: "monthly", installment_amount: 500,
     interest_rate: 6, maturity_type: "simple", is_active: true,
   });
-  const txns = farmers.slice(0, Math.ceil(farmers.length * 0.6)).flatMap((f, i) => [
+  const txns = voters.slice(0, Math.ceil(voters.length * 0.6)).flatMap((f, i) => [
     { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId },
     ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId }] : []),
+    // Share collection transactions so the Share Details tab has rows
+    ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection" }] : []),
   ]);
   if (txns.length) {
     const { error } = await admin.from("savings_transactions").insert(txns);
     if (error) throw new Error(`savings_transactions: ${error.message}`);
   }
-  const shareRows = farmers.slice(0, Math.ceil(farmers.length * 0.5)).map((f) => ({
+  const shareRows = voters.slice(0, Math.ceil(voters.length * 0.5)).map((f) => ({
     farmer_id: f.id, balance: 500, office_id: officeId,
   }));
   if (shareRows.length) await admin.from("shares").insert(shareRows);
