@@ -58,7 +58,7 @@ export default function ScanPayment() {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
-  const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; method: string; note: string | null; idemKey: string; paidAt: string } | null>(null);
+  const [done, setDone] = useState<{ paymentId: string; amount: number; kind: string; method: string; note: string | null; idemKey: string; paidAt: string; verifyToken?: string | null } | null>(null);
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
   const tpl = useReceiptTemplate();
@@ -90,6 +90,7 @@ export default function ScanPayment() {
       },
       collected_amount: done.amount,
       description,
+      verify_url: done.verifyToken ? `${window.location.origin}/r/${done.verifyToken}` : null,
     };
   }
 
