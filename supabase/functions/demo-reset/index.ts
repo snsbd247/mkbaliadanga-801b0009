@@ -137,29 +137,57 @@ function formatToken(fmt: string, ctx: { seq: number; office: string; year: numb
     .replace(/\{year\}/g, String(ctx.year));
 }
 
-async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[]) {
+async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[], customNames?: { en: string; bn?: string; father?: string; mother?: string; mobile?: string; nid?: string }[]) {
   const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
   const year = new Date().getFullYear();
   const officeShort = officeId.slice(0, 4).toUpperCase();
   let voterSeq = 0;
-  const farmers = Array.from({ length: count }, (_, i) => {
+
+  // De-dup: load existing farmer_codes/nids for this office to skip duplicates
+  const { data: existing } = await admin.from("farmers")
+    .select("farmer_code, nid, name_en").eq("office_id", officeId);
+  const existingCodes = new Set((existing ?? []).map((x: any) => x.farmer_code));
+  const existingNids = new Set((existing ?? []).map((x: any) => x.nid).filter(Boolean));
+  const existingNames = new Set((existing ?? []).map((x: any) => x.name_en?.toLowerCase()));
+
+  const desired = customNames?.length ? customNames.slice(0, count) : null;
+  const total = desired ? desired.length : count;
+
+  const farmers: any[] = [];
+  for (let i = 0; i < total; i++) {
     const isVoter = i % ratio === 0;
     if (isVoter) voterSeq++;
     const tokenCtx = { seq: voterSeq, office: officeShort, year };
     const isFemale = i % 7 === 0;
-    const name = isFemale ? pick(FEMALE_NAMES, i) : pick(MALE_NAMES, i);
-    const father = pick(FATHERS, i + 3);
-    const mother = pick(MOTHERS, i + 5);
+    const fallback = isFemale ? pick(FEMALE_NAMES, i) : pick(MALE_NAMES, i);
+    const custom = desired?.[i];
+    const en = custom?.en?.trim() || fallback.en;
+    const bn = custom?.bn?.trim() || fallback.bn;
+    const father = custom?.father?.trim() || pick(FATHERS, i + 3).en;
+    const mother = custom?.mother?.trim() || pick(MOTHERS, i + 5).en;
     const loc = locs.length ? locs[i % locs.length] : null;
-    return {
-      farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
-      member_no: String(i + 1).padStart(7, "0"),
-      name_en: name.en,
-      name_bn: name.bn,
-      father_name: father.en,
-      mother_name: mother.en,
-      mobile: `017${String(10000000 + i).padStart(8, "0")}`,
-      nid: `19900${String(1000000000 + i).padStart(10, "0")}`,
+
+    // Generate unique farmer_code by skipping existing
+    let seq = i + 1;
+    let code = `F-${String(seq).padStart(5, "0")}`;
+    while (existingCodes.has(code)) { seq++; code = `F-${String(seq).padStart(5, "0")}`; }
+    existingCodes.add(code);
+
+    const nid = custom?.nid?.trim() || `19900${String(1000000000 + i).padStart(10, "0")}`;
+    if (existingNids.has(nid)) continue; // skip duplicate NID
+    if (existingNames.has(en.toLowerCase()) && !custom) continue; // skip duplicate generated name
+    existingNids.add(nid);
+    existingNames.add(en.toLowerCase());
+
+    farmers.push({
+      farmer_code: code,
+      member_no: String(seq).padStart(7, "0"),
+      name_en: en,
+      name_bn: bn,
+      father_name: father,
+      mother_name: mother,
+      mobile: custom?.mobile?.trim() || `017${String(10000000 + i).padStart(8, "0")}`,
+      nid,
       village: loc?.mouza_name ?? pick(VILLAGES, i),
       office_id: officeId,
       status: "active",
@@ -170,11 +198,12 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
       district_id: loc?.district_id ?? null,
       upazila_id: loc?.upazila_id ?? null,
       mouza_id: loc?.mouza_id ?? null,
-    };
-  });
+    });
+  }
+  if (!farmers.length) return [];
   const { data, error } = await admin.from("farmers")
     .insert(farmers)
-    .select("id, farmer_code, is_voter, voter_number, account_number, mouza_id");
+    .select("id, farmer_code, name_en, name_bn, is_voter, voter_number, account_number, mouza_id");
   if (error) throw new Error(`farmers: ${error.message}`);
   return data ?? [];
 }
