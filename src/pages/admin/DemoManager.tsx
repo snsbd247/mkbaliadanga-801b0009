@@ -55,6 +55,10 @@ export default function DemoManager() {
   const [lastResult, setLastResult] = useState<any>(null);
   const [seedLog, setSeedLog] = useState<any[]>([]);
   const [verification, setVerification] = useState<{ ok: boolean; issues: string[] } | null>(null);
+  const [locationVerification, setLocationVerification] = useState<any>(null);
+  const [farmerSamples, setFarmerSamples] = useState<any[]>([]);
+  const [customNames, setCustomNames] = useState<any[] | null>(null);
+  const [csvFileName, setCsvFileName] = useState<string>("");
   const [clearing, setClearing] = useState(false);
 
   // logs + filters
@@ -134,7 +138,8 @@ export default function DemoManager() {
           "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ action, modules: selected, size, confirm: "RESET", stream: true,
-          voterCfg: { voterRatio, voterNumberFormat, accountNumberFormat } }),
+          voterCfg: { voterRatio, voterNumberFormat, accountNumberFormat },
+          customNames: customNames ?? undefined }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -176,6 +181,8 @@ export default function DemoManager() {
               setCurrentStep(t("dmComplete" as any));
               setLastResult(ev.summary);
               if (ev.summary?.verification) setVerification(ev.summary.verification);
+              if (ev.summary?.location_verification) setLocationVerification(ev.summary.location_verification);
+              if (ev.summary?.farmer_samples) setFarmerSamples(ev.summary.farmer_samples);
               if (ev.summary?.seed_log) setSeedLog(ev.summary.seed_log);
               succeeded = true;
             }
@@ -283,6 +290,49 @@ export default function DemoManager() {
               <Label>Account Number Format</Label>
               <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="SAV-{seq:6}" />
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {willImport && selected.includes("farmers") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Real Farmer Names (CSV — Optional)</CardTitle>
+            <CardDescription>
+              CSV আপলোড করলে demo নামের বদলে এই নামগুলো ব্যবহার হবে। কলাম: <code>name_en, name_bn, father_name, mother_name, mobile, nid</code> (শুধু <code>name_en</code> বাধ্যতামূলক)। ডুপ্লিকেট NID/farmer_code স্বয়ংক্রিয়ভাবে স্কিপ হবে।
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Input type="file" accept=".csv,text/csv" onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) { setCustomNames(null); setCsvFileName(""); return; }
+              const txt = await f.text();
+              const lines = txt.split(/\r?\n/).filter((l) => l.trim());
+              if (!lines.length) { toast.error("CSV খালি"); return; }
+              const header = lines[0].split(",").map((s) => s.trim().toLowerCase().replace(/^"|"$/g, ""));
+              const idx = (k: string) => header.indexOf(k);
+              const rows = lines.slice(1).map((line) => {
+                const cols = line.split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
+                return {
+                  en: cols[idx("name_en")] ?? "",
+                  bn: cols[idx("name_bn")] ?? "",
+                  father: cols[idx("father_name")] ?? "",
+                  mother: cols[idx("mother_name")] ?? "",
+                  mobile: cols[idx("mobile")] ?? "",
+                  nid: cols[idx("nid")] ?? "",
+                };
+              }).filter((r) => r.en);
+              if (!rows.length) { toast.error("name_en কলাম পাওয়া যায়নি"); return; }
+              setCustomNames(rows);
+              setCsvFileName(f.name);
+              toast.success(`${rows.length} জন farmer নাম লোড হয়েছে`);
+            }} />
+            {customNames && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <Badge>{customNames.length} নাম লোড: {csvFileName}</Badge>
+                <Button size="sm" variant="ghost" onClick={() => { setCustomNames(null); setCsvFileName(""); }}>সরান</Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -433,6 +483,70 @@ export default function DemoManager() {
               </ul>
             </CardContent>
           )}
+        </Card>
+      )}
+
+      {locationVerification && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {locationVerification.ok ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <XCircle className="h-5 w-5 text-destructive" />}
+              Location Count Verification
+            </CardTitle>
+            <CardDescription>{locationVerification.ok ? "সব Division/District/Upazila/Mouza ঠিকঠাক sit হয়েছে।" : `${locationVerification.missing.length} টি গরমিল`}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-xs border rounded">
+              <thead className="bg-muted">
+                <tr><th className="p-2 text-left">Table</th><th className="p-2 text-right">Expected</th><th className="p-2 text-right">Actual</th></tr>
+              </thead>
+              <tbody>
+                {Object.keys(locationVerification.expected).map((k) => (
+                  <tr key={k} className="border-t">
+                    <td className="p-2 font-mono">{k}</td>
+                    <td className="p-2 text-right">≥{locationVerification.expected[k]}</td>
+                    <td className={`p-2 text-right ${locationVerification.actual[k] < locationVerification.expected[k] ? "text-destructive font-semibold" : ""}`}>{locationVerification.actual[k]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!locationVerification.ok && (
+              <ul className="mt-2 text-xs text-destructive list-disc pl-5">
+                {locationVerification.missing.map((m: string, i: number) => <li key={i}>{m}</li>)}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {farmerSamples.length > 0 && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Import Summary — Farmer Samples ({farmerSamples.length})</CardTitle>
+            <CardDescription>প্রথম কয়েকজন farmer-এর নাম (EN/BN) এবং mouza_id দেখুন।</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-xs border rounded">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="p-2 text-left">Code</th>
+                  <th className="p-2 text-left">Name (EN)</th>
+                  <th className="p-2 text-left" lang="bn">Name (BN)</th>
+                  <th className="p-2 text-left">Mouza ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {farmerSamples.map((f, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="p-2 font-mono">{f.farmer_code}</td>
+                    <td className="p-2">{f.name_en}</td>
+                    <td className="p-2" lang="bn">{f.name_bn}</td>
+                    <td className="p-2 font-mono text-[10px]">{f.mouza_id?.slice(0, 8) ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
         </Card>
       )}
 

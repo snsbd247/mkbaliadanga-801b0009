@@ -137,29 +137,57 @@ function formatToken(fmt: string, ctx: { seq: number; office: string; year: numb
     .replace(/\{year\}/g, String(ctx.year));
 }
 
-async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[]) {
+async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[], customNames?: { en: string; bn?: string; father?: string; mother?: string; mobile?: string; nid?: string }[]) {
   const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
   const year = new Date().getFullYear();
   const officeShort = officeId.slice(0, 4).toUpperCase();
   let voterSeq = 0;
-  const farmers = Array.from({ length: count }, (_, i) => {
+
+  // De-dup: load existing farmer_codes/nids for this office to skip duplicates
+  const { data: existing } = await admin.from("farmers")
+    .select("farmer_code, nid, name_en").eq("office_id", officeId);
+  const existingCodes = new Set((existing ?? []).map((x: any) => x.farmer_code));
+  const existingNids = new Set((existing ?? []).map((x: any) => x.nid).filter(Boolean));
+  const existingNames = new Set((existing ?? []).map((x: any) => x.name_en?.toLowerCase()));
+
+  const desired = customNames?.length ? customNames.slice(0, count) : null;
+  const total = desired ? desired.length : count;
+
+  const farmers: any[] = [];
+  for (let i = 0; i < total; i++) {
     const isVoter = i % ratio === 0;
     if (isVoter) voterSeq++;
     const tokenCtx = { seq: voterSeq, office: officeShort, year };
     const isFemale = i % 7 === 0;
-    const name = isFemale ? pick(FEMALE_NAMES, i) : pick(MALE_NAMES, i);
-    const father = pick(FATHERS, i + 3);
-    const mother = pick(MOTHERS, i + 5);
+    const fallback = isFemale ? pick(FEMALE_NAMES, i) : pick(MALE_NAMES, i);
+    const custom = desired?.[i];
+    const en = custom?.en?.trim() || fallback.en;
+    const bn = custom?.bn?.trim() || fallback.bn;
+    const father = custom?.father?.trim() || pick(FATHERS, i + 3).en;
+    const mother = custom?.mother?.trim() || pick(MOTHERS, i + 5).en;
     const loc = locs.length ? locs[i % locs.length] : null;
-    return {
-      farmer_code: `F-${String(i + 1).padStart(5, "0")}`,
-      member_no: String(i + 1).padStart(7, "0"),
-      name_en: name.en,
-      name_bn: name.bn,
-      father_name: father.en,
-      mother_name: mother.en,
-      mobile: `017${String(10000000 + i).padStart(8, "0")}`,
-      nid: `19900${String(1000000000 + i).padStart(10, "0")}`,
+
+    // Generate unique farmer_code by skipping existing
+    let seq = i + 1;
+    let code = `F-${String(seq).padStart(5, "0")}`;
+    while (existingCodes.has(code)) { seq++; code = `F-${String(seq).padStart(5, "0")}`; }
+    existingCodes.add(code);
+
+    const nid = custom?.nid?.trim() || `19900${String(1000000000 + i).padStart(10, "0")}`;
+    if (existingNids.has(nid)) continue; // skip duplicate NID
+    if (existingNames.has(en.toLowerCase()) && !custom) continue; // skip duplicate generated name
+    existingNids.add(nid);
+    existingNames.add(en.toLowerCase());
+
+    farmers.push({
+      farmer_code: code,
+      member_no: String(seq).padStart(7, "0"),
+      name_en: en,
+      name_bn: bn,
+      father_name: father,
+      mother_name: mother,
+      mobile: custom?.mobile?.trim() || `017${String(10000000 + i).padStart(8, "0")}`,
+      nid,
       village: loc?.mouza_name ?? pick(VILLAGES, i),
       office_id: officeId,
       status: "active",
@@ -170,11 +198,12 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
       district_id: loc?.district_id ?? null,
       upazila_id: loc?.upazila_id ?? null,
       mouza_id: loc?.mouza_id ?? null,
-    };
-  });
+    });
+  }
+  if (!farmers.length) return [];
   const { data, error } = await admin.from("farmers")
     .insert(farmers)
-    .select("id, farmer_code, is_voter, voter_number, account_number, mouza_id");
+    .select("id, farmer_code, name_en, name_bn, is_voter, voter_number, account_number, mouza_id");
   if (error) throw new Error(`farmers: ${error.message}`);
   return data ?? [];
 }
@@ -418,9 +447,29 @@ async function previewWipe(admin: any) {
   return counts;
 }
 
+async function verifyLocations(admin: any) {
+  const expected = {
+    divisions: 1,
+    districts: LOCATION_TREE.districts.length,
+    upazilas: LOCATION_TREE.districts.reduce((s, d) => s + d.upazilas.length, 0),
+    mouzas: LOCATION_TREE.districts.reduce((s, d) => s + d.upazilas.reduce((u, x) => u + x.mouzas.length, 0), 0),
+  };
+  const actual: Record<string, number> = {};
+  for (const t of ["divisions", "districts", "upazilas", "mouzas"]) {
+    const { count } = await admin.from(t).select("*", { count: "exact", head: true });
+    actual[t] = count ?? 0;
+  }
+  const missing: string[] = [];
+  for (const [k, v] of Object.entries(expected)) {
+    if (actual[k] < v) missing.push(`${k}: expected ≥${v}, found ${actual[k]}`);
+  }
+  return { ok: missing.length === 0, expected, actual, missing };
+}
+
 // ---- Streaming runner ----
 async function runStream(admin: any, action: string, modules: string[], size: number, voterCfg: VoterCfg,
-  ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null }) {
+  ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null },
+  customNames?: any[]) {
 
   const encoder = new TextEncoder();
   const summary: any = { action, modules, voterCfg };
@@ -462,10 +511,13 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
             modules.includes("expenses") || modules.includes("farmers");
           if (needsAccounts) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
           if (modules.includes("farmers")) {
-            steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি (ভোটার অনুপাত 1/${voterCfg.voterRatio})`, fn: async () => {
-              farmers = await seedFarmers(admin, officeId, size, voterCfg, locs);
+            steps.push({ key: "farmers", label: `${customNames?.length ? customNames.length : size} জন ফার্মার তৈরি (ভোটার অনুপাত 1/${voterCfg.voterRatio})${customNames?.length ? " — CSV থেকে" : ""}`, fn: async () => {
+              farmers = await seedFarmers(admin, officeId, size, voterCfg, locs, customNames);
               summary.farmers = farmers.length;
               summary.voters = farmers.filter((f: any) => f.is_voter).length;
+              summary.farmer_samples = farmers.slice(0, 10).map((f: any) => ({
+                farmer_code: f.farmer_code, name_en: f.name_en, name_bn: f.name_bn, mouza_id: f.mouza_id,
+              }));
             }});
             steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers); }});
           }
@@ -492,6 +544,11 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
           }
+          steps.push({ key: "verify_locations", label: "লোকেশন কাউন্ট যাচাই", fn: async () => {
+            const v = await verifyLocations(admin);
+            summary.location_verification = v;
+            if (!v.ok) send({ type: "warn", step: "verify_locations", message: v.missing.join("; ") });
+          }});
           steps.push({ key: "verify", label: "ভোটার ইন্টিগ্রিটি যাচাই", fn: async () => {
             const v = await verifyVoterIntegrity(admin);
             summary.verification = v;
@@ -616,10 +673,13 @@ Deno.serve(async (req) => {
     if (body?.confirm !== "RESET") return json({ error: "Confirmation required (confirm: 'RESET')" }, 400);
 
     const ctx = { userId: who.user.id, userEmail: who.user.email ?? null, ip, ua };
+    const customNames = Array.isArray(body?.customNames)
+      ? body.customNames.filter((r: any) => r && typeof r.en === "string" && r.en.trim()).slice(0, 1000)
+      : undefined;
 
-    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx);
+    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx, customNames);
 
-    const resp = await runStream(admin, action, modules, size, voterCfg, ctx);
+    const resp = await runStream(admin, action, modules, size, voterCfg, ctx, customNames);
     const text = await resp.text();
     return json({ ok: true, log: text.split("\n").filter(Boolean).map((l) => JSON.parse(l)) });
   } catch (e: any) {
