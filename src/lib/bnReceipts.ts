@@ -170,7 +170,7 @@ function orgBlock(
   return `<div style="text-align:center;font-size:${fontPx}px;color:#333;margin-top:2px;">${lines}</div>`;
 }
 
-function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg"): string {
+function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null): string {
   const t = STR[lang];
   const logo = d.logo_url
     ? `<img src="${d.logo_url}" crossorigin="anonymous" style="height:60px;display:block;margin:0 auto 4px;" />`
@@ -236,11 +236,16 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       ${tableRows}
     </table>
 
-    <div style="display:flex;justify-content:space-between;margin-top:38px;font-size:13px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
       <div style="text-align:left;">
         <div style="border-top:0;padding-top:0;">${t.memberSig}</div>
         <div style="margin-top:18px;font-weight:600;">${d.farmer.name}</div>
       </div>
+      ${qrDataUrl ? `
+      <div style="text-align:center;">
+        <img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin:0 auto;" />
+        <div style="font-size:9px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>
+      </div>` : ""}
       <div style="text-align:right;">
         <div>${t.collectorSig}</div>
         ${signatureUrl
@@ -251,11 +256,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   </div>`;
 }
 
-function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg"): HTMLDivElement {
+function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
-  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize);
-  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize);
+  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl);
+  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl);
   if (copy === "farmer") wrap.innerHTML = farmerCopy;
   else if (copy === "office") wrap.innerHTML = officeCopy;
   else wrap.innerHTML = `${farmerCopy}<div style="border-top:1px dashed #111;margin:8px 22px;"></div>${officeCopy}`;
@@ -280,7 +285,11 @@ function resolveOpts(o?: ReceiptOptions) {
 
 async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions): Promise<jsPDF> {
   const opts = resolveOpts(options);
-  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize);
+  let qrDataUrl: string | null = null;
+  if (data.verify_url) {
+    try { qrDataUrl = await QRCode.toDataURL(data.verify_url, { margin: 0, width: 180 }); } catch { /* noop */ }
+  }
+  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl);
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
