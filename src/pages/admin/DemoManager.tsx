@@ -138,7 +138,8 @@ export default function DemoManager() {
           "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ action, modules: selected, size, confirm: "RESET", stream: true,
-          voterCfg: { voterRatio, voterNumberFormat, accountNumberFormat } }),
+          voterCfg: { voterRatio, voterNumberFormat, accountNumberFormat },
+          customNames: customNames ?? undefined }),
       });
 
       if (!resp.ok || !resp.body) {
