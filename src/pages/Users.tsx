@@ -208,12 +208,14 @@ export default function Users() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>{t("office")}</Label>
-                  <Select value={form.office_id} onValueChange={v => setForm({ ...form, office_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
+                {!(form.role === "developer" || form.role === "super_admin") && (
+                  <div><Label>{t("office")}</Label>
+                    <Select value={form.office_id} onValueChange={v => setForm({ ...form, office_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
@@ -241,25 +243,38 @@ export default function Users() {
                 <TableCell className="font-mono text-xs">{u.username ?? "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{u.email}</TableCell>
                 <TableCell>{u.full_name}</TableCell>
-                <TableCell>
-                  <Select value={u.roles[0] ?? "staff"} onValueChange={(v) => setRole(u.id, v as any)} disabled={u.id === me?.id}>
-                    <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
-                      {isDeveloper && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
-                      {!isDeveloper && u.roles[0] === "super_admin" && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
-                      <SelectItem value="admin">{t("admin")}</SelectItem>
-                      <SelectItem value="committee">{t("committee")}</SelectItem>
-                      <SelectItem value="staff">{t("staff")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Select value={u.office_id ?? ""} onValueChange={(v) => setOffice(u.id, v)}>
-                    <SelectTrigger className="w-[200px]"><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </TableCell>
+                {(() => {
+                  const role = u.roles[0] ?? "staff";
+                  const isGlobal = role === "developer" || role === "super_admin";
+                  const lockRole = u.id === me?.id || role === "developer";
+                  return (
+                    <>
+                      <TableCell>
+                        <Select value={role} onValueChange={(v) => setRole(u.id, v as any)} disabled={lockRole}>
+                          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {isDeveloper && <SelectItem value="developer">Developer</SelectItem>}
+                            {isDeveloper && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
+                            {!isDeveloper && role === "super_admin" && <SelectItem value="super_admin">{t("superAdmin")}</SelectItem>}
+                            <SelectItem value="admin">{t("admin")}</SelectItem>
+                            <SelectItem value="committee">{t("committee")}</SelectItem>
+                            <SelectItem value="staff">{t("staff")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        {isGlobal ? (
+                          <span className="text-xs text-muted-foreground">All offices</span>
+                        ) : (
+                          <Select value={u.office_id ?? ""} onValueChange={(v) => setOffice(u.id, v)}>
+                            <SelectTrigger className="w-[200px]"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                          </Select>
+                        )}
+                      </TableCell>
+                    </>
+                  );
+                })()}
                 <TableCell className="whitespace-nowrap text-xs">{fmtDate(u.created_at)}</TableCell>
                 <TableCell className="text-right space-x-1">
                   <Button size="sm" variant="outline" onClick={() => openPerms(u)} title={t("permissions")}>
