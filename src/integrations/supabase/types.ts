@@ -742,6 +742,7 @@ export type Database = {
           member_no: string | null
           mobile: string | null
           mother_name: string | null
+          mouza_id: string | null
           name_bn: string | null
           name_en: string
           nid: string | null
@@ -749,10 +750,12 @@ export type Database = {
           photo_url: string | null
           post_office: string | null
           status: string
+          union_id: string | null
           upazila: string | null
           upazila_id: string | null
           updated_at: string
           village: string | null
+          village_id: string | null
           voter_cancel_reason: string | null
           voter_cancelled_at: string | null
           voter_cancelled_by: string | null
@@ -760,6 +763,7 @@ export type Database = {
           voter_reactivate_reason: string | null
           voter_reactivated_at: string | null
           voter_reactivated_by: string | null
+          ward_id: string | null
         }
         Insert: {
           account_number?: string | null
@@ -778,6 +782,7 @@ export type Database = {
           member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
+          mouza_id?: string | null
           name_bn?: string | null
           name_en: string
           nid?: string | null
@@ -785,10 +790,12 @@ export type Database = {
           photo_url?: string | null
           post_office?: string | null
           status?: string
+          union_id?: string | null
           upazila?: string | null
           upazila_id?: string | null
           updated_at?: string
           village?: string | null
+          village_id?: string | null
           voter_cancel_reason?: string | null
           voter_cancelled_at?: string | null
           voter_cancelled_by?: string | null
@@ -796,6 +803,7 @@ export type Database = {
           voter_reactivate_reason?: string | null
           voter_reactivated_at?: string | null
           voter_reactivated_by?: string | null
+          ward_id?: string | null
         }
         Update: {
           account_number?: string | null
@@ -814,6 +822,7 @@ export type Database = {
           member_no?: string | null
           mobile?: string | null
           mother_name?: string | null
+          mouza_id?: string | null
           name_bn?: string | null
           name_en?: string
           nid?: string | null
@@ -821,10 +830,12 @@ export type Database = {
           photo_url?: string | null
           post_office?: string | null
           status?: string
+          union_id?: string | null
           upazila?: string | null
           upazila_id?: string | null
           updated_at?: string
           village?: string | null
+          village_id?: string | null
           voter_cancel_reason?: string | null
           voter_cancelled_at?: string | null
           voter_cancelled_by?: string | null
@@ -832,6 +843,7 @@ export type Database = {
           voter_reactivate_reason?: string | null
           voter_reactivated_at?: string | null
           voter_reactivated_by?: string | null
+          ward_id?: string | null
         }
         Relationships: [
           {
