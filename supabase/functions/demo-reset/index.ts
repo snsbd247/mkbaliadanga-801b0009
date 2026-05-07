@@ -8,6 +8,7 @@ const corsHeaders = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+// Wipe everything EXCEPT: profiles, user_roles, role_permissions, user_permissions, demo_operations_log, developer_update_logs
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
   "loan_payments", "loan_installments", "loans", "loan_plans",
@@ -15,16 +16,19 @@ const FULL_WIPE_ORDER = [
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
-  "receipts",
-  "sms_logs", "sms_office_settings",
+  "receipts", "receipt_settings",
+  "sms_logs", "sms_office_settings", "sms_provider_secrets", "sms_settings",
+  "qr_tokens", "qr_rotation_settings",
   "audit_logs", "voter_audit_logs", "import_audit_logs",
   "farmer_login_attempts", "farmer_rejections", "notifications",
-  "qr_tokens",
   "farmer_portal_sessions", "farmer_otps",
   "land_relations", "lands",
   "farmers",
   "seasons",
   "accounts",
+  "card_settings", "company_settings",
+  "mouzas", "upazilas", "districts", "divisions",
+  "offices",
 ];
 
 function pick<T>(arr: T[], i: number): T { return arr[i % arr.length]; }
