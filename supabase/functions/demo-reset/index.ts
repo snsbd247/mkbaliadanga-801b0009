@@ -26,7 +26,7 @@ const FULL_WIPE_ORDER = [
   "farmers",
   "seasons",
   "accounts",
-  "card_settings", "company_settings",
+  
   "mouzas", "upazilas", "districts", "divisions",
   "offices",
 ];
