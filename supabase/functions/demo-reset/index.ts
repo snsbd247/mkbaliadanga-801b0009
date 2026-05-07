@@ -293,7 +293,12 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
           steps.push({ key: "locations", label: "লোকেশন seed", fn: async () => { mouzaId = await seedLocations(admin); } });
           if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
-          if (modules.includes("accounting")) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
+          // Always seed chart-of-accounts before any module that posts ledger entries,
+          // otherwise triggers fail with "null value in column account_id ... violates not-null".
+          const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
+            modules.includes("savings") || modules.includes("irrigation") ||
+            modules.includes("expenses") || modules.includes("farmers");
+          if (needsAccounts) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
           if (modules.includes("farmers")) {
             steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি`, fn: async () => {
               farmers = await seedFarmers(admin, officeId, size); summary.farmers = farmers.length;
