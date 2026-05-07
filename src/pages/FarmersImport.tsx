@@ -73,14 +73,30 @@ const ALL_HEADERS = [
 // existing free-text village field on the farmers table).
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
+  const isCsv = /\.csv$/i.test(file.name) || file.type === "text/csv";
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error);
     reader.onload = () => {
       try {
-        const data = reader.result as ArrayBuffer;
-        const wb = XLSX.read(data, { type: "array" });
-        resolve(wb);
+        if (isCsv) {
+          // Decode as UTF-8 (required for Bangla). Strip BOM if present.
+          // Fallback to windows-1252 only if UTF-8 strict decoding fails.
+          const buf = reader.result as ArrayBuffer;
+          let text: string;
+          try {
+            text = new TextDecoder("utf-8", { fatal: true }).decode(buf);
+          } catch {
+            text = new TextDecoder("windows-1252").decode(buf);
+          }
+          if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+          const wb = XLSX.read(text, { type: "string", raw: true });
+          resolve(wb);
+        } else {
+          const data = reader.result as ArrayBuffer;
+          const wb = XLSX.read(data, { type: "array" });
+          resolve(wb);
+        }
       } catch (e) { reject(e); }
     };
     reader.readAsArrayBuffer(file);

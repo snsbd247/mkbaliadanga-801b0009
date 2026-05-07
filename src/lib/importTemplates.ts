@@ -43,7 +43,8 @@ export function buildCsvTemplate(module: keyof typeof TEMPLATES): string {
 
 export function downloadCsvTemplate(module: keyof typeof TEMPLATES) {
   const csv = buildCsvTemplate(module);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  // Prepend UTF-8 BOM so Excel opens Bangla/Unicode CSV correctly
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
