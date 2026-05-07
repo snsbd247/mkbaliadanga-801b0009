@@ -300,27 +300,40 @@ export default function Users() {
           <DialogHeader>
             <DialogTitle>{t("permissions")} — {permFor?.full_name || permFor?.email}</DialogTitle>
           </DialogHeader>
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead>{t("module")}</TableHead>
-              <TableHead className="text-center">{t("canView")}</TableHead>
-              <TableHead className="text-center">{t("canAdd")}</TableHead>
-              <TableHead className="text-center">{t("canEdit")}</TableHead>
-              <TableHead className="text-center">{t("canDelete")}</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {ALL_MODULES.map((m) => (
-                <TableRow key={m}>
-                  <TableCell className="font-medium capitalize">{m}</TableCell>
-                  {(["can_view","can_add","can_edit","can_delete"] as const).map((k) => (
-                    <TableCell key={k} className="text-center">
-                      <Checkbox checked={!!perms[m]?.[k]} onCheckedChange={() => togglePerm(m, k)} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {(() => {
+            const role = (permFor?.roles?.[0] as string) ?? "staff";
+            const isGlobal = role === "developer" || role === "super_admin";
+            return (
+              <>
+                {isGlobal && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {role === "developer" ? "Developer" : t("superAdmin")} has full access to all modules across all offices. Permissions cannot be restricted.
+                  </p>
+                )}
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>{t("module")}</TableHead>
+                    <TableHead className="text-center">{t("canView")}</TableHead>
+                    <TableHead className="text-center">{t("canAdd")}</TableHead>
+                    <TableHead className="text-center">{t("canEdit")}</TableHead>
+                    <TableHead className="text-center">{t("canDelete")}</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {ALL_MODULES.map((m) => (
+                      <TableRow key={m}>
+                        <TableCell className="font-medium capitalize">{m}</TableCell>
+                        {(["can_view","can_add","can_edit","can_delete"] as const).map((k) => (
+                          <TableCell key={k} className="text-center">
+                            <Checkbox checked={isGlobal ? true : !!perms[m]?.[k]} disabled={isGlobal} onCheckedChange={() => togglePerm(m, k)} />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </>
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPermFor(null)}>{t("cancel")}</Button>
             <Button onClick={savePerms}>{t("save")}</Button>
