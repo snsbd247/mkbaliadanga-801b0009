@@ -51,7 +51,7 @@ async function seedFarmers(admin: any, officeId: string, count: number) {
     status: "active",
     is_voter: i % 3 === 0,
   }));
-  const { data, error } = await admin.from("farmers").insert(farmers).select("id");
+  const { data, error } = await admin.from("farmers").insert(farmers).select("id, is_voter");
   if (error) throw new Error(`farmers: ${error.message}`);
   return data ?? [];
 }
