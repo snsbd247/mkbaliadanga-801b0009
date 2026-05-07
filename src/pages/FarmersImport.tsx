@@ -60,7 +60,7 @@ const REQUIRED = ["name_en"];
 const ALL_HEADERS = [
   "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
   "member_no", "is_voter", "status", "village", "address",
-  "division", "district", "upazila", "union", "ward", "village_loc", "mouza",
+  "division", "district", "upazila", "mouza",
 ];
 
 // Notes:
