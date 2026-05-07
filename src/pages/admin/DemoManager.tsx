@@ -263,6 +263,30 @@ export default function DemoManager() {
         </Card>
       )}
 
+      {willImport && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Voter Configuration</CardTitle>
+            <CardDescription>প্রতি কতজনে ১জন voter হবে এবং voter/account number ফরম্যাট সেট করুন। টোকেন: {"{seq:N}"}, {"{office}"}, {"{year}"}</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <Label>Voter Ratio (1 in N)</Label>
+              <Input type="number" min={1} max={20} value={voterRatio}
+                onChange={(e) => setVoterRatio(Math.max(1, Number(e.target.value) || 3))} />
+            </div>
+            <div>
+              <Label>Voter Number Format</Label>
+              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="V-{seq:5}" />
+            </div>
+            <div>
+              <Label>Account Number Format</Label>
+              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="SAV-{seq:6}" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Button onClick={fetchPreview} disabled={loading} variant="outline" className="w-full" size="lg">
         {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
         {t("dmPreviewBtn" as any)}
