@@ -448,7 +448,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
         }
 
         let officeId = "11111111-1111-1111-1111-111111111111";
-        let mouzaId: string | null = null;
+        let locs: LocPick[] = [];
         let farmers: any[] = [];
         const loanFarmerIds = new Set<string>();
         const savingsFarmerIds = new Set<string>();
@@ -456,7 +456,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
 
         if (action === "import" || action === "both") {
           steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
-          steps.push({ key: "locations", label: "লোকেশন seed", fn: async () => { mouzaId = await seedLocations(admin); } });
+          steps.push({ key: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা) seed", fn: async () => { locs = await seedLocations(admin); summary.locations = locs.length; } });
           if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
           const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
             modules.includes("savings") || modules.includes("irrigation") ||
@@ -464,7 +464,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (needsAccounts) steps.push({ key: "accounting", label: "চার্ট অফ একাউন্টস seed", fn: async () => { await seedAccounts(admin); } });
           if (modules.includes("farmers")) {
             steps.push({ key: "farmers", label: `${size} জন ফার্মার তৈরি (ভোটার অনুপাত 1/${voterCfg.voterRatio})`, fn: async () => {
-              farmers = await seedFarmers(admin, officeId, size, voterCfg);
+              farmers = await seedFarmers(admin, officeId, size, voterCfg, locs);
               summary.farmers = farmers.length;
               summary.voters = farmers.filter((f: any) => f.is_voter).length;
             }});
