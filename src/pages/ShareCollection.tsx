@@ -18,6 +18,7 @@ import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { toast } from "sonner";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useLang } from "@/i18n/LanguageProvider";
 
