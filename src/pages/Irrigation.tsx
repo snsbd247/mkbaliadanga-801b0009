@@ -37,16 +37,16 @@ export default function Irrigation() {
   useEffect(() => {
     if (!form.farmer_id) { setLands([]); return; }
     (async () => {
-      // Own lands
+      // Own lands (with mouza_id for patwari auto-default)
       const { data: own } = await supabase
         .from("lands")
-        .select("id,dag_no,land_size,farmer_id")
+        .select("id,dag_no,land_size,farmer_id,mouza_id")
         .eq("farmer_id", form.farmer_id)
         .is("deleted_at", null);
       // Sharecropper lands (via land_relations)
       const { data: rels } = await supabase
         .from("land_relations")
-        .select("land_id, lands(id,dag_no,land_size,farmer_id)")
+        .select("land_id, lands(id,dag_no,land_size,farmer_id,mouza_id)")
         .eq("sharecropper_farmer_id", form.farmer_id)
         .is("deleted_at", null);
       const ownIds = new Set((own ?? []).map((l: any) => l.id));
@@ -58,6 +58,14 @@ export default function Irrigation() {
       setLands([...ownMarked, ...sharecrop]);
     })();
   }, [form.farmer_id]);
+  // Auto-default patwari based on land's mouza (admin can override in dropdown)
+  useEffect(() => {
+    if (!form.land_id || editId) return;
+    const ld = lands.find((l: any) => l.id === form.land_id);
+    if (!ld?.mouza_id) return;
+    const match = patwaris.find((p: any) => p.mouza_id === ld.mouza_id && p.is_active);
+    if (match && !form.patwari_id) setForm((f: any) => ({ ...f, patwari_id: match.id }));
+  }, [form.land_id, lands, patwaris, editId]);
   // Auto-fill quantity from land size when basis = per_size
   useEffect(() => {
     if (form.basis !== "per_size" || !form.land_id) return;
@@ -112,13 +120,14 @@ export default function Irrigation() {
   }, [form.farmer_id]);
 
   async function load() {
-    let q = supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200);
+    let q = supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name), patwaris(name,name_bn,mobile)").order("entry_date", { ascending: false }).limit(200);
     q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
-    const [r, s] = await Promise.all([
+    const [r, s, p] = await Promise.all([
       q,
       supabase.from("seasons").select("*").order("year", { ascending: false }),
+      supabase.from("patwaris").select("id,name,name_bn,mobile,mouza_id,is_active").eq("is_active", true).order("name"),
     ]);
-    setRows(r.data ?? []); setSeasons(s.data ?? []);
+    setRows(r.data ?? []); setSeasons(s.data ?? []); setPatwaris(p.data ?? []);
   }
   async function restore(id: string) {
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: null } as any).eq("id", id);
