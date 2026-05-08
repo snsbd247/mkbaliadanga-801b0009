@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Eye, Search, Trash2, Pencil, AlertTriangle, Loader2, Download, Upload } from "lucide-react";
+import { TruncateText } from "@/components/ui/truncate-text";
 import * as XLSX from "xlsx";
 
 const FARMER_TEMPLATE_HEADERS = [
@@ -634,13 +635,13 @@ export default function Farmers() {
               <TableRow key={f.id} className="cursor-pointer" onClick={() => nav(`/farmers/${f.id}`)}>
                 <TableCell className="font-mono text-xs">{f.member_no || "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{f.voter_number || "—"}</TableCell>
-                <TableCell>
-                  <div className="font-medium">{f.name_en}</div>
-                  {f.name_bn && <div className="text-xs text-muted-foreground">{f.name_bn}</div>}
+                <TableCell className="max-w-[220px]">
+                  <TruncateText className="font-medium block">{f.name_en}</TruncateText>
+                  {f.name_bn && <TruncateText className="text-xs text-muted-foreground block">{f.name_bn}</TruncateText>}
                 </TableCell>
-                <TableCell>{f.mobile}</TableCell>
-                <TableCell>{f.village || f.villages?.name_bn || f.villages?.name || "—"}</TableCell>
-                <TableCell className="text-xs">{f.offices?.name}</TableCell>
+                <TableCell className="max-w-[140px]"><TruncateText>{f.mobile}</TruncateText></TableCell>
+                <TableCell className="max-w-[160px]"><TruncateText>{f.village || f.villages?.name_bn || f.villages?.name || "—"}</TruncateText></TableCell>
+                <TableCell className="text-xs max-w-[160px]"><TruncateText>{f.offices?.name}</TruncateText></TableCell>
                 <TableCell><Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status}</Badge></TableCell>
                 <TableCell className="text-right">
                   {(() => {

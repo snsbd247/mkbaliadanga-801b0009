@@ -13,6 +13,7 @@ import { MenuSearch } from "./MenuSearch";
 import { MenuShortcutsHelp } from "./MenuShortcutsHelp";
 import { MissingI18nPanel } from "@/components/dev/MissingI18nPanel";
 import { useBranding } from "@/lib/branding";
+import { TruncateText } from "@/components/ui/truncate-text";
 import { SiteFooter } from "./SiteFooter";
 
 export function AppLayout() {
@@ -79,7 +80,7 @@ export function AppLayout() {
                   <button className="flex items-center gap-2 rounded-md border bg-card px-2 py-1 text-sm hover:bg-accent/10 max-w-[260px]">
                     <Avatar className="h-7 w-7 shrink-0"><AvatarFallback className="bg-primary text-primary-foreground text-xs">{initial}</AvatarFallback></Avatar>
                     <div className="text-left min-w-0">
-                      <div className="text-xs font-medium leading-tight truncate">{user.email}</div>
+                      <TruncateText className="text-xs font-medium leading-tight block">{user.email}</TruncateText>
                       <div className="text-[10px] text-muted-foreground leading-tight">{roleLabel}</div>
                     </div>
                   </button>

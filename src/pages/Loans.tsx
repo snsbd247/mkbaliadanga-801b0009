@@ -13,6 +13,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Check, X, Printer, ChevronDown, ChevronRight, Trash2, Pencil } from "lucide-react";
+import { TruncateText } from "@/components/ui/truncate-text";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -338,7 +339,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                   )}
                 </TableCell>
                 <TableCell>{fmtDate(l.issued_on)}</TableCell>
-                <TableCell>{l.farmers?.name_en} <span className="text-xs text-muted-foreground">({l.farmers?.farmer_code})</span></TableCell>
+                <TableCell className="max-w-[220px]"><TruncateText>{l.farmers?.name_en}</TruncateText> <span className="text-xs text-muted-foreground">({l.farmers?.farmer_code})</span></TableCell>
                 <TableCell>{money(l.principal)}</TableCell>
                 <TableCell>{l.interest_enabled ? `${l.interest_rate}%` : "-"}</TableCell>
                 <TableCell>{money(l.total_payable)}</TableCell>

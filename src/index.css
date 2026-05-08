@@ -179,8 +179,46 @@
 
 @media print {
   .no-print { display: none !important; }
-  body { background: white; }
+  body { background: white; color: black; }
+
+  /* A4 page setup with safe margins */
+  @page { size: A4; margin: 12mm; }
+
+  /* Avoid breaking rows / cards across pages */
+  tr, .print-keep, .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+
+  /* Repeat table headers/footers on every printed page */
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+
+  /* Wrap long unbroken strings (NIDs, mobile, account no) in print */
+  td, th, .print-wrap {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Drop horizontal scroll containers in print so full content shows */
+  [data-table-wrap], .overflow-x-auto, .overflow-auto, .overflow-x-scroll {
+    overflow: visible !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  /* Sticky header/sidebar should not overlap printed content */
+  header, .sticky, [data-sidebar="sidebar"] {
+    position: static !important;
+  }
+
+  /* Force background colors / images to print (banners, badges) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide app chrome by default in print — pages opt their content in via .print-area */
+  .no-print-on-print { display: none !important; }
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   *,
