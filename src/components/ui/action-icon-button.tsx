@@ -2,6 +2,7 @@ import * as React from "react";
 import { Pencil, Trash2, Eye, Printer, Loader2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useLang } from "@/i18n/LanguageProvider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -115,15 +116,20 @@ export const DeleteButton = React.forwardRef<HTMLButtonElement, DeleteProps>(
   (
     {
       onConfirm,
-      confirmTitle = "Are you sure?",
-      confirmDescription = "This action cannot be undone.",
-      confirmLabel = "Delete",
-      cancelLabel = "Cancel",
+      confirmTitle,
+      confirmDescription,
+      confirmLabel,
+      cancelLabel,
       disabled,
       ...rest
     },
     ref,
   ) => {
+    const { t } = useLang();
+    const title = confirmTitle ?? t("confirmDelete" as any);
+    const desc = confirmDescription ?? t("confirmDeleteDescription" as any);
+    const okLabel = confirmLabel ?? t("delete" as any);
+    const noLabel = cancelLabel ?? t("cancel" as any);
     if (!onConfirm) return <DeleteBase ref={ref} disabled={disabled} {...rest} />;
     return (
       <AlertDialog>
