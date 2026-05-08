@@ -752,8 +752,8 @@ export default function FarmerDetail() {
                     <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                     <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(l)} title={t("edit")}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => setDelTarget(l)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <EditButton onClick={() => openEdit(l)} title={t("edit")} />
+                      <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
                     </TableCell>
                   </TableRow>
                 ))}
