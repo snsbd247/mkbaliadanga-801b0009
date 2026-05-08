@@ -31,7 +31,8 @@ function fmt(n: number) {
 export default function FarmerDashboard() {
   const nav = useNavigate();
   const brand = useBranding();
-  const { t } = useLang();
+  const { t, setLang } = useLang();
+  useEffect(() => { setLang("bn"); }, [setLang]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PortalData | null>(null);
