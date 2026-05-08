@@ -163,6 +163,7 @@ export default function Irrigation() {
       base_charge: form.base_charge, canal_charge: form.canal_charge,
       maintenance_charge: form.maintenance_charge, other_charge: form.other_charge,
       paid_amount: form.paid_amount, entry_date: form.entry_date,
+      patwari_id: form.patwari_id || null,
     };
     let error;
     if (editId) {
@@ -187,6 +188,7 @@ export default function Irrigation() {
       canal_charge: Number(r.canal_charge), maintenance_charge: Number(r.maintenance_charge),
       other_charge: Number(r.other_charge), paid_amount: Number(r.paid_amount),
       entry_date: r.entry_date,
+      patwari_id: r.patwari_id || "",
     });
     setOpen(true);
   }
