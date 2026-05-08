@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Eye, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
