@@ -203,9 +203,9 @@ export default function Patwaris() {
                 </TableCell>
                 <TableCell className="text-right">
                   <Link to={`/admin/patwaris/${r.id}`}>
-                    <Button size="icon" variant="ghost" title="প্রোফাইল"><Eye className="h-4 w-4" /></Button>
+                    <ViewButton title="প্রোফাইল" />
                   </Link>
-                  <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="এডিট">✎</Button>
+                  <EditButton onClick={() => openEdit(r)} title="এডিট" />
                 </TableCell>
               </TableRow>
             ))}
