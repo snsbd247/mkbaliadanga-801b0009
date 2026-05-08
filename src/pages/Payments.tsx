@@ -16,6 +16,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer } from "lucide-react";
+import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { downloadBnReceiptPdf, type ReceiptCopy } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
@@ -373,7 +374,7 @@ export default function Payments() {
                 <TableRow key={p.id}>
                   <TableCell>{fmtDate(p.created_at)}</TableCell>
                   <TableCell className="font-mono text-xs">{p.receipt_no ?? "—"}</TableCell>
-                  <TableCell>{p.farmers?.name_en} <span className="text-xs text-muted-foreground">({p.farmers?.farmer_code})</span></TableCell>
+                  <TableCell className="max-w-[220px]"><TruncateText>{p.farmers?.name_en}</TruncateText> <span className="text-xs text-muted-foreground">({p.farmers?.farmer_code})</span></TableCell>
                   <TableCell className="space-x-1">
                     {(p.payment_allocations ?? []).length > 0
                       ? p.payment_allocations.map((a: any) => <Badge key={a.id} variant="outline">{a.kind} {money(a.amount)}</Badge>)

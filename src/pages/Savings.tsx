@@ -13,6 +13,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { TruncateText } from "@/components/ui/truncate-text";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -436,7 +437,7 @@ export default function Savings() {
                         </Button>
                       </TableCell>
                       <TableCell>{fmtDate(fp.start_date)}</TableCell>
-                      <TableCell>{(lang === "bn" && fp.farmers?.name_bn) || fp.farmers?.name_en} <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
+                      <TableCell className="max-w-[220px]"><TruncateText>{(lang === "bn" && fp.farmers?.name_bn) || fp.farmers?.name_en}</TruncateText> <span className="text-xs text-muted-foreground">({fp.farmers?.farmer_code})</span></TableCell>
                       <TableCell>{planLabel(fp)} <span className="text-xs text-muted-foreground">({fp.savings_plans?.duration_months}mo / {fp.savings_plans?.installment_type})</span></TableCell>
                       <TableCell>{money(fp.savings_plans?.installment_amount)}</TableCell>
                       <TableCell>{money(fp.expected_total)}</TableCell>
@@ -568,7 +569,7 @@ function TxnTable({ rows, t, isAdmin, isSuper, showDeleted, onDecide, onRestore,
         {rows.map((r: any) => (
           <TableRow key={r.id}>
             <TableCell>{fmtDate(r.txn_date)}</TableCell>
-            <TableCell>{r.farmers?.name_en} <span className="text-xs text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
+            <TableCell className="max-w-[220px]"><TruncateText>{r.farmers?.name_en}</TruncateText> <span className="text-xs text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
             <TableCell><Badge variant={r.type === "deposit" ? "default" : "secondary"}>{t(r.type as any)}</Badge></TableCell>
             <TableCell className="font-semibold">{money(r.amount)}</TableCell>
             <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "pending" ? "outline" : "destructive"}>{t(r.status as any)}</Badge></TableCell>
