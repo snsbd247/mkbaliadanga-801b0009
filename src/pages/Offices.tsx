@@ -12,6 +12,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { fmtDate } from "@/lib/format";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 
 export default function Offices() {
   const { t } = useLang();
