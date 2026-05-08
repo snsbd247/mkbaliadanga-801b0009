@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Plus, Trash2, Save } from "lucide-react";
+import { DeleteButton } from "@/components/ui/action-icon-button";
 import { money } from "@/lib/format";
 import { useLang } from "@/i18n/LanguageProvider";
 

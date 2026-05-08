@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { Lock, Unlock, RefreshCw, FileDown, Eye } from "lucide-react";
+import { ViewButton } from "@/components/ui/action-icon-button";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF } from "@/lib/exports";
 import { getFiscalStartMonth, listFiscalYears, monthRange, quarterRange } from "@/lib/accounting";

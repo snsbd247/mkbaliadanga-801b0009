@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Send, Eye, CalendarClock, AlertTriangle, RotateCcw, Wand2, FlaskConical, CheckCircle2, XCircle, Trash2, KeyRound, Save } from "lucide-react";
+import { DeleteButton } from "@/components/ui/action-icon-button";
 import {
   AlertDialog,
   AlertDialogAction,

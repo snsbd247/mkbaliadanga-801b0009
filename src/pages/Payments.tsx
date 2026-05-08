@@ -16,6 +16,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer, ArrowDownToLine } from "lucide-react";
+import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
