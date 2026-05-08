@@ -236,6 +236,7 @@ export const translations = {
     qrRotation: "QR Rotation",
     bulkCards: "Bulk Cards",
     bulkFarmerImport: "Bulk Farmer Import",
+    patwaris: "Patwaris",
     receiptTemplate: "Receipt Template",
     smsSettings: "SMS Settings",
     smsLogs: "SMS Logs",
