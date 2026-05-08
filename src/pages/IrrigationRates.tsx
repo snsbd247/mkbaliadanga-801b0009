@@ -13,6 +13,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { toast } from "sonner";
 import { money } from "@/lib/format";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 
 type Row = {
   id: string;
