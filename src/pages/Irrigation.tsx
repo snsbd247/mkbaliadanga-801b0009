@@ -329,11 +329,11 @@ export default function Irrigation() {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>{t("selectFarmer")}</Label>
                 <FarmerSearchSelect value={form.farmer_id || null}
-                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "", land_id: "" })}
+                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "", land_id: "", patwari_id: "" })}
                   placeholder={t("searchFarmerNameIdMobile")} />
               </div>
               <div><Label>{t("lands")}</Label>
-                <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
+                <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v, patwari_id: "" })}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {lands.map((l: any) => (
