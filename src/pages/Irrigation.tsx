@@ -323,8 +323,23 @@ export default function Irrigation() {
               <div><Label>{t("lands")}</Label>
                 <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{lands.map(l => <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} ({l.land_size} শতক)</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {lands.map((l: any) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        Dag {l.dag_no} ({l.land_size} শতক) — {l._ownership === "sharecrop" ? "🤝 বর্গা নেয়া" : "🏠 নিজের জমি"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
+                {form.land_id && (() => {
+                  const sel = lands.find((l: any) => l.id === form.land_id);
+                  if (!sel) return null;
+                  return (
+                    <p className={`text-xs mt-1 font-medium ${sel._ownership === "sharecrop" ? "text-amber-600" : "text-emerald-600"}`}>
+                      {sel._ownership === "sharecrop" ? "⚠️ এটি বর্গা নেয়া জমি" : "✓ এটি কৃষকের নিজের জমি"}
+                    </p>
+                  );
+                })()}
               </div>
               <div><Label>{t("season")}</Label>
                 <Select value={form.season_id} onValueChange={v => setForm({ ...form, season_id: v })}>
