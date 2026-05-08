@@ -127,7 +127,7 @@ export const DeleteButton = React.forwardRef<HTMLButtonElement, DeleteProps>(
   ) => {
     const { t } = useLang();
     const title = confirmTitle ?? t("confirmDelete" as any);
-    const desc = confirmDescription ?? t("confirmDeleteDescription" as any);
+    const desc = confirmDescription;
     const okLabel = confirmLabel ?? t("delete" as any);
     const noLabel = cancelLabel ?? t("cancel" as any);
     if (!onConfirm) return <DeleteBase ref={ref} disabled={disabled} {...rest} />;
