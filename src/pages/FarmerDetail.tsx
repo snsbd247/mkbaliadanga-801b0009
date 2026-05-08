@@ -780,7 +780,7 @@ export default function FarmerDetail() {
                   <TableCell><Badge>{t(s.status as any)}</Badge></TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu onSelect={(c) => printSavings(s, c)} title={t("print")} />
-                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteSavings(s)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                    {isSuper && <DeleteButton onClick={() => deleteSavings(s)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
               ))}
