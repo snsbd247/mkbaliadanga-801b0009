@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { toast } from "sonner";
 
 const empty = {
