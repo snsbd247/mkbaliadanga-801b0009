@@ -104,8 +104,10 @@ export default function Offices() {
                 <TableCell>{o.address}</TableCell>
                 {isSuper && (
                   <TableCell className="text-right">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(o)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => del(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <div className="inline-flex items-center gap-1">
+                      <EditButton onClick={() => openEdit(o)} />
+                      <DeleteButton onClick={() => del(o.id)} />
+                    </div>
                   </TableCell>
                 )}
               </TableRow>
