@@ -128,7 +128,7 @@ export function AppSidebar() {
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), developerOnly: true },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
-        { url: "/admin/patwaris", icon: Users, label: "পাটুয়ারী", superOnly: false },
+        { url: "/admin/patwaris", icon: Users, label: t("patwaris") },
         { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
       ],
