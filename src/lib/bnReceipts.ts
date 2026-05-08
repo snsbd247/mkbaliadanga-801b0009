@@ -60,6 +60,10 @@ export interface BnReceiptData {
   charge_amount?: number | null;
   previous_due?: number | null;
 
+  /** Patwari (responsible field officer) — irrigation receipts only */
+  patwari_name?: string | null;
+  patwari_mobile?: string | null;
+
   description?: string | null;
   outstanding?: number | null;
 
@@ -107,6 +111,7 @@ const STR = {
     memberSig: "সদস্যের স্বাক্ষর",
     collectorSig: "আদায়কারীর স্বাক্ষর",
     regNo: "নিবন্ধন নং:",
+    patwari: "পাটুয়ারী:",
   },
   en: {
     titleIrr: "Irrigation Charge Receipt",
@@ -136,6 +141,7 @@ const STR = {
     memberSig: "Member signature",
     collectorSig: "Collector signature",
     regNo: "Reg. No:",
+    patwari: "Patwari:",
   },
 } as const;
 
