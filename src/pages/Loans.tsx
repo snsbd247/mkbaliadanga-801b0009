@@ -373,7 +373,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                     <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "rejected")} title={t("reject")}><X className="h-4 w-4 text-destructive" /></Button>
                   </>)}
                   {!showDeleted && (l.status === "approved" || l.status === "paid") && (
-                    <Button size="icon" variant="ghost" onClick={() => onPrint(l)} title={t("printDisbursementReceipt")}><Printer className="h-4 w-4" /></Button>
+                    <PrintButton onClick={() => onPrint(l)} title={t("printDisbursementReceipt")} />
                   )}
                   {!showDeleted && isSuper && (<>
                     <EditButton onClick={() => onEdit(l)} title={t("editTip")} />
