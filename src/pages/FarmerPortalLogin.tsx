@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useBranding } from "@/lib/branding";
-import { LanguageToggle } from "@/components/LanguageToggle";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -19,7 +18,8 @@ const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export default function FarmerPortalLogin() {
   const nav = useNavigate();
   const brand = useBranding();
-  const { t } = useLang();
+  const { t, setLang } = useLang();
+  useEffect(() => { setLang("bn"); }, [setLang]);
   const { user, isSuper, isAdmin, isCommittee, rolesLoaded, roles } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [mobile, setMobile] = useState("");
@@ -101,9 +101,6 @@ export default function FarmerPortalLogin() {
         aria-labelledby="portal-title"
       >
         <div className="w-full max-w-md space-y-4 sm:space-y-5">
-          <div className="flex justify-end items-center">
-            <LanguageToggle />
-          </div>
 
           <header className="text-center">
             {brand.logo_url ? (

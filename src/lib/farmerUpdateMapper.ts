@@ -36,5 +36,10 @@ export function toFarmerUpdatePayload(
   Object.assign(out, extras);
   if (out.voter_number === "" || out.voter_number == null) delete out.voter_number;
   if (out.office_id === "") out.office_id = null;
+  // Voter = Savings: voter_number থাকলেই active সদস্য (auto-derive)
+  if ("voter_number" in out && out.voter_number) {
+    out.is_voter = true;
+    if (!out.account_number) out.account_number = out.voter_number;
+  }
   return out;
 }

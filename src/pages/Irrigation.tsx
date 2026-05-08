@@ -33,7 +33,30 @@ export default function Irrigation() {
   const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, [showDeleted]);
-  useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); else setLands([]); }, [form.farmer_id]);
+  useEffect(() => {
+    if (!form.farmer_id) { setLands([]); return; }
+    (async () => {
+      // Own lands
+      const { data: own } = await supabase
+        .from("lands")
+        .select("id,dag_no,land_size,farmer_id")
+        .eq("farmer_id", form.farmer_id)
+        .is("deleted_at", null);
+      // Sharecropper lands (via land_relations)
+      const { data: rels } = await supabase
+        .from("land_relations")
+        .select("land_id, lands(id,dag_no,land_size,farmer_id)")
+        .eq("sharecropper_farmer_id", form.farmer_id)
+        .is("deleted_at", null);
+      const ownIds = new Set((own ?? []).map((l: any) => l.id));
+      const ownMarked = (own ?? []).map((l: any) => ({ ...l, _ownership: "own" as const }));
+      const sharecrop = (rels ?? [])
+        .map((r: any) => r.lands)
+        .filter((l: any) => l && !ownIds.has(l.id))
+        .map((l: any) => ({ ...l, _ownership: "sharecrop" as const }));
+      setLands([...ownMarked, ...sharecrop]);
+    })();
+  }, [form.farmer_id]);
   // Auto-fill quantity from land size when basis = per_size
   useEffect(() => {
     if (form.basis !== "per_size" || !form.land_id) return;
@@ -300,8 +323,23 @@ export default function Irrigation() {
               <div><Label>{t("lands")}</Label>
                 <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>{lands.map(l => <SelectItem key={l.id} value={l.id}>Dag {l.dag_no} ({l.land_size} শতক)</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {lands.map((l: any) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        Dag {l.dag_no} ({l.land_size} শতক) — {l._ownership === "sharecrop" ? "🤝 বর্গা নেয়া" : "🏠 নিজের জমি"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
+                {form.land_id && (() => {
+                  const sel = lands.find((l: any) => l.id === form.land_id);
+                  if (!sel) return null;
+                  return (
+                    <p className={`text-xs mt-1 font-medium ${sel._ownership === "sharecrop" ? "text-amber-600" : "text-emerald-600"}`}>
+                      {sel._ownership === "sharecrop" ? "⚠️ এটি বর্গা নেয়া জমি" : "✓ এটি কৃষকের নিজের জমি"}
+                    </p>
+                  );
+                })()}
               </div>
               <div><Label>{t("season")}</Label>
                 <Select value={form.season_id} onValueChange={v => setForm({ ...form, season_id: v })}>

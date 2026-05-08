@@ -12,70 +12,40 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Upload, Download, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, Download, AlertTriangle, Loader2 } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
-import {
-  validateLocationChain, parseLocationDbError, type LocationLevel,
-} from "@/lib/locationValidation";
+import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 
 /**
- * Bulk Farmer Import — names-based CSV / Excel
+ * Bulk Farmer Import — simplified
  *
- * Required columns (case-insensitive):
- *   name_en
- * Optional but recommended:
- *   name_bn, father_name, mother_name, nid, mobile, member_no, status,
- *   division, district, upazila, union, ward, village, mouza
+ * Columns (case-insensitive):
+ *   farmer_id     (optional) — যদি দেয়া হয় ও already exist করে, এটি UPDATE হবে; না দিলে INSERT।
+ *   voter_number  (optional) — থাকলে farmer অটো voter / savings active সদস্য হিসেবে গণ্য হবে।
+ *   name_en       (required)
+ *   name_bn       (optional)
+ *   father_name   (optional)
+ *   mobile        (optional)
+ *   village       (optional, free-text)
  *
- * Locations are resolved from name → ID using existing tables. The same
- * cascading rules as LocationPicker apply: each level must belong to its parent.
- * Rows that fail are highlighted with the EXACT failing level so the user
- * can fix in-place and re-validate before saving.
+ * File: .csv বা .xlsx
  */
 
 type Cell = string | number | null;
 type RowMap = Record<string, Cell>;
 
-type LocResolved = Partial<Record<
-  "division_id" | "district_id" | "upazila_id" | "union_id" | "ward_id" | "village_id" | "mouza_id",
-  string | null
->>;
-
 type RowState = {
   idx: number;
   raw: RowMap;
-  // Editable copies of the location names so the user can correct in-place.
-  loc: {
-    division: string; district: string; upazila: string; mouza: string;
-  };
-  resolved: LocResolved;
-  failedLevel: LocationLevel | null;
-  errorMsg: string | null;
   status: "pending" | "valid" | "invalid" | "saving" | "saved" | "error";
+  errorMsg: string | null;
+  action: "insert" | "update" | null;
 };
 
-const REQUIRED = ["name_en"];
-const ALL_HEADERS = [
-  "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
-  "member_no", "is_voter", "status", "village", "address",
-  "division", "district", "upazila", "mouza",
-];
-
-// Notes:
-// - account_number is auto-generated (not imported).
-// - member_no is optional; if provided AND is_voter=true, must be unique.
-// - is_voter accepts: true/false/yes/no/1/0 (default false).
-// - post_office removed from template.
-
-// We keep the legacy free-text "village" column as-is, and use "village_loc"
-// for the cascading hierarchy village name (to avoid colliding with the
-// existing free-text village field on the farmers table).
-
-import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
+const COLUMNS = ["farmer_id", "voter_number", "name_en", "name_bn", "father_name", "mobile", "village"] as const;
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
-  // Treat .csv and .txt (Excel "Unicode Text" export, tab-delimited UTF-16) as text.
   const isText = /\.(csv|txt|tsv)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -84,7 +54,6 @@ function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
       try {
         if (isText) {
           const text = decodeSpreadsheetBuffer(reader.result as ArrayBuffer);
-          // XLSX auto-detects delimiter (comma / tab) when raw text is passed.
           resolve(XLSX.read(text, { type: "string", raw: true }));
         } else {
           resolve(XLSX.read(reader.result as ArrayBuffer, { type: "array" }));
@@ -117,7 +86,6 @@ export default function FarmersImport() {
   const { isAdmin, officeId, rolesLoaded } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<RowState[]>([]);
-  const [resolving, setResolving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
 
@@ -125,45 +93,33 @@ export default function FarmersImport() {
     document.title = `Bulk Farmer Import — ${t("appName")}`;
   }, [t]);
 
-  function levelLabel(l: LocationLevel) {
-    const map: Record<LocationLevel, string> = {
-      division: t("division"), district: t("district"), upazila: t("upazila"),
-      union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
-    };
-    return map[l];
-  }
-
-  function downloadTemplate() {
-    const ws = XLSX.utils.aoa_to_sheet([
-      ALL_HEADERS,
-      [
-        "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Salma Begum",
-        "1234567890123", "01711000000", "", "true", "active",
-        "Bagbari (free text)", "Holding 12, Road 3",
-        "Rajshahi", "Chapainawabganj", "Chapainawabganj Sadar", "Mouza A",
-      ],
-      [
-        "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim Uddin", "Mst. Khaleda",
-        "9876543210987", "01811000000", "", "false", "active",
-        "", "",
-        "Rajshahi", "Chapainawabganj", "Shibganj", "Mouza B",
-      ],
-    ]);
-    // Add a notes sheet so users know which columns are required.
+  function downloadTemplate(format: "xlsx" | "csv") {
+    const headers = [...COLUMNS];
+    const sample = [
+      ["F-1001", "10001", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
+      ["",       "",      "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
+    ];
+    if (format === "csv") {
+      const csv = [headers, ...sample]
+        .map((r) => r.map((v) => /[",\n]/.test(String(v ?? "")) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? "")).join(","))
+        .join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "farmer-import-template.csv"; a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
     const notes = XLSX.utils.aoa_to_sheet([
       ["Column", "Required", "Notes"],
-      ["name_en", "Yes", "Farmer name in English"],
-      ["name_bn", "No", "Farmer name in Bangla"],
+      ["farmer_id", "No", "Existing farmer code → row will UPDATE; খালি হলে নতুন farmer তৈরি হবে।"],
+      ["voter_number", "No", "নম্বর থাকলে অটো Voter / Savings active সদস্য।"],
+      ["name_en", "Yes", "ইংরেজী নাম"],
+      ["name_bn", "No", "বাংলা নাম"],
       ["father_name", "No", ""],
-      ["mother_name", "No", ""],
-      ["nid", "No", "10 / 13 / 17 digits"],
       ["mobile", "No", "11-digit BD number, e.g. 017XXXXXXXX"],
-      ["member_no", "No", "Required only if is_voter=true"],
-      ["is_voter", "No", "true / false (default false)"],
-      ["status", "No", "active / inactive (default active)"],
-      ["village", "No", "Free-text village (legacy)"],
-      ["address", "No", "Holding / road / address"],
-      ["division / district / upazila / mouza", "No", "Must match an existing location and belong to its parent."],
+      ["village", "No", "Free-text গ্রাম"],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Farmers");
@@ -177,124 +133,22 @@ export default function FarmersImport() {
       const wb = await readBookFromFile(f);
       const parsed = parseSheet(wb);
       if (parsed.length === 0) { toast.error("File is empty."); return; }
-      const initial: RowState[] = parsed.map((raw, idx) => ({
-        idx,
-        raw,
-        loc: {
-          division: String(raw.division ?? ""),
-          district: String(raw.district ?? ""),
-          upazila:  String(raw.upazila  ?? ""),
-          mouza:    String(raw.mouza    ?? ""),
-        },
-        resolved: {},
-        failedLevel: null,
-        errorMsg: null,
-        status: "pending",
-      }));
+      const initial: RowState[] = parsed.map((raw, idx) => {
+        const nameEn = String(raw.name_en ?? "").trim();
+        const farmerId = String(raw.farmer_id ?? raw.member_no ?? "").trim();
+        return {
+          idx,
+          raw,
+          status: nameEn ? "valid" : "invalid",
+          errorMsg: nameEn ? null : "name_en is required",
+          action: farmerId ? "update" : "insert",
+        };
+      });
       setRows(initial);
       setSavedCount(0);
-      await resolveAll(initial);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to read file");
     }
-  }
-
-  // Resolve names → IDs row-by-row with strict parent constraints.
-  async function resolveAll(list: RowState[]) {
-    setResolving(true);
-    try {
-      const next: RowState[] = [];
-      for (const r of list) {
-        next.push(await resolveOne(r));
-      }
-      setRows(next);
-    } finally {
-      setResolving(false);
-    }
-  }
-
-  async function lookup(table: string, name: string, parentCol?: string, parentId?: string | null) {
-    const cleaned = name.trim();
-    if (!cleaned) return null;
-    let q: any = (supabase as any).from(table).select("id,name,name_bn").eq("is_active", true).limit(2);
-    // Match on either English or Bengali name (case-insensitive)
-    q = q.or(`name.ilike.${cleaned},name_bn.ilike.${cleaned}`);
-    if (parentCol && parentId) q = q.eq(parentCol, parentId);
-    const { data } = await q;
-    if (!data || data.length === 0) return { id: null as string | null, ambiguous: false, missing: true };
-    if (data.length > 1) return { id: data[0].id as string, ambiguous: true, missing: false };
-    return { id: data[0].id as string, ambiguous: false, missing: false };
-  }
-
-  async function resolveOne(r: RowState): Promise<RowState> {
-    const out: RowState = { ...r, resolved: {}, failedLevel: null, errorMsg: null };
-
-    if (!String(r.raw.name_en ?? "").trim()) {
-      out.status = "invalid";
-      out.errorMsg = "Missing required field: name_en";
-      return out;
-    }
-
-    const chain: { lvl: LocationLevel; table: string; name: string; parentCol?: string; parentKey?: keyof LocResolved }[] = [
-      { lvl: "division", table: "divisions", name: r.loc.division },
-      { lvl: "district", table: "districts", name: r.loc.district, parentCol: "division_id", parentKey: "division_id" },
-      { lvl: "upazila",  table: "upazilas",  name: r.loc.upazila,  parentCol: "district_id", parentKey: "district_id" },
-      { lvl: "mouza",    table: "mouzas",    name: r.loc.mouza,    parentCol: "upazila_id",  parentKey: "upazila_id" },
-    ];
-
-    for (const step of chain) {
-      if (!step.name.trim()) continue; // optional level; client validator catches missing parents below
-      const parentId = step.parentKey ? out.resolved[step.parentKey] : undefined;
-      if (step.parentKey && !parentId) {
-        out.failedLevel = step.parentKey.replace("_id", "") as LocationLevel;
-        out.errorMsg = `Cannot pick ${levelLabel(step.lvl)} without selecting ${levelLabel(out.failedLevel)} first.`;
-        out.status = "invalid"; return out;
-      }
-      const res = await lookup(step.table, step.name, step.parentCol, parentId);
-      if (!res || res.missing) {
-        out.failedLevel = step.lvl;
-        out.errorMsg = `${levelLabel(step.lvl)} "${step.name}" not found under selected ${step.parentCol ? levelLabel(step.parentKey!.replace("_id", "") as LocationLevel) : "root"}.`;
-        out.status = "invalid"; return out;
-      }
-      if (res.ambiguous) {
-        out.failedLevel = step.lvl;
-        out.errorMsg = `${levelLabel(step.lvl)} "${step.name}" is ambiguous. Please make it unique.`;
-        out.status = "invalid"; return out;
-      }
-      out.resolved[`${step.lvl === "division" ? "division" :
-                      step.lvl === "district" ? "district" :
-                      step.lvl === "upazila"  ? "upazila"  :
-                      step.lvl === "union"    ? "union"    :
-                      step.lvl === "ward"     ? "ward"     :
-                      step.lvl === "village"  ? "village"  : "mouza"}_id` as keyof LocResolved] = res.id;
-    }
-
-    // Mirror the strict cascading rule client-side.
-    const v = validateLocationChain(out.resolved);
-    if (v.ok === false) {
-      out.failedLevel = v.level;
-      out.errorMsg = `Please provide ${levelLabel(v.level)} before its child level.`;
-      out.status = "invalid"; return out;
-    }
-    out.status = "valid";
-    return out;
-  }
-
-  function updateLoc(idx: number, key: keyof RowState["loc"], val: string) {
-    setRows((prev) => prev.map((r) => r.idx === idx
-      ? { ...r, loc: { ...r.loc, [key]: val }, status: "pending", errorMsg: null, failedLevel: null }
-      : r));
-  }
-
-  async function revalidateRow(idx: number) {
-    const r = rows.find((x) => x.idx === idx);
-    if (!r) return;
-    const next = await resolveOne(r);
-    setRows((prev) => prev.map((x) => x.idx === idx ? next : x));
-  }
-
-  async function revalidateAll() {
-    await resolveAll(rows);
   }
 
   const validRows = useMemo(() => rows.filter((r) => r.status === "valid"), [rows]);
@@ -311,44 +165,48 @@ export default function FarmersImport() {
       updated[i] = { ...updated[i], status: "saving", errorMsg: null };
       setRows([...updated]);
 
-      const isVoter = ((): boolean => {
-        const v = String(r.raw.is_voter ?? "").toLowerCase().trim();
-        return v === "true" || v === "1" || v === "yes" || v === "y";
-      })();
-      const memberNo = r.raw.member_no ? String(r.raw.member_no).trim() : null;
+      const farmerId = String(r.raw.farmer_id ?? r.raw.member_no ?? "").trim();
+      const voterNumber = String(r.raw.voter_number ?? "").trim();
+      const isVoter = !!voterNumber;
 
-      const payload: any = {
-        name_en:      r.raw.name_en,
-        name_bn:      r.raw.name_bn      ?? null,
-        father_name:  r.raw.father_name  ?? null,
-        mother_name:  r.raw.mother_name  ?? null,
-        nid:          r.raw.nid          ?? null,
-        mobile:       r.raw.mobile       ?? null,
-        member_no:    memberNo,
-        is_voter:     isVoter,
-        // If voter + member_no provided, mirror it as account_number/voter_number
-        ...(isVoter && memberNo ? { account_number: memberNo, voter_number: memberNo } : {}),
-        status:       (r.raw.status as string) || "active",
-        village:      r.raw.village      ?? null,
-        address:      r.raw.address      ?? null,
-        office_id:    officeId ?? null,
-        ...r.resolved,
+      const basePayload: any = {
+        name_en:     String(r.raw.name_en ?? "").trim(),
+        name_bn:     r.raw.name_bn     ? String(r.raw.name_bn).trim()     : null,
+        father_name: r.raw.father_name ? String(r.raw.father_name).trim() : null,
+        mobile:      r.raw.mobile      ? String(r.raw.mobile).trim()      : null,
+        village:     r.raw.village     ? String(r.raw.village).trim()     : null,
+        ...(isVoter
+          ? { voter_number: voterNumber, account_number: voterNumber, is_voter: true }
+          : {}),
       };
 
-      const { error } = await supabase.from("farmers").insert(payload);
-      if (error) {
-        const lvl = parseLocationDbError(error.message);
-        updated[i] = {
-          ...updated[i],
-          status: "error",
-          failedLevel: lvl ?? updated[i].failedLevel,
-          errorMsg: lvl
-            ? `Server rejected: ${levelLabel(lvl)} doesn't belong to its parent.`
-            : error.message,
-        };
-      } else {
+      try {
+        if (farmerId) {
+          // Find existing farmer by member_no
+          const { data: existing } = await supabase
+            .from("farmers")
+            .select("id")
+            .eq("member_no", farmerId)
+            .maybeSingle();
+          if (existing?.id) {
+            const { error } = await supabase.from("farmers").update(basePayload).eq("id", existing.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase
+              .from("farmers")
+              .insert({ ...basePayload, member_no: farmerId, office_id: officeId ?? null });
+            if (error) throw error;
+          }
+        } else {
+          const { error } = await supabase
+            .from("farmers")
+            .insert({ ...basePayload, office_id: officeId ?? null });
+          if (error) throw error;
+        }
         updated[i] = { ...updated[i], status: "saved" };
         saved++;
+      } catch (e: any) {
+        updated[i] = { ...updated[i], status: "error", errorMsg: e?.message ?? "Save failed" };
       }
       setRows([...updated]);
     }
@@ -370,7 +228,7 @@ export default function FarmersImport() {
     <>
       <PageHeader
         title="Bulk Farmer Import"
-        description="Upload a CSV or Excel (.xlsx) file. Location names are matched against the cascading hierarchy."
+        description=".csv বা .xlsx ফাইল আপলোড করুন। voter_number থাকলে farmer অটো Voter / Savings active সদস্য হবে।"
       />
 
       <Card className="p-4 mb-4">
@@ -384,12 +242,11 @@ export default function FarmersImport() {
               onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
             />
           </div>
-          <Button variant="outline" onClick={downloadTemplate}>
-            <Download className="h-4 w-4 mr-1" /> Template
+          <Button variant="outline" onClick={() => downloadTemplate("xlsx")}>
+            <Download className="h-4 w-4 mr-1" /> XLSX Template
           </Button>
-          <Button variant="outline" onClick={revalidateAll} disabled={rows.length === 0 || resolving}>
-            {resolving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
-            Re-validate
+          <Button variant="outline" onClick={() => downloadTemplate("csv")}>
+            <Download className="h-4 w-4 mr-1" /> CSV Template
           </Button>
           <Button onClick={importValid} disabled={validRows.length === 0 || saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Upload className="h-4 w-4 mr-1" />}
@@ -397,9 +254,10 @@ export default function FarmersImport() {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Required column: <code>name_en</code>. Hierarchy columns:{" "}
-          <code>division, district, upazila, mouza</code>.
-          Each level must belong to the parent above it.
+          Required: <code>name_en</code>. Optional: <code>farmer_id, voter_number, name_bn, father_name, mobile, village</code>.
+          <br />
+          <strong>farmer_id</strong> দিলে existing farmer থাকলে update, না থাকলে নতুন তৈরি হবে।
+          <strong className="ml-2">voter_number</strong> দিলে অটো Voter / Savings active সদস্য।
         </p>
       </Card>
 
@@ -417,10 +275,9 @@ export default function FarmersImport() {
       {invalidRows.length > 0 && (
         <Alert variant="destructive" className="mb-3" role="alert" aria-live="polite">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{invalidRows.length} row(s) need attention</AlertTitle>
+          <AlertTitle>{invalidRows.length} row(s) skipped</AlertTitle>
           <AlertDescription>
-            The failing dropdown for each row is outlined in red. Edit the value and the row
-            will re-validate automatically when you click "Re-validate" or attempt to import.
+            শুধু যেসব row-তে <code>name_en</code> আছে সেগুলোই import হবে।
           </AlertDescription>
         </Alert>
       )}
@@ -432,70 +289,40 @@ export default function FarmersImport() {
               <TableRow>
                 <TableHead>#</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Farmer ID</TableHead>
+                <TableHead>Voter No</TableHead>
+                <TableHead>Name (EN)</TableHead>
+                <TableHead>Name (BN)</TableHead>
+                <TableHead>Father</TableHead>
                 <TableHead>Mobile</TableHead>
-                <TableHead>Division</TableHead>
-                <TableHead>District</TableHead>
-                <TableHead>Upazila</TableHead>
-                <TableHead>Mouza</TableHead>
+                <TableHead>Village</TableHead>
                 <TableHead>Issue</TableHead>
-                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => {
-                const cellCls = (lvl: LocationLevel) =>
-                  r.failedLevel === lvl
-                    ? "border border-destructive ring-2 ring-destructive/30 rounded"
-                    : "";
-                return (
-                  <TableRow key={r.idx} data-status={r.status} data-testid={`import-row-${r.idx}`}>
-                    <TableCell className="font-mono text-xs">{r.idx + 1}</TableCell>
-                    <TableCell>
-                      {r.status === "saved" && (
-                        <Badge variant="default" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" /> Saved
-                        </Badge>
-                      )}
-                      {r.status === "valid" && <Badge variant="secondary">Valid</Badge>}
-                      {r.status === "invalid" && <Badge variant="destructive">Invalid</Badge>}
-                      {r.status === "saving" && <Badge variant="outline">Saving…</Badge>}
-                      {r.status === "error" && <Badge variant="destructive">Server reject</Badge>}
-                      {r.status === "pending" && <Badge variant="outline">Pending</Badge>}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <div className="font-medium">{String(r.raw.name_en ?? "")}</div>
-                      {r.raw.name_bn && <div className="text-xs text-muted-foreground">{String(r.raw.name_bn)}</div>}
-                    </TableCell>
-                    <TableCell className="text-xs">{String(r.raw.mobile ?? "")}</TableCell>
-
-                    {(["division","district","upazila","mouza"] as LocationLevel[]).map((lvl) => (
-                      <TableCell key={lvl} className="min-w-[140px]">
-                        <Input
-                          className={cellCls(lvl)}
-                          value={r.loc[lvl as keyof RowState["loc"]]}
-                          onChange={(e) => updateLoc(r.idx, lvl as keyof RowState["loc"], e.target.value)}
-                          onBlur={() => revalidateRow(r.idx)}
-                          aria-invalid={r.failedLevel === lvl || undefined}
-                        />
-                      </TableCell>
-                    ))}
-
-                    <TableCell className="text-xs max-w-[260px]">
-                      {r.errorMsg && (
-                        <span className="text-destructive" data-testid={`row-err-${r.idx}`}>
-                          {r.errorMsg}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => revalidateRow(r.idx)} disabled={resolving}>
-                        Recheck
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {rows.map((r) => (
+                <TableRow key={r.idx} className={r.status === "invalid" || r.status === "error" ? "bg-destructive/10" : ""}>
+                  <TableCell>{r.idx + 1}</TableCell>
+                  <TableCell>
+                    {r.status === "saved" && <Badge variant="default">Saved</Badge>}
+                    {r.status === "saving" && <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />Saving</Badge>}
+                    {r.status === "valid" && <Badge variant="secondary">Ready</Badge>}
+                    {r.status === "invalid" && <Badge variant="destructive">Invalid</Badge>}
+                    {r.status === "error" && <Badge variant="destructive">Error</Badge>}
+                    {r.status === "pending" && <Badge variant="outline">Pending</Badge>}
+                  </TableCell>
+                  <TableCell>{r.action === "update" ? <Badge variant="outline">Update</Badge> : <Badge variant="outline">Insert</Badge>}</TableCell>
+                  <TableCell className="font-mono text-xs">{String(r.raw.farmer_id ?? r.raw.member_no ?? "")}</TableCell>
+                  <TableCell className="font-mono text-xs">{String(r.raw.voter_number ?? "")}</TableCell>
+                  <TableCell>{String(r.raw.name_en ?? "")}</TableCell>
+                  <TableCell>{String(r.raw.name_bn ?? "")}</TableCell>
+                  <TableCell>{String(r.raw.father_name ?? "")}</TableCell>
+                  <TableCell>{String(r.raw.mobile ?? "")}</TableCell>
+                  <TableCell>{String(r.raw.village ?? "")}</TableCell>
+                  <TableCell className="text-xs text-destructive max-w-[300px]">{r.errorMsg}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </Card>
