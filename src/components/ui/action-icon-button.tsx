@@ -54,3 +54,53 @@ export const DeleteButton = React.forwardRef<HTMLButtonElement, BtnProps>(
   ),
 );
 DeleteButton.displayName = "DeleteButton";
+
+/**
+ * ViewButton — filled sky-blue rounded-square icon button with white eye.
+ */
+export const ViewButton = React.forwardRef<HTMLButtonElement, BtnProps>(
+  ({ className, type = "button", "aria-label": ariaLabel = "View", title = "View", ...props }, ref) => (
+    <button
+      ref={ref}
+      type={type}
+      aria-label={ariaLabel}
+      title={title}
+      className={cn(
+        "inline-flex h-9 w-9 items-center justify-center rounded-lg",
+        "bg-sky-500 text-white shadow-sm transition-colors",
+        "hover:bg-sky-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
+        "disabled:opacity-50 disabled:pointer-events-none",
+        className,
+      )}
+      {...props}
+    >
+      <Eye className="h-4 w-4" />
+    </button>
+  ),
+);
+ViewButton.displayName = "ViewButton";
+
+/**
+ * PrintButton — filled slate rounded-square icon button with white printer.
+ */
+export const PrintButton = React.forwardRef<HTMLButtonElement, BtnProps>(
+  ({ className, type = "button", "aria-label": ariaLabel = "Print", title = "Print", ...props }, ref) => (
+    <button
+      ref={ref}
+      type={type}
+      aria-label={ariaLabel}
+      title={title}
+      className={cn(
+        "inline-flex h-9 w-9 items-center justify-center rounded-lg",
+        "bg-slate-700 text-white shadow-sm transition-colors",
+        "hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2",
+        "disabled:opacity-50 disabled:pointer-events-none",
+        className,
+      )}
+      {...props}
+    >
+      <Printer className="h-4 w-4" />
+    </button>
+  ),
+);
+PrintButton.displayName = "PrintButton";
