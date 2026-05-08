@@ -98,7 +98,7 @@ export default function Payments() {
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
   useEffect(() => { load(); /* refresh on toggle */ }, [showDeleted]);
-  useEffect(() => { if (farmerId) loadDues(); else { setOpenLoans([]); setOpenIrr([]); } }, [farmerId]);
+  useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenLoans([]); setOpenIrr([]); setSavingsBalance(0); } }, [farmerId]);
   useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
   useEffect(() => {
     const loan = params.get("loan");
