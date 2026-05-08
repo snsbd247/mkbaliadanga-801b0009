@@ -451,9 +451,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div>
       <h4 className="font-semibold border-b pb-1 mb-2">{title}</h4>
-      <table className="w-full text-sm">
+      <div data-table-wrap className="w-full overflow-x-auto">
+        <table className="w-full text-sm">
         <tbody>{children}</tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }

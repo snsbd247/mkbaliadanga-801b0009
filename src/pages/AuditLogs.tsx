@@ -417,7 +417,8 @@ function LedgerLinkButton({ log }: { log: any }) {
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>Ledger entries — {refType}</DialogTitle></DialogHeader>
         <div className="overflow-auto max-h-[60vh]">
-          <table className="w-full text-xs">
+          <div data-table-wrap className="w-full overflow-x-auto">
+            <table className="w-full text-xs">
             <thead><tr className="border-b">
               <th className="text-left p-2">Date</th>
               <th className="text-left p-2">Account</th>
@@ -437,7 +438,8 @@ function LedgerLinkButton({ log }: { log: any }) {
               ))}
               {rows.length === 0 && <tr><td colSpan={5} className="text-center p-4 text-muted-foreground">No ledger entries linked.</td></tr>}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -455,7 +457,8 @@ function DiffDialog({ log }: { log: any }) {
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>{log.action} — {log.entity}</DialogTitle></DialogHeader>
         <div className="overflow-auto max-h-[60vh]">
-          <table className="w-full text-xs">
+          <div data-table-wrap className="w-full overflow-x-auto">
+            <table className="w-full text-xs">
             <thead><tr className="border-b"><th className="text-left p-2">Field</th><th className="text-left p-2">Old</th><th className="text-left p-2">New</th></tr></thead>
             <tbody>
               {Array.from(fields).sort().map(k => {
@@ -472,7 +475,8 @@ function DiffDialog({ log }: { log: any }) {
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

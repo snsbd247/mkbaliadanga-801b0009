@@ -578,7 +578,8 @@ export default function Reports() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="p-4">
               <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">Summary {filterTitleSuffix()}</h3>
-              <table className="w-full text-sm">
+              <div data-table-wrap className="w-full overflow-x-auto">
+                <table className="w-full text-sm">
                 <tbody>
                   {auditSummary.map((s, i) => (
                     <tr key={i} className="border-b last:border-0">
@@ -587,7 +588,8 @@ export default function Reports() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </Card>
 
             <Card className="p-4">
