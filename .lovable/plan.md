@@ -1,64 +1,99 @@
 ## লক্ষ্য
 
-ডেটাবেস ও UI কে সরল করা: Savings Plans বাদ, free-form Savings/Share deposit + withdraw (interest নাই, min ৳10/৳50), receipt number support (auto + manual field-receipt), irrigation rate সরলীকরণ, জমির পরিমাণ "শতক" এ standardize, account number শুধু DB-level (UI তে শুধু voter/manual নাম্বার)। বাকি সব আগের ৬ ধাপ আগেই complete।
+৪টি কাজ একসাথে: (১) সব page-এর mobile/tablet/desktop screenshot test, (২) overlap-পাওয়া page-এর PDF/Excel report export, (৩) কার্ড/টেবিলে লম্বা নাম/email/number এ truncate + tooltip, (৪) print preview overlap fix।
 
-## এই batch-এ যা করব (scope)
+## ১. Automated responsive screenshot test
 
-ব্যবহারকারীর নতুন বার্তায় কিছু আইটেম **আগেই করা হয়েছে** (DUES_BLOCK breakdown, voter history, voter cancel/reactivate tests, Savings dropdown, account auto-generate, Voter toggle savings trigger)। সেগুলো পুনরায় করব না। নতুন কাজ গুলো নিচে।
+**Tool:** Playwright (project-এ already configured)। নতুন spec: `e2e/responsive-overlap.spec.ts`।
 
-### ১. Savings/Share — সরল মডেল
-- Savings Plans পেজ ও routes/sidebar entry সরিয়ে দিব (DB টেবিল রেখে দিব — legacy data সুরক্ষা)।
-- Savings ফর্মে type: **Deposit, Share Deposit, Withdraw**।
-- Min validation: deposit ≥ ৳10, share ≥ ৳50, withdraw > 0।
-- Withdraw → status `pending` (existing approval flow আছেই, কেবল status badge ও approve/reject UI স্পষ্ট করব)।
-- ব্যালেন্স check: withdraw amount > available balance হলে block।
-- কোন interest calc নেই।
+- Viewport: `375×812` (mobile), `768×1024` (tablet), `1440×900` (desktop)।
+- Test login একবার (test admin user via env: `E2E_EMAIL`/`E2E_PASSWORD`), তারপর session reuse।
+- Page list: কোডবেস scan করে route discover (`src/App.tsx` → `<Route>`), ৪০+ page।
+- প্রতি (page × viewport) এ:
+  - navigate, network-idle wait
+  - JS দিয়ে overflow detect: প্রতিটি element-এর `scrollWidth > clientWidth` বা `getBoundingClientRect()` overlap check (sibling intersection in same flex/grid row)
+  - screenshot save → `test-results/responsive/{page}-{viewport}.png`
+  - overlap রিপোর্ট JSON-এ append: `{ page, viewport, issues:[{selector, kind}] }`
+- চালানো: `npx playwright test e2e/responsive-overlap.spec.ts`।
 
-### ২. Receipt Number (manual + auto)
-- `payments` ও `savings_transactions` এ `receipt_no text` কলাম যোগ।
-- Insert এর সময় খালি থাকলে DB trigger auto-generate করবে (`RCPT-YYYYMMDD-####` office-wise sequential)।
-- Form-এ optional "Field Receipt #" input — backdated entry তে staff ম্যানুয়াল বসাতে পারবে।
-- Reports (Collection report, Savings list, Payments list) এ Receipt No কলাম যোগ।
+**Auth blocker:** যদি `E2E_EMAIL` env না থাকে, test শুধু public route (`/auth`, `/verify-receipt`, `/farmer-portal/login`) screenshot করবে এবং report-এ blocker note লিখবে। User-কে env add করতে বলব।
 
-### ৩. Irrigation Rate সরলীকরণ
-- IrrigationRates ফর্ম থেকে Canal Charge / Maintenance / Other ফিল্ড UI তে hide। `base_rate` ই থাকবে।
-- IrrigationCharges এন্ট্রিতেও এই তিনটি ০ default রাখব (DB কলাম legacy তে রাখব, UI hide)।
+## ২. Overlap report PDF/Excel export
 
-### ৪. জমির পরিমাণ — শতক
-- Lands টেবিলের `land_size` সব জায়গায় "শতক" (decimal) হিসেবে label করব। Display unit "শতক/Decimal" everywhere।
-- কোন numeric conversion করব না (data already numeric); শুধু label/placeholder/tooltip আপডেট।
+`scripts/responsive-report.mjs`: test result JSON + screenshots নিয়ে—
 
-### ৫. Account Number — DB-only
-- Farmers list ও Farmer detail UI থেকে `account_number` কলাম/field hide।
-- ম্যানুয়াল নম্বরের জায়গায় **Member No** (existing `member_no` text field) ব্যবহার করব — সব table/card/report এ সেটা দেখাবে।
-- Voter toggle অন করলে auto-generate হয়ে DB তে account_number বসবে (already implemented), তবে UI তে দেখাবে না।
-- "Post Office" ফিল্ড farmer form থেকে বাদ।
+- **PDF** (`pdf-lib` বা `reportlab` via python): summary table (page | viewport | issue count) + প্রতি issue-এ thumbnail।
+- **XLSX** (`exceljs`/`openpyxl`): tab "Summary" + tab "Issues" with embedded screenshot link।
+- Output: `/mnt/documents/responsive-overlap-report.pdf` + `.xlsx`।
 
-### ৬. Tests
-- Savings deposit/share min validation tests
-- Withdraw insufficient balance test
-- Receipt number auto vs manual entry test
+User flow: `bun run e2e:responsive` → test → `node scripts/responsive-report.mjs` → report file।
 
-## যা করব না (out of scope)
-- Unified transaction history, unified payment form, irrigation calc engine, loan interest settings, daily/monthly bilingual export — এগুলো অনেক বড় feature; পরবর্তী batch এ আলাদা ভাবে নেব।
+## ৩. Truncate + tooltip component
 
-## Migration summary
-- ALTER TABLE `payments` ADD COLUMN `receipt_no text`
-- ALTER TABLE `savings_transactions` ADD COLUMN `receipt_no text`
-- Trigger: BEFORE INSERT — যদি `receipt_no` NULL হয় তবে `RCPT-YYYYMMDD-NNNN` (office-wise daily sequence) সেট করবে
-- Index: `(office_id, receipt_no)` unique
-- Add ENUM value `share_deposit` to `savings_txn_type` (replaces share_collection mapping)
+নতুন component `src/components/ui/truncate-text.tsx`:
 
-## Files to touch
-- supabase migration (new)
-- src/pages/Savings.tsx — type options, min validation, balance check, receipt field, withdraw status display
-- src/pages/Payments.tsx — receipt_no field + display
-- src/pages/IrrigationRates.tsx — hide canal/maintenance/other
-- src/pages/Farmers.tsx, FarmerDetail.tsx, BulkCards.tsx — hide account_number, drop post_office, show member_no
-- src/components/card/MembershipCard.tsx — show member_no instead
-- src/App.tsx + AppSidebar.tsx — remove SavingsPlans route/link
-- src/pages/reports/CollectionReport.tsx — add Receipt No column
-- New tests: Savings.minValidation, Receipt.autoGenerate
+```tsx
+<TruncateText className="max-w-[200px]">{longText}</TruncateText>
+```
 
-## কনফার্ম
-এই scope এ এগোতে অনুমতি দিন? "Plans বাদ" সত্যিই DB টেবিল ড্রপ চান, নাকি শুধু UI hide (আমি UI hide preferred করছি — safer)?
+- CSS: `truncate` (single line) বা `line-clamp-2`
+- Hover/focus → shadcn `<Tooltip>` দেখায় full text
+- Mobile: tap to show
+- Auto-detect overflow (scrollWidth > clientWidth) — overflow না থাকলে tooltip render-ই হবে না
+
+**যেখানে apply করব** (high-impact spots):
+- `FarmerDetail.tsx` — name, father, mother, NID, mobile cells
+- `Farmers.tsx` table rows — name + mobile column
+- `Payments.tsx` — farmer name + receipt no
+- `Loans.tsx`, `Savings.tsx` — farmer column
+- `AppLayout.tsx` header — user email (already truncated, add tooltip)
+- `NotificationBell` — title
+
+(বাকি page-গুলো auto fix করবে আগের `index.css` rule দিয়ে — শুধু high-traffic ৬–৭ জায়গায় explicit truncate+tooltip যোগ করব।)
+
+## ৪. Print preview overlap fix
+
+Print-ভিত্তিক page: `FarmerProfileReport`, `BulkCards`, `ReceiptTemplate`, `LoanReceiptSettings preview`, `Payments` receipt, `FarmerCard`, `Cashbook`, `Reports`, `FinancialReports`, `CollectionReport`, `ExpensesReport`, `IrrigationDueReport`।
+
+`src/index.css`-এ `@media print` block-এ যোগ:
+
+```css
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  /* Page setup */
+  @page { size: A4; margin: 12mm; }
+  /* Prevent row/card cut across pages */
+  tr, .print-keep { page-break-inside: avoid; }
+  thead { display: table-header-group; } /* repeat header on each page */
+  tfoot { display: table-footer-group; }
+  /* Long-text wrap in print */
+  td, th, .print-wrap { overflow-wrap: anywhere; word-break: break-word; }
+  /* Hide overflow scroll bars in print */
+  [data-table-wrap], .overflow-x-auto, .overflow-auto { overflow: visible !important; }
+  /* Prevent fixed header overlap */
+  header, .sticky { position: static !important; }
+}
+```
+
+প্রতিটি print-page একবার screenshot test (Playwright `page.emulateMedia({ media: 'print' })`) → overlap check + report এ যোগ।
+
+## Deliverable
+
+- **নতুন:** `e2e/responsive-overlap.spec.ts`, `scripts/responsive-report.mjs`, `src/components/ui/truncate-text.tsx`
+- **edit:** `src/index.css` (print block extend), `package.json` (script `e2e:responsive`), high-traffic ৬–৭ page truncate+tooltip integration
+- **output:** `/mnt/documents/responsive-overlap-report.pdf` + `.xlsx`
+
+## Technical notes / Limitations
+
+- Test runner-এ login credentials দরকার (env বা auth-bypass)। না দিলে private route skip হবে।
+- প্রথম run-এ ১০–১৫ মিনিট লাগবে (৪০ page × ৩ viewport)।
+- "Overlap" detect heuristic — sibling bounding-box intersection + scrollWidth check; ১০০% accurate না, false positive হতে পারে। Report এ visual confirmation-এর জন্য screenshot থাকবে।
+- Print CSS এর effect শুধু browser print preview-তে দেখা যাবে; PDF generation যেগুলো `pdfmake` দিয়ে হয় (যেমন bnReceipts) সেগুলোতে আলাদাভাবে এই rule apply হবে না।
+
+## প্রশ্ন
+
+প্ল্যান approve করলে শুরু করি — শুধু confirm করুন:
+
+1. E2E test-এর জন্য admin login credential আছে কি (`E2E_EMAIL`/`E2E_PASSWORD` secret হিসেবে add করতে হবে)? না থাকলে শুধু public page test হবে।
+2. Report format — PDF, XLSX, না দুটোই?
