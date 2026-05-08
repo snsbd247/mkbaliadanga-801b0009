@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
+import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
 import { useBranding } from "@/lib/branding";
 
 const DEFAULT_INTEREST = 8.0;
