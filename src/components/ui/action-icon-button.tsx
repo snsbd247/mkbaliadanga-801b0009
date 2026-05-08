@@ -138,18 +138,18 @@ export const DeleteButton = React.forwardRef<HTMLButtonElement, DeleteProps>(
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
+            <AlertDialogTitle>{title}</AlertDialogTitle>
+            {desc ? <AlertDialogDescription>{desc}</AlertDialogDescription> : null}
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+            <AlertDialogCancel>{noLabel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 void onConfirm();
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {confirmLabel}
+              {okLabel}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
