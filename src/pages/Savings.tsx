@@ -602,7 +602,7 @@ function TxnTable({ rows, t, isAdmin, isSuper, showDeleted, onDecide, onRestore,
                 <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "rejected")} title={t("rejectAction")}><X className="h-4 w-4 text-destructive" /></Button>
               </>)}
               {!showDeleted && (r.status === "approved" || historyMode) && (
-                <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title={t("printReceipt")}><Printer className="h-4 w-4" /></Button>
+                <PrintButton onClick={() => onPrint(r)} title={t("printReceipt")} />
               )}
               {!showDeleted && isSuper && (<>
                 <EditButton onClick={() => onEdit(r)} title="Edit" />
