@@ -100,9 +100,6 @@ export default function FarmerPortalLogin() {
         aria-labelledby="portal-title"
       >
         <div className="w-full max-w-md space-y-4 sm:space-y-5">
-          <div className="flex justify-end items-center">
-            <LanguageToggle />
-          </div>
 
           <header className="text-center">
             {brand.logo_url ? (
