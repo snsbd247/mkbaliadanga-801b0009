@@ -1,106 +1,79 @@
 import * as React from "react";
-import { Pencil, Trash2, Eye, Printer } from "lucide-react";
+import { Pencil, Trash2, Eye, Printer, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 /**
- * EditButton — filled amber rounded-square icon button with white pencil.
- * Use as the standard "edit" action across all tables/lists.
+ * Standard action-icon button used across all tables/lists.
+ * Matches reference design: icon-only square button, transparent background,
+ * colored icon (per action), subtle hover background. All four actions share
+ * the same shape/size — only the icon color differs.
  */
-export const EditButton = React.forwardRef<HTMLButtonElement, BtnProps>(
-  ({ className, type = "button", "aria-label": ariaLabel = "Edit", title = "Edit", ...props }, ref) => (
-    <button
-      ref={ref}
-      type={type}
-      aria-label={ariaLabel}
-      title={title}
-      className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-lg",
-        "bg-amber-500 text-white shadow-sm transition-colors",
-        "hover:bg-amber-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2",
-        "disabled:opacity-50 disabled:pointer-events-none",
+function makeActionButton(
+  Icon: LucideIcon,
+  iconColor: string,
+  hoverBg: string,
+  defaults: { ariaLabel: string; title: string },
+) {
+  const Cmp = React.forwardRef<HTMLButtonElement, BtnProps>(
+    (
+      {
         className,
-      )}
-      {...props}
-    >
-      <Pencil className="h-4 w-4" />
-    </button>
-  ),
-);
-EditButton.displayName = "EditButton";
+        type = "button",
+        "aria-label": ariaLabel = defaults.ariaLabel,
+        title = defaults.title,
+        ...props
+      },
+      ref,
+    ) => (
+      <button
+        ref={ref}
+        type={type}
+        aria-label={ariaLabel}
+        title={title}
+        className={cn(
+          "inline-flex h-9 w-9 items-center justify-center rounded-lg",
+          "bg-transparent transition-colors",
+          hoverBg,
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring",
+          "disabled:opacity-50 disabled:pointer-events-none",
+          className,
+        )}
+        {...props}
+      >
+        <Icon className={cn("h-[18px] w-[18px]", iconColor)} />
+      </button>
+    ),
+  );
+  Cmp.displayName = `${defaults.ariaLabel}Button`;
+  return Cmp;
+}
 
-/**
- * DeleteButton — plain outlined trash icon button (transparent background).
- */
-export const DeleteButton = React.forwardRef<HTMLButtonElement, BtnProps>(
-  ({ className, type = "button", "aria-label": ariaLabel = "Delete", title = "Delete", ...props }, ref) => (
-    <button
-      ref={ref}
-      type={type}
-      aria-label={ariaLabel}
-      title={title}
-      className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-lg",
-        "bg-transparent text-muted-foreground transition-colors",
-        "hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        "disabled:opacity-50 disabled:pointer-events-none",
-        className,
-      )}
-      {...props}
-    >
-      <Trash2 className="h-4 w-4" />
-    </button>
-  ),
+export const EditButton = makeActionButton(
+  Pencil,
+  "text-amber-500",
+  "hover:bg-amber-50 dark:hover:bg-amber-500/10",
+  { ariaLabel: "Edit", title: "Edit" },
 );
-DeleteButton.displayName = "DeleteButton";
 
-/**
- * ViewButton — filled sky-blue rounded-square icon button with white eye.
- */
-export const ViewButton = React.forwardRef<HTMLButtonElement, BtnProps>(
-  ({ className, type = "button", "aria-label": ariaLabel = "View", title = "View", ...props }, ref) => (
-    <button
-      ref={ref}
-      type={type}
-      aria-label={ariaLabel}
-      title={title}
-      className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-lg",
-        "bg-sky-500 text-white shadow-sm transition-colors",
-        "hover:bg-sky-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
-        "disabled:opacity-50 disabled:pointer-events-none",
-        className,
-      )}
-      {...props}
-    >
-      <Eye className="h-4 w-4" />
-    </button>
-  ),
+export const DeleteButton = makeActionButton(
+  Trash2,
+  "text-slate-500 dark:text-slate-400",
+  "hover:bg-slate-100 dark:hover:bg-slate-500/10",
+  { ariaLabel: "Delete", title: "Delete" },
 );
-ViewButton.displayName = "ViewButton";
 
-/**
- * PrintButton — filled slate rounded-square icon button with white printer.
- */
-export const PrintButton = React.forwardRef<HTMLButtonElement, BtnProps>(
-  ({ className, type = "button", "aria-label": ariaLabel = "Print", title = "Print", ...props }, ref) => (
-    <button
-      ref={ref}
-      type={type}
-      aria-label={ariaLabel}
-      title={title}
-      className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-lg",
-        "bg-slate-700 text-white shadow-sm transition-colors",
-        "hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2",
-        "disabled:opacity-50 disabled:pointer-events-none",
-        className,
-      )}
-      {...props}
-    >
-      <Printer className="h-4 w-4" />
-    </button>
-  ),
+export const ViewButton = makeActionButton(
+  Eye,
+  "text-sky-500",
+  "hover:bg-sky-50 dark:hover:bg-sky-500/10",
+  { ariaLabel: "View", title: "View" },
 );
-PrintButton.displayName = "PrintButton";
+
+export const PrintButton = makeActionButton(
+  Printer,
+  "text-slate-600 dark:text-slate-300",
+  "hover:bg-slate-100 dark:hover:bg-slate-500/10",
+  { ariaLabel: "Print", title: "Print" },
+);
