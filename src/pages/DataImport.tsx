@@ -52,7 +52,7 @@ type RowResult = {
 const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any> }> = {
   lands: {
     columns: ["account_number", "dag_no", "land_size", "owner_type", "field_type", "mouza"],
-    sample: { account_number: "AC-0001", dag_no: "123/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "" },
+    sample: { account_number: "100000000001", dag_no: "123/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
   },
   land_relations: {
     columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
@@ -60,19 +60,19 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   },
   loans: {
     columns: ["account_number", "principal", "interest_rate", "total_payable", "issued_on", "note"],
-    sample: { account_number: "AC-0001", principal: 10000, interest_rate: 12, total_payable: 11200, issued_on: "2026-01-15", note: "Crop loan" },
+    sample: { account_number: "100000000001", principal: 10000, interest_rate: 12, total_payable: 11200, issued_on: "2026-01-15", note: "Crop loan" },
   },
   loan_payments: {
     columns: ["account_number", "amount", "paid_on", "note"],
-    sample: { account_number: "AC-0001", amount: 1000, paid_on: "2026-02-15", note: "1st installment" },
+    sample: { account_number: "100000000001", amount: 1000, paid_on: "2026-02-15", note: "1st installment" },
   },
   savings: {
     columns: ["account_number", "type", "amount", "txn_date", "note"],
-    sample: { account_number: "AC-0001", type: "deposit", amount: 500, txn_date: "2026-02-01", note: "Monthly deposit" },
+    sample: { account_number: "100000000001", type: "deposit", amount: 500, txn_date: "2026-02-01", note: "Monthly deposit" },
   },
   payments: {
     columns: ["account_number", "kind", "amount", "method", "note"],
-    sample: { account_number: "AC-0001", kind: "savings", amount: 500, method: "cash", note: "" },
+    sample: { account_number: "100000000001", kind: "savings", amount: 500, method: "cash", note: "" },
   },
   ledger: {
     columns: ["entry_date", "account_code", "debit", "credit", "description", "reference_type"],
