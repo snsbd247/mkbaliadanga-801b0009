@@ -161,24 +161,42 @@ const PrintBase = makeActionButton(
 );
 
 type PrintProps = BaseProps & {
-  /** Show a spinner and disable the button while a receipt is being generated. */
+  /** Force the spinner/disabled state (e.g. parent-controlled). */
   loading?: boolean;
+  onClick?: React.MouseEventHandler<HTMLButtonElement> | (() => void | Promise<void>);
 };
 
+/**
+ * PrintButton: when `onClick` returns a Promise OR `loading` is true, the button
+ * shows a spinner and is disabled so users can't click repeatedly.
+ */
 export const PrintButton = React.forwardRef<HTMLButtonElement, PrintProps>(
-  ({ loading, disabled, children, tooltip, title, ...rest }, ref) => (
-    <PrintBase
-      ref={ref}
-      disabled={disabled || loading}
-      tooltip={loading ? "Printing…" : tooltip ?? title}
-      {...rest}
-    >
-      {loading ? (
-        <Loader2 className="h-[18px] w-[18px] animate-spin text-slate-500" />
-      ) : (
-        children
-      )}
-    </PrintBase>
-  ),
+  ({ loading, disabled, children, tooltip, title, onClick, ...rest }, ref) => {
+    const [pending, setPending] = React.useState(false);
+    const busy = loading || pending;
+    const handle = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!onClick) return;
+      const result = (onClick as any)(e);
+      if (result && typeof result.then === "function") {
+        setPending(true);
+        Promise.resolve(result).finally(() => setPending(false));
+      }
+    };
+    return (
+      <PrintBase
+        ref={ref}
+        disabled={disabled || busy}
+        tooltip={busy ? "Printing…" : tooltip ?? title}
+        onClick={handle}
+        {...rest}
+      >
+        {busy ? (
+          <Loader2 className="h-[18px] w-[18px] animate-spin text-slate-500" />
+        ) : (
+          children
+        )}
+      </PrintBase>
+    );
+  },
 );
 PrintButton.displayName = "PrintButton";
