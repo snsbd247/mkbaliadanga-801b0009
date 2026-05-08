@@ -640,7 +640,7 @@ export default function Farmers() {
                     {isSuper && !f.deleted_at && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" title={t("deleteTipShort")}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          <DeleteButton title={t("deleteTipShort")} />
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
