@@ -21,7 +21,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/exports";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
-import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
+import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
 
 export default function Savings() {
   const { t, lang } = useLang();
@@ -602,7 +602,7 @@ function TxnTable({ rows, t, isAdmin, isSuper, showDeleted, onDecide, onRestore,
                 <Button size="icon" variant="ghost" onClick={() => onDecide(r.id, "rejected")} title={t("rejectAction")}><X className="h-4 w-4 text-destructive" /></Button>
               </>)}
               {!showDeleted && (r.status === "approved" || historyMode) && (
-                <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title={t("printReceipt")}><Printer className="h-4 w-4" /></Button>
+                <PrintButton onClick={() => onPrint(r)} title={t("printReceipt")} />
               )}
               {!showDeleted && isSuper && (<>
                 <EditButton onClick={() => onEdit(r)} title="Edit" />

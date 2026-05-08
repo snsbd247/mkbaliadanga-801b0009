@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Plus, Eye, Search, Trash2, Pencil, AlertTriangle, Loader2, Download, Upload } from "lucide-react";
 import { TruncateText } from "@/components/ui/truncate-text";
-import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
+import { EditButton, DeleteButton, ViewButton } from "@/components/ui/action-icon-button";
 import * as XLSX from "xlsx";
 
 const FARMER_TEMPLATE_HEADERS = [
@@ -633,7 +633,7 @@ export default function Farmers() {
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
-                    <Button size="icon" variant="ghost" title={t("viewTip")} onClick={() => nav(`/farmers/${f.id}`)}><Eye className="h-4 w-4" /></Button>
+                    <ViewButton title={t("viewTip")} onClick={() => nav(`/farmers/${f.id}`)} />
                     {!f.deleted_at && <EditButton title={t("editTip")} onClick={() => openEdit(f)} />}
                     {isSuper && f.deleted_at && (
                       <Button size="sm" variant="outline" onClick={() => restore(f.id)}>{t("restore")}</Button>

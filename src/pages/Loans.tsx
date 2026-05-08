@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
+import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
 import { useBranding } from "@/lib/branding";
 
 const DEFAULT_INTEREST = 8.0;
@@ -373,7 +373,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                     <Button size="icon" variant="ghost" onClick={() => onDecide(l.id, "rejected")} title={t("reject")}><X className="h-4 w-4 text-destructive" /></Button>
                   </>)}
                   {!showDeleted && (l.status === "approved" || l.status === "paid") && (
-                    <Button size="icon" variant="ghost" onClick={() => onPrint(l)} title={t("printDisbursementReceipt")}><Printer className="h-4 w-4" /></Button>
+                    <PrintButton onClick={() => onPrint(l)} title={t("printDisbursementReceipt")} />
                   )}
                   {!showDeleted && isSuper && (<>
                     <EditButton onClick={() => onEdit(l)} title={t("editTip")} />
@@ -426,7 +426,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                                 <td className="py-1 text-right text-success font-semibold">{money(p.amount)}</td>
                                 <td className="py-1 pl-3">{p.collected_by ? (profiles?.[p.collected_by] ?? p.collected_by.slice(0, 6)) : "—"}</td>
                                 <td className="py-1 text-right">
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPrint(l, p)} title={t("printPaymentReceipt")}><Printer className="h-3.5 w-3.5" /></Button>
+                                  <PrintButton className="h-7 w-7" onClick={() => onPrint(l, p)} title={t("printPaymentReceipt")} />
                                 </td>
                               </tr>
                             ))}

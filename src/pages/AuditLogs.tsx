@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { Eye, Download, RefreshCw, Loader2, FileText } from "lucide-react";
+import { ViewButton } from "@/components/ui/action-icon-button";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -452,7 +453,7 @@ function DiffDialog({ log }: { log: any }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" variant="ghost"><Eye className="h-4 w-4" /></Button>
+        <ViewButton />
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>{log.action} — {log.entity}</DialogTitle></DialogHeader>
