@@ -26,6 +26,7 @@ import {
 import * as XLSX from "xlsx";
 import { CoaImportDialog } from "./accounts/CoaImportDialog";
 import { useLang } from "@/i18n/LanguageProvider";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 
 type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
 
