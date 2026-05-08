@@ -426,7 +426,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                                 <td className="py-1 text-right text-success font-semibold">{money(p.amount)}</td>
                                 <td className="py-1 pl-3">{p.collected_by ? (profiles?.[p.collected_by] ?? p.collected_by.slice(0, 6)) : "—"}</td>
                                 <td className="py-1 text-right">
-                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPrint(l, p)} title={t("printPaymentReceipt")}><Printer className="h-3.5 w-3.5" /></Button>
+                                  <PrintButton className="h-7 w-7" onClick={() => onPrint(l, p)} title={t("printPaymentReceipt")} />
                                 </td>
                               </tr>
                             ))}
