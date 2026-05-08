@@ -16,9 +16,8 @@ WHERE n.nspname = 'public'
 
 \echo ''
 \echo '=== 2. Office-scoped tables and their SELECT policy expressions ==='
-SELECT t.tablename, p.policyname, p.cmd, pg_get_expr(p.qual, p.polrelid) AS using_expr
+SELECT p.tablename, p.policyname, p.cmd, p.qual AS using_expr
 FROM pg_policies p
-JOIN pg_tables t ON t.tablename = p.tablename AND t.schemaname = p.schemaname
 WHERE p.schemaname = 'public'
   AND p.cmd = 'SELECT'
   AND EXISTS (
@@ -26,7 +25,7 @@ WHERE p.schemaname = 'public'
     WHERE c.table_schema = p.schemaname AND c.table_name = p.tablename
       AND c.column_name = 'office_id'
   )
-ORDER BY t.tablename, p.policyname;
+ORDER BY p.tablename, p.policyname;
 
 \echo ''
 \echo '=== 3. Office-scoped tables WITHOUT a current_user_office() check (suspicious) ==='
@@ -42,7 +41,7 @@ WHERE t.schemaname = 'public'
     SELECT 1 FROM pg_policies p
     WHERE p.schemaname = t.schemaname AND p.tablename = t.tablename
       AND p.cmd = 'SELECT'
-      AND pg_get_expr(p.qual, p.polrelid) ILIKE '%current_user_office%'
+      AND p.qual ILIKE '%current_user_office%'
   );
 
 \echo ''
