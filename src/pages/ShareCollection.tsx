@@ -491,8 +491,8 @@ function RowsTable({ rows, canDecide, onDecide, canManage, onEdit, onDelete }: {
                   )}
                   {canManage && (
                     <>
-                      <Button size="sm" variant="ghost" onClick={() => onEdit?.(r)} title={t("edit")}><Pencil className="h-3 w-3" /></Button>
-                      <Button size="sm" variant="ghost" onClick={() => onDelete?.(r)} title={t("delete")}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                      <EditButton onClick={() => onEdit?.(r)} title={t("edit")} />
+                      <DeleteButton onClick={() => onDelete?.(r)} title={t("delete")} />
                     </>
                   )}
                 </TableCell>
