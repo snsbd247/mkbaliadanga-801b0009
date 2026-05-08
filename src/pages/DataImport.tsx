@@ -694,8 +694,11 @@ export default function DataImport() {
           </div>
         </div>
 
-        <div className="text-xs text-muted-foreground">
-          <strong>Required columns:</strong> {tpl.columns.join(", ")}
+        <div className="text-xs text-muted-foreground space-y-1">
+          <div><strong>Required columns:</strong> {tpl.columns.join(", ")}</div>
+          <div className="text-[11px]">
+            💡 <strong>account_number</strong> = farmer-এর Voter / Savings A/C No (১২ ডিজিট নম্বর)। Farmer তৈরি করার সময় auto-generate হয়। Bulk Farmer Import-এ <code>voter_number</code> কলাম দিয়ে এটি আপনি সরাসরি দিতে পারেন।
+          </div>
         </div>
 
         {rows.length > 0 && (
