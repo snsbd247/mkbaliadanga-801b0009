@@ -525,9 +525,11 @@ function LevelTab({ level }: { level: Level }) {
                     <TableCell className="text-muted-foreground">{r.name_bn ?? "—"}</TableCell>
                     {directCol && <TableCell className="text-muted-foreground">{parentNames[r[directCol]] ?? (r[directCol] ? "…" : "—")}</TableCell>}
                     <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(r)} aria-label="Edit"><Pencil className="h-4 w-4"/></Button>
-                      <Button size="sm" variant="ghost" onClick={() => toggleActive(r)} aria-label={r.is_active === false ? "Activate" : "Deactivate"} title={r.is_active === false ? "Activate" : "Deactivate"}><Power className={"h-4 w-4 " + (r.is_active === false ? "text-muted-foreground" : "text-success")}/></Button>
-                      <Button size="sm" variant="ghost" onClick={() => remove(r.id)} aria-label="Delete"><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                      <div className="inline-flex items-center gap-1">
+                        <EditButton onClick={() => openEdit(r)} />
+                        <Button size="sm" variant="ghost" onClick={() => toggleActive(r)} aria-label={r.is_active === false ? "Activate" : "Deactivate"} title={r.is_active === false ? "Activate" : "Deactivate"}><Power className={"h-4 w-4 " + (r.is_active === false ? "text-muted-foreground" : "text-success")}/></Button>
+                        <DeleteButton onClick={() => remove(r.id)} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
