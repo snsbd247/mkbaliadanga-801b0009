@@ -273,9 +273,7 @@ function SnapshotDialog({ period, t }: { period: Period; t: (k: any) => string }
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-8 w-8" title={t("viewSnapshot")}>
-          <Eye className="h-4 w-4" />
-        </Button>
+        <ViewButton title={t("viewSnapshot")} />
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
         <DialogHeader>

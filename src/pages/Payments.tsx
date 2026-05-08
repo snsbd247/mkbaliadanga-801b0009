@@ -381,10 +381,8 @@ export default function Payments() {
                         <SelectItem value="savings">{t("savings")}</SelectItem>
                       </SelectContent>
                     </Select>
-                    {allocs.length > 1 && (
-                      <Button type="button" size="icon" variant="ghost" onClick={() => setAllocs(allocs.filter((_, idx) => idx !== i))}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                     {allocs.length > 1 && (
+                      <DeleteButton onClick={() => setAllocs(allocs.filter((_, idx) => idx !== i))} />
                     )}
                   </div>
                   {a.kind === "loan" && (

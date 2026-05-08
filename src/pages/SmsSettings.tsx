@@ -868,9 +868,7 @@ export default function SmsSettings() {
                                   Retire
                                 </Button>
                               )}
-                              <Button type="button" size="sm" variant="ghost" disabled={tokenBusy} onClick={() => deleteToken(t.id)} className="h-7 px-2 text-xs text-destructive hover:text-destructive">
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                              <DeleteButton disabled={tokenBusy} onClick={() => deleteToken(t.id)} />
                             </div>
                           </td>
                         </tr>

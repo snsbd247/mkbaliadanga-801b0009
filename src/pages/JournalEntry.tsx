@@ -107,9 +107,7 @@ export default function JournalEntry() {
                   <TableCell><Input type="number" step="0.01" value={l.debit || ""} onChange={(e) => updateLine(i, { debit: Number(e.target.value), credit: 0 })} className="text-right" /></TableCell>
                   <TableCell><Input type="number" step="0.01" value={l.credit || ""} onChange={(e) => updateLine(i, { credit: Number(e.target.value), debit: 0 })} className="text-right" /></TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => setLines(lines.filter((_, idx) => idx !== i))}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DeleteButton onClick={() => setLines(lines.filter((_, idx) => idx !== i))} />
                   </TableCell>
                 </TableRow>
               ))}
