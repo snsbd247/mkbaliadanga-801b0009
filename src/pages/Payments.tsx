@@ -54,6 +54,47 @@ export default function Payments() {
   const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
   const [autoAmount, setAutoAmount] = useState<number>(0);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
+  const [savingsBalance, setSavingsBalance] = useState<number>(0);
+
+  async function loadSavingsBalance(fid: string) {
+    const { data } = await supabase
+      .from("savings_transactions")
+      .select("type,amount,status")
+      .eq("farmer_id", fid)
+      .eq("status", "approved")
+      .is("deleted_at", null);
+    const bal = (data ?? []).reduce((s: number, r: any) => {
+      const a = Number(r.amount) || 0;
+      if (r.type === "withdraw") return s - a;
+      if (r.type === "share_deposit" || r.type === "share_collection") return s;
+      return s + a;
+    }, 0);
+    setSavingsBalance(bal);
+  }
+
+  async function submitWithdraw() {
+    if (!farmerId) return toast.error(t("pickFarmer"));
+    if (!(withdrawForm.amount > 0)) return toast.error(t("amountMustBePositiveSavings"));
+    if (withdrawForm.amount > savingsBalance) return toast.error(`Insufficient balance. Available: ৳${savingsBalance.toLocaleString()}`);
+    const farmer = farmers.find((x: any) => x.id === farmerId);
+    const { error } = await supabase.from("savings_transactions").insert({
+      farmer_id: farmerId, type: "withdraw" as any, amount: withdrawForm.amount,
+      note: withdrawForm.note, status: "pending" as any, created_by: user?.id,
+    });
+    if (error) return toast.error(error.message);
+    await supabase.from("notifications").insert({
+      kind: "withdrawal_pending",
+      title: t("withdrawalRequestTitle"),
+      body: t("withdrawalRequestedBody").replace("{name}", farmer?.name_en ?? "").replace("{amount}", String(withdrawForm.amount)),
+      link: "/savings",
+    });
+    toast.success(t("pgSavWithdrawSubmitted" as any));
+    setWithdrawOpen(false);
+    setWithdrawForm({ amount: 0, note: "" });
+    load();
+  }
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
   useEffect(() => { load(); /* refresh on toggle */ }, [showDeleted]);
