@@ -283,9 +283,7 @@ export default function Users() {
                   <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <DeleteButton onClick={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")} />
                 </TableCell>
               </TableRow>
             ))}
