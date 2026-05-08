@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ALL_MODULES, type ModuleKey } from "@/lib/permissions";
 import { ShieldCheck, Plus, Trash2, KeyRound } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
+import { DeleteButton } from "@/components/ui/action-icon-button";
 import { z } from "zod";
 
 // Stronger password policy. Super admins must use a longer, mixed password.
@@ -283,9 +284,7 @@ export default function Users() {
                   <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <DeleteButton onClick={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")} />
                 </TableCell>
               </TableRow>
             ))}

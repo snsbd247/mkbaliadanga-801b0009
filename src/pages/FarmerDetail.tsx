@@ -23,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
 import { validateLocationChain } from "@/lib/locationValidation";
 import { SavingsStatement } from "@/components/SavingsStatement";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
@@ -751,8 +752,8 @@ export default function FarmerDetail() {
                     <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                     <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(l)} title={t("edit")}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => setDelTarget(l)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <EditButton onClick={() => openEdit(l)} title={t("edit")} />
+                      <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -779,7 +780,7 @@ export default function FarmerDetail() {
                   <TableCell><Badge>{t(s.status as any)}</Badge></TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu onSelect={(c) => printSavings(s, c)} title={t("print")} />
-                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteSavings(s)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                    {isSuper && <DeleteButton onClick={() => deleteSavings(s)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
               ))}
@@ -814,8 +815,8 @@ export default function FarmerDetail() {
                    <TableCell className="text-right">
                      <Button size="icon" variant="ghost" onClick={() => openLoanView(l)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
                      <ReceiptCopyMenu onSelect={(c) => printLoan(l, c)} title={t("print")} />
-                     {isSuper && <Button size="icon" variant="ghost" onClick={() => editLoanGoto(l)} title={t("edit")}><Pencil className="h-4 w-4" /></Button>}
-                     {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteLoan(l)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                     {isSuper && <EditButton onClick={() => editLoanGoto(l)} title={t("edit")} />}
+                     {isSuper && <DeleteButton onClick={() => deleteLoan(l)} title={t("delete")} />}
                    </TableCell>
                 </TableRow>
               );
@@ -843,7 +844,7 @@ export default function FarmerDetail() {
                   <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu onSelect={(c) => printIrrigation(i, c)} title={t("print")} />
-                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deleteIrrigation(i)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                    {isSuper && <DeleteButton onClick={() => deleteIrrigation(i)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
               ))}
@@ -872,7 +873,7 @@ export default function FarmerDetail() {
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={(c) => reprintReceipt(p, c)} />
-                    {isSuper && <Button size="icon" variant="ghost" onClick={() => deletePayment(p)} title={t("delete")}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                    {isSuper && <DeleteButton onClick={() => deletePayment(p)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
               ))}

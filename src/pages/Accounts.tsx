@@ -26,6 +26,7 @@ import {
 import * as XLSX from "xlsx";
 import { CoaImportDialog } from "./accounts/CoaImportDialog";
 import { useLang } from "@/i18n/LanguageProvider";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 
 type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
 
@@ -401,21 +402,8 @@ export default function Accounts() {
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
-                          <Button
-                            variant="ghost" size="icon" className="h-8 w-8"
-                            title={t("edit")}
-                            onClick={() => openEdit(n)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                            title={t("delete")}
-                            disabled={n.is_system}
-                            onClick={() => setDeleteId(n.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <EditButton title={t("edit")} onClick={() => openEdit(n)} />
+                          <DeleteButton title={t("delete")} disabled={n.is_system} onClick={() => setDeleteId(n.id)} />
                         </div>
                       </td>
                     </tr>
