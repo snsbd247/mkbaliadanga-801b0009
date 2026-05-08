@@ -308,7 +308,29 @@ export default function Payments() {
       <PageHeader
         title={t("payments")}
         description="Unified payment — splits across loan, savings & irrigation in one entry"
-        actions={<ReceiptSettingsButton />}
+        actions={<div className="flex gap-2"><Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" disabled={!farmerId}><ArrowDownToLine className="h-4 w-4 mr-1" />সঞ্চয় উত্তোলন</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>সঞ্চয় উত্তোলনের অনুরোধ</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="rounded-md bg-muted/40 p-2 text-sm flex justify-between">
+                <span>উপলব্ধ ব্যালেন্স</span>
+                <span className="font-mono font-semibold">৳{savingsBalance.toLocaleString()}</span>
+              </div>
+              <div><Label>পরিমাণ</Label>
+                <Input type="number" min="1" max={savingsBalance} value={withdrawForm.amount || ""} onChange={e => setWithdrawForm(f => ({ ...f, amount: +e.target.value }))} /></div>
+              <div><Label>{t("note")}</Label>
+                <Input value={withdrawForm.note} onChange={e => setWithdrawForm(f => ({ ...f, note: e.target.value }))} /></div>
+              <p className="text-xs text-muted-foreground">{t("withdrawalsRequireApproval")}</p>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setWithdrawOpen(false)}>{t("cancel")}</Button>
+              <Button onClick={submitWithdraw}>জমা দিন</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog><ReceiptSettingsButton /></div>}
       />
       <DuplicateReceiptWarning />
       <div className="grid gap-4 lg:grid-cols-3">
