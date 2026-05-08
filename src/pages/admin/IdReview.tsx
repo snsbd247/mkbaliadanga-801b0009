@@ -197,9 +197,7 @@ export default function IdReview() {
                   <Button size="sm" variant="ghost" onClick={() => openHistory(r)} title={t("history")}>
                     <HistoryIcon className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="ghost" disabled={!isSuper} onClick={() => openEdit(r)} title={t("edit")}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <EditButton disabled={!isSuper} onClick={() => openEdit(r)} title={t("edit")} />
                 </TableCell>
               </TableRow>
             ))}
