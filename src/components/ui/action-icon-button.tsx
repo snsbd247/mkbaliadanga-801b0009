@@ -99,7 +99,7 @@ const DeleteBase = makeActionButton(
 
 type DeleteProps = BaseProps & {
   /** When provided, clicking opens an AlertDialog and calls this on confirm. */
-  onConfirm?: () => void | Promise<void>;
+  onConfirm?: () => unknown | Promise<unknown>;
   confirmTitle?: React.ReactNode;
   confirmDescription?: React.ReactNode;
   confirmLabel?: React.ReactNode;
