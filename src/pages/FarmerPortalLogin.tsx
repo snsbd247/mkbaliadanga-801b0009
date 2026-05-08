@@ -18,7 +18,8 @@ const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export default function FarmerPortalLogin() {
   const nav = useNavigate();
   const brand = useBranding();
-  const { t } = useLang();
+  const { t, setLang } = useLang();
+  useEffect(() => { setLang("bn"); }, [setLang]);
   const { user, isSuper, isAdmin, isCommittee, rolesLoaded, roles } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [mobile, setMobile] = useState("");
