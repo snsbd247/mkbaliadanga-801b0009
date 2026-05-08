@@ -197,6 +197,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
     if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
     rows.push([t.due, fmt2(Number(d.previous_due ?? 0))]);
+    if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
     if (d.description) rows.push([t.desc, d.description]);
     if (d.outstanding != null) rows.push([t.balance, fmt2(Number(d.outstanding))]);

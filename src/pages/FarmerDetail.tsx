@@ -199,6 +199,7 @@ export default function FarmerDetail() {
   }
   function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id);
+    const pw = i.patwaris ?? null;
     downloadBnReceiptPdf({
       kind: "irrigation",
       ...commonReceipt(),
@@ -214,6 +215,8 @@ export default function FarmerDetail() {
       rate: Number(i.base_charge) + Number(i.canal_charge) + Number(i.maintenance_charge) + Number(i.other_charge),
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
+      patwari_name: pw ? (pw.name_bn || pw.name) : null,
+      patwari_mobile: pw?.mobile ?? null,
       collected_amount: Number(i.paid_amount || i.total),
     }, copy, receiptArgs.options);
   }
