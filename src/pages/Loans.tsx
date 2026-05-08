@@ -377,7 +377,7 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                   )}
                   {!showDeleted && isSuper && (<>
                     <EditButton onClick={() => onEdit(l)} title={t("editTip")} />
-                    <DeleteButton onClick={() => onDelete(l.id)} title={t("deleteTipShort")} />
+                    <DeleteButton onConfirm={() => onDelete(l.id)} title={t("deleteTipShort")} />
                   </>)}
                 </TableCell>
               </TableRow>

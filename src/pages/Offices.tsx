@@ -47,7 +47,6 @@ export default function Offices() {
     toast.success(t("saved")); setOpen(false); load();
   }
   async function del(id: string) {
-    if (!confirm(t("confirmDelete"))) return;
     const { error } = await supabase.from("offices").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
@@ -106,7 +105,7 @@ export default function Offices() {
                   <TableCell className="text-right">
                     <div className="inline-flex items-center gap-1">
                       <EditButton onClick={() => openEdit(o)} />
-                      <DeleteButton onClick={() => del(o.id)} />
+                      <DeleteButton onConfirm={() => del(o.id)} />
                     </div>
                   </TableCell>
                 )}

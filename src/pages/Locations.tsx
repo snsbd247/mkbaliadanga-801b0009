@@ -311,7 +311,6 @@ function LevelTab({ level }: { level: Level }) {
   }
 
   async function remove(id: string) {
-    if (!confirm(t("confirmDeleteEntry"))) return;
     const { error } = await (supabase.from as any)(level).delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("deletedToast")); load();
@@ -528,7 +527,7 @@ function LevelTab({ level }: { level: Level }) {
                       <div className="inline-flex items-center gap-1">
                         <EditButton onClick={() => openEdit(r)} />
                         <Button size="sm" variant="ghost" onClick={() => toggleActive(r)} aria-label={r.is_active === false ? "Activate" : "Deactivate"} title={r.is_active === false ? "Activate" : "Deactivate"}><Power className={"h-4 w-4 " + (r.is_active === false ? "text-muted-foreground" : "text-success")}/></Button>
-                        <DeleteButton onClick={() => remove(r.id)} />
+                        <DeleteButton onConfirm={() => remove(r.id)} />
                       </div>
                     </TableCell>
                   </TableRow>

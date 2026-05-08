@@ -780,7 +780,7 @@ export default function FarmerDetail() {
                   <TableCell><Badge>{t(s.status as any)}</Badge></TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu onSelect={(c) => printSavings(s, c)} title={t("print")} />
-                    {isSuper && <DeleteButton onClick={() => deleteSavings(s)} title={t("delete")} />}
+                    {isSuper && <DeleteButton onConfirm={() => deleteSavings(s)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
               ))}
@@ -816,7 +816,7 @@ export default function FarmerDetail() {
                      <Button size="icon" variant="ghost" onClick={() => openLoanView(l)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
                      <ReceiptCopyMenu onSelect={(c) => printLoan(l, c)} title={t("print")} />
                      {isSuper && <EditButton onClick={() => editLoanGoto(l)} title={t("edit")} />}
-                     {isSuper && <DeleteButton onClick={() => deleteLoan(l)} title={t("delete")} />}
+                     {isSuper && <DeleteButton onConfirm={() => deleteLoan(l)} title={t("delete")} />}
                    </TableCell>
                 </TableRow>
               );
@@ -844,7 +844,7 @@ export default function FarmerDetail() {
                   <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu onSelect={(c) => printIrrigation(i, c)} title={t("print")} />
-                    {isSuper && <DeleteButton onClick={() => deleteIrrigation(i)} title={t("delete")} />}
+                    {isSuper && <DeleteButton onConfirm={() => deleteIrrigation(i)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
               ))}
@@ -873,7 +873,7 @@ export default function FarmerDetail() {
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
                   <TableCell className="text-right">
                     <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={(c) => reprintReceipt(p, c)} />
-                    {isSuper && <DeleteButton onClick={() => deletePayment(p)} title={t("delete")} />}
+                    {isSuper && <DeleteButton onConfirm={() => deletePayment(p)} title={t("delete")} />}
                   </TableCell>
                 </TableRow>
               ))}

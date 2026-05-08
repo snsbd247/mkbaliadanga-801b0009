@@ -73,7 +73,6 @@ export default function LoanPlans() {
   }
 
   async function del(id: string) {
-    if (!confirm(t("p5_deletePlanConfirm"))) return;
     const { error } = await (supabase.from as any)("loan_plans").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
@@ -143,7 +142,7 @@ export default function LoanPlans() {
                 <TableCell className="text-right">
                   {isAdmin && (<>
                     <EditButton onClick={() => openEdit(r)} />
-                    <DeleteButton onClick={() => del(r.id)} />
+                    <DeleteButton onConfirm={() => del(r.id)} />
                   </>)}
                 </TableCell>
               </TableRow>
