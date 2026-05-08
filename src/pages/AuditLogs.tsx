@@ -453,7 +453,7 @@ function DiffDialog({ log }: { log: any }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" variant="ghost"><Eye className="h-4 w-4" /></Button>
+        <ViewButton />
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>{log.action} — {log.entity}</DialogTitle></DialogHeader>
