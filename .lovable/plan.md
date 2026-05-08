@@ -1,99 +1,99 @@
-## লক্ষ্য
+# Implementation Plan — ১০টি কাজ ধাপে ধাপে
 
-৪টি কাজ একসাথে: (১) সব page-এর mobile/tablet/desktop screenshot test, (২) overlap-পাওয়া page-এর PDF/Excel report export, (৩) কার্ড/টেবিলে লম্বা নাম/email/number এ truncate + tooltip, (৪) print preview overlap fix।
+প্রতিটি ধাপ আগের ধাপের উপর নির্ভরশীল, তাই sequence মেনে করব। প্রতিটি ধাপ শেষে relevant module test করব যেন কিছু না ভাঙে।
 
-## ১. Automated responsive screenshot test
+---
 
-**Tool:** Playwright (project-এ already configured)। নতুন spec: `e2e/responsive-overlap.spec.ts`।
+## ধাপ ১ — Voter = Savings Member merge (UI level)
 
-- Viewport: `375×812` (mobile), `768×1024` (tablet), `1440×900` (desktop)।
-- Test login একবার (test admin user via env: `E2E_EMAIL`/`E2E_PASSWORD`), তারপর session reuse।
-- Page list: কোডবেস scan করে route discover (`src/App.tsx` → `<Route>`), ৪০+ page।
-- প্রতি (page × viewport) এ:
-  - navigate, network-idle wait
-  - JS দিয়ে overflow detect: প্রতিটি element-এর `scrollWidth > clientWidth` বা `getBoundingClientRect()` overlap check (sibling intersection in same flex/grid row)
-  - screenshot save → `test-results/responsive/{page}-{viewport}.png`
-  - overlap রিপোর্ট JSON-এ append: `{ page, viewport, issues:[{selector, kind}] }`
-- চালানো: `npx playwright test e2e/responsive-overlap.spec.ts`।
+**Decision**: `voter_number` থাকলেই active member। DB-তে `is_voter` column থাকবে (legacy data + immutability trigger), কিন্তু UI থেকে toggle সরবে এবং save করার সময় auto-derive হবে: `is_voter = !!voter_number`।
 
-**Auth blocker:** যদি `E2E_EMAIL` env না থাকে, test শুধু public route (`/auth`, `/verify-receipt`, `/farmer-portal/login`) screenshot করবে এবং report-এ blocker note লিখবে। User-কে env add করতে বলব।
+- Farmer create/edit dialog (`Farmers.tsx`, `FarmerDetail.tsx`): "Voter" toggle UI সরিয়ে দেব। শুধু `Voter Number` field থাকবে।
+- Save handler: `is_voter = voter_number ? true : false` auto set।
+- Display label: "Voter Number" → "Voter / Savings A/C No"।
+- VoterList page label clarify।
 
-## ২. Overlap report PDF/Excel export
+## ধাপ ২ — Bulk Farmer Import: simplified template + xlsx
 
-`scripts/responsive-report.mjs`: test result JSON + screenshots নিয়ে—
+`src/pages/FarmersImport.tsx` update:
+- Template columns শুধু: `farmer_id` (optional, internal id for update), `voter_number`, `name_en`, `name_bn`, `father_name`, `mobile`, `village`।
+- File accept: `.csv,.xlsx`। Project-এ ইতিমধ্যে `xlsx` lib আছে (DataImport-এ ব্যবহৃত) — সেটাই reuse করব।
+- Parser: extension detect করে csv বা xlsx route করবে।
+- Sample template download button update (csv + xlsx দুটোই)।
 
-- **PDF** (`pdf-lib` বা `reportlab` via python): summary table (page | viewport | issue count) + প্রতি issue-এ thumbnail।
-- **XLSX** (`exceljs`/`openpyxl`): tab "Summary" + tab "Issues" with embedded screenshot link।
-- Output: `/mnt/documents/responsive-overlap-report.pdf` + `.xlsx`।
+## ধাপ ৩ — Auto voter activation on import
 
-User flow: `bun run e2e:responsive` → test → `node scripts/responsive-report.mjs` → report file।
+Import row processing: যদি `voter_number` cell-এ value থাকে → `is_voter = true` set হবে insert/update payload-এ।
 
-## ৩. Truncate + tooltip component
+## ধাপ ৪ — DataImport page module list refresh
 
-নতুন component `src/components/ui/truncate-text.tsx`:
+`src/pages/DataImport.tsx` + `src/lib/importTemplates.ts`:
+- Modules list verify করে current schema এর সাথে align করব।
+- Templates এ existing column names match করব (যেমন payments-এ `account_number` → এখন voter_number-এর সাথে unified হলে সেটাও clarify)।
+- যেগুলো deprecated বা broken — সরাব।
 
-```tsx
-<TruncateText className="max-w-[200px]">{longText}</TruncateText>
-```
+## ধাপ ৫ — Irrigation: জমির ownership badge
 
-- CSS: `truncate` (single line) বা `line-clamp-2`
-- Hover/focus → shadcn `<Tooltip>` দেখায় full text
-- Mobile: tap to show
-- Auto-detect overflow (scrollWidth > clientWidth) — overflow না থাকলে tooltip render-ই হবে না
+`src/pages/Irrigation.tsx` (Add/Edit dialog): farmer select হওয়ার পর land dropdown-এ প্রতিটা land-এর পাশে badge:
+- "নিজের জমি" (owner_farmer_id == selected farmer)
+- "বর্গা নেয়া" (land_relations table → sharecropper_farmer_id == selected farmer)
 
-**যেখানে apply করব** (high-impact spots):
-- `FarmerDetail.tsx` — name, father, mother, NID, mobile cells
-- `Farmers.tsx` table rows — name + mobile column
-- `Payments.tsx` — farmer name + receipt no
-- `Loans.tsx`, `Savings.tsx` — farmer column
-- `AppLayout.tsx` header — user email (already truncated, add tooltip)
-- `NotificationBell` — title
+Selected হওয়ার পর form-এ summary line দেখাবে।
 
-(বাকি page-গুলো auto fix করবে আগের `index.css` rule দিয়ে — শুধু high-traffic ৬–৭ জায়গায় explicit truncate+tooltip যোগ করব।)
+## ধাপ ৬ — Patwari module (DB + Admin)
 
-## ৪. Print preview overlap fix
+**Migration**: নতুন table `patwaris` (name, mobile, mouza_id, office_id, is_active) + RLS (office-scoped admin manage, auth read)।
 
-Print-ভিত্তিক page: `FarmerProfileReport`, `BulkCards`, `ReceiptTemplate`, `LoanReceiptSettings preview`, `Payments` receipt, `FarmerCard`, `Cashbook`, `Reports`, `FinancialReports`, `CollectionReport`, `ExpensesReport`, `IrrigationDueReport`।
+**Admin page**: `src/pages/admin/Patwaris.tsx` — list, create, edit, deactivate। App.tsx-এ route + sidebar link।
 
-`src/index.css`-এ `@media print` block-এ যোগ:
+## ধাপ ৭ — Patwari profile page
 
-```css
-@media print {
-  .no-print { display: none !important; }
-  body { background: white; }
-  /* Page setup */
-  @page { size: A4; margin: 12mm; }
-  /* Prevent row/card cut across pages */
-  tr, .print-keep { page-break-inside: avoid; }
-  thead { display: table-header-group; } /* repeat header on each page */
-  tfoot { display: table-footer-group; }
-  /* Long-text wrap in print */
-  td, th, .print-wrap { overflow-wrap: anywhere; word-break: break-word; }
-  /* Hide overflow scroll bars in print */
-  [data-table-wrap], .overflow-x-auto, .overflow-auto { overflow: visible !important; }
-  /* Prevent fixed header overlap */
-  header, .sticky { position: static !important; }
-}
-```
+`src/pages/admin/PatwariDetail.tsx`:
+- Patwari info।
+- Assigned mouza-এর সব land + সব farmer (mouza_id match) দেখাবে।
+- Per-land override পরে এলে সেটাও list-এ দেখাবে (ধাপ ৮ এর পর)।
 
-প্রতিটি print-page একবার screenshot test (Playwright `page.emulateMedia({ media: 'print' })`) → overlap check + report এ যোগ।
+## ধাপ ৮ — Irrigation entry-তে Patwari select + receipt
 
-## Deliverable
+Irrigation_charges table-এ `patwari_id` column add (migration)।
 
-- **নতুন:** `e2e/responsive-overlap.spec.ts`, `scripts/responsive-report.mjs`, `src/components/ui/truncate-text.tsx`
-- **edit:** `src/index.css` (print block extend), `package.json` (script `e2e:responsive`), high-traffic ৬–৭ page truncate+tooltip integration
-- **output:** `/mnt/documents/responsive-overlap-report.pdf` + `.xlsx`
+`Irrigation.tsx` Add/Edit dialog:
+- Patwari select dropdown। Default: selected land-এর mouza-এর active patwari (auto-populate, override করা যাবে)।
+- Save করার সময় `patwari_id` store।
 
-## Technical notes / Limitations
+Receipt template (`src/lib/bnReceipts.ts` / paymentReceiptPdf.ts): irrigation receipt-এ "পাটুয়ারী: <name> (<mobile>)" line যোগ।
 
-- Test runner-এ login credentials দরকার (env বা auth-bypass)। না দিলে private route skip হবে।
-- প্রথম run-এ ১০–১৫ মিনিট লাগবে (৪০ page × ৩ viewport)।
-- "Overlap" detect heuristic — sibling bounding-box intersection + scrollWidth check; ১০০% accurate না, false positive হতে পারে। Report এ visual confirmation-এর জন্য screenshot থাকবে।
-- Print CSS এর effect শুধু browser print preview-তে দেখা যাবে; PDF generation যেগুলো `pdfmake` দিয়ে হয় (যেমন bnReceipts) সেগুলোতে আলাদাভাবে এই rule apply হবে না।
+## ধাপ ৯ — Farmer portal Bangla-only
 
-## প্রশ্ন
+- `FarmerPortalLogin.tsx` + `FarmerDashboard.tsx`: render-এ `useEffect(() => setLang('bn'), [])` force।
+- LanguageToggle component conditionally hide (route-based check) — অথবা এই দুই page-এ render না করা।
 
-প্ল্যান approve করলে শুরু করি — শুধু confirm করুন:
+## ধাপ ১০ — Overall flow polish
 
-1. E2E test-এর জন্য admin login credential আছে কি (`E2E_EMAIL`/`E2E_PASSWORD` secret হিসেবে add করতে হবে)? না থাকলে শুধু public page test হবে।
-2. Report format — PDF, XLSX, না দুটোই?
+- Sidebar ordering check (Patwari menu add)।
+- Dead links remove।
+- Voter toggle remove হওয়ার পর dependent pages (DuesAudit, VoterList, Reports) verify।
+- Build + key page smoke test।
+
+---
+
+## Technical Details
+
+**Migrations needed** (২টা separate):
+1. `CREATE TABLE patwaris` + RLS + trigger।
+2. `ALTER TABLE irrigation_charges ADD COLUMN patwari_id UUID`।
+
+**Files to modify (~20)**:
+- Pages: `Farmers.tsx`, `FarmerDetail.tsx`, `FarmersImport.tsx`, `DataImport.tsx`, `Irrigation.tsx`, `VoterList.tsx`, `FarmerPortalLogin.tsx`, `FarmerDashboard.tsx`, `App.tsx`
+- New: `admin/Patwaris.tsx`, `admin/PatwariDetail.tsx`
+- Lib: `importTemplates.ts`, `farmerUpdateMapper.ts`, `bnReceipts.ts`, `paymentReceiptPdf.ts`
+- Layout: `AppSidebar.tsx`, possibly `LanguageToggle` usage sites
+
+**Risk areas**:
+- Voter trigger immutability: সাবধান, existing voter_number কখনো clear হবে না।
+- Patwari migration বড় — আগে approve নেব, তারপর code।
+- Bulk import parser রিরাইট করলে existing flow না ভাঙে — incremental change করব।
+
+**Approval flow**: প্রথমে ধাপ ১-৫ (no DB change) করব, তারপর migration approve নেব, তারপর ৬-৮ করব, শেষে ৯-১০।
+
+ঠিক আছে কিনা জানালে শুরু করব।
