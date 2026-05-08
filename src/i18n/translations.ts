@@ -1646,6 +1646,7 @@ export const translations = {
     qrRotation: "QR রোটেশন",
     bulkCards: "বাল্ক কার্ড",
     bulkFarmerImport: "বাল্ক কৃষক ইমপোর্ট",
+    patwaris: "পাটুয়ারী",
     receiptTemplate: "রসিদ টেমপ্লেট",
     smsSettings: "SMS সেটিংস",
     smsLogs: "SMS লগ",
