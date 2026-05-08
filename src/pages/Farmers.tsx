@@ -497,11 +497,7 @@ export default function Farmers() {
           {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
         </div>
         <FarmerIdField f={f} setF={setF} disabled={disabled} isSuper={isSuper} currentId={f.id ?? null} />
-        <div>
-          <Label>{t("voterSavingsAccount")}</Label>
-          <VoterToggleField f={f} setF={setF} disabled={disabled} />
-        </div>
-        <SavingsVoterFields f={f} setF={setF} disabled={disabled} isSuper={isSuper} />
+        <VoterSavingsField f={f} setF={setF} disabled={disabled} isSuper={isSuper} />
         <div>
           <Label>{t("office")}</Label>
           <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>
