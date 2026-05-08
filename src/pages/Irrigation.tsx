@@ -25,8 +25,9 @@ export default function Irrigation() {
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
+  const [patwaris, setPatwaris] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", rate: 0, quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, entry_date: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", rate: 0, quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, patwari_id: "", entry_date: new Date().toISOString().slice(0, 10) });
   const [rateAvailable, setRateAvailable] = useState<boolean | null>(null);
 
   const [prevDue, setPrevDue] = useState<number>(0);
@@ -36,16 +37,16 @@ export default function Irrigation() {
   useEffect(() => {
     if (!form.farmer_id) { setLands([]); return; }
     (async () => {
-      // Own lands
+      // Own lands (with mouza_id for patwari auto-default)
       const { data: own } = await supabase
         .from("lands")
-        .select("id,dag_no,land_size,farmer_id")
+        .select("id,dag_no,land_size,farmer_id,mouza_id")
         .eq("farmer_id", form.farmer_id)
         .is("deleted_at", null);
       // Sharecropper lands (via land_relations)
       const { data: rels } = await supabase
         .from("land_relations")
-        .select("land_id, lands(id,dag_no,land_size,farmer_id)")
+        .select("land_id, lands(id,dag_no,land_size,farmer_id,mouza_id)")
         .eq("sharecropper_farmer_id", form.farmer_id)
         .is("deleted_at", null);
       const ownIds = new Set((own ?? []).map((l: any) => l.id));
@@ -57,6 +58,14 @@ export default function Irrigation() {
       setLands([...ownMarked, ...sharecrop]);
     })();
   }, [form.farmer_id]);
+  // Auto-default patwari based on land's mouza (admin can override in dropdown)
+  useEffect(() => {
+    if (!form.land_id || editId) return;
+    const ld = lands.find((l: any) => l.id === form.land_id);
+    if (!ld?.mouza_id) return;
+    const match = patwaris.find((p: any) => p.mouza_id === ld.mouza_id && p.is_active);
+    if (match && !form.patwari_id) setForm((f: any) => ({ ...f, patwari_id: match.id }));
+  }, [form.land_id, lands, patwaris, editId]);
   // Auto-fill quantity from land size when basis = per_size
   useEffect(() => {
     if (form.basis !== "per_size" || !form.land_id) return;
@@ -111,13 +120,14 @@ export default function Irrigation() {
   }, [form.farmer_id]);
 
   async function load() {
-    let q = supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name)").order("entry_date", { ascending: false }).limit(200);
+    let q = supabase.from("irrigation_charges").select("*, farmers(name_en,farmer_code,account_number), lands(dag_no), seasons(name), patwaris(name,name_bn,mobile)").order("entry_date", { ascending: false }).limit(200);
     q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
-    const [r, s] = await Promise.all([
+    const [r, s, p] = await Promise.all([
       q,
       supabase.from("seasons").select("*").order("year", { ascending: false }),
+      supabase.from("patwaris").select("id,name,name_bn,mobile,mouza_id,is_active").eq("is_active", true).order("name"),
     ]);
-    setRows(r.data ?? []); setSeasons(s.data ?? []);
+    setRows(r.data ?? []); setSeasons(s.data ?? []); setPatwaris(p.data ?? []);
   }
   async function restore(id: string) {
     const { error } = await supabase.from("irrigation_charges").update({ deleted_at: null } as any).eq("id", id);
@@ -153,6 +163,7 @@ export default function Irrigation() {
       base_charge: form.base_charge, canal_charge: form.canal_charge,
       maintenance_charge: form.maintenance_charge, other_charge: form.other_charge,
       paid_amount: form.paid_amount, entry_date: form.entry_date,
+      patwari_id: form.patwari_id || null,
     };
     let error;
     if (editId) {
@@ -177,6 +188,7 @@ export default function Irrigation() {
       canal_charge: Number(r.canal_charge), maintenance_charge: Number(r.maintenance_charge),
       other_charge: Number(r.other_charge), paid_amount: Number(r.paid_amount),
       entry_date: r.entry_date,
+      patwari_id: r.patwari_id || "",
     });
     setOpen(true);
   }
@@ -317,11 +329,11 @@ export default function Irrigation() {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>{t("selectFarmer")}</Label>
                 <FarmerSearchSelect value={form.farmer_id || null}
-                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "", land_id: "" })}
+                  onChange={(id) => setForm({ ...form, farmer_id: id ?? "", land_id: "", patwari_id: "" })}
                   placeholder={t("searchFarmerNameIdMobile")} />
               </div>
               <div><Label>{t("lands")}</Label>
-                <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v })}>
+                <Select value={form.land_id} onValueChange={v => setForm({ ...form, land_id: v, patwari_id: "" })}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {lands.map((l: any) => (
@@ -375,6 +387,31 @@ export default function Irrigation() {
                 {errors.paid_amount && <p className="text-xs text-destructive mt-1">{errors.paid_amount}</p>}
               </div>
               <div><Label>{t("date")}</Label><Input type="date" value={form.entry_date} onChange={e => setForm({ ...form, entry_date: e.target.value })} /></div>
+              <div className="col-span-2">
+                <Label>পাটুয়ারী (দায়িত্বরত)</Label>
+                <Select value={form.patwari_id || "none"} onValueChange={(v) => setForm({ ...form, patwari_id: v === "none" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="— পাটুয়ারী নির্বাচন করুন —" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— কোনটি না —</SelectItem>
+                    {patwaris.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name_bn || p.name}{p.mobile ? ` — ${p.mobile}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.patwari_id && form.land_id && (() => {
+                  const ld = lands.find((l: any) => l.id === form.land_id);
+                  const pw = patwaris.find((p: any) => p.id === form.patwari_id);
+                  if (!ld?.mouza_id || !pw) return null;
+                  const isDefault = pw.mouza_id === ld.mouza_id;
+                  return (
+                    <p className={`text-xs mt-1 ${isDefault ? "text-muted-foreground" : "text-amber-600 font-medium"}`}>
+                      {isDefault ? "✓ মৌজা অনুযায়ী ডিফল্ট" : "⚠️ মৌজার বাইরে — manual override"}
+                    </p>
+                  );
+                })()}
+              </div>
               <div className="col-span-2 rounded-md border border-dashed p-2 text-sm flex justify-between">
                 <span className="text-muted-foreground">{t("previousDue") || "Previous due (auto)"}</span>
                 <span className={prevDue > 0 ? "due-text font-semibold" : "font-semibold"}>{money(prevDue)}</span>

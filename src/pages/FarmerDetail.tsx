@@ -113,7 +113,7 @@ export default function FarmerDetail() {
       (supabase.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
       supabase.from("savings_transactions").select("*").eq("farmer_id", id!).is("deleted_at", null).order("txn_date", { ascending: false }),
       supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).is("deleted_at", null).order("issued_on", { ascending: false }),
-      supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no)").eq("farmer_id", id!).is("deleted_at", null).order("entry_date", { ascending: false }),
+      supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no), patwaris(name,name_bn,mobile)").eq("farmer_id", id!).is("deleted_at", null).order("entry_date", { ascending: false }),
       supabase.from("shares").select("balance").eq("farmer_id", id!).maybeSingle(),
       supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, verify_token, receipt_no, offices(name)").eq("farmer_id", id!).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
     ]);
@@ -199,6 +199,7 @@ export default function FarmerDetail() {
   }
   function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id);
+    const pw = i.patwaris ?? null;
     downloadBnReceiptPdf({
       kind: "irrigation",
       ...commonReceipt(),
@@ -214,6 +215,8 @@ export default function FarmerDetail() {
       rate: Number(i.base_charge) + Number(i.canal_charge) + Number(i.maintenance_charge) + Number(i.other_charge),
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
+      patwari_name: pw ? (pw.name_bn || pw.name) : null,
+      patwari_mobile: pw?.mobile ?? null,
       collected_amount: Number(i.paid_amount || i.total),
     }, copy, receiptArgs.options);
   }

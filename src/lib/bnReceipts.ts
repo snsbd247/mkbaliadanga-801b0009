@@ -60,6 +60,10 @@ export interface BnReceiptData {
   charge_amount?: number | null;
   previous_due?: number | null;
 
+  /** Patwari (responsible field officer) — irrigation receipts only */
+  patwari_name?: string | null;
+  patwari_mobile?: string | null;
+
   description?: string | null;
   outstanding?: number | null;
 
@@ -107,6 +111,7 @@ const STR = {
     memberSig: "সদস্যের স্বাক্ষর",
     collectorSig: "আদায়কারীর স্বাক্ষর",
     regNo: "নিবন্ধন নং:",
+    patwari: "পাটুয়ারী:",
   },
   en: {
     titleIrr: "Irrigation Charge Receipt",
@@ -136,6 +141,7 @@ const STR = {
     memberSig: "Member signature",
     collectorSig: "Collector signature",
     regNo: "Reg. No:",
+    patwari: "Patwari:",
   },
 } as const;
 
@@ -191,6 +197,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
     if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
     rows.push([t.due, fmt2(Number(d.previous_due ?? 0))]);
+    if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
     if (d.description) rows.push([t.desc, d.description]);
     if (d.outstanding != null) rows.push([t.balance, fmt2(Number(d.outstanding))]);
