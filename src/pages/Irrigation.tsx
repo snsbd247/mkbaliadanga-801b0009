@@ -387,6 +387,31 @@ export default function Irrigation() {
                 {errors.paid_amount && <p className="text-xs text-destructive mt-1">{errors.paid_amount}</p>}
               </div>
               <div><Label>{t("date")}</Label><Input type="date" value={form.entry_date} onChange={e => setForm({ ...form, entry_date: e.target.value })} /></div>
+              <div className="col-span-2">
+                <Label>পাটুয়ারী (দায়িত্বরত)</Label>
+                <Select value={form.patwari_id || "none"} onValueChange={(v) => setForm({ ...form, patwari_id: v === "none" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="— পাটুয়ারী নির্বাচন করুন —" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— কোনটি না —</SelectItem>
+                    {patwaris.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name_bn || p.name}{p.mobile ? ` — ${p.mobile}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.patwari_id && form.land_id && (() => {
+                  const ld = lands.find((l: any) => l.id === form.land_id);
+                  const pw = patwaris.find((p: any) => p.id === form.patwari_id);
+                  if (!ld?.mouza_id || !pw) return null;
+                  const isDefault = pw.mouza_id === ld.mouza_id;
+                  return (
+                    <p className={`text-xs mt-1 ${isDefault ? "text-muted-foreground" : "text-amber-600 font-medium"}`}>
+                      {isDefault ? "✓ মৌজা অনুযায়ী ডিফল্ট" : "⚠️ মৌজার বাইরে — manual override"}
+                    </p>
+                  );
+                })()}
+              </div>
               <div className="col-span-2 rounded-md border border-dashed p-2 text-sm flex justify-between">
                 <span className="text-muted-foreground">{t("previousDue") || "Previous due (auto)"}</span>
                 <span className={prevDue > 0 ? "due-text font-semibold" : "font-semibold"}>{money(prevDue)}</span>
