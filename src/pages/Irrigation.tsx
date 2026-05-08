@@ -25,8 +25,9 @@ export default function Irrigation() {
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
+  const [patwaris, setPatwaris] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", rate: 0, quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, entry_date: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState<any>({ farmer_id: "", land_id: "", season_id: "", basis: "per_size", rate: 0, quantity: 0, base_charge: 0, canal_charge: 0, maintenance_charge: 0, other_charge: 0, paid_amount: 0, patwari_id: "", entry_date: new Date().toISOString().slice(0, 10) });
   const [rateAvailable, setRateAvailable] = useState<boolean | null>(null);
 
   const [prevDue, setPrevDue] = useState<number>(0);
