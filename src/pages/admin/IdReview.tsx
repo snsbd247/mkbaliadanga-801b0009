@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { Search, ShieldAlert, History as HistoryIcon, Pencil } from "lucide-react";
+import { EditButton } from "@/components/ui/action-icon-button";
 
 type Row = {
   id: string;
