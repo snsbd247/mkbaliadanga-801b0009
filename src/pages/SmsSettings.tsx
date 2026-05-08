@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Send, Eye, CalendarClock, AlertTriangle, RotateCcw, Wand2, FlaskConical, CheckCircle2, XCircle, Trash2, KeyRound, Save } from "lucide-react";
+import { DeleteButton } from "@/components/ui/action-icon-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -868,9 +869,7 @@ export default function SmsSettings() {
                                   Retire
                                 </Button>
                               )}
-                              <Button type="button" size="sm" variant="ghost" disabled={tokenBusy} onClick={() => deleteToken(t.id)} className="h-7 px-2 text-xs text-destructive hover:text-destructive">
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                              <DeleteButton disabled={tokenBusy} onClick={() => deleteToken(t.id)} />
                             </div>
                           </td>
                         </tr>

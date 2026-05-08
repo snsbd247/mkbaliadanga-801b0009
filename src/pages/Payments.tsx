@@ -16,6 +16,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer, ArrowDownToLine } from "lucide-react";
+import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
@@ -381,10 +382,8 @@ export default function Payments() {
                         <SelectItem value="savings">{t("savings")}</SelectItem>
                       </SelectContent>
                     </Select>
-                    {allocs.length > 1 && (
-                      <Button type="button" size="icon" variant="ghost" onClick={() => setAllocs(allocs.filter((_, idx) => idx !== i))}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                     {allocs.length > 1 && (
+                      <DeleteButton onClick={() => setAllocs(allocs.filter((_, idx) => idx !== i))} />
                     )}
                   </div>
                   {a.kind === "loan" && (

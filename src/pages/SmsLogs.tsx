@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { RefreshCw, Send, Megaphone, Bell, Eye, Loader2, FileDown, FileSpreadsheet } from "lucide-react";
+import { ViewButton } from "@/components/ui/action-icon-button";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -424,10 +425,8 @@ export default function SmsLogs() {
                         <TableCell>{l.retry_count}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            {(l.event_type === "due_reminder_loan" || l.event_type === "due_reminder_irrigation") && (
-                              <Button size="sm" variant="ghost" onClick={() => openDetails(l)} title={t("viewReceipt")}>
-                                <Eye className="h-4 w-4"/>
-                              </Button>
+                             {(l.event_type === "due_reminder_loan" || l.event_type === "due_reminder_irrigation") && (
+                              <ViewButton onClick={() => openDetails(l)} title={t("viewReceipt")} />
                             )}
                             {l.status !== "sent" && (
                               <Button size="sm" variant="ghost" onClick={() => retryOne(l.id)} disabled={busy}>{t("retryBtn")}</Button>
