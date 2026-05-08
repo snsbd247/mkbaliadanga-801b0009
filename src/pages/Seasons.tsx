@@ -72,7 +72,7 @@ export default function Seasons() {
             {list.map(s => (
               <TableRow key={s.id}>
                 <TableCell>{s.year}</TableCell><TableCell>{t(s.type as any)}</TableCell><TableCell>{s.name}</TableCell>
-                <TableCell className="text-right">{isAdmin && <Button variant="ghost" size="icon" onClick={() => del(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}</TableCell>
+                <TableCell className="text-right">{isAdmin && <DeleteButton onClick={() => del(s.id)} />}</TableCell>
               </TableRow>
             ))}
             {list.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
