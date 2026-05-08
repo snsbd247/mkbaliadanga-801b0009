@@ -15,7 +15,8 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { Paperclip, Check, X, FileText, Plus, Trash2, Printer } from "lucide-react";
+import { Paperclip, Check, X, FileText, Plus, Trash2, Printer, ArrowDownToLine } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { downloadBnReceiptPdf, type ReceiptCopy } from "@/lib/bnReceipts";
@@ -53,10 +54,51 @@ export default function Payments() {
   const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
   const [autoAmount, setAutoAmount] = useState<number>(0);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
+  const [savingsBalance, setSavingsBalance] = useState<number>(0);
+
+  async function loadSavingsBalance(fid: string) {
+    const { data } = await supabase
+      .from("savings_transactions")
+      .select("type,amount,status")
+      .eq("farmer_id", fid)
+      .eq("status", "approved")
+      .is("deleted_at", null);
+    const bal = (data ?? []).reduce((s: number, r: any) => {
+      const a = Number(r.amount) || 0;
+      if (r.type === "withdraw") return s - a;
+      if (r.type === "share_deposit" || r.type === "share_collection") return s;
+      return s + a;
+    }, 0);
+    setSavingsBalance(bal);
+  }
+
+  async function submitWithdraw() {
+    if (!farmerId) return toast.error(t("pickFarmer"));
+    if (!(withdrawForm.amount > 0)) return toast.error(t("amountMustBePositiveSavings"));
+    if (withdrawForm.amount > savingsBalance) return toast.error(`Insufficient balance. Available: ৳${savingsBalance.toLocaleString()}`);
+    const farmer = farmers.find((x: any) => x.id === farmerId);
+    const { error } = await supabase.from("savings_transactions").insert({
+      farmer_id: farmerId, type: "withdraw" as any, amount: withdrawForm.amount,
+      note: withdrawForm.note, status: "pending" as any, created_by: user?.id,
+    });
+    if (error) return toast.error(error.message);
+    await supabase.from("notifications").insert({
+      kind: "withdrawal_pending",
+      title: t("withdrawalRequestTitle"),
+      body: t("withdrawalRequestedBody").replace("{name}", farmer?.name_en ?? "").replace("{amount}", String(withdrawForm.amount)),
+      link: "/savings",
+    });
+    toast.success(t("pgSavWithdrawSubmitted" as any));
+    setWithdrawOpen(false);
+    setWithdrawForm({ amount: 0, note: "" });
+    load();
+  }
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
   useEffect(() => { load(); /* refresh on toggle */ }, [showDeleted]);
-  useEffect(() => { if (farmerId) loadDues(); else { setOpenLoans([]); setOpenIrr([]); } }, [farmerId]);
+  useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenLoans([]); setOpenIrr([]); setSavingsBalance(0); } }, [farmerId]);
   useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
   useEffect(() => {
     const loan = params.get("loan");
@@ -266,7 +308,29 @@ export default function Payments() {
       <PageHeader
         title={t("payments")}
         description="Unified payment — splits across loan, savings & irrigation in one entry"
-        actions={<ReceiptSettingsButton />}
+        actions={<div className="flex gap-2"><Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" disabled={!farmerId}><ArrowDownToLine className="h-4 w-4 mr-1" />সঞ্চয় উত্তোলন</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle>সঞ্চয় উত্তোলনের অনুরোধ</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="rounded-md bg-muted/40 p-2 text-sm flex justify-between">
+                <span>উপলব্ধ ব্যালেন্স</span>
+                <span className="font-mono font-semibold">৳{savingsBalance.toLocaleString()}</span>
+              </div>
+              <div><Label>পরিমাণ</Label>
+                <Input type="number" min="1" max={savingsBalance} value={withdrawForm.amount || ""} onChange={e => setWithdrawForm(f => ({ ...f, amount: +e.target.value }))} /></div>
+              <div><Label>{t("note")}</Label>
+                <Input value={withdrawForm.note} onChange={e => setWithdrawForm(f => ({ ...f, note: e.target.value }))} /></div>
+              <p className="text-xs text-muted-foreground">{t("withdrawalsRequireApproval")}</p>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setWithdrawOpen(false)}>{t("cancel")}</Button>
+              <Button onClick={submitWithdraw}>জমা দিন</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog><ReceiptSettingsButton /></div>}
       />
       <DuplicateReceiptWarning />
       <div className="grid gap-4 lg:grid-cols-3">

@@ -92,13 +92,23 @@ export default function Loans() {
   async function decide(id: string, status: "approved" | "rejected") {
     const { error } = await supabase.from("loans").update({ status, approved_by: user?.id, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
+    const loan = loans.find(l => l.id === id);
     if (status === "approved") {
-      const loan = loans.find(l => l.id === id);
       if (loan?.plan_id) {
         const { error: gErr } = await supabase.rpc("generate_loan_installments", { _loan_id: id });
         if (gErr) toast.error(`Schedule: ${gErr.message}`);
         else toast.success(t("installmentScheduleGenerated"));
       }
+    }
+    // Notify originator about the decision
+    if (loan?.created_by) {
+      await supabase.from("notifications").insert({
+        user_id: loan.created_by,
+        kind: status === "approved" ? "loan_approved" : "loan_rejected",
+        title: status === "approved" ? "ঋণ অনুমোদিত" : "ঋণ প্রত্যাখ্যাত",
+        body: `${loan?.farmers?.name_en ?? ""} — ৳${Number(loan?.principal ?? 0).toLocaleString()}`,
+        link: "/loans",
+      });
     }
     toast.success(t("saved")); load();
   }

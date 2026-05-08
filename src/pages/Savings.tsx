@@ -262,6 +262,17 @@ export default function Savings() {
       .eq("id", id)
       .eq("status", "pending"); // guard: only pending → decision
     if (error) return toast.error(error.message);
+    // Notify originator about the decision
+    const txn = txns.find((x: any) => x.id === id);
+    if (txn?.created_by) {
+      await supabase.from("notifications").insert({
+        user_id: txn.created_by,
+        kind: status === "approved" ? "withdrawal_approved" : "withdrawal_rejected",
+        title: status === "approved" ? "উত্তোলন অনুমোদিত" : "উত্তোলন প্রত্যাখ্যাত",
+        body: `${txn?.farmers?.name_en ?? ""} — ৳${Number(txn?.amount ?? 0).toLocaleString()}${reject_reason ? ` (${reject_reason})` : ""}`,
+        link: "/savings",
+      });
+    }
     toast.success(status === "approved" ? t("pgSavWithdrawApproved" as any) : t("pgSavWithdrawRejected" as any));
     load();
   }
