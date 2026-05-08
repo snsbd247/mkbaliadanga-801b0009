@@ -311,7 +311,8 @@ export default function LedgerReconciliation() {
                 <h3 className="font-semibold text-destructive">{t("p5_mismatches")} ({report.mismatches.length})</h3>
               </div>
               <div className="overflow-auto">
-                <table className="w-full text-xs">
+                <div data-table-wrap className="w-full overflow-x-auto">
+                  <table className="w-full text-xs">
                   <thead className="border-b">
                     <tr>
                       <th className="text-left p-2">{t("type")}</th>
@@ -336,7 +337,8 @@ export default function LedgerReconciliation() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
               <div className="text-xs text-muted-foreground mt-2">{t("p5_clickRowDetail")}</div>
             </Card>
@@ -374,7 +376,8 @@ export default function LedgerReconciliation() {
                 <Card className="p-3">
                   <div className="font-semibold text-sm mb-2">{t("p5_drillDown")} ({detail.ledger_entries.length})</div>
                   <div className="overflow-auto max-h-80">
-                    <table className="w-full text-xs">
+                    <div data-table-wrap className="w-full overflow-x-auto">
+                      <table className="w-full text-xs">
                       <thead className="border-b sticky top-0 bg-card">
                         <tr>
                           <th className="text-left p-1">{t("date")}</th>
@@ -398,7 +401,8 @@ export default function LedgerReconciliation() {
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                      </table>
+                    </div>
                   </div>
                 </Card>
                 <Card className="p-3">
@@ -407,7 +411,8 @@ export default function LedgerReconciliation() {
                     <Alert variant="destructive"><AlertDescription>{t("p5b_noData")}</AlertDescription></Alert>
                   ) : (
                     <div className="overflow-auto max-h-80">
-                      <table className="w-full text-xs">
+                      <div data-table-wrap className="w-full overflow-x-auto">
+                        <table className="w-full text-xs">
                         <tbody>
                           {Object.entries(detail.source ?? {}).map(([k, v]) => (
                             <tr key={k} className="border-b">
@@ -416,7 +421,8 @@ export default function LedgerReconciliation() {
                             </tr>
                           ))}
                         </tbody>
-                      </table>
+                        </table>
+                      </div>
                     </div>
                   )}
                 </Card>

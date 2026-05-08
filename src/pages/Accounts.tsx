@@ -338,7 +338,8 @@ export default function Accounts() {
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <div data-table-wrap className="w-full overflow-x-auto">
+              <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted-foreground border-b">
                   <th className="text-left font-medium px-4 py-3">{t("accountName")}</th>
@@ -421,7 +422,8 @@ export default function Accounts() {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </CardContent>
       </Card>

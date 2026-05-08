@@ -820,7 +820,8 @@ export default function SmsSettings() {
 
               {/* Token list */}
               <div className="rounded-md border">
-                <table className="w-full text-xs">
+                <div data-table-wrap className="w-full overflow-x-auto">
+                  <table className="w-full text-xs">
                   <thead className="bg-muted/40 text-left">
                     <tr>
                       <th className="px-2 py-1.5">Status</th>
@@ -876,7 +877,8 @@ export default function SmsSettings() {
                       );
                     })}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
 
               {/* Audit log */}
@@ -1002,7 +1004,8 @@ export default function SmsSettings() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="table-responsive">
-              <table className="w-full text-sm">
+              <div data-table-wrap className="w-full overflow-x-auto">
+                <table className="w-full text-sm">
                 <thead className="bg-muted/40">
                   <tr className="text-left">
                     <th className="px-3 py-2">{L.office}</th>
@@ -1034,7 +1037,8 @@ export default function SmsSettings() {
                     );
                   })}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1215,7 +1219,8 @@ export default function SmsSettings() {
               </Button>
             </div>
             <div className="table-responsive">
-              <table className="w-full text-xs">
+              <div data-table-wrap className="w-full overflow-x-auto">
+                <table className="w-full text-xs">
                 <thead className="bg-muted/40">
                   <tr className="text-left">
                     <th className="px-3 py-2">{L.time}</th>
@@ -1253,7 +1258,8 @@ export default function SmsSettings() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           </CardContent>
         </Card>

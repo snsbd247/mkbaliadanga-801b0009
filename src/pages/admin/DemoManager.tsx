@@ -506,7 +506,8 @@ export default function DemoManager() {
             <CardDescription>{locationVerification.ok ? "সব Division/District/Upazila/Mouza ঠিকঠাক sit হয়েছে।" : `${locationVerification.missing.length} টি গরমিল`}</CardDescription>
           </CardHeader>
           <CardContent>
-            <table className="w-full text-xs border rounded">
+            <div data-table-wrap className="w-full overflow-x-auto">
+              <table className="w-full text-xs border rounded">
               <thead className="bg-muted">
                 <tr><th className="p-2 text-left">Table</th><th className="p-2 text-right">Expected</th><th className="p-2 text-right">Actual</th></tr>
               </thead>
@@ -519,7 +520,8 @@ export default function DemoManager() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
             {!locationVerification.ok && (
               <ul className="mt-2 text-xs text-destructive list-disc pl-5">
                 {locationVerification.missing.map((m: string, i: number) => <li key={i}>{m}</li>)}
@@ -536,7 +538,8 @@ export default function DemoManager() {
             <CardDescription>প্রথম কয়েকজন farmer-এর নাম (EN/BN) এবং mouza_id দেখুন।</CardDescription>
           </CardHeader>
           <CardContent>
-            <table className="w-full text-xs border rounded">
+            <div data-table-wrap className="w-full overflow-x-auto">
+              <table className="w-full text-xs border rounded">
               <thead className="bg-muted">
                 <tr>
                   <th className="p-2 text-left">Code</th>
@@ -555,7 +558,8 @@ export default function DemoManager() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -568,7 +572,8 @@ export default function DemoManager() {
           </CardHeader>
           <CardContent>
             <div className="max-h-80 overflow-auto border rounded">
-              <table className="w-full text-xs">
+              <div data-table-wrap className="w-full overflow-x-auto">
+                <table className="w-full text-xs">
                 <thead className="bg-muted sticky top-0">
                   <tr>
                     <th className="text-left p-2">Farmer Code</th>
@@ -593,7 +598,8 @@ export default function DemoManager() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           </CardContent>
         </Card>

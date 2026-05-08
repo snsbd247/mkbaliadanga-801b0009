@@ -381,7 +381,8 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                         {sched.length === 0 ? (
                           <div className="text-xs text-muted-foreground">No installments generated yet.</div>
                         ) : (
-                          <table className="w-full text-sm">
+                          <div data-table-wrap className="w-full overflow-x-auto">
+                            <table className="w-full text-sm">
                             <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">#</th><th className="text-left">{t("dueCol")}</th><th className="text-right">{t("amount")}</th><th className="text-right">{t("paidCol")}</th><th className="text-right">{t("penaltyCol")}</th><th>{t("status")}</th></tr></thead>
                             <tbody>
                               {sched.map((it: any) => (
@@ -395,14 +396,16 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                                 </tr>
                               ))}
                             </tbody>
-                          </table>
+                            </table>
+                          </div>
                         )}
                       </div>
                     )}
                     {hasPayments && (
                       <div>
                         <div className="text-xs font-semibold mb-2 uppercase text-muted-foreground">{t("repaymentsHeader")}</div>
-                        <table className="w-full text-sm">
+                        <div data-table-wrap className="w-full overflow-x-auto">
+                          <table className="w-full text-sm">
                           <thead className="text-xs text-muted-foreground"><tr><th className="text-left py-1">{t("date")}</th><th className="text-right">{t("amount")}</th><th className="text-left pl-3">{t("collectedByCol")}</th><th className="text-right">{t("receiptColLabel")}</th></tr></thead>
                           <tbody>
                             {(l.loan_payments ?? []).slice().sort((a: any, b: any) => (b.paid_on ?? "").localeCompare(a.paid_on ?? "")).map((p: any) => (
@@ -416,7 +419,8 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                               </tr>
                             ))}
                           </tbody>
-                        </table>
+                          </table>
+                        </div>
                       </div>
                     )}
                   </TableCell>

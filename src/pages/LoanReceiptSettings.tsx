@@ -154,13 +154,15 @@ export default function LoanReceiptSettings() {
               <div><strong>Receipt #:</strong> <span className="font-mono">{previewNo}</span></div>
               <div><strong>Date:</strong> {new Date().toLocaleDateString()}</div>
             </div>
-            <table className="w-full text-sm border-t border-b">
+            <div data-table-wrap className="w-full overflow-x-auto">
+              <table className="w-full text-sm border-t border-b">
               <tbody>
                 <tr><td className="py-1">{t("farmerName")}</td><td className="py-1 text-right">— Sample Farmer —</td></tr>
                 <tr><td className="py-1">Loan ID</td><td className="py-1 text-right font-mono">SAMPLE-001</td></tr>
                 <tr><td className="py-1">{t("amount")}</td><td className="py-1 text-right">{money(5000)}</td></tr>
               </tbody>
-            </table>
+              </table>
+            </div>
             {footerText && <div className="text-xs whitespace-pre-wrap text-gray-600 pt-2">{footerText}</div>}
           </div>
         </Card>

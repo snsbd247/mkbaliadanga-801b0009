@@ -177,7 +177,8 @@ export default function BulkLoanExport() {
         )}
 
         <div className="max-h-[60vh] overflow-y-auto border rounded">
-          <table className="w-full text-sm">
+          <div data-table-wrap className="w-full overflow-x-auto">
+            <table className="w-full text-sm">
             <thead className="bg-muted sticky top-0"><tr><th className="p-2 w-10"></th><th className="p-2 text-left">{t("farmerName")}</th><th className="p-2 text-left">{t("farmerCode")}</th><th className="p-2 text-left">{t("village")}</th></tr></thead>
             <tbody>
               {filtered.map(f => (
@@ -190,7 +191,8 @@ export default function BulkLoanExport() {
               ))}
               {filtered.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">{t("noData")}</td></tr>}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </Card>
     </>

@@ -470,7 +470,8 @@ export default function Savings() {
                             {fp.cancel_reason && <span className="text-destructive">{fp.status === "rejected" ? t("rejectionReason" as any) : t("cancellationReason" as any)}: {fp.cancel_reason}</span>}
                           </div>
                           <div className="max-h-64 overflow-y-auto">
-                            <table className="w-full text-sm">
+                            <div data-table-wrap className="w-full overflow-x-auto">
+                              <table className="w-full text-sm">
                               <thead className="text-xs text-muted-foreground sticky top-0 bg-muted/30"><tr><th className="text-left py-1">#</th><th className="text-left">{t("pgDate")}</th><th className="text-right">{t("amount")}</th></tr></thead>
                               <tbody>
                                 {sched.map(s => (
@@ -481,7 +482,8 @@ export default function Savings() {
                                   </tr>
                                 ))}
                               </tbody>
-                            </table>
+                              </table>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>

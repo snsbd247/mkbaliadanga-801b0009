@@ -163,6 +163,20 @@
   }
 }
 
+/* Responsive overlap safety net — prevents long unbroken
+   strings (NIDs, mobile numbers, emails, URLs) from overflowing
+   their containers on small screens across the whole app. */
+@layer base {
+  td, th {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  /* Tabular numerics inside cards/grids: allow wrapping */
+  .tabular-nums { overflow-wrap: anywhere; }
+  /* Make sure flex/grid children can shrink below content width */
+  main, main * > .min-w-fix { min-width: 0; }
+}
+
 @media print {
   .no-print { display: none !important; }
   body { background: white; }
