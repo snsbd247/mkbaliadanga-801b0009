@@ -605,8 +605,8 @@ function TxnTable({ rows, t, isAdmin, isSuper, showDeleted, onDecide, onRestore,
                 <Button size="icon" variant="ghost" onClick={() => onPrint(r)} title={t("printReceipt")}><Printer className="h-4 w-4" /></Button>
               )}
               {!showDeleted && isSuper && (<>
-                <Button size="icon" variant="ghost" onClick={() => onEdit(r)} title="Edit"><Pencil className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => onDelete(r.id)} title="Delete"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                <EditButton onClick={() => onEdit(r)} title="Edit" />
+                <DeleteButton onClick={() => onDelete(r.id)} title="Delete" />
               </>)}
             </TableCell>
           </TableRow>
