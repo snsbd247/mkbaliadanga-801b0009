@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Plus, Eye, Search, Trash2, Pencil, AlertTriangle, Loader2, Download, Upload } from "lucide-react";
 import { TruncateText } from "@/components/ui/truncate-text";
-import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
+import { EditButton, DeleteButton, ViewButton } from "@/components/ui/action-icon-button";
 import * as XLSX from "xlsx";
 
 const FARMER_TEMPLATE_HEADERS = [
