@@ -402,21 +402,8 @@ export default function Accounts() {
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
-                          <Button
-                            variant="ghost" size="icon" className="h-8 w-8"
-                            title={t("edit")}
-                            onClick={() => openEdit(n)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                            title={t("delete")}
-                            disabled={n.is_system}
-                            onClick={() => setDeleteId(n.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <EditButton title={t("edit")} onClick={() => openEdit(n)} />
+                          <DeleteButton title={t("delete")} disabled={n.is_system} onClick={() => setDeleteId(n.id)} />
                         </div>
                       </td>
                     </tr>
