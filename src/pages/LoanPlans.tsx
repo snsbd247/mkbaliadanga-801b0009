@@ -142,8 +142,8 @@ export default function LoanPlans() {
                 <TableCell><Badge variant={r.is_active ? "default" : "secondary"}>{r.is_active ? t("p5_activeBadge") : t("p5_inactiveBadge")}</Badge></TableCell>
                 <TableCell className="text-right">
                   {isAdmin && (<>
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => del(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <EditButton onClick={() => openEdit(r)} />
+                    <DeleteButton onClick={() => del(r.id)} />
                   </>)}
                 </TableCell>
               </TableRow>
