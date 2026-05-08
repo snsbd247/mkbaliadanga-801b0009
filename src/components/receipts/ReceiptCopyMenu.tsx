@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Printer } from "lucide-react";
+import { PrintButton } from "@/components/ui/action-icon-button";
 import type { ReceiptCopy } from "@/lib/bnReceipts";
 
 interface Props {
@@ -15,9 +16,7 @@ export function ReceiptCopyMenu({ onSelect, size = "icon", label, title }: Props
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {size === "icon" ? (
-          <Button size="icon" variant="ghost" title={title ?? "Print receipt"}>
-            <Printer className="h-4 w-4" />
-          </Button>
+          <PrintButton title={title ?? "Print receipt"} />
         ) : (
           <Button size="sm" variant="outline">
             <Printer className="h-4 w-4 mr-1" />{label ?? "Print"}
