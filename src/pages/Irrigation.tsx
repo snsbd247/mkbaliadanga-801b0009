@@ -33,7 +33,30 @@ export default function Irrigation() {
   const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${t("irrigation")} — ${t("appName")}`; load(); }, [showDeleted]);
-  useEffect(() => { if (form.farmer_id) supabase.from("lands").select("id,dag_no,land_size").eq("farmer_id", form.farmer_id).then(r => setLands(r.data ?? [])); else setLands([]); }, [form.farmer_id]);
+  useEffect(() => {
+    if (!form.farmer_id) { setLands([]); return; }
+    (async () => {
+      // Own lands
+      const { data: own } = await supabase
+        .from("lands")
+        .select("id,dag_no,land_size,farmer_id")
+        .eq("farmer_id", form.farmer_id)
+        .is("deleted_at", null);
+      // Sharecropper lands (via land_relations)
+      const { data: rels } = await supabase
+        .from("land_relations")
+        .select("land_id, lands(id,dag_no,land_size,farmer_id)")
+        .eq("sharecropper_farmer_id", form.farmer_id)
+        .is("deleted_at", null);
+      const ownIds = new Set((own ?? []).map((l: any) => l.id));
+      const ownMarked = (own ?? []).map((l: any) => ({ ...l, _ownership: "own" as const }));
+      const sharecrop = (rels ?? [])
+        .map((r: any) => r.lands)
+        .filter((l: any) => l && !ownIds.has(l.id))
+        .map((l: any) => ({ ...l, _ownership: "sharecrop" as const }));
+      setLands([...ownMarked, ...sharecrop]);
+    })();
+  }, [form.farmer_id]);
   // Auto-fill quantity from land size when basis = per_size
   useEffect(() => {
     if (form.basis !== "per_size" || !form.land_id) return;
