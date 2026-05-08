@@ -138,7 +138,6 @@ export default function IrrigationRates() {
   }
 
   async function del(id: string) {
-    if (!confirm(t("confirmDelete"))) return;
     const { error } = await supabase.from("irrigation_rates").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
@@ -236,7 +235,7 @@ export default function IrrigationRates() {
                   {isAdmin && (
                     <div className="inline-flex items-center gap-1 justify-end">
                       <EditButton onClick={() => openEdit(r)} />
-                      <DeleteButton onClick={() => del(r.id)} />
+                      <DeleteButton onConfirm={() => del(r.id)} />
                     </div>
                   )}
                 </TableCell>

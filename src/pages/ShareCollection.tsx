@@ -492,7 +492,7 @@ function RowsTable({ rows, canDecide, onDecide, canManage, onEdit, onDelete }: {
                   {canManage && (
                     <>
                       <EditButton onClick={() => onEdit?.(r)} title={t("edit")} />
-                      <DeleteButton onClick={() => onDelete?.(r)} title={t("delete")} />
+                      <DeleteButton onConfirm={() => onDelete?.(r)} title={t("delete")} />
                     </>
                   )}
                 </TableCell>

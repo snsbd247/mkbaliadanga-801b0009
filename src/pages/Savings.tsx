@@ -606,7 +606,7 @@ function TxnTable({ rows, t, isAdmin, isSuper, showDeleted, onDecide, onRestore,
               )}
               {!showDeleted && isSuper && (<>
                 <EditButton onClick={() => onEdit(r)} title="Edit" />
-                <DeleteButton onClick={() => onDelete(r.id)} title="Delete" />
+                <DeleteButton onConfirm={() => onDelete(r.id)} title="Delete" />
               </>)}
             </TableCell>
           </TableRow>

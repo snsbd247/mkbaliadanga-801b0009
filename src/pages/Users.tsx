@@ -107,7 +107,6 @@ export default function Users() {
 
   async function deleteUser(u: any) {
     if (u.id === me?.id) return toast.error(t("cannotDeleteSelf"));
-    if (!confirm(t("deleteUserConfirm").replace("{who}", u.username || u.email))) return;
     const ok = await callAdmin({ action: "delete", user_id: u.id });
     if (!ok) return;
     toast.success(t("userDeleted"));
@@ -284,7 +283,7 @@ export default function Users() {
                   <Button size="sm" variant="outline" onClick={() => { setResetFor(u); setResetPwd(""); }} title={t("resetPasswordTitle")}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
-                  <DeleteButton onClick={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")} />
+                  <DeleteButton onConfirm={() => deleteUser(u)} disabled={u.id === me?.id} title={t("deleteTitle")} />
                 </TableCell>
               </TableRow>
             ))}

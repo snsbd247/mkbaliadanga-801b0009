@@ -33,7 +33,6 @@ export default function Seasons() {
     toast.success(t("saved")); setOpen(false); load();
   }
   async function del(id: string) {
-    if (!confirm(t("confirmDelete"))) return;
     const { error } = await supabase.from("seasons").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
@@ -72,7 +71,7 @@ export default function Seasons() {
             {list.map(s => (
               <TableRow key={s.id}>
                 <TableCell>{s.year}</TableCell><TableCell>{t(s.type as any)}</TableCell><TableCell>{s.name}</TableCell>
-                <TableCell className="text-right">{isAdmin && <DeleteButton onClick={() => del(s.id)} />}</TableCell>
+                <TableCell className="text-right">{isAdmin && <DeleteButton onConfirm={() => del(s.id)} />}</TableCell>
               </TableRow>
             ))}
             {list.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
