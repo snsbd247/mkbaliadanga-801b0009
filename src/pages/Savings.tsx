@@ -21,7 +21,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/exports";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
-import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
+import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
 
 export default function Savings() {
   const { t, lang } = useLang();
