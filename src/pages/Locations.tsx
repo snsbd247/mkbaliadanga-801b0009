@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { Plus, Trash2, MapPin, Pencil, Loader2, Search, Power } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 
 type Level = "divisions" | "districts" | "upazilas" | "unions" | "wards" | "villages" | "mouzas";
 type Row = any;
