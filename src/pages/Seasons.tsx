@@ -12,6 +12,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { DeleteButton } from "@/components/ui/action-icon-button";
 
 export default function Seasons() {
   const { t } = useLang();
