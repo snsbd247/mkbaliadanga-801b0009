@@ -939,6 +939,7 @@ export type Database = {
           office_id: string | null
           other_charge: number
           paid_amount: number
+          patwari_id: string | null
           penalty_amount: number
           previous_due_brought: number
           quantity: number
@@ -962,6 +963,7 @@ export type Database = {
           office_id?: string | null
           other_charge?: number
           paid_amount?: number
+          patwari_id?: string | null
           penalty_amount?: number
           previous_due_brought?: number
           quantity?: number
@@ -985,6 +987,7 @@ export type Database = {
           office_id?: string | null
           other_charge?: number
           paid_amount?: number
+          patwari_id?: string | null
           penalty_amount?: number
           previous_due_brought?: number
           quantity?: number
@@ -1018,6 +1021,13 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "lands_with_location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_charges_patwari_id_fkey"
+            columns: ["patwari_id"]
+            isOneToOne: false
+            referencedRelation: "patwaris"
             referencedColumns: ["id"]
           },
           {
@@ -1742,6 +1752,69 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      patwaris: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          mobile: string | null
+          mouza_id: string | null
+          name: string
+          name_bn: string | null
+          nid: string | null
+          note: string | null
+          office_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          mobile?: string | null
+          mouza_id?: string | null
+          name: string
+          name_bn?: string | null
+          nid?: string | null
+          note?: string | null
+          office_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          mobile?: string | null
+          mouza_id?: string | null
+          name?: string
+          name_bn?: string | null
+          nid?: string | null
+          note?: string | null
+          office_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patwaris_mouza_id_fkey"
+            columns: ["mouza_id"]
+            isOneToOne: false
+            referencedRelation: "mouzas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patwaris_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_allocations: {
         Row: {
