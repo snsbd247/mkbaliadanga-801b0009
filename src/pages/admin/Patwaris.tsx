@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Eye } from "lucide-react";
+import { Plus } from "lucide-react";
+import { ViewButton, EditButton } from "@/components/ui/action-icon-button";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 
