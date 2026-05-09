@@ -62,7 +62,7 @@ export async function logAudit(input: LogAuditInput): Promise<void> {
       user_agent: getUA(),
     };
 
-    const { error } = await supabase.from("system_audit_logs").insert(payload);
+    const { error } = await supabase.from("system_audit_logs").insert([payload]);
     if (error) console.warn("[audit] insert failed:", error.message);
   } catch (e) {
     console.warn("[audit] unexpected error:", e);
