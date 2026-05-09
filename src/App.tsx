@@ -87,6 +87,7 @@ import { RequireRole } from "./components/auth/RequireRole";
 import { RequireDeveloper } from "./components/auth/RequireDeveloper";
 import DeveloperUpdates from "./pages/admin/DeveloperUpdates";
 import AdminLookups from "./pages/admin/Lookups";
+import RateAuditLog from "./pages/admin/RateAuditLog";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
