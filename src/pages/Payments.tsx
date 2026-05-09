@@ -27,6 +27,8 @@ import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButt
 import { DuplicateReceiptWarning } from "@/components/receipts/DuplicateReceiptWarning";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
 
 type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
 
