@@ -63,6 +63,7 @@ export function ExportDialog<T = any>({
   range,
   formats = ["csv", "xlsx", "pdf"],
 }: Props<T>) {
+  const { t } = useLang();
   const initial = useMemo(
     () =>
       Object.fromEntries(
