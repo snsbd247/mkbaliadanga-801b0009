@@ -548,13 +548,16 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     })();
   }, [farmerId]);
 
+  const [rateRow, setRateRow] = useState<RateRow | null>(null);
+
   // Auto-fill rate from season matrix based on selected land's field_type
   useEffect(() => {
-    if (!seasonId || !landId) return;
+    if (!seasonId || !landId) { setRateRow(null); return; }
     const land = lands.find((l: any) => l.id === landId);
     if (!land) return;
     loadSeasonRateMap(seasonId, land.office_id ?? null).then((rows) => {
       const matched = resolveRateForLand(rows, land);
+      setRateRow(matched ?? null);
       if (matched && matched.rate_per_shotok > 0) setRate(matched.rate_per_shotok);
     });
   }, [seasonId, landId, lands]);
