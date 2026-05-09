@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLang } from "@/i18n/LanguageProvider";
+import { translations } from "@/i18n/translations";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Bug } from "lucide-react";
+import { Bug, Download, Copy } from "lucide-react";
 
 /**
  * Floating dev-only panel.
