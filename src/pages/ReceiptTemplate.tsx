@@ -74,6 +74,11 @@ export default function ReceiptTemplatePage() {
     () => previewPaymentReceiptPdf(sample, { ...tpl, logo_url: brand.logo_url ?? null }),
     [sample, tpl, brand.logo_url],
   );
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   async function save() {
     setSaving(true);
