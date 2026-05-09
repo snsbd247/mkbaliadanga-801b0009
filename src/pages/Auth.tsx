@@ -105,19 +105,27 @@ export default function AuthPage() {
     if (error) {
       setBusy(false);
       const status = (error as any).status;
+      const isInvalid = /invalid login|invalid_credentials/i.test(error.message);
+      const isUnconfirmed = /email not confirmed/i.test(error.message);
+      const friendly = isInvalid
+        ? (lang === "bn" ? "পাসওয়ার্ড সঠিক নয়। আবার চেষ্টা করুন বা 'পাসওয়ার্ড ভুলে গেছেন' ব্যবহার করুন।" : "Password is incorrect. Try again or use ‘Forgot password’.")
+        : isUnconfirmed
+        ? (lang === "bn" ? "ইমেইল এখনও যাচাই হয়নি।" : "Email is not confirmed yet.")
+        : error.message;
+      if (isInvalid) setPasswordError(lang === "bn" ? "পাসওয়ার্ড সঠিক নয়" : "Incorrect password");
       setDebug({
         ...d, password: "fail",
         errorCode: (error as any).code ?? "auth_error",
         errorStatus: status,
-        errorMessage: error.message,
+        errorMessage: friendly,
         hint:
-          /invalid login/i.test(error.message)
+          isInvalid
             ? "The password is wrong for this account, or the user is disabled."
-            : /email not confirmed/i.test(error.message)
+            : isUnconfirmed
             ? "The email address has not been confirmed yet."
             : "See backend message above.",
       });
-      return toast.error(error.message || t("invalidPassword"));
+      return toast.error(friendly);
     }
 
     d.password = "ok";
