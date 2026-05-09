@@ -280,7 +280,7 @@ export default function DataImport() {
             const dagRaw = String(raw.dag_no ?? "").trim();
             if (!dagRaw) throw new Error("dag_no required");
             const dv = validateDagNumbers(dagRaw);
-            if (!dv.ok) throw new Error(`dag_no: ${dv.error}`);
+            if (!dv.ok) throw new Error(`dag_no: ${(dv as any).error}`);
             const canonicalDag = dv.values.join(", ");
             next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag } };
             table = "lands";
