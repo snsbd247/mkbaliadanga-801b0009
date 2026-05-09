@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Row = {
   id: string;
@@ -26,11 +27,6 @@ type Row = {
   change_reason: string | null;
 };
 
-const ACTION_LABEL: Record<string, string> = {
-  insert: "নতুন",
-  update: "পরিবর্তন",
-  delete: "মুছে ফেলা",
-};
 const ACTION_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   insert: "default",
   update: "secondary",
@@ -39,6 +35,7 @@ const ACTION_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 
 export default function RateAuditLog() {
   const { isSuper } = useAuth();
+  const { tx } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
   const [landTypes, setLandTypes] = useState<any[]>([]);
@@ -51,8 +48,14 @@ export default function RateAuditLog() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  const ACTION_LABEL: Record<string, string> = {
+    insert: tx("New", "নতুন"),
+    update: tx("Update", "পরিবর্তন"),
+    delete: tx("Delete", "মুছে ফেলা"),
+  };
+
   useEffect(() => {
-    document.title = "রেট পরিবর্তন ইতিহাস";
+    document.title = tx("Rate change history", "রেট পরিবর্তন ইতিহাস");
     Promise.all([
       supabase.from("irrigation_season_types" as any).select("id,name,name_bn,code").is("deleted_at", null),
       supabase.from("land_types" as any).select("id,name,name_bn,code").is("deleted_at", null),
@@ -85,7 +88,7 @@ export default function RateAuditLog() {
 
   const seasonName = (id: string | null) => seasons.find((s) => s.id === id)?.name_bn || seasons.find((s) => s.id === id)?.name || "—";
   const landTypeName = (id: string | null) => landTypes.find((s) => s.id === id)?.name_bn || landTypes.find((s) => s.id === id)?.name || "—";
-  const officeName = (id: string | null) => offices.find((o) => o.id === id)?.name || (id ? id.slice(0, 6) : "সব অফিস");
+  const officeName = (id: string | null) => offices.find((o) => o.id === id)?.name || (id ? id.slice(0, 6) : tx("All offices", "সব অফিস"));
 
   function exportCsv() {
     const header = ["Changed At", "Action", "Office", "Season", "Land Type", "Old Rate", "New Rate", "Changed By"];
@@ -110,71 +113,71 @@ export default function RateAuditLog() {
   return (
     <>
       <PageHeader
-        title="রেট পরিবর্তন ইতিহাস"
-        description="সিজন রেট কনফিগারেশনে কখন, কে, কোন রেট পরিবর্তন করেছে — সম্পূর্ণ ইতিহাস।"
+        title={tx("Rate change history", "রেট পরিবর্তন ইতিহাস")}
+        description={tx("Full history of who, when and what rate changes were made in season rate config.", "সিজন রেট কনফিগারেশনে কখন, কে, কোন রেট পরিবর্তন করেছে — সম্পূর্ণ ইতিহাস।")}
       />
       <Card>
         <CardContent className="pt-6 space-y-3">
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
             <div>
-              <Label>সিজন</Label>
+              <Label>{tx("Season", "সিজন")}</Label>
               <Select value={seasonId} onValueChange={setSeasonId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">সব</SelectItem>
+                  <SelectItem value="all">{tx("All", "সব")}</SelectItem>
                   {seasons.map((s) => <SelectItem key={s.id} value={s.id}>{s.name_bn || s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>জমির ধরন</Label>
+              <Label>{tx("Land type", "জমির ধরন")}</Label>
               <Select value={landTypeId} onValueChange={setLandTypeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">সব</SelectItem>
+                  <SelectItem value="all">{tx("All", "সব")}</SelectItem>
                   {landTypes.map((l) => <SelectItem key={l.id} value={l.id}>{l.name_bn || l.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             {isSuper && (
               <div>
-                <Label>অফিস</Label>
+                <Label>{tx("Office", "অফিস")}</Label>
                 <Select value={officeId} onValueChange={setOfficeId}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">সব</SelectItem>
+                    <SelectItem value="all">{tx("All", "সব")}</SelectItem>
                     {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             )}
             <div>
-              <Label>থেকে</Label>
+              <Label>{tx("From", "থেকে")}</Label>
               <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
             <div>
-              <Label>পর্যন্ত</Label>
+              <Label>{tx("To", "পর্যন্ত")}</Label>
               <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{rows.length} টি এন্ট্রি {loading && "(লোড হচ্ছে…)"}</p>
+            <p className="text-sm text-muted-foreground">{rows.length} {tx("entries", "টি এন্ট্রি")} {loading && tx("(loading…)", "(লোড হচ্ছে…)")}</p>
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
-              <Download className="h-4 w-4 mr-1" /> CSV এক্সপোর্ট
+              <Download className="h-4 w-4 mr-1" /> {tx("CSV export", "CSV এক্সপোর্ট")}
             </Button>
           </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>সময়</TableHead>
-                  <TableHead>অ্যাকশন</TableHead>
-                  <TableHead>অফিস</TableHead>
-                  <TableHead>সিজন</TableHead>
-                  <TableHead>জমির ধরন</TableHead>
-                  <TableHead className="text-right">পুরোনো রেট</TableHead>
-                  <TableHead className="text-right">নতুন রেট</TableHead>
-                  <TableHead className="text-right">পার্থক্য</TableHead>
+                  <TableHead>{tx("Time", "সময়")}</TableHead>
+                  <TableHead>{tx("Action", "অ্যাকশন")}</TableHead>
+                  <TableHead>{tx("Office", "অফিস")}</TableHead>
+                  <TableHead>{tx("Season", "সিজন")}</TableHead>
+                  <TableHead>{tx("Land type", "জমির ধরন")}</TableHead>
+                  <TableHead className="text-right">{tx("Old rate", "পুরোনো রেট")}</TableHead>
+                  <TableHead className="text-right">{tx("New rate", "নতুন রেট")}</TableHead>
+                  <TableHead className="text-right">{tx("Difference", "পার্থক্য")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -198,7 +201,7 @@ export default function RateAuditLog() {
                   );
                 })}
                 {!rows.length && !loading && (
-                  <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">কোন এন্ট্রি নেই</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">{tx("No entries", "কোন এন্ট্রি নেই")}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
