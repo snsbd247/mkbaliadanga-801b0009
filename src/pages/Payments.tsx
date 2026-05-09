@@ -318,7 +318,7 @@ export default function Payments() {
     } catch (_) { /* SMS failure must not break payment flow */ }
   }
 
-  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string) {
+  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string, loanContext: Record<string, any> = {}) {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
       if (a.kind === "loan" && a.reference_id) {
