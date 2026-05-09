@@ -547,23 +547,24 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   const savingsSeeded: string[] = [];
   const sharesSeeded: string[] = [];
   const fspSeeded: string[] = [];
-  const { data: plans } = await admin.from("savings_plans").insert([
+  const planSpecs = [
     { name: "DPS 12",  name_bn: "ডিপিএস ১২", office_id: officeId, duration_months: 12, installment_type: "monthly", installment_amount: 300, interest_rate: 5, maturity_type: "simple", is_active: true },
     { name: "DPS 24",  name_bn: "ডিপিএস ২৪", office_id: officeId, duration_months: 24, installment_type: "monthly", installment_amount: 500, interest_rate: 6, maturity_type: "simple", is_active: true },
     { name: "FDR 36",  name_bn: "এফডিআর ৩৬", office_id: officeId, duration_months: 36, installment_type: "monthly", installment_amount: 1000, interest_rate: 8, maturity_type: "compound", is_active: true },
-  ]).select("id");
+  ];
+  const { data: plans } = await admin.from("savings_plans").insert(planSpecs).select("id, duration_months, installment_amount, interest_rate");
   const planList = plans ?? [];
-  const planId = planList[1]?.id ?? planList[0]?.id ?? null;
 
-  // Enroll ~30% of voters into a farmer_savings_plan
-  if (planId) {
+  // Enroll ~30% of voters across all plans (round-robin)
+  if (planList.length) {
     const enrollTargets = voters.slice(0, Math.ceil(voters.length * 0.3));
     const fspRows = enrollTargets.map((f, i) => {
-      const expected = 500 * 24;
-      const interest = +(expected * 0.06 / 2).toFixed(2);
+      const p = planList[i % planList.length];
+      const expected = Number(p.installment_amount) * Number(p.duration_months);
+      const interest = +(expected * Number(p.interest_rate) / 100 / 2).toFixed(2);
       fspSeeded.push(f.id);
       return {
-        plan_id: planId, farmer_id: f.id, office_id: officeId,
+        plan_id: p.id, farmer_id: f.id, office_id: officeId,
         start_date: new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
         expected_total: expected,
         expected_interest: interest,
