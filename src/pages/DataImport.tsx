@@ -212,19 +212,32 @@ function downloadTemplate(mod: Module) {
   XLSX.writeFile(wb, `import_template_${mod}.xlsx`);
 }
 
-function downloadErrorReport(rows: RowResult[]) {
+function downloadErrorReport(rows: RowResult[], format: "xlsx" | "csv" = "xlsx") {
   const errs = rows.filter((r) => r.status === "error");
   if (!errs.length) return;
-  const ws = XLSX.utils.json_to_sheet(
-    errs.map((r) => ({
-      row: r.idx + 2,
-      error: r.message,
-      ...(r.resolved
-        ? Object.fromEntries(Object.entries(r.resolved).map(([k, v]) => [`resolved_${k}`, v]))
-        : {}),
-      ...r.raw,
-    })),
-  );
+  const flat = errs.map((r) => ({
+    row: r.idx + 2,
+    error: r.message,
+    ...(r.resolved
+      ? Object.fromEntries(Object.entries(r.resolved).map(([k, v]) => [`resolved_${k}`, v]))
+      : {}),
+    ...r.raw,
+  }));
+  if (format === "csv") {
+    const cols = Array.from(new Set(flat.flatMap((o) => Object.keys(o))));
+    const esc = (v: any) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [cols.join(","), ...flat.map((o) => cols.map((c) => esc((o as any)[c])).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "import_errors.csv"; a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+  const ws = XLSX.utils.json_to_sheet(flat);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "errors");
   XLSX.writeFile(wb, `import_errors.xlsx`);
