@@ -268,6 +268,24 @@ export function MissingI18nPanel() {
               <Button
                 size="sm"
                 variant="ghost"
+                title="Download audit CSV"
+                onClick={() => {
+                  const rows = [
+                    ...keyItems.map(([key, info]) => ({
+                      type: "missing-key", route: info.route, lang: info.lang, text: key, suggestion: "",
+                    })),
+                    ...hard.map(h => ({
+                      type: "hardcoded", route: h.route, lang, text: h.text,
+                      suggestion: h.suggestion ? `t("${h.suggestion.key}")  // ${h.suggestion.value}` : "",
+                    })),
+                  ];
+                  if (rows.length === 0) rows.push({ type: "", route: "", lang: "", text: "", suggestion: "" });
+                  downloadAuditCsv(rows, `i18n-audit-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`);
+                }}
+              ><Download className="h-3.5 w-3.5" /></Button>
+              <Button
+                size="sm"
+                variant="ghost"
                 onClick={() => {
                   (window as any).__i18nMissing = new Map();
                   setHard([]);
