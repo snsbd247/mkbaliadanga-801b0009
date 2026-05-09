@@ -949,7 +949,7 @@ export default function FarmerDetail() {
           <IrrigationInvoicesTab farmerId={farmer.id} />
         </TabsContent>
 
-
+        <TabsContent value="payments">
           <Card><Table>
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>
