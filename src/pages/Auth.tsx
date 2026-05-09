@@ -42,9 +42,18 @@ export default function AuthPage() {
   const [forgotInput, setForgotInput] = useState("");
   const [forgotBusy, setForgotBusy] = useState(false);
   const [debug, setDebug] = useState<DebugInfo>(initialDebug);
+  const [showPassword, setShowPassword] = useState(false);
+  const [capsOn, setCapsOn] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${t("login")} — ${brand.company_name}`; }, [t, brand.company_name]);
   useEffect(() => { if (user) nav("/admin", { replace: true }); }, [user, nav]);
+
+  const handleCapsLockCheck = (e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement>) => {
+    const ev = e as any;
+    if (typeof ev.getModifierState === "function") setCapsOn(!!ev.getModifierState("CapsLock"));
+  };
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
