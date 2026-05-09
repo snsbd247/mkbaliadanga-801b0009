@@ -247,7 +247,7 @@ export default function IrrigationInvoicePayment() {
       receipt_no,
       date: new Date(),
       bill_info: description,
-      org: { name: brand?.name, name_bn: brand?.name_bn, address: brand?.address, mobile: brand?.mobile },
+      org: { name: brand?.company_name, name_bn: brand?.company_name_bn, address: brand?.address, mobile: brand?.mobile },
       farmer: {
         name: farmer.name_bn ?? farmer.name_en ?? "",
         member_no: farmer.farmer_code,
