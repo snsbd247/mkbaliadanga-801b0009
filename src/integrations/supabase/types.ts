@@ -1277,7 +1277,57 @@ export type Database = {
           season_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "irrigation_invoices_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "irrigation_invoices_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_invoices_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_invoices_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands_with_location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_invoices_owner_farmer_id_fkey"
+            columns: ["owner_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "irrigation_invoices_owner_farmer_id_fkey"
+            columns: ["owner_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_invoices_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       irrigation_rates: {
         Row: {
