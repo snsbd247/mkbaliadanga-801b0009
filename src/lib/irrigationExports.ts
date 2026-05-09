@@ -1,6 +1,7 @@
 // Centralized irrigation invoice export utilities (CSV + XLSX) including
 // snapshot data and manual-rate flags. Phase 3 — i18n cleanup & enrichment.
 import * as XLSX from "xlsx";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 
 export const IRR_BN = {
   invoiceNo: "ইনভয়েস নং",
