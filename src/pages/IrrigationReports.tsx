@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import { money } from "@/lib/format";
 import { exportInvoicesCSV, exportInvoicesXLSX } from "@/lib/irrigationExports";
 import { FileDown, FileSpreadsheet } from "lucide-react";
+
+const IrrigationReportCharts = lazy(() => import("./irrigation/IrrigationReportCharts"));
 
 type Inv = any;
 
