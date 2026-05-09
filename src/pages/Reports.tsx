@@ -193,7 +193,7 @@ export default function Reports() {
           code: r.farmers?.farmer_code ?? "—",
           name: r.farmers?.name_en ?? "—",
           season: r.seasons ? `${r.seasons.name} ${r.seasons.year}` : "—",
-          dag: r.lands?.dag_no ?? "—",
+          dag: formatDagNumbers(r.lands?.dag_no) || "—",
           total: Number(r.total || 0),
           paid: Number(r.paid_amount || 0),
           due: Number(r.due_amount || 0),
