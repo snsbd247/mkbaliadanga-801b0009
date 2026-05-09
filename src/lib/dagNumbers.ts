@@ -10,10 +10,35 @@ export type DagValidation =
   | { ok: true; values: string[] }
   | { ok: false; error: string; values: string[] };
 
-/** Split a raw dag_no string into trimmed, non-empty parts (preserves order). */
+/**
+ * Normalize a free-form dag_no input so downstream parsers/renders are stable
+ * regardless of how the user typed (or pasted) the value.
+ *
+ * Rules:
+ * - converts newlines / tabs / semicolons to commas
+ * - collapses runs of whitespace
+ * - drops empty tokens
+ * - trims surrounding whitespace inside each token
+ *
+ * Returns canonical "a, b, c" string. Empty input → "".
+ */
+export function normalizeDagInput(input?: string | null): string {
+  if (input === null || input === undefined) return "";
+  const unified = String(input).replace(/[\n\r\t;]+/g, ",");
+  return unified
+    .split(",")
+    .map((x) => x.replace(/\s+/g, " ").trim())
+    .filter((x) => x.length > 0)
+    .join(", ");
+}
+
+/** Split a raw dag_no string into trimmed, non-empty parts (preserves order).
+ *  Input is normalized first so mixed separators / extra whitespace work. */
 export function parseDagNumbers(input?: string | null): string[] {
   if (!input) return [];
-  return String(input)
+  const normalized = normalizeDagInput(input);
+  if (!normalized) return [];
+  return normalized
     .split(",")
     .map((x) => x.trim())
     .filter((x) => x.length > 0);
