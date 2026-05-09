@@ -475,7 +475,7 @@ export default function FarmerProfileReport() {
             );
             return (
               <div key={year} className="irrigation-year-block">
-                <div className="farmer-year-row">সেচ বর্ষ: {year}</div>
+                <div className="farmer-year-row">{tx("Irrigation Year:", "সেচ বর্ষ:")} {year}</div>
                 <table className="farmer-table compact-gap">
                   <colgroup>
                     <col style={{ width: "7%" }} />
