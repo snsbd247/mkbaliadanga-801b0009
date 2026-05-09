@@ -143,6 +143,66 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     toast.success("ইনভয়েস বাতিল করা হয়েছে"); load();
   }
 
+  async function deleteInvoice(inv: any) {
+    const ok = await confirm({
+      title: "ইনভয়েস মুছে ফেলবেন?",
+      description: `${inv.invoice_no} — মুছে ফেলা ইনভয়েস তালিকায় দেখাবে না।`,
+      destructive: true, confirmText: "মুছুন",
+    });
+    if (!ok) return;
+    const { error } = await supabase
+      .from("irrigation_invoices" as any)
+      .update({ deleted_at: new Date().toISOString() } as any)
+      .eq("id", inv.id);
+    if (error) return toast.error(error.message);
+    toast.success("ইনভয়েস মুছে ফেলা হয়েছে"); load();
+  }
+
+  function printInvoice(inv: any) {
+    const farmer = inv.farmers?.name_bn ?? inv.farmers?.name_en ?? "—";
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${inv.invoice_no}</title>
+<style>
+  body{font-family:'Noto Sans Bengali',system-ui,sans-serif;padding:24px;color:#111}
+  h1{font-size:20px;margin:0 0 4px} h2{font-size:14px;margin:0 0 16px;color:#555;font-weight:500}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  td,th{border:1px solid #ddd;padding:6px 10px;font-size:13px;text-align:left}
+  th{background:#f6f6f6}
+  .right{text-align:right} .total{font-weight:700;background:#fafafa}
+  .meta td{border:none;padding:2px 0}
+  @media print{button{display:none}}
+</style></head><body>
+  <h1>সেচ ইনভয়েস — ${inv.invoice_no}</h1>
+  <h2>${inv.seasons?.name ?? inv.seasons?.type ?? ""} ${inv.seasons?.year ?? ""}</h2>
+  <table class="meta">
+    <tr><td><b>কৃষক:</b></td><td>${farmer} (${inv.farmers?.farmer_code ?? ""})</td></tr>
+    <tr><td><b>মোবাইল:</b></td><td>${inv.farmers?.mobile ?? "—"}</td></tr>
+    <tr><td><b>জমি:</b></td><td>${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no ?? "—"} • ${formatLandSize(inv.lands?.land_size) ?? ""}</td></tr>
+    <tr><td><b>ধরন:</b></td><td>${inv.is_borga ? "বর্গাদার" : "নিজ মালিক"}</td></tr>
+    <tr><td><b>ইস্যু তারিখ:</b></td><td>${fmtDate(inv.generated_at)}</td></tr>
+    <tr><td><b>মেয়াদ:</b></td><td>${fmtDate(inv.due_date)}</td></tr>
+  </table>
+  <table>
+    <thead><tr><th>বিবরণ</th><th class="right">টাকা</th></tr></thead>
+    <tbody>
+      <tr><td>সেচ চার্জ</td><td class="right">${money(inv.irrigation_amount)}</td></tr>
+      <tr><td>রক্ষণাবেক্ষণ</td><td class="right">${money(inv.maintenance_amount)}</td></tr>
+      <tr><td>খাল/নালা</td><td class="right">${money(inv.canal_amount)}</td></tr>
+      <tr><td>অন্যান্য</td><td class="right">${money(inv.other_charge)}</td></tr>
+      <tr><td>বিলম্ব ফি</td><td class="right">${money(inv.delay_fee)}</td></tr>
+      <tr class="total"><td>মোট প্রদেয়</td><td class="right">${money(inv.payable_amount)}</td></tr>
+      <tr><td>পরিশোধিত</td><td class="right">${money(inv.paid_amount)}</td></tr>
+      <tr class="total"><td>বকেয়া</td><td class="right">${money(inv.due_amount)}</td></tr>
+    </tbody>
+  </table>
+  ${inv.note ? `<p><b>মন্তব্য:</b> ${inv.note}</p>` : ""}
+  <p style="margin-top:24px;font-size:11px;color:#777">প্রিন্ট: ${new Date().toLocaleString("bn-BD")}</p>
+  <script>window.onload=()=>{window.print();}</script>
+</body></html>`;
+    const w = window.open("", "_blank", "width=800,height=900");
+    if (!w) return toast.error("পপআপ অনুমতি দিন");
+    w.document.write(html); w.document.close();
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-3">
