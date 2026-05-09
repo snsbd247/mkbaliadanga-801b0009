@@ -22,6 +22,7 @@ import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
 import Loans from "./pages/Loans";
 import IrrigationInvoices from "./pages/IrrigationInvoices";
+import IrrigationReports from "./pages/IrrigationReports";
 import IrrigationRates from "./pages/IrrigationRates";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
@@ -185,6 +186,7 @@ const App = () => (
                 <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />
                 <Route path="/admin/lookups" element={<RequireRole roles={["admin","super_admin"]}><AdminLookups /></RequireRole>} />
                 <Route path="/admin/rate-audit" element={<RequireRole roles={["admin","super_admin"]}><RateAuditLog /></RequireRole>} />
+                <Route path="/irrigation-reports" element={<IrrigationReports />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />

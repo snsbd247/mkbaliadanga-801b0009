@@ -22,6 +22,7 @@ interface PortalData {
   loans: Array<{ id: string; principal: number; interest_rate: number; total_payable: number; status: string; issued_on: string; next_due_on?: string; paid: number; due: number; note?: string }>;
   loan_payments: Array<{ id: string; loan_id: string; amount: number; paid_on: string; status: string }>;
   irrigation: Array<{ id: string; entry_date: string; total: number; paid_amount: number; due_amount: number; note?: string }>;
+  irrigation_invoices?: Array<{ id: string; invoice_no: string; generated_at: string; due_date: string; payable_amount: number; paid_amount: number; due_amount: number; invoice_status: string; season_rate?: number; land_type_name?: string; is_borga?: boolean; is_manual_rate?: boolean; seasons?: { name?: string; year?: number; type?: string }; lands?: { dag_no?: string; mouza?: string; land_size?: number } }>;
 }
 
 function fmt(n: number) {
@@ -271,6 +272,42 @@ export default function FarmerDashboard() {
                 </Table>
               </CardContent>
             </Card>
+
+            {data.irrigation_invoices && data.irrigation_invoices.length > 0 && (
+              <Card className="mt-3">
+                <CardHeader><CardTitle className="text-base">সেচ ইনভয়েস</CardTitle></CardHeader>
+                <CardContent className="overflow-x-auto p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ইনভয়েস</TableHead>
+                        <TableHead>সিজন</TableHead>
+                        <TableHead>জমি</TableHead>
+                        <TableHead>মেয়াদ</TableHead>
+                        <TableHead className="text-right">প্রদেয়</TableHead>
+                        <TableHead className="text-right">পরিশোধিত</TableHead>
+                        <TableHead className="text-right">বকেয়া</TableHead>
+                        <TableHead>স্ট্যাটাস</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.irrigation_invoices.map((i) => (
+                        <TableRow key={i.id}>
+                          <TableCell className="font-mono text-xs">{i.invoice_no}{i.is_borga ? " 🤝" : ""}{i.is_manual_rate ? " ✋" : ""}</TableCell>
+                          <TableCell className="text-xs">{i.seasons?.name ?? i.seasons?.type} {i.seasons?.year ?? ""}</TableCell>
+                          <TableCell className="text-xs">{i.lands?.mouza ?? ""} {i.lands?.dag_no ? `• ${i.lands.dag_no}` : ""}</TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">{i.due_date}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(Number(i.payable_amount))}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(Number(i.paid_amount))}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(Number(i.due_amount))}</TableCell>
+                          <TableCell className="text-xs">{i.invoice_status}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
 
