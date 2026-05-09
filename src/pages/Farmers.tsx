@@ -18,6 +18,7 @@ import { Plus, Eye, Search, Trash2, Pencil, AlertTriangle, Loader2, Download, Up
 import { TruncateText } from "@/components/ui/truncate-text";
 import { EditButton, DeleteButton, ViewButton } from "@/components/ui/action-icon-button";
 import * as XLSX from "xlsx";
+import { normalizeFarmerCode } from "@/lib/farmerCode";
 
 const FARMER_TEMPLATE_HEADERS = [
   "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
