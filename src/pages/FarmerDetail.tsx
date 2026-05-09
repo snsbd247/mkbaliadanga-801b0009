@@ -199,19 +199,51 @@ export default function FarmerDetail() {
     }, copy, receiptArgs.options);
   }
   async function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
-    const land = (lands || []).find((x: any) => x.id === i.land_id);
+    const land = (lands || []).find((x: any) => x.id === i.land_id) as any;
     const pw = i.patwaris ?? null;
-    let landOwnerLabel: string | null = "নিজ";
-    if (land && (land as any).owner_type === "borgadar" && (land as any).owner_farmer_id) {
-      const { data: own } = await supabase
-        .from("farmers")
-        .select("name_bn,name_en,member_no")
-        .eq("id", (land as any).owner_farmer_id)
-        .maybeSingle();
-      if (own) {
-        landOwnerLabel = `${own.name_bn || own.name_en}${own.member_no ? " (" + own.member_no + ")" : ""}`;
+
+    // Land owner label: "নিজ" for self, otherwise "Owner Name (member_no)"
+    let landOwnerLabel: string | null = null;
+    if (land) {
+      if (land.owner_type === "borgadar" && land.owner_farmer_id && land.owner_farmer_id !== farmer?.id) {
+        const { data: own } = await supabase
+          .from("farmers")
+          .select("name_bn,name_en,member_no")
+          .eq("id", land.owner_farmer_id)
+          .maybeSingle();
+        if (own) {
+          landOwnerLabel = `${own.name_bn || own.name_en}${own.member_no ? " (" + own.member_no + ")" : ""}`;
+        } else {
+          landOwnerLabel = "—";
+        }
+      } else {
+        landOwnerLabel = "নিজ";
       }
     }
+
+    // Field type Bangla label
+    const fieldTypeBn = ({
+      high_land: "উঁচু জমি",
+      medium_land: "মাঝারি জমি",
+      low_land: "নিচু জমি",
+      other: "অন্যান্য",
+    } as Record<string, string>)[land?.field_type as string] ?? null;
+
+    // Full ledger outstanding for this farmer (sum of due across all open charges)
+    const { data: dueRows } = await supabase
+      .from("irrigation_charges")
+      .select("due_amount")
+      .eq("farmer_id", farmer?.id ?? id!)
+      .is("deleted_at", null);
+    const totalOutstanding = (dueRows ?? []).reduce((s: number, r: any) => s + Number(r.due_amount || 0), 0);
+
+    // Collected from outstanding (this entry): how much of paid amount went to previous due
+    const paid = Number(i.paid_amount || 0);
+    const baseCharge = Number(i.base_charge ?? 0);
+    const extras = Number(i.penalty_amount ?? 0) + Number(i.maintenance_charge ?? 0) + Number(i.canal_charge ?? 0) + Number(i.other_charge ?? 0);
+    const currentSeasonAmount = baseCharge + extras;
+    const collectedFromOutstanding = Math.max(0, paid - currentSeasonAmount > 0 ? paid - currentSeasonAmount : 0);
+
     downloadBnReceiptPdf({
       kind: "irrigation",
       ...commonReceipt(),
@@ -219,20 +251,23 @@ export default function FarmerDetail() {
       date: i.entry_date,
       bill_info: i.seasons ? `${i.seasons.name ?? ""}${i.seasons.year ? ", " + i.seasons.year : ""}` : undefined,
       farmer: farmerForReceipt({
-        mouza: (land as any)?.mouza_name ?? null,
-        field_type_bn: (land as any)?.field_type ?? null,
-        land_size: (land as any)?.land_size ?? null,
-        dag_no: i.lands?.dag_no ?? (land as any)?.dag_no ?? null,
+        mouza: land?.mouza_name ?? land?.mouza ?? null,
+        field_type_bn: fieldTypeBn,
+        land_size: land?.land_size != null ? Number(land.land_size) : null,
+        dag_no: land?.dag_no ?? i.lands?.dag_no ?? null,
+        owner_type_bn: land?.owner_type === "borgadar" ? "বর্গাদার" : land?.owner_type === "owner" ? "মালিক" : null,
       }),
-      rate: Number(i.base_charge) + Number(i.canal_charge) + Number(i.maintenance_charge) + Number(i.other_charge),
+      rate: baseCharge + extras,
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
       land_owner_label: landOwnerLabel,
-      current_season_charge: Number(i.base_charge ?? 0),
+      current_season_charge: baseCharge,
       penalty_amount: Number(i.penalty_amount ?? 0),
       maintenance_charge: Number(i.maintenance_charge ?? 0),
       canal_charge: Number(i.canal_charge ?? 0),
-      total_outstanding: Number(i.due_amount ?? 0),
+      total_outstanding: totalOutstanding,
+      collected_from_outstanding: collectedFromOutstanding,
+      remark: i.note ?? null,
       patwari_name: pw ? (pw.name_bn || pw.name) : null,
       patwari_mobile: pw?.mobile ?? null,
       collected_amount: Number(i.paid_amount || i.total),

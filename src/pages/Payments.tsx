@@ -532,7 +532,7 @@ export default function Payments() {
                             if (refIds.length) {
                               const { data: charges } = await supabase
                                 .from("irrigation_charges")
-                                .select("id,total,paid_amount,due_amount,base_charge,penalty_amount,maintenance_charge,canal_charge,land_id,lands(mouza,dag_no,land_size,field_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
+                                .select("id,total,paid_amount,due_amount,base_charge,penalty_amount,maintenance_charge,canal_charge,other_charge,land_id,note,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
                                 .in("id", refIds);
                               primaryCharge = (charges ?? [])[0] ?? null;
                               // total outstanding = sum of due_amount across the farmer's open charges
@@ -545,7 +545,7 @@ export default function Payments() {
                             }
                             const land = primaryCharge?.lands;
                             const ownerFarmer = land?.farmers;
-                            const isSelf = land?.owner_farmer_id && land.owner_farmer_id === p.farmer_id;
+                            const isSelf = !land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner";
                             const fieldTypeBn = ({ high_land: "উঁচু জমি", medium_land: "মাঝারি জমি", low_land: "নিচু জমি", other: "অন্যান্য" } as Record<string, string>)[land?.field_type as string] ?? null;
                             irrEnriched = {
                               farmerExtras: {
@@ -553,7 +553,7 @@ export default function Payments() {
                                 dag_no: land?.dag_no ?? null,
                                 land_size: land?.land_size != null ? Number(land.land_size) : null,
                                 field_type_bn: fieldTypeBn,
-                                owner_type_bn: ownerTypeBn(land?.owner_farmer_id === p.farmer_id ? "owner" : "borgadar"),
+                                owner_type_bn: ownerTypeBn(land?.owner_type ?? (isSelf ? "owner" : "borgadar")),
                               },
                               land_owner_label: isSelf
                                 ? "নিজ"
