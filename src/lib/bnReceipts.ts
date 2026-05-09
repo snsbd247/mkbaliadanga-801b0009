@@ -2,7 +2,8 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
-import { formatDagNumbers } from "@/lib/dagNumbers";
+import { parseDagNumbers } from "@/lib/dagNumbers";
+import { getReceiptLayoutSettings, dagSeparatorHtml } from "@/lib/receiptLayoutSettings";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
 export type ReceiptCopy = "both" | "farmer" | "office";
@@ -238,10 +239,14 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         ? `${bigha.toFixed(2)} বিঘা (${shatak.toFixed(2)} শতক)`
         : `${bigha.toFixed(2)} bigha (${shatak.toFixed(2)} shatak)`;
     }
-    const dagFormatted = formatDagNumbers(d.farmer.dag_no);
+    const layout = getReceiptLayoutSettings();
+    const mouzaLabel = (lang === "bn" ? layout.mouzaLabelBn : layout.mouzaLabelEn).trim() || t.mouza;
+    const dagLabel = (lang === "bn" ? layout.dagLabelBn : layout.dagLabelEn).trim() || t.dag;
+    const dagTokens = parseDagNumbers(d.farmer.dag_no);
+    const dagFormatted = dagTokens.join(dagSeparatorHtml(layout.dagSeparator));
     const mouzaParts = [d.farmer.mouza, sizeLabel].filter(Boolean) as string[];
-    if (mouzaParts.length) rows.push([t.mouza, mouzaParts.join(" / ")]);
-    if (dagFormatted) rows.push([t.dag, dagFormatted]);
+    if (mouzaParts.length) rows.push([mouzaLabel, mouzaParts.join(" / ")]);
+    if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
     if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
     rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
     if (d.collected_from_outstanding != null)
@@ -271,10 +276,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.remark, String(d.remark).trim()]);
   }
 
+  const pad = getReceiptLayoutSettings().rowSpacingPx;
   const tableRows = rows.map(([k, v]) => `
     <tr>
-      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">${k}</td>
-      <td style="padding:4px 8px;vertical-align:top;color:#111;">${v}</td>
+      <td style="padding:${pad}px 8px;vertical-align:top;width:38%;color:#111;">${k}</td>
+      <td style="padding:${pad}px 8px;vertical-align:top;color:#111;white-space:pre-line;">${v}</td>
     </tr>`).join("");
 
   const fontFamily = lang === "bn"
@@ -335,6 +341,24 @@ function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLa
   else wrap.innerHTML = `${farmerCopy}<div style="border-top:1px dashed #111;margin:8px 22px;"></div>${officeCopy}`;
   document.body.appendChild(wrap);
   return wrap;
+}
+
+/** Test-only: build a single receipt copy's HTML without touching the DOM. */
+export function buildReceiptCopyHtmlForTest(
+  data: BnReceiptData,
+  copy: "farmer" | "office" = "farmer",
+  lang: ReceiptLang = "bn",
+): string {
+  return copyHtml(
+    data,
+    STR[lang][copy === "farmer" ? "farmerCopy" : "officeCopy"],
+    data.collector_signature_url,
+    lang,
+    "two-line",
+    "sm",
+    null,
+    false,
+  );
 }
 
 function copySuffix(copy: ReceiptCopy): string {
