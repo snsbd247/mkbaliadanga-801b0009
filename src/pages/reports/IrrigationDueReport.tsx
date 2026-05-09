@@ -70,12 +70,15 @@ export default function IrrigationDueReport() {
       const grouped = new Map<string, Row>();
       (data ?? []).forEach((r: any) => {
         const key = `${r.farmer_id}|${r.land_id}|${r.season_id}`;
+        const shatak = Number(r.lands?.land_size ?? 0);
         const cur = grouped.get(key) ?? {
           farmer_id: r.farmer_id,
           farmer_name: r.farmers?.name_en ?? "—",
           farmer_code: r.farmers?.farmer_code ?? "—",
           land_id: r.land_id,
           land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${r.lands.dag_no}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
+          land_size_shatak: shatak,
+          land_size_bigha: shatakToBigha(shatak),
           season_id: r.season_id,
           season_label: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
           total: 0, paid: 0, due: 0,
