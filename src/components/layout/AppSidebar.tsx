@@ -48,41 +48,43 @@ export function AppSidebar() {
   const menu: ParentItem[] = [
     { key: "dashboard", icon: LayoutDashboard, label: t("dashboard"), url: "/admin", permKey: "dashboard" },
 
-    // ── Members ──
+    // ── Members & Voters ──
     {
       key: "members", icon: Users, label: t("members"),
       children: [
         { url: "/farmers", icon: Users, label: t("farmers"), permKey: "farmers" },
         { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
+        { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
+        { url: "/admin/patwaris", icon: Users, label: t("patwaris") },
         { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
         { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
         { url: "/reports/voter-audit", icon: FileBarChart, label: t("voterAudit"), permKey: "farmers" },
       ],
     },
 
-    // ── Operations ──
+    // ── Savings & Loans ──
     {
-      key: "operations", icon: Briefcase, label: t("operations"),
+      key: "savingsLoans", icon: Wallet, label: t("savingsAndLoans" as any) || "সঞ্চয় ও ঋণ",
       children: [
-        { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
         { url: "/share-collection", icon: Wallet, label: t("shareCollection"), permKey: "savings" },
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
         { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
-        { url: "/irrigation/invoices", icon: Droplets, label: t("irrigationInvoices" as any), permKey: "irrigation" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
 
-    // ── Irrigation Settings ──
+    // ── Irrigation ──
     {
-      key: "irrigationSettings", icon: SettingsIcon, label: t("irrigationSettingsGroup" as any),
+      key: "irrigation", icon: Droplets, label: t("irrigation" as any) || "সেচ",
       children: [
-        { url: "/admin/lookups", icon: Sprout, label: t("seasonTypesAndLandKinds" as any) },
-        { url: "/seasons", icon: CalendarDays, label: t("seasonRateConfig" as any), permKey: "seasons" },
+        { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
+        { url: "/irrigation/invoices", icon: Droplets, label: t("irrigationInvoices" as any), permKey: "irrigation" },
         { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
+        { url: "/admin/lookups", icon: Sprout, label: t("seasonTypesAndLandKinds" as any) },
         { url: "/admin/rate-audit", icon: ScrollText, label: t("rateChangeHistory" as any) },
+        { url: "/admin/irrigation-due-mismatch", icon: ShieldAlert, label: t("irrigationDueMismatch" as any) || "Irrigation Due Mismatch", permKey: "reports" },
       ],
     },
 
@@ -123,13 +125,27 @@ export function AppSidebar() {
         { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
         { url: "/reports/farmer-statement", icon: FileBarChart, label: t("farmerStatement"), permKey: "reports" },
         { url: "/reports/expenses", icon: FileBarChart, label: t("expensesReport"), permKey: "reports" },
-       { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
-       { url: "/reports/invoices", icon: FileBarChart, label: t("invoicesReport" as any), permKey: "reports" },
-       { url: "/irrigation-reports", icon: FileBarChart, label: t("irrigationRevenueCollection" as any), permKey: "reports" },
-       { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
+        { url: "/reports/invoices", icon: FileBarChart, label: t("invoicesReport" as any), permKey: "reports" },
+        { url: "/irrigation-reports", icon: FileBarChart, label: t("irrigationRevenueCollection" as any), permKey: "reports" },
+        { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
+        { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
         { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
+      ],
+    },
+
+    // ── Audit & Monitoring ──
+    {
+      key: "auditMon", icon: ShieldAlert, label: t("auditAndMonitoring" as any) || "অডিট ও মনিটরিং",
+      children: [
+        { url: "/audit", icon: ScrollText, label: t("auditLogs"), developerOnly: true },
+        { url: "/admin/audit-timeline", icon: ScrollText, label: t("auditTimeline" as any) || "Audit Timeline", developerOnly: true },
+        { url: "/admin/retry-jobs", icon: RefreshCw, label: t("retryJobs" as any) || "Retry Jobs", developerOnly: true },
+        { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
+        { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
+        { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
+        { url: "/diagnostics", icon: ShieldAlert, label: t("diagnostics" as any), developerOnly: true },
       ],
     },
 
@@ -138,20 +154,10 @@ export function AppSidebar() {
       key: "admin", icon: Shield, label: t("adminGroup"),
       children: [
         { url: "/offices", icon: Building2, label: t("offices"), permKey: "offices" },
+        { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/users", icon: ShieldCheck, label: t("users"), superOnly: true },
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), developerOnly: true },
         { url: "/admin/my-permissions", icon: Shield, label: t("myPermissions" as any) },
-        { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
-        { url: "/audit", icon: ScrollText, label: t("auditLogs"), developerOnly: true },
-        { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
-        { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
-        { url: "/admin/patwaris", icon: Users, label: t("patwaris") },
-        
-        { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
-        { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
-        { url: "/admin/irrigation-due-mismatch", icon: ShieldAlert, label: t("irrigationDueMismatch" as any) || "Irrigation Due Mismatch", permKey: "reports" },
-        { url: "/admin/retry-jobs", icon: ShieldAlert, label: t("retryJobs" as any) || "Retry Jobs", developerOnly: true },
-        { url: "/admin/audit-timeline", icon: ScrollText, label: t("auditTimeline" as any) || "Audit Timeline", developerOnly: true },
       ],
     },
 
@@ -165,7 +171,6 @@ export function AppSidebar() {
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
         { url: "/backup", icon: Database, label: t("backup"), developerOnly: true },
         { url: "/admin/demo-manager", icon: Database, label: t("demoManager" as any), developerOnly: true },
-        { url: "/diagnostics", icon: ShieldAlert, label: t("diagnostics" as any), developerOnly: true },
         { url: "/admin/developer-updates", icon: RefreshCw, label: t("developerUpdates" as any), developerOnly: true },
       ],
     },
