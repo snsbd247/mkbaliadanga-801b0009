@@ -13,6 +13,7 @@ import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Row = {
   id: string;
@@ -28,6 +29,7 @@ type Row = {
 const empty: any = { code: "", name: "", name_en: "", name_bn: "", is_active: true, sort_order: 0 };
 
 function LookupTable({ table, title }: { table: "irrigation_season_types" | "land_types"; title: string }) {
+  const { tx } = useLang();
   const [rows, setRows] = useState<Row[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
@@ -59,7 +61,7 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
   }
 
   async function save() {
-    if (!form.code.trim() || !form.name.trim()) return toast.error("কোড ও নাম দিন");
+    if (!form.code.trim() || !form.name.trim()) return toast.error(tx("Enter code and name", "কোড ও নাম দিন"));
     setBusy(true);
     try {
       const payload = {
@@ -74,7 +76,7 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
         ? await supabase.from(table as any).update(payload).eq("id", form.id)
         : await supabase.from(table as any).insert(payload);
       if (error) throw error;
-      toast.success("সংরক্ষিত");
+      toast.success(tx("Saved", "সংরক্ষিত"));
       setOpen(false);
       load();
     } catch (e: any) {
@@ -82,19 +84,13 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
     } finally { setBusy(false); }
   }
 
-  // Soft delete: set deleted_at; the DB trigger blocks if in use.
   async function softDelete(id: string) {
     const { error } = await supabase.from(table as any).delete().eq("id", id);
     if (error) {
-      // trigger raised exception (in-use) → mark inactive instead
-      const msg = error.message?.includes("ব্যবহৃত") || error.message?.includes("রেফারড")
-        ? error.message
-        : error.message;
-      toast.error(msg);
+      toast.error(error.message);
       return;
     }
-    // Hard-delete succeeded but user wanted soft delete → re-insert minimal log? Keep hard delete since not in use.
-    toast.success("মুছে ফেলা হয়েছে");
+    toast.success(tx("Deleted", "মুছে ফেলা হয়েছে"));
     load();
   }
 
@@ -103,17 +99,17 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
       <CardContent className="pt-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">{title}</h3>
-          <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" /> নতুন</Button>
+          <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" /> {tx("New", "নতুন")}</Button>
         </div>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>কোড</TableHead>
-              <TableHead>নাম (EN)</TableHead>
-              <TableHead>বাংলা</TableHead>
-              <TableHead className="text-right">ক্রম</TableHead>
-              <TableHead>স্ট্যাটাস</TableHead>
-              <TableHead className="text-right">কাজ</TableHead>
+              <TableHead>{tx("Code", "কোড")}</TableHead>
+              <TableHead>{tx("Name (EN)", "নাম (EN)")}</TableHead>
+              <TableHead>{tx("Bangla", "বাংলা")}</TableHead>
+              <TableHead className="text-right">{tx("Order", "ক্রম")}</TableHead>
+              <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
+              <TableHead className="text-right">{tx("Actions", "কাজ")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -124,7 +120,7 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
                 <TableCell>{r.name_bn ?? "—"}</TableCell>
                 <TableCell className="text-right">{r.sort_order}</TableCell>
                 <TableCell>
-                  <Badge variant={r.is_active ? "default" : "secondary"}>{r.is_active ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
+                  <Badge variant={r.is_active ? "default" : "secondary"}>{r.is_active ? tx("Active", "সক্রিয়") : tx("Inactive", "নিষ্ক্রিয়")}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="inline-flex gap-1 justify-end">
@@ -136,7 +132,7 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
             ))}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">কোনো ডেটা নেই</TableCell>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">{tx("No data", "কোনো ডেটা নেই")}</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -145,37 +141,37 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{form.id ? "সম্পাদনা" : "নতুন"} — {title}</DialogTitle>
+              <DialogTitle>{form.id ? tx("Edit", "সম্পাদনা") : tx("New", "নতুন")} — {title}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-3">
               <div>
-                <Label>কোড (slug, ইউনিক)</Label>
+                <Label>{tx("Code (slug, unique)", "কোড (slug, ইউনিক)")}</Label>
                 <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="boro / pukur / doba" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>নাম (English)</Label>
+                  <Label>{tx("Name (English)", "নাম (English)")}</Label>
                   <Input value={form.name_en ?? ""} onChange={(e) => setForm({ ...form, name_en: e.target.value, name: form.name || e.target.value })} />
                 </div>
                 <div>
-                  <Label>বাংলা নাম</Label>
+                  <Label>{tx("Bangla name", "বাংলা নাম")}</Label>
                   <Input value={form.name_bn ?? ""} onChange={(e) => setForm({ ...form, name_bn: e.target.value, name: form.name || e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>ক্রম</Label>
+                  <Label>{tx("Order", "ক্রম")}</Label>
                   <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} />
                 </div>
                 <div className="flex items-center gap-2 pt-6">
                   <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} id={`active-${table}`} />
-                  <Label htmlFor={`active-${table}`}>সক্রিয়</Label>
+                  <Label htmlFor={`active-${table}`}>{tx("Active", "সক্রিয়")}</Label>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>বাতিল</Button>
-              <Button onClick={save} disabled={busy}>{busy ? "…" : "সংরক্ষণ"}</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{tx("Cancel", "বাতিল")}</Button>
+              <Button onClick={save} disabled={busy}>{busy ? "…" : tx("Save", "সংরক্ষণ")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -185,17 +181,18 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
 }
 
 export default function IrrigationSettings() {
-  useEffect(() => { document.title = "সেচ সেটিংস — Admin"; }, []);
+  const { tx } = useLang();
+  useEffect(() => { document.title = tx("Irrigation Settings — Admin", "সেচ সেটিংস — Admin"); }, [tx]);
   return (
     <>
-      <PageHeader title="সেচ সেটিংস" description="সিজন টাইপ ও জমির ধরন ব্যবস্থাপনা" />
+      <PageHeader title={tx("Irrigation Settings", "সেচ সেটিংস")} description={tx("Manage season types and land types", "সিজন টাইপ ও জমির ধরন ব্যবস্থাপনা")} />
       <Tabs defaultValue="season">
         <TabsList>
-          <TabsTrigger value="season">সিজন টাইপ</TabsTrigger>
-          <TabsTrigger value="land">জমির ধরন</TabsTrigger>
+          <TabsTrigger value="season">{tx("Season type", "সিজন টাইপ")}</TabsTrigger>
+          <TabsTrigger value="land">{tx("Land type", "জমির ধরন")}</TabsTrigger>
         </TabsList>
-        <TabsContent value="season"><LookupTable table="irrigation_season_types" title="সিজনের ধরন" /></TabsContent>
-        <TabsContent value="land"><LookupTable table="land_types" title="জমির ধরন" /></TabsContent>
+        <TabsContent value="season"><LookupTable table="irrigation_season_types" title={tx("Season types", "সিজনের ধরন")} /></TabsContent>
+        <TabsContent value="land"><LookupTable table="land_types" title={tx("Land types", "জমির ধরন")} /></TabsContent>
       </Tabs>
     </>
   );
