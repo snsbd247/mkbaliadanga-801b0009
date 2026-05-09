@@ -804,15 +804,34 @@ export default function FarmerDetail() {
                     )}
 
                     {/* 3. For owner only: Dag No input */}
-                    {land.owner_type === "owner" && (
-                      <div className="grid grid-cols-2 gap-3">
-                       <div>
-                          <Label>{t("dagNo")} <span className="text-destructive">*</span></Label>
-                          <Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} placeholder="123, 124/A, 125" />
-                          <p className="text-xs text-muted-foreground mt-1">একাধিক দাগ নং কমা (,) দিয়ে আলাদা করে লিখুন</p>
+                    {land.owner_type === "owner" && (() => {
+                      const live = land.dag_no.trim() ? validateDagNumbers(land.dag_no) : null;
+                      const liveErr = live && live.ok === false ? live.error : null;
+                      const preview = live && live.ok ? live.values.join(", ") : null;
+                      return (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>{t("dagNo")} <span className="text-destructive">*</span></Label>
+                            <Input
+                              disabled={savingLand}
+                              value={land.dag_no}
+                              onChange={e => setLand({ ...land, dag_no: e.target.value })}
+                              placeholder="123, 124/A, 125-B"
+                              aria-invalid={!!liveErr}
+                              className={liveErr ? "border-destructive focus-visible:ring-destructive" : undefined}
+                            />
+                            {liveErr ? (
+                              <p className="text-xs text-destructive mt-1">{liveErr} — দয়া করে কমা দিয়ে আলাদা করুন এবং শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> ব্যবহার করুন।</p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ: <code>123, 124/A, 125-B</code>
+                                {preview && preview !== land.dag_no.trim() && <> — সংরক্ষণে রূপান্তরিত হবে: <strong>{preview}</strong></>}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* 4. Land size + Field type */}
                     {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
