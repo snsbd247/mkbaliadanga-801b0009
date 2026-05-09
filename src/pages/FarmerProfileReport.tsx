@@ -72,10 +72,10 @@ export default function FarmerProfileReport() {
 
       const fieldTypeLabel = (v: string) => {
         switch (v) {
-          case "high_land": return "উঁচু জমি(High Land)";
-          case "medium_land": return "মাঝারি জমি(Medium Land)";
-          case "low_land": return "নিচু জমি(Low Land)";
-          case "other": return "বিবিধ";
+          case "high_land": return tx("High Land", "উঁচু জমি(High Land)");
+          case "medium_land": return tx("Medium Land", "মাঝারি জমি(Medium Land)");
+          case "low_land": return tx("Low Land", "নিচু জমি(Low Land)");
+          case "other": return tx("Other", "বিবিধ");
           default: return safeText(v);
         }
       };
@@ -84,7 +84,7 @@ export default function FarmerProfileReport() {
         const relation = activeRelationByLand.get(row.land_id);
         const sc = relation?.sc;
         const isBorga = row.lands?.owner_type === "borgadar";
-        const ownerTypeText = isBorga ? "বর্গাদার" : "মালিক";
+        const ownerTypeText = isBorga ? tx("Sharecropper", "বর্গাদার") : tx("Owner", "মালিক");
         const ownerNameFid = isBorga && sc?.name_en
           ? `${safeText(sc.name_en)} - ${safeText(sc.farmer_code)}`
           : "";
