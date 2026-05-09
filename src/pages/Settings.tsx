@@ -145,6 +145,7 @@ export default function Settings() {
           <Button onClick={save} disabled={busy}>{busy ? "…" : t("save")}</Button>
         </div>
       </Card>
+      <RoundingCard />
       <Card className="max-w-2xl p-6 mt-4">
         <div className="flex items-center justify-between">
           <div>
