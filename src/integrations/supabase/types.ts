@@ -3697,6 +3697,10 @@ export type Database = {
           office_id: string
         }[]
       }
+      log_developer_access: {
+        Args: { _action: string; _blocked?: boolean; _meta?: Json }
+        Returns: undefined
+      }
       log_farmer_rejection: {
         Args: {
           _attempted: Json

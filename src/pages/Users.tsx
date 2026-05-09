@@ -72,9 +72,19 @@ export default function Users() {
       rolesByUser[uid].sort((a, b) => (ROLE_RANK[b] ?? 0) - (ROLE_RANK[a] ?? 0));
     });
     const mapped = (p.data ?? []).map((x: any) => ({ ...x, roles: rolesByUser[x.id] ?? [] }));
-    // Hide developer accounts from non-developer viewers (super admin, admin, etc.)
-    const visible = isDeveloper ? mapped : mapped.filter((u: any) => !u.roles.includes("developer"));
+    // Server-side RLS already hides developer profiles from non-developers; this filter
+    // is a defense-in-depth no-op when RLS is healthy.
+    const visible = mapped.filter((u: any) => isDeveloper || !u.roles.includes("developer"));
+    const blocked = mapped.length - visible.length;
     setList(visible);
+    // Audit who viewed/attempted to view developer accounts
+    try {
+      await supabase.rpc("log_developer_access", {
+        _action: isDeveloper ? "view_developer_users" : "list_users",
+        _blocked: blocked > 0 || !isDeveloper,
+        _meta: { visible_count: visible.length, hidden_count: blocked } as any,
+      });
+    } catch { /* audit failure must not break UI */ }
   }
 
   async function callAdmin(payload: any) {
