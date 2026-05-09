@@ -66,7 +66,7 @@ const DEFAULT_SAMPLE_VARS: Record<string, string> = {
   balance: "12,750.00",
   payable: "22,000.00",
   due: "8,000.00",
-  type: "Loan / ঋণ",
+  type: "Loan / ঋণ", // i18n-ignore: intentional bilingual sample value
   date: new Date().toISOString().slice(0, 10),
 };
 
@@ -346,7 +346,7 @@ export default function SmsSettings() {
   const [s, setS] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
   const [testMobile, setTestMobile] = useState("");
-  const [testMsg, setTestMsg] = useState("পরীক্ষামূলক বার্তা — Smart Irrigation");
+  const [testMsg, setTestMsg] = useState(lang === "bn" ? "পরীক্ষামূলক বার্তা — Smart Irrigation" : "Test message — Smart Irrigation");
   const [tplTestMobile, setTplTestMobile] = useState("");
   const [tplTestBusy, setTplTestBusy] = useState<string | null>(null);
   const [sampleVars, setSampleVars] = useState<Record<string, string>>(DEFAULT_SAMPLE_VARS);
@@ -740,7 +740,7 @@ export default function SmsSettings() {
                 <Select value={s.language} onValueChange={(v) => set("language", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bn">Bangla (বাংলা)</SelectItem>
+                    <SelectItem value="bn">Bangla (বাংলা)</SelectItem>{/* i18n-ignore */}
                     <SelectItem value="en">English</SelectItem>
                   </SelectContent>
                 </Select>

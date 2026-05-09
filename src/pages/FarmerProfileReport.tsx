@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/branding";
+import { useLang } from "@/i18n/LanguageProvider";
 
 function safeText(value: unknown) {
   if (value === null || value === undefined || value === "") return "";
@@ -23,6 +24,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 export default function FarmerProfileReport() {
+  const { tx } = useLang();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const nav = useNavigate();
@@ -70,10 +72,10 @@ export default function FarmerProfileReport() {
 
       const fieldTypeLabel = (v: string) => {
         switch (v) {
-          case "high_land": return "উঁচু জমি(High Land)";
-          case "medium_land": return "মাঝারি জমি(Medium Land)";
-          case "low_land": return "নিচু জমি(Low Land)";
-          case "other": return "বিবিধ";
+          case "high_land": return tx("High Land", "উঁচু জমি(High Land)");
+          case "medium_land": return tx("Medium Land", "মাঝারি জমি(Medium Land)");
+          case "low_land": return tx("Low Land", "নিচু জমি(Low Land)");
+          case "other": return tx("Other", "বিবিধ");
           default: return safeText(v);
         }
       };
@@ -82,7 +84,7 @@ export default function FarmerProfileReport() {
         const relation = activeRelationByLand.get(row.land_id);
         const sc = relation?.sc;
         const isBorga = row.lands?.owner_type === "borgadar";
-        const ownerTypeText = isBorga ? "বর্গাদার" : "মালিক";
+        const ownerTypeText = isBorga ? tx("Sharecropper", "বর্গাদার") : tx("Owner", "মালিক");
         const ownerNameFid = isBorga && sc?.name_en
           ? `${safeText(sc.name_en)} - ${safeText(sc.farmer_code)}`
           : "";
@@ -177,11 +179,11 @@ export default function FarmerProfileReport() {
   }, [loading, searchParams]);
 
   if (loading) {
-    return <div className="p-6 text-sm text-muted-foreground">Loading report...</div>;
+    return <div className="p-6 text-sm text-muted-foreground">{tx("Loading report...", "রিপোর্ট লোড হচ্ছে...")}</div>;
   }
 
   if (!farmer) {
-    return <div className="p-6 text-sm text-muted-foreground">Farmer not found.</div>;
+    return <div className="p-6 text-sm text-muted-foreground">{tx("Farmer not found.", "কৃষক পাওয়া যায়নি।")}</div>;
   }
 
   const irrigationYear = ownerRows.find((row) => row.irrigation_year)?.irrigation_year || new Date().getFullYear();
@@ -382,7 +384,7 @@ export default function FarmerProfileReport() {
             <div className="farmer-report-org">{brand.company_name_bn || brand.company_name}</div>
           </div>
 
-          <div className="farmer-report-rule">এক নজরে কৃষকের তথ্য</div>
+          <div className="farmer-report-rule">{tx("Farmer Information at a Glance", "এক নজরে কৃষকের তথ্য")}</div>
 
           <div className="farmer-section-title">Farmer Information</div>
           <table className="farmer-table compact-gap">
@@ -473,7 +475,7 @@ export default function FarmerProfileReport() {
             );
             return (
               <div key={year} className="irrigation-year-block">
-                <div className="farmer-year-row">সেচ বর্ষ: {year}</div>
+                <div className="farmer-year-row">{tx("Irrigation Year:", "সেচ বর্ষ:")} {year}</div>
                 <table className="farmer-table compact-gap">
                   <colgroup>
                     <col style={{ width: "7%" }} />

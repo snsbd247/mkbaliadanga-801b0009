@@ -37,11 +37,14 @@ function walk(dir, out = []) {
 //   - Bilingual seed/data fields like  name_bn: "..."  / label_bn: "..."
 //   - Sample CSV/template rows ([ "...", "..." ])
 //   - Lines guarded by  lang === "bn" / "en"  ternaries (already i18n-aware)
-//   - String concatenation glue: toast(`${name} এর ...`) when wrapped in lang check elsewhere
+//   - Lines INSIDE a local i18n block:  bn: { ... }  /  en: { ... }
+//   - SMS template defaults:  tpl_<name>(_en)?: "..."
 const isCommentLine = (l) => /^\s*(\/\/|\*|\/\*)/.test(l);
 const isSeedDataField = (l) => /\b(name_bn|label_bn|title_bn|desc_bn|company_name_bn|name_en|label_en|title_en)\s*:/.test(l);
-const isLangGuarded = (l) => /lang\s*===\s*["'](bn|en)["']|case\s+["'](bn|en)["']|\?\s*["'][^"']*[\u0980-\u09FF]/.test(l);
+const isLangGuarded = (l) => /lang\s*===\s*["'](bn|en)["']|case\s+["'](bn|en)["']|\?\s*["'][^"']*[\u0980-\u09FF]|\w+\(\s*["'][^"']*["']\s*,\s*["'][^"']*[\u0980-\u09FF]/.test(l);
 const isSampleArrayRow = (l) => /^\s*\[\s*"/.test(l) && /,\s*"/.test(l);
+const isTemplateDefault = (l) => /^\s*tpl_[a-z_]+(_en)?\s*:\s*["'`]/.test(l);
+const isI18nBlockOpen = (l) => /^\s*(en|bn)\s*:\s*\{\s*$/.test(l);
 
 const files = ROOTS.flatMap(r => walk(r));
 const findings = [];
@@ -52,8 +55,26 @@ for (const file of files) {
 
   // Strip block comments before line-by-line scan
   const stripped = src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
+  let inI18nBlock = false;
+  let i18nBraceDepth = 0;
   stripped.split("\n").forEach((line, i) => {
-    if (isCommentLine(line) || isSeedDataField(line) || isLangGuarded(line) || isSampleArrayRow(line)) return;
+    // Track i18n dict block (bn: { ... }  or  en: { ... })
+    if (!inI18nBlock && isI18nBlockOpen(line)) {
+      inI18nBlock = true;
+      i18nBraceDepth = 1;
+      return;
+    }
+    if (inI18nBlock) {
+      // count braces to find the closing brace of this block
+      for (const ch of line) {
+        if (ch === "{") i18nBraceDepth++;
+        else if (ch === "}") i18nBraceDepth--;
+      }
+      if (i18nBraceDepth <= 0) inI18nBlock = false;
+      return;
+    }
+    if (isCommentLine(line) || isSeedDataField(line) || isLangGuarded(line) || isSampleArrayRow(line) || isTemplateDefault(line)) return;
+    if (/i18n-ignore/.test(line)) return;
     if (BN.test(line) && !/\bt\(|\btx\(/.test(line)) {
       findings.push({ file, line: i + 1, kind: "bn", text: line.trim().slice(0, 140) });
     }
