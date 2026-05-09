@@ -17,6 +17,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { formatLandSize } from "@/lib/irrigationCalc";
+import { matchesDagSearch, formatDagNumbers } from "@/lib/dagNumbers";
 import {
   calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
