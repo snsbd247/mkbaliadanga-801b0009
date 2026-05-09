@@ -261,11 +261,48 @@ export default function DataImport() {
     try {
       const wb = await readBookFromFile(f);
       const parsed = parseSheet(wb);
-      setRows(parsed.map((raw, idx) => ({ idx, raw, status: "pending" })));
-      toast.success(`Loaded ${parsed.length} rows`);
+      const verified = verifyRows(parsed, mod);
+      setRows(verified);
+      const errs = verified.filter((r) => r.status === "error").length;
+      if (errs > 0) toast.warning(`Loaded ${parsed.length} rows — ${errs} have validation errors`);
+      else toast.success(`Loaded ${parsed.length} rows. Columns + dag_no format look good.`);
     } catch (e: any) {
       toast.error(`Failed to read file: ${e.message}`);
     }
+  }
+
+  function verifyRows(parsed: Record<string, any>[], m: Module): RowResult[] {
+    const required: Partial<Record<Module, string[]>> = {
+      lands: ["account_number", "dag_no", "land_size"],
+      land_relations: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from"],
+      irrigation: ["account_number", "dag_no", "season_year", "season_type", "base_charge", "entry_date"],
+      loans: ["account_number", "principal"],
+      loan_payments: ["account_number", "amount"],
+      savings: ["account_number", "type", "amount"],
+      payments: ["account_number", "kind", "amount"],
+      cashbook_receipts: ["receipt_date", "kind", "amount"],
+      cashbook_expenses: ["expense_date", "head", "amount"],
+      ledger: ["entry_date", "account_code"],
+    };
+    const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
+    const req = required[m] ?? TEMPLATES[m].columns;
+    const missingCols = req.filter((c) => !headerSet.has(c));
+    return parsed.map((raw, idx) => {
+      const issues: string[] = [];
+      if (missingCols.length) issues.push(`Missing columns: ${missingCols.join(", ")}`);
+      for (const col of req) {
+        const v = raw[col];
+        if (v === null || v === undefined || String(v).trim() === "") {
+          issues.push(`${col} is required`);
+        }
+      }
+      if (["lands", "land_relations", "irrigation"].includes(m) && raw.dag_no) {
+        const dv = validateDagNumbers(String(raw.dag_no));
+        if (!dv.ok) issues.push(`dag_no: ${(dv as any).error}`);
+      }
+      if (issues.length) return { idx, raw, status: "error", message: issues.join(" • ") };
+      return { idx, raw, status: "pending" };
+    });
   }
 
   // Look up farmer_id + office_id by account_number — single round trip.
