@@ -135,27 +135,27 @@ export default function IrrigationReports() {
 
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => setExportOpen(true)} disabled={!rows.length}>
-              <FileDown className="h-4 w-4 mr-1" /> এক্সপোর্ট
+              <FileDown className="h-4 w-4 mr-1" /> {t("exp_export" as any)}
             </Button>
             {(fromDate || toDate || seasonId !== "all" || officeId !== "all") && (
               <Button size="sm" variant="ghost" onClick={() => { setSeasonId("all"); setOfficeId("all"); setFromDate(""); setToDate(""); }}>
-                ফিল্টার রিসেট
+                {t("filterReset" as any)}
               </Button>
             )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
-            <Stat label="মোট ইনভয়েস" value={totals.count.toLocaleString()} />
-            <Stat label="মোট প্রদেয়" value={money(totals.payable)} />
-            <Stat label="পরিশোধিত" value={money(totals.paid)} hint={`${collectionPct}% কালেকশন`} />
-            <Stat label="বকেয়া" value={money(totals.due)} hint={totals.manual ? `${totals.manual} টি ম্যানুয়াল রেট` : undefined} tone="destructive" />
+            <Stat label={t("irr_totalInvoices" as any)} value={totals.count.toLocaleString()} />
+            <Stat label={t("irr_totalPayable" as any)} value={money(totals.payable)} />
+            <Stat label={t("irr_paid" as any)} value={money(totals.paid)} hint={t("irr_collectionPct" as any).replace("{pct}", String(collectionPct))} />
+            <Stat label={t("irr_due" as any)} value={money(totals.due)} hint={totals.manual ? t("irr_manualRateCount" as any).replace("{n}", String(totals.manual)) : undefined} tone="destructive" />
           </div>
 
-          <p className="text-sm text-muted-foreground">{loading ? "লোড হচ্ছে…" : `${rows.length} টি ইনভয়েস`}</p>
+          <p className="text-sm text-muted-foreground">{loading ? t("irr_loading" as any) : t("irr_invoiceCount" as any).replace("{n}", String(rows.length))}</p>
         </CardContent>
       </Card>
 
-      <Suspense fallback={<div className="mt-4 text-sm text-muted-foreground">চার্ট লোড হচ্ছে…</div>}>
+      <Suspense fallback={<div className="mt-4 text-sm text-muted-foreground">{t("irr_loading" as any)}</div>}>
         <IrrigationReportCharts rows={rows} />
       </Suspense>
 
