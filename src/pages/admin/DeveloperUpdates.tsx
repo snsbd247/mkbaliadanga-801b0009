@@ -1,3 +1,4 @@
+// i18n-ignore-file — admin-only page (English UI)
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
