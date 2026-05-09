@@ -114,11 +114,13 @@ function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF
   const { tx } = useLang();
   const [checking, setChecking] = useState(false);
   const [dupErr, setDupErr] = useState<string | null>(null);
+  const [fmtErr, setFmtErr] = useState<string | null>(null);
   const tRef = useRef<any>(null);
 
   async function onChange(v: string) {
     setF({ ...f, member_no: v });
     setDupErr(null);
+    setFmtErr(null);
     if (tRef.current) clearTimeout(tRef.current);
     if (!v.trim()) return;
     setChecking(true);
@@ -131,20 +133,40 @@ function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF
     }, 350);
   }
 
+  function onBlur() {
+    const v = (f.member_no ?? "").trim();
+    if (!v) return;
+    const r = normalizeFarmerCode(v);
+    if (!r.ok) { setFmtErr(r.error); return; }
+    if (r.value !== v) setF({ ...f, member_no: r.value });
+  }
+
   return (
     <div className="col-span-2">
-      <Label className={dupErr ? "text-destructive" : ""}>
-        Farmer ID * <span className="text-xs text-muted-foreground">{tx("(auto-generated, Super Admin can change)", "(অটো-জেনারেট, Super Admin পরিবর্তন করতে পারবে)")}</span>
+      <Label className={dupErr || fmtErr ? "text-destructive" : ""}>
+        Farmer ID *{" "}
+        <span className="text-xs text-muted-foreground">{tx("(auto-generated, Super Admin can change)", "(অটো-জেনারেট, Super Admin পরিবর্তন করতে পারবে)")}</span>
+        <span
+          title={tx(
+            "Format: 5-digit padded number, e.g. 00001. Inputs like 'F-00001', '1', '2026-00000001' are auto-normalized to 00001.",
+            "ফরম্যাট: 5-digit, যেমন 00001। 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে।"
+          )}
+          className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] cursor-help text-muted-foreground"
+          aria-label="format help"
+        >?</span>
       </Label>
       <Input
         value={f.member_no || ""}
         disabled={disabled || !isSuper}
         maxLength={30}
+        placeholder="00001"
         onChange={(e) => onChange(e.target.value)}
-        className={dupErr ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
+        onBlur={onBlur}
+        className={dupErr || fmtErr ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
         data-testid="member-no-input"
       />
       {checking && <p className="mt-1 text-xs text-muted-foreground">Checking…</p>}
+      {fmtErr && <p className="mt-1 text-xs text-destructive" role="alert">{fmtErr}</p>}
       {dupErr && <p className="mt-1 text-xs text-destructive" role="alert">{dupErr}</p>}
       {!isSuper && <p className="mt-1 text-xs text-muted-foreground">{tx("Only Super Admin can change.", "শুধু Super Admin পরিবর্তন করতে পারবে।")}</p>}
     </div>
