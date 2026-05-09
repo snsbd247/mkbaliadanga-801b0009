@@ -12,7 +12,7 @@ import { FileSpreadsheet, RefreshCw, Loader2 } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { downloadCsv } from "@/lib/csvExport";
-import { fmtDateTime } from "@/lib/format";
+const fmtDateTime = (d: string) => { try { return new Date(d).toLocaleString(); } catch { return d; } };
 
 type Row = {
   id: string;
