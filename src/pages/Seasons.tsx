@@ -211,6 +211,7 @@ export default function Seasons() {
 }
 
 function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOpenChange: (v: boolean) => void; season: any }) {
+  const { tx } = useLang();
   const [landTypes, setLandTypes] = useState<LandType[]>([]);
   const [rates, setRates] = useState<Record<string, number>>({}); // land_type_id -> rate
   const [busy, setBusy] = useState(false);
@@ -242,7 +243,7 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
       await supabase.from("irrigation_season_rates" as any).delete().eq("irrigation_season_id", season.id).is("office_id", null);
       const { error } = await supabase.from("irrigation_season_rates" as any).insert(rows);
       if (error) throw error;
-      toast.success("রেট সংরক্ষিত হয়েছে — শুধুমাত্র নতুন ইনভয়েসে প্রভাব পড়বে।");
+      toast.success(tx("Rates saved — only new invoices will be affected.", "রেট সংরক্ষিত হয়েছে — শুধুমাত্র নতুন ইনভয়েসে প্রভাব পড়বে।"));
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e.message);
@@ -258,10 +259,10 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{seasonLabel} — শতক প্রতি রেট</DialogTitle>
+          <DialogTitle>{seasonLabel} — {tx("Rate per shotok", "শতক প্রতি রেট")}</DialogTitle>
         </DialogHeader>
         <p className="text-xs text-muted-foreground">
-          প্রতি জমির ধরন অনুযায়ী রেট। পুরোনো ইনভয়েসে রেট পরিবর্তনের কোনো প্রভাব পড়বে না (snapshot)।
+          {tx("Rate per land type. Existing invoices will not be affected (snapshot).", "প্রতি জমির ধরন অনুযায়ী রেট। পুরোনো ইনভয়েসে রেট পরিবর্তনের কোনো প্রভাব পড়বে না (snapshot)।")}
         </p>
         <div className="space-y-2 max-h-[420px] overflow-y-auto">
           {landTypes.map((lt) => (
@@ -277,15 +278,15 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
             </div>
           ))}
           {landTypes.length === 0 && (
-            <p className="text-sm text-muted-foreground">কোনো জমির ধরন নেই — সেচ সেটিংস → জমির ধরন থেকে যোগ করুন।</p>
+            <p className="text-sm text-muted-foreground">{tx("No land types — add from Irrigation Settings → Land Types.", "কোনো জমির ধরন নেই — সেচ সেটিংস → জমির ধরন থেকে যোগ করুন।")}</p>
           )}
         </div>
         {landTypes.length > 0 && (
-          <div className="text-xs text-muted-foreground">মোট কনফিগারড রেট: {total.toFixed(2)}</div>
+          <div className="text-xs text-muted-foreground">{tx("Total configured rate", "মোট কনফিগারড রেট")}: {total.toFixed(2)}</div>
         )}
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>বাতিল</Button>
-          <Button onClick={save} disabled={busy || landTypes.length === 0}>{busy ? "…" : "সংরক্ষণ"}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{tx("Cancel", "বাতিল")}</Button>
+          <Button onClick={save} disabled={busy || landTypes.length === 0}>{busy ? "…" : tx("Save", "সংরক্ষণ")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
