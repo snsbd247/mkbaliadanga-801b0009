@@ -54,7 +54,7 @@ for (const file of files) {
   const stripped = src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
   stripped.split("\n").forEach((line, i) => {
     if (isCommentLine(line) || isSeedDataField(line) || isLangGuarded(line) || isSampleArrayRow(line)) return;
-    if (BN.test(line) && !/t\(/.test(line)) {
+    if (BN.test(line) && !/\bt\(|\btx\(/.test(line)) {
       findings.push({ file, line: i + 1, kind: "bn", text: line.trim().slice(0, 140) });
     }
     const m = line.match(/>([A-Z][A-Za-z][A-Za-z ,.'!?-]{6,60})</);
