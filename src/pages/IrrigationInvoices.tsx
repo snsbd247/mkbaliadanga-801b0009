@@ -323,7 +323,30 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" title={tx("View", "দেখুন")} onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
-                      <ReceiptCopyMenu onSelect={(c) => printInvoice(r, c as InvoiceCopy)} title={tx("Print", "প্রিন্ট")} />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" title={tx("Print", "প্রিন্ট")}><Printer className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => previewInvoice(r, lastCopy)}>
+                            <Eye className="h-4 w-4 mr-2" />{tx("Preview PDF", "PDF প্রিভিউ")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => downloadInvoice(r, "both")}>
+                            {lastCopy === "both" ? "✓ " : ""}{tx("Both copies (A4)", "উভয় কপি (A4)")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => downloadInvoice(r, "office")}>
+                            {lastCopy === "office" ? "✓ " : ""}{tx("Office copy", "অফিস কপি")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => downloadInvoice(r, "farmer")}>
+                            {lastCopy === "farmer" ? "✓ " : ""}{tx("Farmer copy", "কৃষকের কপি")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setPdfSettingsOpen(true)}>
+                            <SettingsIcon className="h-4 w-4 mr-2" />{tx("PDF settings", "PDF সেটিংস")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
                         <Button size="sm" variant="ghost" title={tx("Edit", "এডিট")} onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
                       )}
