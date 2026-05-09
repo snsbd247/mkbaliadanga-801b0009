@@ -179,11 +179,11 @@ export default function FarmerProfileReport() {
   }, [loading, searchParams]);
 
   if (loading) {
-    return <div className="p-6 text-sm text-muted-foreground">Loading report...</div>;
+    return <div className="p-6 text-sm text-muted-foreground">{tx("Loading report...", "রিপোর্ট লোড হচ্ছে...")}</div>;
   }
 
   if (!farmer) {
-    return <div className="p-6 text-sm text-muted-foreground">Farmer not found.</div>;
+    return <div className="p-6 text-sm text-muted-foreground">{tx("Farmer not found.", "কৃষক পাওয়া যায়নি।")}</div>;
   }
 
   const irrigationYear = ownerRows.find((row) => row.irrigation_year)?.irrigation_year || new Date().getFullYear();
