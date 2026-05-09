@@ -55,8 +55,10 @@ import LoanReceiptSettings from "./pages/LoanReceiptSettings";
 import BulkLoanExport from "./pages/BulkLoanExport";
 import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
+import MyPermissions from "./pages/admin/MyPermissions";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
+import SavingsLoanReport from "./pages/reports/SavingsLoanReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
 import ExpensesReport from "./pages/reports/ExpensesReport";
 import FarmersImport from "./pages/FarmersImport";
@@ -124,6 +126,7 @@ const App = () => (
                 <Route path="/reports" element={<RequirePerm module="reports"><Reports /></RequirePerm>} />
                 <Route path="/reports/irrigation-due" element={<RequirePerm module="reports"><IrrigationDueReport /></RequirePerm>} />
                 <Route path="/reports/collections" element={<RequirePerm module="reports"><CollectionReport /></RequirePerm>} />
+                <Route path="/reports/savings-loan" element={<RequirePerm module="reports"><SavingsLoanReport /></RequirePerm>} />
                 <Route path="/reports/farmer-rejections" element={<RequirePerm module="farmers" action="can_edit"><FarmerRejectionsReport /></RequirePerm>} />
                 <Route path="/reports/voter-audit" element={<RequirePerm module="farmers" action="can_edit"><VoterAudit /></RequirePerm>} />
                 <Route path="/voters/history" element={<RequirePerm module="farmers" action="can_edit"><VoterHistory /></RequirePerm>} />
@@ -164,6 +167,7 @@ const App = () => (
                 <Route path="/admin/bulk-loan-export" element={<RequireRole roles={["admin","super_admin"]}><BulkLoanExport /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
+                <Route path="/admin/my-permissions" element={<MyPermissions />} />
                 <Route path="/admin/duplicate-receipts" element={<RequireDeveloper><DuplicateReceiptAudit /></RequireDeveloper>} />
                 <Route path="/admin/farmer-login-audit" element={<RequireDeveloper><FarmerLoginAudit /></RequireDeveloper>} />
                 <Route path="/admin/demo-manager" element={<RequireDeveloper><DemoManager /></RequireDeveloper>} />

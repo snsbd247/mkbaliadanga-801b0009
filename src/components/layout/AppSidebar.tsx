@@ -108,6 +108,7 @@ export function AppSidebar() {
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
+        { url: "/reports/savings-loan", icon: FileBarChart, label: "Savings & Loan Report", permKey: "reports" },
         { url: "/reports/farmer-statement", icon: FileBarChart, label: t("farmerStatement"), permKey: "reports" },
         { url: "/reports/expenses", icon: FileBarChart, label: t("expensesReport"), permKey: "reports" },
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
@@ -124,6 +125,7 @@ export function AppSidebar() {
         { url: "/offices", icon: Building2, label: t("offices"), permKey: "offices" },
         { url: "/users", icon: ShieldCheck, label: t("users"), superOnly: true },
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), developerOnly: true },
+        { url: "/admin/my-permissions", icon: Shield, label: "My Permissions" },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), developerOnly: true },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
