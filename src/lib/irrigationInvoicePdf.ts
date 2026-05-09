@@ -429,3 +429,14 @@ export function buildMailtoLink(d: IrrigationInvoiceData, to?: string | null): s
   const body = `প্রিয় ${d.farmer?.name ?? "কৃষক"},\n\nইনভয়েস নং: ${d.invoice_no}\nমোট প্রদেয়: ${fmt2(d.payable_amount)} টাকা\nপরিশোধিত: ${fmt2(d.paid_amount)} টাকা\nবকেয়া: ${fmt2(d.due_amount)} টাকা\nমেয়াদ: ${fmtDate(d.due_date)}\n\nধন্যবাদ।`;
   return `mailto:${to ?? ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
+
+/** Test-only: build the irrigation invoice copy HTML (no DOM, no canvas). */
+export function buildIrrigationInvoiceHtmlForTest(
+  d: IrrigationInvoiceData,
+  brand: Partial<CompanyBranding> = { company_name_bn: "Test Org" } as any,
+  role: "office" | "farmer" = "farmer",
+  settings: InvoicePdfSettings = DEFAULT_INVOICE_SETTINGS,
+): string {
+  const label = role === "office" ? "অফিস কপি" : "কৃষকের কপি";
+  return copyHtml(d, brand as CompanyBranding, label, settings, role);
+}
