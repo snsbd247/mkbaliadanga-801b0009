@@ -23,6 +23,7 @@ import Savings from "./pages/Savings";
 import Loans from "./pages/Loans";
 import Irrigation from "./pages/Irrigation";
 import IrrigationInvoices from "./pages/IrrigationInvoices";
+import IrrigationInvoicePayment from "./pages/IrrigationInvoicePayment";
 import IrrigationRates from "./pages/IrrigationRates";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
@@ -124,6 +125,7 @@ const App = () => (
                 <Route path="/share-collection" element={<RequirePerm module="savings"><ShareCollection /></RequirePerm>} />
                 <Route path="/irrigation" element={<RequirePerm module="irrigation"><Irrigation /></RequirePerm>} />
                 <Route path="/irrigation/invoices" element={<RequirePerm module="irrigation"><IrrigationInvoices /></RequirePerm>} />
+                <Route path="/irrigation/collect" element={<RequirePerm module="payments"><IrrigationInvoicePayment /></RequirePerm>} />
                 <Route path="/irrigation/rates" element={<RequirePerm module="irrigation"><IrrigationRates /></RequirePerm>} />
                 <Route path="/payments" element={<RequirePerm module="payments"><Payments /></RequirePerm>} />
                 <Route path="/reports" element={<RequirePerm module="reports"><Reports /></RequirePerm>} />
