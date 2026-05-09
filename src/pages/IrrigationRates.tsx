@@ -116,12 +116,12 @@ export default function IrrigationRates() {
       if (form.id) {
         ({ error } = await supabase.from("irrigation_rates").update(payload).eq("id", form.id));
       } else {
-        // Check duplicate (office_id + season_id)
+        // Check duplicate (office_id + season_id) within the effective office.
         const { data: existing } = await supabase
           .from("irrigation_rates")
           .select("id")
           .eq("season_id", form.season_id)
-          .eq("office_id", officeId as string)
+          .eq("office_id", effectiveOffice)
           .maybeSingle();
         if (existing?.id) {
           if (!confirm("এই অফিস ও সিজনের জন্য একটি রেট আছে — আপডেট করবেন?")) {
