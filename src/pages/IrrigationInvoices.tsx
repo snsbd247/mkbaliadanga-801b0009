@@ -632,8 +632,12 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     });
   }, [seasonId, landId, lands]);
 
+  const [manualReason, setManualReason] = useState("");
+  const isManualRate = !!seasonId && !!landId && (!rateRow || rateRow.rate_per_shotok <= 0);
+
   async function save() {
     if (!farmerId || !landId || !seasonId || !rate) return toast.error("সব ফিল্ড পূরণ করুন");
+    if (isManualRate && manualReason.trim().length < 3) return toast.error("ম্যানুয়াল রেটের কারণ লিখুন (অন্তত ৩ অক্ষর)");
     setBusy(true);
     try {
       const land = lands.find((l: any) => l.id === landId);
@@ -668,6 +672,8 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         season_rate: rate,
         land_type_id: rateRow?.land_type_id ?? null,
         land_type_name: rateRow?.land_type_name ?? land?.field_type ?? null,
+        is_manual_rate: isManualRate,
+        manual_rate_reason: isManualRate ? manualReason.trim() : null,
         calculation_snapshot: {
           rate_per_shotok: rate,
           land_size_shotok: Number(land?.land_size ?? 0),
@@ -677,12 +683,14 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
           calc,
           generated_at: new Date().toISOString(),
           source: "manual",
+          is_manual_rate: isManualRate,
+          manual_rate_reason: isManualRate ? manualReason.trim() : null,
         },
       } as any);
       if (error) throw error;
       toast.success(`ইনভয়েস ${invoice_no} তৈরি হয়েছে`);
       onOpenChange(false);
-      setFarmerId(null); setLandId(""); setSeasonId(""); setRate(0); setOtherCharge(0);
+      setFarmerId(null); setLandId(""); setSeasonId(""); setRate(0); setOtherCharge(0); setManualReason("");
     } catch (e: any) {
       toast.error(e.message);
     } finally { setBusy(false); }
