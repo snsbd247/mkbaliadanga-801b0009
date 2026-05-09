@@ -398,6 +398,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8">
+                  <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
+                </TableHead>
                 <TableHead>{tx("Invoice No", "ইনভয়েস নং")}</TableHead>
                 <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
                 <TableHead>{tx("Land", "জমি")}</TableHead>
@@ -412,7 +415,8 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             </TableHeader>
             <TableBody>
               {filtered.map((r: any) => (
-                <TableRow key={r.id}>
+                <TableRow key={r.id} data-state={selected.has(r.id) ? "selected" : undefined}>
+                  <TableCell><Checkbox checked={selected.has(r.id)} onCheckedChange={(v) => toggleOne(r.id, !!v)} /></TableCell>
                   <TableCell className="font-mono text-xs">{r.invoice_no}</TableCell>
                   <TableCell>
                     <div className="font-medium">{r.farmers?.name_bn ?? r.farmers?.name_en ?? "—"}</div>
