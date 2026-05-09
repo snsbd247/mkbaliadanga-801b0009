@@ -160,9 +160,9 @@ export function AppSidebar() {
         { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
         { url: "/backup", icon: Database, label: t("backup"), developerOnly: true },
-        { url: "/admin/demo-manager", icon: Database, label: "Demo Manager", developerOnly: true },
-        { url: "/diagnostics", icon: ShieldAlert, label: "Diagnostics", developerOnly: true },
-        { url: "/admin/developer-updates", icon: RefreshCw, label: "Developer Updates", developerOnly: true },
+        { url: "/admin/demo-manager", icon: Database, label: t("demoManager" as any), developerOnly: true },
+        { url: "/diagnostics", icon: ShieldAlert, label: t("diagnostics" as any), developerOnly: true },
+        { url: "/admin/developer-updates", icon: RefreshCw, label: t("developerUpdates" as any), developerOnly: true },
       ],
     },
 
