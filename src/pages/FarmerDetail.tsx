@@ -476,15 +476,52 @@ export default function FarmerDetail() {
       owner_farmer_id: ((row as any).owner_farmer_id as string) ?? "",
     });
     setEditLocErr(null);
-    setEditLoc({ village: row.mouza ?? null });
+    // Hydrate full location chain so LocationPicker preselects the saved values.
+    let initialLoc: any = {
+      division_id: (row as any).division_id ?? null,
+      district_id: (row as any).district_id ?? null,
+      upazila_id: (row as any).upazila_id ?? null,
+      mouza_id: (row as any).mouza_id ?? null,
+      mouza_name: row.mouza ?? null,
+    };
+    if (initialLoc.mouza_id) {
+      const { data: m } = await supabase
+        .from("mouzas")
+        .select("id,name,upazila_id,upazilas:upazila_id(id,name,district_id,districts:district_id(id,name,division_id,divisions:division_id(id,name)))")
+        .eq("id", initialLoc.mouza_id)
+        .maybeSingle();
+      if (m) {
+        const up: any = (m as any).upazilas;
+        const di: any = up?.districts;
+        const dv: any = di?.divisions;
+        initialLoc = {
+          division_id: dv?.id ?? initialLoc.division_id,
+          division_name: dv?.name ?? null,
+          district_id: di?.id ?? initialLoc.district_id,
+          district_name: di?.name ?? null,
+          upazila_id: up?.id ?? initialLoc.upazila_id,
+          upazila_name: up?.name ?? null,
+          mouza_id: (m as any).id,
+          mouza_name: (m as any).name ?? row.mouza,
+        };
+      }
+    }
+    setEditLoc(initialLoc);
   }
 
   async function saveEdit() {
     if (!editLand) return;
     setEditSaving(true);
     try {
+      const v = validateLocationChain(editLoc);
+      if (!v.ok) { setEditLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+      if (!(editLoc as any).mouza_id) { setEditLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "Mouza required" }); return; }
       const { error } = await supabase.from("lands").update({
-        mouza: (editLoc as any).mouza_name ?? (editLoc as any).village ?? "",
+        mouza: (editLoc as any).mouza_name ?? "",
+        division_id: (editLoc as any).division_id ?? null,
+        district_id: (editLoc as any).district_id ?? null,
+        upazila_id: (editLoc as any).upazila_id ?? null,
+        mouza_id: (editLoc as any).mouza_id ?? null,
         dag_no: editForm.dag_no,
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
@@ -493,6 +530,7 @@ export default function FarmerDetail() {
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved"));
       setEditLand(null);
+      setEditLoc({});
       loadAll();
     } finally { setEditSaving(false); }
   }

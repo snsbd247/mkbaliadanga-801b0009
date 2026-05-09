@@ -93,8 +93,15 @@ export default function IrrigationRates() {
     if (!(Number(form.base_rate) > 0)) return toast.error("Base rate must be > 0");
     setSaving(true);
     try {
+      // Fall back to the first office when the current profile has none (e.g. super_admin without explicit assignment).
+      let effectiveOffice = officeId;
+      if (!effectiveOffice) {
+        const { data: o } = await supabase.from("offices").select("id").order("created_at").limit(1).maybeSingle();
+        effectiveOffice = o?.id ?? null;
+      }
+      if (!effectiveOffice) return toast.error("No office available — create an office first.");
       const payload = {
-        office_id: officeId,
+        office_id: effectiveOffice,
         season_id: form.season_id,
         basis: form.basis,
         base_rate: Number(form.base_rate),
@@ -109,12 +116,12 @@ export default function IrrigationRates() {
       if (form.id) {
         ({ error } = await supabase.from("irrigation_rates").update(payload).eq("id", form.id));
       } else {
-        // Check duplicate (office_id + season_id)
+        // Check duplicate (office_id + season_id) within the effective office.
         const { data: existing } = await supabase
           .from("irrigation_rates")
           .select("id")
           .eq("season_id", form.season_id)
-          .eq("office_id", officeId as string)
+          .eq("office_id", effectiveOffice)
           .maybeSingle();
         if (existing?.id) {
           if (!confirm("এই অফিস ও সিজনের জন্য একটি রেট আছে — আপডেট করবেন?")) {

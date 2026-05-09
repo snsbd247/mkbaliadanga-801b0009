@@ -176,6 +176,17 @@ export default function Payments() {
       const status = receiptFile ? "pending" : "approved";
       // Primary kind = first allocation kind (kept for backward compat)
       const primary = allocs[0];
+
+      // Auto-generate receipt number if user didn't supply one.
+      // IRR-YYYY-NNNNN when every allocation is irrigation, otherwise PAY-YYYY-NNNNN.
+      let finalReceiptNo: string | null = receiptNo.trim() || null;
+      if (!finalReceiptNo) {
+        const allIrr = allocs.every(a => a.kind === "irrigation");
+        const rpcKind = allIrr ? "IRR" : "PAY";
+        const { data: rn, error: rnErr } = await supabase.rpc("next_receipt_no", { p_kind: rpcKind });
+        if (!rnErr && typeof rn === "string") finalReceiptNo = rn;
+      }
+
       const payload: any = {
         farmer_id: farmerId,
         kind: primary.kind,
@@ -185,7 +196,7 @@ export default function Payments() {
         collected_by: user?.id,
         status,
         idempotency_key: idemKey,
-        receipt_no: receiptNo.trim() || null,
+        receipt_no: finalReceiptNo,
       };
 
       const { data: inserted, error } = await supabase.from("payments").insert(payload).select("id").single();
