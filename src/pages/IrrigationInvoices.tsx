@@ -548,13 +548,16 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     })();
   }, [farmerId]);
 
+  const [rateRow, setRateRow] = useState<RateRow | null>(null);
+
   // Auto-fill rate from season matrix based on selected land's field_type
   useEffect(() => {
-    if (!seasonId || !landId) return;
+    if (!seasonId || !landId) { setRateRow(null); return; }
     const land = lands.find((l: any) => l.id === landId);
     if (!land) return;
     loadSeasonRateMap(seasonId, land.office_id ?? null).then((rows) => {
       const matched = resolveRateForLand(rows, land);
+      setRateRow(matched ?? null);
       if (matched && matched.rate_per_shotok > 0) setRate(matched.rate_per_shotok);
     });
   }, [seasonId, landId, lands]);
@@ -592,6 +595,19 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         due_date: dueDate,
         invoice_status: "generated",
         generated_by: userId,
+        season_rate: rate,
+        land_type_id: rateRow?.land_type_id ?? null,
+        land_type_name: rateRow?.land_type_name ?? land?.field_type ?? null,
+        calculation_snapshot: {
+          rate_per_shotok: rate,
+          land_size_shotok: Number(land?.land_size ?? 0),
+          land_type_code: rateRow?.land_type_code ?? land?.field_type ?? null,
+          land_type_name: rateRow?.land_type_name ?? null,
+          settings,
+          calc,
+          generated_at: new Date().toISOString(),
+          source: "manual",
+        },
       } as any);
       if (error) throw error;
       toast.success(`ইনভয়েস ${invoice_no} তৈরি হয়েছে`);

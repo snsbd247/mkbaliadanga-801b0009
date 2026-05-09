@@ -72,6 +72,7 @@ export function AppSidebar() {
         { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
         { url: "/irrigation/invoices", icon: Droplets, label: "সেচ ইনভয়েস", permKey: "irrigation" },
         { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
+        { url: "/admin/lookups", icon: SettingsIcon, label: "সেচ সেটিংস (সিজন/জমির ধরন)" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
@@ -134,7 +135,7 @@ export function AppSidebar() {
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
         { url: "/admin/patwaris", icon: Users, label: t("patwaris") },
-        { url: "/admin/lookups", icon: Shield, label: "সিজন ও জমির ধরন" },
+        
         { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
       ],
