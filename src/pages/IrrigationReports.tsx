@@ -102,33 +102,33 @@ export default function IrrigationReports() {
         <CardContent className="pt-6 space-y-4">
           <div className="grid gap-3 md:grid-cols-4">
             <div>
-              <Label>সিজন</Label>
+              <Label>{t("irr_colSeason" as any)}</Label>
               <Select value={seasonId} onValueChange={setSeasonId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">সব</SelectItem>
+                  <SelectItem value="all">{t("all" as any)}</SelectItem>
                   {seasons.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name ?? s.type} {s.year}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             {isSuper && (
               <div>
-                <Label>অফিস</Label>
+                <Label>{t("office" as any)}</Label>
                 <Select value={officeId} onValueChange={setOfficeId}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">সব</SelectItem>
+                    <SelectItem value="all">{t("all" as any)}</SelectItem>
                     {offices.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             )}
             <div>
-              <Label>শুরু তারিখ</Label>
+              <Label>{t("startDate" as any)}</Label>
               <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
             </div>
             <div>
-              <Label>শেষ তারিখ</Label>
+              <Label>{t("endDate" as any)}</Label>
               <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
             </div>
           </div>
