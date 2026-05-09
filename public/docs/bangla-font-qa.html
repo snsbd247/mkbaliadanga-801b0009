@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>Bangla Font QA Guide — Multi-Viewer Test</title>
+<style>
+  @font-face { font-family: 'NotoSansBengali'; src: url('/fonts/NotoSansBengali-Regular.ttf') format('truetype'); }
+  @font-face { font-family: 'NotoSerifBengali'; src: url('/fonts/NotoSerifBengali-Regular.ttf') format('truetype'); }
+  body { font-family: 'NotoSansBengali', system-ui, sans-serif; max-width: 880px; margin: 24px auto; padding: 0 16px; color: #111; line-height: 1.6; }
+  h1 { color: #1e3a8a; margin-bottom: 4px; }
+  h2 { color: #334155; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 28px; }
+  h3 { color: #475569; }
+  code, kbd { background: #f1f5f9; padding: 1px 6px; border-radius: 3px; font-size: 90%; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 16px; }
+  th, td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: #e2e8f0; }
+  .ok { color: #166534; font-weight: 600; }
+  .warn { color: #b45309; font-weight: 600; }
+  .fail { color: #b91c1c; font-weight: 600; }
+  .sample { padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 6px 0; background: #fff; }
+  .sample.serif { font-family: 'NotoSerifBengali', serif; }
+  .nav { background: #eef2ff; border-left: 3px solid #4f46e5; padding: 10px 14px; border-radius: 4px; margin: 12px 0; }
+  ol li { margin-bottom: 6px; }
+  .checklist li { list-style: none; padding-left: 24px; position: relative; }
+  .checklist li::before { content: "☐"; position: absolute; left: 0; font-size: 18px; color: #475569; }
+  footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #cbd5e1; font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+
+<h1>বাংলা ফন্ট — মাল্টি-Viewer QA গাইড</h1>
+<div class="nav">
+  এই গাইডটি পরীক্ষা করে দেখায় যে আপনার তৈরি PDF গুলোতে বাংলা টেক্সট Chrome, Adobe Reader, এবং মোবাইল PDF অ্যাপে একইভাবে রেন্ডার হচ্ছে কিনা। সব PDF-এ ফন্ট subset-embed হয়, তাই viewer-এ ফন্ট ইনস্টল না থাকলেও কাজ করার কথা।
+</div>
+
+<h2>১. দ্রুত যাচাই (৫ মিনিট)</h2>
+<ol>
+  <li>Settings → <b>বাংলা ফন্ট</b> কার্ডে যান।</li>
+  <li>"QA নমুনা PDF ডাউনলোড" বাটনে ক্লিক করুন।</li>
+  <li>নিচের viewer তিনটিতে একই PDF খুলে নিচের checklist মিলিয়ে দেখুন।</li>
+</ol>
+
+<h3>রেফারেন্স স্যাম্পল (ব্রাউজারে এমনই দেখা উচিত)</h3>
+<div class="sample">
+  যত মত তত পথ — বাংলাদেশের কৃষক সমিতি। কৃষ্ণচূড়া ফোটে।<br>
+  যুক্তাক্ষর: ক্ষ ত্র জ্ঞ ঞ্চ ন্দ্র শ্র হ্ম ণ্ড স্ত্র<br>
+  সংখ্যা: ০ ১ ২ ৩ ৪ ৫ ৬ ৭ ৮ ৯ — টাকা ১২,৩৪৫.৬৭
+</div>
+<div class="sample serif">
+  (Serif) যত মত তত পথ — বাংলাদেশের কৃষক সমিতি। কৃষ্ণচূড়া ফোটে।<br>
+  যুক্তাক্ষর: ক্ষ ত্র জ্ঞ ঞ্চ ন্দ্র শ্র হ্ম ণ্ড স্ত্র
+</div>
+
+<h2>২. Viewer-ভিত্তিক টেস্ট ম্যাট্রিক্স</h2>
+<table>
+  <tr><th>Viewer</th><th>প্ল্যাটফর্ম</th><th>কীভাবে যাচাই করবেন</th><th>সম্ভাব্য সমস্যা</th></tr>
+  <tr>
+    <td><b>Chrome / Edge</b><br>(built-in)</td><td>Desktop</td>
+    <td>PDF ফাইল ব্রাউজারে drag করুন। Ctrl+ +/- দিয়ে zoom করে যুক্তাক্ষর দেখুন।</td>
+    <td>সাধারণত কোনো সমস্যা হয় না (HarfBuzz shaping)।</td>
+  </tr>
+  <tr>
+    <td><b>Adobe Acrobat Reader</b></td><td>Desktop</td>
+    <td>File → Open → আপনার PDF। Edit → Preferences → Page Display-এ "Use local fonts" off রাখুন।</td>
+    <td>পুরনো version-এ কখনো কখনো reph/matra position হালকা সরে যায় — font subset embed-এ সাধারণত ঠিক থাকে।</td>
+  </tr>
+  <tr>
+    <td><b>Firefox PDF.js</b></td><td>Desktop</td>
+    <td>PDF Firefox-এ open করুন। About:config-এ <code>pdfjs.disabled</code> false থাকা দরকার।</td>
+    <td>PDF.js জটিল conjunct-এ মাঝে মাঝে gap দেখায় — embed font থাকলে minimal।</td>
+  </tr>
+  <tr>
+    <td><b>Adobe Reader Mobile</b></td><td>Android / iOS</td>
+    <td>Play/App Store থেকে install করে PDF open করুন।</td>
+    <td>খুব কম। রিপোর্ট করুন যদি hashma/reph ভেঙে যায়।</td>
+  </tr>
+  <tr>
+    <td><b>Google Drive Preview</b></td><td>Mobile + Web</td>
+    <td>Drive-এ upload করে in-app preview খুলুন।</td>
+    <td>Drive web preview কখনো কখনো embedded font ignore করে — Drive অ্যাপে ঠিক থাকে।</td>
+  </tr>
+  <tr>
+    <td><b>Samsung / Xiaomi Default Reader</b></td><td>Android</td>
+    <td>Default file manager → PDF tap।</td>
+    <td>OEM viewer-এ কখনো কখনো glyph fallback হয় — Adobe Reader recommend করুন।</td>
+  </tr>
+  <tr>
+    <td><b>iOS Files / Books</b></td><td>iPhone / iPad</td>
+    <td>AirDrop বা mail attachment → tap to open।</td>
+    <td>iOS-এর CoreText shaping ভালো — সাধারণত নিখুঁত।</td>
+  </tr>
+</table>
+
+<h2>৩. Checklist (প্রতিটি viewer-এ মিলান)</h2>
+<ul class="checklist">
+  <li>"কৃষ্ণচূড়া" — ক্ষ্ণ যুক্তাক্ষর সঠিকভাবে গঠিত (ভেঙে আলাদা নয়)</li>
+  <li>"স্ত্র" — তিনটি অক্ষর একসাথে stack হয়েছে</li>
+  <li>"কৃষক" — কৃ-র নিচে হ্রস্ব ঋ-কার ঠিক জায়গায়</li>
+  <li>"০ ১ ২ ৩ ৪ ৫ ৬ ৭ ৮ ৯" — সব বাংলা সংখ্যা পড়া যাচ্ছে (□ box নয়)</li>
+  <li>দাঁড়ি (।) সঠিকভাবে রেন্ডার হয়েছে</li>
+  <li>matra (ি, ী, ে, ৈ, ো, ৌ) ঠিক position-এ বসেছে</li>
+  <li>reph (র্) যুক্তাক্ষরের উপরে ছোট হয়ে বসেছে</li>
+  <li>Latin শব্দ (Loan, SMS, NID) আলাদাভাবে ঠিকঠাক — overlap নেই</li>
+</ul>
+
+<h2>৪. সমস্যা হলে (Fallback Rules)</h2>
+<table>
+  <tr><th>লক্ষণ</th><th>সম্ভাব্য কারণ</th><th>সমাধান</th></tr>
+  <tr><td>সব বাংলা □ box</td><td>Font load fail হয়েছে।</td><td>App স্বয়ংক্রিয়ভাবে fallback ফন্টে যাবে। Browser console-এ <code>[pdf] Bangla font ... failed</code> warning দেখুন।</td></tr>
+  <tr><td>যুক্তাক্ষর ভেঙে যাচ্ছে</td><td>Viewer পুরনো / shaping সমর্থন নেই।</td><td>Viewer update করুন বা Adobe Reader/Chrome ব্যবহার করুন।</td></tr>
+  <tr><td>Latin অংশ অদৃশ্য</td><td>একই PDF object-এ font mix সমস্যা।</td><td>Settings → বাংলা ফন্ট → অন্য ফন্ট বাছুন (Sans ↔ Serif)।</td></tr>
+  <tr><td>প্রিন্টে ঝাপসা</td><td>Low-DPI scaling।</td><td>Print dialog-এ "Actual Size" / 100% scale বাছুন।</td></tr>
+</table>
+
+<h2>৫. Automatic Fallback — কীভাবে কাজ করে</h2>
+<p>প্রতিবার PDF তৈরির সময় <code>ensureBanglaFont(doc)</code> কল হয়। এটি:</p>
+<ol>
+  <li>আপনার পছন্দের ফন্ট fetch করার চেষ্টা করে।</li>
+  <li>ব্যর্থ হলে <code>BANGLA_FONT_FALLBACK</code>-এর পরের ফন্ট চেষ্টা করে।</li>
+  <li>সফল হলে সেই family-নাম return করে এবং PDF-এ subset-embed করে।</li>
+  <li>সব ব্যর্থ হলে <code>null</code> return করে — কলার তখন default Helvetica-তে fallback করে এবং console-এ warning log হয়।</li>
+</ol>
+
+<footer>
+  Field Manager — Bangla Font QA Guide. শেষ আপডেট: ২০২৬। সমস্যা পেলে Settings → বাংলা ফন্ট থেকে নমুনা PDF জেনারেট করে support-এ পাঠান।
+</footer>
+</body>
+</html>

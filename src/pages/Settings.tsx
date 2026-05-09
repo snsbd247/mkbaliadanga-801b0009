@@ -12,6 +12,7 @@ import { Navigate } from "react-router-dom";
 import { notifyBrandingChange, useBranding } from "@/lib/branding";
 import { getReceiptLayoutSettings, setReceiptLayoutSettings, resetReceiptLayoutSettings } from "@/lib/receiptLayoutSettings";
 import { buildReceiptCopyHtmlForTest } from "@/lib/bnReceipts";
+import BanglaFontSelector from "@/components/settings/BanglaFontSelector";
 
 export default function Settings() {
   const { t } = useLang();
@@ -148,6 +149,7 @@ export default function Settings() {
         </div>
       </Card>
       <RoundingCard />
+      <BanglaFontSelector />
       <ReceiptLayoutCard />
       <Card className="max-w-2xl p-6 mt-4">
         <div className="flex items-center justify-between">
