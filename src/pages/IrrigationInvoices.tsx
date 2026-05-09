@@ -63,7 +63,7 @@ export default function IrrigationInvoices() {
 
   return (
     <>
-      <PageHeader title="সেচ ইনভয়েস ব্যবস্থাপনা" description="ইনভয়েস তৈরি, তালিকা ও সেটিংস। অর্থ গ্রহণ পেমেন্ট পেজ থেকে করুন।" />
+      <PageHeader title="সেচ ইনভয়েস" description="ইনভয়েস তৈরি, তালিকা ও সেটিংস। অর্থ গ্রহণ পেমেন্ট পেজ থেকে করুন।" />
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
         <TabsList>
           <TabsTrigger value="list">ইনভয়েস তালিকা</TabsTrigger>
