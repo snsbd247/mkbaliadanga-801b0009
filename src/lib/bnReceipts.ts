@@ -209,18 +209,36 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
 
   const rows: Array<[string, string]> = [];
-  rows.push([t.farmerLine, `${d.farmer.name}${d.farmer.member_no ? " - " + d.farmer.member_no : ""}${d.farmer.owner_type_bn ? " (" + d.farmer.owner_type_bn + ")" : ""}`]);
-  if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
+  // কৃষকের নাম এবং কৃষক সদস্য নং: name - member_no - owner_type - voter/savings ref
+  const memberRefSuffix = d.farmer.member_type_bn || d.farmer.member_ref_no
+    ? ` - ${[d.farmer.member_type_bn, d.farmer.member_ref_no].filter(Boolean).join(" ")}`.trimEnd()
+    : "";
+  rows.push([
+    t.farmerLine,
+    `${d.farmer.name}${d.farmer.member_no ? " - " + d.farmer.member_no : ""}${d.farmer.owner_type_bn ? " - " + d.farmer.owner_type_bn : ""}${memberRefSuffix}`,
+  ]);
   rows.push([t.villageLine, `${d.farmer.village ?? "—"}${d.farmer.mobile ? " / " + d.farmer.mobile : ""}`]);
+  if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
 
   if (d.kind === "irrigation") {
-    if (d.farmer.mouza) rows.push([t.mouza, d.farmer.mouza]);
-    if (d.farmer.field_type_bn || d.farmer.land_size != null)
-      rows.push([t.landKind, `${d.farmer.field_type_bn ?? "—"}${d.farmer.land_size != null ? "-" + Number(d.farmer.land_size).toFixed(6) : ""}`]);
-    if (d.farmer.dag_no) rows.push([t.dag, d.farmer.dag_no]);
-    if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
-    if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
-    rows.push([t.due, fmt2(Number(d.previous_due ?? 0))]);
+    if (d.land_owner_label) rows.push([t.landOwner, d.land_owner_label]);
+    const mouzaParts = [
+      d.farmer.mouza,
+      d.farmer.dag_no,
+      d.farmer.land_size != null ? Number(d.farmer.land_size).toFixed(2) : null,
+    ].filter(Boolean) as string[];
+    if (mouzaParts.length) rows.push([t.mouza, mouzaParts.join(" / ")]);
+    if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
+    rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
+    if (d.collected_from_outstanding != null)
+      rows.push([t.collectedFromDue, fmt2(Number(d.collected_from_outstanding))]);
+    if (d.current_season_charge != null)
+      rows.push([t.currentCharge, fmt2(Number(d.current_season_charge))]);
+    const extras = [d.penalty_amount, d.maintenance_charge, d.canal_charge]
+      .map((n) => fmt2(Number(n ?? 0)))
+      .join(" / ");
+    if (d.penalty_amount != null || d.maintenance_charge != null || d.canal_charge != null)
+      rows.push([t.extraCharges, extras]);
     if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
     if (d.description) rows.push([t.desc, d.description]);
