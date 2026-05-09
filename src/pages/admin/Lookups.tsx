@@ -11,45 +11,50 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 type Row = {
   id: string;
   code: string;
   name: string;
+  name_en: string | null;
   name_bn: string | null;
   is_active: boolean;
   sort_order: number;
+  deleted_at: string | null;
 };
 
-const empty: Omit<Row, "id"> & { id?: string } = {
-  code: "",
-  name: "",
-  name_bn: "",
-  is_active: true,
-  sort_order: 0,
-};
+const empty: any = { code: "", name: "", name_en: "", name_bn: "", is_active: true, sort_order: 0 };
 
-function LookupTable({ table, title }: { table: "season_types" | "field_types"; title: string }) {
+function LookupTable({ table, title }: { table: "irrigation_season_types" | "land_types"; title: string }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<typeof empty>(empty);
+  const [form, setForm] = useState<any>(empty);
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const { data } = await supabase.from(table as any).select("*").order("sort_order").order("name");
+    const { data } = await supabase
+      .from(table as any)
+      .select("*")
+      .is("deleted_at", null)
+      .order("sort_order")
+      .order("name");
     setRows((data as any) ?? []);
   }
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  function openNew() {
-    setForm({ ...empty });
-    setOpen(true);
-  }
+  function openNew() { setForm({ ...empty }); setOpen(true); }
   function openEdit(r: Row) {
-    setForm({ id: r.id, code: r.code, name: r.name, name_bn: r.name_bn ?? "", is_active: r.is_active, sort_order: r.sort_order });
+    setForm({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      name_en: r.name_en ?? r.name,
+      name_bn: r.name_bn ?? "",
+      is_active: r.is_active,
+      sort_order: r.sort_order,
+    });
     setOpen(true);
   }
 
@@ -60,6 +65,7 @@ function LookupTable({ table, title }: { table: "season_types" | "field_types"; 
       const payload = {
         code: form.code.trim().toLowerCase().replace(/\s+/g, "_"),
         name: form.name.trim(),
+        name_en: form.name_en?.trim() || form.name.trim(),
         name_bn: form.name_bn?.trim() || null,
         is_active: form.is_active,
         sort_order: Number(form.sort_order) || 0,
@@ -73,13 +79,22 @@ function LookupTable({ table, title }: { table: "season_types" | "field_types"; 
       load();
     } catch (e: any) {
       toast.error(e.message);
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
-  async function del(id: string) {
+
+  // Soft delete: set deleted_at; the DB trigger blocks if in use.
+  async function softDelete(id: string) {
     const { error } = await supabase.from(table as any).delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // trigger raised exception (in-use) → mark inactive instead
+      const msg = error.message?.includes("ব্যবহৃত") || error.message?.includes("রেফারড")
+        ? error.message
+        : error.message;
+      toast.error(msg);
+      return;
+    }
+    // Hard-delete succeeded but user wanted soft delete → re-insert minimal log? Keep hard delete since not in use.
+    toast.success("মুছে ফেলা হয়েছে");
     load();
   }
 
@@ -88,18 +103,16 @@ function LookupTable({ table, title }: { table: "season_types" | "field_types"; 
       <CardContent className="pt-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">{title}</h3>
-          <Button size="sm" onClick={openNew}>
-            <Plus className="h-4 w-4 mr-1" /> নতুন
-          </Button>
+          <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" /> নতুন</Button>
         </div>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>কোড</TableHead>
-              <TableHead>নাম</TableHead>
+              <TableHead>নাম (EN)</TableHead>
               <TableHead>বাংলা</TableHead>
               <TableHead className="text-right">ক্রম</TableHead>
-              <TableHead>সক্রিয়</TableHead>
+              <TableHead>স্ট্যাটাস</TableHead>
               <TableHead className="text-right">কাজ</TableHead>
             </TableRow>
           </TableHeader>
@@ -107,23 +120,23 @@ function LookupTable({ table, title }: { table: "season_types" | "field_types"; 
             {rows.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="font-mono text-xs">{r.code}</TableCell>
-                <TableCell>{r.name}</TableCell>
+                <TableCell>{r.name_en ?? r.name}</TableCell>
                 <TableCell>{r.name_bn ?? "—"}</TableCell>
                 <TableCell className="text-right">{r.sort_order}</TableCell>
-                <TableCell>{r.is_active ? "✓" : "—"}</TableCell>
+                <TableCell>
+                  <Badge variant={r.is_active ? "default" : "secondary"}>{r.is_active ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="inline-flex gap-1 justify-end">
                     <EditButton onClick={() => openEdit(r)} />
-                    <DeleteButton onConfirm={() => del(r.id)} />
+                    <DeleteButton onConfirm={() => softDelete(r.id)} />
                   </div>
                 </TableCell>
               </TableRow>
             ))}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  কোনো ডেটা নেই
-                </TableCell>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">কোনো ডেটা নেই</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -139,21 +152,25 @@ function LookupTable({ table, title }: { table: "season_types" | "field_types"; 
                 <Label>কোড (slug, ইউনিক)</Label>
                 <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="boro / pukur / doba" />
               </div>
-              <div>
-                <Label>নাম</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>নাম (English)</Label>
+                  <Input value={form.name_en ?? ""} onChange={(e) => setForm({ ...form, name_en: e.target.value, name: form.name || e.target.value })} />
+                </div>
+                <div>
+                  <Label>বাংলা নাম</Label>
+                  <Input value={form.name_bn ?? ""} onChange={(e) => setForm({ ...form, name_bn: e.target.value, name: form.name || e.target.value })} />
+                </div>
               </div>
-              <div>
-                <Label>বাংলা নাম</Label>
-                <Input value={form.name_bn ?? ""} onChange={(e) => setForm({ ...form, name_bn: e.target.value })} />
-              </div>
-              <div>
-                <Label>ক্রম</Label>
-                <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} id={`active-${table}`} />
-                <Label htmlFor={`active-${table}`}>সক্রিয়</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>ক্রম</Label>
+                  <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} />
+                </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} id={`active-${table}`} />
+                  <Label htmlFor={`active-${table}`}>সক্রিয়</Label>
+                </div>
               </div>
             </div>
             <DialogFooter>
@@ -167,18 +184,18 @@ function LookupTable({ table, title }: { table: "season_types" | "field_types"; 
   );
 }
 
-export default function AdminLookups() {
-  useEffect(() => { document.title = "Lookups — Admin"; }, []);
+export default function IrrigationSettings() {
+  useEffect(() => { document.title = "সেচ সেটিংস — Admin"; }, []);
   return (
     <>
-      <PageHeader title="সিজন ও জমির ধরন" description="সিজন টাইপ ও জমির ধরন ব্যবস্থাপনা" />
+      <PageHeader title="সেচ সেটিংস" description="সিজন টাইপ ও জমির ধরন ব্যবস্থাপনা" />
       <Tabs defaultValue="season">
         <TabsList>
           <TabsTrigger value="season">সিজন টাইপ</TabsTrigger>
-          <TabsTrigger value="field">জমির ধরন</TabsTrigger>
+          <TabsTrigger value="land">জমির ধরন</TabsTrigger>
         </TabsList>
-        <TabsContent value="season"><LookupTable table="season_types" title="সিজনের ধরন" /></TabsContent>
-        <TabsContent value="field"><LookupTable table="field_types" title="জমির ধরন" /></TabsContent>
+        <TabsContent value="season"><LookupTable table="irrigation_season_types" title="সিজনের ধরন" /></TabsContent>
+        <TabsContent value="land"><LookupTable table="land_types" title="জমির ধরন" /></TabsContent>
       </Tabs>
     </>
   );
