@@ -373,6 +373,57 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           onRecalculated={load}
         />
         <InvoiceEditDialog inv={editInv} onClose={() => setEditInv(null)} onSaved={load} />
+
+        <Dialog open={!!pdfPreviewUrl} onOpenChange={(v) => { if (!v) { if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl); setPdfPreviewUrl(null); } }}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader><DialogTitle>{tx("Invoice PDF preview", "ইনভয়েস PDF প্রিভিউ")}</DialogTitle></DialogHeader>
+            {pdfPreviewUrl && (
+              <iframe src={pdfPreviewUrl} title="Invoice preview" className="w-full h-[75vh] border rounded-md bg-white" />
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl); setPdfPreviewUrl(null); }}>{tx("Close", "বন্ধ")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={pdfSettingsOpen} onOpenChange={setPdfSettingsOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{tx("Invoice PDF settings", "ইনভয়েস PDF সেটিংস")}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">{tx("Adjust margins and the cut-line position so the A5 office and farmer copies fit your printer.", "মার্জিন ও কাট-লাইন এর পজিশন এডজাস্ট করুন যাতে A5 অফিস ও কৃষক কপি আপনার প্রিন্টারে ঠিকমতো ফিট করে।")}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>{tx("Top margin (mm)", "উপরের মার্জিন (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.marginTopMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginTopMm: Number(e.target.value) || 0 })} /></div>
+                <div><Label>{tx("Bottom margin (mm)", "নিচের মার্জিন (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.marginBottomMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginBottomMm: Number(e.target.value) || 0 })} /></div>
+                <div><Label>{tx("Left margin (mm)", "বাম মার্জিন (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.marginLeftMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginLeftMm: Number(e.target.value) || 0 })} /></div>
+                <div><Label>{tx("Right margin (mm)", "ডান মার্জিন (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.marginRightMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginRightMm: Number(e.target.value) || 0 })} /></div>
+                <div className="col-span-2"><Label>{tx("Cut-line position from top (mm) — A4 mid = 148.5", "কাট-লাইন অবস্থান উপর থেকে (mm) — A4 মাঝ = 148.5")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.cutLineMm} onChange={(e) => setPdfSettings({ ...pdfSettings, cutLineMm: Number(e.target.value) || 0 })} /></div>
+              </div>
+              <div className="border-t pt-3 space-y-2">
+                <h4 className="text-sm font-semibold">{tx("Signatures", "স্বাক্ষর")}</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>{tx("Farmer sign label", "কৃষকের স্বাক্ষর লেবেল")}</Label>
+                    <Input value={pdfSettings.farmerSignTitle} onChange={(e) => setPdfSettings({ ...pdfSettings, farmerSignTitle: e.target.value })} /></div>
+                  <div><Label>{tx("Farmer name (optional)", "কৃষকের নাম (ঐচ্ছিক)")}</Label>
+                    <Input value={pdfSettings.farmerSignName} onChange={(e) => setPdfSettings({ ...pdfSettings, farmerSignName: e.target.value })} placeholder={tx("Auto from invoice", "ইনভয়েস থেকে অটো")} /></div>
+                  <div><Label>{tx("Collector sign label", "আদায়কারীর স্বাক্ষর লেবেল")}</Label>
+                    <Input value={pdfSettings.collectorSignTitle} onChange={(e) => setPdfSettings({ ...pdfSettings, collectorSignTitle: e.target.value })} /></div>
+                  <div><Label>{tx("Collector name / title", "আদায়কারীর নাম / পদবি")}</Label>
+                    <Input value={pdfSettings.collectorSignName} onChange={(e) => setPdfSettings({ ...pdfSettings, collectorSignName: e.target.value })} placeholder={tx("e.g. Md. Karim — Field Officer", "যেমন: মো. করিম — মাঠ কর্মকর্তা")} /></div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setPdfSettings({ ...DEFAULT_INVOICE_SETTINGS }); }}>{tx("Reset", "রিসেট")}</Button>
+              <Button variant="outline" onClick={() => setPdfSettingsOpen(false)}>{tx("Close", "বন্ধ")}</Button>
+              <Button onClick={() => { saveInvoiceSettings(pdfSettings); toast.success(tx("Saved", "সংরক্ষণ হয়েছে")); setPdfSettingsOpen(false); }}>{tx("Save", "সংরক্ষণ")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
