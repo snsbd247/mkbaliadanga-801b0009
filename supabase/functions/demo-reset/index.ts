@@ -668,10 +668,21 @@ async function seedAccounts(admin: any) {
   if (error) throw error;
 }
 
-async function seedSettings(admin: any) {
+async function seedSettings(admin: any, officeId?: string) {
   await admin.from("company_settings").upsert({
     id: 1, company_name: "Smart Irrigation Cooperative", company_name_bn: "স্মার্ট সেচ সমবায়",
     address: "Baliadanga, Rangpur", mobile: "01700000000", email: "demo@example.com",
+    registration_no: "COOP-2018-0451",
+    default_loan_interest: 12,
+    penalty_type: "percentage", penalty_value: 2, penalty_grace_days: 30,
+    fiscal_year_start_month: 7,
+    loan_receipt_no_format: "LOAN-{YYYYMMDD}-{TAIL}",
+    loan_receipt_header_en: "Smart Irrigation Cooperative — Loan Receipt",
+    loan_receipt_header_bn: "স্মার্ট সেচ সমবায় — ঋণ রসিদ",
+    loan_receipt_footer_en: "Thank you for your timely payment.",
+    loan_receipt_footer_bn: "সময়মত পরিশোধের জন্য ধন্যবাদ।",
+    pdf_footer_text: "If found, please return to the issuing office.",
+    pdf_footer_show_address: true, pdf_footer_show_contact: true,
   });
   await admin.from("card_settings").upsert({ id: 1 });
   // SMS settings — disabled by default for demo, but template fields populated
@@ -681,8 +692,46 @@ async function seedSettings(admin: any) {
     send_on_loan_approved: true,
     send_on_savings_deposit: true, send_on_savings_withdraw: true,
   } as any).then(() => {}).catch(() => {});
+  // Per-office SMS toggle
+  if (officeId) {
+    await admin.from("sms_office_settings").upsert(
+      { office_id: officeId, enabled: false, sender_id: "DEMO" },
+      { onConflict: "office_id" }
+    ).then(() => {}).catch(() => {});
+  }
   // Default receipt settings (best-effort; ignore if shape differs)
   await admin.from("receipt_settings").upsert({ id: 1 } as any).then(() => {}).catch(() => {});
+  // QR rotation defaults
+  await admin.from("qr_rotation_settings").upsert(
+    { id: 1, enabled: false, interval_days: 90, grace_hours: 24 }
+  ).then(() => {}).catch(() => {});
+}
+
+async function seedAccountingPeriod(admin: any, officeId: string) {
+  // Open period for current fiscal year (July → June)
+  const today = new Date();
+  const fyStartYear = today.getMonth() >= 6 ? today.getFullYear() : today.getFullYear() - 1;
+  const period_start = `${fyStartYear}-07-01`;
+  const period_end = `${fyStartYear + 1}-06-30`;
+  await admin.from("accounting_periods").upsert(
+    { office_id: officeId, period_start, period_end, status: "open" },
+    { onConflict: "period_start,period_end,office_id" }
+  ).then(() => {}).catch(() => {});
+}
+
+async function seedDuePromises(admin: any, officeId: string, farmers: any[]) {
+  const voters = farmers.filter((f: any) => f.is_voter).slice(0, 5);
+  if (!voters.length) return 0;
+  const rows = voters.map((f: any, i: number) => ({
+    farmer_id: f.id, office_id: officeId,
+    previous_due_amount: 500 + i * 100,
+    promise_date: new Date(Date.now() + (7 + i * 3) * 86400000).toISOString().slice(0, 10),
+    status: i === 0 ? "fulfilled" : i === 4 ? "overdue" : "pending",
+    remarks: "Demo due promise",
+  }));
+  const { error } = await admin.from("irrigation_due_promises").insert(rows);
+  if (error) return 0;
+  return rows.length;
 }
 
 async function findOrInsert(admin: any, table: string, match: Record<string, any>, insertExtra: Record<string, any> = {}) {
