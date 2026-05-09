@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sprout, Mail, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Sprout, Mail, AlertCircle, CheckCircle2, XCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,14 +42,27 @@ export default function AuthPage() {
   const [forgotInput, setForgotInput] = useState("");
   const [forgotBusy, setForgotBusy] = useState(false);
   const [debug, setDebug] = useState<DebugInfo>(initialDebug);
+  const [showPassword, setShowPassword] = useState(false);
+  const [capsOn, setCapsOn] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${t("login")} — ${brand.company_name}`; }, [t, brand.company_name]);
   useEffect(() => { if (user) nav("/admin", { replace: true }); }, [user, nav]);
 
+  const handleCapsLockCheck = (e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement>) => {
+    const ev = e as any;
+    if (typeof ev.getModifierState === "function") setCapsOn(!!ev.getModifierState("CapsLock"));
+  };
+
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     const u = username.trim();
-    if (!u || !password) {
+    const uErr = !u ? (lang === "bn" ? "ইউজারনেম দিন" : "Enter your username") : null;
+    const pErr = !password ? (lang === "bn" ? "পাসওয়ার্ড দিন" : "Enter your password") : null;
+    setUsernameError(uErr);
+    setPasswordError(pErr);
+    if (uErr || pErr) {
       setDebug({ ...initialDebug, hint: "Both username and password are required." });
       return toast.error(t("usernameAndPasswordRequired"));
     }
@@ -72,12 +85,16 @@ export default function AuthPage() {
       }
       if (!data) {
         setBusy(false);
+        const msg = lang === "bn"
+          ? `"${u}" নামে কোন একাউন্ট নেই। বানান চেক করুন বা ইমেইল দিয়ে চেষ্টা করুন।`
+          : `No account found for username "${u}". Check spelling or try email instead.`;
+        setUsernameError(lang === "bn" ? "ইউজারনেম পাওয়া যায়নি" : "Username not found");
         setDebug({
           ...d, lookup: "fail",
-          errorMessage: `No account found for username "${u}"`,
+          errorMessage: msg,
           hint: "The username does not exist. Check spelling, or use email instead.",
         });
-        return toast.error(t("noAccountFor").replace("{u}", u));
+        return toast.error(msg);
       }
       email = data as string;
     }
@@ -92,19 +109,27 @@ export default function AuthPage() {
     if (error) {
       setBusy(false);
       const status = (error as any).status;
+      const isInvalid = /invalid login|invalid_credentials/i.test(error.message);
+      const isUnconfirmed = /email not confirmed/i.test(error.message);
+      const friendly = isInvalid
+        ? (lang === "bn" ? "পাসওয়ার্ড সঠিক নয়। আবার চেষ্টা করুন বা 'পাসওয়ার্ড ভুলে গেছেন' ব্যবহার করুন।" : "Password is incorrect. Try again or use ‘Forgot password’.")
+        : isUnconfirmed
+        ? (lang === "bn" ? "ইমেইল এখনও যাচাই হয়নি।" : "Email is not confirmed yet.")
+        : error.message;
+      if (isInvalid) setPasswordError(lang === "bn" ? "পাসওয়ার্ড সঠিক নয়" : "Incorrect password");
       setDebug({
         ...d, password: "fail",
         errorCode: (error as any).code ?? "auth_error",
         errorStatus: status,
-        errorMessage: error.message,
+        errorMessage: friendly,
         hint:
-          /invalid login/i.test(error.message)
+          isInvalid
             ? "The password is wrong for this account, or the user is disabled."
-            : /email not confirmed/i.test(error.message)
+            : isUnconfirmed
             ? "The email address has not been confirmed yet."
             : "See backend message above.",
       });
-      return toast.error(error.message || t("invalidPassword"));
+      return toast.error(friendly);
     }
 
     d.password = "ok";
@@ -179,30 +204,64 @@ export default function AuthPage() {
           <p className="text-sm text-muted-foreground mb-4">{t("signInDesc")}</p>
           <form onSubmit={signIn} className="space-y-3">
             <div>
-              <Label>{t("username")}</Label>
+              <Label htmlFor="login-username">{t("username")}</Label>
               <Input
+                id="login-username"
+                name="username"
                 required
                 autoComplete="username"
+                inputMode="text"
+                autoCapitalize="none"
+                spellCheck={false}
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={e => { setUsername(e.target.value); if (usernameError) setUsernameError(null); }}
                 placeholder={t("username")}
+                aria-invalid={!!usernameError}
+                aria-describedby={usernameError ? "login-username-err" : undefined}
               />
+              {usernameError && <p id="login-username-err" className="text-xs text-destructive mt-1">{usernameError}</p>}
             </div>
             <div>
               <div className="flex items-center justify-between">
-                <Label>{t("password")}</Label>
+                <Label htmlFor="login-password">{t("password")}</Label>
                 <button type="button" onClick={() => { setForgotInput(username); setForgotOpen(true); }} className="text-xs text-primary hover:underline">
                   {t("forgotPassword")}
                 </button>
               </div>
-              <Input
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder={t("password")}
-              />
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  name="current-password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={e => { setPassword(e.target.value); if (passwordError) setPasswordError(null); }}
+                  onKeyUp={handleCapsLockCheck}
+                  onKeyDown={handleCapsLockCheck}
+                  onBlur={() => setCapsOn(false)}
+                  placeholder={t("password")}
+                  className="pr-10"
+                  aria-invalid={!!passwordError}
+                  aria-describedby={passwordError ? "login-password-err" : (capsOn ? "login-password-caps" : undefined)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute inset-y-0 right-2 flex items-center text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                  aria-label={showPassword ? (lang === "bn" ? "পাসওয়ার্ড লুকান" : "Hide password") : (lang === "bn" ? "পাসওয়ার্ড দেখান" : "Show password")}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {passwordError && <p id="login-password-err" className="text-xs text-destructive mt-1">{passwordError}</p>}
+              {capsOn && !passwordError && (
+                <p id="login-password-caps" className="text-xs text-warning-foreground mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {lang === "bn" ? "Caps Lock চালু আছে" : "Caps Lock is on"}
+                </p>
+              )}
             </div>
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
           </form>

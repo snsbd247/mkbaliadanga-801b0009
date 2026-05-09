@@ -22,10 +22,14 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
-import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2 } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
-import { downloadIrrigationInvoicePdf, type InvoiceCopy } from "@/lib/irrigationInvoicePdf";
-import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
+import {
+  downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
+  loadInvoiceSettings, saveInvoiceSettings, loadLastInvoiceCopy, saveLastInvoiceCopy,
+  DEFAULT_INVOICE_SETTINGS, type InvoiceCopy, type InvoicePdfSettings,
+} from "@/lib/irrigationInvoicePdf";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -100,6 +104,11 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [search, setSearch] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [editInv, setEditInv] = useState<Invoice | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
+  const [pdfSettingsOpen, setPdfSettingsOpen] = useState(false);
+  const [pdfSettings, setPdfSettings] = useState<InvoicePdfSettings>(() => loadInvoiceSettings());
+  const [lastCopy, setLastCopy] = useState<InvoiceCopy>(() => loadLastInvoiceCopy());
 
   async function load() {
     setLoading(true);
@@ -160,38 +169,60 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     toast.success(tx("Invoice deleted", "ইনভয়েস মুছে ফেলা হয়েছে")); load();
   }
 
-  async function printInvoice(inv: any, copy: InvoiceCopy = "both") {
+  function buildInvoicePdfPayload(inv: any) {
+    return {
+      invoice_no: inv.invoice_no,
+      generated_at: inv.generated_at,
+      due_date: inv.due_date,
+      is_borga: inv.is_borga,
+      note: inv.note,
+      irrigation_amount: inv.irrigation_amount,
+      maintenance_amount: inv.maintenance_amount,
+      canal_amount: inv.canal_amount,
+      other_charge: inv.other_charge,
+      delay_fee: inv.delay_fee,
+      payable_amount: inv.payable_amount,
+      paid_amount: inv.paid_amount,
+      due_amount: inv.due_amount,
+      invoice_status: inv.invoice_status,
+      farmer: {
+        name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
+        farmer_code: inv.farmers?.farmer_code,
+        mobile: inv.farmers?.mobile,
+        village: inv.farmers?.village ?? null,
+      },
+      land: {
+        mouza: inv.lands?.mouza,
+        dag_no: inv.lands?.dag_no,
+        land_size: inv.lands?.land_size,
+      },
+      season: inv.seasons,
+    };
+  }
+
+  async function downloadInvoice(inv: any, copy: InvoiceCopy) {
     try {
-      await downloadIrrigationInvoicePdf({
-        invoice_no: inv.invoice_no,
-        generated_at: inv.generated_at,
-        due_date: inv.due_date,
-        is_borga: inv.is_borga,
-        note: inv.note,
-        irrigation_amount: inv.irrigation_amount,
-        maintenance_amount: inv.maintenance_amount,
-        canal_amount: inv.canal_amount,
-        other_charge: inv.other_charge,
-        delay_fee: inv.delay_fee,
-        payable_amount: inv.payable_amount,
-        paid_amount: inv.paid_amount,
-        due_amount: inv.due_amount,
-        invoice_status: inv.invoice_status,
-        farmer: {
-          name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
-          farmer_code: inv.farmers?.farmer_code,
-          mobile: inv.farmers?.mobile,
-          village: inv.farmers?.village ?? null,
-        },
-        land: {
-          mouza: inv.lands?.mouza,
-          dag_no: inv.lands?.dag_no,
-          land_size: inv.lands?.land_size,
-        },
-        season: inv.seasons,
-      }, copy);
+      saveLastInvoiceCopy(copy);
+      setLastCopy(copy);
+      await downloadIrrigationInvoicePdf(buildInvoicePdfPayload(inv), copy, pdfSettings);
     } catch (e: any) {
       toast.error(e?.message ?? tx("Failed to generate PDF", "পিডিএফ তৈরি ব্যর্থ"));
+    }
+  }
+
+  async function previewInvoice(inv: any, copy: InvoiceCopy) {
+    try {
+      setPdfPreviewLoading(true);
+      saveLastInvoiceCopy(copy);
+      setLastCopy(copy);
+      const url = await previewIrrigationInvoicePdf(buildInvoicePdfPayload(inv), copy, pdfSettings);
+      // Revoke prior URL to avoid leaks
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(url);
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Failed to preview PDF", "প্রিভিউ তৈরি ব্যর্থ"));
+    } finally {
+      setPdfPreviewLoading(false);
     }
   }
 
@@ -292,7 +323,30 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" title={tx("View", "দেখুন")} onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
-                      <ReceiptCopyMenu onSelect={(c) => printInvoice(r, c as InvoiceCopy)} title={tx("Print", "প্রিন্ট")} />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" title={tx("Print", "প্রিন্ট")}><Printer className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => previewInvoice(r, lastCopy)}>
+                            <Eye className="h-4 w-4 mr-2" />{tx("Preview PDF", "PDF প্রিভিউ")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => downloadInvoice(r, "both")}>
+                            {lastCopy === "both" ? "✓ " : ""}{tx("Both copies (A4)", "উভয় কপি (A4)")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => downloadInvoice(r, "office")}>
+                            {lastCopy === "office" ? "✓ " : ""}{tx("Office copy", "অফিস কপি")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => downloadInvoice(r, "farmer")}>
+                            {lastCopy === "farmer" ? "✓ " : ""}{tx("Farmer copy", "কৃষকের কপি")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setPdfSettingsOpen(true)}>
+                            <SettingsIcon className="h-4 w-4 mr-2" />{tx("PDF settings", "PDF সেটিংস")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
                         <Button size="sm" variant="ghost" title={tx("Edit", "এডিট")} onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
                       )}
@@ -319,6 +373,57 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           onRecalculated={load}
         />
         <InvoiceEditDialog inv={editInv} onClose={() => setEditInv(null)} onSaved={load} />
+
+        <Dialog open={!!pdfPreviewUrl} onOpenChange={(v) => { if (!v) { if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl); setPdfPreviewUrl(null); } }}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader><DialogTitle>{tx("Invoice PDF preview", "ইনভয়েস PDF প্রিভিউ")}</DialogTitle></DialogHeader>
+            {pdfPreviewUrl && (
+              <iframe src={pdfPreviewUrl} title="Invoice preview" className="w-full h-[75vh] border rounded-md bg-white" />
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl); setPdfPreviewUrl(null); }}>{tx("Close", "বন্ধ")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={pdfSettingsOpen} onOpenChange={setPdfSettingsOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{tx("Invoice PDF settings", "ইনভয়েস PDF সেটিংস")}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">{tx("Adjust margins and the cut-line position so the A5 office and farmer copies fit your printer.", "মার্জিন ও কাট-লাইন এর পজিশন এডজাস্ট করুন যাতে A5 অফিস ও কৃষক কপি আপনার প্রিন্টারে ঠিকমতো ফিট করে।")}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>{tx("Top margin (mm)", "উপরের মার্জিন (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.marginTopMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginTopMm: Number(e.target.value) || 0 })} /></div>
+                <div><Label>{tx("Bottom margin (mm)", "নিচের মার্জিন (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.marginBottomMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginBottomMm: Number(e.target.value) || 0 })} /></div>
+                <div><Label>{tx("Left margin (mm)", "বাম মার্জিন (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.marginLeftMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginLeftMm: Number(e.target.value) || 0 })} /></div>
+                <div><Label>{tx("Right margin (mm)", "ডান মার্জিন (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.marginRightMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginRightMm: Number(e.target.value) || 0 })} /></div>
+                <div className="col-span-2"><Label>{tx("Cut-line position from top (mm) — A4 mid = 148.5", "কাট-লাইন অবস্থান উপর থেকে (mm) — A4 মাঝ = 148.5")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.cutLineMm} onChange={(e) => setPdfSettings({ ...pdfSettings, cutLineMm: Number(e.target.value) || 0 })} /></div>
+              </div>
+              <div className="border-t pt-3 space-y-2">
+                <h4 className="text-sm font-semibold">{tx("Signatures", "স্বাক্ষর")}</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>{tx("Farmer sign label", "কৃষকের স্বাক্ষর লেবেল")}</Label>
+                    <Input value={pdfSettings.farmerSignTitle} onChange={(e) => setPdfSettings({ ...pdfSettings, farmerSignTitle: e.target.value })} /></div>
+                  <div><Label>{tx("Farmer name (optional)", "কৃষকের নাম (ঐচ্ছিক)")}</Label>
+                    <Input value={pdfSettings.farmerSignName} onChange={(e) => setPdfSettings({ ...pdfSettings, farmerSignName: e.target.value })} placeholder={tx("Auto from invoice", "ইনভয়েস থেকে অটো")} /></div>
+                  <div><Label>{tx("Collector sign label", "আদায়কারীর স্বাক্ষর লেবেল")}</Label>
+                    <Input value={pdfSettings.collectorSignTitle} onChange={(e) => setPdfSettings({ ...pdfSettings, collectorSignTitle: e.target.value })} /></div>
+                  <div><Label>{tx("Collector name / title", "আদায়কারীর নাম / পদবি")}</Label>
+                    <Input value={pdfSettings.collectorSignName} onChange={(e) => setPdfSettings({ ...pdfSettings, collectorSignName: e.target.value })} placeholder={tx("e.g. Md. Karim — Field Officer", "যেমন: মো. করিম — মাঠ কর্মকর্তা")} /></div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setPdfSettings({ ...DEFAULT_INVOICE_SETTINGS }); }}>{tx("Reset", "রিসেট")}</Button>
+              <Button variant="outline" onClick={() => setPdfSettingsOpen(false)}>{tx("Close", "বন্ধ")}</Button>
+              <Button onClick={() => { saveInvoiceSettings(pdfSettings); toast.success(tx("Saved", "সংরক্ষণ হয়েছে")); setPdfSettingsOpen(false); }}>{tx("Save", "সংরক্ষণ")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

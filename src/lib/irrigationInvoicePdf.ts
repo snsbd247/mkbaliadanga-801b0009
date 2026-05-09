@@ -1,8 +1,6 @@
 // Irrigation Invoice PDF — A4 page with two A5 halves (Office copy + Farmer copy).
-// Design mirrors `bnReceipts.ts` so the print/cut workflow stays identical to
-// the existing irrigation charge payment receipt: print one A4 sheet, cut in
-// the middle along the dashed line — top half stays in office, bottom half is
-// handed to the farmer.
+// Each copy is rendered independently to its own canvas so margins, cut-line
+// position, and signature blocks are configurable per print run.
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
@@ -10,6 +8,60 @@ import { loadBranding, type CompanyBranding } from "@/lib/branding";
 import { formatLandSize } from "@/lib/irrigationCalc";
 
 export type InvoiceCopy = "both" | "office" | "farmer";
+
+export interface InvoicePdfSettings {
+  /** Page margins in mm. */
+  marginTopMm: number;
+  marginBottomMm: number;
+  marginLeftMm: number;
+  marginRightMm: number;
+  /** Distance from page top (mm) where the dashed cut line is drawn. Default ≈ A4 mid (148.5). */
+  cutLineMm: number;
+  /** Signature labels under the lines. */
+  farmerSignName: string;
+  farmerSignTitle: string;
+  collectorSignName: string;
+  collectorSignTitle: string;
+}
+
+export const DEFAULT_INVOICE_SETTINGS: InvoicePdfSettings = {
+  marginTopMm: 8,
+  marginBottomMm: 8,
+  marginLeftMm: 8,
+  marginRightMm: 8,
+  cutLineMm: 148.5,
+  farmerSignName: "",
+  farmerSignTitle: "কৃষকের স্বাক্ষর",
+  collectorSignName: "",
+  collectorSignTitle: "আদায়কারীর স্বাক্ষর",
+};
+
+const SETTINGS_KEY = "mk:irrigation-invoice-pdf:v1";
+const LAST_COPY_KEY = "mk:irrigation-invoice-copy:v1";
+
+export function loadInvoiceSettings(): InvoicePdfSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return { ...DEFAULT_INVOICE_SETTINGS };
+    return { ...DEFAULT_INVOICE_SETTINGS, ...(JSON.parse(raw) as Partial<InvoicePdfSettings>) };
+  } catch { return { ...DEFAULT_INVOICE_SETTINGS }; }
+}
+
+export function saveInvoiceSettings(s: InvoicePdfSettings) {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* noop */ }
+}
+
+export function loadLastInvoiceCopy(): InvoiceCopy {
+  try {
+    const v = localStorage.getItem(LAST_COPY_KEY);
+    if (v === "office" || v === "farmer" || v === "both") return v;
+  } catch { /* noop */ }
+  return "both";
+}
+
+export function saveLastInvoiceCopy(c: InvoiceCopy) {
+  try { localStorage.setItem(LAST_COPY_KEY, c); } catch { /* noop */ }
+}
 
 export interface IrrigationInvoiceData {
   invoice_no: string;
@@ -64,19 +116,18 @@ function statusBn(s?: string | null) {
   }
 }
 
-function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string): string {
+function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer"): string {
   const farmer = d.farmer ?? {};
   const land = d.land ?? {};
   const seasonLabel = [d.season?.name ?? d.season?.type, d.season?.year].filter(Boolean).join(" ");
 
   const logoBlock = brand.logo_url
-    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:48px;display:block;margin:0 auto 2px;" />`
+    ? `<img src="${brand.logo_url}" crossorigin="anonymous" style="height:42px;display:block;margin:0 auto 2px;" />`
     : "";
 
   const orgName = brand.company_name_bn ?? brand.company_name ?? "";
   const orgLine2 = [brand.address, brand.mobile, brand.email].filter(Boolean).join(" • ");
   const regLine = brand.registration_no ? `নিবন্ধন নং: ${toBnDigits(brand.registration_no)}` : "";
-
   const amountWords = bnAmountInWords(Number(d.payable_amount ?? 0));
 
   const rows: Array<[string, string]> = [
@@ -98,119 +149,154 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     ["বিলম্ব ফি", d.delay_fee],
   ];
 
+  const farmerSig = `
+    <div style="text-align:center;min-width:160px;">
+      <div style="border-top:1px solid #111;padding-top:2px;">${settings.farmerSignTitle || "কৃষকের স্বাক্ষর"}</div>
+      ${settings.farmerSignName ? `<div style="font-weight:600;font-size:11px;">${settings.farmerSignName}</div>` : (farmer.name ? `<div style="font-size:11px;color:#444;">${farmer.name}</div>` : "")}
+    </div>`;
+
+  const collectorSig = `
+    <div style="text-align:center;min-width:160px;">
+      <div style="border-top:1px solid #111;padding-top:2px;">${settings.collectorSignTitle || "আদায়কারীর স্বাক্ষর"}</div>
+      ${settings.collectorSignName ? `<div style="font-weight:600;font-size:11px;">${settings.collectorSignName}</div>` : ""}
+    </div>`;
+
   return `
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:14px 22px;" data-invoice-copy="${copyLabel}">
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:10px 14px;" data-invoice-copy="${role}">
     <div style="text-align:center;">
       ${logoBlock}
-      <div style="font-size:16px;font-weight:700;">${orgName}</div>
-      ${orgLine2 ? `<div style="font-size:11px;color:#333;">${orgLine2}</div>` : ""}
-      ${regLine ? `<div style="font-size:11px;color:#333;">${regLine}</div>` : ""}
-      <div style="font-size:16px;font-weight:700;margin-top:4px;">সেচ ইনভয়েস</div>
-      <div style="display:inline-block;border:1px solid #111;padding:1px 12px;margin-top:4px;font-size:12px;">${copyLabel}</div>
+      <div style="font-size:15px;font-weight:700;">${orgName}</div>
+      ${orgLine2 ? `<div style="font-size:10px;color:#333;">${orgLine2}</div>` : ""}
+      ${regLine ? `<div style="font-size:10px;color:#333;">${regLine}</div>` : ""}
+      <div style="font-size:15px;font-weight:700;margin-top:3px;">সেচ ইনভয়েস</div>
+      <div style="display:inline-block;border:1px solid #111;padding:1px 12px;margin-top:3px;font-size:11px;">${copyLabel}</div>
     </div>
 
-    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;">
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;">
       <div>রসিদ নং: <b>${d.invoice_no}</b></div>
       <div>তারিখ: ${fmtDate(d.generated_at)}</div>
     </div>
 
-    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:6px;font-size:12px;">
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:5px;font-size:11px;">
       ${rows.map(([k, v]) => `
         <tr>
-          <td style="padding:3px 8px;vertical-align:top;width:38%;border-bottom:1px solid #ddd;">${k}</td>
-          <td style="padding:3px 8px;vertical-align:top;border-bottom:1px solid #ddd;">${v}</td>
+          <td style="padding:2px 6px;vertical-align:top;width:38%;border-bottom:1px solid #ddd;">${k}</td>
+          <td style="padding:2px 6px;vertical-align:top;border-bottom:1px solid #ddd;">${v}</td>
         </tr>`).join("")}
     </table>
 
-    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:6px;font-size:12px;">
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:5px;font-size:11px;">
       <thead>
         <tr style="background:#f4f4f4;">
-          <th style="text-align:left;padding:4px 8px;border-bottom:1px solid #111;">বিবরণ</th>
-          <th style="text-align:right;padding:4px 8px;border-bottom:1px solid #111;">টাকা</th>
+          <th style="text-align:left;padding:3px 6px;border-bottom:1px solid #111;">বিবরণ</th>
+          <th style="text-align:right;padding:3px 6px;border-bottom:1px solid #111;">টাকা</th>
         </tr>
       </thead>
       <tbody>
         ${chargeRows.map(([k, v]) => `
           <tr>
-            <td style="padding:3px 8px;border-bottom:1px solid #eee;">${k}</td>
-            <td style="padding:3px 8px;text-align:right;border-bottom:1px solid #eee;">${fmt2(v as number)}</td>
+            <td style="padding:2px 6px;border-bottom:1px solid #eee;">${k}</td>
+            <td style="padding:2px 6px;text-align:right;border-bottom:1px solid #eee;">${fmt2(v as number)}</td>
           </tr>`).join("")}
         <tr>
-          <td style="padding:4px 8px;font-weight:700;background:#fafafa;border-top:1px solid #111;">মোট প্রদেয়</td>
-          <td style="padding:4px 8px;text-align:right;font-weight:700;background:#fafafa;border-top:1px solid #111;">${fmt2(d.payable_amount)}</td>
+          <td style="padding:3px 6px;font-weight:700;background:#fafafa;border-top:1px solid #111;">মোট প্রদেয়</td>
+          <td style="padding:3px 6px;text-align:right;font-weight:700;background:#fafafa;border-top:1px solid #111;">${fmt2(d.payable_amount)}</td>
         </tr>
         <tr>
-          <td style="padding:3px 8px;">পরিশোধিত</td>
-          <td style="padding:3px 8px;text-align:right;">${fmt2(d.paid_amount)}</td>
+          <td style="padding:2px 6px;">পরিশোধিত</td>
+          <td style="padding:2px 6px;text-align:right;">${fmt2(d.paid_amount)}</td>
         </tr>
         <tr>
-          <td style="padding:4px 8px;font-weight:700;background:#fff5f5;color:#b91c1c;">বকেয়া</td>
-          <td style="padding:4px 8px;text-align:right;font-weight:700;background:#fff5f5;color:#b91c1c;">${fmt2(d.due_amount)}</td>
+          <td style="padding:3px 6px;font-weight:700;background:#fff5f5;color:#b91c1c;">বকেয়া</td>
+          <td style="padding:3px 6px;text-align:right;font-weight:700;background:#fff5f5;color:#b91c1c;">${fmt2(d.due_amount)}</td>
         </tr>
       </tbody>
     </table>
 
-    <div style="font-size:11px;margin-top:4px;">কথায়: ${amountWords} টাকা মাত্র।</div>
-    ${d.note ? `<div style="font-size:11px;margin-top:2px;"><b>মন্তব্য:</b> ${d.note}</div>` : ""}
+    <div style="font-size:10px;margin-top:3px;">কথায়: ${amountWords} টাকা মাত্র।</div>
+    ${d.note ? `<div style="font-size:10px;margin-top:1px;"><b>মন্তব্য:</b> ${d.note}</div>` : ""}
 
-    <div style="display:flex;justify-content:space-between;margin-top:22px;font-size:11px;">
-      <div style="text-align:center;">
-        <div style="border-top:1px solid #111;width:140px;padding-top:2px;">কৃষকের স্বাক্ষর</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="border-top:1px solid #111;width:140px;padding-top:2px;">আদায়কারীর স্বাক্ষর</div>
-      </div>
+    <div style="display:flex;justify-content:space-between;margin-top:18px;font-size:10px;gap:12px;">
+      ${farmerSig}
+      ${collectorSig}
     </div>
   </div>`;
 }
 
-function buildHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copy: InvoiceCopy): HTMLDivElement {
+async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer"): Promise<HTMLCanvasElement> {
   const wrap = document.createElement("div");
-  wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
-  const office = copyHtml(d, brand, "অফিস কপি");
-  const farmerC = copyHtml(d, brand, "কৃষকের কপি");
-  if (copy === "office") wrap.innerHTML = office;
-  else if (copy === "farmer") wrap.innerHTML = farmerC;
-  else {
-    wrap.innerHTML = `${office}<div style="border-top:1.5px dashed #111;margin:6px 22px;text-align:center;font-size:10px;color:#666;">— এখান থেকে কেটে আলাদা করুন —</div>${farmerC}`;
-  }
+  wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:780px;background:#fff;";
+  wrap.innerHTML = copyHtml(d, brand, copyLabel, settings, role);
   document.body.appendChild(wrap);
-  return wrap;
-}
-
-async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy): Promise<jsPDF> {
-  const brand = await loadBranding();
-  const node = buildHtml(d, brand, copy);
   try {
     await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 8;
-    const innerW = pageW - margin * 2;
-    const innerH = pageH - margin * 2;
-    const imgH = (canvas.height * innerW) / canvas.width;
-    // Scale-to-fit so a tall (two-copy) layout always fits on a single A4 page.
-    const finalW = imgH > innerH ? (canvas.width * innerH) / canvas.height : innerW;
-    const finalH = imgH > innerH ? innerH : imgH;
-    const x = margin + (innerW - finalW) / 2;
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, margin, finalW, finalH);
-    return pdf;
+    return await html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
   } finally {
-    node.remove();
+    wrap.remove();
   }
 }
 
-export async function downloadIrrigationInvoicePdf(d: IrrigationInvoiceData, copy: InvoiceCopy = "both"): Promise<void> {
-  const pdf = await renderPdf(d, copy);
+async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy, settings: InvoicePdfSettings): Promise<jsPDF> {
+  const brand = await loadBranding();
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
+  const pageW = pdf.internal.pageSize.getWidth();   // 210
+  const pageH = pdf.internal.pageSize.getHeight();  // 297
+  const innerW = pageW - settings.marginLeftMm - settings.marginRightMm;
+  const cutY = Math.min(Math.max(settings.cutLineMm, 60), pageH - 60);
+
+  const placeImage = (canvas: HTMLCanvasElement, yTop: number, yBottom: number) => {
+    const slotH = yBottom - yTop;
+    const aspect = canvas.height / canvas.width;
+    const drawW = innerW;
+    const drawH = drawW * aspect;
+    const finalW = drawH > slotH ? slotH / aspect : drawW;
+    const finalH = drawH > slotH ? slotH : drawH;
+    const x = settings.marginLeftMm + (innerW - finalW) / 2;
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", x, yTop, finalW, finalH);
+  };
+
+  if (copy === "office" || copy === "both") {
+    const c = await renderCopyToCanvas(d, brand, "অফিস কপি", settings, "office");
+    if (copy === "office") {
+      placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
+    } else {
+      placeImage(c, settings.marginTopMm, cutY - 3);
+    }
+  }
+  if (copy === "farmer" || copy === "both") {
+    const c = await renderCopyToCanvas(d, brand, "কৃষকের কপি", settings, "farmer");
+    if (copy === "farmer") {
+      placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
+    } else {
+      placeImage(c, cutY + 3, pageH - settings.marginBottomMm);
+    }
+  }
+
+  if (copy === "both") {
+    pdf.setLineDashPattern([1.5, 1.5], 0);
+    pdf.setDrawColor(60);
+    pdf.setLineWidth(0.3);
+    pdf.line(settings.marginLeftMm, cutY, pageW - settings.marginRightMm, cutY);
+    pdf.setLineDashPattern([], 0);
+    pdf.setFontSize(7);
+    pdf.setTextColor(110);
+    pdf.text("— এখান থেকে কেটে আলাদা করুন —", pageW / 2, cutY - 1, { align: "center" });
+    pdf.setTextColor(0);
+  }
+
+  return pdf;
+}
+
+export async function downloadIrrigationInvoicePdf(d: IrrigationInvoiceData, copy: InvoiceCopy = "both", settings?: InvoicePdfSettings): Promise<void> {
+  const s = settings ?? loadInvoiceSettings();
+  const pdf = await renderPdf(d, copy, s);
   const suffix = copy === "office" ? "_office" : copy === "farmer" ? "_farmer" : "";
   pdf.save(`irrigation_invoice_${d.invoice_no}${suffix}.pdf`);
 }
 
-export async function printIrrigationInvoicePdf(d: IrrigationInvoiceData, copy: InvoiceCopy = "both"): Promise<void> {
-  const pdf = await renderPdf(d, copy);
-  const url = pdf.output("bloburl");
-  const w = window.open(url as any, "_blank");
-  if (w) { try { w.focus(); } catch { /* noop */ } }
+export async function previewIrrigationInvoicePdf(d: IrrigationInvoiceData, copy: InvoiceCopy = "both", settings?: InvoicePdfSettings): Promise<string> {
+  const s = settings ?? loadInvoiceSettings();
+  const pdf = await renderPdf(d, copy, s);
+  const blob = pdf.output("blob");
+  return URL.createObjectURL(blob);
 }
