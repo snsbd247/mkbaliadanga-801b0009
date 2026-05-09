@@ -798,6 +798,84 @@ async function previewWipe(admin: any) {
   return counts;
 }
 
+// ---- Post-import row-count + page mapping verification ----
+// Mirrors src/lib/demoPresets.ts MODULE_VERIFY (Deno isolation).
+const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: string; required: boolean }[]> = {
+  locations: [
+    { table: "divisions", page: "/locations", page_label: "Locations", required: true },
+    { table: "districts", page: "/locations", page_label: "Locations", required: true },
+    { table: "upazilas",  page: "/locations", page_label: "Locations", required: true },
+    { table: "mouzas",    page: "/locations", page_label: "Locations", required: true },
+  ],
+  settings: [
+    { table: "company_settings", page: "/settings",      page_label: "Settings",      required: true },
+    { table: "card_settings",    page: "/card-designer", page_label: "Card Designer", required: false },
+  ],
+  accounting: [
+    { table: "accounts",           page: "/accounts",     page_label: "Chart of Accounts", required: true },
+    { table: "accounting_periods", page: "/period-close", page_label: "Period Close",      required: true },
+  ],
+  farmers: [
+    { table: "farmers",        page: "/farmers",         page_label: "Farmers",          required: true },
+    { table: "lands",          page: "/farmers",         page_label: "Farmers (Lands)",  required: true },
+    { table: "patwaris",       page: "/admin/patwaris",  page_label: "Patwaris",         required: false },
+    { table: "land_relations", page: "/farmers",         page_label: "Farmers (Borga)",  required: false },
+  ],
+  irrigation: [
+    { table: "irrigation_charge_settings", page: "/irrigation-rates",    page_label: "Irrigation Rates",    required: true },
+    { table: "irrigation_season_rates",    page: "/irrigation-rates",    page_label: "Irrigation Rates",    required: true },
+    { table: "irrigation_invoices",        page: "/irrigation-invoices", page_label: "Irrigation Invoices", required: true },
+    { table: "seasons",                    page: "/seasons",             page_label: "Seasons",             required: true },
+  ],
+  loans: [
+    { table: "loan_plans",              page: "/loan-plans",                 page_label: "Loan Plans",           required: true },
+    { table: "loan_delay_fee_settings", page: "/admin/loan-delay-settings",  page_label: "Loan Delay Settings",  required: true },
+    { table: "loans",                   page: "/loans",                      page_label: "Loans",                required: true },
+    { table: "loan_installments",       page: "/loans",                      page_label: "Loans (Installments)", required: true },
+    { table: "loan_payments",           page: "/loans",                      page_label: "Loans (Payments)",     required: false },
+  ],
+  savings: [
+    { table: "savings_plans",        page: "/savings",          page_label: "Savings",          required: true },
+    { table: "savings_transactions", page: "/savings",          page_label: "Savings (Tx)",     required: true },
+    { table: "shares",               page: "/share-collection", page_label: "Share Collection", required: false },
+    { table: "farmer_savings_plans", page: "/savings",          page_label: "Savings (Plans)",  required: false },
+  ],
+  expenses: [
+    { table: "expenses", page: "/payments", page_label: "Payments / Expenses", required: true },
+  ],
+};
+
+async function verifyRowCounts(admin: any, modules: string[]) {
+  const seen = new Set<string>();
+  const rows: any[] = [];
+  for (const m of modules) {
+    const entries = MODULE_VERIFY[m];
+    if (!entries) continue;
+    for (const e of entries) {
+      if (seen.has(e.table)) continue;
+      seen.add(e.table);
+      const { count, error } = await admin.from(e.table).select("*", { count: "exact", head: true });
+      const actual = error ? 0 : (count ?? 0);
+      const status = actual > 0 ? "ok" : (e.required ? "empty_required" : "empty_optional");
+      rows.push({ module: m, ...e, actual, status });
+    }
+  }
+  const failed = rows.filter((r) => r.status === "empty_required").length;
+  const warnings = rows.filter((r) => r.status === "empty_optional").length;
+  const ok = rows.filter((r) => r.status === "ok").length;
+  return { rows, total: rows.length, ok, failed, warnings, allOk: failed === 0 };
+}
+
+// ---- Preset definitions (mirrors src/lib/demoPresets.ts) ----
+const PRESETS: Record<string, { size: number; modules: string[] }> = {
+  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
+  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
+  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
+  loans_only:      { size: 50,  modules: ["locations","settings","accounting","farmers","loans"] },
+  savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
+  irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
+};
+
 async function verifyLocations(admin: any) {
   const expected = {
     divisions: 1,
