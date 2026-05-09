@@ -301,7 +301,7 @@ export default function DataImport() {
       irrigation: ["account_number", "dag_no", "season_year", "season_type", "base_charge", "entry_date"],
       loans: ["account_number", "principal"],
       loan_payments: ["account_number", "amount"],
-      loan_installments: ["loan_no", "installment_no", "due_date", "amount"],
+      loan_installments: ["account_number", "installment_no", "due_date", "amount"],
       savings: ["account_number", "type", "amount"],
       payments: ["account_number", "kind", "amount"],
       cashbook_receipts: ["receipt_date", "kind", "amount"],
