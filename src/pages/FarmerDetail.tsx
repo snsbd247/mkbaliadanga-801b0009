@@ -125,6 +125,13 @@ export default function FarmerDetail() {
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
     setPayments(pm.data ?? []);
 
+    // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
+    const inv = await supabase
+      .from("irrigation_invoices")
+      .select("due_amount")
+      .eq("farmer_id", id!)
+      .is("deleted_at", null);
+    setInvDue((inv.data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
   }
 
   function farmerLocationLine(fr: any): string {
