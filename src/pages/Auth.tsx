@@ -204,30 +204,64 @@ export default function AuthPage() {
           <p className="text-sm text-muted-foreground mb-4">{t("signInDesc")}</p>
           <form onSubmit={signIn} className="space-y-3">
             <div>
-              <Label>{t("username")}</Label>
+              <Label htmlFor="login-username">{t("username")}</Label>
               <Input
+                id="login-username"
+                name="username"
                 required
                 autoComplete="username"
+                inputMode="text"
+                autoCapitalize="none"
+                spellCheck={false}
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={e => { setUsername(e.target.value); if (usernameError) setUsernameError(null); }}
                 placeholder={t("username")}
+                aria-invalid={!!usernameError}
+                aria-describedby={usernameError ? "login-username-err" : undefined}
               />
+              {usernameError && <p id="login-username-err" className="text-xs text-destructive mt-1">{usernameError}</p>}
             </div>
             <div>
               <div className="flex items-center justify-between">
-                <Label>{t("password")}</Label>
+                <Label htmlFor="login-password">{t("password")}</Label>
                 <button type="button" onClick={() => { setForgotInput(username); setForgotOpen(true); }} className="text-xs text-primary hover:underline">
                   {t("forgotPassword")}
                 </button>
               </div>
-              <Input
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder={t("password")}
-              />
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  name="current-password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={e => { setPassword(e.target.value); if (passwordError) setPasswordError(null); }}
+                  onKeyUp={handleCapsLockCheck}
+                  onKeyDown={handleCapsLockCheck}
+                  onBlur={() => setCapsOn(false)}
+                  placeholder={t("password")}
+                  className="pr-10"
+                  aria-invalid={!!passwordError}
+                  aria-describedby={passwordError ? "login-password-err" : (capsOn ? "login-password-caps" : undefined)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute inset-y-0 right-2 flex items-center text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                  aria-label={showPassword ? (lang === "bn" ? "পাসওয়ার্ড লুকান" : "Hide password") : (lang === "bn" ? "পাসওয়ার্ড দেখান" : "Show password")}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {passwordError && <p id="login-password-err" className="text-xs text-destructive mt-1">{passwordError}</p>}
+              {capsOn && !passwordError && (
+                <p id="login-password-caps" className="text-xs text-warning-foreground mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {lang === "bn" ? "Caps Lock চালু আছে" : "Caps Lock is on"}
+                </p>
+              )}
             </div>
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
           </form>
