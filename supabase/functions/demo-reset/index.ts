@@ -861,7 +861,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           steps.push({ key: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা) seed", fn: async () => { locs = await seedLocations(admin); summary.locations = locs.length; } });
           steps.push({ key: "land_types", label: "জমির ধরন (Land Types) seed", fn: async () => { landTypes = await seedLandTypes(admin, officeId); summary.land_types = landTypes.length; } });
           steps.push({ key: "season_types", label: "সিজন টাইপ (Boro/Aman/Aus) seed", fn: async () => { seasonTypes = await seedSeasonTypes(admin); summary.season_types = seasonTypes.length; } });
-          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed (company/card/SMS/receipt)", fn: async () => { await seedSettings(admin); } });
+          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed (company/card/SMS/receipt/QR)", fn: async () => { await seedSettings(admin, officeId); } });
           const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
             modules.includes("savings") || modules.includes("irrigation") ||
             modules.includes("expenses") || modules.includes("farmers");
