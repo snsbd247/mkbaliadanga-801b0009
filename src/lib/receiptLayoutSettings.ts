@@ -150,3 +150,29 @@ export function getIrrigationLabels(lang: "bn" | "en"): { mouza: string; dag: st
     dag: (s.dagLabelBn || "").trim() || DEFAULT_LABELS.bn.dag,
   };
 }
+
+/** Resolve savings labels (per-module override → default). */
+export function getSavingsLabels(lang: "bn" | "en"): { desc: string; balance: string } {
+  const s = getReceiptLayoutSettings();
+  if (lang === "en") return {
+    desc: (s.savingsDescLabelEn || "").trim() || DEFAULT_LABELS.en.savingsDesc,
+    balance: (s.savingsBalanceLabelEn || "").trim() || DEFAULT_LABELS.en.savingsBalance,
+  };
+  return {
+    desc: (s.savingsDescLabelBn || "").trim() || DEFAULT_LABELS.bn.savingsDesc,
+    balance: (s.savingsBalanceLabelBn || "").trim() || DEFAULT_LABELS.bn.savingsBalance,
+  };
+}
+
+/** Resolve loan labels (per-module override → default). */
+export function getLoanLabels(lang: "bn" | "en"): { desc: string; outstanding: string } {
+  const s = getReceiptLayoutSettings();
+  if (lang === "en") return {
+    desc: (s.loanDescLabelEn || "").trim() || DEFAULT_LABELS.en.loanDesc,
+    outstanding: (s.loanOutstandingLabelEn || "").trim() || DEFAULT_LABELS.en.loanOutstanding,
+  };
+  return {
+    desc: (s.loanDescLabelBn || "").trim() || DEFAULT_LABELS.bn.loanDesc,
+    outstanding: (s.loanOutstandingLabelBn || "").trim() || DEFAULT_LABELS.bn.loanOutstanding,
+  };
+}
