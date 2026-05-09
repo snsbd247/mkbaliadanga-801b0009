@@ -28,7 +28,7 @@ describe("logAudit", () => {
     });
     expect(fromMock).toHaveBeenCalledWith("system_audit_logs");
     expect(insertMock).toHaveBeenCalledTimes(1);
-    const payload = insertMock.mock.calls[0][0];
+    const payload = (insertMock.mock.calls[0][0] as any[])[0];
     expect(payload.user_id).toBe("user-1");
     expect(payload.module).toBe("irrigation_payment");
     expect(payload.action_type).toBe("create");
