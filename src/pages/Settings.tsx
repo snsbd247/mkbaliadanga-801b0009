@@ -212,9 +212,6 @@ function ReceiptLayoutCard() {
   ];
 
   // Build live preview HTML — re-renders whenever `s` or `lang` changes.
-  // We import lazily to avoid loading PDF deps on Settings page.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { buildReceiptCopyHtmlForTest } = require("@/lib/bnReceipts");
   const previewHtml = buildReceiptCopyHtmlForTest(
     {
       kind: "irrigation",
