@@ -1,6 +1,6 @@
 # Unused i18n keys
 
-Total keys: **1452** · Referenced: **1049** · Unused: **403**
+Total keys: **1461** · Referenced: **1049** · Unused: **412**
 
 - `signup`
 - `createAccount`
@@ -405,3 +405,12 @@ Total keys: **1452** · Referenced: **1049** · Unused: **403**
 - `view`
 - `locationsManagementDesc`
 - `locationsHierarchyNote`
+- `p5c_pageTitle`
+- `p5c_pageDesc`
+- `share_collection`
+- `savingsLoanReport`
+- `missingFarmerId`
+- `missingAccountNo`
+- `duplicateFarmerIdIssue`
+- `duplicateAccountNo`
+- `duplicateFarmerCode`

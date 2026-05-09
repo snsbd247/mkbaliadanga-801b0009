@@ -12,6 +12,7 @@ const ACTIONS = [
   { key: "can_add", label: "Add" },
   { key: "can_edit", label: "Edit" },
   { key: "can_delete", label: "Delete" },
+  { key: "can_view", label: "Print" }, // Print is gated by view access
 ] as const;
 
 /**
@@ -54,8 +55,8 @@ export default function MyPermissions() {
           <TableHeader>
             <TableRow>
               <TableHead>Module</TableHead>
-              {ACTIONS.map((a) => (
-                <TableHead key={a.key} className="text-center">{a.label}</TableHead>
+              {ACTIONS.map((a, idx) => (
+                <TableHead key={`${a.label}-${idx}`} className="text-center">{a.label}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -63,10 +64,10 @@ export default function MyPermissions() {
             {ALL_MODULES.map((mod) => (
               <TableRow key={mod}>
                 <TableCell className="font-medium capitalize">{mod}</TableCell>
-                {ACTIONS.map((a) => {
+                {ACTIONS.map((a, idx) => {
                   const ok = can(mod, a.key);
                   return (
-                    <TableCell key={a.key} className="text-center">
+                    <TableCell key={`${a.label}-${idx}`} className="text-center">
                       {ok ? (
                         <Check className="inline h-4 w-4 text-green-600" aria-label="allowed" />
                       ) : (
