@@ -273,7 +273,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         if (byCode["1010"]) {
           const { data: je, error: jeErr } = await supabase.from("journal_entries").insert({
             entry_date: new Date().toISOString().slice(0, 10),
-            reference: receiptNoForJournal(paymentId),
+            reference: `IRR-PAY-${paymentId.slice(0, 8)}`,
             description: `Irrigation payment ${paymentId.slice(0, 8)}`,
             office_id: officeId,
             posted: true,
