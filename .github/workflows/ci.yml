@@ -25,6 +25,10 @@ jobs:
           name: i18n-unused-report
           path: docs/i18n-unused-report.md
 
+      # Lint
+      - name: ESLint
+        run: npm run lint
+
       # Unit tests
       - name: Vitest
         run: npm test
