@@ -19,6 +19,7 @@ type Inv = any;
 
 export default function IrrigationReports() {
   const { isSuper } = useAuth();
+  const { t } = useLang();
   const [seasons, setSeasons] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
   const [seasonId, setSeasonId] = useState("all");
