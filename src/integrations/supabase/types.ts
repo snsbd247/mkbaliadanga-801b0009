@@ -1360,6 +1360,48 @@ export type Database = {
           },
         ]
       }
+      irrigation_rate_audit_logs: {
+        Row: {
+          action: string
+          change_reason: string | null
+          changed_at: string
+          changed_by: string | null
+          id: string
+          ip: string | null
+          irrigation_season_id: string | null
+          land_type_id: string | null
+          new_rate: number | null
+          office_id: string | null
+          old_rate: number | null
+        }
+        Insert: {
+          action?: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          ip?: string | null
+          irrigation_season_id?: string | null
+          land_type_id?: string | null
+          new_rate?: number | null
+          office_id?: string | null
+          old_rate?: number | null
+        }
+        Update: {
+          action?: string
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          ip?: string | null
+          irrigation_season_id?: string | null
+          land_type_id?: string | null
+          new_rate?: number | null
+          office_id?: string | null
+          old_rate?: number | null
+        }
+        Relationships: []
+      }
       irrigation_rates: {
         Row: {
           base_rate: number
