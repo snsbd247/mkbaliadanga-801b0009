@@ -356,9 +356,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             <Input placeholder={tx("Invoice no / farmer name / code / mobile", "ইনভয়েস নং / কৃষক নাম / কোড / মোবাইল")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <p className="text-sm text-muted-foreground">{filtered.length} {tx("invoices", "টি ইনভয়েস")} {loading && tx("(loading…)", "(লোড হচ্ছে…)")}</p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(filtered)} disabled={!filtered.length}>
               <FileDown className="h-4 w-4 mr-1" /> CSV
             </Button>
@@ -367,6 +367,33 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             </Button>
           </div>
         </div>
+
+        {selected.size > 0 && (
+          <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2 flex-wrap">
+            <div className="text-sm">
+              <span className="font-semibold">{selected.size}</span> {tx("invoices selected", "টি ইনভয়েস নির্বাচিত")}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>{tx("Clear", "মুছুন")}</Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" disabled={bulkBusy}>
+                    <Files className="h-4 w-4 mr-1" />{bulkBusy ? tx("Working…", "প্রস্তুত…") : tx("Download set as PDF", "সেট PDF ডাউনলোড")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => bulkPreview(lastCopy)}>
+                    <Eye className="h-4 w-4 mr-2" />{tx("Preview combined PDF", "যৌথ PDF প্রিভিউ")}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => bulkDownload("both")}>{tx("Both copies (per page)", "উভয় কপি (প্রতি পেজ)")}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => bulkDownload("office")}>{tx("Office copies only", "শুধু অফিস কপি")}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => bulkDownload("farmer")}>{tx("Farmer copies only", "শুধু কৃষক কপি")}</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
