@@ -22,7 +22,7 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
-import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
