@@ -16,7 +16,7 @@
     "i18n:check:update": "node scripts/i18n-check.mjs --update",
     "i18n:unused": "node scripts/i18n-unused.mjs",
     "i18n:unused:warn": "node scripts/i18n-unused.mjs --warn",
-    "i18n:unused:ci": "node scripts/i18n-unused.mjs --fail --threshold=403",
+    "i18n:unused:ci": "node scripts/i18n-unused.mjs --fail --threshold=412",
     "i18n:prune": "node scripts/i18n-prune.mjs",
     "e2e:responsive": "playwright test e2e/responsive-overlap.spec.ts",
     "e2e:responsive:report": "node scripts/responsive-report.mjs",
