@@ -81,7 +81,7 @@ export function ExportDialog<T = any>({
   const handleExport = async () => {
     const cols = columns.filter((c) => selected[c.key]);
     if (cols.length === 0) {
-      toast.error("কমপক্ষে একটি কলাম নির্বাচন করুন");
+      toast.error(t("exp_pickAtLeastOne" as any));
       return;
     }
     setBusy(true);
