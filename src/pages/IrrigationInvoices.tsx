@@ -21,7 +21,7 @@ import {
   calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
-import { loadSeasonRateMap, resolveRate } from "@/lib/seasonRates";
+import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { Sparkles, Plus, Eye, Ban, RefreshCw } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -299,7 +299,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [seasonId, setSeasonId] = useState("");
   const [officeId, setOfficeId] = useState("");
   const [rateOverride, setRateOverride] = useState<number>(0);
-  const [rateMap, setRateMap] = useState<Record<string, number>>({});
+  const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [dueDate, setDueDate] = useState<string>(() => {
     const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10);
   });
@@ -310,9 +310,9 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
   const [manualOpen, setManualOpen] = useState(false);
 
-  // Load per-field-type rate matrix when season/office changes.
+  // Load per-land-type rate matrix when season/office changes.
   useEffect(() => {
-    if (!seasonId) { setRateMap({}); return; }
+    if (!seasonId) { setRateMap([]); return; }
     loadSeasonRateMap(seasonId, officeId || null).then(setRateMap);
   }, [seasonId, officeId]);
 
@@ -321,7 +321,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     setBusy(true);
     setSkippedNoRate(0);
     try {
-      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type").is("deleted_at", null);
+      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
       const { data: lands, error: lerr } = await lq;
       if (lerr) throw lerr;
@@ -345,8 +345,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       const previewArr: any[] = [];
       let noRate = 0;
       for (const l of eligible) {
-        const matrixRate = resolveRate(rateMap, l.field_type);
-        const rate = matrixRate > 0 ? matrixRate : rateOverride;
+        const matched = resolveRateForLand(rateMap, l);
+        const rate = matched && matched.rate_per_shotok > 0 ? matched.rate_per_shotok : rateOverride;
         if (!(rate > 0)) { noRate++; continue; }
         const billed = await resolveBilledFarmer(l.id, dueDate);
         const calc = calcInvoice({
@@ -356,7 +356,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           due_date: dueDate,
           as_of: new Date().toISOString().slice(0, 10),
         });
-        previewArr.push({ land: l, billed, calc, settings, rate });
+        previewArr.push({ land: l, billed, calc, settings, rate, rateRow: matched });
       }
       setPreviewRows(previewArr);
       setSkippedNoRate(noRate);
@@ -392,6 +392,18 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             due_date: dueDate,
             invoice_status: "generated",
             generated_by: userId,
+            season_rate: row.rate,
+            land_type_id: row.rateRow?.land_type_id ?? null,
+            land_type_name: row.rateRow?.land_type_name ?? row.land.field_type ?? null,
+            calculation_snapshot: {
+              rate_per_shotok: row.rate,
+              land_size_shotok: Number(row.land.land_size),
+              land_type_code: row.rateRow?.land_type_code ?? row.land.field_type ?? null,
+              land_type_name: row.rateRow?.land_type_name ?? null,
+              settings: row.settings,
+              calc: row.calc,
+              generated_at: new Date().toISOString(),
+            },
           };
           const { error } = await supabase.from("irrigation_invoices" as any).insert(payload);
           if (error) { failed++; console.error(error); } else success++;
@@ -541,9 +553,9 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     if (!seasonId || !landId) return;
     const land = lands.find((l: any) => l.id === landId);
     if (!land) return;
-    loadSeasonRateMap(seasonId, land.office_id ?? null).then((m) => {
-      const r = resolveRate(m, land.field_type);
-      if (r > 0) setRate(r);
+    loadSeasonRateMap(seasonId, land.office_id ?? null).then((rows) => {
+      const matched = resolveRateForLand(rows, land);
+      if (matched && matched.rate_per_shotok > 0) setRate(matched.rate_per_shotok);
     });
   }, [seasonId, landId, lands]);
 

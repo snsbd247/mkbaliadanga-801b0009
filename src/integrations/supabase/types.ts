@@ -890,45 +890,6 @@ export type Database = {
           },
         ]
       }
-      field_types: {
-        Row: {
-          code: string
-          created_at: string
-          created_by: string | null
-          id: string
-          is_active: boolean
-          name: string
-          name_bn: string | null
-          office_id: string | null
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          name_bn?: string | null
-          office_id?: string | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          name_bn?: string | null
-          office_id?: string | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       import_audit_logs: {
         Row: {
           created_at: string
@@ -1230,6 +1191,7 @@ export type Database = {
       }
       irrigation_invoices: {
         Row: {
+          calculation_snapshot: Json | null
           canal_amount: number
           cancel_reason: string | null
           cancelled_at: string | null
@@ -1248,6 +1210,8 @@ export type Database = {
           irrigation_amount: number
           is_borga: boolean
           land_id: string
+          land_type_id: string | null
+          land_type_name: string | null
           maintenance_amount: number
           note: string | null
           office_id: string | null
@@ -1256,9 +1220,11 @@ export type Database = {
           paid_amount: number
           payable_amount: number
           season_id: string
+          season_rate: number | null
           updated_at: string
         }
         Insert: {
+          calculation_snapshot?: Json | null
           canal_amount?: number
           cancel_reason?: string | null
           cancelled_at?: string | null
@@ -1277,6 +1243,8 @@ export type Database = {
           irrigation_amount?: number
           is_borga?: boolean
           land_id: string
+          land_type_id?: string | null
+          land_type_name?: string | null
           maintenance_amount?: number
           note?: string | null
           office_id?: string | null
@@ -1285,9 +1253,11 @@ export type Database = {
           paid_amount?: number
           payable_amount?: number
           season_id: string
+          season_rate?: number | null
           updated_at?: string
         }
         Update: {
+          calculation_snapshot?: Json | null
           canal_amount?: number
           cancel_reason?: string | null
           cancelled_at?: string | null
@@ -1306,6 +1276,8 @@ export type Database = {
           irrigation_amount?: number
           is_borga?: boolean
           land_id?: string
+          land_type_id?: string | null
+          land_type_name?: string | null
           maintenance_amount?: number
           note?: string | null
           office_id?: string | null
@@ -1314,6 +1286,7 @@ export type Database = {
           paid_amount?: number
           payable_amount?: number
           season_id?: string
+          season_rate?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1343,6 +1316,13 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "lands_with_location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_invoices_land_type_id_fkey"
+            columns: ["land_type_id"]
+            isOneToOne: false
+            referencedRelation: "land_types"
             referencedColumns: ["id"]
           },
           {
@@ -1430,6 +1410,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      irrigation_season_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          irrigation_season_id: string
+          land_type_id: string
+          office_id: string | null
+          rate_per_shotok: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          irrigation_season_id: string
+          land_type_id: string
+          office_id?: string | null
+          rate_per_shotok?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          irrigation_season_id?: string
+          land_type_id?: string
+          office_id?: string | null
+          rate_per_shotok?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "irrigation_season_rates_irrigation_season_id_fkey"
+            columns: ["irrigation_season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_season_rates_land_type_id_fkey"
+            columns: ["land_type_id"]
+            isOneToOne: false
+            referencedRelation: "land_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      irrigation_season_types: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          name_en: string | null
+          office_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          name_en?: string | null
+          office_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          name_en?: string | null
+          office_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       journal_entries: {
         Row: {
@@ -1606,6 +1679,51 @@ export type Database = {
           },
         ]
       }
+      land_types: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          name_en: string | null
+          office_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          name_en?: string | null
+          office_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          name_en?: string | null
+          office_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lands: {
         Row: {
           created_at: string
@@ -1617,6 +1735,7 @@ export type Database = {
           field_type: Database["public"]["Enums"]["field_type"]
           id: string
           land_size: number
+          land_type_id: string | null
           mouza: string | null
           mouza_id: string | null
           office_id: string | null
@@ -1634,6 +1753,7 @@ export type Database = {
           field_type?: Database["public"]["Enums"]["field_type"]
           id?: string
           land_size?: number
+          land_type_id?: string | null
           mouza?: string | null
           mouza_id?: string | null
           office_id?: string | null
@@ -1651,6 +1771,7 @@ export type Database = {
           field_type?: Database["public"]["Enums"]["field_type"]
           id?: string
           land_size?: number
+          land_type_id?: string | null
           mouza?: string | null
           mouza_id?: string | null
           office_id?: string | null
@@ -1671,6 +1792,13 @@ export type Database = {
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_land_type_id_fkey"
+            columns: ["land_type_id"]
+            isOneToOne: false
+            referencedRelation: "land_types"
             referencedColumns: ["id"]
           },
           {
@@ -2707,108 +2835,43 @@ export type Database = {
           },
         ]
       }
-      season_field_rates: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          field_type_code: string
-          id: string
-          office_id: string | null
-          rate_per_shotok: number
-          season_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          field_type_code: string
-          id?: string
-          office_id?: string | null
-          rate_per_shotok?: number
-          season_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          field_type_code?: string
-          id?: string
-          office_id?: string | null
-          rate_per_shotok?: number
-          season_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "season_field_rates_season_id_fkey"
-            columns: ["season_id"]
-            isOneToOne: false
-            referencedRelation: "seasons"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      season_types: {
-        Row: {
-          code: string
-          created_at: string
-          created_by: string | null
-          id: string
-          is_active: boolean
-          name: string
-          name_bn: string | null
-          office_id: string | null
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          name_bn?: string | null
-          office_id?: string | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          name_bn?: string | null
-          office_id?: string | null
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       seasons: {
         Row: {
           created_at: string
+          due_date: string | null
+          end_date: string | null
+          fiscal_year: string | null
           id: string
           name: string | null
           season_type_id: string | null
+          start_date: string | null
+          status: string
           type: Database["public"]["Enums"]["season_type"]
           year: number
         }
         Insert: {
           created_at?: string
+          due_date?: string | null
+          end_date?: string | null
+          fiscal_year?: string | null
           id?: string
           name?: string | null
           season_type_id?: string | null
+          start_date?: string | null
+          status?: string
           type: Database["public"]["Enums"]["season_type"]
           year: number
         }
         Update: {
           created_at?: string
+          due_date?: string | null
+          end_date?: string | null
+          fiscal_year?: string | null
           id?: string
           name?: string | null
           season_type_id?: string | null
+          start_date?: string | null
+          status?: string
           type?: Database["public"]["Enums"]["season_type"]
           year?: number
         }
@@ -2817,7 +2880,7 @@ export type Database = {
             foreignKeyName: "seasons_season_type_id_fkey"
             columns: ["season_type_id"]
             isOneToOne: false
-            referencedRelation: "season_types"
+            referencedRelation: "irrigation_season_types"
             referencedColumns: ["id"]
           },
         ]

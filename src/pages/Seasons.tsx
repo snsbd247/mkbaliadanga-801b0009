@@ -13,11 +13,11 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { DeleteButton } from "@/components/ui/action-icon-button";
+import { Badge } from "@/components/ui/badge";
 
 type SeasonType = { id: string; code: string; name: string; name_bn: string | null };
-type FieldType = { id: string; code: string; name: string; name_bn: string | null };
+type LandType = { id: string; code: string; name: string; name_bn: string | null };
 
-// Map any custom code to legacy enum value (for backward compat).
 const ENUM_VALUES = new Set(["aman", "boro", "iri", "other"]);
 const toEnum = (code: string) => (ENUM_VALUES.has(code) ? code : "other");
 
@@ -27,9 +27,17 @@ export default function Seasons() {
   const [list, setList] = useState<any[]>([]);
   const [types, setTypes] = useState<SeasonType[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ year: new Date().getFullYear(), season_type_id: "", name: "" });
+  const [form, setForm] = useState<any>({
+    year: new Date().getFullYear(),
+    season_type_id: "",
+    name: "",
+    fiscal_year: "",
+    start_date: "",
+    end_date: "",
+    due_date: "",
+    status: "active",
+  });
 
-  // Rates dialog
   const [ratesOpen, setRatesOpen] = useState(false);
   const [ratesSeason, setRatesSeason] = useState<any | null>(null);
 
@@ -40,8 +48,16 @@ export default function Seasons() {
 
   async function load() {
     const [{ data: s }, { data: st }] = await Promise.all([
-      supabase.from("seasons").select("*, season_types(id,code,name,name_bn)").order("year", { ascending: false }),
-      supabase.from("season_types" as any).select("id,code,name,name_bn").eq("is_active", true).order("sort_order"),
+      supabase
+        .from("seasons")
+        .select("*, irrigation_season_types:season_type_id(id,code,name,name_bn)")
+        .order("year", { ascending: false }),
+      supabase
+        .from("irrigation_season_types" as any)
+        .select("id,code,name,name_bn")
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .order("sort_order"),
     ]);
     setList(s ?? []);
     setTypes((st as any) ?? []);
@@ -56,12 +72,17 @@ export default function Seasons() {
       type: toEnum(stype.code),
       season_type_id: form.season_type_id,
       name: form.name || `${stype.name_bn || stype.name} ${form.year}`,
+      fiscal_year: form.fiscal_year || `${form.year}-${form.year + 1}`,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
+      due_date: form.due_date || null,
+      status: form.status,
     };
     const { error } = await supabase.from("seasons").insert(payload);
     if (error) return toast.error(error.message);
     toast.success(t("saved"));
     setOpen(false);
-    setForm({ year: new Date().getFullYear(), season_type_id: "", name: "" });
+    setForm({ year: new Date().getFullYear(), season_type_id: "", name: "", fiscal_year: "", start_date: "", end_date: "", due_date: "", status: "active" });
     load();
   }
 
@@ -79,52 +100,58 @@ export default function Seasons() {
           isAdmin && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("addNew")}
-                </Button>
+                <Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>
-                    {t("addNew")} — {t("seasons")}
-                  </DialogTitle>
+                  <DialogTitle>{t("addNew")} — {t("seasons")}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-3">
-                  <div>
-                    <Label>{t("year")}</Label>
-                    <Input
-                      type="number"
-                      value={form.year}
-                      onChange={(e) => setForm({ ...form, year: +e.target.value })}
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>সিজন টাইপ</Label>
-                    <Select
-                      value={form.season_type_id}
-                      onValueChange={(v) => setForm({ ...form, season_type_id: v })}
-                    >
+                    <Select value={form.season_type_id} onValueChange={(v) => setForm({ ...form, season_type_id: v })}>
                       <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>
                         {types.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name_bn || s.name}
-                          </SelectItem>
+                          <SelectItem key={s.id} value={s.id}>{s.name_bn || s.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      নতুন টাইপ যোগ করতে: Admin → সিজন ও জমির ধরন
-                    </p>
                   </div>
                   <div>
-                    <Label>{t("name")}</Label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="optional"
-                    />
+                    <Label>{t("year")}</Label>
+                    <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: +e.target.value })} />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>নাম</Label>
+                    <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="উদাহরণ: বোরো ২০২৬" />
+                  </div>
+                  <div>
+                    <Label>অর্থবছর</Label>
+                    <Input value={form.fiscal_year} onChange={(e) => setForm({ ...form, fiscal_year: e.target.value })} placeholder={`${form.year}-${form.year + 1}`} />
+                  </div>
+                  <div>
+                    <Label>স্ট্যাটাস</Label>
+                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">সক্রিয়</SelectItem>
+                        <SelectItem value="closed">বন্ধ</SelectItem>
+                        <SelectItem value="draft">খসড়া</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>শুরুর তারিখ</Label>
+                    <Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>শেষের তারিখ</Label>
+                    <Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>ইনভয়েস মেয়াদ (Due Date)</Label>
+                    <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
                   </div>
                 </div>
                 <DialogFooter>
@@ -140,29 +167,27 @@ export default function Seasons() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("year")}</TableHead>
-              <TableHead>{t("season")}</TableHead>
-              <TableHead>{t("name")}</TableHead>
-              <TableHead className="text-right">{t("actions")}</TableHead>
+              <TableHead>সিজন</TableHead>
+              <TableHead>অর্থবছর</TableHead>
+              <TableHead>মেয়াদ</TableHead>
+              <TableHead>স্ট্যাটাস</TableHead>
+              <TableHead className="text-right">কাজ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {list.map((s) => {
-              const label = s.season_types?.name_bn || s.season_types?.name || t(s.type as any);
+              const label = s.irrigation_season_types?.name_bn || s.irrigation_season_types?.name || s.name || t(s.type as any);
               return (
                 <TableRow key={s.id}>
-                  <TableCell>{s.year}</TableCell>
-                  <TableCell>{label}</TableCell>
-                  <TableCell>{s.name}</TableCell>
+                  <TableCell>{label} <span className="text-muted-foreground">{s.year}</span></TableCell>
+                  <TableCell>{s.fiscal_year ?? "—"}</TableCell>
+                  <TableCell>{s.due_date ?? "—"}</TableCell>
+                  <TableCell><Badge variant={s.status === "active" ? "default" : "secondary"}>{s.status ?? "—"}</Badge></TableCell>
                   <TableCell className="text-right">
                     {isAdmin && (
                       <div className="inline-flex gap-1 justify-end">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => { setRatesSeason(s); setRatesOpen(true); }}
-                        >
-                          <DollarSign className="h-3.5 w-3.5 mr-1" /> রেট
+                        <Button size="sm" variant="outline" onClick={() => { setRatesSeason(s); setRatesOpen(true); }}>
+                          <DollarSign className="h-3.5 w-3.5 mr-1" /> রেট কনফিগ
                         </Button>
                         <DeleteButton onConfirm={() => del(s.id)} />
                       </div>
@@ -173,42 +198,33 @@ export default function Seasons() {
             })}
             {list.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
-                  {t("noData")}
-                </TableCell>
+                <TableCell colSpan={5} className="text-center text-muted-foreground">{t("noData")}</TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </Card>
 
-      <SeasonRatesDialog
-        open={ratesOpen}
-        onOpenChange={setRatesOpen}
-        season={ratesSeason}
-      />
+      <SeasonRatesDialog open={ratesOpen} onOpenChange={setRatesOpen} season={ratesSeason} />
     </>
   );
 }
 
-// ============================================================
-// Per-season per-field-type rate matrix dialog
-// ============================================================
 function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOpenChange: (v: boolean) => void; season: any }) {
-  const [fieldTypes, setFieldTypes] = useState<FieldType[]>([]);
-  const [rates, setRates] = useState<Record<string, number>>({});
+  const [landTypes, setLandTypes] = useState<LandType[]>([]);
+  const [rates, setRates] = useState<Record<string, number>>({}); // land_type_id -> rate
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open || !season?.id) return;
     (async () => {
-      const [{ data: ft }, { data: rs }] = await Promise.all([
-        supabase.from("field_types" as any).select("id,code,name,name_bn").eq("is_active", true).order("sort_order"),
-        supabase.from("season_field_rates" as any).select("field_type_code,rate_per_shotok,office_id").eq("season_id", season.id).is("office_id", null),
+      const [{ data: lt }, { data: rs }] = await Promise.all([
+        supabase.from("land_types" as any).select("id,code,name,name_bn").eq("is_active", true).is("deleted_at", null).order("sort_order"),
+        supabase.from("irrigation_season_rates" as any).select("land_type_id,rate_per_shotok").eq("irrigation_season_id", season.id).is("office_id", null),
       ]);
-      setFieldTypes((ft as any) ?? []);
+      setLandTypes((lt as any) ?? []);
       const m: Record<string, number> = {};
-      for (const r of (rs as any[]) ?? []) m[r.field_type_code] = Number(r.rate_per_shotok);
+      for (const r of (rs as any[]) ?? []) m[r.land_type_id] = Number(r.rate_per_shotok);
       setRates(m);
     })();
   }, [open, season?.id]);
@@ -217,17 +233,16 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
     if (!season?.id) return;
     setBusy(true);
     try {
-      const rows = fieldTypes.map((ft) => ({
-        season_id: season.id,
-        field_type_code: ft.code,
-        rate_per_shotok: Number(rates[ft.code] ?? 0),
+      const rows = landTypes.map((lt) => ({
+        irrigation_season_id: season.id,
+        land_type_id: lt.id,
+        rate_per_shotok: Number(rates[lt.id] ?? 0),
         office_id: null,
       }));
-      // Delete existing globals then re-insert (simpler than upsert with composite null key).
-      await supabase.from("season_field_rates" as any).delete().eq("season_id", season.id).is("office_id", null);
-      const { error } = await supabase.from("season_field_rates" as any).insert(rows);
+      await supabase.from("irrigation_season_rates" as any).delete().eq("irrigation_season_id", season.id).is("office_id", null);
+      const { error } = await supabase.from("irrigation_season_rates" as any).insert(rows);
       if (error) throw error;
-      toast.success("রেট সংরক্ষিত হয়েছে");
+      toast.success("রেট সংরক্ষিত হয়েছে — শুধুমাত্র নতুন ইনভয়েসে প্রভাব পড়বে।");
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e.message);
@@ -236,7 +251,8 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
     }
   }
 
-  const seasonLabel = season ? `${season.season_types?.name_bn || season.season_types?.name || season.type} ${season.year}` : "";
+  const seasonLabel = season ? `${season.irrigation_season_types?.name_bn || season.irrigation_season_types?.name || season.name || season.type} ${season.year}` : "";
+  const total = landTypes.reduce((s, lt) => s + (Number(rates[lt.id]) || 0), 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -245,28 +261,31 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
           <DialogTitle>{seasonLabel} — শতক প্রতি রেট</DialogTitle>
         </DialogHeader>
         <p className="text-xs text-muted-foreground">
-          জমির ধরন অনুযায়ী শতক প্রতি কত টাকা — এটি ইনভয়েস তৈরিতে ব্যবহার হবে।
+          প্রতি জমির ধরন অনুযায়ী রেট। পুরোনো ইনভয়েসে রেট পরিবর্তনের কোনো প্রভাব পড়বে না (snapshot)।
         </p>
         <div className="space-y-2 max-h-[420px] overflow-y-auto">
-          {fieldTypes.map((ft) => (
-            <div key={ft.id} className="grid grid-cols-2 gap-3 items-center">
-              <Label>{ft.name_bn || ft.name}</Label>
+          {landTypes.map((lt) => (
+            <div key={lt.id} className="grid grid-cols-2 gap-3 items-center">
+              <Label>{lt.name_bn || lt.name}</Label>
               <Input
                 type="number"
                 min="0"
                 step="0.01"
-                value={rates[ft.code] ?? 0}
-                onChange={(e) => setRates({ ...rates, [ft.code]: Number(e.target.value) })}
+                value={rates[lt.id] ?? 0}
+                onChange={(e) => setRates({ ...rates, [lt.id]: Number(e.target.value) })}
               />
             </div>
           ))}
-          {fieldTypes.length === 0 && (
-            <p className="text-sm text-muted-foreground">কোনো জমির ধরন নেই — Admin → সিজন ও জমির ধরন থেকে যোগ করুন।</p>
+          {landTypes.length === 0 && (
+            <p className="text-sm text-muted-foreground">কোনো জমির ধরন নেই — সেচ সেটিংস → জমির ধরন থেকে যোগ করুন।</p>
           )}
         </div>
+        {landTypes.length > 0 && (
+          <div className="text-xs text-muted-foreground">মোট কনফিগারড রেট: {total.toFixed(2)}</div>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>বাতিল</Button>
-          <Button onClick={save} disabled={busy || fieldTypes.length === 0}>{busy ? "…" : "সংরক্ষণ"}</Button>
+          <Button onClick={save} disabled={busy || landTypes.length === 0}>{busy ? "…" : "সংরক্ষণ"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
