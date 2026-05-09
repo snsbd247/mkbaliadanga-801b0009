@@ -36,6 +36,7 @@ type Module =
   | "land_relations"
   | "loans"
   | "loan_payments"
+  | "loan_installments"
   | "savings"
   | "payments"
   | "irrigation"
