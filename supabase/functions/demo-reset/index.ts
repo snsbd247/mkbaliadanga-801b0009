@@ -11,9 +11,11 @@ const json = (b: unknown, s = 200) =>
 // Wipe everything EXCEPT: profiles, user_roles, role_permissions, user_permissions, demo_operations_log, developer_update_logs
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
-  "loan_payments", "loan_installments", "loans", "loan_plans",
+  "loan_payments", "loan_installments", "loans", "loan_plans", "loan_delay_fee_settings",
   "irrigation_sms_logs",
+  "irrigation_due_promises",
   "irrigation_invoice_payments", "irrigation_invoice_audit", "irrigation_invoices",
+  "irrigation_delay_fee_audit",
   "irrigation_charges", "irrigation_rates", "irrigation_season_rates", "irrigation_charge_settings",
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
