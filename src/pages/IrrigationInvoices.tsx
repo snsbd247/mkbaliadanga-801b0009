@@ -357,7 +357,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           </div>
           <div className="lg:col-span-2">
             <Label>{tx("Search", "খুঁজুন")}</Label>
-            <Input placeholder={tx("Invoice no / farmer name / code / mobile", "ইনভয়েস নং / কৃষক নাম / কোড / মোবাইল")} value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input placeholder={tx("Invoice no / farmer / code / mobile / dag / mouza", "ইনভয়েস নং / কৃষক / কোড / মোবাইল / দাগ / মৌজা")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
         <div className="flex items-center justify-between gap-2 flex-wrap">
