@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Navigate } from "react-router-dom";
 import { notifyBrandingChange, useBranding } from "@/lib/branding";
+import { getReceiptLayoutSettings, setReceiptLayoutSettings } from "@/lib/receiptLayoutSettings";
 
 export default function Settings() {
   const { t } = useLang();
