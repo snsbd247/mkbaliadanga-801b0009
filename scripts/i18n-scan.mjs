@@ -74,6 +74,7 @@ for (const file of files) {
       return;
     }
     if (isCommentLine(line) || isSeedDataField(line) || isLangGuarded(line) || isSampleArrayRow(line) || isTemplateDefault(line)) return;
+    if (/i18n-ignore/.test(line)) return;
     if (BN.test(line) && !/\bt\(|\btx\(/.test(line)) {
       findings.push({ file, line: i + 1, kind: "bn", text: line.trim().slice(0, 140) });
     }
