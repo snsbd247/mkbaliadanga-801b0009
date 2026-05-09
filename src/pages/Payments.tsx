@@ -161,7 +161,13 @@ export default function Payments() {
   async function loadDues() {
     const [l, i] = await Promise.all([
       supabase.from("loans").select("id,principal,total_payable,issued_on,loan_payments(amount)").eq("farmer_id", farmerId).eq("status", "approved"),
-      supabase.from("irrigation_charges").select("id,total,paid_amount,due_amount,entry_date").eq("farmer_id", farmerId).is("deleted_at", null).gt("due_amount", 0),
+      supabase.from("irrigation_invoices")
+        .select("id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge")
+        .eq("farmer_id", farmerId)
+        .is("deleted_at", null)
+        .neq("invoice_status", "cancelled")
+        .gt("due_amount", 0)
+        .order("due_date", { ascending: true }),
     ]);
     setOpenLoans(l.data ?? []); setOpenIrr(i.data ?? []);
   }
@@ -249,14 +255,30 @@ export default function Payments() {
     }
   }
 
-  async function applyAllocationsToLedgers(_paymentId: string, fId: string, list: Allocation[], desc?: string) {
+  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string) {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
       if (a.kind === "loan" && a.reference_id) {
         await supabase.from("loan_payments").insert({ loan_id: a.reference_id, amount: Number(a.amount), collected_by: user?.id, note: noteText });
       } else if (a.kind === "irrigation" && a.reference_id) {
-        const { data: irr } = await supabase.from("irrigation_charges").select("paid_amount").eq("id", a.reference_id).single();
-        if (irr) await supabase.from("irrigation_charges").update({ paid_amount: Number(irr.paid_amount) + Number(a.amount) }).eq("id", a.reference_id);
+        const { data: inv } = await supabase
+          .from("irrigation_invoices")
+          .select("paid_amount,office_id")
+          .eq("id", a.reference_id)
+          .single();
+        if (inv) {
+          await supabase.from("irrigation_invoices")
+            .update({ paid_amount: Number(inv.paid_amount) + Number(a.amount) })
+            .eq("id", a.reference_id);
+          await supabase.from("irrigation_invoice_payments").insert({
+            invoice_id: a.reference_id,
+            payment_id: paymentId,
+            office_id: inv.office_id,
+            collected_amount: Number(a.amount),
+            irrigation_collected: Number(a.amount),
+            created_by: user?.id,
+          });
+        }
       } else if (a.kind === "savings") {
         await supabase.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id, note: noteText });
       }
@@ -295,7 +317,7 @@ export default function Payments() {
     // Build queue per priority with oldest-first dues
     const queues: Record<string, { reference_id: string; due: number }[]> = {
       irrigation: [...openIrr]
-        .sort((a, b) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime())
+        .sort((a, b) => new Date(a.due_date || a.generated_at).getTime() - new Date(b.due_date || b.generated_at).getTime())
         .map(i => ({ reference_id: i.id, due: Number(i.due_amount || 0) }))
         .filter(x => x.due > 0),
       loan: [...openLoans]
@@ -429,8 +451,12 @@ export default function Payments() {
                   )}
                   {a.kind === "irrigation" && (
                     <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })}>
-                      <SelectTrigger><SelectValue placeholder={openIrr.length ? "Pick charge" : "No open charges"} /></SelectTrigger>
-                      <SelectContent>{openIrr.map(ic => <SelectItem key={ic.id} value={ic.id}>{fmtDate(ic.entry_date)} — Due {money(ic.due_amount)}</SelectItem>)}</SelectContent>
+                      <SelectTrigger><SelectValue placeholder={openIrr.length ? "Pick invoice" : "No open invoices"} /></SelectTrigger>
+                      <SelectContent>{openIrr.map(ic => (
+                        <SelectItem key={ic.id} value={ic.id}>
+                          {ic.invoice_no} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
+                        </SelectItem>
+                      ))}</SelectContent>
                     </Select>
                   )}
                   <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
@@ -514,8 +540,7 @@ export default function Payments() {
                             : kind === "savings" ? "সঞ্চয় জমা গ্রহণ"
                             : "সেচ চার্জ গ্রহণ");
 
-                        const ownerTypeBn = (ot?: string | null) =>
-                          ot === "borgadar" ? "বর্গাদার" : ot === "owner" ? "মালিক" : null;
+                        // owner_type label now derived from invoice.is_borga; helper kept inline above.
                         const memberTypeBn = (f: any) =>
                           f?.is_voter ? "ভোটার নং" : f?.account_number ? "সঞ্চয়ী নং" : null;
                         const memberRefNo = (f: any) => f?.voter_number ?? f?.account_number ?? null;
@@ -530,22 +555,22 @@ export default function Payments() {
                             let primaryCharge: any = null;
                             let totalOutstanding = 0;
                             if (refIds.length) {
-                              const { data: charges } = await supabase
-                                .from("irrigation_charges")
-                                .select("id,total,paid_amount,due_amount,base_charge,penalty_amount,maintenance_charge,canal_charge,other_charge,land_id,note,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
+                              const { data: invs } = await supabase
+                                .from("irrigation_invoices")
+                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
                                 .in("id", refIds);
-                              primaryCharge = (charges ?? [])[0] ?? null;
-                              // total outstanding = sum of due_amount across the farmer's open charges
+                              primaryCharge = (invs ?? [])[0] ?? null;
                               const { data: allDues } = await supabase
-                                .from("irrigation_charges")
+                                .from("irrigation_invoices")
                                 .select("due_amount")
                                 .eq("farmer_id", p.farmer_id)
-                                .is("deleted_at", null);
+                                .is("deleted_at", null)
+                                .neq("invoice_status", "cancelled");
                               totalOutstanding = (allDues ?? []).reduce((s: number, r: any) => s + Number(r.due_amount || 0), 0);
                             }
                             const land = primaryCharge?.lands;
                             const ownerFarmer = land?.farmers;
-                            const isSelf = !land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner";
+                            const isSelf = !primaryCharge?.is_borga && (!land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner");
                             const fieldTypeBn = ({ high_land: "উঁচু জমি", medium_land: "মাঝারি জমি", low_land: "নিচু জমি", other: "অন্যান্য" } as Record<string, string>)[land?.field_type as string] ?? null;
                             irrEnriched = {
                               farmerExtras: {
@@ -553,20 +578,20 @@ export default function Payments() {
                                 dag_no: land?.dag_no ?? null,
                                 land_size: land?.land_size != null ? Number(land.land_size) : null,
                                 field_type_bn: fieldTypeBn,
-                                owner_type_bn: ownerTypeBn(land?.owner_type ?? (isSelf ? "owner" : "borgadar")),
+                                owner_type_bn: primaryCharge?.is_borga ? "বর্গাদার" : "মালিক",
                               },
                               land_owner_label: isSelf
                                 ? "নিজ"
                                 : ownerFarmer
                                   ? `${ownerFarmer.name_bn || ownerFarmer.name_en}${ownerFarmer.member_no ? " (" + ownerFarmer.member_no + ")" : ""}`
                                   : null,
-                              current_season_charge: primaryCharge?.base_charge != null ? Number(primaryCharge.base_charge) : null,
-                              penalty_amount: primaryCharge?.penalty_amount != null ? Number(primaryCharge.penalty_amount) : 0,
-                              maintenance_charge: primaryCharge?.maintenance_charge != null ? Number(primaryCharge.maintenance_charge) : 0,
-                              canal_charge: primaryCharge?.canal_charge != null ? Number(primaryCharge.canal_charge) : 0,
+                              current_season_charge: primaryCharge?.irrigation_amount != null ? Number(primaryCharge.irrigation_amount) : null,
+                              penalty_amount: primaryCharge?.delay_fee != null ? Number(primaryCharge.delay_fee) : 0,
+                              maintenance_charge: primaryCharge?.maintenance_amount != null ? Number(primaryCharge.maintenance_amount) : 0,
+                              canal_charge: primaryCharge?.canal_amount != null ? Number(primaryCharge.canal_amount) : 0,
                               total_outstanding: totalOutstanding,
                               collected_from_outstanding: collectedFromOutstanding,
-                              remark: p.note ?? null,
+                              remark: p.note ?? primaryCharge?.invoice_no ?? null,
                             };
                           }
 
