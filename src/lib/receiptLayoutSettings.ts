@@ -18,6 +18,15 @@ export interface ReceiptLayoutSettings {
   rowSpacingPx: number;          // irrigation (kept for backward compat)
   savingsRowSpacingPx: number;   // savings receipts only
   loanRowSpacingPx: number;      // loan receipts only
+  /** Per-module label overrides (savings/loan). Empty = use built-in defaults. */
+  savingsDescLabelBn: string;
+  savingsDescLabelEn: string;
+  savingsBalanceLabelBn: string;
+  savingsBalanceLabelEn: string;
+  loanDescLabelBn: string;
+  loanDescLabelEn: string;
+  loanOutstandingLabelBn: string;
+  loanOutstandingLabelEn: string;
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
@@ -29,12 +38,28 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   rowSpacingPx: 4,
   savingsRowSpacingPx: 4,
   loanRowSpacingPx: 4,
+  savingsDescLabelBn: "",
+  savingsDescLabelEn: "",
+  savingsBalanceLabelBn: "",
+  savingsBalanceLabelEn: "",
+  loanDescLabelBn: "",
+  loanDescLabelEn: "",
+  loanOutstandingLabelBn: "",
+  loanOutstandingLabelEn: "",
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
 export const DEFAULT_LABELS = {
-  bn: { mouza: "মৌজা / জমির পরিমান:", dag: "দাগ নং:" },
-  en: { mouza: "Mouza / Land size:", dag: "Dag no:" },
+  bn: {
+    mouza: "মৌজা / জমির পরিমান:", dag: "দাগ নং:",
+    savingsDesc: "বিবরণ:", savingsBalance: "বর্তমান স্থিতি:",
+    loanDesc: "ঋণের বিবরণ:", loanOutstanding: "অবশিষ্ট ঋণ:",
+  },
+  en: {
+    mouza: "Mouza / Land size:", dag: "Dag no:",
+    savingsDesc: "Description:", savingsBalance: "Current balance:",
+    loanDesc: "Loan description:", loanOutstanding: "Loan outstanding:",
+  },
 } as const;
 
 const STORAGE_KEY = "receipt_layout_settings_v1";
@@ -123,5 +148,31 @@ export function getIrrigationLabels(lang: "bn" | "en"): { mouza: string; dag: st
   return {
     mouza: (s.mouzaLabelBn || "").trim() || DEFAULT_LABELS.bn.mouza,
     dag: (s.dagLabelBn || "").trim() || DEFAULT_LABELS.bn.dag,
+  };
+}
+
+/** Resolve savings labels (per-module override → default). */
+export function getSavingsLabels(lang: "bn" | "en"): { desc: string; balance: string } {
+  const s = getReceiptLayoutSettings();
+  if (lang === "en") return {
+    desc: (s.savingsDescLabelEn || "").trim() || DEFAULT_LABELS.en.savingsDesc,
+    balance: (s.savingsBalanceLabelEn || "").trim() || DEFAULT_LABELS.en.savingsBalance,
+  };
+  return {
+    desc: (s.savingsDescLabelBn || "").trim() || DEFAULT_LABELS.bn.savingsDesc,
+    balance: (s.savingsBalanceLabelBn || "").trim() || DEFAULT_LABELS.bn.savingsBalance,
+  };
+}
+
+/** Resolve loan labels (per-module override → default). */
+export function getLoanLabels(lang: "bn" | "en"): { desc: string; outstanding: string } {
+  const s = getReceiptLayoutSettings();
+  if (lang === "en") return {
+    desc: (s.loanDescLabelEn || "").trim() || DEFAULT_LABELS.en.loanDesc,
+    outstanding: (s.loanOutstandingLabelEn || "").trim() || DEFAULT_LABELS.en.loanOutstanding,
+  };
+  return {
+    desc: (s.loanDescLabelBn || "").trim() || DEFAULT_LABELS.bn.loanDesc,
+    outstanding: (s.loanOutstandingLabelBn || "").trim() || DEFAULT_LABELS.bn.loanOutstanding,
   };
 }

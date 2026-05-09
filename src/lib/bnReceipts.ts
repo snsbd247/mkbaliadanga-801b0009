@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
-import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels } from "@/lib/receiptLayoutSettings";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
 export type ReceiptCopy = "both" | "farmer" | "office";
@@ -259,11 +259,13 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       rows.push([t.extraCharges, extras]);
     if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
-    if (d.description) rows.push([t.desc, d.description]);
-    if (d.outstanding != null) rows.push([t.balance, fmt2(Number(d.outstanding))]);
+    const sl = getSavingsLabels(lang);
+    if (d.description) rows.push([sl.desc, d.description]);
+    if (d.outstanding != null) rows.push([sl.balance, fmt2(Number(d.outstanding))]);
   } else {
-    if (d.description) rows.push([t.loanDesc, d.description]);
-    if (d.outstanding != null) rows.push([t.remainingLoan, fmt2(Number(d.outstanding))]);
+    const ll = getLoanLabels(lang);
+    if (d.description) rows.push([ll.desc, d.description]);
+    if (d.outstanding != null) rows.push([ll.outstanding, fmt2(Number(d.outstanding))]);
   }
 
   const totalLabel = d.kind === "savings" ? t.totalSav : d.kind === "loan" ? t.totalLoan : t.totalIrr;
