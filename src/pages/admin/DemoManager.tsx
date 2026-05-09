@@ -131,6 +131,7 @@ export default function DemoManager() {
     setLastResult(null);
     setProgress(0);
     setStepLog([]);
+    setRowCountReport(null);
     setCurrentStep(t("dmStarting" as any));
 
     try {
