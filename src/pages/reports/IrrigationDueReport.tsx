@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { formatLandSize, shatakToBigha } from "@/lib/irrigationCalc";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
