@@ -27,6 +27,7 @@ export default function IrrigationReports() {
   const [toDate, setToDate] = useState("");
   const [rows, setRows] = useState<Inv[]>([]);
   const [loading, setLoading] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     document.title = "সেচ রিপোর্ট";
