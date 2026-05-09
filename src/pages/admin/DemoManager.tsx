@@ -603,6 +603,54 @@ export default function DemoManager() {
         </Card>
       )}
 
+      {rowCountReport && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {rowCountReport.allOk
+                ? <CheckCircle2 className="h-5 w-5 text-primary" />
+                : <XCircle className="h-5 w-5 text-destructive" />}
+              {tx("Module Row-Count + Page Mapping", "মডিউল Row-Count + পেজ Mapping")} ({rowCountReport.ok}/{rowCountReport.total})
+            </CardTitle>
+            <CardDescription>
+              {rowCountReport.allOk
+                ? tx("Every required table is populated — no module is empty.", "সব required টেবিলে ডেটা আছে — কোনো মডিউল খালি নেই।")
+                : `${rowCountReport.failed} ${tx("required tables empty", "required টেবিল খালি")}, ${rowCountReport.warnings} ${tx("optional warnings", "optional warning")}`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border rounded">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="p-2 text-left">Module</th>
+                    <th className="p-2 text-left">Table</th>
+                    <th className="p-2 text-left">Page</th>
+                    <th className="p-2 text-right">Rows</th>
+                    <th className="p-2 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(rowCountReport.rows ?? []).map((r: any, i: number) => (
+                    <tr key={i} className={`border-t ${r.status === "empty_required" ? "bg-destructive/5" : ""}`}>
+                      <td className="p-2"><Badge variant="outline">{r.module}</Badge></td>
+                      <td className="p-2 font-mono">{r.table}</td>
+                      <td className="p-2"><a className="underline text-primary" href={r.page}>{r.page_label}</a></td>
+                      <td className={`p-2 text-right tabular-nums ${r.actual === 0 && r.required ? "text-destructive font-bold" : ""}`}>{r.actual}</td>
+                      <td className="p-2">
+                        {r.status === "ok" && <Badge variant="default">OK</Badge>}
+                        {r.status === "empty_required" && <Badge variant="destructive">EMPTY (required)</Badge>}
+                        {r.status === "empty_optional" && <Badge variant="secondary">empty (optional)</Badge>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {seedLog.length > 0 && !loading && (
         <Card>
           <CardHeader>
