@@ -51,6 +51,7 @@ const findings = [];
 for (const file of files) {
   if (SKIP.some(re => re.test(file))) continue;
   const src = readFileSync(file, "utf8");
+  if (/i18n-ignore-file/.test(src)) continue;
   const usesT = /from ["']@\/i18n\/LanguageProvider["']/.test(src);
 
   // Capture i18n-ignore lines BEFORE stripping comments (so block comments still mark the line).
