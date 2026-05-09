@@ -837,6 +837,7 @@ export default function DataImport() {
                 <SelectItem value="land_relations">Land Relations (owner/tenant)</SelectItem>
                 <SelectItem value="loans">Loans</SelectItem>
                 <SelectItem value="loan_payments">Loan Payments</SelectItem>
+                <SelectItem value="loan_installments">Loan Installments</SelectItem>
                 <SelectItem value="savings">Savings Transactions</SelectItem>
                 <SelectItem value="payments">Payments (generic)</SelectItem>
                 <SelectItem value="irrigation">Irrigation Charges</SelectItem>
