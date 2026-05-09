@@ -591,7 +591,6 @@ export const translations = {
     seasonTypesAndLandKinds: "Season Types & Land Kinds",
     seasonRateConfig: "Season Rate Configuration",
     rateChangeHistory: "Rate Change History",
-    savingsLoanReport: "Savings & Loan Report",
     receiptReportIrrPay: "Receipt Report (IRR/PAY)",
     invoicesReport: "Invoices Report",
     irrigationRevenueCollection: "Irrigation Revenue & Collection",
