@@ -13,6 +13,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
 import { useBranding } from "@/lib/branding";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 
 const ALL = "__all__";
 
