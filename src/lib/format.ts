@@ -1,11 +1,6 @@
-// Round to whole taka — half-up: ≥ .50 → up, < .50 → down.
-// This is the project-wide rule for invoices, receipts, payment receipts and reports.
-export const roundTaka = (n: number | null | undefined): number => {
-  const v = Number(n ?? 0);
-  if (!isFinite(v)) return 0;
-  // Math.round in JS rounds .5 away from zero → matches "above .50 = 1, below = 0".
-  return Math.round(v);
-};
+import { roundTaka } from "./rounding";
+
+export { roundTaka } from "./rounding";
 
 export const money = (n: number | null | undefined) =>
   "৳ " + roundTaka(n).toLocaleString("en-IN", { maximumFractionDigits: 0 });
