@@ -39,6 +39,7 @@ type Module =
   | "savings"
   | "payments"
   | "irrigation"
+  | "shares"
   | "cashbook_receipts"
   | "cashbook_expenses"
   | "ledger";
@@ -91,6 +92,10 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   cashbook_expenses: {
     columns: ["expense_date", "head", "payee", "amount", "method", "note"],
     sample: { expense_date: "2026-02-01", head: "Office", payee: "Stationery shop", amount: 500, method: "cash", note: "Pens & paper" },
+  },
+  shares: {
+    columns: ["account_number", "balance"],
+    sample: { account_number: "100000000001", balance: 500 },
   },
 };
 
