@@ -614,6 +614,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
 
 const AUDIT_LOG_TABLES = [
   "audit_logs", "voter_audit_logs", "import_audit_logs",
+  "irrigation_rate_audit_logs", "irrigation_invoice_audit",
   "farmer_login_attempts", "farmer_rejections", "demo_operations_log",
 ];
 
