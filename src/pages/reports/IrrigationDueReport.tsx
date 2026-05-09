@@ -58,9 +58,9 @@ export default function IrrigationDueReport() {
     let cancelled = false;
     setLoading(true);
     (async () => {
-      let q = supabase.from("irrigation_charges").select(
-        "farmer_id,land_id,season_id,total,paid_amount,due_amount,office_id," +
-        "farmers(name_en,farmer_code),lands(mouza,dag_no,land_size),seasons(name,year,type)"
+      let q = supabase.from("irrigation_invoices").select(
+        "farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id," +
+        "farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code),lands(mouza,dag_no,land_size),seasons(name,year,type)"
       ).is("deleted_at", null).limit(5000);
       if (officeId !== "all") q = q.eq("office_id", officeId);
       if (seasonId !== "all") q = q.eq("season_id", seasonId);
@@ -84,7 +84,7 @@ export default function IrrigationDueReport() {
           season_label: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
           total: 0, paid: 0, due: 0,
         };
-        cur.total += Number(r.total || 0);
+        cur.total += Number(r.payable_amount || 0);
         cur.paid += Number(r.paid_amount || 0);
         cur.due += Number(r.due_amount || 0);
         grouped.set(key, cur);
