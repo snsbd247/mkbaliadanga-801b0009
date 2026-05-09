@@ -901,7 +901,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
   customNames?: any[], transactional: boolean = true, preset?: string) {
 
   const encoder = new TextEncoder();
-  const summary: any = { action, modules, voterCfg };
+  const summary: any = { action, modules, voterCfg, transactional, preset: preset ?? null };
 
   const stream = new ReadableStream({
     async start(controller) {
