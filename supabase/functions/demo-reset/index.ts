@@ -469,8 +469,21 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
     };
   });
   if (loanRows.length) {
+    // Seed default delay-fee settings (idempotent per office)
+    await admin.from("loan_delay_fee_settings").upsert({
+      office_id: officeId,
+      mode: "combined",
+      value: 2,            // 2% of installment
+      daily_penalty: 10,   // ৳10 per day
+      grace_days: 5,
+      max_penalty: 1000,
+      auto_apply: true,
+      allow_partial_installment: false,
+      enforcement_mode: "block",
+    }, { onConflict: "office_id" });
+
     const { data: ins } = await admin.from("loans").insert(loanRows).select("id, total_payable, status, issued_on");
-    // Generate installment schedules + payments + delay-fee audit
+    // Generate installment schedules + payments
     const allInst: any[] = [];
     const pays: any[] = [];
     const today = new Date();
@@ -479,12 +492,18 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
       const totalPay = Number(l.total_payable);
       const monthly = +(totalPay / 12).toFixed(2);
       const start = l.issued_on ? new Date(l.issued_on) : new Date(today.getTime() - 180 * 86400000);
-      // 12 installments; first 3 paid, next 2 overdue, rest pending
+      // 12 installments; first 3 paid, the past-due remaining ones become overdue, future ones stay due
       for (let n = 1; n <= 12; n++) {
         const due = new Date(start);
         due.setMonth(due.getMonth() + n);
         const paid = n <= 3;
-        const overdue = !paid && due < today;
+        const isOverdue = !paid && due < today;
+        const overdueDays = isOverdue ? Math.floor((today.getTime() - due.getTime()) / 86400000) : 0;
+        // Combined penalty: 2% of monthly + 10/day beyond 5-day grace, capped at 1000
+        const billable = Math.max(0, overdueDays - 5);
+        const penalty = isOverdue
+          ? Math.min(1000, +(monthly * 0.02 + billable * 10).toFixed(2))
+          : 0;
         allInst.push({
           loan_id: l.id,
           installment_no: n,
@@ -492,8 +511,9 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
           paid_amount: paid ? monthly : 0,
           due_date: due.toISOString().slice(0, 10),
           paid_on: paid ? new Date(due.getTime() - 2 * 86400000).toISOString().slice(0, 10) : null,
-          status: paid ? "paid" : (overdue ? "pending" : "pending"),
-          penalty_amount: overdue ? 50 : 0,
+          status: paid ? "paid" : "due",
+          penalty_amount: penalty,
+          overdue_days: overdueDays,
           office_id: officeId,
         });
       }
@@ -504,6 +524,7 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
         pays.push({
           loan_id: l.id, amount: monthly, office_id: officeId,
           paid_on: new Date(due.getTime() - 2 * 86400000).toISOString().slice(0, 10),
+          penalty_collected: 0,
         });
       }
     }
