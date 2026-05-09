@@ -458,6 +458,16 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                             {lastCopy === "farmer" ? "✓ " : ""}{tx("Farmer copy", "কৃষকের কপি")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => shareInvoice(r)}>
+                            <Share2 className="h-4 w-4 mr-2" />{tx("Share PDF…", "PDF শেয়ার…")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => shareWhatsApp(r)}>
+                            <MessageCircle className="h-4 w-4 mr-2" />{tx("WhatsApp summary", "WhatsApp বার্তা")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => shareEmail(r)}>
+                            <Mail className="h-4 w-4 mr-2" />{tx("Email summary", "ইমেইল বার্তা")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => setPdfSettingsOpen(true)}>
                             <SettingsIcon className="h-4 w-4 mr-2" />{tx("PDF settings", "PDF সেটিংস")}
                           </DropdownMenuItem>
