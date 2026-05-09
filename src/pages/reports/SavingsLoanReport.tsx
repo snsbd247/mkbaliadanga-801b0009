@@ -126,7 +126,7 @@ export default function SavingsLoanReport() {
   return (
     <>
       <PageHeader
-        title={t("savingsLoanReport" as any) || "Savings & Loan Report"}
+        title="Savings & Loan Report"
         description="Daily / Monthly aggregation with PDF and Excel export."
       />
 
