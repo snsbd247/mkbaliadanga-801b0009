@@ -28,6 +28,7 @@ import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
+import IrrigationInvoicesTab from "@/components/farmers/IrrigationInvoicesTab";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
