@@ -71,8 +71,8 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
     sample: { account_number: "100000000001", amount: 1000, paid_on: "2026-02-15", note: "1st installment" },
   },
   loan_installments: {
-    columns: ["loan_no", "installment_no", "due_date", "amount", "status"],
-    sample: { loan_no: "LOAN-2026-001", installment_no: 1, due_date: "2026-02-15", amount: 1000, status: "due" },
+    columns: ["account_number", "installment_no", "due_date", "amount", "status"],
+    sample: { account_number: "100000000001", installment_no: 1, due_date: "2026-02-15", amount: 1000, status: "due" },
   },
   savings: {
     columns: ["account_number", "type", "amount", "txn_date", "note"],
