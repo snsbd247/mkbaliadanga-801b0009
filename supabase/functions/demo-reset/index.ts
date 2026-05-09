@@ -661,12 +661,13 @@ async function ensureOffice(admin: any) {
 function estimateImport(modules: string[], size: number) {
   const c: Record<string, number> = {};
   if (modules.includes("locations")) c["divisions/districts/upazilas/mouzas"] = 4;
-  if (modules.includes("settings")) c["company_settings + card_settings"] = 2;
-  if (modules.includes("accounting")) c["accounts"] = 8;
-  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; }
-  if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_rates"] = 1; c["irrigation_charges"] = size; }
+  c["land_types"] = 3; c["irrigation_season_types"] = 3;
+  if (modules.includes("settings")) c["company/card/sms/receipt settings"] = 4;
+  if (modules.includes("accounting")) c["accounts"] = 12;
+  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; c["patwaris"] = 4; c["land_relations"] = Math.ceil(size / 7); }
+  if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_charge_settings"] = 1; c["irrigation_season_rates"] = 3; c["irrigation_charges"] = size; c["irrigation_invoices"] = size; }
   if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 1; c["loans"] = n; c["loan_payments"] = Math.min(3, n); }
-  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 1; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); }
+  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 1; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); c["farmer_savings_plans"] = Math.ceil(n * 0.5); }
   if (modules.includes("expenses")) c["expenses"] = 3;
   return c;
 }
