@@ -175,21 +175,21 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
                     aria-label="Select all"
                   />
                 </TableHead>
-                <TableHead>ইনভয়েস</TableHead>
-                <TableHead>সিজন</TableHead>
-                <TableHead>জমি</TableHead>
-                <SortHead label="মেয়াদ" k="due_date" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                <SortHead label="প্রদেয়" k="payable_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
-                <SortHead label="পরিশোধিত" k="paid_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
-                <SortHead label="বকেয়া" k="due_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
-                <SortHead label="স্ট্যাটাস" k="invoice_status" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <TableHead>{t("irr_colInvoice" as any)}</TableHead>
+                <TableHead>{t("irr_colSeason" as any)}</TableHead>
+                <TableHead>{t("irr_colLand" as any)}</TableHead>
+                <SortHead label={t("irr_colDueDate" as any)} k="due_date" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortHead label={t("irr_chartLegendPayable" as any)} k="payable_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
+                <SortHead label={t("irr_colPaid" as any)} k="paid_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
+                <SortHead label={t("irr_colDue" as any)} k="due_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
+                <SortHead label={t("irr_colStatus" as any)} k="invoice_status" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">লোড হচ্ছে…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">{t("irr_loading" as any)}</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">কোন ইনভয়েস নেই</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">{t("irr_noInvoice" as any)}</TableCell></TableRow>
               ) : filtered.map((r) => {
                 const st = effectiveStatus(r);
                 const eligible = Number(r.due_amount || 0) > 0 && r.invoice_status !== "cancelled";
