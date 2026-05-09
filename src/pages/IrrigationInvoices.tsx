@@ -169,38 +169,60 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     toast.success(tx("Invoice deleted", "ইনভয়েস মুছে ফেলা হয়েছে")); load();
   }
 
-  async function printInvoice(inv: any, copy: InvoiceCopy = "both") {
+  function buildInvoicePdfPayload(inv: any) {
+    return {
+      invoice_no: inv.invoice_no,
+      generated_at: inv.generated_at,
+      due_date: inv.due_date,
+      is_borga: inv.is_borga,
+      note: inv.note,
+      irrigation_amount: inv.irrigation_amount,
+      maintenance_amount: inv.maintenance_amount,
+      canal_amount: inv.canal_amount,
+      other_charge: inv.other_charge,
+      delay_fee: inv.delay_fee,
+      payable_amount: inv.payable_amount,
+      paid_amount: inv.paid_amount,
+      due_amount: inv.due_amount,
+      invoice_status: inv.invoice_status,
+      farmer: {
+        name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
+        farmer_code: inv.farmers?.farmer_code,
+        mobile: inv.farmers?.mobile,
+        village: inv.farmers?.village ?? null,
+      },
+      land: {
+        mouza: inv.lands?.mouza,
+        dag_no: inv.lands?.dag_no,
+        land_size: inv.lands?.land_size,
+      },
+      season: inv.seasons,
+    };
+  }
+
+  async function downloadInvoice(inv: any, copy: InvoiceCopy) {
     try {
-      await downloadIrrigationInvoicePdf({
-        invoice_no: inv.invoice_no,
-        generated_at: inv.generated_at,
-        due_date: inv.due_date,
-        is_borga: inv.is_borga,
-        note: inv.note,
-        irrigation_amount: inv.irrigation_amount,
-        maintenance_amount: inv.maintenance_amount,
-        canal_amount: inv.canal_amount,
-        other_charge: inv.other_charge,
-        delay_fee: inv.delay_fee,
-        payable_amount: inv.payable_amount,
-        paid_amount: inv.paid_amount,
-        due_amount: inv.due_amount,
-        invoice_status: inv.invoice_status,
-        farmer: {
-          name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
-          farmer_code: inv.farmers?.farmer_code,
-          mobile: inv.farmers?.mobile,
-          village: inv.farmers?.village ?? null,
-        },
-        land: {
-          mouza: inv.lands?.mouza,
-          dag_no: inv.lands?.dag_no,
-          land_size: inv.lands?.land_size,
-        },
-        season: inv.seasons,
-      }, copy);
+      saveLastInvoiceCopy(copy);
+      setLastCopy(copy);
+      await downloadIrrigationInvoicePdf(buildInvoicePdfPayload(inv), copy, pdfSettings);
     } catch (e: any) {
       toast.error(e?.message ?? tx("Failed to generate PDF", "পিডিএফ তৈরি ব্যর্থ"));
+    }
+  }
+
+  async function previewInvoice(inv: any, copy: InvoiceCopy) {
+    try {
+      setPdfPreviewLoading(true);
+      saveLastInvoiceCopy(copy);
+      setLastCopy(copy);
+      const url = await previewIrrigationInvoicePdf(buildInvoicePdfPayload(inv), copy, pdfSettings);
+      // Revoke prior URL to avoid leaks
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(url);
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Failed to preview PDF", "প্রিভিউ তৈরি ব্যর্থ"));
+    } finally {
+      setPdfPreviewLoading(false);
     }
   }
 
