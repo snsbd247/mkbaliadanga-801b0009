@@ -31,7 +31,7 @@ export default function IrrigationReports() {
   const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
-    document.title = "সেচ রিপোর্ট";
+    document.title = t("irr_pageTitle" as any);
     Promise.all([
       supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
       supabase.from("offices").select("id,name").order("name"),
