@@ -277,10 +277,7 @@ export default function Payments() {
       const { data: full } = await supabase.from("farmers").select("mobile,name_bn,name_en").eq("id", fId).maybeSingle();
       const mobile = full?.mobile ?? farmer?.mobile;
       if (!mobile) return;
-      const message = tx(
-        `BDT ${irrTotal.toLocaleString()} received against your irrigation invoice.${receiptNo ? `\nReceipt no: ${receiptNo}` : ""}\nThank you.`,
-        `আপনার সেচ ইনভয়েসের ৳${irrTotal.toLocaleString()} টাকা গ্রহণ করা হয়েছে।${receiptNo ? `\nরসিদ নং: ${receiptNo}` : ""}\nধন্যবাদ।`
-      );
+      const message = tx(`BDT ${irrTotal.toLocaleString()} received against your irrigation invoice.${receiptNo ? `\nReceipt no: ${receiptNo}` : ""}\nThank you.`, `আপনার সেচ ইনভয়েসের ৳${irrTotal.toLocaleString()} টাকা গ্রহণ করা হয়েছে।${receiptNo ? `\nরসিদ নং: ${receiptNo}` : ""}\nধন্যবাদ।`);
       await supabase.functions.invoke("send-sms", { body: { mobile, message, event_type: "irrigation_payment", farmer_id: fId } });
     } catch (_) { /* SMS failure must not break payment flow */ }
   }
@@ -602,7 +599,7 @@ export default function Payments() {
                             const land = primaryCharge?.lands;
                             const ownerFarmer = land?.farmers;
                             const isSelf = !primaryCharge?.is_borga && (!land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner");
-                            const fieldTypeBn = ({ high_land: "উঁচু জমি", medium_land: "মাঝারি জমি", low_land: "নিচু জমি", other: "অন্যান্য" } as Record<string, string>)[land?.field_type as string] ?? null;
+                            const fieldTypeBn = ({ high_land: tx("High land","উঁচু জমি"), medium_land: tx("Medium land","মাঝারি জমি"), low_land: tx("Low land","নিচু জমি"), other: tx("Other","অন্যান্য") } as Record<string, string>)[land?.field_type as string] ?? null;
                             irrEnriched = {
                               farmerExtras: {
                                 mouza: land?.mouza ?? null,
