@@ -432,7 +432,7 @@ export default function Reports() {
                 <TableCell>{fmtDate(r.entry_date)}</TableCell>
                 <TableCell>{r.farmers?.name_en} <span className="text-xs text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
                 <TableCell>{r.seasons?.name}</TableCell>
-                <TableCell>{r.lands?.dag_no}</TableCell>
+                <TableCell className="whitespace-pre-line">{formatDagNumbers(r.lands?.dag_no)}</TableCell>
                 <TableCell className="text-right">{money(r.base_charge)}</TableCell>
                 <TableCell className="text-right">{money(r.canal_charge)}</TableCell>
                 <TableCell className="text-right">{money(r.maintenance_charge)}</TableCell>
