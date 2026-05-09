@@ -182,6 +182,7 @@ const App = () => (
                 <Route path="/admin/patwaris" element={<RequireRole roles={["admin","super_admin"]}><Patwaris /></RequireRole>} />
                 <Route path="/admin/patwaris/:id" element={<RequireRole roles={["admin","super_admin"]}><PatwariDetail /></RequireRole>} />
                 <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />
+                <Route path="/admin/lookups" element={<RequireRole roles={["admin","super_admin"]}><AdminLookups /></RequireRole>} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />
