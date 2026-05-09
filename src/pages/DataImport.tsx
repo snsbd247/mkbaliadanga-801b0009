@@ -706,7 +706,12 @@ export default function DataImport() {
           <div><strong>Required columns:</strong> {tpl.columns.join(", ")}</div>
           <div className="text-[11px]">
             💡 <strong>account_number</strong> = farmer-এর Voter / Savings A/C No (১২ ডিজিট নম্বর)। Farmer তৈরি করার সময় auto-generate হয়। Bulk Farmer Import-এ <code>voter_number</code> কলাম দিয়ে এটি আপনি সরাসরি দিতে পারেন।
-          </div>
+          {(mod === "lands" || mod === "irrigation" || mod === "land_relations") && (
+            <div className="text-[11px]">
+              🏷️ <strong>dag_no</strong> এ একটি জমির একাধিক দাগ নম্বর কমা দিয়ে দিতে পারেন (যেমন <code>123, 124/A, 125-B</code>)। প্রতিটি টোকেনে শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> ব্যবহার করা যাবে। ইমপোর্টের সময় canonical format-এ অটো রূপান্তর হবে এবং invalid হলে সেই row error দেখাবে।
+            </div>
+          )}
+        </div>
         </div>
 
         {rows.length > 0 && (
