@@ -220,7 +220,7 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
             </TableBody>
           </Table>
         </div>
-        <p className="text-xs text-muted-foreground">{filtered.length} টি ইনভয়েস (মোট {rows.length})</p>
+        <p className="text-xs text-muted-foreground">{t("irr_invoiceCount" as any).replace("{n}", String(filtered.length))} ({rows.length})</p>
       </CardContent>
     </Card>
   );
