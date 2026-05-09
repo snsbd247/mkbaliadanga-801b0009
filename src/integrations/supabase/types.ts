@@ -3431,6 +3431,48 @@ export type Database = {
         }
         Relationships: []
       }
+      system_audit_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          ip: string | null
+          module: string
+          new_data: Json | null
+          office_id: string | null
+          old_data: Json | null
+          reference_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          ip?: string | null
+          module: string
+          new_data?: Json | null
+          office_id?: string | null
+          old_data?: Json | null
+          reference_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip?: string | null
+          module?: string
+          new_data?: Json | null
+          office_id?: string | null
+          old_data?: Json | null
+          reference_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       upazilas: {
         Row: {
           code: string | null

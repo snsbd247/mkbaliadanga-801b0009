@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { downloadCsv } from "@/lib/csvExport";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -99,6 +100,17 @@ export default function PromiseDueReport() {
   function exportXlsx() {
     exportExcel("promise_due_report", "Promises", filtered);
   }
+  function exportCsv() {
+    downloadCsv(`promise_due_report_${new Date().toISOString().slice(0, 10)}`, filtered, [
+      { header: "Farmer", accessor: r => r.farmer_name },
+      { header: "Code", accessor: r => r.farmer_code ?? "" },
+      { header: "Previous Due", accessor: r => r.previous_due_amount },
+      { header: "Promise Date", accessor: r => r.promise_date },
+      { header: "Status", accessor: r => r.status },
+      { header: "Remarks", accessor: r => r.remarks ?? "" },
+      { header: "Created At", accessor: r => r.created_at },
+    ]);
+  }
 
   const statusBadge = (s: string) => {
     const map: any = {
@@ -148,6 +160,7 @@ export default function PromiseDueReport() {
           <div className="flex items-end gap-2">
             <Button variant="outline" size="sm" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
             <Button variant="outline" size="sm" onClick={exportXlsx}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+            <Button variant="outline" size="sm" onClick={exportCsv}><FileText className="h-4 w-4 mr-1" />CSV</Button>
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
