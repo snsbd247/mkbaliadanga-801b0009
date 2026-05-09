@@ -146,6 +146,7 @@ export default function Settings() {
         </div>
       </Card>
       <RoundingCard />
+      <ReceiptLayoutCard />
       <Card className="max-w-2xl p-6 mt-4">
         <div className="flex items-center justify-between">
           <div>
@@ -191,6 +192,76 @@ function RoundingCard() {
           </label>
         ))}
       </div>
+    </Card>
+  );
+}
+
+function ReceiptLayoutCard() {
+  const [s, setS] = useState(() => {
+    // lazy import to avoid circular deps
+    const mod = require("@/lib/receiptLayoutSettings");
+    return mod.getReceiptLayoutSettings();
+  });
+  const update = (patch: any) => {
+    const mod = require("@/lib/receiptLayoutSettings");
+    const next = mod.setReceiptLayoutSettings(patch);
+    setS(next);
+    toast.success("রিসিপ্ট লে-আউট আপডেট হয়েছে");
+  };
+  const seps: Array<{ v: "comma" | "newline" | "semicolon"; label: string }> = [
+    { v: "comma", label: "কমা ( , )" },
+    { v: "newline", label: "নতুন লাইন" },
+    { v: "semicolon", label: "সেমিকোলন ( ; )" },
+  ];
+  return (
+    <Card className="max-w-2xl p-6 mt-4">
+      <div className="font-semibold mb-1">সেচ রিসিপ্ট লে-আউট</div>
+      <div className="text-sm text-muted-foreground mb-3">
+        মাল্টিপল দাগ নম্বর কীভাবে দেখাবে, রো-এর লেবেল ও স্পেসিং কাস্টমাইজ করুন। অন্য মডিউলে প্রভাব পড়বে না।
+      </div>
+
+      <div className="mb-4">
+        <div className="text-sm font-medium mb-2">দাগ নম্বর সেপারেটর</div>
+        <div className="grid gap-2">
+          {seps.map((o) => (
+            <label key={o.v} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="dag-sep" checked={s.dagSeparator === o.v}
+                onChange={() => update({ dagSeparator: o.v })} />
+              <span>{o.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3 mb-4">
+        <label className="text-sm">
+          <div className="font-medium mb-1">মৌজা/জমির পরিমান লেবেল (BN)</div>
+          <input className="w-full border rounded px-2 py-1 bg-background" value={s.mouzaLabelBn}
+            placeholder="মৌজা / জমির পরিমান:" onChange={(e) => update({ mouzaLabelBn: e.target.value })} />
+        </label>
+        <label className="text-sm">
+          <div className="font-medium mb-1">Mouza/Land label (EN)</div>
+          <input className="w-full border rounded px-2 py-1 bg-background" value={s.mouzaLabelEn}
+            placeholder="Mouza / Land size:" onChange={(e) => update({ mouzaLabelEn: e.target.value })} />
+        </label>
+        <label className="text-sm">
+          <div className="font-medium mb-1">দাগ নং লেবেল (BN)</div>
+          <input className="w-full border rounded px-2 py-1 bg-background" value={s.dagLabelBn}
+            placeholder="দাগ নং:" onChange={(e) => update({ dagLabelBn: e.target.value })} />
+        </label>
+        <label className="text-sm">
+          <div className="font-medium mb-1">Dag no label (EN)</div>
+          <input className="w-full border rounded px-2 py-1 bg-background" value={s.dagLabelEn}
+            placeholder="Dag no:" onChange={(e) => update({ dagLabelEn: e.target.value })} />
+        </label>
+      </div>
+
+      <label className="text-sm block">
+        <div className="font-medium mb-1">রো স্পেসিং (px): {s.rowSpacingPx}</div>
+        <input type="range" min={2} max={12} value={s.rowSpacingPx}
+          onChange={(e) => update({ rowSpacingPx: Number(e.target.value) })}
+          className="w-full" />
+      </label>
     </Card>
   );
 }
