@@ -46,7 +46,9 @@ export function normalizeFarmerCode(
   if (digits.length > 12) {
     return { ok: false, error: `"${raw}" is too long for a Farmer ID` };
   }
-  return { ok: true, value: digits.padStart(PAD, "0") };
+  // Drop leading zeros so "00000001" and "1" both canonicalize to "00001".
+  const stripped = digits.replace(/^0+/, "") || "0";
+  return { ok: true, value: stripped.padStart(PAD, "0") };
 }
 
 /**
