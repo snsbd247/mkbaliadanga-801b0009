@@ -63,6 +63,9 @@ export default function DemoManager() {
   const [customNames, setCustomNames] = useState<any[] | null>(null);
   const [csvFileName, setCsvFileName] = useState<string>("");
   const [clearing, setClearing] = useState(false);
+  const [presetId, setPresetId] = useState<string>("custom");
+  const [transactional, setTransactional] = useState(true);
+  const [rowCountReport, setRowCountReport] = useState<any>(null);
 
   // logs + filters
   const [logs, setLogs] = useState<any[]>([]);
