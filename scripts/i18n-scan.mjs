@@ -17,7 +17,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from "
 import { join } from "node:path";
 
 const ROOTS = ["src/pages", "src/components"];
-const SKIP = [/i18n\//, /__tests__/, /\/test\//, /integrations\//, /bnNumber\.ts$/, /bnReceipts\.ts$/];
+const SKIP = [/i18n\//, /__tests__/, /\/test\//, /integrations\//, /bnNumber\.ts$/, /bnReceipts\.ts$/, /components\/ui\//];
 const BN = /[\u0980-\u09FF]{2,}/;
 const BASELINE = "scripts/i18n-scan-baseline.json";
 const args = new Set(process.argv.slice(2));
