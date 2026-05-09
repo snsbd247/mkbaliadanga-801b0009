@@ -814,6 +814,7 @@ export default function DataImport() {
                 <SelectItem value="irrigation">Irrigation Charges</SelectItem>
                 <SelectItem value="cashbook_receipts">Cashbook — Receipts</SelectItem>
                 <SelectItem value="cashbook_expenses">Cashbook — Expenses</SelectItem>
+                <SelectItem value="shares">Share Balance (upsert)</SelectItem>
                 {isSuper && <SelectItem value="ledger">Ledger Entries (super-admin)</SelectItem>}
               </SelectContent>
             </Select>
