@@ -493,9 +493,11 @@ export default function FarmerDetail() {
     if (!v.ok) { setLandLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
     if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) }); return; }
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
+    let canonicalDag = land.dag_no.trim();
     if (land.owner_type === "owner") {
       const dv = validateDagNumbers(land.dag_no);
       if (dv.ok === false) return toast.error(dv.error);
+      canonicalDag = dv.values.join(", ");
     }
     if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
@@ -510,7 +512,7 @@ export default function FarmerDetail() {
         district_id: (landLoc as any).district_id ?? null,
         upazila_id: (landLoc as any).upazila_id ?? null,
         mouza_id: (landLoc as any).mouza_id ?? null,
-        dag_no: land.dag_no,
+        dag_no: canonicalDag,
         land_size: land.land_size,
         owner_type: land.owner_type as any,
         field_type: land.field_type as any,
