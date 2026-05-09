@@ -22,7 +22,7 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
-import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,6 +97,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [editInv, setEditInv] = useState<Invoice | null>(null);
 
   async function load() {
     setLoading(true);
@@ -140,6 +141,66 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       .eq("id", inv.id);
     if (error) return toast.error(error.message);
     toast.success("ইনভয়েস বাতিল করা হয়েছে"); load();
+  }
+
+  async function deleteInvoice(inv: any) {
+    const ok = await confirm({
+      title: "ইনভয়েস মুছে ফেলবেন?",
+      description: `${inv.invoice_no} — মুছে ফেলা ইনভয়েস তালিকায় দেখাবে না।`,
+      destructive: true, confirmText: "মুছুন",
+    });
+    if (!ok) return;
+    const { error } = await supabase
+      .from("irrigation_invoices" as any)
+      .update({ deleted_at: new Date().toISOString() } as any)
+      .eq("id", inv.id);
+    if (error) return toast.error(error.message);
+    toast.success("ইনভয়েস মুছে ফেলা হয়েছে"); load();
+  }
+
+  function printInvoice(inv: any) {
+    const farmer = inv.farmers?.name_bn ?? inv.farmers?.name_en ?? "—";
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${inv.invoice_no}</title>
+<style>
+  body{font-family:'Noto Sans Bengali',system-ui,sans-serif;padding:24px;color:#111}
+  h1{font-size:20px;margin:0 0 4px} h2{font-size:14px;margin:0 0 16px;color:#555;font-weight:500}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  td,th{border:1px solid #ddd;padding:6px 10px;font-size:13px;text-align:left}
+  th{background:#f6f6f6}
+  .right{text-align:right} .total{font-weight:700;background:#fafafa}
+  .meta td{border:none;padding:2px 0}
+  @media print{button{display:none}}
+</style></head><body>
+  <h1>সেচ ইনভয়েস — ${inv.invoice_no}</h1>
+  <h2>${inv.seasons?.name ?? inv.seasons?.type ?? ""} ${inv.seasons?.year ?? ""}</h2>
+  <table class="meta">
+    <tr><td><b>কৃষক:</b></td><td>${farmer} (${inv.farmers?.farmer_code ?? ""})</td></tr>
+    <tr><td><b>মোবাইল:</b></td><td>${inv.farmers?.mobile ?? "—"}</td></tr>
+    <tr><td><b>জমি:</b></td><td>${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no ?? "—"} • ${formatLandSize(inv.lands?.land_size) ?? ""}</td></tr>
+    <tr><td><b>ধরন:</b></td><td>${inv.is_borga ? "বর্গাদার" : "নিজ মালিক"}</td></tr>
+    <tr><td><b>ইস্যু তারিখ:</b></td><td>${fmtDate(inv.generated_at)}</td></tr>
+    <tr><td><b>মেয়াদ:</b></td><td>${fmtDate(inv.due_date)}</td></tr>
+  </table>
+  <table>
+    <thead><tr><th>বিবরণ</th><th class="right">টাকা</th></tr></thead>
+    <tbody>
+      <tr><td>সেচ চার্জ</td><td class="right">${money(inv.irrigation_amount)}</td></tr>
+      <tr><td>রক্ষণাবেক্ষণ</td><td class="right">${money(inv.maintenance_amount)}</td></tr>
+      <tr><td>খাল/নালা</td><td class="right">${money(inv.canal_amount)}</td></tr>
+      <tr><td>অন্যান্য</td><td class="right">${money(inv.other_charge)}</td></tr>
+      <tr><td>বিলম্ব ফি</td><td class="right">${money(inv.delay_fee)}</td></tr>
+      <tr class="total"><td>মোট প্রদেয়</td><td class="right">${money(inv.payable_amount)}</td></tr>
+      <tr><td>পরিশোধিত</td><td class="right">${money(inv.paid_amount)}</td></tr>
+      <tr class="total"><td>বকেয়া</td><td class="right">${money(inv.due_amount)}</td></tr>
+    </tbody>
+  </table>
+  ${inv.note ? `<p><b>মন্তব্য:</b> ${inv.note}</p>` : ""}
+  <p style="margin-top:24px;font-size:11px;color:#777">প্রিন্ট: ${new Date().toLocaleString("bn-BD")}</p>
+  <script>window.onload=()=>{window.print();}</script>
+</body></html>`;
+    const w = window.open("", "_blank", "width=800,height=900");
+    if (!w) return toast.error("পপআপ অনুমতি দিন");
+    w.document.write(html); w.document.close();
   }
 
   return (
@@ -238,9 +299,16 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" title="দেখুন" onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" title="প্রিন্ট" onClick={() => printInvoice(r)}><Printer className="h-4 w-4" /></Button>
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
-                        <Button size="sm" variant="ghost" onClick={() => cancelInvoice(r)}><Ban className="h-4 w-4 text-destructive" /></Button>
+                        <Button size="sm" variant="ghost" title="এডিট" onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
+                      )}
+                      {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
+                        <Button size="sm" variant="ghost" title="বাতিল" onClick={() => cancelInvoice(r)}><Ban className="h-4 w-4 text-destructive" /></Button>
+                      )}
+                      {isSuper && (
+                        <Button size="sm" variant="ghost" title="মুছুন" onClick={() => deleteInvoice(r)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       )}
                     </div>
                   </TableCell>
@@ -258,8 +326,96 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           allRows={rows}
           onRecalculated={load}
         />
+        <InvoiceEditDialog inv={editInv} onClose={() => setEditInv(null)} onSaved={load} />
       </CardContent>
     </Card>
+  );
+}
+
+// ============================================================
+// EDIT DIALOG (due_date, other_charge, delay_fee, note)
+// ============================================================
+function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
+  const [dueDate, setDueDate] = useState("");
+  const [otherCharge, setOtherCharge] = useState("0");
+  const [delayFee, setDelayFee] = useState("0");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!inv) return;
+    setDueDate(inv.due_date ?? "");
+    setOtherCharge(String(inv.other_charge ?? 0));
+    setDelayFee(String(inv.delay_fee ?? 0));
+    setNote(inv.note ?? "");
+  }, [inv?.id]);
+
+  if (!inv) return null;
+
+  async function save() {
+    const oc = Number(otherCharge) || 0;
+    const df = Number(delayFee) || 0;
+    if (oc < 0 || df < 0) return toast.error("ঋণাত্মক মান দেওয়া যাবে না");
+    if (!dueDate) return toast.error("মেয়াদ তারিখ দিন");
+    setBusy(true);
+    const payable = Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + oc + df;
+    const due = Math.max(0, payable - Number(inv.paid_amount ?? 0));
+    const newStatus =
+      inv.invoice_status === "cancelled" ? inv.invoice_status :
+      due === 0 ? "paid" :
+      Number(inv.paid_amount ?? 0) > 0 ? "partial_paid" :
+      new Date(dueDate) < new Date() ? "overdue" : "generated";
+    const { error } = await supabase
+      .from("irrigation_invoices" as any)
+      .update({
+        due_date: dueDate,
+        other_charge: oc,
+        delay_fee: df,
+        note: note || null,
+        payable_amount: payable,
+        due_amount: due,
+        invoice_status: newStatus,
+      } as any)
+      .eq("id", inv.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("ইনভয়েস হালনাগাদ হয়েছে");
+    onSaved?.(); onClose();
+  }
+
+  return (
+    <Dialog open={!!inv} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>ইনভয়েস এডিট — {inv.invoice_no}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>মেয়াদ তারিখ</Label>
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>অন্যান্য চার্জ</Label>
+              <Input type="number" min="0" step="0.01" value={otherCharge} onChange={(e) => setOtherCharge(e.target.value)} />
+            </div>
+            <div>
+              <Label>বিলম্ব ফি</Label>
+              <Input type="number" min="0" step="0.01" value={delayFee} onChange={(e) => setDelayFee(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>মন্তব্য</Label>
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            সেচ/রক্ষণাবেক্ষণ/খাল চার্জ পরিবর্তনের জন্য “পুনঃগণনা” ব্যবহার করুন।
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={busy}>বন্ধ</Button>
+          <Button onClick={save} disabled={busy}>{busy ? "সংরক্ষণ…" : "সংরক্ষণ করুন"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

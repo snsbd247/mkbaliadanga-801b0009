@@ -17,6 +17,8 @@ jobs:
       # i18n governance
       - name: i18n parity (EN ↔ BN)
         run: npm run i18n:check
+      - name: i18n hardcoded-string scan (no regressions)
+        run: npm run i18n:scan:ci
       - name: i18n unused-key report
         run: npm run i18n:unused:ci
       - uses: actions/upload-artifact@v4

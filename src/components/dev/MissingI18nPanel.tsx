@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLang } from "@/i18n/LanguageProvider";
+import { translations } from "@/i18n/translations";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Bug } from "lucide-react";
+import { Bug, Download, Copy } from "lucide-react";
 
 /**
  * Floating dev-only panel.
@@ -24,7 +25,72 @@ const ALLOW = new Set([
   "MB", "KB", "TB", "v1", "v2", "AM", "PM",
 ]);
 
-type Hardcoded = { text: string; tag: string; route: string };
+type Hardcoded = { text: string; tag: string; route: string; suggestion?: { key: string; value: string; score: number } | null };
+
+// ---- Suggestion engine: build a value→key index across both langs ----------
+let valueIndex: Array<{ key: string; value: string; lang: "en" | "bn" }> | null = null;
+function getValueIndex() {
+  if (valueIndex) return valueIndex;
+  const out: Array<{ key: string; value: string; lang: "en" | "bn" }> = [];
+  for (const l of ["en", "bn"] as const) {
+    const dict = (translations as any)[l] as Record<string, string>;
+    for (const k of Object.keys(dict)) {
+      const v = dict[k];
+      if (typeof v === "string" && v.trim()) out.push({ key: k, value: v, lang: l });
+    }
+  }
+  valueIndex = out;
+  return out;
+}
+function lev(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = new Array(n + 1), curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i; let rowMin = i;
+    for (let j = 1; j <= n; j++) {
+      const c = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + c);
+      if (curr[j] < rowMin) rowMin = curr[j];
+    }
+    if (rowMin > max) return max + 1;
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+function suggestKey(text: string): { key: string; value: string; score: number } | null {
+  const idx = getValueIndex();
+  const norm = text.trim().toLowerCase();
+  // 1. exact case-insensitive match
+  for (const e of idx) {
+    if (e.value.trim().toLowerCase() === norm) return { key: e.key, value: e.value, score: 1 };
+  }
+  // 2. fuzzy: small distance relative to length
+  const max = Math.max(2, Math.min(8, Math.floor(norm.length / 3)));
+  let best: { key: string; value: string; score: number } | null = null;
+  let bestD = max + 1;
+  for (const e of idx) {
+    const v = e.value.trim().toLowerCase();
+    if (Math.abs(v.length - norm.length) > bestD) continue;
+    const d = lev(norm, v, bestD);
+    if (d < bestD) { bestD = d; best = { key: e.key, value: e.value, score: 1 - d / Math.max(norm.length, v.length) }; if (d === 0) break; }
+  }
+  return best && best.score >= 0.5 ? best : null;
+}
+
+function downloadAuditCsv(rows: Array<Record<string, string | number>>, filename: string) {
+  const headers = Object.keys(rows[0] ?? { type: "", route: "", text: "", suggestion: "" });
+  const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [headers.join(","), ...rows.map(r => headers.map(h => esc(r[h])).join(","))].join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 function getRoot(): HTMLElement | null {
   if (typeof document === "undefined") return null;
@@ -132,7 +198,7 @@ function scanHardcoded(lang: "en" | "bn", route: string): Hardcoded[] {
     if (seen.has(key)) continue;
     seen.add(key);
     const parent = cur.parentElement!;
-    out.push({ text: key, tag: pathFor(parent), route });
+    out.push({ text: key, tag: pathFor(parent), route, suggestion: suggestKey(key) });
     if (out.length >= 200) break;
   }
   return out;
@@ -202,6 +268,24 @@ export function MissingI18nPanel() {
               <Button
                 size="sm"
                 variant="ghost"
+                title="Download audit CSV"
+                onClick={() => {
+                  const rows = [
+                    ...keyItems.map(([key, info]) => ({
+                      type: "missing-key", route: info.route, lang: info.lang, text: key, suggestion: "",
+                    })),
+                    ...hard.map(h => ({
+                      type: "hardcoded", route: h.route, lang, text: h.text,
+                      suggestion: h.suggestion ? `t("${h.suggestion.key}")  // ${h.suggestion.value}` : "",
+                    })),
+                  ];
+                  if (rows.length === 0) rows.push({ type: "", route: "", lang: "", text: "", suggestion: "" });
+                  downloadAuditCsv(rows, `i18n-audit-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`);
+                }}
+              ><Download className="h-3.5 w-3.5" /></Button>
+              <Button
+                size="sm"
+                variant="ghost"
                 onClick={() => {
                   (window as any).__i18nMissing = new Map();
                   setHard([]);
@@ -245,9 +329,26 @@ export function MissingI18nPanel() {
               ) : hard.map((h, i) => (
                 <div key={i} className="px-3 py-1.5 border-b">
                   <div className="text-[12px]">{h.text}</div>
-                  <div className="font-mono text-[10px] text-muted-foreground truncate">
-                    {h.tag}
-                  </div>
+                  <div className="font-mono text-[10px] text-muted-foreground truncate">{h.tag}</div>
+                  {h.suggestion ? (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <code className="flex-1 truncate rounded bg-muted px-1.5 py-0.5 text-[10px]">
+                        t("{h.suggestion.key}")
+                      </code>
+                      <span className="text-[10px] text-muted-foreground">
+                        {Math.round(h.suggestion.score * 100)}%
+                      </span>
+                      <button
+                        title="Copy"
+                        className="rounded p-1 hover:bg-muted"
+                        onClick={() => navigator.clipboard?.writeText(`t("${h.suggestion!.key}")`)}
+                      ><Copy className="h-3 w-3" /></button>
+                    </div>
+                  ) : (
+                    <div className="mt-0.5 text-[10px] italic text-muted-foreground">
+                      No close key — add a new one.
+                    </div>
+                  )}
                 </div>
               ))
             )}
