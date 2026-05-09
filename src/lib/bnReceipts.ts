@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
 export type ReceiptCopy = "both" | "farmer" | "office";
