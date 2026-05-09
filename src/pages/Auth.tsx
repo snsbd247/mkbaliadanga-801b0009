@@ -58,7 +58,11 @@ export default function AuthPage() {
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     const u = username.trim();
-    if (!u || !password) {
+    const uErr = !u ? (lang === "bn" ? "ইউজারনেম দিন" : "Enter your username") : null;
+    const pErr = !password ? (lang === "bn" ? "পাসওয়ার্ড দিন" : "Enter your password") : null;
+    setUsernameError(uErr);
+    setPasswordError(pErr);
+    if (uErr || pErr) {
       setDebug({ ...initialDebug, hint: "Both username and password are required." });
       return toast.error(t("usernameAndPasswordRequired"));
     }
