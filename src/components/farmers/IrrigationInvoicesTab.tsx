@@ -116,9 +116,9 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
   }
 
   function payNow() {
-    if (selected.size === 0) return toast.error("কমপক্ষে একটি ইনভয়েস বেছে নিন");
+    if (selected.size === 0) return toast.error(t("irr_selectAtLeastOne" as any));
     const ids = filtered.filter((r) => selected.has(r.id) && Number(r.due_amount || 0) > 0 && r.invoice_status !== "cancelled").map((r) => r.id);
-    if (!ids.length) return toast.error("নির্বাচিত ইনভয়েসগুলো পরিশোধযোগ্য নয়");
+    if (!ids.length) return toast.error(t("irr_notPayable" as any));
     nav(`/payments?farmer=${farmerId}&irr=${ids.join(",")}`);
   }
 
