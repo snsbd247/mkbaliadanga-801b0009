@@ -160,7 +160,7 @@ export default function InvoiceReport() {
                 filtered.map((r) => ({
                   Invoice: r.invoice_no,
                   Farmer: r.farmers?.name_en, Code: r.farmers?.farmer_code, Mobile: r.farmers?.mobile,
-                  Mouza: r.lands?.mouza, Dag: r.lands?.dag_no,
+                  Mouza: r.lands?.mouza, Dag: formatDagNumbers(r.lands?.dag_no),
                   Season: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "",
                   Type: r.is_borga ? "Borga" : "Own",
                   Payable: r.payable_amount, Paid: r.paid_amount, Due: r.due_amount,
