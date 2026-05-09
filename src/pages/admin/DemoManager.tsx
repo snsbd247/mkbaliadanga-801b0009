@@ -301,10 +301,7 @@ export default function DemoManager() {
           <CardHeader>
             <CardTitle>Real Farmer Names (CSV — Optional)</CardTitle>
             <CardDescription>
-              {tx(
-                "If a CSV is uploaded, these names are used instead of demo names. Columns: name_en, name_bn, father_name, mother_name, mobile, nid (only name_en is required). Duplicate NID/farmer_code are auto-skipped.",
-                "CSV আপলোড করলে demo নামের বদলে এই নামগুলো ব্যবহার হবে। কলাম: name_en, name_bn, father_name, mother_name, mobile, nid (শুধু name_en বাধ্যতামূলক)। ডুপ্লিকেট NID/farmer_code স্বয়ংক্রিয়ভাবে স্কিপ হবে।"
-              )}
+              {tx("If a CSV is uploaded, these names are used instead of demo names. Columns: name_en, name_bn, father_name, mother_name, mobile, nid (only name_en is required). Duplicate NID/farmer_code are auto-skipped.", "CSV আপলোড করলে demo নামের বদলে এই নামগুলো ব্যবহার হবে। কলাম: name_en, name_bn, father_name, mother_name, mobile, nid (শুধু name_en বাধ্যতামূলক)। ডুপ্লিকেট NID/farmer_code স্বয়ংক্রিয়ভাবে স্কিপ হবে।")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -571,7 +568,7 @@ export default function DemoManager() {
         <Card>
           <CardHeader>
             <CardTitle>Per-Farmer Seed Log ({seedLog.length})</CardTitle>
-            <CardDescription>প্রতিটি ফার্মারের voter status এবং কোন মডিউলে seed হয়েছে</CardDescription>
+            <CardDescription>{tx("Each farmer's voter status and which modules were seeded", "প্রতিটি ফার্মারের voter status এবং কোন মডিউলে seed হয়েছে")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="max-h-80 overflow-auto border rounded">
@@ -617,7 +614,7 @@ export default function DemoManager() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="destructive" size="sm" disabled={clearing} onClick={async () => {
-              if (!confirm("সব audit log মুছে ফেলবেন? এটা ফেরানো যাবে না।")) return;
+              if (!confirm(tx("Delete all audit logs? This cannot be undone.", "সব audit log মুছে ফেলবেন? এটা ফেরানো যাবে না।"))) return;
               setClearing(true);
               try {
                 const { data, error } = await supabase.functions.invoke("demo-reset", { body: { action: "clear_audit", confirm: "CLEAR" } });
