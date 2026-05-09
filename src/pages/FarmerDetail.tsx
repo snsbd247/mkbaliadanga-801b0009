@@ -495,7 +495,7 @@ export default function FarmerDetail() {
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
     if (land.owner_type === "owner") {
       const dv = validateDagNumbers(land.dag_no);
-      if (!dv.ok) return toast.error(dv.error);
+      if (dv.ok === false) return toast.error(dv.error);
     }
     if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
