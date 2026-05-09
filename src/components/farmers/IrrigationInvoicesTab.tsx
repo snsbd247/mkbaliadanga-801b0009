@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { money } from "@/lib/format";
 import { toast } from "sonner";
 import { Wallet, ArrowUpDown } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Inv = any;
 type SortKey = "due_date" | "payable_amount" | "due_amount" | "paid_amount" | "invoice_status" | "generated_at";
