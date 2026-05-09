@@ -170,6 +170,17 @@ export default function Payments() {
         .order("due_date", { ascending: true }),
     ]);
     setOpenLoans(l.data ?? []); setOpenIrr(i.data ?? []);
+
+    // Preload allocations from URL ?irr=id1,id2 — used by FarmerDetail "Pay" flow
+    const irrParam = params.get("irr");
+    if (irrParam) {
+      const ids = irrParam.split(",").map(s => s.trim()).filter(Boolean);
+      const matched = (i.data ?? []).filter((x: any) => ids.includes(x.id) && Number(x.due_amount || 0) > 0);
+      if (matched.length) {
+        setAllocs(matched.map((x: any) => ({ kind: "irrigation" as const, reference_id: x.id, amount: Number(x.due_amount) })));
+        toast.success(`${matched.length} টি ইনভয়েস প্রিলোড হয়েছে`);
+      }
+    }
   }
 
   const totalAmount = useMemo(() => allocs.reduce((s, a) => s + Number(a.amount || 0), 0), [allocs]);
