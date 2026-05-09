@@ -11,6 +11,7 @@ import { money } from "@/lib/format";
 import { useLang } from "@/i18n/LanguageProvider";
 import { exportExcel } from "@/lib/exports";
 import { downloadCsv } from "@/lib/csvExport";
+import { logAudit } from "@/lib/audit";
 import { toast } from "sonner";
 
 type Row = {
@@ -155,6 +156,13 @@ export default function IrrigationDueMismatch() {
             action: "recalculate",
             note: "Mismatch report — recalculated paid/due from irrigation_invoice_payments",
           } as any);
+          logAudit({
+            module: "irrigation_invoice",
+            action_type: "recalculate",
+            office_id: inv.office_id,
+            reference_id: inv.id,
+            new_data: { paid_amount: paid, due_amount: due, source: "mismatch_report" },
+          });
         }
       }
       toast.success(tx(`Recalculated ${updated} invoices`, `${updated}টি ইনভয়েস রিক্যালকুলেট হয়েছে`), { id: tid });
