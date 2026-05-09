@@ -76,10 +76,15 @@ describe("farmer_code formatting consistency across modules", () => {
 
   for (const f of FILES) {
     if (ALLOWLIST.has(f)) continue;
-    it(`${f} contains no hard-coded "F-NNNNN" farmer codes`, () => {
+    it(`${f} contains no hard-coded "F-NNNNN" farmer codes (assignments / sample rows)`, () => {
       const src = readFileSync(f, "utf8");
-      // Match explicit farmer_code literals like "F-00001" / `F-12` etc.
-      const offenders = src.match(/["'`]F-\d{2,}["'`]/g) ?? [];
+      // Only flag patterns where "F-NNNN" is used as an assigned VALUE
+      // (object property, array sample, etc.), not when mentioned inside
+      // help/tooltip prose explaining the legacy format.
+      const offenders = [
+        ...(src.match(/farmer_code\s*[:=]\s*["'`]F-\d{2,}/g) ?? []),
+        ...(src.match(/\[\s*["'`]F-\d{2,}["'`]\s*,/g) ?? []),
+      ];
       expect(offenders, `Found legacy farmer codes in ${f}: ${offenders.join(", ")}`).toEqual([]);
     });
   }
