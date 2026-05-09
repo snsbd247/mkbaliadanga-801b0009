@@ -267,7 +267,7 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={parent.key}>
                       <SidebarMenuButton asChild isActive={isActive(parent.url!)} tooltip={parent.label}>
-                        <NavLink to={parent.url!} end={parent.url === "/"}>
+                        <NavLink to={parent.url!} end={parent.url === "/"} onClick={closeOnNav}>
                           <parent.icon className="h-4 w-4" />
                           <span>{highlight(parent.label)}</span>
                         </NavLink>
