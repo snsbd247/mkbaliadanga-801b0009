@@ -55,14 +55,16 @@ describe("permission matrix guards", () => {
   });
 
   it("clone target = super_admin must be rejected by guard", () => {
-    const cloneFrom: Role = "staff";
-    const cloneTo: Role = "super_admin";
+    const cloneFrom = "staff" as Role;
+    const cloneTo = "super_admin" as Role;
     const allowed = cloneFrom !== cloneTo && cloneTo !== "super_admin";
     expect(allowed).toBe(false);
   });
 
   it("clone same source/target is rejected", () => {
-    const allowed = ("staff" as Role) !== ("staff" as Role);
+    const a = "staff" as Role;
+    const b = "staff" as Role;
+    const allowed = a !== b;
     expect(allowed).toBe(false);
   });
 });
