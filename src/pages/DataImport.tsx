@@ -115,8 +115,35 @@ function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
   });
 }
 
+// Header aliases — lets users rearrange or rename columns slightly without
+// breaking the import. Keys are normalized aliases → canonical column name.
+const HEADER_ALIASES: Record<string, string> = {
+  account_no: "account_number",
+  acc_no: "account_number",
+  voter_no: "account_number",
+  voter_number: "account_number",
+  member_no: "account_number",
+  dag: "dag_no",
+  dag_number: "dag_no",
+  plot_no: "dag_no",
+  plot: "dag_no",
+  size: "land_size",
+  area: "land_size",
+  share: "share_percentage",
+  share_pct: "share_percentage",
+  owner_acc: "owner_account_number",
+  owner_account: "owner_account_number",
+  tenant_acc: "tenant_account_number",
+  tenant_account: "tenant_account_number",
+  sharecropper_account_number: "tenant_account_number",
+  date: "entry_date",
+  season: "season_type",
+  year: "season_year",
+};
+
 function normalizeKey(k: string) {
-  return String(k).trim().toLowerCase().replace(/\s+/g, "_");
+  const base = String(k).trim().toLowerCase().replace(/\s+/g, "_").replace(/[()./]/g, "");
+  return HEADER_ALIASES[base] ?? base;
 }
 
 function parseSheet(wb: XLSX.WorkBook): Record<string, any>[] {
@@ -132,27 +159,85 @@ function parseSheet(wb: XLSX.WorkBook): Record<string, any>[] {
   });
 }
 
+const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
+  lands: [
+    ["Column", "Required", "Format / Notes"],
+    ["account_number", "Yes", "Farmer Voter / Savings A/C No (12 digits)."],
+    ["dag_no", "Yes", "One or more dag numbers, comma separated. Canonical: \"123, 124/A, 125-B\". Allowed chars per token: digits, letters, '/', '-' (max 32). No duplicates."],
+    ["land_size", "Yes", "Decimal (acre/decimal as per office unit). > 0."],
+    ["owner_type", "No", "owner | borgadar (default: owner)"],
+    ["field_type", "No", "high_land | medium_land | low_land (default: medium_land)"],
+    ["mouza", "No", "Free text mouza name."],
+    [],
+    ["Examples", "", ""],
+    ["100000000001", "", "dag_no = 123  → single dag"],
+    ["100000000001", "", "dag_no = 123, 124/A, 125-B  → multi-dag (canonical)"],
+  ],
+  land_relations: [
+    ["Column", "Required", "Format / Notes"],
+    ["owner_account_number", "Yes", "Owner farmer A/C No (12 digits)."],
+    ["tenant_account_number", "Yes", "Tenant / sharecropper farmer A/C No."],
+    ["dag_no", "Yes", "Must EXACTLY match the owner's land dag_no in canonical comma-separated form (e.g. \"123, 124/A\")."],
+    ["share_percentage", "Yes", "0 < value ≤ 100. Combined overlap must not exceed 100%."],
+    ["valid_from", "Yes", "YYYY-MM-DD"],
+    ["valid_to", "No", "YYYY-MM-DD or empty for open-ended."],
+    ["note", "No", "Free text."],
+  ],
+  irrigation: [
+    ["Column", "Required", "Format / Notes"],
+    ["account_number", "Yes", "Farmer A/C No (12 digits)."],
+    ["dag_no", "Yes", "Must match an existing land for this farmer. Canonical comma-separated form supported (e.g. \"123, 124/A\")."],
+    ["season_year", "Yes", "e.g. 2026"],
+    ["season_type", "Yes", "boro | aman | aus"],
+    ["quantity", "Yes", "Decimal — irrigated land size."],
+    ["base_charge", "Yes", "Numeric"],
+    ["canal_charge / maintenance_charge / other_charge", "No", "Numeric, default 0"],
+    ["previous_due_brought", "No", "Numeric, default 0"],
+    ["penalty_amount", "No", "Numeric, default 0"],
+    ["entry_date", "Yes", "YYYY-MM-DD"],
+    ["note", "No", "Free text"],
+  ],
+};
+
 function downloadTemplate(mod: Module) {
   const tpl = TEMPLATES[mod];
   const ws = XLSX.utils.json_to_sheet([tpl.sample], { header: tpl.columns });
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, mod);
+  const guide = TPL_INSTRUCTIONS[mod];
+  if (guide) {
+    const gws = XLSX.utils.aoa_to_sheet(guide);
+    XLSX.utils.book_append_sheet(wb, gws, "Instructions");
+  }
   XLSX.writeFile(wb, `import_template_${mod}.xlsx`);
 }
 
-function downloadErrorReport(rows: RowResult[]) {
+function downloadErrorReport(rows: RowResult[], format: "xlsx" | "csv" = "xlsx") {
   const errs = rows.filter((r) => r.status === "error");
   if (!errs.length) return;
-  const ws = XLSX.utils.json_to_sheet(
-    errs.map((r) => ({
-      row: r.idx + 2,
-      error: r.message,
-      ...(r.resolved
-        ? Object.fromEntries(Object.entries(r.resolved).map(([k, v]) => [`resolved_${k}`, v]))
-        : {}),
-      ...r.raw,
-    })),
-  );
+  const flat = errs.map((r) => ({
+    row: r.idx + 2,
+    error: r.message,
+    ...(r.resolved
+      ? Object.fromEntries(Object.entries(r.resolved).map(([k, v]) => [`resolved_${k}`, v]))
+      : {}),
+    ...r.raw,
+  }));
+  if (format === "csv") {
+    const cols = Array.from(new Set(flat.flatMap((o) => Object.keys(o))));
+    const esc = (v: any) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [cols.join(","), ...flat.map((o) => cols.map((c) => esc((o as any)[c])).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "import_errors.csv"; a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+  const ws = XLSX.utils.json_to_sheet(flat);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "errors");
   XLSX.writeFile(wb, `import_errors.xlsx`);
@@ -189,11 +274,48 @@ export default function DataImport() {
     try {
       const wb = await readBookFromFile(f);
       const parsed = parseSheet(wb);
-      setRows(parsed.map((raw, idx) => ({ idx, raw, status: "pending" })));
-      toast.success(`Loaded ${parsed.length} rows`);
+      const verified = verifyRows(parsed, mod);
+      setRows(verified);
+      const errs = verified.filter((r) => r.status === "error").length;
+      if (errs > 0) toast.warning(`Loaded ${parsed.length} rows — ${errs} have validation errors`);
+      else toast.success(`Loaded ${parsed.length} rows. Columns + dag_no format look good.`);
     } catch (e: any) {
       toast.error(`Failed to read file: ${e.message}`);
     }
+  }
+
+  function verifyRows(parsed: Record<string, any>[], m: Module): RowResult[] {
+    const required: Partial<Record<Module, string[]>> = {
+      lands: ["account_number", "dag_no", "land_size"],
+      land_relations: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from"],
+      irrigation: ["account_number", "dag_no", "season_year", "season_type", "base_charge", "entry_date"],
+      loans: ["account_number", "principal"],
+      loan_payments: ["account_number", "amount"],
+      savings: ["account_number", "type", "amount"],
+      payments: ["account_number", "kind", "amount"],
+      cashbook_receipts: ["receipt_date", "kind", "amount"],
+      cashbook_expenses: ["expense_date", "head", "amount"],
+      ledger: ["entry_date", "account_code"],
+    };
+    const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
+    const req = required[m] ?? TEMPLATES[m].columns;
+    const missingCols = req.filter((c) => !headerSet.has(c));
+    return parsed.map((raw, idx) => {
+      const issues: string[] = [];
+      if (missingCols.length) issues.push(`Missing columns: ${missingCols.join(", ")}`);
+      for (const col of req) {
+        const v = raw[col];
+        if (v === null || v === undefined || String(v).trim() === "") {
+          issues.push(`${col} is required`);
+        }
+      }
+      if (["lands", "land_relations", "irrigation"].includes(m) && raw.dag_no) {
+        const dv = validateDagNumbers(String(raw.dag_no));
+        if (!dv.ok) issues.push(`dag_no: ${(dv as any).error}`);
+      }
+      if (issues.length) return { idx, raw, status: "error", message: issues.join(" • ") };
+      return { idx, raw, status: "pending" };
+    });
   }
 
   // Look up farmer_id + office_id by account_number — single round trip.
@@ -722,9 +844,14 @@ export default function DataImport() {
             <Badge variant="secondary">Pending: {stats.pending}</Badge>
             <div className="ml-auto flex gap-2">
               {stats.err > 0 && (
-                <Button variant="outline" onClick={() => downloadErrorReport(rows)}>
-                  <Download className="h-4 w-4 mr-1" /> Error Report
-                </Button>
+                <>
+                  <Button variant="outline" onClick={() => downloadErrorReport(rows, "xlsx")}>
+                    <Download className="h-4 w-4 mr-1" /> Error Report (.xlsx)
+                  </Button>
+                  <Button variant="outline" onClick={() => downloadErrorReport(rows, "csv")}>
+                    <FileSpreadsheet className="h-4 w-4 mr-1" /> Error Report (.csv)
+                  </Button>
+                </>
               )}
               <Button variant="outline" onClick={() => importAll(true)} disabled={working || stats.pending === 0}>
                 {working ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
