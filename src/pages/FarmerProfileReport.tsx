@@ -48,11 +48,11 @@ export default function FarmerProfileReport() {
         supabase.from("shares").select("balance").eq("farmer_id", id).maybeSingle(),
         supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
         supabase
-          .from("irrigation_charges")
-          .select("id, total, due_amount, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type)")
+          .from("irrigation_invoices")
+          .select("id, payable_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type)")
           .eq("farmer_id", id)
           .is("deleted_at", null)
-          .order("entry_date", { ascending: false }),
+          .order("generated_at", { ascending: false }),
         supabase
           .from("land_relations")
           .select("land_id, valid_to, sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en, farmer_code)")
@@ -98,17 +98,17 @@ export default function FarmerProfileReport() {
           owner_name_fid: ownerNameFid,
           land_size: row.lands?.land_size !== null && row.lands?.land_size !== undefined ? Number(row.lands.land_size).toFixed(6) : "",
           field_type: fieldTypeLabel(row.lands?.field_type),
-          charge_rate: String(Math.round(Number(row.base_charge || 0))),
-          canal_charge: String(Math.round(Number(row.canal_charge || 0))),
-          maintenance_charge: String(Math.round(Number(row.maintenance_charge || 0))),
+          charge_rate: String(Math.round(Number(row.irrigation_amount || 0))),
+          canal_charge: String(Math.round(Number(row.canal_amount || 0))),
+          maintenance_charge: String(Math.round(Number(row.maintenance_amount || 0))),
           other_charge: String(Math.round(Number(row.other_charge || 0))),
-          charge: String(Math.round(Number(row.total || 0))),
+          charge: String(Math.round(Number(row.payable_amount || 0))),
           due: String(Math.round(Number(row.due_amount || 0))),
           land_size_num: Number(row.lands?.land_size || 0),
-          canal_num: Number(row.canal_charge || 0),
-          maintenance_num: Number(row.maintenance_charge || 0),
+          canal_num: Number(row.canal_amount || 0),
+          maintenance_num: Number(row.maintenance_amount || 0),
           other_num: Number(row.other_charge || 0),
-          charge_num: Number(row.total || 0),
+          charge_num: Number(row.payable_amount || 0),
           due_num: Number(row.due_amount || 0),
           irrigation_year: Number(row.seasons?.year) || new Date().getFullYear(),
         };
