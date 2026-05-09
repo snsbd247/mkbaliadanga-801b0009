@@ -97,8 +97,8 @@ export default function FarmersImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const headers = [...COLUMNS];
     const sample = [
-      ["01001", "10001", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
-      ["",       "",      "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
+      ["00001", "10001", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
+      ["",      "",      "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
     ];
     if (format === "csv") {
       const csv = [headers, ...sample]
