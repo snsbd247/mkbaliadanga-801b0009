@@ -6,6 +6,7 @@ import html2canvas from "html2canvas";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { loadBranding, type CompanyBranding } from "@/lib/branding";
 import { formatLandSize } from "@/lib/irrigationCalc";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 
 export type InvoiceCopy = "both" | "office" | "farmer";
 export type PaperFormat = "a4" | "letter";
