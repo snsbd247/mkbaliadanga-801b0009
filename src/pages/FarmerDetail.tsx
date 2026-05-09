@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 
 import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
 import { validateLocationChain } from "@/lib/locationValidation";
+import { validateDagNumbers } from "@/lib/dagNumbers";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
