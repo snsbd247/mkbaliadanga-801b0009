@@ -681,6 +681,8 @@ export default function Payments() {
           </Table>
         </Card>
       </div>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
