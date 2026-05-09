@@ -948,7 +948,7 @@ export default function FarmerDetail() {
                   <TableCell className={due > 0 ? "due-text" : ""}>{fmtDate(l.next_due_on)}</TableCell>
                   <TableCell><Badge>{t(l.status as any)}</Badge></TableCell>
                    <TableCell className="text-right">
-                     <Button size="icon" variant="ghost" onClick={() => openLoanView(l)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
+                     <Button size="icon" variant="ghost" onClick={() => nav(`/loans/${l.id}`)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
                      <ReceiptCopyMenu onSelect={(c) => printLoan(l, c)} title={t("print")} />
                      {isSuper && <EditButton onClick={() => editLoanGoto(l)} title={t("edit")} />}
                      {isSuper && <DeleteButton onConfirm={() => deleteLoan(l)} title={t("delete")} />}

@@ -1,105 +1,82 @@
-# Reliability, Retry, Audit & Permission Matrix — Rollout Plan
+# Loan Module Refactor Plan
 
-This is 5 large epics. Shipping all at once would be risky — proposing a phased rollout that leaves the app working after every phase. Each phase is one chat message.
-
----
-
-## Phase 1 — Retry Queue + SMS/Receipt Status (foundation)
-
-**DB migration**
-
-- `background_retry_jobs` table: `id, office_id, job_type, reference_id, payload jsonb, status, retry_count, max_retry, next_retry_at, last_error, created_at, updated_at` + RLS (office-scoped read, super-admin manage, system insert via edge function).
-- Extend `irrigation_sms_logs.status` allowed values: `pending|sent|delivered|failed|retrying|permanently_failed`.
-- New `receipt_jobs` table (or reuse `background_retry_jobs` with `job_type='receipt_generation'`) — go with the latter to keep one queue.
-- Status enum constraint via trigger (no CHECK with non-immutable funcs).
-
-**Code**
-
-- `src/lib/retryQueue.ts` — `enqueue(jobType, refId, payload)`, `markSuccess`, `markFailed` (computes next_retry_at via 1m / 5m / 15m / 1h schedule).
-- Wrap SMS + receipt calls in `IrrigationPaymentPanel` so payment is never rolled back on SMS/PDF failure — failures enqueue retry job.
-- Edge function `process-retry-jobs` (cron-eligible) — picks `next_retry_at <= now()`, dispatches by `job_type`, updates status; transitions to `permanently_failed` after `max_retry`.
-- Admin notification: surface failed jobs in existing notifications panel + dashboard alert card.
-- Manual actions: "Retry" / "Regenerate Receipt" / "View failure" buttons on failed-jobs admin page (`/admin/retry-jobs`).
-
-**Tests**
-
-- Unit: schedule computation (`nextRetryAt(attempt)`).
-- Integration: enqueue → process → success / exhaust path.
+This is a large, multi-area change. To keep it safe and reviewable (and to avoid breaking the live loan ledger / accounting / receipts / SMS), I'll deliver it in **5 phases**. Each phase is self-contained, ships passing tests, and leaves the existing flow working.
 
 ---
 
-## Phase 2 — Centralized Audit Log (`system_audit_logs`)
+## Phase 1 — Full-page Loan Details + Installment View (UI only, zero schema risk)
 
-**DB migration**
+**Route:** `/loans/:loanId`
+- New page `src/pages/LoanDetail.tsx` (replaces modal; modal trigger in `FarmerDetail` becomes a `<Link>`).
+- **Section 1 — Loan Summary**: loan no, farmer, plan, principal, interest, total payable, total paid, remaining due, status, start date, last installment date.
+- **Section 2 — Installment counters**: total / paid / pending / overdue.
+- **Section 3 — Installment table**: No, Due Date, Amount, Paid, Due, Payment Date, Delay Fee, Status (Pending / Paid / Partial / Overdue) with Bangla labels.
+- Banner: **শেষ কিস্তির তারিখ** + **জরিমানা কার্যকর হবে** when `today > due_date && status != paid`.
+- Print-friendly layout (reuse existing print CSS).
+- Loan Timeline section (read existing `audit_logs` + `loan_payments` + `system_audit_logs`).
 
-- `system_audit_logs(id, office_id, user_id, module, action_type, reference_id, old_data jsonb, new_data jsonb, ip, user_agent, created_at)` — insert-only (no UPDATE/DELETE policy).
-- RLS: office-scoped read + super-admin all; INSERT via authenticated.
-
-**Code**
-
-- `src/lib/audit.ts` — `logAudit({ module, action, refId, before, after })`. Used everywhere financial actions occur.
-- Wire into: payment create/edit/cancel/retry, receipt generated/regenerated/failed/downloaded, SMS sent/failed/retried, journal posted/reversed/corrected.
-- Admin page `/admin/audit-timeline` — search, filter by module/user/date, timeline view, CSV export.
-
-**Tests**
-
-- Unit: `logAudit` payload shape.
-- Integration: payment flow writes 4+ audit rows.
+**No DB changes in this phase.** Overdue is computed client-side from existing columns.
 
 ---
 
-## Phase 3 — CSV Export (Promise Due + Mismatch)
+## Phase 2 — Installment Enforcement + Delay Fee Engine
 
-- Add `Export CSV` button (UTF-8 BOM for Bangla) to `PromiseDueReport.tsx` and `IrrigationDueMismatch.tsx`.
-- Respect active filters; stream rows in chunks of 5k for large datasets.
-- Columns exactly per spec.
+**Schema (migration):**
+- `loan_delay_fee_settings` (office-scoped: `mode = flat|percent`, `value`, `grace_days`, `auto_apply`, `allow_partial_installment` default false).
+- `loan_installment_delay_audit` (installment_id, original, modified, reason, changed_by, office_id).
+- Indexes on `loan_installments(loan_id, due_date, status)` and `loan_payments(payment_date)`.
 
-**Tests**
+**Logic (`src/lib/loanDelayFee.ts`):**
+- Pure function `computeInstallmentDelayFee(installment, settings, paymentDate)`.
+- Allocation helper `allocateInstallmentPayment(amount, installment, delayFee, settings)`.
 
-- Unit: CSV escaping + Bangla UTF-8 round-trip.
-
----
-
-## Phase 4 — Role Permission Matrix UI
-
-**DB migration**
-
-- `role_permissions(id, role app_role, module text, action text, allowed boolean, office_id uuid null, updated_by, updated_at)` — unique `(role, module, action, office_id)`.
-- `permission_audit_logs(id, role, module, action, old_value, new_value, office_id, changed_by, created_at)`.
-- Helper SQL fn `has_permission(_user, _module, _action) returns boolean` (security definer).
-- Seed sensible defaults from current hardcoded role checks.
-
-**Code**
-
-- Page `/admin/permissions` (route + sidebar entry "রোল ও অনুমতি ম্যাট্রিক্স").
-- Matrix table: rows = module × action; columns = roles. Inline toggle, bulk select, role cloning, search, sticky headers, Bangla labels.
-- Guards: super-admin only; can't toggle off own role's "manage permissions"; confirm dialog for destructive toggles; every change writes `permission_audit_logs` + `system_audit_logs`.
-- Optional `usePermission(module, action)` hook used by sensitive UI buttons (gradual adoption — does NOT replace existing RLS / role checks).
-
-**Tests**
-
-- Unit: privilege escalation guard.
-- Integration: toggle persists + audit row.
+**Validation in `IrrigationPaymentPanel`-equivalent loan panel:**
+- Block submit if `amount < (installmentAmount + delayFee)` AND `allow_partial_installment = false`.
+- Toast: **নির্ধারিত কিস্তির চেয়ে কম টাকা গ্রহণ করা যাবে না।**
+- Admin override field with reason → writes to delay-fee audit + `system_audit_logs`.
 
 ---
 
-## Phase 5 — E2E Tests (Playwright)
+## Phase 3 — Payment Page Breakdown + Receipt Update
 
-- Add Playwright + seed script + `npm run test:e2e`, `npm run test:irrigation`.
-- Scenarios: invoice payment, promise-date flow, delay-fee override, receipt failure recovery, SMS failure recovery, duplicate prevention.
-- Failure screenshots, retry logs, JUnit report, optional GH Actions nightly job.
-
----
-
-## Out of scope / kept compatible
-
-- Existing accounting, ledger, receipt verify, SMS gateway, RLS, role checks, reports — untouched. New audit/permission systems are additive.
-- `irrigation_charges` legacy reads remain in audit/legacy pages (per previous phase).
+- Loan payment selector shows: current installment, overdue list, delay fee, previous due, **total payable** breakdown.
+- Receipt PDF (`paymentReceiptPdf.ts` loan branch): adds Loan No, Installment No, Installment Due Date, Installment Amount, Delay Fee, Total Received, Remaining Loan Due. Bangla layout.
 
 ---
 
-## Suggested order
+## Phase 4 — Reports + Timeline
 
-Ship Phase 1 next (highest value, unblocks reliability). Then 2 → 3 → 4 → 5.
+- **Loan Overdue Report** (`/reports/loan-overdue`)
+- **Installment Collection Report** (`/reports/installment-collection`)
+- **Penalty Collection Report** (`/reports/loan-penalty`)
+- Filters: office, loan plan, date range, status. Exports: CSV (existing `csvExport.ts`), PDF (existing pdf util), Excel via CSV-with-BOM.
+- Sidebar entries gated by existing `permKey` system.
 
-Reply **"ok phase 1"** (or specify a different phase) to proceed.
+---
+
+## Phase 5 — Demo Import + Reset Rebuild + Tests
+
+- Extend `supabase/functions/demo-reset/index.ts` to seed:
+  - loan master, installment schedule, installment statuses, payment history, penalties, overdue cases, receipts, ledger entries.
+- FK & relationship validation (farmer_id / office_id / loan_plan_id).
+- **Tests:**
+  - Unit: delay-fee math, allocation, partial-payment blocker, overdue detector.
+  - Integration: payment flow with override + audit write.
+  - Playwright: navigate to `/loans/:id`, attempt underpayment → blocked, admin override succeeds, overdue badge visible.
+
+---
+
+## Compatibility guarantees
+
+- No changes to existing `loans`, `loan_payments`, `loan_installments` columns — only **additive** (new tables + indexes).
+- Existing modal stays functional during Phase 1 (replaced, not removed from DB).
+- Ledger posting, SMS, receipt verification, RLS — untouched.
+
+---
+
+## How would you like to proceed?
+
+Reply with one of:
+- **"start phase 1"** — I'll begin with the full-page loan view (safest, no DB).
+- **"all phases"** — I'll run phases 1 → 5 sequentially in this loop (long; multiple migrations will need approvals).
+- **"phase X"** — jump to a specific phase.

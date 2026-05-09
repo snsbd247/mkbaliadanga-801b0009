@@ -83,6 +83,7 @@ import PatwariDetail from "./pages/admin/PatwariDetail";
 import FarmerStatement from "./pages/FarmerStatement";
 
 import LoanPlans from "./pages/LoanPlans";
+import LoanDetail from "./pages/LoanDetail";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
@@ -128,6 +129,7 @@ const App = () => (
 
                 <Route path="/loans" element={<RequirePerm module="loans"><Loans /></RequirePerm>} />
                 <Route path="/loans/plans" element={<RequirePerm module="loans"><LoanPlans /></RequirePerm>} />
+                <Route path="/loans/:loanId" element={<RequirePerm module="loans"><LoanDetail /></RequirePerm>} />
                 <Route path="/share-collection" element={<RequirePerm module="savings"><ShareCollection /></RequirePerm>} />
                 {/* Legacy routes redirect to unified invoice/payment pages */}
                 <Route path="/irrigation" element={<Navigate to="/irrigation/invoices" replace />} />
