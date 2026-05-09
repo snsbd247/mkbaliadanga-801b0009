@@ -1584,6 +1584,12 @@ export const translations = {
     irr_chartTitleLandTypeCompare: "Comparison by Land Type",
     irr_chartTitleMonthly: "Monthly Trend (last 12 months)",
     irr_chartTitleAging: "Overdue Aging",
+    savingsAndLoans: "Savings & Loans",
+    irrigationDueMismatch: "Irrigation Due Mismatch",
+    promiseDueReport: "Promise Due Report",
+    auditAndMonitoring: "Audit & Monitoring",
+    auditTimeline: "Audit Timeline",
+    retryJobs: "Retry Jobs",
   },
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
@@ -3069,6 +3075,12 @@ export const translations = {
     irr_chartTitleLandTypeCompare: "জমির ধরন ভিত্তিক তুলনা",
     irr_chartTitleMonthly: "মাসিক ট্রেন্ড (শেষ ১২ মাস)",
     irr_chartTitleAging: "বকেয়া বয়স বিশ্লেষণ",
+    savingsAndLoans: "সঞ্চয় ও ঋণ",
+    irrigationDueMismatch: "সেচ বকেয়া অমিল",
+    promiseDueReport: "প্রতিশ্রুতি বকেয়া রিপোর্ট",
+    auditAndMonitoring: "অডিট ও মনিটরিং",
+    auditTimeline: "অডিট টাইমলাইন",
+    retryJobs: "পুনরায় চেষ্টার কাজ",
   },
 } as const;
 
