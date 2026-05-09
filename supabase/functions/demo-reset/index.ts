@@ -504,7 +504,7 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
       for (let n = 1; n <= duration; n++) {
         const due = new Date(start);
         due.setMonth(due.getMonth() + n);
-        const paid = n <= 3;
+        const paid = n <= paidCount;
         const isOverdue = !paid && due < today;
         const overdueDays = isOverdue ? Math.floor((today.getTime() - due.getTime()) / 86400000) : 0;
         // Combined penalty: 2% of monthly + 10/day beyond 5-day grace, capped at 1000
