@@ -608,6 +608,15 @@ async function seedSettings(admin: any) {
     address: "Baliadanga, Rangpur", mobile: "01700000000", email: "demo@example.com",
   });
   await admin.from("card_settings").upsert({ id: 1 });
+  // SMS settings — disabled by default for demo, but template fields populated
+  await admin.from("sms_settings").upsert({
+    id: 1, enabled: false,
+    send_on_irrigation_payment: true, send_on_loan_payment: true,
+    send_on_loan_approved: true,
+    send_on_savings_deposit: true, send_on_savings_withdraw: true,
+  } as any).then(() => {}).catch(() => {});
+  // Default receipt settings (best-effort; ignore if shape differs)
+  await admin.from("receipt_settings").upsert({ id: 1 } as any).then(() => {}).catch(() => {});
 }
 
 async function findOrInsert(admin: any, table: string, match: Record<string, any>, insertExtra: Record<string, any> = {}) {
