@@ -68,7 +68,7 @@ export default function Ledger() {
         supabase.from("loans").select("id").in("farmer_id", ids),
         supabase.from("loan_payments").select("id,loan_id").in("loan_id",
           ((await supabase.from("loans").select("id").in("farmer_id", ids)).data ?? []).map((l: any) => l.id)),
-        supabase.from("irrigation_charges").select("id").in("farmer_id", ids),
+        supabase.from("irrigation_invoices").select("id").in("farmer_id", ids).is("deleted_at", null),
       ]);
       const refIds = [
         ...((savings.data ?? []).map((x: any) => x.id)),
