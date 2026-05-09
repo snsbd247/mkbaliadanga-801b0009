@@ -161,6 +161,30 @@ export function exportExcel(
   XLSX.writeFile(wb, `${buildExportName(filename, range)}.xlsx`);
 }
 
+// CSV writer with UTF-8 BOM so Excel opens Bengali/Unicode correctly.
+export function exportCSV(
+  filename: string,
+  head: string[],
+  rows: any[][],
+  range?: { from?: string | null; to?: string | null }
+) {
+  const esc = (v: any) => {
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [head.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))];
+  const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${buildExportName(filename, range)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ---------- Payment Receipt PDF ----------
 export function exportPaymentReceiptPDF(opts: {
   brand: { company_name: string; address?: string; mobile?: string };

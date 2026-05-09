@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
-import { money } from "@/lib/format";
-import { exportInvoicesCSV, exportInvoicesXLSX } from "@/lib/irrigationExports";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { money, fmtDate } from "@/lib/format";
+import { ExportDialog, type ExportColumn } from "@/components/exports/ExportDialog";
+import { FileDown } from "lucide-react";
 
 const IrrigationReportCharts = lazy(() => import("./irrigation/IrrigationReportCharts"));
 
@@ -26,6 +26,7 @@ export default function IrrigationReports() {
   const [toDate, setToDate] = useState("");
   const [rows, setRows] = useState<Inv[]>([]);
   const [loading, setLoading] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     document.title = "সেচ রিপোর্ট";
@@ -131,11 +132,8 @@ export default function IrrigationReports() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(rows, "irrigation-report.csv")} disabled={!rows.length}>
-              <FileDown className="h-4 w-4 mr-1" /> CSV
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(rows, "irrigation-report.xlsx")} disabled={!rows.length}>
-              <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+            <Button size="sm" variant="outline" onClick={() => setExportOpen(true)} disabled={!rows.length}>
+              <FileDown className="h-4 w-4 mr-1" /> এক্সপোর্ট
             </Button>
             {(fromDate || toDate || seasonId !== "all" || officeId !== "all") && (
               <Button size="sm" variant="ghost" onClick={() => { setSeasonId("all"); setOfficeId("all"); setFromDate(""); setToDate(""); }}>
@@ -220,6 +218,29 @@ export default function IrrigationReports() {
           </Table>
         </CardContent>
       </Card>
+
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        reportName="irrigation-report"
+        rows={rows}
+        range={{ from: fromDate || null, to: toDate || null }}
+        columns={[
+          { key: "date", label: "তারিখ", accessor: (r: any) => fmtDate(r.entry_date) },
+          { key: "season", label: "সিজন", accessor: (r: any) => r.seasons?.name ?? "" },
+          { key: "farmer_code", label: "কৃষক কোড", accessor: (r: any) => r.farmers?.farmer_code ?? "" },
+          { key: "farmer_name", label: "কৃষকের নাম", accessor: (r: any) => r.farmers?.name_bn || r.farmers?.name_en || "" },
+          { key: "mobile", label: "মোবাইল", accessor: (r: any) => r.farmers?.mobile ?? "" },
+          { key: "dag_no", label: "দাগ নং", accessor: (r: any) => r.lands?.dag_no ?? "" },
+          { key: "mouza", label: "মৌজা", accessor: (r: any) => r.lands?.mouza ?? "" },
+          { key: "land_size", label: "জমির পরিমাণ", accessor: (r: any) => r.lands?.land_size ?? "" },
+          { key: "rate", label: "রেট", accessor: (r: any) => r.rate ?? "" },
+          { key: "total", label: "মোট", accessor: (r: any) => r.total ?? 0 },
+          { key: "paid_amount", label: "পরিশোধিত", accessor: (r: any) => r.paid_amount ?? 0 },
+          { key: "due_amount", label: "বকেয়া", accessor: (r: any) => r.due_amount ?? 0, defaultSelected: true },
+          { key: "status", label: "স্ট্যাটাস", accessor: (r: any) => r.status ?? "" },
+        ]}
+      />
     </>
   );
 }
