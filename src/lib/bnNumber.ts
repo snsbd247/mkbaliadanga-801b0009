@@ -29,7 +29,9 @@ function lessThanThousand(n: number): string {
 }
 
 export function bnAmountInWords(amount: number): string {
-  const n = Math.floor(Math.abs(amount));
+  // Project rule: amounts in receipts/invoices/reports are rounded to whole
+  // taka (≥ .50 → up, < .50 → down). No paisa in words.
+  const n = Math.round(Math.abs(Number(amount) || 0));
   if (n === 0) return "শূন্য টাকা";
   const parts: string[] = [];
   const crore = Math.floor(n / 10000000);
@@ -40,8 +42,5 @@ export function bnAmountInWords(amount: number): string {
   if (lakh) parts.push(lessThanThousand(lakh) + " লক্ষ");
   if (thousand) parts.push(lessThanThousand(thousand) + " হাজার");
   if (rest) parts.push(lessThanThousand(rest));
-  let words = parts.join(" ").trim() + " টাকা";
-  const paisa = Math.round((Math.abs(amount) - n) * 100);
-  if (paisa > 0) words += " " + lessThanThousand(paisa) + " পয়সা";
-  return words;
+  return parts.join(" ").trim() + " টাকা";
 }
