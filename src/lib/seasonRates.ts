@@ -1,32 +1,49 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type SeasonRateRow = {
-  id?: string;
-  season_id: string;
-  field_type_code: string;
+export type RateRow = {
+  land_type_id: string;
+  land_type_code: string;
+  land_type_name: string;
   rate_per_shotok: number;
   office_id: string | null;
 };
 
-/** Build a map: field_type_code -> rate, scoped to office (office-specific overrides global NULL row). */
-export async function loadSeasonRateMap(season_id: string, office_id?: string | null): Promise<Record<string, number>> {
-  if (!season_id) return {};
+/**
+ * Build per-land-type rate map for a season.
+ * Office-specific rate overrides global (NULL office_id) rate.
+ */
+export async function loadSeasonRateMap(season_id: string, office_id?: string | null): Promise<RateRow[]> {
+  if (!season_id) return [];
   const { data } = await supabase
-    .from("season_field_rates" as any)
-    .select("field_type_code, rate_per_shotok, office_id")
-    .eq("season_id", season_id);
-  const rows = (data as any[]) ?? [];
-  const map: Record<string, number> = {};
-  // Apply globals first, then office-specific overrides.
-  for (const r of rows.filter((r) => r.office_id === null)) map[r.field_type_code] = Number(r.rate_per_shotok);
-  if (office_id) {
-    for (const r of rows.filter((r) => r.office_id === office_id)) map[r.field_type_code] = Number(r.rate_per_shotok);
-  }
-  return map;
+    .from("irrigation_season_rates" as any)
+    .select("land_type_id, rate_per_shotok, office_id, land_types(id, code, name, name_bn)")
+    .eq("irrigation_season_id", season_id);
+  const rows = ((data as any[]) ?? []).map((r) => ({
+    land_type_id: r.land_type_id,
+    land_type_code: r.land_types?.code ?? "",
+    land_type_name: r.land_types?.name_bn || r.land_types?.name || r.land_types?.code || "",
+    rate_per_shotok: Number(r.rate_per_shotok),
+    office_id: r.office_id,
+  }));
+  // Office-scoped overrides globals → dedupe by land_type_id, prefer office match.
+  const map = new Map<string, RateRow>();
+  for (const r of rows.filter((x) => x.office_id === null)) map.set(r.land_type_id, r);
+  if (office_id) for (const r of rows.filter((x) => x.office_id === office_id)) map.set(r.land_type_id, r);
+  return [...map.values()];
 }
 
-/** Lookup helper used by invoice generation. Returns 0 if no rate is configured. */
-export function resolveRate(map: Record<string, number>, field_type: string | null | undefined): number {
-  if (!field_type) return map["other"] ?? 0;
-  return map[field_type] ?? map["other"] ?? 0;
+/** Resolve rate for a land — prefer land.land_type_id then fall back to enum field_type code. */
+export function resolveRateForLand(
+  rates: RateRow[],
+  land: { land_type_id?: string | null; field_type?: string | null },
+): RateRow | null {
+  if (land.land_type_id) {
+    const hit = rates.find((r) => r.land_type_id === land.land_type_id);
+    if (hit) return hit;
+  }
+  if (land.field_type) {
+    const hit = rates.find((r) => r.land_type_code === land.field_type);
+    if (hit) return hit;
+  }
+  return rates.find((r) => r.land_type_code === "other") ?? null;
 }
