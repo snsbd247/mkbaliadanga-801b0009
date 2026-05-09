@@ -1579,6 +1579,10 @@ export const translations = {
     startDate: "Start Date",
     endDate: "End Date",
     filterReset: "Reset Filters",
+    irr_chartTitleSeasonCollection: "Collection by Season",
+    irr_chartTitleLandTypeCompare: "Comparison by Land Type",
+    irr_chartTitleMonthly: "Monthly Trend (last 12 months)",
+    irr_chartTitleAging: "Overdue Aging",
   },
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
