@@ -22,6 +22,7 @@ import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
 import Loans from "./pages/Loans";
 import IrrigationInvoices from "./pages/IrrigationInvoices";
+import IrrigationReports from "./pages/IrrigationReports";
 import IrrigationRates from "./pages/IrrigationRates";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
