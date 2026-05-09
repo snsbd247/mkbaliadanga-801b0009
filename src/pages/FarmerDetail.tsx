@@ -574,6 +574,10 @@ export default function FarmerDetail() {
       const v = validateLocationChain(editLoc);
       if (!v.ok) { setEditLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
       if (!(editLoc as any).mouza_id) { setEditLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "Mouza required" }); return; }
+      if (editForm.owner_type === "owner") {
+        const dv = validateDagNumbers(editForm.dag_no);
+        if (dv.ok === false) { toast.error(dv.error); return; }
+      }
       const { error } = await supabase.from("lands").update({
         mouza: (editLoc as any).mouza_name ?? "",
         division_id: (editLoc as any).division_id ?? null,
