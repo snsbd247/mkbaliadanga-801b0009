@@ -1,82 +1,144 @@
-# Irrigation Ecosystem v2 — Phased Plan
+# Irrigation Payment Flow Refactor — Plan
 
-বিশাল স্কোপ। এক রিকোয়েস্টে সব করলে regression risk বেশি — তাই ৬টি ফেজে ভাগ করছি, প্রতিটা নিজে নিজে shippable। আপনি বললেই Phase 1 দিয়ে শুরু করব, অথবা ক্রম পাল্টে দিতে পারি।
+This is a large, multi-area change. Proposing a phased rollout so nothing existing breaks (receipts, QR verify, ledger integrity, statements, reports, RLS).
 
----
+## Scope summary
 
-## Phase 1 — Irrigation Analytics Charts (`/irrigation/reports`)
-- `recharts` (already in deps) দিয়ে ৪টি চার্ট যোগ:
-  - Season-wise Collection (stacked bar: payable / paid / due + collection %)
-  - Land-type Comparison (grouped bar)
-  - Monthly Trend (line: invoiced vs collected, last 12 months)
-  - Overdue Aging (pie: 0-30 / 31-60 / 60+ days)
-- ফিল্টার: office, season, date range, land-type — সবগুলো চার্ট ও existing summary শেয়ার করবে।
-- বাংলা labels, responsive container, lazy-load charts।
-- Backend: একটা নতুন SECURITY DEFINER RPC `irrigation_report_aggregates(office_id, season_id, from, to)` — current RLS-honored views এর উপর। Existing report data ভাঙবে না।
-
-## Phase 2 — FarmerDashboard Irrigation Table (search / filter / sort)
-- Client-side search (invoice no / season / land type / mouza / status)
-- Filters: season dropdown, status (Pending / Partial / Paid / Overdue / Cancelled), date range
-- Sort headers: due date, amount, status, paid date, created
-- "Overdue" derived from `due_date < today AND due_amount > 0`
-- শুধু UI/state — `farmer-portal-data` edge function unchanged।
-
-## Phase 3 — Direct Payment from FarmerDashboard
-- Row checkbox + selection bar + "পেমেন্ট করুন" button
-- Validation: skip cancelled / fully-paid / negative-due
-- Navigate `/payments?farmer={id}&irrigation_invoices={id1,id2}` (hash so URL stays short if many)
-- Payments page reads param, preloads invoices, auto-fills total, locks against duplicate (idempotency_key on submit + recheck due before insert)
-- DB: কোনো schema পরিবর্তন নাই; existing `irrigation_invoice_payments` flow reuse।
-
-## Phase 4 — SMS Tracking (`irrigation_sms_logs` + `/sms/logs` page)
-- নতুন টেবিল `irrigation_sms_logs` (RLS: office-scoped read, super_admin manage)
-  - columns per spec; FK to invoices/farmers/offices
-  - indexes: (office_id, sent_at DESC), (status), (irrigation_invoice_id)
-- `sms-due-reminders` & `send-sms` edge functions কে wrap: প্রতিটা attempt log করবে (Pending → Sent/Failed/Skipped, gateway response, retry_count)
-- নতুন page `/sms/logs`:
-  - search, status filter, invoice filter
-  - "Retry" action (super_admin only) → re-invoke send-sms with same payload, increments retry_count
-  - CSV export
-  - detail drawer with full message + gateway response
-- existing SMS settings/logs page touch করব না, এটা নতুন page।
-
-## Phase 5 — Advanced Export System (CSV / Excel / PDF)
-- Reusable `<ExportDialog>` component:
-  - column picker (checkbox list, presets save to localStorage per module)
-  - format selector (CSV / Excel / PDF)
-  - "respect current filters" toggle (default on)
-- Backend helper `lib/exports/buildExport.ts`:
-  - CSV: UTF-8 BOM (Bengali safe)
-  - Excel: `xlsx` (already pinned), bn-aware number format
-  - PDF: existing pdfmake + Bengali font already wired
-- Wire into Irrigation Reports + Invoices first; other reports later (additive)।
-
-## Phase 6 — Farmer Profile Data Consistency Audit
-- Smoke-check করব Savings / Lands / Irrigation / Payments tab queries:
-  - missing FKs (already added payments→offices; will check lands, irrigation_invoices, savings_transactions joins)
-  - RLS office isolation verify (run `scripts/rls-audit.sql` + new vitest cases)
-  - schema cache (PostgREST `notify pgrst` after FK add) — already triggered by migration
-- Add indexes where slow (e.g. `irrigation_invoices(farmer_id, deleted_at)`, `payments(farmer_id, created_at DESC)`) only if missing।
-- Vitest coverage:
-  - dashboard filter/sort
-  - payment-flow guard (cancelled/paid invoice rejection)
-  - SMS log status transitions
-  - export column projection
-- Playwright e2e (opt-in CI gate already in place):
-  - dashboard → select invoices → payments → success
-  - SMS log retry visible
-  - chart renders with non-empty data
+Separate **Current Invoice Collection** from **Previous Season Due Collection** in the irrigation payment workflow, add **Promise Date** bypass, **Delay Fee override** with audit, **split ledger heads**, **new report**, and updated **receipt + SMS** — without breaking existing modules.
 
 ---
 
-## Cross-cutting guardrails
-- কোনো existing migration / RPC / edge function signature পরিবর্তন হবে না — শুধু additive।
-- Each phase ends with: typecheck + vitest + manual smoke on `/irrigation/reports`, `/farmers/:id`, `/sms/logs`।
-- Backward-compat tests থেকে যা আছে (receipt verify, ledger integrity, savings, loans) — কোনোটাই pre/post diff এ ভাঙবে না।
+## Phase 1 — Database foundations (migration)
+
+### 1.1 New table: `irrigation_due_promises`
+```
+id, office_id, farmer_id, payment_id (nullable until linked),
+previous_due_amount numeric, promise_date date, remarks text,
+approved_by uuid, status text default 'pending'
+  -- pending | fulfilled | overdue | broken
+fulfilled_at timestamptz, created_at, updated_at
+```
+RLS: office-scoped read; admin/committee insert; super_admin manage.
+Trigger: nightly/at-read derivation of `overdue` (computed in queries; no cron needed initially).
+
+### 1.2 Extend `irrigation_invoice_payments`
+Add columns (nullable, backward compatible):
+- `current_invoice_collected numeric default 0`
+- `previous_due_collected numeric default 0`
+- `delay_fee_override_reason text`
+- `delay_fee_original numeric` (snapshot when overridden)
+
+Existing `collected_amount` continues to mean "total received" (sum). Old rows untouched.
+
+### 1.3 New table: `irrigation_delay_fee_audit`
+```
+id, invoice_id, payment_id, original_amount, modified_amount,
+reason text, changed_by, office_id, created_at
+```
+RLS: office read, admin insert.
+
+### 1.4 Chart of accounts
+Ensure system accounts exist (insert if missing, idempotent):
+- `IRR-INCOME` Irrigation Income
+- `IRR-PREV-DUE` Previous Due Collection
+- `IRR-DELAY` Delay Fee Income
+- `IRR-MAINT` Maintenance Income
+- `IRR-CANAL` Canal/Nala Income
+
+(Existing ledger postings remain unchanged for old payments.)
 
 ---
 
-## প্রশ্ন (শুরুর আগে)
-1. **শুরু কোথা থেকে?** Phase 1 (charts) থেকে যাব নাকি আপনার priority আলাদা?
-2. **SMS gateway**: existing `send-sms` function-এর gateway response কি raw JSON সংরক্ষণ করব, না সংক্ষেপে status code + message?
-3. **Direct payment**: একসাথে multiple invoice select করে এক payment receipt, নাকি প্রতিটা invoice আলাদা receipt? (existing `irrigation_invoice_payments` allocation একাধিক invoice support করে — first option সহজ ও clean।)
+## Phase 2 — Payments page UI (`src/pages/Payments.tsx` + `IrrigationInvoicesTab` flow)
+
+New layout when `kind = irrigation`:
+
+```
+┌─ Step 1: Farmer search (existing)
+├─ Step 2: Select current invoice(s)  → from irrigation_invoices where due_amount>0 & current season
+├─ Step 3 (auto): Current Invoice Panel
+│    Invoice No | Season | Irrigation | Delay Fee [editable] | Maintenance | Canal | Total Payable
+│    Input: "বর্তমান বকেয়া থেকে গ্রহণ" (current_invoice_collected)
+├─ Step 4 (auto): Previous Due Panel  (only if previous unpaid invoices found)
+│    ⚠ banner + expandable season/invoice/due table
+│    Input: "পূর্বের বকেয়া থেকে সংগৃহীত" (previous_due_collected)
+├─ Step 5: Validation
+│    if previousDueRemaining > 0 AND special_permission=false → block submit
+│    if special_permission=true → require promise_date + remarks
+└─ Step 6: Submit → atomic insert (payment + iip + promise + audit)
+```
+
+Receipt total = current + previous.
+
+## Phase 3 — Payment submit logic
+
+Refactor `submitIrrigationPayment` (or equivalent) to:
+1. Validate (zod): `current_invoice_collected ≥ 0`, `previous_due_collected ≥ 0`, sum > 0, no fully-paid/cancelled invoice selected.
+2. Insert one `payments` row (`amount = current + previous`, `kind=irrigation`).
+3. Insert one `irrigation_invoice_payments` row per selected invoice with split fields.
+4. If delay fee changed from snapshot → insert `irrigation_delay_fee_audit`.
+5. If `special_permission=true` → insert `irrigation_due_promises` row, link to payment.
+6. Post journal entries split by ledger head (5 lines instead of 1).
+7. Queue SMS with new template.
+8. Update existing invoice `paid_amount/due_amount` (current invoices only).
+
+All in a single supabase RPC for atomicity (`fn_post_irrigation_payment`).
+
+## Phase 4 — Receipt (`bnReceipts.ts` / `paymentReceiptPdf.ts`)
+
+Add irrigation receipt variant with two sections:
+- **বর্তমান বকেয়া** — line items per selected invoice
+- **পূর্বের বকেয়া থেকে সংগৃহীত** — single line
+- **মোট গ্রহণ** — grand total
+
+Keep old receipts working: branch only when `previous_due_collected > 0` or new flag set; otherwise render legacy layout.
+
+## Phase 5 — SMS template
+
+Update `send-sms` payload builder for irrigation:
+```
+আপনার সেচ বিলের ৳{current} এবং পূর্বের বকেয়া ৳{prev} গ্রহণ করা হয়েছে।
+অবশিষ্ট বকেয়া ৳{remaining}{promise_line}
+```
+
+## Phase 6 — Reports
+
+- **Update**: `IrrigationDueReport`, `CollectionReport`, `ReceiptKindReport`, `InvoiceReport` — add columns: Current Collection / Previous Due Collection / Delay Fee / Maintenance / Canal.
+- **New**: `src/pages/reports/PromiseDueReport.tsx` — list `irrigation_due_promises` with farmer, due, promise_date, status; filters: office, status (pending/fulfilled/overdue/broken), date range; export CSV/PDF.
+- **New (admin)**: `src/pages/admin/IrrigationDueMismatch.tsx` — list farmers where `sum(irrigation_invoices.due_amount)` differs from stat-card aggregation (referenced in earlier message).
+
+## Phase 7 — Demo importer fix (also from earlier message)
+
+In `supabase/functions/demo-reset` (or DataImport flow): add **Share Balance** import. Audit other modules and fix gaps:
+- share_balance / share_capital
+- savings opening balance
+- (verify) loan EMI schedule, irrigation invoices, voter flags
+
+## Phase 8 — Tests
+
+- Unit: split-amount calculation, delay fee override, promise validation.
+- Integration: payment RPC posts split journal correctly.
+- E2E (Playwright): full flow — current+previous, blocked submit, promise bypass, override audit.
+
+---
+
+## Technical notes
+
+- **Backward compat**: every new column nullable; old code paths read `collected_amount` = sum.
+- **Atomicity**: server-side RPC prevents partial writes.
+- **RLS**: office_id on every new table; mirror existing irrigation policies.
+- **Audit**: delay_fee + promise + payment all logged.
+- **i18n**: all new strings via `t()`; Bengali-first labels.
+
+---
+
+## Rollout order (recommended)
+
+1. Approve plan.
+2. Run Phase 1 migration.
+3. Implement Phase 2–5 (Payments UI + RPC + receipt + SMS).
+4. Implement Phase 6 reports.
+5. Phase 7 importer fix.
+6. Phase 8 tests + verify build.
+
+Given the size, I suggest we do this in **2–3 separate messages** rather than one giant change, so each phase can be reviewed in the preview before moving to the next. **Shall I start with Phase 1 (migration) + Phase 2–3 (Payments UI + RPC) in this round?**
