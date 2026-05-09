@@ -28,6 +28,7 @@ import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
+import IrrigationInvoicesTab from "@/components/farmers/IrrigationInvoicesTab";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
@@ -685,6 +686,7 @@ export default function FarmerDetail() {
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="loans">{t("loans")}</TabsTrigger>}
           <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
+          <TabsTrigger value="irr_invoices">সেচ ইনভয়েস</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
         </TabsList>
@@ -943,7 +945,11 @@ export default function FarmerDetail() {
           </Table></Card>
         </TabsContent>
 
-        <TabsContent value="payments">
+        <TabsContent value="irr_invoices">
+          <IrrigationInvoicesTab farmerId={farmer.id} />
+        </TabsContent>
+
+
           <Card><Table>
             <TableHeader><TableRow>
               <TableHead>{t("date")}</TableHead>

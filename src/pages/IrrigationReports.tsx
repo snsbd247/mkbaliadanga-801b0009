@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import { money } from "@/lib/format";
 import { exportInvoicesCSV, exportInvoicesXLSX } from "@/lib/irrigationExports";
 import { FileDown, FileSpreadsheet } from "lucide-react";
+
+const IrrigationReportCharts = lazy(() => import("./irrigation/IrrigationReportCharts"));
 
 type Inv = any;
 
@@ -19,6 +22,8 @@ export default function IrrigationReports() {
   const [offices, setOffices] = useState<any[]>([]);
   const [seasonId, setSeasonId] = useState("all");
   const [officeId, setOfficeId] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [rows, setRows] = useState<Inv[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -40,8 +45,10 @@ export default function IrrigationReports() {
       .limit(2000);
     if (seasonId !== "all") q = q.eq("season_id", seasonId);
     if (officeId !== "all") q = q.eq("office_id", officeId);
+    if (fromDate) q = q.gte("generated_at", fromDate);
+    if (toDate) q = q.lte("generated_at", `${toDate}T23:59:59`);
     q.then(({ data }) => { setRows((data as any) ?? []); setLoading(false); });
-  }, [seasonId, officeId]);
+  }, [seasonId, officeId, fromDate, toDate]);
 
   const totals = useMemo(() => {
     const t = { count: rows.length, payable: 0, paid: 0, due: 0, manual: 0 };
@@ -90,7 +97,7 @@ export default function IrrigationReports() {
       <PageHeader title="সেচ রিপোর্ট" description="সিজন ও জমির ধরন অনুযায়ী রাজস্ব ও কালেকশন বিশ্লেষণ" />
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             <div>
               <Label>সিজন</Label>
               <Select value={seasonId} onValueChange={setSeasonId}>
@@ -113,14 +120,28 @@ export default function IrrigationReports() {
                 </Select>
               </div>
             )}
-            <div className="flex items-end gap-2">
-              <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(rows, "irrigation-report.csv")} disabled={!rows.length}>
-                <FileDown className="h-4 w-4 mr-1" /> CSV
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(rows, "irrigation-report.xlsx")} disabled={!rows.length}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
-              </Button>
+            <div>
+              <Label>শুরু তারিখ</Label>
+              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
             </div>
+            <div>
+              <Label>শেষ তারিখ</Label>
+              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(rows, "irrigation-report.csv")} disabled={!rows.length}>
+              <FileDown className="h-4 w-4 mr-1" /> CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(rows, "irrigation-report.xlsx")} disabled={!rows.length}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+            </Button>
+            {(fromDate || toDate || seasonId !== "all" || officeId !== "all") && (
+              <Button size="sm" variant="ghost" onClick={() => { setSeasonId("all"); setOfficeId("all"); setFromDate(""); setToDate(""); }}>
+                ফিল্টার রিসেট
+              </Button>
+            )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
@@ -133,6 +154,10 @@ export default function IrrigationReports() {
           <p className="text-sm text-muted-foreground">{loading ? "লোড হচ্ছে…" : `${rows.length} টি ইনভয়েস`}</p>
         </CardContent>
       </Card>
+
+      <Suspense fallback={<div className="mt-4 text-sm text-muted-foreground">চার্ট লোড হচ্ছে…</div>}>
+        <IrrigationReportCharts rows={rows} />
+      </Suspense>
 
       <Card className="mt-4">
         <CardContent className="pt-6">

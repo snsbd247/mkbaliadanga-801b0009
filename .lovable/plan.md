@@ -1,63 +1,82 @@
-# Irrigation Module Stabilization Plan
+# Irrigation Ecosystem v2 — Phased Plan
 
-This is a large, multi-area cleanup. To stay safe and avoid breaking existing flows (ledger, receipts, payments, QR, accounting), I'll deliver it in **phased PRs** rather than one massive change. Each phase is independently shippable and testable.
+বিশাল স্কোপ। এক রিকোয়েস্টে সব করলে regression risk বেশি — তাই ৬টি ফেজে ভাগ করছি, প্রতিটা নিজে নিজে shippable। আপনি বললেই Phase 1 দিয়ে শুরু করব, অথবা ক্রম পাল্টে দিতে পারি।
 
-## Phase 1 — Snapshot Safety + Rate Fallback (highest risk, ship first)
+---
 
-**DB migration**
-- Add `irrigation_invoices.is_manual_rate boolean default false`, `manual_rate_reason text`, `recalculated_at timestamptz`, `recalculated_by uuid`.
-- Add trigger `trg_protect_invoice_snapshot` on `irrigation_invoices` UPDATE: blocks changes to `calculation_snapshot`, `season_rate`, `land_type_id`, `land_type_name` unless the SQL `set local app.allow_snapshot_rewrite = 'on'` flag is set (used only by the recalc RPC).
-- Add RPC `recalculate_irrigation_invoice(invoice_id, reason)` — admin-only, archives old snapshot into `irrigation_invoice_audit`, writes new snapshot, sets `recalculated_*`.
+## Phase 1 — Irrigation Analytics Charts (`/irrigation/reports`)
+- `recharts` (already in deps) দিয়ে ৪টি চার্ট যোগ:
+  - Season-wise Collection (stacked bar: payable / paid / due + collection %)
+  - Land-type Comparison (grouped bar)
+  - Monthly Trend (line: invoiced vs collected, last 12 months)
+  - Overdue Aging (pie: 0-30 / 31-60 / 60+ days)
+- ফিল্টার: office, season, date range, land-type — সবগুলো চার্ট ও existing summary শেয়ার করবে।
+- বাংলা labels, responsive container, lazy-load charts।
+- Backend: একটা নতুন SECURITY DEFINER RPC `irrigation_report_aggregates(office_id, season_id, from, to)` — current RLS-honored views এর উপর। Existing report data ভাঙবে না।
 
-**Frontend (`src/pages/IrrigationInvoices.tsx`)**
-- Edit dialog: snapshot fields (rate, land type, snapshot JSON) become **read-only** with a "স্ন্যাপশট সুরক্ষিত" badge.
-- New "পুনঃগণনা" button (admin only) → opens reason dialog → calls RPC.
-- Bulk + manual generation: before insert, run rate check. If missing, open `RateMissingDialog` with three actions: *Set manual rate*, *Go to rate config*, *Cancel*. Manual rate path stores `is_manual_rate=true` + reason.
+## Phase 2 — FarmerDashboard Irrigation Table (search / filter / sort)
+- Client-side search (invoice no / season / land type / mouza / status)
+- Filters: season dropdown, status (Pending / Partial / Paid / Overdue / Cancelled), date range
+- Sort headers: due date, amount, status, paid date, created
+- "Overdue" derived from `due_date < today AND due_amount > 0`
+- শুধু UI/state — `farmer-portal-data` edge function unchanged।
 
-## Phase 2 — Sidebar Restructure + Rate Audit Log
+## Phase 3 — Direct Payment from FarmerDashboard
+- Row checkbox + selection bar + "পেমেন্ট করুন" button
+- Validation: skip cancelled / fully-paid / negative-due
+- Navigate `/payments?farmer={id}&irrigation_invoices={id1,id2}` (hash so URL stays short if many)
+- Payments page reads param, preloads invoices, auto-fills total, locks against duplicate (idempotency_key on submit + recheck due before insert)
+- DB: কোনো schema পরিবর্তন নাই; existing `irrigation_invoice_payments` flow reuse।
 
-**DB migration**
-```
-irrigation_rate_audit_logs(id, office_id, irrigation_season_id, land_type_id,
-  old_rate numeric, new_rate numeric, change_reason text,
-  changed_by uuid, changed_at timestamptz default now(), ip text)
-```
-- Trigger on `irrigation_season_rates` INSERT/UPDATE/DELETE → writes audit row.
-- RLS: admin/super read; insert via trigger only.
+## Phase 4 — SMS Tracking (`irrigation_sms_logs` + `/sms/logs` page)
+- নতুন টেবিল `irrigation_sms_logs` (RLS: office-scoped read, super_admin manage)
+  - columns per spec; FK to invoices/farmers/offices
+  - indexes: (office_id, sent_at DESC), (status), (irrigation_invoice_id)
+- `sms-due-reminders` & `send-sms` edge functions কে wrap: প্রতিটা attempt log করবে (Pending → Sent/Failed/Skipped, gateway response, retry_count)
+- নতুন page `/sms/logs`:
+  - search, status filter, invoice filter
+  - "Retry" action (super_admin only) → re-invoke send-sms with same payload, increments retry_count
+  - CSV export
+  - detail drawer with full message + gateway response
+- existing SMS settings/logs page touch করব না, এটা নতুন page।
 
-**New page** `src/pages/admin/RateAuditLog.tsx` at `/admin/rate-audit` with filters (date, office, season, land type), export to CSV, detail modal.
+## Phase 5 — Advanced Export System (CSV / Excel / PDF)
+- Reusable `<ExportDialog>` component:
+  - column picker (checkbox list, presets save to localStorage per module)
+  - format selector (CSV / Excel / PDF)
+  - "respect current filters" toggle (default on)
+- Backend helper `lib/exports/buildExport.ts`:
+  - CSV: UTF-8 BOM (Bengali safe)
+  - Excel: `xlsx` (already pinned), bn-aware number format
+  - PDF: existing pdfmake + Bengali font already wired
+- Wire into Irrigation Reports + Invoices first; other reports later (additive)।
 
-**Sidebar (`src/components/layout/AppSidebar.tsx`)** — split current Operations group:
-```
-Operations:           সেচ ইনভয়েস, পেমেন্ট, রসিদসমূহ
-Irrigation Reports:   সেচ রিপোর্ট, ওভারডিউ, বিলম্ব ফি, বর্গা, সিজন
-Irrigation Settings:  সিজন টাইপ, জমির ধরন, সিজন রেট, সেচ চার্জ সেটিংস, রেট পরিবর্তন ইতিহাস
-```
-Move existing irrigation entries; keep permission gating; add icons + dividers (already supported by current Collapsible groups).
+## Phase 6 — Farmer Profile Data Consistency Audit
+- Smoke-check করব Savings / Lands / Irrigation / Payments tab queries:
+  - missing FKs (already added payments→offices; will check lands, irrigation_invoices, savings_transactions joins)
+  - RLS office isolation verify (run `scripts/rls-audit.sql` + new vitest cases)
+  - schema cache (PostgREST `notify pgrst` after FK add) — already triggered by migration
+- Add indexes where slow (e.g. `irrigation_invoices(farmer_id, deleted_at)`, `payments(farmer_id, created_at DESC)`) only if missing।
+- Vitest coverage:
+  - dashboard filter/sort
+  - payment-flow guard (cancelled/paid invoice rejection)
+  - SMS log status transitions
+  - export column projection
+- Playwright e2e (opt-in CI gate already in place):
+  - dashboard → select invoices → payments → success
+  - SMS log retry visible
+  - chart renders with non-empty data
 
-## Phase 3 — i18n Cleanup + Export Enrichment
+---
 
-**i18n** — add canonical keys to `src/i18n/translations.ts`:
-`irrigationInvoice, irrigationCollection, seasonRate, landType, delayFee, canalCharge, maintenanceCharge, payableAmount, dueAmount, paidAmount, manualRate, snapshotProtected, recalculate, rateMissingTitle, rateMissingBody`.
-Replace hardcoded Bangla/English mixes in: `IrrigationInvoices.tsx`, `Seasons.tsx`, `admin/Lookups.tsx`, `IrrigationRates.tsx`, `reports/IrrigationDueReport.tsx`, `reports/InvoiceReport.tsx`, related toast/validation strings.
+## Cross-cutting guardrails
+- কোনো existing migration / RPC / edge function signature পরিবর্তন হবে না — শুধু additive।
+- Each phase ends with: typecheck + vitest + manual smoke on `/irrigation/reports`, `/farmers/:id`, `/sms/logs`।
+- Backward-compat tests থেকে যা আছে (receipt verify, ledger integrity, savings, loans) — কোনোটাই pre/post diff এ ভাঙবে না।
 
-**Exports** (`src/lib/exports.ts` + report pages) — add columns:
-`season_rate, land_type_name, is_manual_rate, manual_rate_reason, generated_by_name, payment_status, calculation_snapshot` (JSON column for Excel; flattened summary for PDF).
+---
 
-## Phase 4 — Demo Refresh + Tests
-
-- Update `supabase/functions/demo-reset/index.ts` to seed: 3 season types, 5 land types, 2 seasons with full rate matrix, sample invoices (paid/partial/overdue/borga/manual-rate), rate audit history, SMS logs. Preserve admin user.
-- Vitest additions:
-  - `irrigationInvoice.snapshot.test.ts` — trigger blocks snapshot mutation.
-  - `irrigationInvoice.rateMissing.test.ts` — fallback dialog flow.
-  - `rateAuditLog.test.ts` — trigger writes audit row on rate change.
-  - `exports.irrigationColumns.test.ts` — new fields present.
-  - `AppSidebar.irrigationGroups.test.tsx` — three groups render with permissions.
-
-## Out of Scope / Non-Goals
-- No changes to ledger, payments, receipts, QR, or accounting code paths.
-- No schema changes to `irrigation_charge_settings` or `lands`.
-- Backward compatible: old invoices without `is_manual_rate` default to `false`.
-
-## Suggested Execution Order
-I recommend approving and shipping **Phase 1 first** (highest value + risk), validating in preview, then proceeding sequentially. Reply with "next phase 1" (or which phase to start) and I'll implement.
+## প্রশ্ন (শুরুর আগে)
+1. **শুরু কোথা থেকে?** Phase 1 (charts) থেকে যাব নাকি আপনার priority আলাদা?
+2. **SMS gateway**: existing `send-sms` function-এর gateway response কি raw JSON সংরক্ষণ করব, না সংক্ষেপে status code + message?
+3. **Direct payment**: একসাথে multiple invoice select করে এক payment receipt, নাকি প্রতিটা invoice আলাদা receipt? (existing `irrigation_invoice_payments` allocation একাধিক invoice support করে — first option সহজ ও clean।)
