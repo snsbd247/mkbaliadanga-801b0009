@@ -5,6 +5,12 @@ interface Ctx {
   lang: Lang;
   setLang: (l: Lang) => void;
   t: (k: TranslationKey) => string;
+  /**
+   * Inline bilingual helper — returns `en` or `bn` based on active language.
+   * Use for one-off page-local strings instead of polluting translations.ts.
+   *   <Button>{tx("Save", "সংরক্ষণ")}</Button>
+   */
+  tx: (en: string, bn: string) => string;
 }
 
 const LanguageContext = createContext<Ctx | undefined>(undefined);
