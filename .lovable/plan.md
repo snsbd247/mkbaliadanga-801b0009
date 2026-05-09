@@ -97,3 +97,25 @@ Given the size, I suggest splitting into **3 messages**:
 - **Msg 3**: Phase C + D + E
 
 Reply **"go"** to proceed with Msg 1, or tell me to skip/reorder phases.
+
+---
+
+## Status — Completed
+
+- **Phase A**: `src/lib/irrigationDue.ts` + 12 unit tests ✓
+- **Phase B-1**: Dashboard, Cashbook, Reports, Dues, DuesAudit ✓
+- **Phase B-2**: Statement, FarmerProfileReport, FarmerDetail (receipt outstanding + delete-block) ✓
+- **Phase B-3**: reports/IrrigationDueReport, reports/CollectionReport ✓
+- **Phase B-4**: Ledger, LandDetail ✓
+- **Phase B-5**: SmsLogs (invoice-first with charge fallback) ✓
+- **Phase C**: IrrigationDueMismatch — added Excel export, View Farmer link, per-farmer Recalculate (rebuilds invoice paid/due from `irrigation_invoice_payments` and writes audit row) ✓
+- **Phase D**: Verified `DataImport.tsx` already supports `shares` module with account_number + balance ✓
+
+## Intentionally retained on `irrigation_charges` (legacy/audit only)
+
+- `Diagnostics.tsx` — RLS/data probe across all tables
+- `AuditLogs.tsx` — historical audit timeline
+- `Backup.tsx` — full table snapshot list
+- `DataImport.tsx` — legacy import path (still supported)
+- `admin/PatwariDetail.tsx` — patwari "special entries" (invoices have no `patwari_id`)
+- `FarmerDetail.tsx` line 120 — legacy charge-list tab kept as audit history
