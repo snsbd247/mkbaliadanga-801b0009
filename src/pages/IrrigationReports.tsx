@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import { money, fmtDate } from "@/lib/format";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 import { ExportDialog, type ExportColumn } from "@/components/exports/ExportDialog";
 import { FileDown } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
