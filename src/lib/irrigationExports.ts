@@ -43,7 +43,7 @@ function flatten(inv: any) {
     [IRR_BN.farmerCode]: inv.farmers?.farmer_code ?? "",
     [IRR_BN.mobile]: inv.farmers?.mobile ?? "",
     [IRR_BN.mouza]: inv.lands?.mouza ?? "",
-    [IRR_BN.dag]: inv.lands?.dag_no ?? "",
+    [IRR_BN.dag]: formatDagNumbers(inv.lands?.dag_no),
     [IRR_BN.landSize]: inv.lands?.land_size ?? "",
     [IRR_BN.landType]: inv.land_type_name ?? snap.land_type_name ?? "",
     [IRR_BN.season]: inv.seasons?.name ?? inv.seasons?.type ?? "",
