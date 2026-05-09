@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-09T11:04:08.327Z",
+  "generatedAt": "2026-05-09T11:06:10.382Z",
   "counts": {
     "src/pages/Accounts.tsx": 2,
     "src/pages/AuditLogs.tsx": 1,
@@ -12,7 +12,7 @@
     "src/pages/FarmerProfileReport.tsx": 34,
     "src/pages/Farmers.tsx": 7,
     "src/pages/FarmersImport.tsx": 14,
-    "src/pages/IrrigationInvoices.tsx": 126,
+    "src/pages/IrrigationInvoices.tsx": 165,
     "src/pages/IrrigationRates.tsx": 3,
     "src/pages/LedgerReconciliation.tsx": 1,
     "src/pages/Loans.tsx": 2,
