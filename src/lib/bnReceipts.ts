@@ -343,6 +343,24 @@ function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLa
   return wrap;
 }
 
+/** Test-only: build a single receipt copy's HTML without touching the DOM. */
+export function buildReceiptCopyHtmlForTest(
+  data: BnReceiptData,
+  copy: "farmer" | "office" = "farmer",
+  lang: ReceiptLang = "bn",
+): string {
+  return copyHtml(
+    data,
+    STR[lang][copy === "farmer" ? "farmerCopy" : "officeCopy"],
+    data.collector_signature_url,
+    lang,
+    "two-line",
+    "sm",
+    null,
+    false,
+  );
+}
+
 function copySuffix(copy: ReceiptCopy): string {
   return copy === "farmer" ? "_farmer" : copy === "office" ? "_office" : "";
 }
