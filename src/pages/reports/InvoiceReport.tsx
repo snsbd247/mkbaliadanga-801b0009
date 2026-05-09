@@ -191,7 +191,7 @@ export default function InvoiceReport() {
                 <TableRow key={r.id}>
                   <TableCell className="text-xs font-mono">{r.invoice_no}</TableCell>
                   <TableCell className="text-xs">{r.farmers?.name_en} <span className="text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
-                  <TableCell className="text-xs">{r.lands?.mouza}/{r.lands?.dag_no}</TableCell>
+                  <TableCell className="text-xs">{r.lands?.mouza}/{formatDagNumbers(r.lands?.dag_no)}</TableCell>
                   <TableCell className="text-xs">{r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—"}</TableCell>
                   <TableCell><Badge variant={r.is_borga ? "secondary" : "outline"}>{r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ")}</Badge></TableCell>
                   <TableCell className="text-right">{money(r.payable_amount)}</TableCell>
