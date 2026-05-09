@@ -58,11 +58,32 @@ export function formatDagNumbers(input?: string | null, separator: string = ", "
   return parseDagNumbers(input).join(separator);
 }
 
-/** Returns true when the search query matches any individual dag in the joined string. */
+/**
+ * Split a free-form search query into dag-like tokens. Accepts commas,
+ * newlines, semicolons, slashes-of-spaces, or plain whitespace as separators
+ * so users can paste "123, 124\n125" and still match each piece.
+ */
+export function parseDagSearchTokens(query: string): string[] {
+  if (!query) return [];
+  return String(query)
+    .split(/[,\n;]+|\s+/)
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+}
+
+/**
+ * Returns true when the search query matches any individual dag in the joined
+ * string. The query may itself contain multiple dag tokens (comma / newline /
+ * whitespace separated) — a match on any token is enough.
+ */
 export function matchesDagSearch(dag_no: string | null | undefined, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const parts = parseDagNumbers(dag_no);
-  if (parts.some((p) => p.toLowerCase().includes(q))) return true;
-  return (dag_no ?? "").toLowerCase().includes(q);
+  const raw = (query ?? "").trim().toLowerCase();
+  if (!raw) return true;
+  const haystack = (dag_no ?? "").toLowerCase();
+  const parts = parseDagNumbers(dag_no).map((p) => p.toLowerCase());
+  const tokens = parseDagSearchTokens(query).map((t) => t.toLowerCase());
+  if (tokens.length === 0) return haystack.includes(raw);
+  return tokens.some(
+    (t) => parts.some((p) => p.includes(t)) || haystack.includes(t),
+  );
 }
