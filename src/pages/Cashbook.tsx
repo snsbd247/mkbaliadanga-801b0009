@@ -154,7 +154,7 @@ export default function Cashbook() {
       return s + (Number(l.total_payable || 0) - paid);
     }, 0);
 
-    const irrCharged = irrigation.reduce((s, x) => s + Number(x.total || 0), 0);
+    const irrCharged = irrigation.reduce((s, x) => s + Number(x.payable_amount || 0), 0);
     const irrCollected = irrigation.reduce((s, x) => s + Number(x.paid_amount || 0), 0);
     const irrDue = irrigation.reduce((s, x) => s + Number(x.due_amount || 0), 0);
 
