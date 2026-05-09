@@ -56,7 +56,7 @@ export default function Users() {
     role: "staff" as "developer" | "super_admin" | "admin" | "committee" | "staff", office_id: "",
   });
 
-  useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, []);
+  useEffect(() => { document.title = `${t("users")} — ${t("appName")}`; load(); }, [isDeveloper]);
 
   async function load() {
     const [p, r, o] = await Promise.all([
