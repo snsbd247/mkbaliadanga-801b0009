@@ -30,7 +30,7 @@ describe("normalizeFarmerCode", () => {
   ])("rejects %p (%s)", (input) => {
     const r = normalizeFarmerCode(input as any);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toMatch(/Farmer ID|valid|empty|too long/);
+    if (r.ok === false) expect(r.error).toMatch(/Farmer ID|valid|empty|too long/);
   });
 });
 
