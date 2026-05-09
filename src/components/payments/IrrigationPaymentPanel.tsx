@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { safeWithRetry } from "@/lib/retryQueue";
+import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
 
 type Invoice = {
@@ -189,6 +190,15 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           await supabase.from("irrigation_invoices")
             .update({ delay_fee: newFee, payable_amount: Number(inv.payable_amount) + (newFee - originalFee), due_amount: Number(inv.due_amount) + (newFee - originalFee) })
             .eq("id", inv.id);
+          // central audit log for delay-fee override
+          logAudit({
+            module: "delay_fee_override",
+            action_type: "override",
+            office_id: inv.office_id,
+            reference_id: inv.id,
+            old_data: { delay_fee: originalFee },
+            new_data: { delay_fee: newFee, reason: delayFeeReason[inv.id] || null, payment_id: paymentId },
+          });
         }
 
         // update paid amount
@@ -247,7 +257,30 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           approved_by: user?.id,
           status: "pending",
         });
+        logAudit({
+          module: "promise_date",
+          action_type: "create",
+          office_id: officeId,
+          reference_id: paymentId,
+          new_data: { farmer_id: farmerId, promise_date: promiseDate, previous_due_amount: previousRemainingAfter, remarks: promiseRemarks },
+        });
       }
+
+      // central audit log for payment creation
+      logAudit({
+        module: "irrigation_payment",
+        action_type: "create",
+        office_id: officeId,
+        reference_id: paymentId,
+        new_data: {
+          farmer_id: farmerId,
+          amount: grandTotal,
+          method,
+          current_collected: Number(currentCollected || 0),
+          previous_collected: Number(previousCollected || 0),
+          invoice_ids: sorted.map(i => i.id),
+        },
+      });
 
       // 4b) Split-ledger journal posting (Dr Cash / Cr 5 income heads)
       try {
