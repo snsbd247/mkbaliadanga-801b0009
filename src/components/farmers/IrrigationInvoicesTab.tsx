@@ -240,12 +240,13 @@ function SortHead({ label, k, sortKey, sortDir, onClick, className }: { label: s
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useLang();
   const map: Record<string, { label: string; variant: any; className?: string }> = {
-    pending: { label: "পেন্ডিং", variant: "outline" },
-    partial: { label: "আংশিক", variant: "secondary" },
-    paid: { label: "পরিশোধিত", variant: "default" },
-    overdue: { label: "মেয়াদোত্তীর্ণ", variant: "destructive" },
-    cancelled: { label: "বাতিল", variant: "outline", className: "opacity-60" },
+    pending: { label: t("irr_statusPending" as any), variant: "outline" },
+    partial: { label: t("irr_statusPartial" as any), variant: "secondary" },
+    paid: { label: t("irr_statusPaid" as any), variant: "default" },
+    overdue: { label: t("irr_statusOverdue" as any), variant: "destructive" },
+    cancelled: { label: t("irr_statusCancelled" as any), variant: "outline", className: "opacity-60" },
   };
   const c = map[status] ?? { label: status, variant: "outline" };
   return <Badge variant={c.variant} className={c.className}>{c.label}</Badge>;
