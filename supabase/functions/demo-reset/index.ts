@@ -525,8 +525,8 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
           office_id: officeId,
         });
       }
-      // Corresponding loan_payments rows for the 3 paid installments
-      for (let n = 1; n <= 3; n++) {
+      // Corresponding loan_payments rows
+      for (let n = 1; n <= paidCount; n++) {
         const due = new Date(start);
         due.setMonth(due.getMonth() + n);
         pays.push({
