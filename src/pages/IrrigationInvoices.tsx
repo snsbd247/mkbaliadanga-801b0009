@@ -392,6 +392,18 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             due_date: dueDate,
             invoice_status: "generated",
             generated_by: userId,
+            season_rate: row.rate,
+            land_type_id: row.rateRow?.land_type_id ?? null,
+            land_type_name: row.rateRow?.land_type_name ?? row.land.field_type ?? null,
+            calculation_snapshot: {
+              rate_per_shotok: row.rate,
+              land_size_shotok: Number(row.land.land_size),
+              land_type_code: row.rateRow?.land_type_code ?? row.land.field_type ?? null,
+              land_type_name: row.rateRow?.land_type_name ?? null,
+              settings: row.settings,
+              calc: row.calc,
+              generated_at: new Date().toISOString(),
+            },
           };
           const { error } = await supabase.from("irrigation_invoices" as any).insert(payload);
           if (error) { failed++; console.error(error); } else success++;
