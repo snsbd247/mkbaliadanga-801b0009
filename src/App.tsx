@@ -186,6 +186,7 @@ const App = () => (
                 <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />
                 <Route path="/admin/lookups" element={<RequireRole roles={["admin","super_admin"]}><AdminLookups /></RequireRole>} />
                 <Route path="/admin/rate-audit" element={<RequireRole roles={["admin","super_admin"]}><RateAuditLog /></RequireRole>} />
+                <Route path="/irrigation-reports" element={<IrrigationReports />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
               <Route path="*" element={<NotFound />} />
