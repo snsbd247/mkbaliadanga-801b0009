@@ -84,7 +84,6 @@ export default function IdReview() {
     setDraft({
       member_no: r.member_no ?? "",
       account_number: r.account_number ?? "",
-      voter_number: r.voter_number ?? "",
     });
   }
 
@@ -93,7 +92,7 @@ export default function IdReview() {
     setSaving(true);
     const patch: any = {};
     const old: any = {};
-    (["member_no", "account_number", "voter_number"] as const).forEach(k => {
+    (["member_no", "account_number"] as const).forEach(k => {
       const newV = (draft[k] ?? "") as string;
       const oldV = (editing[k] ?? "") as string;
       if (newV !== oldV) { patch[k] = newV || null; old[k] = oldV || null; }
@@ -172,8 +171,7 @@ export default function IdReview() {
             <TableRow>
               <TableHead>{t("name")}</TableHead>
               <TableHead>{t("farmerIdLabel")}</TableHead>
-              <TableHead>{t("savingsAcNo")}</TableHead>
-              <TableHead>{t("voterNo")}</TableHead>
+              <TableHead>Voter / Savings A/C No</TableHead>
               <TableHead>{t("voterQ")}</TableHead>
               <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
@@ -188,7 +186,6 @@ export default function IdReview() {
                 </TableCell>
                 <TableCell className="font-mono text-xs">{r.member_no || "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{r.account_number || "—"}</TableCell>
-                <TableCell className="font-mono text-xs">{r.voter_number || "—"}</TableCell>
                 <TableCell>
                   {r.is_voter
                     ? <Badge variant="default">{t("yes")}</Badge>
@@ -204,7 +201,7 @@ export default function IdReview() {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   {t("noRecordsFound")}
                 </TableCell>
               </TableRow>
@@ -240,15 +237,10 @@ export default function IdReview() {
                   maxLength={20}
                 />
               </div>
-              <div>
-                <Label>{t("voterNo")}</Label>
-                <Input
-                  value={(draft.voter_number ?? "") as string}
-                  onChange={(e) => setDraft(d => ({ ...d, voter_number: e.target.value.replace(/\D/g, "") }))}
-                  maxLength={20}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">{t("auditOnSave")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("auditOnSave")}<br />
+                Voter No = Savings A/C No (auto-synced; one and the same value).
+              </p>
             </div>
           )}
           <DialogFooter>
