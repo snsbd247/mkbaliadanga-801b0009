@@ -6,7 +6,8 @@ import html2canvas from "html2canvas";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { loadBranding, type CompanyBranding } from "@/lib/branding";
 import { formatLandSize } from "@/lib/irrigationCalc";
-import { formatDagNumbers } from "@/lib/dagNumbers";
+import { parseDagNumbers } from "@/lib/dagNumbers";
+import { getReceiptLayoutSettings, dagSeparatorString } from "@/lib/receiptLayoutSettings";
 
 export type InvoiceCopy = "both" | "office" | "farmer";
 export type PaperFormat = "a4" | "letter";
@@ -176,11 +177,16 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   const regLine = brand.registration_no ? `নিবন্ধন নং: ${toBnDigits(brand.registration_no)}` : "";
   const amountWords = bnAmountInWords(Number(d.payable_amount ?? 0));
 
+  const layout = getReceiptLayoutSettings();
+  const mouzaLabel = layout.mouzaLabelBn.trim() || "মৌজা / জমির পরিমাণ";
+  const dagLabel = layout.dagLabelBn.trim() || "দাগ নং";
+  const dagJoined = parseDagNumbers(land.dag_no).join(dagSeparatorString(layout.dagSeparator));
   const rows: Array<[string, string]> = [
     ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
     ["গ্রাম / মোবাইল", `${farmer.village ?? "—"}${farmer.mobile ? " / " + farmer.mobile : ""}`],
     ["জমির ধরন", d.is_borga ? "বর্গাদার" : "নিজ মালিক"],
-    ["মৌজা / দাগ / জমির পরিমাণ", `${land.mouza ?? "—"} / দাগ ${formatDagNumbers(land.dag_no) || "—"} / ${formatLandSize(land.land_size) ?? "—"}`],
+    [mouzaLabel, `${land.mouza ?? "—"} / ${formatLandSize(land.land_size) ?? "—"}`],
+    [dagLabel, dagJoined || "—"],
     ["সিজন", seasonLabel || "—"],
     ["ইস্যু তারিখ", fmtDate(d.generated_at)],
     ["মেয়াদ তারিখ", fmtDate(d.due_date)],
