@@ -55,8 +55,8 @@ export default function MyPermissions() {
           <TableHeader>
             <TableRow>
               <TableHead>Module</TableHead>
-              {ACTIONS.map((a) => (
-                <TableHead key={a.key} className="text-center">{a.label}</TableHead>
+              {ACTIONS.map((a, idx) => (
+                <TableHead key={`${a.label}-${idx}`} className="text-center">{a.label}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
