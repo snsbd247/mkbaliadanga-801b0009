@@ -203,9 +203,19 @@ export default function IrrigationRates() {
                     </Select>
                   </div>
                   <div>
-                    <Label>Base rate / unit</Label>
+                    <Label>
+                      Base rate / unit{" "}
+                      <span className="text-xs text-muted-foreground">
+                        ({form.basis === "per_size" ? "per শতক" : form.basis === "per_day" ? "per day" : "per hour"})
+                      </span>
+                    </Label>
                     <Input type="number" min="0" step="0.01" value={form.base_rate}
                       onChange={(e) => setForm({ ...form, base_rate: +e.target.value })} />
+                    {form.basis === "per_size" && Number(form.base_rate) > 0 ? (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        ≈ {(Number(form.base_rate) * 33).toFixed(2)} per বিঘা (1 বিঘা = 33 শতক)
+                      </div>
+                    ) : null}
                   </div>
                   {/* Canal/Maintenance/Other charges hidden — defaults to 0 */}
                   <div className="col-span-2">
