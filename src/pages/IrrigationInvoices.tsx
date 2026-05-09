@@ -112,6 +112,14 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [pdfSettingsOpen, setPdfSettingsOpen] = useState(false);
   const [pdfSettings, setPdfSettings] = useState<InvoicePdfSettings>(() => loadInvoiceSettings());
   const [lastCopy, setLastCopy] = useState<InvoiceCopy>(() => loadLastInvoiceCopy());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [staff, setStaff] = useState<Array<{ id: string; full_name: string | null; username: string | null }>>([]);
+
+  useEffect(() => {
+    supabase.from("profiles").select("id,full_name,username").order("full_name").limit(500)
+      .then(({ data }) => setStaff((data as any) ?? []));
+  }, []);
 
   async function load() {
     setLoading(true);
