@@ -556,22 +556,22 @@ export default function Payments() {
                             let primaryCharge: any = null;
                             let totalOutstanding = 0;
                             if (refIds.length) {
-                              const { data: charges } = await supabase
-                                .from("irrigation_charges")
-                                .select("id,total,paid_amount,due_amount,base_charge,penalty_amount,maintenance_charge,canal_charge,other_charge,land_id,note,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
+                              const { data: invs } = await supabase
+                                .from("irrigation_invoices")
+                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
                                 .in("id", refIds);
-                              primaryCharge = (charges ?? [])[0] ?? null;
-                              // total outstanding = sum of due_amount across the farmer's open charges
+                              primaryCharge = (invs ?? [])[0] ?? null;
                               const { data: allDues } = await supabase
-                                .from("irrigation_charges")
+                                .from("irrigation_invoices")
                                 .select("due_amount")
                                 .eq("farmer_id", p.farmer_id)
-                                .is("deleted_at", null);
+                                .is("deleted_at", null)
+                                .neq("invoice_status", "cancelled");
                               totalOutstanding = (allDues ?? []).reduce((s: number, r: any) => s + Number(r.due_amount || 0), 0);
                             }
                             const land = primaryCharge?.lands;
                             const ownerFarmer = land?.farmers;
-                            const isSelf = !land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner";
+                            const isSelf = !primaryCharge?.is_borga && (!land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner");
                             const fieldTypeBn = ({ high_land: "উঁচু জমি", medium_land: "মাঝারি জমি", low_land: "নিচু জমি", other: "অন্যান্য" } as Record<string, string>)[land?.field_type as string] ?? null;
                             irrEnriched = {
                               farmerExtras: {
@@ -579,20 +579,20 @@ export default function Payments() {
                                 dag_no: land?.dag_no ?? null,
                                 land_size: land?.land_size != null ? Number(land.land_size) : null,
                                 field_type_bn: fieldTypeBn,
-                                owner_type_bn: ownerTypeBn(land?.owner_type ?? (isSelf ? "owner" : "borgadar")),
+                                owner_type_bn: primaryCharge?.is_borga ? "বর্গাদার" : "মালিক",
                               },
                               land_owner_label: isSelf
                                 ? "নিজ"
                                 : ownerFarmer
                                   ? `${ownerFarmer.name_bn || ownerFarmer.name_en}${ownerFarmer.member_no ? " (" + ownerFarmer.member_no + ")" : ""}`
                                   : null,
-                              current_season_charge: primaryCharge?.base_charge != null ? Number(primaryCharge.base_charge) : null,
-                              penalty_amount: primaryCharge?.penalty_amount != null ? Number(primaryCharge.penalty_amount) : 0,
-                              maintenance_charge: primaryCharge?.maintenance_charge != null ? Number(primaryCharge.maintenance_charge) : 0,
-                              canal_charge: primaryCharge?.canal_charge != null ? Number(primaryCharge.canal_charge) : 0,
+                              current_season_charge: primaryCharge?.irrigation_amount != null ? Number(primaryCharge.irrigation_amount) : null,
+                              penalty_amount: primaryCharge?.delay_fee != null ? Number(primaryCharge.delay_fee) : 0,
+                              maintenance_charge: primaryCharge?.maintenance_amount != null ? Number(primaryCharge.maintenance_amount) : 0,
+                              canal_charge: primaryCharge?.canal_amount != null ? Number(primaryCharge.canal_amount) : 0,
                               total_outstanding: totalOutstanding,
                               collected_from_outstanding: collectedFromOutstanding,
-                              remark: p.note ?? null,
+                              remark: p.note ?? primaryCharge?.invoice_no ?? null,
                             };
                           }
 
