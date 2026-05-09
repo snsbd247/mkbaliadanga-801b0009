@@ -236,6 +236,37 @@ export default function DemoManager() {
       </Card>
 
       <Card>
+        <CardHeader>
+          <CardTitle>Preset</CardTitle>
+          <CardDescription>{tx("Quick presets — auto-fill size + modules. Choose Custom to configure manually.", "দ্রুত preset — size + module অটো-সেট। ম্যানুয়ালি সেট করতে Custom নির্বাচন করুন।")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Select value={presetId} onValueChange={(v) => {
+            setPresetId(v);
+            const p = DEMO_PRESETS.find((x) => x.id === v);
+            if (p) {
+              setSize(p.size);
+              setSelected(p.modules as string[]);
+            }
+          }}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="custom">Custom</SelectItem>
+              {DEMO_PRESETS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.label_en} — {p.description_en}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={transactional} onCheckedChange={(v) => setTransactional(!!v)} />
+            <span>{tx("Transactional — auto-rollback partial data on error", "ট্রানজ্যাকশনাল — error হলে আংশিক ডেটা auto-মুছে যাবে")}</span>
+          </label>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader><CardTitle>{t("dmOperation" as any)}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <RadioGroup value={action} onValueChange={(v: any) => setAction(v)}>
