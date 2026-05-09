@@ -236,8 +236,10 @@ export function downloadPaymentReceiptPdf(data: PaymentReceiptData, tpl?: Partia
 
 export function previewPaymentReceiptPdf(data: PaymentReceiptData, tpl?: Partial<ReceiptTemplate>): string {
   const doc = buildPaymentReceiptDoc(data, tpl);
-  // dataurlstring is a full data: URI suitable for an <iframe src=...>
-  return doc.output("datauristring");
+  // Chrome blocks navigating iframes to data: URLs ("This page has been blocked
+  // by Chrome"), so emit a same-origin blob: URL instead.
+  const blob = doc.output("blob");
+  return URL.createObjectURL(blob);
 }
 
 export function maskToken(token: string): string {
