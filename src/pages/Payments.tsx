@@ -53,6 +53,7 @@ export default function Payments() {
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
   const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
+  const [previewSerial, setPreviewSerial] = useState<string>("");
   const [autoAmount, setAutoAmount] = useState<number>(0);
   const [showDeleted, setShowDeleted] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
@@ -108,6 +109,26 @@ export default function Payments() {
       setAllocs([{ kind: "loan", reference_id: loan, amount: amt ? Number(amt) : 0 }]);
     }
   }, [params, farmerId, openLoans.length]);
+
+  // Live preview of the auto-generated receipt serial. Reads (does not consume) the counter.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (receiptNo.trim()) { setPreviewSerial(""); return; }
+      const allIrr = allocs.length > 0 && allocs.every(a => a.kind === "irrigation");
+      const k = allIrr ? "IRR" : "PAY";
+      const year = new Date().getFullYear();
+      const { data } = await supabase
+        .from("receipt_counters")
+        .select("last_no")
+        .eq("kind", k)
+        .eq("year", year)
+        .maybeSingle();
+      const next = ((data?.last_no as number | undefined) ?? 0) + 1;
+      if (!cancelled) setPreviewSerial(`${k}-${year}-${String(next).padStart(5, "0")}`);
+    })();
+    return () => { cancelled = true; };
+  }, [allocs, receiptNo]);
 
   async function loadPriority() {
     if (!user) return;
@@ -419,7 +440,15 @@ export default function Payments() {
             </div>
 
             <div><Label>{t("method")}</Label><Input value={method} onChange={e => setMethod(e.target.value)} /></div>
-            <div><Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label><Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" /></div>
+            <div>
+              <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label>
+              <Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" />
+              {!receiptNo.trim() && previewSerial && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Auto serial preview: <span className="font-mono font-semibold text-foreground">{previewSerial}</span>
+                </p>
+              )}
+            </div>
             <div><Label>{t("note")}</Label><Input value={note} onChange={e => setNote(e.target.value)} /></div>
             <div>
               <Label className="flex items-center gap-1"><Paperclip className="h-3.5 w-3.5" /> Receipt (optional, requires approval)</Label>
