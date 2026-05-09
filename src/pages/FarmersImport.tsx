@@ -16,6 +16,7 @@ import { Upload, Download, AlertTriangle, Loader2 } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
+import { normalizeFarmerCode } from "@/lib/farmerCode";
 
 /**
  * Bulk Farmer Import — simplified
