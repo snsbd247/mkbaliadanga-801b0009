@@ -2148,6 +2148,87 @@ export type Database = {
           },
         ]
       }
+      loan_delay_fee_settings: {
+        Row: {
+          allow_partial_installment: boolean
+          auto_apply: boolean
+          created_at: string
+          created_by: string | null
+          grace_days: number
+          id: string
+          mode: string
+          office_id: string | null
+          updated_at: string
+          updated_by: string | null
+          value: number
+        }
+        Insert: {
+          allow_partial_installment?: boolean
+          auto_apply?: boolean
+          created_at?: string
+          created_by?: string | null
+          grace_days?: number
+          id?: string
+          mode?: string
+          office_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: number
+        }
+        Update: {
+          allow_partial_installment?: boolean
+          auto_apply?: boolean
+          created_at?: string
+          created_by?: string | null
+          grace_days?: number
+          id?: string
+          mode?: string
+          office_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
+      loan_installment_delay_audit: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          installment_id: string
+          loan_id: string
+          modified_amount: number
+          office_id: string | null
+          original_amount: number
+          payment_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          installment_id: string
+          loan_id: string
+          modified_amount?: number
+          office_id?: string | null
+          original_amount?: number
+          payment_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          installment_id?: string
+          loan_id?: string
+          modified_amount?: number
+          office_id?: string | null
+          original_amount?: number
+          payment_id?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       loan_installments: {
         Row: {
           amount: number

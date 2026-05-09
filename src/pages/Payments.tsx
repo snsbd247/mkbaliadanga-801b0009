@@ -211,6 +211,24 @@ export default function Payments() {
       if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
 
+    // Strict installment enforcement for loan allocations
+    for (const a of allocs) {
+      if (a.kind !== "loan" || !a.reference_id) continue;
+      const { data: loanRow } = await supabase.from("loans").select("office_id").eq("id", a.reference_id).maybeSingle();
+      const officeId = (loanRow as any)?.office_id ?? null;
+      const [{ data: instList }, { data: settingsList }] = await Promise.all([
+        supabase.from("loan_installments").select("id,installment_no,amount,paid_amount,due_date,status").eq("loan_id", a.reference_id).order("installment_no"),
+        supabase.from("loan_delay_fee_settings").select("*").or(officeId ? `office_id.eq.${officeId},office_id.is.null` : "office_id.is.null"),
+      ]);
+      const next = (await import("@/lib/loanDelayFee")).nextDueInstallment((instList ?? []) as any);
+      if (!next) continue; // no schedule → fall through (legacy loans)
+      const settings = (settingsList && settingsList[0]) || (await import("@/lib/loanDelayFee")).DEFAULT_DELAY_SETTINGS;
+      const v = (await import("@/lib/loanDelayFee")).validateInstallmentPayment(next as any, settings as any, Number(a.amount));
+      if (!v.ok) {
+        return toast.error(`${v.reason} (নির্ধারিত: ৳${v.required.toFixed(2)}, প্রদত্ত: ৳${Number(a.amount).toFixed(2)})`);
+      }
+    }
+
     setSubmitting(true);
     try {
       const status = receiptFile ? "pending" : "approved";
