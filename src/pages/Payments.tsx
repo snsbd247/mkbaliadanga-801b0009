@@ -27,6 +27,8 @@ import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButt
 import { DuplicateReceiptWarning } from "@/components/receipts/DuplicateReceiptWarning";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
 
 type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
 
@@ -416,6 +418,15 @@ export default function Payments() {
         </Dialog><ReceiptSettingsButton /></div>}
       />
       <DuplicateReceiptWarning />
+      <Tabs defaultValue="quick" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="quick">{tx("Quick / Multi-allocation", "দ্রুত / মিশ্র")}</TabsTrigger>
+          <TabsTrigger value="irrigation">{tx("Structured Irrigation Payment", "কাঠামোবদ্ধ সেচ পেমেন্ট")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="irrigation">
+          <IrrigationPaymentPanel initialFarmerId={farmerId} onPaid={load} />
+        </TabsContent>
+        <TabsContent value="quick">
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-1">
           <h2 className="font-semibold mb-1">{t("payNow")}</h2>
@@ -670,6 +681,8 @@ export default function Payments() {
           </Table>
         </Card>
       </div>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
