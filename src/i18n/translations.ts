@@ -3056,6 +3056,9 @@ export const translations = {
     exp_done: "এক্সপোর্ট সম্পন্ন হয়েছে",
     exp_failed: "এক্সপোর্ট ব্যর্থ হয়েছে",
     exp_pickAtLeastOne: "কমপক্ষে একটি কলাম নির্বাচন করুন",
+    startDate: "শুরু তারিখ",
+    endDate: "শেষ তারিখ",
+    filterReset: "ফিল্টার রিসেট",
   },
 } as const;
 
