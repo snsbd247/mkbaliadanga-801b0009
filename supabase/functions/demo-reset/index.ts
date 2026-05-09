@@ -1007,6 +1007,11 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
             summary.verification = v;
             if (!v.ok) send({ type: "warn", step: "verify", message: v.issues.join("; ") });
           }});
+          steps.push({ key: "verify_row_counts", label: "Row count + page mapping যাচাই", fn: async () => {
+            const r = await verifyRowCounts(admin, modules);
+            summary.row_count_report = r;
+            if (!r.allOk) send({ type: "warn", step: "verify_row_counts", message: `${r.failed} required tables empty` });
+          }});
         }
 
         const total = steps.length;
