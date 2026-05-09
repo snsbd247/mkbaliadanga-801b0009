@@ -11,6 +11,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { money, fmtDate } from "@/lib/format";
 import { ExportDialog, type ExportColumn } from "@/components/exports/ExportDialog";
 import { FileDown } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const IrrigationReportCharts = lazy(() => import("./irrigation/IrrigationReportCharts"));
 
