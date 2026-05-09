@@ -70,7 +70,7 @@ export function flattenInvoiceForExport(inv: any) {
 }
 
 export function exportInvoicesXLSX(invoices: any[], filename = "irrigation-invoices.xlsx") {
-  const rows = invoices.map(flatten);
+  const rows = invoices.map(flattenInvoiceForExport);
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Invoices");
@@ -78,7 +78,7 @@ export function exportInvoicesXLSX(invoices: any[], filename = "irrigation-invoi
 }
 
 export function exportInvoicesCSV(invoices: any[], filename = "irrigation-invoices.csv") {
-  const rows = invoices.map(flatten);
+  const rows = invoices.map(flattenInvoiceForExport);
   const ws = XLSX.utils.json_to_sheet(rows);
   const csv = XLSX.utils.sheet_to_csv(ws);
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
