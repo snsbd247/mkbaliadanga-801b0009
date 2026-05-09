@@ -12,22 +12,26 @@ const json = (b: unknown, s = 200) =>
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
   "loan_payments", "loan_installments", "loans", "loan_plans",
+  "irrigation_sms_logs",
   "irrigation_invoice_payments", "irrigation_invoice_audit", "irrigation_invoices",
-  "irrigation_charges", "irrigation_rates", "irrigation_season_rates",
+  "irrigation_charges", "irrigation_rates", "irrigation_season_rates", "irrigation_charge_settings",
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
-  "receipts", "receipt_settings",
-  "sms_logs", "sms_office_settings", "sms_provider_secrets",
-  "qr_tokens",
+  "receipts", "receipt_counters", "receipt_settings",
+  "sms_logs", "sms_office_settings", "sms_provider_secrets", "sms_settings",
+  "qr_tokens", "qr_rotation_settings",
   "audit_logs", "voter_audit_logs", "import_audit_logs",
+  "irrigation_rate_audit_logs",
   "farmer_login_attempts", "farmer_rejections", "notifications",
   "farmer_portal_sessions", "farmer_otps",
   "land_relations", "lands",
+  "patwaris",
   "farmers",
-  "seasons",
+  "seasons", "irrigation_season_types",
+  "land_types",
   "accounts",
-  
+  "card_settings", "company_settings",
   "mouzas", "upazilas", "districts", "divisions",
   "offices",
 ];
@@ -209,30 +213,155 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
   return data ?? [];
 }
 
-async function seedLands(admin: any, officeId: string, farmers: any[]) {
-  const lands = farmers.map((f, i) => ({
-    farmer_id: f.id,
-    land_size: 0.25 + (i % 8) * 0.25,
-    mouza_id: f.mouza_id ?? null,
-    dag_no: `D${100 + i}`,
-    field_type: i % 3 === 0 ? "high_land" : i % 3 === 1 ? "medium_land" : "low_land",
-    owner_type: "owner",
-    office_id: officeId,
-    owner_farmer_id: f.id,
-  }));
-  const { error } = await admin.from("lands").insert(lands);
-  if (error) throw new Error(`lands: ${error.message}`);
+async function seedLandTypes(admin: any, officeId: string): Promise<{ id: string; code: string; rate: number }[]> {
+  const rows = [
+    { code: "HIGH",   name: "High Land",   name_bn: "উঁচু জমি",   sort_order: 1, rate: 1800 },
+    { code: "MEDIUM", name: "Medium Land", name_bn: "মাঝারি জমি", sort_order: 2, rate: 1500 },
+    { code: "LOW",    name: "Low Land",    name_bn: "নিচু জমি",   sort_order: 3, rate: 1200 },
+  ];
+  const out: { id: string; code: string; rate: number }[] = [];
+  for (const r of rows) {
+    const { data: existing } = await admin.from("land_types").select("id").eq("code", r.code).maybeSingle();
+    let id = existing?.id;
+    if (!id) {
+      const { data, error } = await admin.from("land_types").insert({
+        code: r.code, name: r.name, name_en: r.name, name_bn: r.name_bn,
+        sort_order: r.sort_order, is_active: true, office_id: officeId,
+      }).select("id").single();
+      if (error) throw new Error(`land_types: ${error.message}`);
+      id = data.id;
+    }
+    out.push({ id, code: r.code, rate: r.rate });
+  }
+  return out;
 }
 
-async function seedIrrigation(admin: any, officeId: string, farmers: any[]) {
+async function seedSeasonTypes(admin: any): Promise<{ id: string; code: string }[]> {
+  const rows = [
+    { code: "BORO", name: "Boro",  name_bn: "বোরো", sort_order: 1 },
+    { code: "AMAN", name: "Aman",  name_bn: "আমন",  sort_order: 2 },
+    { code: "AUS",  name: "Aus",   name_bn: "আউশ",  sort_order: 3 },
+  ];
+  const out: { id: string; code: string }[] = [];
+  for (const r of rows) {
+    const { data: existing } = await admin.from("irrigation_season_types").select("id").eq("code", r.code).maybeSingle();
+    let id = existing?.id;
+    if (!id) {
+      const { data, error } = await admin.from("irrigation_season_types").insert({
+        code: r.code, name: r.name, name_en: r.name, name_bn: r.name_bn,
+        sort_order: r.sort_order, is_active: true,
+      }).select("id").single();
+      if (error) throw new Error(`irrigation_season_types: ${error.message}`);
+      id = data.id;
+    }
+    out.push({ id, code: r.code });
+  }
+  return out;
+}
+
+async function seedPatwaris(admin: any, officeId: string, locs: LocPick[]) {
+  const names = [
+    { en: "Md. Kamrul Hasan", bn: "মোঃ কামরুল হাসান" },
+    { en: "Md. Abdul Latif",  bn: "মোঃ আব্দুল লতিফ" },
+    { en: "Md. Shahin Alam",  bn: "মোঃ শাহিন আলম" },
+    { en: "Md. Bashir Ahmed", bn: "মোঃ বশির আহমেদ" },
+  ];
+  const rows = names.map((n, i) => ({
+    name: n.en, name_bn: n.bn,
+    mobile: `018${String(20000000 + i).padStart(8, "0")}`,
+    nid: `199${String(8000000000 + i).padStart(10, "0")}`,
+    address: locs[i % Math.max(1, locs.length)]?.mouza_name ?? "",
+    mouza_id: locs[i % Math.max(1, locs.length)]?.mouza_id ?? null,
+    office_id: officeId, is_active: true,
+  }));
+  const { data, error } = await admin.from("patwaris").insert(rows).select("id");
+  if (error) throw new Error(`patwaris: ${error.message}`);
+  return data ?? [];
+}
+
+async function seedIrrigationChargeSettings(admin: any, officeId: string) {
+  const { error } = await admin.from("irrigation_charge_settings").upsert({
+    office_id: officeId,
+    maintenance_percent: 5, canal_percent: 3,
+    delay_fee_percent: 2, grace_days: 30, auto_apply_delay_fee: true,
+  }, { onConflict: "office_id" });
+  if (error) throw new Error(`irrigation_charge_settings: ${error.message}`);
+}
+
+async function seedLands(admin: any, officeId: string, farmers: any[], landTypes: { id: string; rate: number }[]) {
+  const lands = farmers.map((f, i) => {
+    const lt = landTypes[i % landTypes.length];
+    return {
+      farmer_id: f.id,
+      land_size: 0.25 + (i % 8) * 0.25,
+      mouza_id: f.mouza_id ?? null,
+      dag_no: `D${100 + i}`,
+      land_type_id: lt?.id ?? null,
+      field_type: i % 3 === 0 ? "high_land" : i % 3 === 1 ? "medium_land" : "low_land",
+      owner_type: "owner",
+      office_id: officeId,
+      owner_farmer_id: f.id,
+    };
+  });
+  const { data, error } = await admin.from("lands").insert(lands).select("id, farmer_id, land_size, land_type_id, office_id");
+  if (error) throw new Error(`lands: ${error.message}`);
+  return data ?? [];
+}
+
+async function seedLandRelations(admin: any, officeId: string, lands: any[], farmers: any[]) {
+  // ~15% of lands have a sharecropper (borga) — picks a different voter farmer
+  const voterIds = farmers.filter((f: any) => f.is_voter).map((f: any) => f.id);
+  if (!voterIds.length) return 0;
+  const rows = lands.filter((_, i) => i % 7 === 0).map((l, i) => {
+    const sc = voterIds.find((id: string) => id !== l.farmer_id) ?? null;
+    if (!sc) return null;
+    return {
+      land_id: l.id,
+      owner_farmer_id: l.farmer_id,
+      sharecropper_farmer_id: sc,
+      share_percentage: 50,
+      valid_from: new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10),
+      office_id: officeId,
+      note: "Demo borga relationship",
+    };
+  }).filter(Boolean);
+  if (!rows.length) return 0;
+  const { error } = await admin.from("land_relations").insert(rows);
+  if (error) throw new Error(`land_relations: ${error.message}`);
+  return rows.length;
+}
+
+async function seedIrrigation(admin: any, officeId: string, farmers: any[], landTypes: { id: string; rate: number }[], seasonTypes: { id: string; code: string }[]) {
   const year = new Date().getFullYear();
+  const seasonTypeId = seasonTypes.find((s) => s.code === "BORO")?.id ?? seasonTypes[0]?.id;
   const { data: season } = await admin.from("seasons")
-    .upsert({ year, type: "boro", name: `Boro ${year}` }, { onConflict: "year,type" }).select("id").single();
+    .upsert({
+      year, type: "boro", name: `Boro ${year}`,
+      season_type_id: seasonTypeId,
+      fiscal_year: `${year}-${year + 1}`,
+      start_date: `${year}-01-01`,
+      end_date: `${year}-06-30`,
+      due_date: `${year}-07-31`,
+      status: "active",
+    }, { onConflict: "year,type" }).select("id").single();
   if (!season) return;
+
+  // Per-land-type season rates
+  const rates = landTypes.map((lt) => ({
+    irrigation_season_id: season.id,
+    land_type_id: lt.id,
+    office_id: officeId,
+    rate_per_shotok: lt.rate,
+  }));
+  await admin.from("irrigation_season_rates").insert(rates);
+
+  // Legacy irrigation_rates row (kept for back-compat)
   await admin.from("irrigation_rates").insert({
     season_id: season.id, office_id: officeId, basis: "per_size",
     base_rate: 1500, canal_charge: 100, maintenance_charge: 50, other_charge: 0,
   });
+
+  // Legacy irrigation_charges (still referenced by some reports)
   const { data: lands } = await admin.from("lands").select("id, farmer_id, land_size, office_id").limit(farmers.length);
   if (!lands?.length) return;
   const charges = lands.map((l: any, i: number) => {
@@ -248,6 +377,75 @@ async function seedIrrigation(admin: any, officeId: string, farmers: any[]) {
     };
   });
   await admin.from("irrigation_charges").insert(charges);
+
+  return season.id as string;
+}
+
+async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: string, landTypes: { id: string; rate: number }[]) {
+  if (!seasonId) return 0;
+  // Load lands with their owner + type
+  const { data: lands } = await admin.from("lands")
+    .select("id, farmer_id, owner_farmer_id, land_size, land_type_id, office_id")
+    .eq("office_id", officeId);
+  if (!lands?.length) return 0;
+
+  const rateMap = new Map(landTypes.map((lt) => [lt.id, lt.rate]));
+  const today = new Date();
+  const dueDate = new Date(today.getTime() + 30 * 86400000).toISOString().slice(0, 10);
+  const ts = today.toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
+
+  const invoices = lands.map((l: any, i: number) => {
+    const size = Number(l.land_size) || 1;
+    const rate = rateMap.get(l.land_type_id) ?? 1500;
+    const irrigation = +(rate * size).toFixed(2);
+    const maintenance = +(irrigation * 0.05).toFixed(2);
+    const canal = +(irrigation * 0.03).toFixed(2);
+    const payable = +(irrigation + maintenance + canal).toFixed(2);
+    const isPaid = i % 4 === 0;
+    const isPartial = i % 4 === 1;
+    const paid = isPaid ? payable : isPartial ? +(payable * 0.5).toFixed(2) : 0;
+    return {
+      invoice_no: `INV-${ts}-${String(i + 1).padStart(4, "0")}`,
+      office_id: officeId,
+      season_id: seasonId,
+      land_id: l.id,
+      owner_farmer_id: l.owner_farmer_id ?? l.farmer_id,
+      farmer_id: l.farmer_id,
+      is_borga: false,
+      irrigation_amount: irrigation,
+      maintenance_amount: maintenance,
+      canal_amount: canal,
+      delay_fee: 0, other_charge: 0,
+      payable_amount: payable,
+      paid_amount: paid,
+      due_amount: +(payable - paid).toFixed(2),
+      due_date: dueDate,
+      invoice_status: isPaid ? "paid" : isPartial ? "partial_paid" : "generated",
+      land_type_id: l.land_type_id,
+      season_rate: rate,
+    };
+  });
+
+  const { data: ins, error } = await admin.from("irrigation_invoices").insert(invoices).select("id, paid_amount, irrigation_amount, maintenance_amount, canal_amount, office_id");
+  if (error) throw new Error(`irrigation_invoices: ${error.message}`);
+
+  // Record payment rows for those that were paid
+  const payRows = (ins ?? [])
+    .filter((inv: any) => Number(inv.paid_amount) > 0)
+    .map((inv: any) => ({
+      invoice_id: inv.id,
+      collected_amount: inv.paid_amount,
+      irrigation_collected: inv.irrigation_amount,
+      maintenance_collected: inv.maintenance_amount,
+      canal_collected: inv.canal_amount,
+      delay_fee_collected: 0,
+      office_id: inv.office_id,
+    }));
+  if (payRows.length) {
+    const { error: payErr } = await admin.from("irrigation_invoice_payments").insert(payRows);
+    if (payErr) throw new Error(`irrigation_invoice_payments: ${payErr.message}`);
+  }
+  return invoices.length;
 }
 
 async function seedLoans(admin: any, officeId: string, farmers: any[]) {
@@ -284,11 +482,36 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const savingsSeeded: string[] = [];
   const sharesSeeded: string[] = [];
-  await admin.from("savings_plans").insert({
+  const fspSeeded: string[] = [];
+  const { data: planRow } = await admin.from("savings_plans").insert({
     name: "DPS 24", name_bn: "ডিপিএস ২৪", office_id: officeId,
     duration_months: 24, installment_type: "monthly", installment_amount: 500,
     interest_rate: 6, maturity_type: "simple", is_active: true,
-  });
+  }).select("id").single();
+  const planId = planRow?.id ?? null;
+
+  // Enroll ~30% of voters into a farmer_savings_plan
+  if (planId) {
+    const enrollTargets = voters.slice(0, Math.ceil(voters.length * 0.3));
+    const fspRows = enrollTargets.map((f, i) => {
+      const expected = 500 * 24;
+      const interest = +(expected * 0.06 / 2).toFixed(2);
+      fspSeeded.push(f.id);
+      return {
+        plan_id: planId, farmer_id: f.id, office_id: officeId,
+        start_date: new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
+        expected_total: expected,
+        expected_interest: interest,
+        maturity_amount: expected + interest,
+        status: i % 4 === 0 ? "pending" : "approved",
+      };
+    });
+    if (fspRows.length) {
+      const { error } = await admin.from("farmer_savings_plans").insert(fspRows);
+      if (error) throw new Error(`farmer_savings_plans: ${error.message}`);
+    }
+  }
+
   const targets = voters.slice(0, Math.ceil(voters.length * 0.6));
   const txns = targets.flatMap((f, i) => {
     savingsSeeded.push(f.id);
@@ -305,7 +528,7 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   const shareTargets = voters.slice(0, Math.ceil(voters.length * 0.5));
   const shareRows = shareTargets.map((f) => { sharesSeeded.push(f.id); return { farmer_id: f.id, balance: 500, office_id: officeId }; });
   if (shareRows.length) await admin.from("shares").insert(shareRows);
-  return { savingsSeeded, sharesSeeded };
+  return { savingsSeeded, sharesSeeded, fspSeeded };
 }
 
 async function seedPayments(admin: any, officeId: string, farmers: any[]) {
@@ -385,6 +608,15 @@ async function seedSettings(admin: any) {
     address: "Baliadanga, Rangpur", mobile: "01700000000", email: "demo@example.com",
   });
   await admin.from("card_settings").upsert({ id: 1 });
+  // SMS settings — disabled by default for demo, but template fields populated
+  await admin.from("sms_settings").upsert({
+    id: 1, enabled: false,
+    send_on_irrigation_payment: true, send_on_loan_payment: true,
+    send_on_loan_approved: true,
+    send_on_savings_deposit: true, send_on_savings_withdraw: true,
+  } as any).then(() => {}).catch(() => {});
+  // Default receipt settings (best-effort; ignore if shape differs)
+  await admin.from("receipt_settings").upsert({ id: 1 } as any).then(() => {}).catch(() => {});
 }
 
 async function findOrInsert(admin: any, table: string, match: Record<string, any>, insertExtra: Record<string, any> = {}) {
@@ -429,12 +661,13 @@ async function ensureOffice(admin: any) {
 function estimateImport(modules: string[], size: number) {
   const c: Record<string, number> = {};
   if (modules.includes("locations")) c["divisions/districts/upazilas/mouzas"] = 4;
-  if (modules.includes("settings")) c["company_settings + card_settings"] = 2;
-  if (modules.includes("accounting")) c["accounts"] = 8;
-  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; }
-  if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_rates"] = 1; c["irrigation_charges"] = size; }
+  c["land_types"] = 3; c["irrigation_season_types"] = 3;
+  if (modules.includes("settings")) c["company/card/sms/receipt settings"] = 4;
+  if (modules.includes("accounting")) c["accounts"] = 12;
+  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; c["patwaris"] = 4; c["land_relations"] = Math.ceil(size / 7); }
+  if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_charge_settings"] = 1; c["irrigation_season_rates"] = 3; c["irrigation_charges"] = size; c["irrigation_invoices"] = size; }
   if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 1; c["loans"] = n; c["loan_payments"] = Math.min(3, n); }
-  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 1; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); }
+  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 1; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); c["farmer_savings_plans"] = Math.ceil(n * 0.5); }
   if (modules.includes("expenses")) c["expenses"] = 3;
   return c;
 }
@@ -499,14 +732,21 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
         let officeId = "11111111-1111-1111-1111-111111111111";
         let locs: LocPick[] = [];
         let farmers: any[] = [];
+        let landTypes: { id: string; code: string; rate: number }[] = [];
+        let seasonTypes: { id: string; code: string }[] = [];
+        let lands: any[] = [];
+        let seasonId: string | undefined;
         const loanFarmerIds = new Set<string>();
         const savingsFarmerIds = new Set<string>();
         const sharesFarmerIds = new Set<string>();
+        const fspFarmerIds = new Set<string>();
 
         if (action === "import" || action === "both") {
           steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
           steps.push({ key: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা) seed", fn: async () => { locs = await seedLocations(admin); summary.locations = locs.length; } });
-          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
+          steps.push({ key: "land_types", label: "জমির ধরন (Land Types) seed", fn: async () => { landTypes = await seedLandTypes(admin, officeId); summary.land_types = landTypes.length; } });
+          steps.push({ key: "season_types", label: "সিজন টাইপ (Boro/Aman/Aus) seed", fn: async () => { seasonTypes = await seedSeasonTypes(admin); summary.season_types = seasonTypes.length; } });
+          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed (company/card/SMS/receipt)", fn: async () => { await seedSettings(admin); } });
           const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
             modules.includes("savings") || modules.includes("irrigation") ||
             modules.includes("expenses") || modules.includes("farmers");
@@ -520,7 +760,13 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
                 farmer_code: f.farmer_code, name_en: f.name_en, name_bn: f.name_bn, mouza_id: f.mouza_id,
               }));
             }});
-            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers); }});
+            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { lands = await seedLands(admin, officeId, farmers, landTypes); summary.lands = lands.length; }});
+            steps.push({ key: "land_relations", label: "বর্গা সম্পর্ক (land_relations) seed", fn: async () => {
+              if (lands.length) summary.land_relations = await seedLandRelations(admin, officeId, lands, farmers);
+            }});
+            steps.push({ key: "patwaris", label: "পাটোয়ারী seed", fn: async () => {
+              const p = await seedPatwaris(admin, officeId, locs); summary.patwaris = p.length;
+            }});
           }
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
           if (needFarmers && !modules.includes("farmers")) {
@@ -529,17 +775,26 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               farmers = data ?? [];
             }});
           }
-          if (modules.includes("irrigation")) steps.push({ key: "irrigation", label: "সেচ চার্জ seed", fn: async () => { if (farmers.length) await seedIrrigation(admin, officeId, farmers); }});
+          if (modules.includes("irrigation")) {
+            steps.push({ key: "irr_charge_settings", label: "সেচ চার্জ সেটিংস seed", fn: async () => { await seedIrrigationChargeSettings(admin, officeId); }});
+            steps.push({ key: "irrigation", label: "সেচ সিজন/রেট/চার্জ seed", fn: async () => {
+              if (farmers.length) seasonId = await seedIrrigation(admin, officeId, farmers, landTypes, seasonTypes);
+            }});
+            steps.push({ key: "irrigation_invoices", label: "সেচ ইনভয়েস + পেমেন্ট seed", fn: async () => {
+              if (seasonId) summary.irrigation_invoices = await seedIrrigationInvoices(admin, officeId, seasonId, landTypes);
+            }});
+          }
           if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed (শুধু ভোটার)", fn: async () => {
             if (!farmers.length) return;
             const ids = await seedLoans(admin, officeId, farmers);
             ids.forEach((x) => loanFarmerIds.add(x));
           }});
-          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় + শেয়ার seed (শুধু ভোটার)", fn: async () => {
+          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় + শেয়ার + প্ল্যান এনরোলমেন্ট seed (শুধু ভোটার)", fn: async () => {
             if (!farmers.length) return;
             const out = await seedSavings(admin, officeId, farmers);
             out.savingsSeeded.forEach((x) => savingsFarmerIds.add(x));
             out.sharesSeeded.forEach((x) => sharesFarmerIds.add(x));
+            out.fspSeeded.forEach((x) => fspFarmerIds.add(x));
           }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
           if (modules.includes("farmers") || needFarmers) {
