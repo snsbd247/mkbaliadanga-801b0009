@@ -272,6 +272,42 @@ export default function FarmerDashboard() {
                 </Table>
               </CardContent>
             </Card>
+
+            {data.irrigation_invoices && data.irrigation_invoices.length > 0 && (
+              <Card className="mt-3">
+                <CardHeader><CardTitle className="text-base">সেচ ইনভয়েস</CardTitle></CardHeader>
+                <CardContent className="overflow-x-auto p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ইনভয়েস</TableHead>
+                        <TableHead>সিজন</TableHead>
+                        <TableHead>জমি</TableHead>
+                        <TableHead>মেয়াদ</TableHead>
+                        <TableHead className="text-right">প্রদেয়</TableHead>
+                        <TableHead className="text-right">পরিশোধিত</TableHead>
+                        <TableHead className="text-right">বকেয়া</TableHead>
+                        <TableHead>স্ট্যাটাস</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.irrigation_invoices.map((i) => (
+                        <TableRow key={i.id}>
+                          <TableCell className="font-mono text-xs">{i.invoice_no}{i.is_borga ? " 🤝" : ""}{i.is_manual_rate ? " ✋" : ""}</TableCell>
+                          <TableCell className="text-xs">{i.seasons?.name ?? i.seasons?.type} {i.seasons?.year ?? ""}</TableCell>
+                          <TableCell className="text-xs">{i.lands?.mouza ?? ""} {i.lands?.dag_no ? `• ${i.lands.dag_no}` : ""}</TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">{i.due_date}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(Number(i.payable_amount))}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(Number(i.paid_amount))}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(Number(i.due_amount))}</TableCell>
+                          <TableCell className="text-xs">{i.invoice_status}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
 
