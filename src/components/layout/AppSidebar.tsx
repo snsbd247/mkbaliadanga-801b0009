@@ -125,6 +125,7 @@ export function AppSidebar() {
         { url: "/reports/expenses", icon: FileBarChart, label: t("expensesReport"), permKey: "reports" },
        { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
        { url: "/reports/invoices", icon: FileBarChart, label: "ইনভয়েস রিপোর্ট", permKey: "reports" },
+       { url: "/irrigation-reports", icon: FileBarChart, label: "সেচ রাজস্ব ও কালেকশন", permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
         { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
