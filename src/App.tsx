@@ -134,6 +134,10 @@ const App = () => (
                 <Route path="/loans" element={<RequirePerm module="loans"><Loans /></RequirePerm>} />
                 <Route path="/loans/plans" element={<RequirePerm module="loans"><LoanPlans /></RequirePerm>} />
                 <Route path="/loans/:loanId" element={<RequirePerm module="loans"><LoanDetail /></RequirePerm>} />
+                <Route path="/admin/loan-delay-settings" element={<RequirePerm module="loans" action="can_edit"><LoanDelaySettings /></RequirePerm>} />
+                <Route path="/reports/loan-overdue" element={<RequirePerm module="reports"><LoanOverdueReport /></RequirePerm>} />
+                <Route path="/reports/installment-collection" element={<RequirePerm module="reports"><InstallmentCollectionReport /></RequirePerm>} />
+                <Route path="/reports/loan-penalty" element={<RequirePerm module="reports"><LoanPenaltyReport /></RequirePerm>} />
                 <Route path="/share-collection" element={<RequirePerm module="savings"><ShareCollection /></RequirePerm>} />
                 {/* Legacy routes redirect to unified invoice/payment pages */}
                 <Route path="/irrigation" element={<Navigate to="/irrigation/invoices" replace />} />
