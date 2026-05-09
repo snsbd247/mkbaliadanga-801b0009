@@ -33,8 +33,9 @@ type ParentItem = {
 };
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
+  const closeOnNav = () => { if (isMobile) setOpenMobile(false); };
   const { pathname } = useLocation();
   const { t, lang } = useLang();
   const { isSuper, isDeveloper, user } = useAuth();
@@ -266,7 +267,7 @@ export function AppSidebar() {
                   return (
                     <SidebarMenuItem key={parent.key}>
                       <SidebarMenuButton asChild isActive={isActive(parent.url!)} tooltip={parent.label}>
-                        <NavLink to={parent.url!} end={parent.url === "/"}>
+                        <NavLink to={parent.url!} end={parent.url === "/"} onClick={closeOnNav}>
                           <parent.icon className="h-4 w-4" />
                           <span>{highlight(parent.label)}</span>
                         </NavLink>
@@ -309,7 +310,7 @@ export function AppSidebar() {
                                 isActive={isActive(child.url)}
                                 className="focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-1 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium"
                               >
-                                <NavLink to={child.url}>
+                                <NavLink to={child.url} onClick={closeOnNav}>
                                   <child.icon className="h-4 w-4" />
                                   <span className="flex-1 truncate">{highlight(child.label)}</span>
                                   {q && (
