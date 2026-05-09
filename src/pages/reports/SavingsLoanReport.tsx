@@ -90,18 +90,14 @@ export default function SavingsLoanReport() {
   async function onPdf() {
     setPdfBusy(true);
     try {
-      await exportTablePDF({
-        title,
-        range: { from, to },
-        columns: cols.map((c) => ({ header: c.label, dataKey: c.key })),
-        rows: rows.map((r) => ({
-          date: bucket === "monthly" ? r.date : fmtDate(r.date),
-          count: r.count,
-          amount: money(r.amount),
-        })),
-        footerTotals: { date: "Total", count: String(totalCount), amount: money(total) },
-        filename: `${source}-${bucket}-${from}-${to}.pdf`,
-      } as any);
+      const head = cols.map((c) => c.label);
+      const body = rows.map((r) => [
+        bucket === "monthly" ? r.date : fmtDate(r.date),
+        String(r.count),
+        money(r.amount),
+      ]);
+      body.push(["Total", String(totalCount), money(total)]);
+      await exportTablePDF(title, head, body, { from, to });
     } catch (e: any) {
       toast.error(e.message ?? "PDF export failed");
     } finally {
@@ -111,16 +107,17 @@ export default function SavingsLoanReport() {
 
   function onExcel() {
     try {
-      exportExcel({
-        sheetName: title.slice(0, 28),
-        columns: cols.map((c) => ({ header: c.label, key: c.key })),
-        rows: rows.map((r) => ({
-          date: bucket === "monthly" ? r.date : r.date,
-          count: r.count,
-          amount: r.amount,
-        })),
-        filename: `${source}-${bucket}-${from}-${to}.xlsx`,
+      const data = rows.map((r) => ({
+        [bucket === "monthly" ? "Month" : "Date"]: r.date,
+        Transactions: r.count,
+        Amount: r.amount,
+      }));
+      data.push({
+        [bucket === "monthly" ? "Month" : "Date"]: "Total",
+        Transactions: totalCount,
+        Amount: total,
       } as any);
+      exportExcel(`${source}-${bucket}`, title.slice(0, 28), data, { from, to });
     } catch (e: any) {
       toast.error(e.message ?? "Excel export failed");
     }
