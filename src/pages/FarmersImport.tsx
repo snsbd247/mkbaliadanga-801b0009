@@ -114,7 +114,7 @@ export default function FarmersImport() {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
     const notes = XLSX.utils.aoa_to_sheet([
       ["Column", "Required", "Notes"],
-      ["farmer_id", "No", "Existing farmer code → row will UPDATE; খালি হলে নতুন farmer তৈরি হবে।"],
+      ["farmer_id", "No", "5-digit padded code (e.g. 00001). 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে। existing হলে UPDATE, খালি হলে নতুন তৈরি হবে।"],
       ["voter_number", "No", "নম্বর থাকলে অটো Voter / Savings active সদস্য।"],
       ["name_en", "Yes", "ইংরেজী নাম"],
       ["name_bn", "No", "বাংলা নাম"],
