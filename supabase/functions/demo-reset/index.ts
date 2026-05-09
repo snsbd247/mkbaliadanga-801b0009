@@ -837,6 +837,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
             savings_seeded: savingsFarmerIds.has(f.id),
             loans_seeded: loanFarmerIds.has(f.id),
             shares_seeded: sharesFarmerIds.has(f.id),
+            fsp_seeded: fspFarmerIds.has(f.id),
           }));
           summary.seed_log = seedLog;
           send({ type: "seed_log", rows: seedLog });
