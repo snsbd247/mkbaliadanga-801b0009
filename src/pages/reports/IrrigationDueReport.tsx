@@ -170,7 +170,10 @@ export default function IrrigationDueReport() {
                 "Irrigation-Due", "Due",
                 filtered.map((r) => ({
                   "Farmer Code": r.farmer_code, "Farmer": r.farmer_name,
-                  "Land": r.land_label, "Season": r.season_label,
+                  "Land": r.land_label,
+                  "Bigha": Number(r.land_size_bigha.toFixed(2)),
+                  "Shatak": Number(r.land_size_shatak.toFixed(2)),
+                  "Season": r.season_label,
                   "Total": r.total, "Paid": r.paid, "Due": r.due,
                 })),
               )}>
