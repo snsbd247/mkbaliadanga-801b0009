@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { shatakToBigha } from "./irrigationCalc";
 
 export type LandExportRow = {
   division_name?: string | null;
@@ -31,18 +32,22 @@ function buildLocation(r: LandExportRow): string {
   return chain.join(" › ");
 }
 
-const headers = ["#", "Location", "Mouza", "Dag No", "Land Size", "Owner Type", "Field Type"];
+const headers = ["#", "Location", "Mouza", "Dag No", "Bigha", "Shatak", "Owner Type", "Field Type"];
 
 function rows(lands: LandExportRow[]): (string | number)[][] {
-  return lands.map((l, i) => [
-    i + 1,
-    buildLocation(l) || "-",
-    l.mouza_name ?? l.mouza ?? "-",
-    l.dag_no ?? "-",
-    l.land_size ?? 0,
-    l.owner_type ?? "-",
-    l.field_type ?? "-",
-  ]);
+  return lands.map((l, i) => {
+    const sh = Number(l.land_size ?? 0);
+    return [
+      i + 1,
+      buildLocation(l) || "-",
+      l.mouza_name ?? l.mouza ?? "-",
+      l.dag_no ?? "-",
+      Number(shatakToBigha(sh).toFixed(2)),
+      Number(sh.toFixed(2)),
+      l.owner_type ?? "-",
+      l.field_type ?? "-",
+    ];
+  });
 }
 
 export function exportLandsPdf(farmer: FarmerHeader, lands: LandExportRow[]) {
@@ -67,7 +72,7 @@ export function exportLandsExcel(farmer: FarmerHeader, lands: LandExportRow[]) {
   const meta = [["Farmer", farmer.name_en], ["Account No", farmer.account_number ?? farmer.farmer_code], []];
   const data = [...meta, headers, ...rows(lands)];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws["!cols"] = [{ wch: 4 }, { wch: 60 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 14 }];
+  ws["!cols"] = [{ wch: 4 }, { wch: 60 }, { wch: 18 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 14 }];
   XLSX.utils.book_append_sheet(wb, ws, "Lands");
   XLSX.writeFile(wb, `lands-${farmer.account_number ?? farmer.farmer_code}.xlsx`);
 }

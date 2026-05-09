@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { formatLandSize, shatakToBigha } from "@/lib/irrigationCalc";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -20,6 +21,8 @@ type Row = {
   farmer_code: string;
   land_id: string;
   land_label: string;
+  land_size_shatak: number;
+  land_size_bigha: number;
   season_id: string;
   season_label: string;
   total: number;
@@ -67,12 +70,15 @@ export default function IrrigationDueReport() {
       const grouped = new Map<string, Row>();
       (data ?? []).forEach((r: any) => {
         const key = `${r.farmer_id}|${r.land_id}|${r.season_id}`;
+        const shatak = Number(r.lands?.land_size ?? 0);
         const cur = grouped.get(key) ?? {
           farmer_id: r.farmer_id,
           farmer_name: r.farmers?.name_en ?? "—",
           farmer_code: r.farmers?.farmer_code ?? "—",
           land_id: r.land_id,
-          land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${r.lands.dag_no}` : null, r.lands?.land_size ? `${r.lands.land_size} dec` : null].filter(Boolean).join(" • ") || "—",
+          land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${r.lands.dag_no}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
+          land_size_shatak: shatak,
+          land_size_bigha: shatakToBigha(shatak),
           season_id: r.season_id,
           season_label: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
           total: 0, paid: 0, due: 0,
@@ -105,8 +111,8 @@ export default function IrrigationDueReport() {
     { total: 0, paid: 0, due: 0 },
   ), [filtered]);
 
-  const head = [t("farmerCode"), t("farmer"), t("land"), t("season"), t("total"), t("paid"), t("dueAmount")];
-  const body = filtered.map((r) => [r.farmer_code, r.farmer_name, r.land_label, r.season_label, money(r.total), money(r.paid), money(r.due)]);
+  const head = [t("farmerCode"), t("farmer"), "Land", "Bigha", "Shatak", t("season"), t("total"), t("paid"), t("dueAmount")];
+  const body = filtered.map((r) => [r.farmer_code, r.farmer_name, r.land_label, r.land_size_bigha.toFixed(2), r.land_size_shatak.toFixed(2), r.season_label, money(r.total), money(r.paid), money(r.due)]);
 
   return (
     <div className="container mx-auto p-4 space-y-4">
@@ -164,7 +170,10 @@ export default function IrrigationDueReport() {
                 "Irrigation-Due", "Due",
                 filtered.map((r) => ({
                   "Farmer Code": r.farmer_code, "Farmer": r.farmer_name,
-                  "Land": r.land_label, "Season": r.season_label,
+                  "Land": r.land_label,
+                  "Bigha": Number(r.land_size_bigha.toFixed(2)),
+                  "Shatak": Number(r.land_size_shatak.toFixed(2)),
+                  "Season": r.season_label,
                   "Total": r.total, "Paid": r.paid, "Due": r.due,
                 })),
               )}>
