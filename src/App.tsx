@@ -84,6 +84,10 @@ import FarmerStatement from "./pages/FarmerStatement";
 
 import LoanPlans from "./pages/LoanPlans";
 import LoanDetail from "./pages/LoanDetail";
+import LoanDelaySettings from "./pages/admin/LoanDelaySettings";
+import LoanOverdueReport from "./pages/reports/LoanOverdueReport";
+import InstallmentCollectionReport from "./pages/reports/InstallmentCollectionReport";
+import LoanPenaltyReport from "./pages/reports/LoanPenaltyReport";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
