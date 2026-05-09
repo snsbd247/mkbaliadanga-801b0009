@@ -145,6 +145,7 @@ export default function Settings() {
           <Button onClick={save} disabled={busy}>{busy ? "…" : t("save")}</Button>
         </div>
       </Card>
+      <RoundingCard />
       <Card className="max-w-2xl p-6 mt-4">
         <div className="flex items-center justify-between">
           <div>
@@ -155,5 +156,41 @@ export default function Settings() {
         </div>
       </Card>
     </>
+  );
+}
+
+function RoundingCard() {
+  const [mode, setMode] = useState<string>(() => {
+    try { return localStorage.getItem("taka_rounding_mode_v1") ?? "half_up"; } catch { return "half_up"; }
+  });
+  const opts: Array<{ v: string; label: string; desc: string }> = [
+    { v: "half_up", label: "≥ .50 → ১ টাকা (default)", desc: "≥ .50 হলে উপরে, নিচে হলে ০" },
+    { v: "half_even", label: "Banker's (half-even)", desc: ".5 হলে নিকটতম জোড় সংখ্যায়" },
+    { v: "floor", label: "Floor (নিচের দিকে)", desc: "সর্বদা নিচের দিকে" },
+    { v: "ceil", label: "Ceil (উপরের দিকে)", desc: "সর্বদা উপরের দিকে" },
+  ];
+  return (
+    <Card className="max-w-2xl p-6 mt-4">
+      <div className="font-semibold mb-1">টাকা রাউন্ডিং নিয়ম</div>
+      <div className="text-sm text-muted-foreground mb-3">
+        ইনভয়েস, রশিদ, পেমেন্ট রিসিপ্ট ও রিপোর্ট সব জায়গায় এই নিয়মে এমাউন্ট পুরো টাকায় দেখাবে।
+      </div>
+      <div className="grid gap-2">
+        {opts.map((o) => (
+          <label key={o.v} className="flex items-start gap-2 text-sm cursor-pointer">
+            <input type="radio" name="rounding-mode" className="mt-1" checked={mode === o.v}
+              onChange={() => {
+                setMode(o.v);
+                try { localStorage.setItem("taka_rounding_mode_v1", o.v); } catch { /* ignore */ }
+                toast.success("রাউন্ডিং নিয়ম আপডেট হয়েছে। নতুন রিপোর্ট/রশিদে কার্যকর হবে।");
+              }} />
+            <span>
+              <span className="font-medium">{o.label}</span>
+              <span className="block text-xs text-muted-foreground">{o.desc}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </Card>
   );
 }

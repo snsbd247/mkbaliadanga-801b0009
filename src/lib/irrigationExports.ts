@@ -2,6 +2,9 @@
 // snapshot data and manual-rate flags. Phase 3 — i18n cleanup & enrichment.
 import * as XLSX from "xlsx";
 import { formatDagNumbers } from "@/lib/dagNumbers";
+import { roundTaka } from "@/lib/rounding";
+
+const r = (v: any) => (v === "" || v === null || v === undefined) ? v : roundTaka(Number(v));
 
 export const IRR_BN = {
   invoiceNo: "ইনভয়েস নং",
@@ -48,13 +51,13 @@ function flatten(inv: any) {
     [IRR_BN.landType]: inv.land_type_name ?? snap.land_type_name ?? "",
     [IRR_BN.season]: inv.seasons?.name ?? inv.seasons?.type ?? "",
     [IRR_BN.year]: inv.seasons?.year ?? "",
-    [IRR_BN.rate]: inv.season_rate ?? snap.rate ?? "",
-    [IRR_BN.baseAmount]: snap.base_amount ?? inv.base_amount ?? "",
-    [IRR_BN.lateFee]: inv.late_fee ?? snap.late_fee ?? 0,
-    [IRR_BN.maintenance]: inv.maintenance_fee ?? snap.maintenance_fee ?? 0,
-    [IRR_BN.payable]: inv.payable_amount ?? "",
-    [IRR_BN.paid]: inv.paid_amount ?? 0,
-    [IRR_BN.due]: inv.due_amount ?? 0,
+    [IRR_BN.rate]: r(inv.season_rate ?? snap.rate ?? ""),
+    [IRR_BN.baseAmount]: r(snap.base_amount ?? inv.base_amount ?? ""),
+    [IRR_BN.lateFee]: r(inv.late_fee ?? snap.late_fee ?? 0),
+    [IRR_BN.maintenance]: r(inv.maintenance_fee ?? snap.maintenance_fee ?? 0),
+    [IRR_BN.payable]: r(inv.payable_amount ?? ""),
+    [IRR_BN.paid]: r(inv.paid_amount ?? 0),
+    [IRR_BN.due]: r(inv.due_amount ?? 0),
     [IRR_BN.status]: STATUS_BN[inv.invoice_status] ?? inv.invoice_status ?? "",
     [IRR_BN.generatedAt]: inv.generated_at ? new Date(inv.generated_at).toLocaleDateString() : "",
     [IRR_BN.dueDate]: inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "",
