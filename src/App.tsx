@@ -55,6 +55,7 @@ import LoanReceiptSettings from "./pages/LoanReceiptSettings";
 import BulkLoanExport from "./pages/BulkLoanExport";
 import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
+import MyPermissions from "./pages/admin/MyPermissions";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
@@ -164,6 +165,7 @@ const App = () => (
                 <Route path="/admin/bulk-loan-export" element={<RequireRole roles={["admin","super_admin"]}><BulkLoanExport /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
+                <Route path="/admin/my-permissions" element={<MyPermissions />} />
                 <Route path="/admin/duplicate-receipts" element={<RequireDeveloper><DuplicateReceiptAudit /></RequireDeveloper>} />
                 <Route path="/admin/farmer-login-audit" element={<RequireDeveloper><FarmerLoginAudit /></RequireDeveloper>} />
                 <Route path="/admin/demo-manager" element={<RequireDeveloper><DemoManager /></RequireDeveloper>} />
