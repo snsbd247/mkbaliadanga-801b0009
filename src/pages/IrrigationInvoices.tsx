@@ -527,8 +527,8 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     if (!farmerId) { setLands([]); return; }
     (async () => {
       const [{ data: own }, { data: rels }] = await Promise.all([
-        supabase.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id").eq("farmer_id", farmerId).is("deleted_at", null),
-        supabase.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
+        supabase.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type").eq("farmer_id", farmerId).is("deleted_at", null),
+        supabase.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
       ]);
       const ids = new Set((own ?? []).map((l: any) => l.id));
       const sc = (rels ?? []).map((r: any) => r.lands).filter((l: any) => l && !ids.has(l.id));
@@ -536,7 +536,16 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     })();
   }, [farmerId]);
 
-  async function save() {
+  // Auto-fill rate from season matrix based on selected land's field_type
+  useEffect(() => {
+    if (!seasonId || !landId) return;
+    const land = lands.find((l: any) => l.id === landId);
+    if (!land) return;
+    loadSeasonRateMap(seasonId, land.office_id ?? null).then((m) => {
+      const r = resolveRate(m, land.field_type);
+      if (r > 0) setRate(r);
+    });
+  }, [seasonId, landId, lands]);
     if (!farmerId || !landId || !seasonId || !rate) return toast.error("সব ফিল্ড পূরণ করুন");
     setBusy(true);
     try {
