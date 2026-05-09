@@ -16,9 +16,9 @@ const seasonRows = [
 ];
 
 const irrigationRows = [
-  { id: "i1", entry_date: "2025-09-01", season_id: "s-aman", due_amount: 1500, total: 1500, paid_amount: 0,
+  { id: "i1", generated_at: "2025-09-01T00:00:00Z", season_id: "s-aman", due_amount: 1500, payable_amount: 1500, paid_amount: 0,
     seasons: { name: "Aman", year: 2025 }, lands: { dag_no: "12" } },
-  { id: "i2", entry_date: "2026-02-01", season_id: "s-boro", due_amount: 800, total: 800, paid_amount: 0,
+  { id: "i2", generated_at: "2026-02-01T00:00:00Z", season_id: "s-boro", due_amount: 800, payable_amount: 800, paid_amount: 0,
     seasons: { name: "Boro", year: 2026 }, lands: { dag_no: "12" } },
 ];
 
@@ -29,10 +29,11 @@ vi.mock("@/integrations/supabase/client", () => ({
       builder.select = () => builder;
       builder.eq = () => builder;
       builder.is = () => builder;
+      builder.neq = () => builder;
       builder.order = () => builder;
       builder.then = (cb: any) => {
         if (table === "seasons") return Promise.resolve({ data: seasonRows }).then(cb);
-        if (table === "irrigation_charges") return Promise.resolve({ data: irrigationRows }).then(cb);
+        if (table === "irrigation_invoices") return Promise.resolve({ data: irrigationRows }).then(cb);
         return Promise.resolve({ data: [] }).then(cb);
       };
       return builder;
