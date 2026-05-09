@@ -136,9 +136,10 @@ export default function Dashboard() {
 
     const dueMap = new Map<string, { name: string; code: string; due: number }>();
     const { data: irrDue } = await supabase
-      .from("irrigation_charges")
+      .from("irrigation_invoices")
       .select("farmer_id,due_amount,farmers(name_en,farmer_code)")
       .is("deleted_at", null)
+      .neq("invoice_status", "cancelled")
       .gt("due_amount", 0);
     (irrDue ?? []).forEach((r: any) => {
       const key = r.farmer_id;
