@@ -77,12 +77,12 @@ export function AppSidebar() {
 
     // ── Irrigation Settings ──
     {
-      key: "irrigationSettings", icon: SettingsIcon, label: "সেচ সেটিংস",
+      key: "irrigationSettings", icon: SettingsIcon, label: t("irrigationSettingsGroup" as any),
       children: [
-        { url: "/admin/lookups", icon: Sprout, label: "সিজন টাইপ ও জমির ধরন" },
-        { url: "/seasons", icon: CalendarDays, label: "সিজন রেট কনফিগারেশন", permKey: "seasons" },
+        { url: "/admin/lookups", icon: Sprout, label: t("seasonTypesAndLandKinds" as any) },
+        { url: "/seasons", icon: CalendarDays, label: t("seasonRateConfig" as any), permKey: "seasons" },
         { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
-        { url: "/admin/rate-audit", icon: ScrollText, label: "রেট পরিবর্তন ইতিহাস" },
+        { url: "/admin/rate-audit", icon: ScrollText, label: t("rateChangeHistory" as any) },
       ],
     },
 
@@ -119,13 +119,13 @@ export function AppSidebar() {
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
-        { url: "/reports/savings-loan", icon: FileBarChart, label: "Savings & Loan Report", permKey: "reports" },
-        { url: "/reports/receipts", icon: FileBarChart, label: "Receipt Report (IRR/PAY)", permKey: "reports" },
+        { url: "/reports/savings-loan", icon: FileBarChart, label: t("savingsLoanReport" as any), permKey: "reports" },
+        { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
         { url: "/reports/farmer-statement", icon: FileBarChart, label: t("farmerStatement"), permKey: "reports" },
         { url: "/reports/expenses", icon: FileBarChart, label: t("expensesReport"), permKey: "reports" },
        { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
-       { url: "/reports/invoices", icon: FileBarChart, label: "ইনভয়েস রিপোর্ট", permKey: "reports" },
-       { url: "/irrigation-reports", icon: FileBarChart, label: "সেচ রাজস্ব ও কালেকশন", permKey: "reports" },
+       { url: "/reports/invoices", icon: FileBarChart, label: t("invoicesReport" as any), permKey: "reports" },
+       { url: "/irrigation-reports", icon: FileBarChart, label: t("irrigationRevenueCollection" as any), permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
         { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
@@ -139,7 +139,7 @@ export function AppSidebar() {
         { url: "/offices", icon: Building2, label: t("offices"), permKey: "offices" },
         { url: "/users", icon: ShieldCheck, label: t("users"), superOnly: true },
         { url: "/admin/role-matrix", icon: Shield, label: t("roleMatrix"), developerOnly: true },
-        { url: "/admin/my-permissions", icon: Shield, label: "My Permissions" },
+        { url: "/admin/my-permissions", icon: Shield, label: t("myPermissions" as any) },
         { url: "/locations", icon: MapPin, label: t("locations"), permKey: "locations" },
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), developerOnly: true },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
@@ -160,9 +160,9 @@ export function AppSidebar() {
         { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
         { url: "/backup", icon: Database, label: t("backup"), developerOnly: true },
-        { url: "/admin/demo-manager", icon: Database, label: "Demo Manager", developerOnly: true },
-        { url: "/diagnostics", icon: ShieldAlert, label: "Diagnostics", developerOnly: true },
-        { url: "/admin/developer-updates", icon: RefreshCw, label: "Developer Updates", developerOnly: true },
+        { url: "/admin/demo-manager", icon: Database, label: t("demoManager" as any), developerOnly: true },
+        { url: "/diagnostics", icon: ShieldAlert, label: t("diagnostics" as any), developerOnly: true },
+        { url: "/admin/developer-updates", icon: RefreshCw, label: t("developerUpdates" as any), developerOnly: true },
       ],
     },
 
