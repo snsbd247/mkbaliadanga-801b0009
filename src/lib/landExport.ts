@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { shatakToBigha } from "./irrigationCalc";
+import { formatDagNumbers } from "./dagNumbers";
 
 export type LandExportRow = {
   division_name?: string | null;
