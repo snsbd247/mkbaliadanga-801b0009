@@ -97,7 +97,7 @@ export default function IrrigationReports() {
 
   return (
     <>
-      <PageHeader title="সেচ রিপোর্ট" description="সিজন ও জমির ধরন অনুযায়ী রাজস্ব ও কালেকশন বিশ্লেষণ" />
+      <PageHeader title={t("irr_pageTitle" as any)} description={t("irr_pageDesc" as any)} />
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="grid gap-3 md:grid-cols-4">
