@@ -20,9 +20,9 @@ export function rowsToCsvBlob<T>(
   columns: CsvColumn<T>[],
   chunkSize = 5000,
 ): Blob {
-  const parts: string[] = [];
-  // BOM for Excel UTF-8
-  parts.push("\uFEFF");
+  const parts: BlobPart[] = [];
+  // BOM for Excel UTF-8 (as bytes — string "\uFEFF" can be stripped by some Blob impls)
+  parts.push(new Uint8Array([0xef, 0xbb, 0xbf]));
   parts.push(columns.map((c) => escapeCell(c.header)).join(",") + "\n");
 
   for (let i = 0; i < rows.length; i += chunkSize) {
