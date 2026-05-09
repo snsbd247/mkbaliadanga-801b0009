@@ -245,6 +245,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           invoiceId={previewId}
           onClose={() => setPreviewId(null)}
           allRows={rows}
+          onRecalculated={load}
         />
       </CardContent>
     </Card>
