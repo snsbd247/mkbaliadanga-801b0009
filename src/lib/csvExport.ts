@@ -15,26 +15,34 @@ function escapeCell(v: unknown): string {
   return s;
 }
 
-export function rowsToCsvBlob<T>(
+/** Build CSV body string (without BOM). Useful for testing/in-memory work. */
+export function rowsToCsvString<T>(
   rows: T[],
   columns: CsvColumn<T>[],
   chunkSize = 5000,
-): Blob {
-  const parts: BlobPart[] = [];
-  // BOM for Excel UTF-8 (as bytes — string "\uFEFF" can be stripped by some Blob impls)
-  parts.push(new Uint8Array([0xef, 0xbb, 0xbf]));
-  parts.push(columns.map((c) => escapeCell(c.header)).join(",") + "\n");
-
+): string {
+  const out: string[] = [];
+  out.push(columns.map((c) => escapeCell(c.header)).join(",") + "\n");
   for (let i = 0; i < rows.length; i += chunkSize) {
     const slice = rows.slice(i, i + chunkSize);
     let buf = "";
     for (const row of slice) {
       buf += columns.map((c) => escapeCell(c.accessor(row))).join(",") + "\n";
     }
-    parts.push(buf);
+    out.push(buf);
   }
+  return out.join("");
+}
 
-  return new Blob(parts, { type: "text/csv;charset=utf-8;" });
+export function rowsToCsvBlob<T>(
+  rows: T[],
+  columns: CsvColumn<T>[],
+  chunkSize = 5000,
+): Blob {
+  const body = rowsToCsvString(rows, columns, chunkSize);
+  // UTF-8 BOM as bytes for Excel compatibility
+  const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
+  return new Blob([bom, body], { type: "text/csv;charset=utf-8;" });
 }
 
 export function downloadCsv<T>(
