@@ -245,7 +245,10 @@ export default function Payments() {
         if (url) await supabase.from("payments").update({ receipt_url: url }).eq("id", inserted.id);
       }
 
-      if (status === "approved") await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note);
+      if (status === "approved") {
+        await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note);
+        await sendIrrigationPaymentSms(farmerId, allocs, finalReceiptNo);
+      }
 
       toast.success(status === "pending" ? "Submitted for approval" : t("paymentSuccess"));
       resetForm();
