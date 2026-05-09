@@ -453,20 +453,24 @@ async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: st
 async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const seeded: string[] = [];
-  const { data: plan } = await admin.from("loan_plans").insert({
-    name: "Standard 12mo", name_bn: "১২ মাসের সাধারণ", office_id: officeId,
-    duration_months: 12, interest_rate: 12, installment_type: "monthly",
-    penalty_type: "percentage", penalty_value: 2, grace_period_days: 7, is_active: true,
-  }).select("id").single();
-  const planId = plan?.id ?? null;
+  // Seed 3 plans (6/12/24 months)
+  const planDefs = [
+    { name: "Short Term 6mo", name_bn: "৬ মাসের স্বল্প-মেয়াদী", duration_months: 6,  interest_rate: 10, installment_type: "monthly", penalty_type: "percentage", penalty_value: 2, grace_period_days: 5,  is_active: true, office_id: officeId },
+    { name: "Standard 12mo",  name_bn: "১২ মাসের সাধারণ",       duration_months: 12, interest_rate: 12, installment_type: "monthly", penalty_type: "percentage", penalty_value: 2, grace_period_days: 7,  is_active: true, office_id: officeId },
+    { name: "Long Term 24mo", name_bn: "২৪ মাসের দীর্ঘ-মেয়াদী", duration_months: 24, interest_rate: 14, installment_type: "monthly", penalty_type: "flat",       penalty_value: 100, grace_period_days: 10, is_active: true, office_id: officeId },
+  ];
+  const { data: plans } = await admin.from("loan_plans").insert(planDefs).select("id, duration_months, interest_rate");
+  const planList = plans ?? [];
+  const planId = planList[1]?.id ?? planList[0]?.id ?? null;
   const targets = voters.slice(0, Math.ceil(voters.length * 0.4));
   const loanRows = targets.map((f, i) => {
+    const p = planList[i % Math.max(1, planList.length)] ?? { id: planId, duration_months: 12, interest_rate: 12 };
     const principal = 10000 + (i % 5) * 5000;
-    const totalPay = principal * 1.12;
+    const totalPay = principal * (1 + Number(p.interest_rate) / 100);
     seeded.push(f.id);
     return {
-      farmer_id: f.id, principal, interest_rate: 12, total_payable: totalPay, total_due: totalPay,
-      installment_amount: totalPay / 12, plan_id: planId,
+      farmer_id: f.id, principal, interest_rate: p.interest_rate, total_payable: totalPay, total_due: totalPay,
+      installment_amount: totalPay / p.duration_months, plan_id: p.id,
       status: i % 4 === 0 ? "pending" : "approved", office_id: officeId,
     };
   });
