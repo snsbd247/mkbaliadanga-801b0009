@@ -298,42 +298,34 @@ const Row = ({ k, v, bold }: { k: string; v: any; bold?: boolean }) => (
 function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [seasonId, setSeasonId] = useState("");
   const [officeId, setOfficeId] = useState("");
-  const [rate, setRate] = useState<number>(0);
+  const [rateOverride, setRateOverride] = useState<number>(0);
+  const [rateMap, setRateMap] = useState<Record<string, number>>({});
   const [dueDate, setDueDate] = useState<string>(() => {
     const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10);
   });
   const [busy, setBusy] = useState(false);
   const [previewRows, setPreviewRows] = useState<any[] | null>(null);
+  const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
 
   const [manualOpen, setManualOpen] = useState(false);
 
-  // Pre-load rate from irrigation_rates
+  // Load per-field-type rate matrix when season/office changes.
   useEffect(() => {
-    if (!seasonId) return;
-    (async () => {
-      const { data } = await supabase
-        .from("irrigation_rates")
-        .select("base_rate")
-        .eq("season_id", seasonId)
-        .eq("basis", "per_size")
-        .eq("is_active", true)
-        .maybeSingle();
-      if (data?.base_rate) setRate(Number(data.base_rate));
-    })();
-  }, [seasonId]);
+    if (!seasonId) { setRateMap({}); return; }
+    loadSeasonRateMap(seasonId, officeId || null).then(setRateMap);
+  }, [seasonId, officeId]);
 
   async function preview() {
-    if (!seasonId || !rate) return toast.error("সিজন ও রেট দিন");
+    if (!seasonId) return toast.error("সিজন বাছাই করুন");
     setBusy(true);
+    setSkippedNoRate(0);
     try {
-      // Fetch lands
-      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza").is("deleted_at", null);
+      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
       const { data: lands, error: lerr } = await lq;
       if (lerr) throw lerr;
 
-      // Skip already-invoiced
       let skip = new Set<string>();
       if (skipExisting) {
         const { data: existing } = await supabase
@@ -351,7 +343,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       const eligible = (lands ?? []).filter((l: any) => Number(l.land_size) > 0 && !skip.has(l.id));
 
       const previewArr: any[] = [];
+      let noRate = 0;
       for (const l of eligible) {
+        const matrixRate = resolveRate(rateMap, l.field_type);
+        const rate = matrixRate > 0 ? matrixRate : rateOverride;
+        if (!(rate > 0)) { noRate++; continue; }
         const billed = await resolveBilledFarmer(l.id, dueDate);
         const calc = calcInvoice({
           land_size_shotok: Number(l.land_size),
@@ -360,10 +356,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           due_date: dueDate,
           as_of: new Date().toISOString().slice(0, 10),
         });
-        previewArr.push({ land: l, billed, calc, settings });
+        previewArr.push({ land: l, billed, calc, settings, rate });
       }
       setPreviewRows(previewArr);
-      toast.success(`${previewArr.length} টি ইনভয়েস প্রিভিউ প্রস্তুত`);
+      setSkippedNoRate(noRate);
+      toast.success(`${previewArr.length} টি প্রিভিউ${noRate ? ` • ${noRate} টি জমিতে রেট নেই` : ""}`);
     } catch (e: any) {
       toast.error(e.message);
     } finally { setBusy(false); }
