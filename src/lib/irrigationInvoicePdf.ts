@@ -180,7 +180,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
     ["গ্রাম / মোবাইল", `${farmer.village ?? "—"}${farmer.mobile ? " / " + farmer.mobile : ""}`],
     ["জমির ধরন", d.is_borga ? "বর্গাদার" : "নিজ মালিক"],
-    ["মৌজা / দাগ / জমির পরিমাণ", `${land.mouza ?? "—"} / দাগ ${land.dag_no ?? "—"} / ${formatLandSize(land.land_size) ?? "—"}`],
+    ["মৌজা / দাগ / জমির পরিমাণ", `${land.mouza ?? "—"} / দাগ ${formatDagNumbers(land.dag_no) || "—"} / ${formatLandSize(land.land_size) ?? "—"}`],
     ["সিজন", seasonLabel || "—"],
     ["ইস্যু তারিখ", fmtDate(d.generated_at)],
     ["মেয়াদ তারিখ", fmtDate(d.due_date)],
