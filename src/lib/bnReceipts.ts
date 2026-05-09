@@ -240,8 +240,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         : `${bigha.toFixed(2)} bigha (${shatak.toFixed(2)} shatak)`;
     }
     const layout = getReceiptLayoutSettings();
-    const mouzaLabel = (lang === "bn" ? layout.mouzaLabelBn : layout.mouzaLabelEn).trim() || t.mouza;
-    const dagLabel = (lang === "bn" ? layout.dagLabelBn : layout.dagLabelEn).trim() || t.dag;
+    const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels(lang);
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
     const dagFormatted = dagTokens.join(dagSeparatorHtml(layout.dagSeparator));
     const mouzaParts = [d.farmer.mouza, sizeLabel].filter(Boolean) as string[];
