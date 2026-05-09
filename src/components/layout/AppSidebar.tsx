@@ -77,12 +77,12 @@ export function AppSidebar() {
 
     // ── Irrigation Settings ──
     {
-      key: "irrigationSettings", icon: SettingsIcon, label: "সেচ সেটিংস",
+      key: "irrigationSettings", icon: SettingsIcon, label: t("irrigationSettingsGroup" as any),
       children: [
-        { url: "/admin/lookups", icon: Sprout, label: "সিজন টাইপ ও জমির ধরন" },
-        { url: "/seasons", icon: CalendarDays, label: "সিজন রেট কনফিগারেশন", permKey: "seasons" },
+        { url: "/admin/lookups", icon: Sprout, label: t("seasonTypesAndLandKinds" as any) },
+        { url: "/seasons", icon: CalendarDays, label: t("seasonRateConfig" as any), permKey: "seasons" },
         { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
-        { url: "/admin/rate-audit", icon: ScrollText, label: "রেট পরিবর্তন ইতিহাস" },
+        { url: "/admin/rate-audit", icon: ScrollText, label: t("rateChangeHistory" as any) },
       ],
     },
 
