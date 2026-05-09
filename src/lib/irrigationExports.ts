@@ -39,7 +39,7 @@ const STATUS_BN: Record<string, string> = {
   paid: "পরিশোধিত", overdue: "মেয়াদোত্তীর্ণ", cancelled: "বাতিল",
 };
 
-function flatten(inv: any) {
+export function flattenInvoiceForExport(inv: any) {
   const snap = inv.calculation_snapshot ?? {};
   return {
     [IRR_BN.invoiceNo]: inv.invoice_no ?? "",
