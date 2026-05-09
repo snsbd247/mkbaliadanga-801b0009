@@ -1005,7 +1005,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                 <TableBody>
                   {previewRows.slice(0, 100).map((r: any, i: number) => (
                     <TableRow key={i}>
-                      <TableCell className="text-xs">{r.land.mouza} • Dag {r.land.dag_no}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
+                      <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
                       <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
                       <TableCell className="text-right">{money(r.calc.irrigation_amount)}</TableCell>
                       <TableCell className="text-right">{money(r.calc.maintenance_amount)}</TableCell>
