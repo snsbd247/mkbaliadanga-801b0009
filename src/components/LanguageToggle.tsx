@@ -31,7 +31,7 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
         aria-pressed={lang === "bn"}
         aria-label="বাংলায় পরিবর্তন করুন (Switch to Bengali)"
       >
-        বাংলা
+        বাংলা{/* i18n-ignore */}
       </Button>
     </div>
   );
