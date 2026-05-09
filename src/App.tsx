@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,9 +21,7 @@ import ScanPayment from "./pages/ScanPayment";
 import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
 import Loans from "./pages/Loans";
-import Irrigation from "./pages/Irrigation";
 import IrrigationInvoices from "./pages/IrrigationInvoices";
-import IrrigationInvoicePayment from "./pages/IrrigationInvoicePayment";
 import IrrigationRates from "./pages/IrrigationRates";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
@@ -124,9 +122,10 @@ const App = () => (
                 <Route path="/loans" element={<RequirePerm module="loans"><Loans /></RequirePerm>} />
                 <Route path="/loans/plans" element={<RequirePerm module="loans"><LoanPlans /></RequirePerm>} />
                 <Route path="/share-collection" element={<RequirePerm module="savings"><ShareCollection /></RequirePerm>} />
-                <Route path="/irrigation" element={<RequirePerm module="irrigation"><Irrigation /></RequirePerm>} />
+                {/* Legacy routes redirect to unified invoice/payment pages */}
+                <Route path="/irrigation" element={<Navigate to="/irrigation/invoices" replace />} />
+                <Route path="/irrigation/collect" element={<Navigate to="/payments" replace />} />
                 <Route path="/irrigation/invoices" element={<RequirePerm module="irrigation"><IrrigationInvoices /></RequirePerm>} />
-                <Route path="/irrigation/collect" element={<RequirePerm module="payments"><IrrigationInvoicePayment /></RequirePerm>} />
                 <Route path="/irrigation/rates" element={<RequirePerm module="irrigation"><IrrigationRates /></RequirePerm>} />
                 <Route path="/payments" element={<RequirePerm module="payments"><Payments /></RequirePerm>} />
                 <Route path="/reports" element={<RequirePerm module="reports"><Reports /></RequirePerm>} />
