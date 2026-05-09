@@ -84,7 +84,6 @@ export default function IdReview() {
     setDraft({
       member_no: r.member_no ?? "",
       account_number: r.account_number ?? "",
-      voter_number: r.voter_number ?? "",
     });
   }
 
