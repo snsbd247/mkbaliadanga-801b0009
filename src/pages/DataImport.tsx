@@ -53,7 +53,7 @@ type RowResult = {
 const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any> }> = {
   lands: {
     columns: ["account_number", "dag_no", "land_size", "owner_type", "field_type", "mouza"],
-    sample: { account_number: "100000000001", dag_no: "123/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
+    sample: { account_number: "100000000001", dag_no: "123, 124/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
   },
   land_relations: {
     columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
