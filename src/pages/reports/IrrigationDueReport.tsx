@@ -111,8 +111,8 @@ export default function IrrigationDueReport() {
     { total: 0, paid: 0, due: 0 },
   ), [filtered]);
 
-  const head = [t("farmerCode"), t("farmer"), t("land"), t("season"), t("total"), t("paid"), t("dueAmount")];
-  const body = filtered.map((r) => [r.farmer_code, r.farmer_name, r.land_label, r.season_label, money(r.total), money(r.paid), money(r.due)]);
+  const head = [t("farmerCode"), t("farmer"), "Land", "Bigha", "Shatak", t("season"), t("total"), t("paid"), t("dueAmount")];
+  const body = filtered.map((r) => [r.farmer_code, r.farmer_name, r.land_label, r.land_size_bigha.toFixed(2), r.land_size_shatak.toFixed(2), r.season_label, money(r.total), money(r.paid), money(r.due)]);
 
   return (
     <div className="container mx-auto p-4 space-y-4">
