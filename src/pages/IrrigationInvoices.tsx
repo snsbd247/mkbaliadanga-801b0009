@@ -310,9 +310,9 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
   const [manualOpen, setManualOpen] = useState(false);
 
-  // Load per-field-type rate matrix when season/office changes.
+  // Load per-land-type rate matrix when season/office changes.
   useEffect(() => {
-    if (!seasonId) { setRateMap({}); return; }
+    if (!seasonId) { setRateMap([]); return; }
     loadSeasonRateMap(seasonId, officeId || null).then(setRateMap);
   }, [seasonId, officeId]);
 
@@ -321,7 +321,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     setBusy(true);
     setSkippedNoRate(0);
     try {
-      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type").is("deleted_at", null);
+      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
       const { data: lands, error: lerr } = await lq;
       if (lerr) throw lerr;
@@ -345,8 +345,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       const previewArr: any[] = [];
       let noRate = 0;
       for (const l of eligible) {
-        const matrixRate = resolveRate(rateMap, l.field_type);
-        const rate = matrixRate > 0 ? matrixRate : rateOverride;
+        const matched = resolveRateForLand(rateMap, l);
+        const rate = matched && matched.rate_per_shotok > 0 ? matched.rate_per_shotok : rateOverride;
         if (!(rate > 0)) { noRate++; continue; }
         const billed = await resolveBilledFarmer(l.id, dueDate);
         const calc = calcInvoice({
@@ -356,7 +356,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           due_date: dueDate,
           as_of: new Date().toISOString().slice(0, 10),
         });
-        previewArr.push({ land: l, billed, calc, settings, rate });
+        previewArr.push({ land: l, billed, calc, settings, rate, rateRow: matched });
       }
       setPreviewRows(previewArr);
       setSkippedNoRate(noRate);
