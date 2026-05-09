@@ -3063,6 +3063,10 @@ export const translations = {
     startDate: "শুরু তারিখ",
     endDate: "শেষ তারিখ",
     filterReset: "ফিল্টার রিসেট",
+    irr_chartTitleSeasonCollection: "সিজন ভিত্তিক কালেকশন",
+    irr_chartTitleLandTypeCompare: "জমির ধরন ভিত্তিক তুলনা",
+    irr_chartTitleMonthly: "মাসিক ট্রেন্ড (শেষ ১২ মাস)",
+    irr_chartTitleAging: "বকেয়া বয়স বিশ্লেষণ",
   },
 } as const;
 
