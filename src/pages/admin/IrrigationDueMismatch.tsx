@@ -79,7 +79,7 @@ export default function IrrigationDueMismatch() {
     <>
       <PageHeader
         title={tx("Irrigation Due Mismatch", "সেচ বকেয়া অমিল")}
-        right={<Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className="h-4 w-4 mr-1" />{tx("Refresh", "রিফ্রেশ")}</Button>}
+        actions={<Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className="h-4 w-4 mr-1" />{tx("Refresh", "রিফ্রেশ")}</Button>}
       />
       <Card className="p-3 mb-3 text-sm flex items-center gap-2 text-muted-foreground">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
