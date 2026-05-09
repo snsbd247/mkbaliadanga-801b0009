@@ -515,9 +515,31 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         <Dialog open={pdfSettingsOpen} onOpenChange={setPdfSettingsOpen}>
           <DialogContent>
             <DialogHeader><DialogTitle>{tx("Invoice PDF settings", "ইনভয়েস PDF সেটিংস")}</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">{tx("Adjust margins and the cut-line position so the A5 office and farmer copies fit your printer.", "মার্জিন ও কাট-লাইন এর পজিশন এডজাস্ট করুন যাতে A5 অফিস ও কৃষক কপি আপনার প্রিন্টারে ঠিকমতো ফিট করে।")}</p>
+            <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
+              <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                <Label className="text-xs font-semibold">{tx("Printer preset", "প্রিন্টার প্রিসেট")}</Label>
+                <Select onValueChange={applyPreset}>
+                  <SelectTrigger><SelectValue placeholder={tx("Choose a preset to apply…", "প্রিসেট বাছাই করুন…")} /></SelectTrigger>
+                  <SelectContent>
+                    {PRINTER_PRESETS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{tx(p.labelEn, p.labelBn)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">{tx("Quickly set paper size, margins and cut-line for common printers.", "সাধারণ প্রিন্টারের জন্য পেজ সাইজ, মার্জিন ও কাট-লাইন এক ক্লিকে সেট করুন।")}</p>
+              </div>
+
+              <p className="text-xs text-muted-foreground">{tx("Adjust paper, margins and the cut-line position so the office and farmer copies fit your printer.", "পেজ, মার্জিন ও কাট-লাইন এর পজিশন এডজাস্ট করুন যাতে অফিস ও কৃষক কপি আপনার প্রিন্টারে ঠিকমতো ফিট করে।")}</p>
               <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2"><Label>{tx("Paper size", "পেজ সাইজ")}</Label>
+                  <Select value={pdfSettings.paperFormat} onValueChange={(v) => setPdfSettings({ ...pdfSettings, paperFormat: v as any, cutLineMm: v === "letter" ? 139.7 : 148.5 })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="a4">A4 (210 × 297 mm)</SelectItem>
+                      <SelectItem value="letter">Letter (216 × 279 mm)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div><Label>{tx("Top margin (mm)", "উপরের মার্জিন (mm)")}</Label>
                   <Input type="number" step="0.5" value={pdfSettings.marginTopMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginTopMm: Number(e.target.value) || 0 })} /></div>
                 <div><Label>{tx("Bottom margin (mm)", "নিচের মার্জিন (mm)")}</Label>
@@ -526,11 +548,14 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   <Input type="number" step="0.5" value={pdfSettings.marginLeftMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginLeftMm: Number(e.target.value) || 0 })} /></div>
                 <div><Label>{tx("Right margin (mm)", "ডান মার্জিন (mm)")}</Label>
                   <Input type="number" step="0.5" value={pdfSettings.marginRightMm} onChange={(e) => setPdfSettings({ ...pdfSettings, marginRightMm: Number(e.target.value) || 0 })} /></div>
-                <div className="col-span-2"><Label>{tx("Cut-line position from top (mm) — A4 mid = 148.5", "কাট-লাইন অবস্থান উপর থেকে (mm) — A4 মাঝ = 148.5")}</Label>
-                  <Input type="number" step="0.5" value={pdfSettings.cutLineMm} onChange={(e) => setPdfSettings({ ...pdfSettings, cutLineMm: Number(e.target.value) || 0 })} /></div>
+                <div className="col-span-2"><Label>{tx("Cut-line position from top (mm)", "কাট-লাইন অবস্থান উপর থেকে (mm)")}</Label>
+                  <Input type="number" step="0.5" value={pdfSettings.cutLineMm} onChange={(e) => setPdfSettings({ ...pdfSettings, cutLineMm: Number(e.target.value) || 0 })} />
+                  <p className="text-[11px] text-muted-foreground mt-1">{tx("A4 mid = 148.5 · Letter mid = 139.7", "A4 মাঝ = 148.5 · Letter মাঝ = 139.7")}</p>
+                </div>
               </div>
               <div className="border-t pt-3 space-y-2">
                 <h4 className="text-sm font-semibold">{tx("Signatures", "স্বাক্ষর")}</h4>
+                <p className="text-[11px] text-muted-foreground">{tx("Pick a staff member to auto-fill the signature name, or type a custom value.", "স্বাক্ষর নাম অটো-ফিল করতে স্টাফ নির্বাচন করুন, অথবা কাস্টম লিখুন।")}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>{tx("Farmer sign label", "কৃষকের স্বাক্ষর লেবেল")}</Label>
                     <Input value={pdfSettings.farmerSignTitle} onChange={(e) => setPdfSettings({ ...pdfSettings, farmerSignTitle: e.target.value })} /></div>
@@ -538,8 +563,35 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                     <Input value={pdfSettings.farmerSignName} onChange={(e) => setPdfSettings({ ...pdfSettings, farmerSignName: e.target.value })} placeholder={tx("Auto from invoice", "ইনভয়েস থেকে অটো")} /></div>
                   <div><Label>{tx("Collector sign label", "আদায়কারীর স্বাক্ষর লেবেল")}</Label>
                     <Input value={pdfSettings.collectorSignTitle} onChange={(e) => setPdfSettings({ ...pdfSettings, collectorSignTitle: e.target.value })} /></div>
-                  <div><Label>{tx("Collector name / title", "আদায়কারীর নাম / পদবি")}</Label>
+                  <div><Label>{tx("Collector — staff list", "আদায়কারী — স্টাফ তালিকা")}</Label>
+                    <Select value="" onValueChange={(v) => {
+                      const s = staff.find((x) => x.id === v);
+                      if (s) setPdfSettings({ ...pdfSettings, collectorSignName: s.full_name ?? s.username ?? "" });
+                    }}>
+                      <SelectTrigger><SelectValue placeholder={tx("Select staff…", "স্টাফ নির্বাচন…")} /></SelectTrigger>
+                      <SelectContent>
+                        {staff.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.full_name ?? s.username ?? s.id.slice(0, 8)}</SelectItem>
+                        ))}
+                        {!staff.length && <div className="px-3 py-2 text-xs text-muted-foreground">{tx("No staff available", "কোন স্টাফ নেই")}</div>}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2"><Label>{tx("Collector name / title", "আদায়কারীর নাম / পদবি")}</Label>
                     <Input value={pdfSettings.collectorSignName} onChange={(e) => setPdfSettings({ ...pdfSettings, collectorSignName: e.target.value })} placeholder={tx("e.g. Md. Karim — Field Officer", "যেমন: মো. করিম — মাঠ কর্মকর্তা")} /></div>
+                  <div><Label>{tx("Farmer — staff list", "কৃষক স্বাক্ষর — স্টাফ তালিকা")}</Label>
+                    <Select value="" onValueChange={(v) => {
+                      const s = staff.find((x) => x.id === v);
+                      if (s) setPdfSettings({ ...pdfSettings, farmerSignName: s.full_name ?? s.username ?? "" });
+                    }}>
+                      <SelectTrigger><SelectValue placeholder={tx("Select staff…", "স্টাফ নির্বাচন…")} /></SelectTrigger>
+                      <SelectContent>
+                        {staff.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.full_name ?? s.username ?? s.id.slice(0, 8)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </div>
