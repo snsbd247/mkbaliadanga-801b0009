@@ -245,7 +245,10 @@ export default function Payments() {
         if (url) await supabase.from("payments").update({ receipt_url: url }).eq("id", inserted.id);
       }
 
-      if (status === "approved") await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note);
+      if (status === "approved") {
+        await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note);
+        await sendIrrigationPaymentSms(farmerId, allocs, finalReceiptNo);
+      }
 
       toast.success(status === "pending" ? "Submitted for approval" : t("paymentSuccess"));
       resetForm();
@@ -253,6 +256,19 @@ export default function Payments() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function sendIrrigationPaymentSms(fId: string, list: Allocation[], receiptNo: string | null) {
+    try {
+      const irrTotal = list.filter(a => a.kind === "irrigation").reduce((s, a) => s + Number(a.amount || 0), 0);
+      if (irrTotal <= 0) return;
+      const farmer = farmers.find((x: any) => x.id === fId);
+      const { data: full } = await supabase.from("farmers").select("mobile,name_bn,name_en").eq("id", fId).maybeSingle();
+      const mobile = full?.mobile ?? farmer?.mobile;
+      if (!mobile) return;
+      const message = `আপনার সেচ ইনভয়েসের ৳${irrTotal.toLocaleString()} টাকা গ্রহণ করা হয়েছে।${receiptNo ? `\nরসিদ নং: ${receiptNo}` : ""}\nধন্যবাদ।`;
+      await supabase.functions.invoke("send-sms", { body: { mobile, message, event_type: "irrigation_payment", farmer_id: fId } });
+    } catch (_) { /* SMS failure must not break payment flow */ }
   }
 
   async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string) {
@@ -294,6 +310,7 @@ export default function Payments() {
       : [{ kind: p.kind, reference_id: p.reference_id ?? "", amount: Number(p.amount) }];
 
     await applyAllocationsToLedgers(p.id, p.farmer_id, allocList, p.note);
+    await sendIrrigationPaymentSms(p.farmer_id, allocList, p.receipt_no ?? null);
     toast.success(t("approvedToast"));
     load();
   }
