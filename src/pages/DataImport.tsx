@@ -754,7 +754,21 @@ export default function DataImport() {
                     {r.status === "error" && <Badge variant="destructive">Error</Badge>}
                     {r.status === "pending" && <Badge variant="secondary">Pending</Badge>}
                   </TableCell>
-                  {tpl.columns.map((c) => <TableCell key={c}>{String(r.raw[c] ?? "")}</TableCell>)}
+                  {tpl.columns.map((c) => {
+                    if (c === "dag_no" && (mod === "lands" || mod === "irrigation" || mod === "land_relations")) {
+                      const canonical = r.resolved?.dag_canonical ?? formatDagNumbers(String(r.raw[c] ?? ""));
+                      const original = String(r.raw[c] ?? "");
+                      return (
+                        <TableCell key={c} className="text-xs">
+                          <div className="font-mono">{original || "—"}</div>
+                          {canonical && canonical !== original && (
+                            <div className="text-[10px] text-muted-foreground">→ {canonical}</div>
+                          )}
+                        </TableCell>
+                      );
+                    }
+                    return <TableCell key={c}>{String(r.raw[c] ?? "")}</TableCell>;
+                  })}
                   <TableCell className="text-xs text-destructive">{r.message ?? ""}</TableCell>
                 </TableRow>
               ))}
