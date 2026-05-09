@@ -716,6 +716,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "farmer_savings_plans_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "farmer_savings_plans_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "farmer_savings_plans_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
