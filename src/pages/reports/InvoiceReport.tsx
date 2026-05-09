@@ -12,10 +12,12 @@ import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Filter = "all" | "overdue" | "delay_fee" | "borga" | "cancelled" | "paid";
 
 export default function InvoiceReport() {
+  const { tx } = useLang();
   const { isSuper } = useAuth();
   const [offices, setOffices] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
@@ -27,7 +29,7 @@ export default function InvoiceReport() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "ইনভয়েস রিপোর্ট";
+    document.title = tx("Invoice Report", "ইনভয়েস রিপোর্ট");
     Promise.all([
       supabase.from("offices").select("id,name").order("name"),
       supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
@@ -80,62 +82,67 @@ export default function InvoiceReport() {
     { payable: 0, paid: 0, due: 0, delay: 0 },
   ), [filtered]);
 
-  const head = ["ইনভয়েস", "কৃষক", "মৌজা/দাগ", "সিজন", "ধরন", "প্রদেয়", "জমা", "বকেয়া", "বিলম্ব ফি", "অবস্থা"];
+  const head = [
+    tx("Invoice", "ইনভয়েস"), tx("Farmer", "কৃষক"), tx("Mouza/Dag", "মৌজা/দাগ"),
+    tx("Season", "সিজন"), tx("Type", "ধরন"),
+    tx("Payable", "প্রদেয়"), tx("Paid", "জমা"), tx("Due", "বকেয়া"),
+    tx("Late fee", "বিলম্ব ফি"), tx("Status", "অবস্থা"),
+  ];
   const body = filtered.map((r) => [
     r.invoice_no,
     `${r.farmers?.name_en ?? ""} (${r.farmers?.farmer_code ?? ""})`,
     `${r.lands?.mouza ?? ""}/${r.lands?.dag_no ?? ""}`,
     r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
-    r.is_borga ? "বর্গা" : "নিজ",
+    r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ"),
     money(r.payable_amount), money(r.paid_amount), money(r.due_amount), money(r.delay_fee),
     r.invoice_status,
   ]);
 
   return (
     <div className="container mx-auto p-4 space-y-4">
-      <PageHeader title="ইনভয়েস রিপোর্ট" description="ওভারডিউ, বিলম্ব ফি, বর্গা, সিজন-ভিত্তিক ইনভয়েস রিপোর্ট" />
+      <PageHeader title={tx("Invoice Report", "ইনভয়েস রিপোর্ট")} description={tx("Overdue, late-fee, sharecropper and season-wise invoice report", "ওভারডিউ, বিলম্ব ফি, বর্গা, সিজন-ভিত্তিক ইনভয়েস রিপোর্ট")} />
 
       <Card>
         <CardContent className="grid gap-3 pt-6 md:grid-cols-2 lg:grid-cols-5">
           {isSuper && (
             <div>
-              <Label>অফিস</Label>
+              <Label>{tx("Office", "অফিস")}</Label>
               <Select value={officeId} onValueChange={setOfficeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">সকল অফিস</SelectItem>
+                  <SelectItem value="all">{tx("All offices", "সকল অফিস")}</SelectItem>
                   {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           )}
           <div>
-            <Label>সিজন</Label>
+            <Label>{tx("Season", "সিজন")}</Label>
             <Select value={seasonId} onValueChange={setSeasonId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">সকল সিজন</SelectItem>
+                <SelectItem value="all">{tx("All seasons", "সকল সিজন")}</SelectItem>
                 {seasons.map((s) => <SelectItem key={s.id} value={s.id}>{s.name ?? s.type} {s.year}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>ফিল্টার</Label>
+            <Label>{tx("Filter", "ফিল্টার")}</Label>
             <Select value={filter} onValueChange={(v) => setFilter(v as Filter)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">সব ইনভয়েস</SelectItem>
-                <SelectItem value="overdue">ওভারডিউ</SelectItem>
-                <SelectItem value="delay_fee">বিলম্ব ফি প্রযোজ্য</SelectItem>
-                <SelectItem value="borga">বর্গা</SelectItem>
-                <SelectItem value="paid">পরিশোধিত</SelectItem>
-                <SelectItem value="cancelled">বাতিল</SelectItem>
+                <SelectItem value="all">{tx("All invoices", "সব ইনভয়েস")}</SelectItem>
+                <SelectItem value="overdue">{tx("Overdue", "ওভারডিউ")}</SelectItem>
+                <SelectItem value="delay_fee">{tx("Late fee applied", "বিলম্ব ফি প্রযোজ্য")}</SelectItem>
+                <SelectItem value="borga">{tx("Sharecropper", "বর্গা")}</SelectItem>
+                <SelectItem value="paid">{tx("Paid", "পরিশোধিত")}</SelectItem>
+                <SelectItem value="cancelled">{tx("Cancelled", "বাতিল")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="lg:col-span-2">
-            <Label>খুঁজুন</Label>
-            <Input placeholder="ইনভয়েস নং / কৃষক / কোড / মোবাইল" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Label>{tx("Search", "খুঁজুন")}</Label>
+            <Input placeholder={tx("Invoice no / farmer / code / mobile", "ইনভয়েস নং / কৃষক / কোড / মোবাইল")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </CardContent>
       </Card>
@@ -143,7 +150,7 @@ export default function InvoiceReport() {
       <Card>
         <CardContent className="pt-6">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{filtered.length} টি {loading && "(লোড হচ্ছে...)"}</p>
+            <p className="text-sm text-muted-foreground">{filtered.length} {tx("rows", "টি")} {loading && tx("(loading…)", "(লোড হচ্ছে...)")}</p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF("Invoice-Report", head, body)}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
@@ -166,16 +173,16 @@ export default function InvoiceReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ইনভয়েস</TableHead>
-                <TableHead>কৃষক</TableHead>
-                <TableHead>মৌজা/দাগ</TableHead>
-                <TableHead>সিজন</TableHead>
-                <TableHead>ধরন</TableHead>
-                <TableHead className="text-right">প্রদেয়</TableHead>
-                <TableHead className="text-right">জমা</TableHead>
-                <TableHead className="text-right">বকেয়া</TableHead>
-                <TableHead className="text-right">বিলম্ব ফি</TableHead>
-                <TableHead>অবস্থা</TableHead>
+                <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
+                <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
+                <TableHead>{tx("Mouza/Dag", "মৌজা/দাগ")}</TableHead>
+                <TableHead>{tx("Season", "সিজন")}</TableHead>
+                <TableHead>{tx("Type", "ধরন")}</TableHead>
+                <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
+                <TableHead className="text-right">{tx("Paid", "জমা")}</TableHead>
+                <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
+                <TableHead className="text-right">{tx("Late fee", "বিলম্ব ফি")}</TableHead>
+                <TableHead>{tx("Status", "অবস্থা")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -185,7 +192,7 @@ export default function InvoiceReport() {
                   <TableCell className="text-xs">{r.farmers?.name_en} <span className="text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
                   <TableCell className="text-xs">{r.lands?.mouza}/{r.lands?.dag_no}</TableCell>
                   <TableCell className="text-xs">{r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—"}</TableCell>
-                  <TableCell><Badge variant={r.is_borga ? "secondary" : "outline"}>{r.is_borga ? "বর্গা" : "নিজ"}</Badge></TableCell>
+                  <TableCell><Badge variant={r.is_borga ? "secondary" : "outline"}>{r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ")}</Badge></TableCell>
                   <TableCell className="text-right">{money(r.payable_amount)}</TableCell>
                   <TableCell className="text-right text-success">{money(r.paid_amount)}</TableCell>
                   <TableCell className="text-right text-destructive font-semibold">{money(r.due_amount)}</TableCell>
@@ -194,16 +201,16 @@ export default function InvoiceReport() {
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">কোন তথ্য নেই</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{tx("No data", "কোন তথ্য নেই")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
           {filtered.length > 0 && (
             <div className="mt-3 flex flex-wrap justify-end gap-6 text-sm">
-              <div>প্রদেয়: <span className="font-semibold">{money(totals.payable)}</span></div>
-              <div>জমা: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
-              <div>বকেয়া: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
-              <div>বিলম্ব ফি: <span className="font-semibold">{money(totals.delay)}</span></div>
+              <div>{tx("Payable", "প্রদেয়")}: <span className="font-semibold">{money(totals.payable)}</span></div>
+              <div>{tx("Paid", "জমা")}: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
+              <div>{tx("Due", "বকেয়া")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
+              <div>{tx("Late fee", "বিলম্ব ফি")}: <span className="font-semibold">{money(totals.delay)}</span></div>
             </div>
           )}
         </CardContent>
