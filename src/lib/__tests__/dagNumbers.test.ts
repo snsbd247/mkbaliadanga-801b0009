@@ -4,7 +4,24 @@ import {
   validateDagNumbers,
   formatDagNumbers,
   matchesDagSearch,
+  normalizeDagInput,
 } from "@/lib/dagNumbers";
+
+describe("dagNumbers — normalization", () => {
+  it("converts newlines, tabs and semicolons to commas", () => {
+    expect(normalizeDagInput("123\n124/A;125-B\t126")).toBe("123, 124/A, 125-B, 126");
+  });
+  it("collapses internal whitespace and drops empties", () => {
+    expect(normalizeDagInput("  123 ,, ,  124/A  ,  ")).toBe("123, 124/A");
+  });
+  it("returns empty string for null / blank", () => {
+    expect(normalizeDagInput(null)).toBe("");
+    expect(normalizeDagInput("   \n  ")).toBe("");
+  });
+  it("parseDagNumbers handles mixed separators via normalization", () => {
+    expect(parseDagNumbers("123;\n124/A,  125")).toEqual(["123", "124/A", "125"]);
+  });
+});
 
 describe("dagNumbers — parsing & formatting", () => {
   it("parses single dag", () => {
