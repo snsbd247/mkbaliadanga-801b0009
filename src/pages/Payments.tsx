@@ -211,7 +211,8 @@ export default function Payments() {
       if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
 
-    // Strict installment enforcement for loan allocations
+    // Strict installment enforcement for loan allocations (engine v2)
+    const loanContext: Record<string, { settings: any; next: any; breakdown: any; override?: string }> = {};
     for (const a of allocs) {
       if (a.kind !== "loan" || !a.reference_id) continue;
       const { data: loanRow } = await supabase.from("loans").select("office_id").eq("id", a.reference_id).maybeSingle();
@@ -220,13 +221,28 @@ export default function Payments() {
         supabase.from("loan_installments").select("id,installment_no,amount,paid_amount,due_date,status").eq("loan_id", a.reference_id).order("installment_no"),
         supabase.from("loan_delay_fee_settings").select("*").or(officeId ? `office_id.eq.${officeId},office_id.is.null` : "office_id.is.null"),
       ]);
-      const next = (await import("@/lib/loanDelayFee")).nextDueInstallment((instList ?? []) as any);
+      const engine = await import("@/lib/loanDelayFee");
+      const next = engine.nextDueInstallment((instList ?? []) as any);
       if (!next) continue; // no schedule → fall through (legacy loans)
-      const settings = (settingsList && settingsList[0]) || (await import("@/lib/loanDelayFee")).DEFAULT_DELAY_SETTINGS;
-      const v = (await import("@/lib/loanDelayFee")).validateInstallmentPayment(next as any, settings as any, Number(a.amount));
-      if (!v.ok) {
-        return toast.error(`${v.reason} (নির্ধারিত: ৳${v.required.toFixed(2)}, প্রদত্ত: ৳${Number(a.amount).toFixed(2)})`);
+      const settings = (settingsList && settingsList[0]) || engine.DEFAULT_DELAY_SETTINGS;
+      const v = engine.validateInstallmentPayment(next as any, settings as any, Number(a.amount));
+      const breakdown = engine.computePenaltyBreakdown(next as any, settings as any);
+      let overrideReason: string | undefined;
+      if (!v.ok || v.needsOverride) {
+        const enf = v.enforcement;
+        if (enf === "block") {
+          return toast.error(`${v.reason} (নির্ধারিত: ৳${v.required.toFixed(2)}, প্রদত্ত: ৳${Number(a.amount).toFixed(2)})`);
+        }
+        if (enf === "warn") {
+          if (!window.confirm(`⚠ নির্ধারিত: ৳${v.required.toFixed(2)} | প্রদত্ত: ৳${Number(a.amount).toFixed(2)}\nতবুও সংরক্ষণ করবেন?`)) return;
+        }
+        if (enf === "allow") {
+          const reason = window.prompt("আংশিক পেমেন্ট override কারণ লিখুন (অডিটে সংরক্ষিত হবে):", "")?.trim();
+          if (!reason) return toast.error("Override কারণ আবশ্যক");
+          overrideReason = reason;
+        }
       }
+      loanContext[a.reference_id] = { settings, next, breakdown, override: overrideReason };
     }
 
     setSubmitting(true);
