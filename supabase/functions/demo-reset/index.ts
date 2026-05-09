@@ -528,7 +528,7 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   const shareTargets = voters.slice(0, Math.ceil(voters.length * 0.5));
   const shareRows = shareTargets.map((f) => { sharesSeeded.push(f.id); return { farmer_id: f.id, balance: 500, office_id: officeId }; });
   if (shareRows.length) await admin.from("shares").insert(shareRows);
-  return { savingsSeeded, sharesSeeded };
+  return { savingsSeeded, sharesSeeded, fspSeeded };
 }
 
 async function seedPayments(admin: any, officeId: string, farmers: any[]) {
