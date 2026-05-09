@@ -277,11 +277,17 @@ export default function DataImport() {
             const f = farmerMap.get(String(raw.account_number));
             if (!f) throw new Error("Farmer not found for account_number");
             if (!raw.land_size || Number(raw.land_size) <= 0) throw new Error("land_size required");
+            const dagRaw = String(raw.dag_no ?? "").trim();
+            if (!dagRaw) throw new Error("dag_no required");
+            const dv = validateDagNumbers(dagRaw);
+            if (!dv.ok) throw new Error(`dag_no: ${dv.error}`);
+            const canonicalDag = dv.values.join(", ");
+            next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag } };
             table = "lands";
             payload = {
               farmer_id: f.id,
               office_id: f.office_id,
-              dag_no: raw.dag_no ?? null,
+              dag_no: canonicalDag,
               land_size: Number(raw.land_size),
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
