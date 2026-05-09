@@ -429,20 +429,30 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               </div>
             )}
             <div>
-              <Label>রেট/শতক *</Label>
-              <Input type="number" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
+              <Label>ফলব্যাক রেট/শতক <span className="text-xs text-muted-foreground">(ধরনের রেট না থাকলে)</span></Label>
+              <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(Number(e.target.value))} />
             </div>
             <div>
               <Label>মেয়াদ *</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
           </div>
+          {seasonId && (
+            <div className="text-xs text-muted-foreground">
+              {Object.keys(rateMap).length > 0
+                ? `কনফিগার্ড রেট: ${Object.entries(rateMap).map(([k, v]) => `${k}=${v}`).join(", ")}`
+                : "এই সিজনে কোনো জমির ধরনভিত্তিক রেট নেই — Seasons পেজ থেকে রেট সেট করুন বা ফলব্যাক রেট দিন।"}
+            </div>
+          )}
+          {skippedNoRate > 0 && (
+            <div className="text-xs text-destructive">{skippedNoRate} টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।</div>
+          )}
           <div className="flex items-center gap-2">
             <Switch checked={skipExisting} onCheckedChange={setSkipExisting} id="skip" />
             <Label htmlFor="skip">আগে তৈরি হওয়া ইনভয়েস বাদ দিন (ডুপ্লিকেট প্রতিরোধ)</Label>
           </div>
           <div className="flex gap-2">
-            <Button onClick={preview} disabled={busy || !seasonId || !rate}>
+            <Button onClick={preview} disabled={busy || !seasonId}>
               <Sparkles className="h-4 w-4 mr-1" /> প্রিভিউ
             </Button>
             {previewRows && previewRows.length > 0 && (
