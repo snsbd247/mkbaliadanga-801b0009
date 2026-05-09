@@ -66,7 +66,7 @@ const DEFAULT_SAMPLE_VARS: Record<string, string> = {
   balance: "12,750.00",
   payable: "22,000.00",
   due: "8,000.00",
-  type: "Loan / ঋণ",
+  type: "Loan / ঋণ", // i18n-ignore: intentional bilingual sample value
   date: new Date().toISOString().slice(0, 10),
 };
 
