@@ -12,6 +12,7 @@ const ACTIONS = [
   { key: "can_add", label: "Add" },
   { key: "can_edit", label: "Edit" },
   { key: "can_delete", label: "Delete" },
+  { key: "can_view", label: "Print" }, // Print is gated by view access
 ] as const;
 
 /**
