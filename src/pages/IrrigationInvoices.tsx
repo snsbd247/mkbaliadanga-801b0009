@@ -21,6 +21,7 @@ import {
   calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
+import { loadSeasonRateMap, resolveRate } from "@/lib/seasonRates";
 import { Sparkles, Plus, Eye, Ban, RefreshCw } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -297,42 +298,34 @@ const Row = ({ k, v, bold }: { k: string; v: any; bold?: boolean }) => (
 function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [seasonId, setSeasonId] = useState("");
   const [officeId, setOfficeId] = useState("");
-  const [rate, setRate] = useState<number>(0);
+  const [rateOverride, setRateOverride] = useState<number>(0);
+  const [rateMap, setRateMap] = useState<Record<string, number>>({});
   const [dueDate, setDueDate] = useState<string>(() => {
     const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10);
   });
   const [busy, setBusy] = useState(false);
   const [previewRows, setPreviewRows] = useState<any[] | null>(null);
+  const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
 
   const [manualOpen, setManualOpen] = useState(false);
 
-  // Pre-load rate from irrigation_rates
+  // Load per-field-type rate matrix when season/office changes.
   useEffect(() => {
-    if (!seasonId) return;
-    (async () => {
-      const { data } = await supabase
-        .from("irrigation_rates")
-        .select("base_rate")
-        .eq("season_id", seasonId)
-        .eq("basis", "per_size")
-        .eq("is_active", true)
-        .maybeSingle();
-      if (data?.base_rate) setRate(Number(data.base_rate));
-    })();
-  }, [seasonId]);
+    if (!seasonId) { setRateMap({}); return; }
+    loadSeasonRateMap(seasonId, officeId || null).then(setRateMap);
+  }, [seasonId, officeId]);
 
   async function preview() {
-    if (!seasonId || !rate) return toast.error("সিজন ও রেট দিন");
+    if (!seasonId) return toast.error("সিজন বাছাই করুন");
     setBusy(true);
+    setSkippedNoRate(0);
     try {
-      // Fetch lands
-      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza").is("deleted_at", null);
+      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
       const { data: lands, error: lerr } = await lq;
       if (lerr) throw lerr;
 
-      // Skip already-invoiced
       let skip = new Set<string>();
       if (skipExisting) {
         const { data: existing } = await supabase
@@ -350,7 +343,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       const eligible = (lands ?? []).filter((l: any) => Number(l.land_size) > 0 && !skip.has(l.id));
 
       const previewArr: any[] = [];
+      let noRate = 0;
       for (const l of eligible) {
+        const matrixRate = resolveRate(rateMap, l.field_type);
+        const rate = matrixRate > 0 ? matrixRate : rateOverride;
+        if (!(rate > 0)) { noRate++; continue; }
         const billed = await resolveBilledFarmer(l.id, dueDate);
         const calc = calcInvoice({
           land_size_shotok: Number(l.land_size),
@@ -359,10 +356,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           due_date: dueDate,
           as_of: new Date().toISOString().slice(0, 10),
         });
-        previewArr.push({ land: l, billed, calc, settings });
+        previewArr.push({ land: l, billed, calc, settings, rate });
       }
       setPreviewRows(previewArr);
-      toast.success(`${previewArr.length} টি ইনভয়েস প্রিভিউ প্রস্তুত`);
+      setSkippedNoRate(noRate);
+      toast.success(`${previewArr.length} টি প্রিভিউ${noRate ? ` • ${noRate} টি জমিতে রেট নেই` : ""}`);
     } catch (e: any) {
       toast.error(e.message);
     } finally { setBusy(false); }
@@ -431,20 +429,30 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               </div>
             )}
             <div>
-              <Label>রেট/শতক *</Label>
-              <Input type="number" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
+              <Label>ফলব্যাক রেট/শতক <span className="text-xs text-muted-foreground">(ধরনের রেট না থাকলে)</span></Label>
+              <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(Number(e.target.value))} />
             </div>
             <div>
               <Label>মেয়াদ *</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
           </div>
+          {seasonId && (
+            <div className="text-xs text-muted-foreground">
+              {Object.keys(rateMap).length > 0
+                ? `কনফিগার্ড রেট: ${Object.entries(rateMap).map(([k, v]) => `${k}=${v}`).join(", ")}`
+                : "এই সিজনে কোনো জমির ধরনভিত্তিক রেট নেই — Seasons পেজ থেকে রেট সেট করুন বা ফলব্যাক রেট দিন।"}
+            </div>
+          )}
+          {skippedNoRate > 0 && (
+            <div className="text-xs text-destructive">{skippedNoRate} টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।</div>
+          )}
           <div className="flex items-center gap-2">
             <Switch checked={skipExisting} onCheckedChange={setSkipExisting} id="skip" />
             <Label htmlFor="skip">আগে তৈরি হওয়া ইনভয়েস বাদ দিন (ডুপ্লিকেট প্রতিরোধ)</Label>
           </div>
           <div className="flex gap-2">
-            <Button onClick={preview} disabled={busy || !seasonId || !rate}>
+            <Button onClick={preview} disabled={busy || !seasonId}>
               <Sparkles className="h-4 w-4 mr-1" /> প্রিভিউ
             </Button>
             {previewRows && previewRows.length > 0 && (
@@ -519,14 +527,25 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     if (!farmerId) { setLands([]); return; }
     (async () => {
       const [{ data: own }, { data: rels }] = await Promise.all([
-        supabase.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id").eq("farmer_id", farmerId).is("deleted_at", null),
-        supabase.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
+        supabase.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type").eq("farmer_id", farmerId).is("deleted_at", null),
+        supabase.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
       ]);
       const ids = new Set((own ?? []).map((l: any) => l.id));
       const sc = (rels ?? []).map((r: any) => r.lands).filter((l: any) => l && !ids.has(l.id));
       setLands([...(own ?? []), ...sc]);
     })();
   }, [farmerId]);
+
+  // Auto-fill rate from season matrix based on selected land's field_type
+  useEffect(() => {
+    if (!seasonId || !landId) return;
+    const land = lands.find((l: any) => l.id === landId);
+    if (!land) return;
+    loadSeasonRateMap(seasonId, land.office_id ?? null).then((m) => {
+      const r = resolveRate(m, land.field_type);
+      if (r > 0) setRate(r);
+    });
+  }, [seasonId, landId, lands]);
 
   async function save() {
     if (!farmerId || !landId || !seasonId || !rate) return toast.error("সব ফিল্ড পূরণ করুন");

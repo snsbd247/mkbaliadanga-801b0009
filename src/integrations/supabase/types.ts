@@ -890,6 +890,45 @@ export type Database = {
           },
         ]
       }
+      field_types: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          office_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          office_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          office_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       import_audit_logs: {
         Row: {
           created_at: string
@@ -2668,11 +2707,92 @@ export type Database = {
           },
         ]
       }
+      season_field_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          field_type_code: string
+          id: string
+          office_id: string | null
+          rate_per_shotok: number
+          season_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          field_type_code: string
+          id?: string
+          office_id?: string | null
+          rate_per_shotok?: number
+          season_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          field_type_code?: string
+          id?: string
+          office_id?: string | null
+          rate_per_shotok?: number
+          season_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_field_rates_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      season_types: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          name_bn: string | null
+          office_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          name_bn?: string | null
+          office_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_bn?: string | null
+          office_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       seasons: {
         Row: {
           created_at: string
           id: string
           name: string | null
+          season_type_id: string | null
           type: Database["public"]["Enums"]["season_type"]
           year: number
         }
@@ -2680,6 +2800,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string | null
+          season_type_id?: string | null
           type: Database["public"]["Enums"]["season_type"]
           year: number
         }
@@ -2687,10 +2808,19 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string | null
+          season_type_id?: string | null
           type?: Database["public"]["Enums"]["season_type"]
           year?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "seasons_season_type_id_fkey"
+            columns: ["season_type_id"]
+            isOneToOne: false
+            referencedRelation: "season_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shares: {
         Row: {
