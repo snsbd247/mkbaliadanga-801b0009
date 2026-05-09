@@ -193,6 +193,7 @@ export default function DemoManager() {
               if (ev.summary?.location_verification) setLocationVerification(ev.summary.location_verification);
               if (ev.summary?.farmer_samples) setFarmerSamples(ev.summary.farmer_samples);
               if (ev.summary?.seed_log) setSeedLog(ev.summary.seed_log);
+              if (ev.summary?.row_count_report) setRowCountReport(ev.summary.row_count_report);
               succeeded = true;
             }
           } catch (parseErr) {
