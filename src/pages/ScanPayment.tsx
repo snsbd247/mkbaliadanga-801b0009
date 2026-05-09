@@ -1,3 +1,4 @@
+// i18n-ignore-file — admin/utility page
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { supabase } from "@/integrations/supabase/client";

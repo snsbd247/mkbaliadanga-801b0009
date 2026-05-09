@@ -82,7 +82,7 @@ function parseSheet(wb: XLSX.WorkBook): RowMap[] {
 }
 
 export default function FarmersImport() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { isAdmin, officeId, rolesLoaded } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<RowState[]>([]);
@@ -228,7 +228,7 @@ export default function FarmersImport() {
     <>
       <PageHeader
         title="Bulk Farmer Import"
-        description=".csv বা .xlsx ফাইল আপলোড করুন। voter_number থাকলে farmer অটো Voter / Savings active সদস্য হবে।"
+        description={tx("Upload a .csv or .xlsx file. If voter_number is set, the farmer auto-becomes a Voter / Savings active member.", ".csv বা .xlsx ফাইল আপলোড করুন। voter_number থাকলে farmer অটো Voter / Savings active সদস্য হবে।")}
       />
 
       <Card className="p-4 mb-4">
@@ -256,8 +256,8 @@ export default function FarmersImport() {
         <p className="text-xs text-muted-foreground mt-2">
           Required: <code>name_en</code>. Optional: <code>farmer_id, voter_number, name_bn, father_name, mobile, village</code>.
           <br />
-          <strong>farmer_id</strong> দিলে existing farmer থাকলে update, না থাকলে নতুন তৈরি হবে।
-          <strong className="ml-2">voter_number</strong> দিলে অটো Voter / Savings active সদস্য।
+          {tx("If farmer_id is given, existing farmer is updated, else a new one is created.", "farmer_id দিলে existing farmer থাকলে update, না থাকলে নতুন তৈরি হবে।")}
+          <span className="ml-2">{tx("If voter_number is given, auto Voter / Savings active member.", "voter_number দিলে অটো Voter / Savings active সদস্য।")}</span>
         </p>
       </Card>
 
@@ -277,7 +277,7 @@ export default function FarmersImport() {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>{invalidRows.length} row(s) skipped</AlertTitle>
           <AlertDescription>
-            শুধু যেসব row-তে <code>name_en</code> আছে সেগুলোই import হবে।
+            {tx("Only rows containing name_en will be imported.", "শুধু যেসব row-তে name_en আছে সেগুলোই import হবে।")}
           </AlertDescription>
         </Alert>
       )}
