@@ -201,6 +201,7 @@ export default function AuthPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                placeholder={t("password")}
               />
             </div>
             <Button type="submit" className="w-full" disabled={busy}>{busy ? "…" : t("login")}</Button>
