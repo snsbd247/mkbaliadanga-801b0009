@@ -239,12 +239,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         : `${bigha.toFixed(2)} bigha (${shatak.toFixed(2)} shatak)`;
     }
     const dagFormatted = formatDagNumbers(d.farmer.dag_no);
-    const mouzaParts = [
-      d.farmer.mouza,
-      dagFormatted || undefined,
-      sizeLabel,
-    ].filter(Boolean) as string[];
+    const mouzaParts = [d.farmer.mouza, sizeLabel].filter(Boolean) as string[];
     if (mouzaParts.length) rows.push([t.mouza, mouzaParts.join(" / ")]);
+    if (dagFormatted) rows.push([t.dag, dagFormatted]);
     if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
     rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
     if (d.collected_from_outstanding != null)
