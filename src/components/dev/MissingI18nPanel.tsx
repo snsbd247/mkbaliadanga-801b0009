@@ -198,7 +198,7 @@ function scanHardcoded(lang: "en" | "bn", route: string): Hardcoded[] {
     if (seen.has(key)) continue;
     seen.add(key);
     const parent = cur.parentElement!;
-    out.push({ text: key, tag: pathFor(parent), route });
+    out.push({ text: key, tag: pathFor(parent), route, suggestion: suggestKey(key) });
     if (out.length >= 200) break;
   }
   return out;
