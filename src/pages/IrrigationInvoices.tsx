@@ -299,7 +299,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [seasonId, setSeasonId] = useState("");
   const [officeId, setOfficeId] = useState("");
   const [rateOverride, setRateOverride] = useState<number>(0);
-  const [rateMap, setRateMap] = useState<Record<string, number>>({});
+  const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [dueDate, setDueDate] = useState<string>(() => {
     const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10);
   });
