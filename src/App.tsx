@@ -59,6 +59,7 @@ import MyPermissions from "./pages/admin/MyPermissions";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import CollectionReport from "./pages/reports/CollectionReport";
 import SavingsLoanReport from "./pages/reports/SavingsLoanReport";
+import ReceiptKindReport from "./pages/reports/ReceiptKindReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
 import ExpensesReport from "./pages/reports/ExpensesReport";
 import FarmersImport from "./pages/FarmersImport";
