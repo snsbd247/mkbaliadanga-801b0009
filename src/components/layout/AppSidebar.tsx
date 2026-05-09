@@ -71,6 +71,7 @@ export function AppSidebar() {
         { url: "/share-collection", icon: Wallet, label: t("shareCollection"), permKey: "savings" },
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
         { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
+        { url: "/admin/loan-delay-settings", icon: HandCoins, label: "ঋণ জরিমানা সেটিংস", permKey: "loans" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
