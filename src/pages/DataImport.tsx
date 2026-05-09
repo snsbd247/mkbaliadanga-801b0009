@@ -823,7 +823,7 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadTemplate(mod)}>
               <Download className="h-4 w-4 mr-1" /> Template (.xlsx)
             </Button>
-            {(["lands","land_relations","payments","irrigation","cashbook_receipts","cashbook_expenses"] as Module[]).includes(mod) && (
+            {(["lands","land_relations","payments","irrigation","cashbook_receipts","cashbook_expenses","shares"] as Module[]).includes(mod) && (
               <Button variant="outline" onClick={() => downloadCsvTemplate(mod as any)}>
                 <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
               </Button>
