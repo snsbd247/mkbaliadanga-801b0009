@@ -546,6 +546,8 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
       if (r > 0) setRate(r);
     });
   }, [seasonId, landId, lands]);
+
+  async function save() {
     if (!farmerId || !landId || !seasonId || !rate) return toast.error("সব ফিল্ড পূরণ করুন");
     setBusy(true);
     try {
