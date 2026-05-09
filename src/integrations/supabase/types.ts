@@ -1095,6 +1095,87 @@ export type Database = {
           },
         ]
       }
+      irrigation_delay_fee_audit: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          invoice_id: string
+          modified_amount: number
+          office_id: string | null
+          original_amount: number
+          payment_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          invoice_id: string
+          modified_amount?: number
+          office_id?: string | null
+          original_amount?: number
+          payment_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          modified_amount?: number
+          office_id?: string | null
+          original_amount?: number
+          payment_id?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      irrigation_due_promises: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          farmer_id: string
+          fulfilled_at: string | null
+          id: string
+          office_id: string | null
+          payment_id: string | null
+          previous_due_amount: number
+          promise_date: string
+          remarks: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          farmer_id: string
+          fulfilled_at?: string | null
+          id?: string
+          office_id?: string | null
+          payment_id?: string | null
+          previous_due_amount?: number
+          promise_date: string
+          remarks?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          farmer_id?: string
+          fulfilled_at?: string | null
+          id?: string
+          office_id?: string | null
+          payment_id?: string | null
+          previous_due_amount?: number
+          promise_date?: string
+          remarks?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       irrigation_invoice_audit: {
         Row: {
           action: string
@@ -1145,39 +1226,51 @@ export type Database = {
           collected_amount: number
           created_at: string
           created_by: string | null
+          current_invoice_collected: number
           delay_fee_collected: number
+          delay_fee_original: number | null
+          delay_fee_override_reason: string | null
           id: string
           invoice_id: string
           irrigation_collected: number
           maintenance_collected: number
           office_id: string | null
           payment_id: string | null
+          previous_due_collected: number
         }
         Insert: {
           canal_collected?: number
           collected_amount?: number
           created_at?: string
           created_by?: string | null
+          current_invoice_collected?: number
           delay_fee_collected?: number
+          delay_fee_original?: number | null
+          delay_fee_override_reason?: string | null
           id?: string
           invoice_id: string
           irrigation_collected?: number
           maintenance_collected?: number
           office_id?: string | null
           payment_id?: string | null
+          previous_due_collected?: number
         }
         Update: {
           canal_collected?: number
           collected_amount?: number
           created_at?: string
           created_by?: string | null
+          current_invoice_collected?: number
           delay_fee_collected?: number
+          delay_fee_original?: number | null
+          delay_fee_override_reason?: string | null
           id?: string
           invoice_id?: string
           irrigation_collected?: number
           maintenance_collected?: number
           office_id?: string | null
           payment_id?: string | null
+          previous_due_collected?: number
         }
         Relationships: [
           {
