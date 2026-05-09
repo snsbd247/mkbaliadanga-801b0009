@@ -171,7 +171,7 @@ export default function IdReview() {
             <TableRow>
               <TableHead>{t("name")}</TableHead>
               <TableHead>{t("farmerIdLabel")}</TableHead>
-              <TableHead>Voter / Savings A/C No</TableHead>
+              <TableHead>{t("savingsAcNo")}</TableHead>
               <TableHead>{t("voterQ")}</TableHead>
               <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
