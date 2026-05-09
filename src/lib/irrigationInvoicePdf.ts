@@ -178,8 +178,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   const amountWords = bnAmountInWords(Number(d.payable_amount ?? 0));
 
   const layout = getReceiptLayoutSettings();
-  const mouzaLabel = layout.mouzaLabelBn.trim() || "মৌজা / জমির পরিমাণ";
-  const dagLabel = layout.dagLabelBn.trim() || "দাগ নং";
+  const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels("bn");
   const dagJoined = parseDagNumbers(land.dag_no).join(dagSeparatorString(layout.dagSeparator));
   const rows: Array<[string, string]> = [
     ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
