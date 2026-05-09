@@ -25,7 +25,72 @@ const ALLOW = new Set([
   "MB", "KB", "TB", "v1", "v2", "AM", "PM",
 ]);
 
-type Hardcoded = { text: string; tag: string; route: string };
+type Hardcoded = { text: string; tag: string; route: string; suggestion?: { key: string; value: string; score: number } | null };
+
+// ---- Suggestion engine: build a value→key index across both langs ----------
+let valueIndex: Array<{ key: string; value: string; lang: "en" | "bn" }> | null = null;
+function getValueIndex() {
+  if (valueIndex) return valueIndex;
+  const out: Array<{ key: string; value: string; lang: "en" | "bn" }> = [];
+  for (const l of ["en", "bn"] as const) {
+    const dict = (translations as any)[l] as Record<string, string>;
+    for (const k of Object.keys(dict)) {
+      const v = dict[k];
+      if (typeof v === "string" && v.trim()) out.push({ key: k, value: v, lang: l });
+    }
+  }
+  valueIndex = out;
+  return out;
+}
+function lev(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = new Array(n + 1), curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i; let rowMin = i;
+    for (let j = 1; j <= n; j++) {
+      const c = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + c);
+      if (curr[j] < rowMin) rowMin = curr[j];
+    }
+    if (rowMin > max) return max + 1;
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+function suggestKey(text: string): { key: string; value: string; score: number } | null {
+  const idx = getValueIndex();
+  const norm = text.trim().toLowerCase();
+  // 1. exact case-insensitive match
+  for (const e of idx) {
+    if (e.value.trim().toLowerCase() === norm) return { key: e.key, value: e.value, score: 1 };
+  }
+  // 2. fuzzy: small distance relative to length
+  const max = Math.max(2, Math.min(8, Math.floor(norm.length / 3)));
+  let best: { key: string; value: string; score: number } | null = null;
+  let bestD = max + 1;
+  for (const e of idx) {
+    const v = e.value.trim().toLowerCase();
+    if (Math.abs(v.length - norm.length) > bestD) continue;
+    const d = lev(norm, v, bestD);
+    if (d < bestD) { bestD = d; best = { key: e.key, value: e.value, score: 1 - d / Math.max(norm.length, v.length) }; if (d === 0) break; }
+  }
+  return best && best.score >= 0.5 ? best : null;
+}
+
+function downloadAuditCsv(rows: Array<Record<string, string | number>>, filename: string) {
+  const headers = Object.keys(rows[0] ?? { type: "", route: "", text: "", suggestion: "" });
+  const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [headers.join(","), ...rows.map(r => headers.map(h => esc(r[h])).join(","))].join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 function getRoot(): HTMLElement | null {
   if (typeof document === "undefined") return null;
