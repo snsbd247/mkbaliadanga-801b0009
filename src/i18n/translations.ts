@@ -1576,6 +1576,9 @@ export const translations = {
     exp_done: "Export complete",
     exp_failed: "Export failed",
     exp_pickAtLeastOne: "Select at least one column",
+    startDate: "Start Date",
+    endDate: "End Date",
+    filterReset: "Reset Filters",
   },
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
