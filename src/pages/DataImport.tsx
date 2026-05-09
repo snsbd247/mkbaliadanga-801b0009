@@ -301,6 +301,7 @@ export default function DataImport() {
       cashbook_receipts: ["receipt_date", "kind", "amount"],
       cashbook_expenses: ["expense_date", "head", "amount"],
       ledger: ["entry_date", "account_code"],
+      shares: ["account_number", "balance"],
     };
     const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
     const req = required[m] ?? TEMPLATES[m].columns;
