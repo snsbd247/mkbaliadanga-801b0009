@@ -384,7 +384,7 @@ export default function FarmerProfileReport() {
             <div className="farmer-report-org">{brand.company_name_bn || brand.company_name}</div>
           </div>
 
-          <div className="farmer-report-rule">এক নজরে কৃষকের তথ্য</div>
+          <div className="farmer-report-rule">{tx("Farmer Information at a Glance", "এক নজরে কৃষকের তথ্য")}</div>
 
           <div className="farmer-section-title">Farmer Information</div>
           <table className="farmer-table compact-gap">
