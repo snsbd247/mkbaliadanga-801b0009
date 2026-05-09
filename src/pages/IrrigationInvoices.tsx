@@ -22,8 +22,11 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
-import { Sparkles, Plus, Eye, Ban, RefreshCw } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Link } from "react-router-dom";
 
 type Invoice = any;
 
