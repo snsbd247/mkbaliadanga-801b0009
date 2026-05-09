@@ -221,15 +221,26 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
 
   if (d.kind === "irrigation") {
-    if (d.land_owner_label) rows.push([t.landOwner, d.land_owner_label]);
-    // Land size stored in শতক; convert to বিঘা for the receipt (1 বিঘা = 33 শতক).
-    const sizeBigha = d.farmer.land_size != null
-      ? (Number(d.farmer.land_size) / 33).toFixed(2) + (lang === "bn" ? " বিঘা" : " bigha")
-      : null;
+    // Always show land owner row — fallback to "তথ্য পাওয়া যায়নি" / "Not available" when missing
+    rows.push([
+      t.landOwner,
+      d.land_owner_label && d.land_owner_label.trim()
+        ? d.land_owner_label
+        : (lang === "bn" ? "তথ্য পাওয়া যায়নি" : "Not available"),
+    ]);
+    // Land size stored in শতক; show both বিঘা and শতক so users can cross-check (1 বিঘা = 33 শতক).
+    let sizeLabel: string | null = null;
+    if (d.farmer.land_size != null) {
+      const shatak = Number(d.farmer.land_size);
+      const bigha = shatak / 33;
+      sizeLabel = lang === "bn"
+        ? `${bigha.toFixed(2)} বিঘা (${shatak.toFixed(2)} শতক)`
+        : `${bigha.toFixed(2)} bigha (${shatak.toFixed(2)} shatak)`;
+    }
     const mouzaParts = [
       d.farmer.mouza,
       d.farmer.dag_no,
-      sizeBigha,
+      sizeLabel,
     ].filter(Boolean) as string[];
     if (mouzaParts.length) rows.push([t.mouza, mouzaParts.join(" / ")]);
     if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
