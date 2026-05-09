@@ -73,7 +73,7 @@ export default function IrrigationDueReport() {
           farmer_name: r.farmers?.name_en ?? "—",
           farmer_code: r.farmers?.farmer_code ?? "—",
           land_id: r.land_id,
-          land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${r.lands.dag_no}` : null, r.lands?.land_size ? `${r.lands.land_size} dec` : null].filter(Boolean).join(" • ") || "—",
+          land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${r.lands.dag_no}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
           season_id: r.season_id,
           season_label: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
           total: 0, paid: 0, due: 0,
