@@ -16,6 +16,7 @@ import {
 import { Upload, Download, AlertTriangle, CheckCircle2, Loader2, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { downloadCsvTemplate } from "@/lib/importTemplates";
+import { validateDagNumbers, formatDagNumbers } from "@/lib/dagNumbers";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
@@ -53,7 +54,7 @@ type RowResult = {
 const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any> }> = {
   lands: {
     columns: ["account_number", "dag_no", "land_size", "owner_type", "field_type", "mouza"],
-    sample: { account_number: "100000000001", dag_no: "123/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
+    sample: { account_number: "100000000001", dag_no: "123, 124/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
   },
   land_relations: {
     columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
@@ -276,11 +277,17 @@ export default function DataImport() {
             const f = farmerMap.get(String(raw.account_number));
             if (!f) throw new Error("Farmer not found for account_number");
             if (!raw.land_size || Number(raw.land_size) <= 0) throw new Error("land_size required");
+            const dagRaw = String(raw.dag_no ?? "").trim();
+            if (!dagRaw) throw new Error("dag_no required");
+            const dv = validateDagNumbers(dagRaw);
+            if (!dv.ok) throw new Error(`dag_no: ${(dv as any).error}`);
+            const canonicalDag = dv.values.join(", ");
+            next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag } };
             table = "lands";
             payload = {
               farmer_id: f.id,
               office_id: f.office_id,
-              dag_no: raw.dag_no ?? null,
+              dag_no: canonicalDag,
               land_size: Number(raw.land_size),
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
@@ -699,7 +706,12 @@ export default function DataImport() {
           <div><strong>Required columns:</strong> {tpl.columns.join(", ")}</div>
           <div className="text-[11px]">
             💡 <strong>account_number</strong> = farmer-এর Voter / Savings A/C No (১২ ডিজিট নম্বর)। Farmer তৈরি করার সময় auto-generate হয়। Bulk Farmer Import-এ <code>voter_number</code> কলাম দিয়ে এটি আপনি সরাসরি দিতে পারেন।
-          </div>
+          {(mod === "lands" || mod === "irrigation" || mod === "land_relations") && (
+            <div className="text-[11px]">
+              🏷️ <strong>dag_no</strong> এ একটি জমির একাধিক দাগ নম্বর কমা দিয়ে দিতে পারেন (যেমন <code>123, 124/A, 125-B</code>)। প্রতিটি টোকেনে শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> ব্যবহার করা যাবে। ইমপোর্টের সময় canonical format-এ অটো রূপান্তর হবে এবং invalid হলে সেই row error দেখাবে।
+            </div>
+          )}
+        </div>
         </div>
 
         {rows.length > 0 && (
@@ -747,7 +759,21 @@ export default function DataImport() {
                     {r.status === "error" && <Badge variant="destructive">Error</Badge>}
                     {r.status === "pending" && <Badge variant="secondary">Pending</Badge>}
                   </TableCell>
-                  {tpl.columns.map((c) => <TableCell key={c}>{String(r.raw[c] ?? "")}</TableCell>)}
+                  {tpl.columns.map((c) => {
+                    if (c === "dag_no" && (mod === "lands" || mod === "irrigation" || mod === "land_relations")) {
+                      const canonical = r.resolved?.dag_canonical ?? formatDagNumbers(String(r.raw[c] ?? ""));
+                      const original = String(r.raw[c] ?? "");
+                      return (
+                        <TableCell key={c} className="text-xs">
+                          <div className="font-mono">{original || "—"}</div>
+                          {canonical && canonical !== original && (
+                            <div className="text-[10px] text-muted-foreground">→ {canonical}</div>
+                          )}
+                        </TableCell>
+                      );
+                    }
+                    return <TableCell key={c}>{String(r.raw[c] ?? "")}</TableCell>;
+                  })}
                   <TableCell className="text-xs text-destructive">{r.message ?? ""}</TableCell>
                 </TableRow>
               ))}
