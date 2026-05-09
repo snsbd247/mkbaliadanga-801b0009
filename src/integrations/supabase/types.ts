@@ -2692,6 +2692,45 @@ export type Database = {
           },
         ]
       }
+      permission_audit_logs: {
+        Row: {
+          action: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          module: string
+          new_value: boolean | null
+          old_value: boolean | null
+          reason: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          module: string
+          new_value?: boolean | null
+          old_value?: boolean | null
+          reason?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          module?: string
+          new_value?: boolean | null
+          old_value?: boolean | null
+          reason?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -3837,6 +3876,10 @@ export type Database = {
       }
       get_sms_provider_status: { Args: { _provider?: string }; Returns: Json }
       get_sms_provider_token: { Args: { _provider?: string }; Returns: string }
+      has_permission: {
+        Args: { _action: string; _module: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
