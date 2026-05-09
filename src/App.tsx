@@ -23,6 +23,7 @@ import Savings from "./pages/Savings";
 import Loans from "./pages/Loans";
 import Irrigation from "./pages/Irrigation";
 import IrrigationInvoices from "./pages/IrrigationInvoices";
+import IrrigationInvoicePayment from "./pages/IrrigationInvoicePayment";
 import IrrigationRates from "./pages/IrrigationRates";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
