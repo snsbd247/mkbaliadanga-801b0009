@@ -1,82 +1,77 @@
-# Loan Module Refactor Plan
+# Loan Penalty Engine v2 — Expansion Plan
 
-This is a large, multi-area change. To keep it safe and reviewable (and to avoid breaking the live loan ledger / accounting / receipts / SMS), I'll deliver it in **5 phases**. Each phase is self-contained, ships passing tests, and leaves the existing flow working.
+This builds on the Phase 2 work already shipped (`loan_delay_fee_settings`, `loanDelayFee.ts`, `LoanDelaySettings.tsx`, strict-validation in `Payments.tsx`, `LoanOverdueReport`, `InstallmentCollectionReport`, `LoanPenaltyReport`, demo seeding). It expands the engine to **daily / combined penalties**, **snapshots**, **strict-mode toggle**, **smart import**, and **status auto-sync**.
 
----
-
-## Phase 1 — Full-page Loan Details + Installment View (UI only, zero schema risk)
-
-**Route:** `/loans/:loanId`
-- New page `src/pages/LoanDetail.tsx` (replaces modal; modal trigger in `FarmerDetail` becomes a `<Link>`).
-- **Section 1 — Loan Summary**: loan no, farmer, plan, principal, interest, total payable, total paid, remaining due, status, start date, last installment date.
-- **Section 2 — Installment counters**: total / paid / pending / overdue.
-- **Section 3 — Installment table**: No, Due Date, Amount, Paid, Due, Payment Date, Delay Fee, Status (Pending / Paid / Partial / Overdue) with Bangla labels.
-- Banner: **শেষ কিস্তির তারিখ** + **জরিমানা কার্যকর হবে** when `today > due_date && status != paid`.
-- Print-friendly layout (reuse existing print CSS).
-- Loan Timeline section (read existing `audit_logs` + `loan_payments` + `system_audit_logs`).
-
-**No DB changes in this phase.** Overdue is computed client-side from existing columns.
+I'll ship in **6 phases**. Each phase is self-contained and leaves the system green.
 
 ---
 
-## Phase 2 — Installment Enforcement + Delay Fee Engine
+## Phase A — Schema additions (additive only, zero risk)
 
-**Schema (migration):**
-- `loan_delay_fee_settings` (office-scoped: `mode = flat|percent`, `value`, `grace_days`, `auto_apply`, `allow_partial_installment` default false).
-- `loan_installment_delay_audit` (installment_id, original, modified, reason, changed_by, office_id).
-- Indexes on `loan_installments(loan_id, due_date, status)` and `loan_payments(payment_date)`.
+Migration:
+- `loan_delay_fee_settings`: add `daily_penalty NUMERIC DEFAULT 0`, `max_penalty NUMERIC`, `enforcement_mode TEXT DEFAULT 'block'` (`block|warn|allow`), rename concept of `mode` → keep existing `flat|percent` and add `daily|combined` values.
+- `loan_installments`: add `penalty_amount NUMERIC DEFAULT 0`, `overdue_days INTEGER DEFAULT 0`, `penalty_rule_snapshot JSONB`, `strict_validation_override BOOLEAN DEFAULT FALSE`. (`installment_status` already exists as `status` — keep.)
+- `loan_payments`: add `penalty_collected NUMERIC DEFAULT 0`, `override_reason TEXT`, `override_by UUID`.
+- Indexes: `loan_installments(loan_id, due_date, status)`, `loan_payments(payment_date)`, `loan_payments(loan_id)`.
+- Trigger `loan_payment_after_insert`: recompute `loans.status` (`completed` when all installments paid, `overdue` when any past-due unpaid, else current value).
 
-**Logic (`src/lib/loanDelayFee.ts`):**
-- Pure function `computeInstallmentDelayFee(installment, settings, paymentDate)`.
-- Allocation helper `allocateInstallmentPayment(amount, installment, delayFee, settings)`.
+## Phase B — Engine v2 (`src/lib/loanDelayFee.ts`)
 
-**Validation in `IrrigationPaymentPanel`-equivalent loan panel:**
-- Block submit if `amount < (installmentAmount + delayFee)` AND `allow_partial_installment = false`.
-- Toast: **নির্ধারিত কিস্তির চেয়ে কম টাকা গ্রহণ করা যাবে না।**
-- Admin override field with reason → writes to delay-fee audit + `system_audit_logs`.
+Extend pure functions:
+- `mode: "flat" | "percent" | "daily" | "combined"`.
+- New formulas with `max_penalty` cap and `grace_days`.
+- `computePenaltyBreakdown()` returns `{ percentPart, dailyPart, fixedPart, capped, overdueDays, total }`.
+- `buildPenaltySnapshot()` returns the JSON stored on the installment at payment-time.
+- Backward-compatible: existing `flat|percent` callers unchanged.
 
----
+## Phase C — Settings UI + Strict Mode
 
-## Phase 3 — Payment Page Breakdown + Receipt Update
+Update `src/pages/admin/LoanDelaySettings.tsx`:
+- Add `daily_penalty`, `max_penalty`, `enforcement_mode` (block/warn/allow).
+- Live preview card: enter installment + days late → see calculated breakdown.
+- Bangla helper text for each field.
 
-- Loan payment selector shows: current installment, overdue list, delay fee, previous due, **total payable** breakdown.
-- Receipt PDF (`paymentReceiptPdf.ts` loan branch): adds Loan No, Installment No, Installment Due Date, Installment Amount, Delay Fee, Total Received, Remaining Loan Due. Bangla layout.
+## Phase D — Payment flow upgrade
 
----
+`src/pages/Payments.tsx` (loan branch) + `LoanDetail.tsx`:
+- Show breakdown card: Installment / Penalty / Total payable / Previous due / Remaining.
+- Honor `enforcement_mode`:
+  - `block` → reject under-payment with the Bangla toast.
+  - `warn` → confirm dialog, proceed.
+  - `allow` → require **override reason**, write `override_reason` + `override_by`, log to `system_audit_logs` and `loan_installment_delay_audit`.
+- On insert: write `penalty_collected`, snapshot `penalty_rule_snapshot` to the installment row.
+- After insert: recompute installment `status`, `paid_amount`, `penalty_amount`, `overdue_days`. (Trigger handles loan-level rollup.)
 
-## Phase 4 — Reports + Timeline
+## Phase E — Smart Loan Import
 
-- **Loan Overdue Report** (`/reports/loan-overdue`)
-- **Installment Collection Report** (`/reports/installment-collection`)
-- **Penalty Collection Report** (`/reports/loan-penalty`)
-- Filters: office, loan plan, date range, status. Exports: CSV (existing `csvExport.ts`), PDF (existing pdf util), Excel via CSV-with-BOM.
-- Sidebar entries gated by existing `permKey` system.
+`src/pages/DataImport.tsx` loan flow:
+- Accept CSV columns: `Loan No, Installment No, Due Date, Amount, Status`.
+- If installment rows missing for a loan → **auto-generate** schedule from loan plan + installment count + start date (Option 1) and surface the line in the report.
+- Validations: duplicate installment, missing farmer, invalid loan mapping, invalid date/amount, office mismatch.
+- Result modal: imported / skipped / failed / auto-generated counts + downloadable CSV error report (re-using `csvExport.ts`).
+- Bangla validation message: **ইন্সটলমেন্ট ডাটা অনুপস্থিত। অটো-জেনারেট অথবা ইমপোর্ট সংশোধন করুন।**
 
----
+## Phase F — Receipt + Tests
 
-## Phase 5 — Demo Import + Reset Rebuild + Tests
-
-- Extend `supabase/functions/demo-reset/index.ts` to seed:
-  - loan master, installment schedule, installment statuses, payment history, penalties, overdue cases, receipts, ledger entries.
-- FK & relationship validation (farmer_id / office_id / loan_plan_id).
-- **Tests:**
-  - Unit: delay-fee math, allocation, partial-payment blocker, overdue detector.
-  - Integration: payment flow with override + audit write.
-  - Playwright: navigate to `/loans/:id`, attempt underpayment → blocked, admin override succeeds, overdue badge visible.
+- `paymentReceiptPdf.ts` loan branch: add Installment No, Due Date, Paid Date, Installment Amount, Penalty, Total Received, Remaining (Bangla layout).
+- Unit tests: daily/combined math, cap, grace, snapshot shape, status transitions.
+- Integration test: override flow writes audit + payment columns.
+- Playwright (`e2e/loan-reliability.spec.ts` extension): warn mode dialog, allow mode override prompt, import auto-generation banner.
 
 ---
 
 ## Compatibility guarantees
 
-- No changes to existing `loans`, `loan_payments`, `loan_installments` columns — only **additive** (new tables + indexes).
-- Existing modal stays functional during Phase 1 (replaced, not removed from DB).
-- Ledger posting, SMS, receipt verification, RLS — untouched.
+- All schema changes are **additive** (new columns/indexes/trigger). Existing `loans`, `loan_payments`, `loan_installments` columns untouched.
+- Existing flat/percent settings continue to work — `daily=0`, `max_penalty=null`, `enforcement_mode='block'` defaults preserve current behavior.
+- Receipts/SMS/ledger posting/RLS — unchanged interfaces.
+- Demo-reset seed remains valid (new columns nullable / defaulted).
 
 ---
 
 ## How would you like to proceed?
 
 Reply with one of:
-- **"start phase 1"** — I'll begin with the full-page loan view (safest, no DB).
-- **"all phases"** — I'll run phases 1 → 5 sequentially in this loop (long; multiple migrations will need approvals).
-- **"phase X"** — jump to a specific phase.
+- **"all phases"** — run A → F sequentially (one migration, then code).
+- **"phase A"** / **"phase B"** … — run a single phase.
+- **"skip import"** / **"skip receipt"** — drop a section.
