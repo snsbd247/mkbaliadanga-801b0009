@@ -136,13 +136,20 @@ export default function FarmersImport() {
       if (parsed.length === 0) { toast.error("File is empty."); return; }
       const initial: RowState[] = parsed.map((raw, idx) => {
         const nameEn = String(raw.name_en ?? "").trim();
-        const farmerId = String(raw.farmer_id ?? raw.member_no ?? "").trim();
+        const farmerIdRaw = String(raw.farmer_id ?? raw.member_no ?? "").trim();
+        let farmerIdErr: string | null = null;
+        if (farmerIdRaw) {
+          const r = normalizeFarmerCode(farmerIdRaw);
+          if (r.ok === false) farmerIdErr = r.error;
+          else raw.farmer_id = r.value; // canonicalize in-place for the save loop
+        }
+        const errorMsg = !nameEn ? "name_en is required" : farmerIdErr;
         return {
           idx,
           raw,
-          status: nameEn ? "valid" : "invalid",
-          errorMsg: nameEn ? null : "name_en is required",
-          action: farmerId ? "update" : "insert",
+          status: errorMsg ? "invalid" : "valid",
+          errorMsg,
+          action: farmerIdRaw && !farmerIdErr ? "update" : "insert",
         };
       });
       setRows(initial);
