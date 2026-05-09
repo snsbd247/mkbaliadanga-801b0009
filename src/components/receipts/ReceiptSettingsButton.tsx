@@ -36,7 +36,7 @@ export function ReceiptSettingsButton() {
           <Select value={opts.lang} onValueChange={(v) => setReceiptOptions({ lang: v as any })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="bn">বাংলা (Bangla)</SelectItem>
+              <SelectItem value="bn">বাংলা (Bangla)</SelectItem>{/* i18n-ignore */}
               <SelectItem value="en">English</SelectItem>
             </SelectContent>
           </Select>

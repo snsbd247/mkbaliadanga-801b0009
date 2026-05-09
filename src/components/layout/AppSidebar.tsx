@@ -70,7 +70,7 @@ export function AppSidebar() {
         { url: "/share-collection", icon: Wallet, label: t("shareCollection"), permKey: "savings" },
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
         { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
-        { url: "/irrigation/invoices", icon: Droplets, label: "সেচ ইনভয়েস", permKey: "irrigation" },
+        { url: "/irrigation/invoices", icon: Droplets, label: t("irrigationInvoices" as any), permKey: "irrigation" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },

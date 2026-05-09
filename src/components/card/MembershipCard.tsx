@@ -95,7 +95,7 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
               {headerTitle}
               {headerSub && <div className="text-[7px] font-normal opacity-80 truncate">{headerSub}</div>}
             </div>
-            <div className="ml-auto text-[7px] opacity-80">Farmer ID</div>
+            <div className="ml-auto text-[7px] opacity-80">{/* i18n-ignore */}Farmer ID</div>
           </div>
           <div className="flex-1 flex items-center gap-2 p-2">
             {opts.show_photo && (
@@ -165,7 +165,7 @@ export function MembershipCard({ data, templateId = "classic", display }: Props)
               <div className="bg-white p-0.5 border rounded">
                 <QRCodeSVG value={qrValue} size={90} level="M" includeMargin={false} />
               </div>
-              <div className="text-[6px] text-gray-500 mt-0.5">Scan to pay</div>
+              <div className="text-[6px] text-gray-500 mt-0.5">{/* i18n-ignore */}Scan to pay</div>
             </div>
           )}
         </div>

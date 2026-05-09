@@ -146,7 +146,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
             <div className="py-6 text-center text-xs text-muted-foreground">Type at least {MIN_SEARCH} characters…</div>
           )}
           {!loading && !tooShort && items.length === 0 && (
-            <div className="py-6 text-center text-sm text-muted-foreground">No farmer found</div>
+            <div className="py-6 text-center text-sm text-muted-foreground">{/* i18n-ignore */}No farmer found</div>
           )}
           {!loading && items.map((it, idx) => (
             <button

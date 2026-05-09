@@ -71,7 +71,7 @@ export function AppLayout() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setLang("en")}>English</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLang("bn")}>বাংলা</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLang("bn")}>বাংলা</DropdownMenuItem>{/* i18n-ignore */}
                 </DropdownMenuContent>
               </DropdownMenu>
 

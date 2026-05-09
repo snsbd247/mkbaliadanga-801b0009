@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
 import { fmtDate } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const isDev = import.meta.env.DEV;
 const devLog = (...args: any[]) => { if (isDev) console.log("[NotificationBell]", ...args); };
@@ -17,6 +18,7 @@ let mountCounter = 0;
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const { tx } = useLang();
   const nav = useNavigate();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,12 +141,12 @@ export function NotificationBell() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-sm font-semibold">Notifications</span>
+          <span className="text-sm font-semibold">{tx("Notifications", "নোটিফিকেশন")}</span>
           <div className="flex items-center gap-2">
             {status === "connecting" && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
             {status === "error" && <AlertCircle className="h-3 w-3 text-destructive" />}
             {unread > 0 && (
-              <button onClick={markAll} className="text-xs text-primary hover:underline">Mark all read</button>
+              <button onClick={markAll} className="text-xs text-primary hover:underline">{tx("Mark all read", "সব পঠিত করুন")}</button>
             )}
           </div>
         </div>
@@ -158,7 +160,7 @@ export function NotificationBell() {
             <div className="flex items-start gap-2 p-4 text-sm text-destructive">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="flex-1">
-                <div className="font-medium">Couldn't load notifications</div>
+                <div className="font-medium">{tx("Couldn't load notifications", "নোটিফিকেশন লোড হয়নি")}</div>
                 <div className="text-xs opacity-80">{error}</div>
                 <button
                   onClick={() => { setLoading(true); load(); }}
@@ -175,7 +177,7 @@ export function NotificationBell() {
             </div>
           )}
           {!loading && !error && items.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">No notifications</p>
+            <p className="p-4 text-sm text-muted-foreground">{tx("No notifications", "কোনো নোটিফিকেশন নেই")}</p>
           )}
           {!loading && !error && items.map((n) => (
             <button

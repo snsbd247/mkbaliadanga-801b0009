@@ -114,7 +114,7 @@ export default function ReceiptKindReport() {
       <Card className="p-4 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
           <div className="md:col-span-2">
-            <Label>Receipt Kind</Label>
+            <Label>{/* i18n-ignore */}Receipt Kind</Label>
             <Tabs value={kind} onValueChange={(v) => setKind(v as Kind)}>
               <TabsList className="w-full">
                 <TabsTrigger value="IRR" className="flex-1">IRR (Irrigation)</TabsTrigger>

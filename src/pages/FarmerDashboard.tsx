@@ -32,7 +32,7 @@ function fmt(n: number) {
 export default function FarmerDashboard() {
   const nav = useNavigate();
   const brand = useBranding();
-  const { t, setLang } = useLang();
+  const { t, setLang, tx } = useLang();
   useEffect(() => { setLang("bn"); }, [setLang]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -275,19 +275,19 @@ export default function FarmerDashboard() {
 
             {data.irrigation_invoices && data.irrigation_invoices.length > 0 && (
               <Card className="mt-3">
-                <CardHeader><CardTitle className="text-base">সেচ ইনভয়েস</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base">{tx("Irrigation invoices", "সেচ ইনভয়েস")}</CardTitle></CardHeader>
                 <CardContent className="overflow-x-auto p-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>ইনভয়েস</TableHead>
-                        <TableHead>সিজন</TableHead>
-                        <TableHead>জমি</TableHead>
-                        <TableHead>মেয়াদ</TableHead>
-                        <TableHead className="text-right">প্রদেয়</TableHead>
-                        <TableHead className="text-right">পরিশোধিত</TableHead>
-                        <TableHead className="text-right">বকেয়া</TableHead>
-                        <TableHead>স্ট্যাটাস</TableHead>
+                        <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
+                        <TableHead>{tx("Season", "সিজন")}</TableHead>
+                        <TableHead>{tx("Land", "জমি")}</TableHead>
+                        <TableHead>{tx("Due", "মেয়াদ")}</TableHead>
+                        <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
+                        <TableHead className="text-right">{tx("Paid", "পরিশোধিত")}</TableHead>
+                        <TableHead className="text-right">{tx("Outstanding", "বকেয়া")}</TableHead>
+                        <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

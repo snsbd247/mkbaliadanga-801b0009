@@ -3,6 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Printer } from "lucide-react";
 import { PrintButton } from "@/components/ui/action-icon-button";
 import type { ReceiptCopy } from "@/lib/bnReceipts";
+import { useLang } from "@/i18n/LanguageProvider";
 
 interface Props {
   onSelect: (copy: ReceiptCopy) => void;
@@ -12,21 +13,22 @@ interface Props {
 }
 
 export function ReceiptCopyMenu({ onSelect, size = "icon", label, title }: Props) {
+  const { tx } = useLang();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {size === "icon" ? (
-          <PrintButton title={title ?? "Print receipt"} />
+          <PrintButton title={title ?? tx("Print receipt", "রসিদ প্রিন্ট")} />
         ) : (
           <Button size="sm" variant="outline">
-            <Printer className="h-4 w-4 mr-1" />{label ?? "Print"}
+            <Printer className="h-4 w-4 mr-1" />{label ?? tx("Print", "প্রিন্ট")}
           </Button>
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => onSelect("both")}>Both copies</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onSelect("farmer")}>Farmer copy</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onSelect("office")}>Office copy</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onSelect("both")}>{tx("Both copies", "উভয় কপি")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onSelect("farmer")}>{tx("Farmer copy", "কৃষক কপি")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onSelect("office")}>{tx("Office copy", "অফিস কপি")}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
