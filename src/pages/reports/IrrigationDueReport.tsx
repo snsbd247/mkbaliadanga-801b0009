@@ -21,6 +21,8 @@ type Row = {
   farmer_code: string;
   land_id: string;
   land_label: string;
+  land_size_shatak: number;
+  land_size_bigha: number;
   season_id: string;
   season_label: string;
   total: number;
