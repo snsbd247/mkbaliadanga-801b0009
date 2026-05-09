@@ -72,6 +72,7 @@ export function AppSidebar() {
         { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
         { url: "/irrigation", icon: Droplets, label: t("irrigation"), permKey: "irrigation" },
         { url: "/irrigation/invoices", icon: Droplets, label: "সেচ ইনভয়েস", permKey: "irrigation" },
+        { url: "/irrigation/collect", icon: Droplets, label: "সেচ কালেকশন", permKey: "payments" },
         { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
