@@ -13,6 +13,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
 import { useBranding } from "@/lib/branding";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 
 const ALL = "__all__";
 
@@ -192,7 +193,7 @@ export default function Reports() {
           code: r.farmers?.farmer_code ?? "—",
           name: r.farmers?.name_en ?? "—",
           season: r.seasons ? `${r.seasons.name} ${r.seasons.year}` : "—",
-          dag: r.lands?.dag_no ?? "—",
+          dag: formatDagNumbers(r.lands?.dag_no) || "—",
           total: Number(r.total || 0),
           paid: Number(r.paid_amount || 0),
           due: Number(r.due_amount || 0),
@@ -417,8 +418,8 @@ export default function Reports() {
 
         <TabsContent value="irrigation">
           <ExportBar
-            onPdf={() => exportTablePDF(`Irrigation Detail${filterTitleSuffix()}`, ["Date", "Farmer", "Season", "Dag", "Base", "Canal", "Maint.", "Other", "Total", "Paid", "Due"], irr.map(r => [fmtDate(r.entry_date), `${r.farmers?.farmer_code} ${r.farmers?.name_en}`, r.seasons?.name, r.lands?.dag_no, r.base_charge, r.canal_charge, r.maintenance_charge, r.other_charge, r.total, r.paid_amount, r.due_amount]))}
-            onXlsx={() => exportExcel("irrigation-detail", "Irrigation", irr.map(r => ({ Date: r.entry_date, Farmer: r.farmers?.name_en, Code: r.farmers?.farmer_code, Season: r.seasons?.name, Dag: r.lands?.dag_no, Mouza: r.lands?.mouza, Size: r.lands?.land_size, Base: r.base_charge, Canal: r.canal_charge, Maintenance: r.maintenance_charge, Other: r.other_charge, Total: r.total, Paid: r.paid_amount, Due: r.due_amount })))}
+            onPdf={() => exportTablePDF(`Irrigation Detail${filterTitleSuffix()}`, ["Date", "Farmer", "Season", "Dag", "Base", "Canal", "Maint.", "Other", "Total", "Paid", "Due"], irr.map(r => [fmtDate(r.entry_date), `${r.farmers?.farmer_code} ${r.farmers?.name_en}`, r.seasons?.name, formatDagNumbers(r.lands?.dag_no), r.base_charge, r.canal_charge, r.maintenance_charge, r.other_charge, r.total, r.paid_amount, r.due_amount]))}
+            onXlsx={() => exportExcel("irrigation-detail", "Irrigation", irr.map(r => ({ Date: r.entry_date, Farmer: r.farmers?.name_en, Code: r.farmers?.farmer_code, Season: r.seasons?.name, Dag: formatDagNumbers(r.lands?.dag_no), Mouza: r.lands?.mouza, Size: r.lands?.land_size, Base: r.base_charge, Canal: r.canal_charge, Maintenance: r.maintenance_charge, Other: r.other_charge, Total: r.total, Paid: r.paid_amount, Due: r.due_amount })))}
           />
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
@@ -431,7 +432,7 @@ export default function Reports() {
                 <TableCell>{fmtDate(r.entry_date)}</TableCell>
                 <TableCell>{r.farmers?.name_en} <span className="text-xs text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
                 <TableCell>{r.seasons?.name}</TableCell>
-                <TableCell>{r.lands?.dag_no}</TableCell>
+                <TableCell className="whitespace-pre-line">{formatDagNumbers(r.lands?.dag_no)}</TableCell>
                 <TableCell className="text-right">{money(r.base_charge)}</TableCell>
                 <TableCell className="text-right">{money(r.canal_charge)}</TableCell>
                 <TableCell className="text-right">{money(r.maintenance_charge)}</TableCell>

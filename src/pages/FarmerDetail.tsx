@@ -493,9 +493,11 @@ export default function FarmerDetail() {
     if (!v.ok) { setLandLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
     if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) }); return; }
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
+    let canonicalDag = land.dag_no.trim();
     if (land.owner_type === "owner") {
       const dv = validateDagNumbers(land.dag_no);
       if (dv.ok === false) return toast.error(dv.error);
+      canonicalDag = dv.values.join(", ");
     }
     if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
@@ -510,7 +512,7 @@ export default function FarmerDetail() {
         district_id: (landLoc as any).district_id ?? null,
         upazila_id: (landLoc as any).upazila_id ?? null,
         mouza_id: (landLoc as any).mouza_id ?? null,
-        dag_no: land.dag_no,
+        dag_no: canonicalDag,
         land_size: land.land_size,
         owner_type: land.owner_type as any,
         field_type: land.field_type as any,
@@ -574,9 +576,11 @@ export default function FarmerDetail() {
       const v = validateLocationChain(editLoc);
       if (!v.ok) { setEditLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
       if (!(editLoc as any).mouza_id) { setEditLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "Mouza required" }); return; }
+      let canonicalDag = editForm.dag_no.trim();
       if (editForm.owner_type === "owner") {
         const dv = validateDagNumbers(editForm.dag_no);
         if (dv.ok === false) { toast.error(dv.error); return; }
+        canonicalDag = dv.values.join(", ");
       }
       const { error } = await supabase.from("lands").update({
         mouza: (editLoc as any).mouza_name ?? "",
@@ -584,7 +588,7 @@ export default function FarmerDetail() {
         district_id: (editLoc as any).district_id ?? null,
         upazila_id: (editLoc as any).upazila_id ?? null,
         mouza_id: (editLoc as any).mouza_id ?? null,
-        dag_no: editForm.dag_no,
+        dag_no: canonicalDag,
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
         field_type: editForm.field_type as any,
@@ -800,15 +804,34 @@ export default function FarmerDetail() {
                     )}
 
                     {/* 3. For owner only: Dag No input */}
-                    {land.owner_type === "owner" && (
-                      <div className="grid grid-cols-2 gap-3">
-                       <div>
-                          <Label>{t("dagNo")} <span className="text-destructive">*</span></Label>
-                          <Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} placeholder="123, 124/A, 125" />
-                          <p className="text-xs text-muted-foreground mt-1">একাধিক দাগ নং কমা (,) দিয়ে আলাদা করে লিখুন</p>
+                    {land.owner_type === "owner" && (() => {
+                      const live = land.dag_no.trim() ? validateDagNumbers(land.dag_no) : null;
+                      const liveErr = live && live.ok === false ? live.error : null;
+                      const preview = live && live.ok ? live.values.join(", ") : null;
+                      return (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>{t("dagNo")} <span className="text-destructive">*</span></Label>
+                            <Input
+                              disabled={savingLand}
+                              value={land.dag_no}
+                              onChange={e => setLand({ ...land, dag_no: e.target.value })}
+                              placeholder="123, 124/A, 125-B"
+                              aria-invalid={!!liveErr}
+                              className={liveErr ? "border-destructive focus-visible:ring-destructive" : undefined}
+                            />
+                            {liveErr ? (
+                              <p className="text-xs text-destructive mt-1">{liveErr} — দয়া করে কমা দিয়ে আলাদা করুন এবং শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> ব্যবহার করুন।</p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ: <code>123, 124/A, 125-B</code>
+                                {preview && preview !== land.dag_no.trim() && <> — সংরক্ষণে রূপান্তরিত হবে: <strong>{preview}</strong></>}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* 4. Land size + Field type */}
                     {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
@@ -1039,7 +1062,34 @@ export default function FarmerDetail() {
                 errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} showVillage={false} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t("dagNo")}</Label><Input disabled={editSaving} value={editForm.dag_no} onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })} placeholder="123, 124/A" /><p className="text-xs text-muted-foreground mt-1">একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন</p></div>
+              <div>
+                <Label>{t("dagNo")}</Label>
+                {(() => {
+                  const live = editForm.dag_no.trim() ? validateDagNumbers(editForm.dag_no) : null;
+                  const liveErr = live && live.ok === false ? live.error : null;
+                  const preview = live && live.ok ? live.values.join(", ") : null;
+                  return (
+                    <>
+                      <Input
+                        disabled={editSaving}
+                        value={editForm.dag_no}
+                        onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })}
+                        placeholder="123, 124/A, 125-B"
+                        aria-invalid={!!liveErr}
+                        className={liveErr ? "border-destructive focus-visible:ring-destructive" : undefined}
+                      />
+                      {liveErr ? (
+                        <p className="text-xs text-destructive mt-1">{liveErr} — কমা দিয়ে আলাদা করুন; শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> অনুমোদিত।</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ: <code>123, 124/A, 125-B</code>
+                          {preview && preview !== editForm.dag_no.trim() && <> — সংরক্ষণে রূপান্তরিত হবে: <strong>{preview}</strong></>}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
               <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.01" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
               <div><Label>{t("ownerType")}</Label>
                 <Select value={editForm.owner_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, owner_type: v })}>

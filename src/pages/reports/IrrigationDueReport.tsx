@@ -12,6 +12,7 @@ import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { formatLandSize, shatakToBigha } from "@/lib/irrigationCalc";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -76,7 +77,7 @@ export default function IrrigationDueReport() {
           farmer_name: r.farmers?.name_en ?? "—",
           farmer_code: r.farmers?.farmer_code ?? "—",
           land_id: r.land_id,
-          land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${r.lands.dag_no}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
+          land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${formatDagNumbers(r.lands.dag_no)}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
           land_size_shatak: shatak,
           land_size_bigha: shatakToBigha(shatak),
           season_id: r.season_id,

@@ -111,3 +111,23 @@ describe("dagNumbers — module integration regressions", () => {
     expect(found[0].lands.dag_no).toBe("100, 101/A");
   });
 });
+
+describe("dagNumbers — save canonicalization", () => {
+  it("dv.values.join(', ') matches formatDagNumbers", () => {
+    const input = " 123 ,124/A,  125-B ";
+    const dv = validateDagNumbers(input);
+    expect(dv.ok).toBe(true);
+    if (dv.ok) {
+      expect(dv.values.join(", ")).toBe(formatDagNumbers(input));
+      expect(dv.values.join(", ")).toBe("123, 124/A, 125-B");
+    }
+  });
+  it("server-side regex (matches DB trigger) rejects bad chars", () => {
+    const SERVER_PATTERN = /^[A-Za-z0-9০-৯/\-]+$/;
+    expect(SERVER_PATTERN.test("123")).toBe(true);
+    expect(SERVER_PATTERN.test("124/A")).toBe(true);
+    expect(SERVER_PATTERN.test("125-B")).toBe(true);
+    expect(SERVER_PATTERN.test("12$4")).toBe(false);
+    expect(SERVER_PATTERN.test("12 4")).toBe(false);
+  });
+});

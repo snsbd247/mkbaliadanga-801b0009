@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -91,7 +92,7 @@ export default function InvoiceReport() {
   const body = filtered.map((r) => [
     r.invoice_no,
     `${r.farmers?.name_en ?? ""} (${r.farmers?.farmer_code ?? ""})`,
-    `${r.lands?.mouza ?? ""}/${r.lands?.dag_no ?? ""}`,
+    `${r.lands?.mouza ?? ""}/${formatDagNumbers(r.lands?.dag_no)}`,
     r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
     r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ"),
     money(r.payable_amount), money(r.paid_amount), money(r.due_amount), money(r.delay_fee),
@@ -159,7 +160,7 @@ export default function InvoiceReport() {
                 filtered.map((r) => ({
                   Invoice: r.invoice_no,
                   Farmer: r.farmers?.name_en, Code: r.farmers?.farmer_code, Mobile: r.farmers?.mobile,
-                  Mouza: r.lands?.mouza, Dag: r.lands?.dag_no,
+                  Mouza: r.lands?.mouza, Dag: formatDagNumbers(r.lands?.dag_no),
                   Season: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "",
                   Type: r.is_borga ? "Borga" : "Own",
                   Payable: r.payable_amount, Paid: r.paid_amount, Due: r.due_amount,
@@ -190,7 +191,7 @@ export default function InvoiceReport() {
                 <TableRow key={r.id}>
                   <TableCell className="text-xs font-mono">{r.invoice_no}</TableCell>
                   <TableCell className="text-xs">{r.farmers?.name_en} <span className="text-muted-foreground">({r.farmers?.farmer_code})</span></TableCell>
-                  <TableCell className="text-xs">{r.lands?.mouza}/{r.lands?.dag_no}</TableCell>
+                  <TableCell className="text-xs">{r.lands?.mouza}/{formatDagNumbers(r.lands?.dag_no)}</TableCell>
                   <TableCell className="text-xs">{r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—"}</TableCell>
                   <TableCell><Badge variant={r.is_borga ? "secondary" : "outline"}>{r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ")}</Badge></TableCell>
                   <TableCell className="text-right">{money(r.payable_amount)}</TableCell>

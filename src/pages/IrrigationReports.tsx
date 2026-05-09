@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import { money, fmtDate } from "@/lib/format";
+import { formatDagNumbers } from "@/lib/dagNumbers";
 import { ExportDialog, type ExportColumn } from "@/components/exports/ExportDialog";
 import { FileDown } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -233,7 +234,7 @@ export default function IrrigationReports() {
           { key: "farmer_code", label: t("irr_colFarmerCode" as any), accessor: (r: any) => r.farmers?.farmer_code ?? "" },
           { key: "farmer_name", label: t("irr_colFarmerName" as any), accessor: (r: any) => r.farmers?.name_bn || r.farmers?.name_en || "" },
           { key: "mobile", label: t("irr_colMobile" as any), accessor: (r: any) => r.farmers?.mobile ?? "" },
-          { key: "dag_no", label: t("irr_colDagNo" as any), accessor: (r: any) => r.lands?.dag_no ?? "" },
+          { key: "dag_no", label: t("irr_colDagNo" as any), accessor: (r: any) => formatDagNumbers(r.lands?.dag_no) },
           { key: "mouza", label: t("irr_colMouza" as any), accessor: (r: any) => r.lands?.mouza ?? "" },
           { key: "land_size", label: t("irr_colLandSize" as any), accessor: (r: any) => r.lands?.land_size ?? "" },
           { key: "rate", label: t("irr_colRate" as any), accessor: (r: any) => r.rate ?? "" },

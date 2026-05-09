@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { money, moneyPdf, fmtDate } from "./format";
 import { loadBranding } from "./branding";
 import { ensureBanglaFont, BANGLA_FONT } from "./pdfFonts";
+import { formatDagNumbers } from "./dagNumbers";
 
 
 // Resolve current PDF language from the app's persisted user choice. Reports
@@ -97,7 +98,7 @@ export function exportFarmerReportPDF(farmer: any, ctx: any) {
   autoTable(doc, {
     startY: y + 2,
     head: [["Mouza", "Dag No", "Size", "Owner", "Field"]],
-    body: ctx.lands.map((l: any) => [l.mouza, l.dag_no, l.land_size, l.owner_type, l.field_type]),
+    body: ctx.lands.map((l: any) => [l.mouza, formatDagNumbers(l.dag_no), l.land_size, l.owner_type, l.field_type]),
   });
 
   y = (doc as any).lastAutoTable.finalY + 6;
