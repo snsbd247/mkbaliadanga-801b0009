@@ -125,6 +125,7 @@ const App = () => (
                 <Route path="/share-collection" element={<RequirePerm module="savings"><ShareCollection /></RequirePerm>} />
                 <Route path="/irrigation" element={<RequirePerm module="irrigation"><Irrigation /></RequirePerm>} />
                 <Route path="/irrigation/invoices" element={<RequirePerm module="irrigation"><IrrigationInvoices /></RequirePerm>} />
+                <Route path="/irrigation/collect" element={<RequirePerm module="payments"><IrrigationInvoicePayment /></RequirePerm>} />
                 <Route path="/irrigation/rates" element={<RequirePerm module="irrigation"><IrrigationRates /></RequirePerm>} />
                 <Route path="/payments" element={<RequirePerm module="payments"><Payments /></RequirePerm>} />
                 <Route path="/reports" element={<RequirePerm module="reports"><Reports /></RequirePerm>} />
