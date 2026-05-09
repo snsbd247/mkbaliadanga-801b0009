@@ -161,7 +161,13 @@ export default function Payments() {
   async function loadDues() {
     const [l, i] = await Promise.all([
       supabase.from("loans").select("id,principal,total_payable,issued_on,loan_payments(amount)").eq("farmer_id", farmerId).eq("status", "approved"),
-      supabase.from("irrigation_charges").select("id,total,paid_amount,due_amount,entry_date").eq("farmer_id", farmerId).is("deleted_at", null).gt("due_amount", 0),
+      supabase.from("irrigation_invoices")
+        .select("id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge")
+        .eq("farmer_id", farmerId)
+        .is("deleted_at", null)
+        .neq("invoice_status", "cancelled")
+        .gt("due_amount", 0)
+        .order("due_date", { ascending: true }),
     ]);
     setOpenLoans(l.data ?? []); setOpenIrr(i.data ?? []);
   }
@@ -249,14 +255,30 @@ export default function Payments() {
     }
   }
 
-  async function applyAllocationsToLedgers(_paymentId: string, fId: string, list: Allocation[], desc?: string) {
+  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string) {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
       if (a.kind === "loan" && a.reference_id) {
         await supabase.from("loan_payments").insert({ loan_id: a.reference_id, amount: Number(a.amount), collected_by: user?.id, note: noteText });
       } else if (a.kind === "irrigation" && a.reference_id) {
-        const { data: irr } = await supabase.from("irrigation_charges").select("paid_amount").eq("id", a.reference_id).single();
-        if (irr) await supabase.from("irrigation_charges").update({ paid_amount: Number(irr.paid_amount) + Number(a.amount) }).eq("id", a.reference_id);
+        const { data: inv } = await supabase
+          .from("irrigation_invoices")
+          .select("paid_amount,office_id")
+          .eq("id", a.reference_id)
+          .single();
+        if (inv) {
+          await supabase.from("irrigation_invoices")
+            .update({ paid_amount: Number(inv.paid_amount) + Number(a.amount) })
+            .eq("id", a.reference_id);
+          await supabase.from("irrigation_invoice_payments").insert({
+            invoice_id: a.reference_id,
+            payment_id: paymentId,
+            office_id: inv.office_id,
+            collected_amount: Number(a.amount),
+            irrigation_collected: Number(a.amount),
+            created_by: user?.id,
+          });
+        }
       } else if (a.kind === "savings") {
         await supabase.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id, note: noteText });
       }
@@ -295,7 +317,7 @@ export default function Payments() {
     // Build queue per priority with oldest-first dues
     const queues: Record<string, { reference_id: string; due: number }[]> = {
       irrigation: [...openIrr]
-        .sort((a, b) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime())
+        .sort((a, b) => new Date(a.due_date || a.generated_at).getTime() - new Date(b.due_date || b.generated_at).getTime())
         .map(i => ({ reference_id: i.id, due: Number(i.due_amount || 0) }))
         .filter(x => x.due > 0),
       loan: [...openLoans]
@@ -429,8 +451,12 @@ export default function Payments() {
                   )}
                   {a.kind === "irrigation" && (
                     <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })}>
-                      <SelectTrigger><SelectValue placeholder={openIrr.length ? "Pick charge" : "No open charges"} /></SelectTrigger>
-                      <SelectContent>{openIrr.map(ic => <SelectItem key={ic.id} value={ic.id}>{fmtDate(ic.entry_date)} — Due {money(ic.due_amount)}</SelectItem>)}</SelectContent>
+                      <SelectTrigger><SelectValue placeholder={openIrr.length ? "Pick invoice" : "No open invoices"} /></SelectTrigger>
+                      <SelectContent>{openIrr.map(ic => (
+                        <SelectItem key={ic.id} value={ic.id}>
+                          {ic.invoice_no} — {fmtDate(ic.due_date)} — Due {money(ic.due_amount)}
+                        </SelectItem>
+                      ))}</SelectContent>
                     </Select>
                   )}
                   <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
