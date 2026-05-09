@@ -161,16 +161,16 @@ export default function IrrigationReports() {
 
       <Card className="mt-4">
         <CardContent className="pt-6">
-          <h3 className="font-semibold mb-3">সিজন ভিত্তিক রাজস্ব</h3>
+          <h3 className="font-semibold mb-3">{t("irr_colSeason" as any)}</h3>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>সিজন</TableHead>
-                <TableHead className="text-right">ইনভয়েস</TableHead>
-                <TableHead className="text-right">প্রদেয়</TableHead>
-                <TableHead className="text-right">পরিশোধিত</TableHead>
-                <TableHead className="text-right">বকেয়া</TableHead>
-                <TableHead className="text-right">কালেকশন %</TableHead>
+                <TableHead>{t("irr_colSeason" as any)}</TableHead>
+                <TableHead className="text-right">{t("irr_colInvoice" as any)}</TableHead>
+                <TableHead className="text-right">{t("irr_chartLegendPayable" as any)}</TableHead>
+                <TableHead className="text-right">{t("irr_chartLegendPaid" as any)}</TableHead>
+                <TableHead className="text-right">{t("irr_chartLegendDue" as any)}</TableHead>
+                <TableHead className="text-right">%</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -184,7 +184,7 @@ export default function IrrigationReports() {
                   <TableCell className="text-right">{r.payable > 0 ? `${Math.round((r.paid / r.payable) * 100)}%` : "—"}</TableCell>
                 </TableRow>
               ))}
-              {!bySeason.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">কোন তথ্য নেই</TableCell></TableRow>}
+              {!bySeason.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("irr_chartNoData" as any)}</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
@@ -192,16 +192,16 @@ export default function IrrigationReports() {
 
       <Card className="mt-4">
         <CardContent className="pt-6">
-          <h3 className="font-semibold mb-3">জমির ধরন ভিত্তিক কালেকশন</h3>
+          <h3 className="font-semibold mb-3">{t("landTypeName" as any)}</h3>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>জমির ধরন</TableHead>
-                <TableHead className="text-right">ইনভয়েস</TableHead>
-                <TableHead className="text-right">প্রদেয়</TableHead>
-                <TableHead className="text-right">পরিশোধিত</TableHead>
-                <TableHead className="text-right">বকেয়া</TableHead>
-                <TableHead className="text-right">কালেকশন %</TableHead>
+                <TableHead>{t("landTypeName" as any)}</TableHead>
+                <TableHead className="text-right">{t("irr_colInvoice" as any)}</TableHead>
+                <TableHead className="text-right">{t("irr_chartLegendPayable" as any)}</TableHead>
+                <TableHead className="text-right">{t("irr_chartLegendPaid" as any)}</TableHead>
+                <TableHead className="text-right">{t("irr_chartLegendDue" as any)}</TableHead>
+                <TableHead className="text-right">%</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -215,7 +215,7 @@ export default function IrrigationReports() {
                   <TableCell className="text-right">{r.payable > 0 ? `${Math.round((r.paid / r.payable) * 100)}%` : "—"}</TableCell>
                 </TableRow>
               ))}
-              {!byLandType.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">কোন তথ্য নেই</TableCell></TableRow>}
+              {!byLandType.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("irr_chartNoData" as any)}</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
