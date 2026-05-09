@@ -264,6 +264,13 @@ export default function FarmersImport() {
         <p className="text-xs text-muted-foreground mt-2">
           Required: <code>name_en</code>. Optional: <code>farmer_id, voter_number, name_bn, father_name, mobile, village</code>.
           <br />
+          <span
+            title={tx(
+              "Farmer ID format: 5-digit padded number (e.g. 00001). Inputs like 'F-00001', '1', '2026-00000001' are auto-normalized to 00001. Letters or non-numeric values are rejected.",
+              "Farmer ID ফরম্যাট: 5-digit padded (যেমন 00001)। 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে। অক্ষর / সংখ্যা ছাড়া ভ্যালু রিজেক্ট হবে।"
+            )}
+            className="inline-flex h-4 w-4 mr-1 items-center justify-center rounded-full border text-[10px] cursor-help"
+          >?</span>
           {tx("If farmer_id is given, existing farmer is updated, else a new one is created.", "farmer_id দিলে existing farmer থাকলে update, না থাকলে নতুন তৈরি হবে।")}
           <span className="ml-2">{tx("If voter_number is given, auto Voter / Savings active member.", "voter_number দিলে অটো Voter / Savings active সদস্য।")}</span>
         </p>
