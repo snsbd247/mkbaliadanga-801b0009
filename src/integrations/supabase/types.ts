@@ -1558,6 +1558,89 @@ export type Database = {
         }
         Relationships: []
       }
+      irrigation_sms_logs: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          failure_reason: string | null
+          farmer_id: string | null
+          gateway_response: Json | null
+          id: string
+          irrigation_invoice_id: string | null
+          message: string | null
+          mobile: string | null
+          office_id: string | null
+          retry_count: number
+          sent_at: string | null
+          sent_by: string | null
+          sms_type: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          failure_reason?: string | null
+          farmer_id?: string | null
+          gateway_response?: Json | null
+          id?: string
+          irrigation_invoice_id?: string | null
+          message?: string | null
+          mobile?: string | null
+          office_id?: string | null
+          retry_count?: number
+          sent_at?: string | null
+          sent_by?: string | null
+          sms_type: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          failure_reason?: string | null
+          farmer_id?: string | null
+          gateway_response?: Json | null
+          id?: string
+          irrigation_invoice_id?: string | null
+          message?: string | null
+          mobile?: string | null
+          office_id?: string | null
+          retry_count?: number
+          sent_at?: string | null
+          sent_by?: string | null
+          sms_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "irrigation_sms_logs_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "irrigation_sms_logs_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_sms_logs_irrigation_invoice_id_fkey"
+            columns: ["irrigation_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "irrigation_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "irrigation_sms_logs_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           created_at: string
