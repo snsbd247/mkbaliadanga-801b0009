@@ -58,13 +58,25 @@ export default function Reports() {
   }
 
   async function load() {
-    let irrQ: any = supabase.from("irrigation_charges")
-      .select("entry_date,office_id,base_charge,canal_charge,maintenance_charge,other_charge,total,paid_amount,due_amount,farmer_id,farmers(name_en,farmer_code),seasons(name,year,type),lands(dag_no,mouza,land_size),season_id")
+    // Source of truth: irrigation_invoices (legacy irrigation_charges fields are
+    // mapped onto entry_date/total/base_charge so downstream aggregations stay
+    // identical without rewriting every reduce/export call site.)
+    let irrQ: any = supabase.from("irrigation_invoices")
+      .select("generated_at,office_id,irrigation_amount,canal_amount,maintenance_amount,other_charge,delay_fee,payable_amount,paid_amount,due_amount,farmer_id,farmers(name_en,farmer_code),seasons(name,year,type),lands(dag_no,mouza,land_size),season_id,invoice_status")
       .is("deleted_at", null)
-      .order("entry_date", { ascending: false });
-    irrQ = applyCommon(irrQ, "entry_date");
+      .neq("invoice_status", "cancelled")
+      .order("generated_at", { ascending: false });
+    irrQ = applyCommon(irrQ, "generated_at");
     if (seasonId !== ALL) irrQ = irrQ.eq("season_id", seasonId);
-    setIrr((await irrQ).data ?? []);
+    const irrRows = ((await irrQ).data ?? []).map((r: any) => ({
+      ...r,
+      entry_date: String(r.generated_at ?? "").slice(0, 10),
+      base_charge: Number(r.irrigation_amount ?? 0),
+      canal_charge: Number(r.canal_amount ?? 0),
+      maintenance_charge: Number(r.maintenance_amount ?? 0),
+      total: Number(r.payable_amount ?? 0),
+    }));
+    setIrr(irrRows);
 
     let lnQ: any = supabase.from("loans").select("issued_on,office_id,principal,interest_rate,total_payable,status,farmer_id,farmers(name_en,farmer_code),loan_payments(amount,paid_on)").is("deleted_at", null).order("issued_on", { ascending: false });
     lnQ = applyCommon(lnQ, "issued_on");

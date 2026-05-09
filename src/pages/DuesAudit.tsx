@@ -38,12 +38,18 @@ export default function DuesAudit() {
     setLoading(true);
     (async () => {
       const [{ data: ic }, dues] = await Promise.all([
-        supabase.from("irrigation_charges")
-          .select("id,entry_date,season_id,due_amount,total,paid_amount,seasons(name,year),lands(dag_no)")
-          .eq("farmer_id", farmerId).is("deleted_at", null).order("entry_date", { ascending: false }),
+        supabase.from("irrigation_invoices")
+          .select("id,generated_at,season_id,due_amount,payable_amount,paid_amount,seasons(name,year),lands(dag_no)")
+          .eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled").order("generated_at", { ascending: false }),
         getFarmerDues(farmerId),
       ]);
-      setIrr((ic as any) ?? []);
+      // Map to legacy field names so the table render stays unchanged.
+      const mapped = (ic as any[] ?? []).map((r) => ({
+        ...r,
+        entry_date: String(r.generated_at ?? "").slice(0, 10),
+        total: Number(r.payable_amount ?? 0),
+      }));
+      setIrr(mapped);
       setLoanDue(dues.loan_due);
       setSavingsBal(dues.savings_balance);
       setShareBal(dues.share_balance);

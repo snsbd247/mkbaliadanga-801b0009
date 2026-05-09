@@ -46,21 +46,23 @@ export default function Dues() {
     const out: Row[] = [];
 
     const { data: irr } = await supabase
-      .from("irrigation_charges")
-      .select("farmer_id,due_amount,entry_date,seasons(name,year),farmers(name_en,farmer_code,mobile)")
+      .from("irrigation_invoices")
+      .select("farmer_id,due_amount,due_date,generated_at,invoice_no,seasons(name,year),farmers(name_en,farmer_code,mobile)")
       .is("deleted_at", null)
+      .neq("invoice_status", "cancelled")
       .gt("due_amount", 0);
     (irr ?? []).forEach((r: any) => {
-      const days = Math.max(0, Math.floor((today - new Date(r.entry_date).getTime()) / 86400000));
+      const refDate = r.due_date ?? String(r.generated_at ?? "").slice(0, 10);
+      const days = Math.max(0, Math.floor((today - new Date(refDate).getTime()) / 86400000));
       out.push({
         farmer_id: r.farmer_id,
         name: r.farmers?.name_en ?? "—",
         code: r.farmers?.farmer_code ?? "—",
         mobile: r.farmers?.mobile ?? null,
         source: "irrigation",
-        reference: r.seasons ? `${r.seasons.name} ${r.seasons.year}` : "—",
+        reference: r.seasons ? `${r.seasons.name} ${r.seasons.year}` : (r.invoice_no ?? "—"),
         due: Number(r.due_amount),
-        oldest: r.entry_date,
+        oldest: refDate,
         ageDays: days,
       });
     });
