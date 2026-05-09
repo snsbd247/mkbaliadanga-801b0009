@@ -171,6 +171,52 @@ Deno.serve(async (req) => {
     await fireSend(ins.id);
   }
 
+  // ----- IRRIGATION INVOICE dues (new invoice-based system) -----
+  const invQ = admin
+    .from("irrigation_invoices")
+    .select("id, farmer_id, office_id, due_amount, due_date, invoice_status")
+    .gt("due_amount", 0)
+    .neq("invoice_status", "cancelled")
+    .is("deleted_at", null)
+    .gte("due_date", fromStr)
+    .lte("due_date", horizonStr);
+  if (officeFilter) invQ.eq("office_id", officeFilter);
+  const { data: invs, error: inverr } = await invQ;
+  if (inverr) summary.errors.push("inv:" + inverr.message);
+
+  for (const it of invs ?? []) {
+    const { data: farmer } = await admin.from("farmers").select("mobile").eq("id", it.farmer_id).maybeSingle();
+    const mobile = farmer?.mobile?.trim();
+    if (!mobile) continue;
+
+    const message = render(tpl, {
+      type: lang === "en" ? "Irrigation Invoice" : "সেচ ইনভয়েস",
+      due: fmtBdt(Number(it.due_amount)),
+      date: it.due_date,
+      amount: fmtBdt(Number(it.due_amount)),
+    });
+
+    const { data: ins, error: ie } = await admin
+      .from("sms_logs")
+      .insert({
+        mobile, message, status: "queued",
+        event_type: "due_reminder_irrigation_invoice",
+        farmer_id: it.farmer_id,
+        reference_type: "irrigation_invoice",
+        reference_id: it.id,
+        office_id: it.office_id,
+      })
+      .select("id")
+      .single();
+    if (ie) {
+      if ((ie as any).code === "23505") summary.skipped_dup++;
+      else summary.errors.push("inv_log:" + ie.message);
+      continue;
+    }
+    (summary as any).irrigation_invoice = ((summary as any).irrigation_invoice ?? 0) + 1;
+    await fireSend(ins.id);
+  }
+
   // ----- Auto-retry queued/failed (rate-limited: 50 max) -----
   const { data: stuck } = await admin
     .from("sms_logs")
