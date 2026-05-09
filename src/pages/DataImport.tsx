@@ -683,6 +683,23 @@ export default function DataImport() {
               expense_date: raw.expense_date ?? new Date().toISOString().slice(0, 10),
               created_by: user?.id,
             };
+          } else if (mod === "shares") {
+            const f = farmerMap.get(String(raw.account_number));
+            if (!f) throw new Error("Farmer not found for account_number");
+            const bal = Number(raw.balance ?? 0);
+            if (!(bal >= 0)) throw new Error("balance must be ≥ 0");
+            if (dryRun) {
+              next[i] = { ...next[i], status: "ok", message: `Will upsert share balance=${bal} (preview)` };
+              if (i % 10 === 0) setRows([...next]);
+              continue;
+            }
+            const { error: upErr } = await supabase
+              .from("shares")
+              .upsert({ farmer_id: f.id, office_id: f.office_id, balance: bal }, { onConflict: "farmer_id" });
+            if (upErr) throw upErr;
+            next[i] = { ...next[i], status: "ok" };
+            if (i % 10 === 0) setRows([...next]);
+            continue;
           }
 
           if (dryRun) {
