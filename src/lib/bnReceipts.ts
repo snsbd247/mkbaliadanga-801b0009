@@ -222,10 +222,14 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
 
   if (d.kind === "irrigation") {
     if (d.land_owner_label) rows.push([t.landOwner, d.land_owner_label]);
+    // Land size stored in শতক; convert to বিঘা for the receipt (1 বিঘা = 33 শতক).
+    const sizeBigha = d.farmer.land_size != null
+      ? (Number(d.farmer.land_size) / 33).toFixed(2) + (lang === "bn" ? " বিঘা" : " bigha")
+      : null;
     const mouzaParts = [
       d.farmer.mouza,
       d.farmer.dag_no,
-      d.farmer.land_size != null ? Number(d.farmer.land_size).toFixed(2) : null,
+      sizeBigha,
     ].filter(Boolean) as string[];
     if (mouzaParts.length) rows.push([t.mouza, mouzaParts.join(" / ")]);
     if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
