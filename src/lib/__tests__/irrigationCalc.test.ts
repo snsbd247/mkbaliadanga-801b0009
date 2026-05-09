@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { calcBaseCharge, calcIrrigation, dailyDue } from "../irrigationCalc";
+import {
+  calcBaseCharge, calcIrrigation, dailyDue,
+  shatakToBigha, bighaToShatak, formatLandSize, SHATAK_PER_BIGHA,
+} from "../irrigationCalc";
 
 describe("calcBaseCharge", () => {
   it("per_size: rate × land_size (শতক)", () => {
