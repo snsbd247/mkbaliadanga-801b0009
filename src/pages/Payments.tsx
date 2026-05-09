@@ -440,7 +440,15 @@ export default function Payments() {
             </div>
 
             <div><Label>{t("method")}</Label><Input value={method} onChange={e => setMethod(e.target.value)} /></div>
-            <div><Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label><Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" /></div>
+            <div>
+              <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label>
+              <Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" />
+              {!receiptNo.trim() && previewSerial && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Auto serial preview: <span className="font-mono font-semibold text-foreground">{previewSerial}</span>
+                </p>
+              )}
+            </div>
             <div><Label>{t("note")}</Label><Input value={note} onChange={e => setNote(e.target.value)} /></div>
             <div>
               <Label className="flex items-center gap-1"><Paperclip className="h-3.5 w-3.5" /> Receipt (optional, requires approval)</Label>
