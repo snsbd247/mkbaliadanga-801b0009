@@ -22,7 +22,7 @@ const ENUM_VALUES = new Set(["aman", "boro", "iri", "other"]);
 const toEnum = (code: string) => (ENUM_VALUES.has(code) ? code : "other");
 
 export default function Seasons() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { isAdmin } = useAuth();
   const [list, setList] = useState<any[]>([]);
   const [types, setTypes] = useState<SeasonType[]>([]);
@@ -64,9 +64,9 @@ export default function Seasons() {
   }
 
   async function save() {
-    if (!form.season_type_id) return toast.error("সিজন টাইপ বাছাই করুন");
+    if (!form.season_type_id) return toast.error(tx("Choose a season type", "সিজন টাইপ বাছাই করুন"));
     const stype = types.find((x) => x.id === form.season_type_id);
-    if (!stype) return toast.error("অবৈধ টাইপ");
+    if (!stype) return toast.error(tx("Invalid type", "অবৈধ টাইপ"));
     const payload: any = {
       year: form.year,
       type: toEnum(stype.code),
@@ -108,7 +108,7 @@ export default function Seasons() {
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>সিজন টাইপ</Label>
+                    <Label>{tx("Season type", "সিজন টাইপ")}</Label>
                     <Select value={form.season_type_id} onValueChange={(v) => setForm({ ...form, season_type_id: v })}>
                       <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>
@@ -123,34 +123,34 @@ export default function Seasons() {
                     <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: +e.target.value })} />
                   </div>
                   <div className="col-span-2">
-                    <Label>নাম</Label>
-                    <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="উদাহরণ: বোরো ২০২৬" />
+                    <Label>{tx("Name", "নাম")}</Label>
+                    <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={tx("e.g. Boro 2026", "উদাহরণ: বোরো ২০২৬")} />
                   </div>
                   <div>
-                    <Label>অর্থবছর</Label>
+                    <Label>{tx("Fiscal year", "অর্থবছর")}</Label>
                     <Input value={form.fiscal_year} onChange={(e) => setForm({ ...form, fiscal_year: e.target.value })} placeholder={`${form.year}-${form.year + 1}`} />
                   </div>
                   <div>
-                    <Label>স্ট্যাটাস</Label>
+                    <Label>{tx("Status", "স্ট্যাটাস")}</Label>
                     <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="active">সক্রিয়</SelectItem>
-                        <SelectItem value="closed">বন্ধ</SelectItem>
-                        <SelectItem value="draft">খসড়া</SelectItem>
+                        <SelectItem value="active">{tx("Active", "সক্রিয়")}</SelectItem>
+                        <SelectItem value="closed">{tx("Closed", "বন্ধ")}</SelectItem>
+                        <SelectItem value="draft">{tx("Draft", "খসড়া")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label>শুরুর তারিখ</Label>
+                    <Label>{tx("Start date", "শুরুর তারিখ")}</Label>
                     <Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
                   </div>
                   <div>
-                    <Label>শেষের তারিখ</Label>
+                    <Label>{tx("End date", "শেষের তারিখ")}</Label>
                     <Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
                   </div>
                   <div className="col-span-2">
-                    <Label>ইনভয়েস মেয়াদ (Due Date)</Label>
+                    <Label>{tx("Invoice due date", "ইনভয়েস মেয়াদ (Due Date)")}</Label>
                     <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
                   </div>
                 </div>
@@ -167,11 +167,11 @@ export default function Seasons() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>সিজন</TableHead>
-              <TableHead>অর্থবছর</TableHead>
-              <TableHead>মেয়াদ</TableHead>
-              <TableHead>স্ট্যাটাস</TableHead>
-              <TableHead className="text-right">কাজ</TableHead>
+              <TableHead>{tx("Season", "সিজন")}</TableHead>
+              <TableHead>{tx("Fiscal year", "অর্থবছর")}</TableHead>
+              <TableHead>{tx("Due", "মেয়াদ")}</TableHead>
+              <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
+              <TableHead className="text-right">{tx("Actions", "কাজ")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -187,7 +187,7 @@ export default function Seasons() {
                     {isAdmin && (
                       <div className="inline-flex gap-1 justify-end">
                         <Button size="sm" variant="outline" onClick={() => { setRatesSeason(s); setRatesOpen(true); }}>
-                          <DollarSign className="h-3.5 w-3.5 mr-1" /> রেট কনফিগ
+                          <DollarSign className="h-3.5 w-3.5 mr-1" /> {tx("Rate config", "রেট কনফিগ")}
                         </Button>
                         <DeleteButton onConfirm={() => del(s.id)} />
                       </div>
