@@ -42,7 +42,7 @@ function rows(lands: LandExportRow[]): (string | number)[][] {
       i + 1,
       buildLocation(l) || "-",
       l.mouza_name ?? l.mouza ?? "-",
-      l.dag_no ?? "-",
+      formatDagNumbers(l.dag_no) || "-",
       Number(shatakToBigha(sh).toFixed(2)),
       Number(sh.toFixed(2)),
       l.owner_type ?? "-",
