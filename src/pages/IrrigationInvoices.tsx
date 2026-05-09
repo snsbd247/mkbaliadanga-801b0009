@@ -292,7 +292,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" title={tx("View", "দেখুন")} onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
-                      <Button size="sm" variant="ghost" title={tx("Print", "প্রিন্ট")} onClick={() => printInvoice(r)}><Printer className="h-4 w-4" /></Button>
+                      <ReceiptCopyMenu onSelect={(c) => printInvoice(r, c as InvoiceCopy)} title={tx("Print", "প্রিন্ট")} />
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
                         <Button size="sm" variant="ghost" title={tx("Edit", "এডিট")} onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
                       )}
