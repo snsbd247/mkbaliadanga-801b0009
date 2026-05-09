@@ -243,7 +243,7 @@ function ReceiptLayoutCard() {
         irrigation_amount: 400, maintenance_amount: 50, canal_amount: 25, delay_fee: 25,
         payable_amount: 500, paid_amount: 0, due_amount: 500,
         invoice_status: "generated",
-        farmer: { name: "Karim Mia", farmer_code: "F-101", mobile: "017", village: "Baliadanga" },
+        farmer: { name: "Karim Mia", farmer_code: "00101", mobile: "017", village: "Baliadanga" },
         land: { mouza: "Baliadanga", dag_no: "123, 124/A, 125-B", land_size: 33 },
         season: { name: "Boro", year: 2026 },
       } as any, "farmer");
@@ -256,7 +256,7 @@ function ReceiptLayoutCard() {
       const { exportInvoicesXLSX } = await import("@/lib/irrigationExports");
       exportInvoicesXLSX([{
         invoice_no: "PREVIEW-001",
-        farmers: { name_bn: "Karim Mia", farmer_code: "F-101", mobile: "017" },
+        farmers: { name_bn: "Karim Mia", farmer_code: "00101", mobile: "017" },
         lands: { mouza: "Baliadanga", dag_no: "123, 124/A, 125-B", land_size: 33 },
         seasons: { name: "Boro", year: 2026 },
         invoice_status: "generated",
