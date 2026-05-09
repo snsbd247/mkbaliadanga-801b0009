@@ -469,10 +469,45 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
     };
   });
   if (loanRows.length) {
-    const { data: ins } = await admin.from("loans").insert(loanRows).select("id, total_payable, status");
-    const pays = (ins ?? []).filter((l: any) => l.status === "approved").slice(0, 3).map((l: any) => ({
-      loan_id: l.id, amount: Math.round(Number(l.total_payable) * 0.1), office_id: officeId,
-    }));
+    const { data: ins } = await admin.from("loans").insert(loanRows).select("id, total_payable, status, issued_on");
+    // Generate installment schedules + payments + delay-fee audit
+    const allInst: any[] = [];
+    const pays: any[] = [];
+    const today = new Date();
+    for (const l of (ins ?? [])) {
+      if (l.status !== "approved") continue;
+      const totalPay = Number(l.total_payable);
+      const monthly = +(totalPay / 12).toFixed(2);
+      const start = l.issued_on ? new Date(l.issued_on) : new Date(today.getTime() - 180 * 86400000);
+      // 12 installments; first 3 paid, next 2 overdue, rest pending
+      for (let n = 1; n <= 12; n++) {
+        const due = new Date(start);
+        due.setMonth(due.getMonth() + n);
+        const paid = n <= 3;
+        const overdue = !paid && due < today;
+        allInst.push({
+          loan_id: l.id,
+          installment_no: n,
+          amount: monthly,
+          paid_amount: paid ? monthly : 0,
+          due_date: due.toISOString().slice(0, 10),
+          paid_on: paid ? new Date(due.getTime() - 2 * 86400000).toISOString().slice(0, 10) : null,
+          status: paid ? "paid" : (overdue ? "pending" : "pending"),
+          penalty_amount: overdue ? 50 : 0,
+          office_id: officeId,
+        });
+      }
+      // Corresponding loan_payments rows for the 3 paid installments
+      for (let n = 1; n <= 3; n++) {
+        const due = new Date(start);
+        due.setMonth(due.getMonth() + n);
+        pays.push({
+          loan_id: l.id, amount: monthly, office_id: officeId,
+          paid_on: new Date(due.getTime() - 2 * 86400000).toISOString().slice(0, 10),
+        });
+      }
+    }
+    if (allInst.length) await admin.from("loan_installments").insert(allInst);
     if (pays.length) await admin.from("loan_payments").insert(pays);
   }
   return seeded;
