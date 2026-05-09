@@ -153,7 +153,7 @@ export function ExportDialog<T = any>({
           </div>
 
           <div>
-            <Label className="text-sm font-medium mb-2 block">ফরম্যাট</Label>
+            <Label className="text-sm font-medium mb-2 block">{t("exp_format" as any)}</Label>
             <RadioGroup
               value={format}
               onValueChange={(v) => setFormat(v as ExportFormat)}
