@@ -12,7 +12,8 @@ const json = (b: unknown, s = 200) =>
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
   "loan_payments", "loan_installments", "loans", "loan_plans",
-  "irrigation_charges", "irrigation_rates",
+  "irrigation_invoice_payments", "irrigation_invoice_audit", "irrigation_invoices",
+  "irrigation_charges", "irrigation_rates", "irrigation_season_rates",
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
@@ -613,6 +614,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
 
 const AUDIT_LOG_TABLES = [
   "audit_logs", "voter_audit_logs", "import_audit_logs",
+  "irrigation_rate_audit_logs", "irrigation_invoice_audit",
   "farmer_login_attempts", "farmer_rejections", "demo_operations_log",
 ];
 
