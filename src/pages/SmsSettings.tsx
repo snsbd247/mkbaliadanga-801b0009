@@ -740,7 +740,7 @@ export default function SmsSettings() {
                 <Select value={s.language} onValueChange={(v) => set("language", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bn">Bangla (বাংলা)</SelectItem>
+                    <SelectItem value="bn">Bangla (বাংলা)</SelectItem>{/* i18n-ignore */}
                     <SelectItem value="en">English</SelectItem>
                   </SelectContent>
                 </Select>
