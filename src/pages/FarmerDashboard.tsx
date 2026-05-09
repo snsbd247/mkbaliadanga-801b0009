@@ -22,6 +22,7 @@ interface PortalData {
   loans: Array<{ id: string; principal: number; interest_rate: number; total_payable: number; status: string; issued_on: string; next_due_on?: string; paid: number; due: number; note?: string }>;
   loan_payments: Array<{ id: string; loan_id: string; amount: number; paid_on: string; status: string }>;
   irrigation: Array<{ id: string; entry_date: string; total: number; paid_amount: number; due_amount: number; note?: string }>;
+  irrigation_invoices?: Array<{ id: string; invoice_no: string; generated_at: string; due_date: string; payable_amount: number; paid_amount: number; due_amount: number; invoice_status: string; season_rate?: number; land_type_name?: string; is_borga?: boolean; is_manual_rate?: boolean; seasons?: { name?: string; year?: number; type?: string }; lands?: { dag_no?: string; mouza?: string; land_size?: number } }>;
 }
 
 function fmt(n: number) {
