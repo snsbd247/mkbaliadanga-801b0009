@@ -20,6 +20,7 @@ import {
 import { useLang } from "@/i18n/LanguageProvider";
 import * as XLSX from "xlsx";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
+import { DEMO_PRESETS, type DemoModule } from "@/lib/demoPresets";
 
 const MODULE_KEYS = [
   { id: "locations", tk: "dmModLocations" },
