@@ -97,6 +97,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [editInv, setEditInv] = useState<Invoice | null>(null);
 
   async function load() {
     setLoading(true);
