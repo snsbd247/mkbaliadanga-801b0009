@@ -12,7 +12,7 @@ const TEMPLATES: Record<string, Tpl> = {
   irrigation: {
     columns: ["account_number","dag_no","season_year","season_type","quantity","base_charge","canal_charge","maintenance_charge","other_charge","previous_due_brought","penalty_amount","entry_date","note"],
     sample: { account_number: "100000000001", dag_no: "123/A", season_year: 2026, season_type: "boro", quantity: 0.33, base_charge: 200, canal_charge: 50, maintenance_charge: 20, other_charge: 0, previous_due_brought: 0, penalty_amount: 0, entry_date: "2026-02-01", note: "" },
-    instructions: "season_type = boro | aman | aus. dag_no must already exist for that farmer.",
+    instructions: "season_type = boro | aman | aus. dag_no must already exist for that farmer. Multiple dag numbers per land are supported (comma separated, e.g. \"123, 124/A\").",
   },
   cashbook_receipts: {
     columns: ["receipt_date", "kind", "account_number", "amount", "method", "note"],
