@@ -71,3 +71,61 @@ describe("dailyDue", () => {
     expect(dailyDue(500, -5)).toBe(500);
   });
 });
+
+describe("Bigha ↔ Shatak conversion", () => {
+  it("uses 33 শতক = 1 বিঘা constant", () => {
+    expect(SHATAK_PER_BIGHA).toBe(33);
+  });
+  it("shatakToBigha: round-trip with bighaToShatak", () => {
+    expect(shatakToBigha(33)).toBe(1);
+    expect(shatakToBigha(66)).toBe(2);
+    expect(shatakToBigha(49.5)).toBe(1.5);
+    expect(bighaToShatak(1)).toBe(33);
+    expect(bighaToShatak(2.5)).toBe(82.5);
+  });
+  it("handles null / NaN / negative safely", () => {
+    expect(shatakToBigha(null)).toBe(0);
+    expect(shatakToBigha(undefined)).toBe(0);
+    expect(shatakToBigha(-10)).toBe(0);
+    expect(bighaToShatak("abc" as any)).toBe(0);
+  });
+  it("rounds to 2 decimals", () => {
+    expect(shatakToBigha(10)).toBe(0.3);
+    expect(shatakToBigha(100)).toBe(3.03);
+  });
+});
+
+describe("formatLandSize", () => {
+  it("default long variant shows both units in Bangla", () => {
+    expect(formatLandSize(49.5)).toBe("১.৫০ বিঘা (৪৯.৫০ শতক)".replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d).toString()));
+    // Plain ASCII assertion (string already in latin digits)
+    expect(formatLandSize(49.5)).toBe("1.50 বিঘা (49.50 শতক)");
+  });
+  it("short variant uses slash separator", () => {
+    expect(formatLandSize(33, "short")).toBe("1.00 বিঘা / 33.00 শতক");
+  });
+  it("ascii variant for PDF/Excel without Bangla fonts", () => {
+    expect(formatLandSize(33, "ascii")).toBe("1.00 bigha (33.00 shatak)");
+    expect(formatLandSize(66, "ascii")).toBe("2.00 bigha (66.00 shatak)");
+  });
+  it("falls back when value is missing", () => {
+    expect(formatLandSize(null)).toBe("—");
+    expect(formatLandSize(undefined)).toBe("—");
+    expect(formatLandSize("")).toBe("—");
+  });
+  it("renders zero explicitly", () => {
+    expect(formatLandSize(0, "ascii")).toBe("0 bigha (0 shatak)");
+  });
+});
+
+describe("calculation consistency: per_size charge equals per-bigha rate × bigha", () => {
+  it("rate-per-শতক × land in শতক = rate-per-বিঘা × land in বিঘা", () => {
+    const ratePerShatak = 12;
+    const landShatak = 49.5;
+    const a = calcBaseCharge({ basis: "per_size", rate: ratePerShatak, land_size: landShatak });
+    const ratePerBigha = ratePerShatak * SHATAK_PER_BIGHA;
+    const landBigha = shatakToBigha(landShatak);
+    const b = Math.round(ratePerBigha * landBigha * 100) / 100;
+    expect(a).toBe(b);
+  });
+});
