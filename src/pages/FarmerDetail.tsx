@@ -1030,7 +1030,7 @@ export default function FarmerDetail() {
                 errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} showVillage={false} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t("dagNo")}</Label><Input disabled={editSaving} value={editForm.dag_no} onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })} /></div>
+              <div><Label>{t("dagNo")}</Label><Input disabled={editSaving} value={editForm.dag_no} onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })} placeholder="123, 124/A" /><p className="text-xs text-muted-foreground mt-1">একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন</p></div>
               <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.01" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
               <div><Label>{t("ownerType")}</Label>
                 <Select value={editForm.owner_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, owner_type: v })}>
