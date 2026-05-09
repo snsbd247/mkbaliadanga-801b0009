@@ -310,6 +310,7 @@ export default function Payments() {
       : [{ kind: p.kind, reference_id: p.reference_id ?? "", amount: Number(p.amount) }];
 
     await applyAllocationsToLedgers(p.id, p.farmer_id, allocList, p.note);
+    await sendIrrigationPaymentSms(p.farmer_id, allocList, p.receipt_no ?? null);
     toast.success(t("approvedToast"));
     load();
   }
