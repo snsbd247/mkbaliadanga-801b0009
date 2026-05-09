@@ -145,7 +145,7 @@ const STR = {
     farmerLine: "Farmer name & member no:",
     fatherLine: "Father/Husband:",
     villageLine: "Village / Mobile:",
-    mouza: "Mouza / Dag / Land size:",
+    mouza: "Mouza / Land size:",
     landKind: "Land type:",
     landOwner: "Land owner:",
     dag: "Dag no:",
