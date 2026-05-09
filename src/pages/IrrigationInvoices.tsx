@@ -487,7 +487,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={10} className="text-center py-6 text-muted-foreground">{tx("No invoices", "কোন ইনভয়েস নেই")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={11} className="text-center py-6 text-muted-foreground">{tx("No invoices", "কোন ইনভয়েস নেই")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
