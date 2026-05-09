@@ -1148,7 +1148,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
               <SelectContent>
                 {lands.map((l: any) => (
                   <SelectItem key={l.id} value={l.id}>
-                    {l.mouza} • Dag {l.dag_no} ({formatLandSize(l.land_size, "short")})
+                    {l.mouza} • Dag {formatDagNumbers(l.dag_no)} ({formatLandSize(l.land_size, "short")})
                   </SelectItem>
                 ))}
               </SelectContent>
