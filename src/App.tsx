@@ -66,6 +66,7 @@ import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
 import ExpensesReport from "./pages/reports/ExpensesReport";
 import PromiseDueReport from "./pages/reports/PromiseDueReport";
 import IrrigationDueMismatch from "./pages/admin/IrrigationDueMismatch";
+import RetryJobs from "./pages/admin/RetryJobs";
 import FarmersImport from "./pages/FarmersImport";
 import DataImport from "./pages/DataImport";
 import VoterList from "./pages/VoterList";
@@ -148,6 +149,7 @@ const App = () => (
                 <Route path="/reports/expenses" element={<RequirePerm module="reports" action="can_view"><ExpensesReport /></RequirePerm>} />
                 <Route path="/reports/promise-due" element={<RequirePerm module="reports"><PromiseDueReport /></RequirePerm>} />
                 <Route path="/admin/irrigation-due-mismatch" element={<RequireRole roles={["admin","super_admin"]}><IrrigationDueMismatch /></RequireRole>} />
+                <Route path="/admin/retry-jobs" element={<RequireRole roles={["admin","super_admin"]}><RetryJobs /></RequireRole>} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 <Route path="/import" element={<RequirePerm module="farmers" action="can_add"><DataImport /></RequirePerm>} />
                 <Route path="/users" element={<RequireRole roles={["admin","super_admin"]}><Users /></RequireRole>} />

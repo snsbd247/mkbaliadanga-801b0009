@@ -16,6 +16,7 @@ import { Loader2, AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
+import { safeWithRetry } from "@/lib/retryQueue";
 import { autoReceiptNo } from "@/lib/receiptNo";
 
 type Invoice = {
@@ -305,16 +306,19 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       }
 
       const receiptNo = autoReceiptNo("IRR", paymentId);
-      try {
-        const [{ data: farmer }, { data: company }] = await Promise.all([
-          supabase.from("farmers").select("name_bn,name_en,member_no,village,mobile").eq("id", farmerId).maybeSingle(),
-          supabase.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
-        ]);
-        const farmerName = (farmer?.name_bn || farmer?.name_en || "").trim();
-        const totalDelay = sorted.reduce((s, inv) => s + (delayFee[inv.id] ?? Number(inv.delay_fee || 0)), 0);
-        const totalMaint = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
-        const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
-        await downloadBnReceiptPdf({
+      const [{ data: farmer }, { data: company }] = await Promise.all([
+        supabase.from("farmers").select("name_bn,name_en,member_no,village,mobile,office_id").eq("id", farmerId).maybeSingle(),
+        supabase.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
+      ]);
+      const farmerName = (farmer?.name_bn || farmer?.name_en || "").trim();
+      const totalDelay = sorted.reduce((s, inv) => s + (delayFee[inv.id] ?? Number(inv.delay_fee || 0)), 0);
+      const totalMaint = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
+      const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
+
+      // Receipt — never blocks payment; failure → retry queue
+      const receiptResult = await safeWithRetry(
+        "receipt_generation",
+        () => downloadBnReceiptPdf({
           kind: "irrigation",
           receipt_no: receiptNo,
           date: new Date(),
@@ -331,20 +335,33 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           canal_charge: totalCanal,
           collected_amount: grandTotal,
           remark: specialPermission ? `${tx("Special permission until", "বিশেষ অনুমতি — পরিশোধের তারিখ")}: ${promiseDate}${promiseRemarks ? " — " + promiseRemarks : ""}` : (note || null),
-        }, "both");
+        }, "both"),
+        { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
+      );
+      if (!receiptResult.ok) {
+        toast.warning(tx("Receipt generation failed — queued for retry", "রসিদ তৈরি ব্যর্থ — রিট্রাই কিউতে যোগ হয়েছে"));
+      }
 
-        if (farmer?.mobile) {
-          const remaining = Math.max(0, previousDueTotal - Number(previousCollected || 0));
-          const promiseLine = specialPermission && promiseDate
-            ? `\n${tx("Promise date", "প্রতিশ্রুতির তারিখ")}: ${promiseDate}` : "";
-          const message = tx(
-            `Irrigation payment received.\nCurrent: BDT ${Number(currentCollected || 0).toLocaleString()}\nPrevious due: BDT ${Number(previousCollected || 0).toLocaleString()}\nRemaining previous due: BDT ${remaining.toLocaleString()}${promiseLine}\nReceipt: ${receiptNo}`,
-            `সেচের পেমেন্ট গ্রহণ করা হয়েছে।\nবর্তমান: ৳${Number(currentCollected || 0).toLocaleString()}\nপূর্বের বকেয়া: ৳${Number(previousCollected || 0).toLocaleString()}\nঅবশিষ্ট পূর্বের বকেয়া: ৳${remaining.toLocaleString()}${promiseLine}\nরসিদ: ${receiptNo}`,
-          );
-          await supabase.functions.invoke("send-sms", { body: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId } });
+      // SMS — never blocks payment; failure → retry queue
+      if (farmer?.mobile) {
+        const remaining = Math.max(0, previousDueTotal - Number(previousCollected || 0));
+        const promiseLine = specialPermission && promiseDate
+          ? `\n${tx("Promise date", "প্রতিশ্রুতির তারিখ")}: ${promiseDate}` : "";
+        const message = tx(
+          `Irrigation payment received.\nCurrent: BDT ${Number(currentCollected || 0).toLocaleString()}\nPrevious due: BDT ${Number(previousCollected || 0).toLocaleString()}\nRemaining previous due: BDT ${remaining.toLocaleString()}${promiseLine}\nReceipt: ${receiptNo}`,
+          `সেচের পেমেন্ট গ্রহণ করা হয়েছে।\nবর্তমান: ৳${Number(currentCollected || 0).toLocaleString()}\nপূর্বের বকেয়া: ৳${Number(previousCollected || 0).toLocaleString()}\nঅবশিষ্ট পূর্বের বকেয়া: ৳${remaining.toLocaleString()}${promiseLine}\nরসিদ: ${receiptNo}`,
+        );
+        const smsResult = await safeWithRetry(
+          "sms_send",
+          async () => {
+            const { error } = await supabase.functions.invoke("send-sms", { body: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId } });
+            if (error) throw error;
+          },
+          { referenceId: paymentId, payload: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
+        );
+        if (!smsResult.ok) {
+          toast.warning(tx("SMS send failed — queued for retry", "SMS পাঠানো ব্যর্থ — রিট্রাই কিউতে যোগ হয়েছে"));
         }
-      } catch (rcptErr) {
-        console.warn("[irrigation-pay] receipt/SMS failed", rcptErr);
       }
 
       toast.success(tx("Payment recorded", "পেমেন্ট সংরক্ষিত হয়েছে"));

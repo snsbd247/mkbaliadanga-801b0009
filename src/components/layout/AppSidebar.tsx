@@ -150,6 +150,7 @@ export function AppSidebar() {
         { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
         { url: "/admin/irrigation-due-mismatch", icon: ShieldAlert, label: t("irrigationDueMismatch" as any) || "Irrigation Due Mismatch", permKey: "reports" },
+        { url: "/admin/retry-jobs", icon: ShieldAlert, label: t("retryJobs" as any) || "Retry Jobs", developerOnly: true },
       ],
     },
 
