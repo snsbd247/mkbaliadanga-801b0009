@@ -6,10 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, AlertTriangle, FileSpreadsheet, Wrench, ExternalLink } from "lucide-react";
+import { Loader2, RefreshCw, AlertTriangle, FileSpreadsheet, FileText, Wrench, ExternalLink } from "lucide-react";
 import { money } from "@/lib/format";
 import { useLang } from "@/i18n/LanguageProvider";
 import { exportExcel } from "@/lib/exports";
+import { downloadCsv } from "@/lib/csvExport";
 import { toast } from "sonner";
 
 type Row = {
@@ -83,7 +84,7 @@ export default function IrrigationDueMismatch() {
 
   useEffect(() => { document.title = tx("Irrigation Due Mismatch", "সেচ বকেয়া অমিল"); load(); }, []);
 
-  function exportCsv() {
+  function exportXlsx() {
     if (!rows.length) return toast.error(tx("Nothing to export", "এক্সপোর্ট করার মতো কিছু নেই"));
     exportExcel("irrigation-due-mismatch.xlsx", "Mismatch", rows.map(r => ({
       "Farmer": r.farmer_name,
@@ -94,6 +95,19 @@ export default function IrrigationDueMismatch() {
       "Split (Cur+Prev)": r.collected_split,
       "Delta": r.delta,
     })));
+  }
+  function exportCsv() {
+    if (!rows.length) return toast.error(tx("Nothing to export", "এক্সপোর্ট করার মতো কিছু নেই"));
+    downloadCsv(`irrigation-due-mismatch-${new Date().toISOString().slice(0, 10)}`, rows, [
+      { header: "Farmer ID", accessor: r => r.farmer_id },
+      { header: "Farmer", accessor: r => r.farmer_name },
+      { header: "Code", accessor: r => r.farmer_code ?? "" },
+      { header: "Invoiced Due", accessor: r => r.invoiced_due },
+      { header: "Invoice Paid", accessor: r => r.invoiced_paid },
+      { header: "Legacy Collected", accessor: r => r.legacy_collected },
+      { header: "Split (Cur+Prev)", accessor: r => r.collected_split },
+      { header: "Delta", accessor: r => r.delta },
+    ]);
   }
 
   async function recalcFarmer(farmerId: string) {
@@ -158,8 +172,11 @@ export default function IrrigationDueMismatch() {
         title={tx("Irrigation Due Mismatch", "সেচ বকেয়া অমিল")}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
+            <Button variant="outline" size="sm" onClick={exportXlsx} disabled={!rows.length}>
               <FileSpreadsheet className="h-4 w-4 mr-1" />Excel
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
+              <FileText className="h-4 w-4 mr-1" />CSV
             </Button>
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
               <RefreshCw className="h-4 w-4 mr-1" />{tx("Refresh", "রিফ্রেশ")}
