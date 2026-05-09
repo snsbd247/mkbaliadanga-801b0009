@@ -22,7 +22,8 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
-import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown } from "lucide-react";
+import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -186,7 +187,17 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             <Input placeholder="ইনভয়েস নং / কৃষক নাম / কোড / মোবাইল" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{filtered.length} টি ইনভয়েস {loading && "(লোড হচ্ছে…)"}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">{filtered.length} টি ইনভয়েস {loading && "(লোড হচ্ছে…)"}</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(filtered)} disabled={!filtered.length}>
+              <FileDown className="h-4 w-4 mr-1" /> CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(filtered)} disabled={!filtered.length}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+            </Button>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
