@@ -82,7 +82,7 @@ export default function IrrigationReports() {
   const byLandType = useMemo(() => {
     const m = new Map<string, { name: string; payable: number; paid: number; due: number; count: number }>();
     for (const r of rows) {
-      const name = r.land_type_name || "অজানা";
+      const name = r.land_type_name || t("irr_unknown" as any);
       const cur = m.get(name) ?? { name, payable: 0, paid: 0, due: 0, count: 0 };
       cur.payable += Number(r.payable_amount || 0);
       cur.paid += Number(r.paid_amount || 0);
