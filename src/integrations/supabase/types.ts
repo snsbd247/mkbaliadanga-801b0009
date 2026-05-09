@@ -1865,6 +1865,7 @@ export type Database = {
         Row: {
           created_at: string
           dag_no: string | null
+          dag_numbers: string[]
           deleted_at: string | null
           district_id: string | null
           division_id: string | null
@@ -1883,6 +1884,7 @@ export type Database = {
         Insert: {
           created_at?: string
           dag_no?: string | null
+          dag_numbers?: string[]
           deleted_at?: string | null
           district_id?: string | null
           division_id?: string | null
@@ -1901,6 +1903,7 @@ export type Database = {
         Update: {
           created_at?: string
           dag_no?: string | null
+          dag_numbers?: string[]
           deleted_at?: string | null
           district_id?: string | null
           division_id?: string | null
