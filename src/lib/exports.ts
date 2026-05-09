@@ -32,10 +32,10 @@ export async function applyPdfHeaderFooter(
   const pageH = doc.internal.pageSize.getHeight();
 
   const lang = pdfLang();
-  const fontReady = lang === "bn" ? await ensureBanglaFont(doc) : false;
-  const useBn = lang === "bn" && fontReady;
+  const bnFamily = lang === "bn" ? await ensureBanglaFont(doc) : null;
+  const useBn = lang === "bn" && !!bnFamily;
   const setLangFont = (style: "normal" | "bold" = "normal") => {
-    if (useBn) doc.setFont(BANGLA_FONT, "normal");
+    if (useBn && bnFamily) doc.setFont(bnFamily, "normal");
     else doc.setFont(undefined, style);
   };
 
