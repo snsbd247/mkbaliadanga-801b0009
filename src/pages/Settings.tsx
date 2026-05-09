@@ -11,6 +11,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { Navigate } from "react-router-dom";
 import { notifyBrandingChange, useBranding } from "@/lib/branding";
 import { getReceiptLayoutSettings, setReceiptLayoutSettings, resetReceiptLayoutSettings } from "@/lib/receiptLayoutSettings";
+import { buildReceiptCopyHtmlForTest } from "@/lib/bnReceipts";
 
 export default function Settings() {
   const { t } = useLang();
