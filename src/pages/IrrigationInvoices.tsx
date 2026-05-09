@@ -104,6 +104,11 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [search, setSearch] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [editInv, setEditInv] = useState<Invoice | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
+  const [pdfSettingsOpen, setPdfSettingsOpen] = useState(false);
+  const [pdfSettings, setPdfSettings] = useState<InvoicePdfSettings>(() => loadInvoiceSettings());
+  const [lastCopy, setLastCopy] = useState<InvoiceCopy>(() => loadLastInvoiceCopy());
 
   async function load() {
     setLoading(true);
