@@ -115,8 +115,35 @@ function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
   });
 }
 
+// Header aliases — lets users rearrange or rename columns slightly without
+// breaking the import. Keys are normalized aliases → canonical column name.
+const HEADER_ALIASES: Record<string, string> = {
+  account_no: "account_number",
+  acc_no: "account_number",
+  voter_no: "account_number",
+  voter_number: "account_number",
+  member_no: "account_number",
+  dag: "dag_no",
+  dag_number: "dag_no",
+  plot_no: "dag_no",
+  plot: "dag_no",
+  size: "land_size",
+  area: "land_size",
+  share: "share_percentage",
+  share_pct: "share_percentage",
+  owner_acc: "owner_account_number",
+  owner_account: "owner_account_number",
+  tenant_acc: "tenant_account_number",
+  tenant_account: "tenant_account_number",
+  sharecropper_account_number: "tenant_account_number",
+  date: "entry_date",
+  season: "season_type",
+  year: "season_year",
+};
+
 function normalizeKey(k: string) {
-  return String(k).trim().toLowerCase().replace(/\s+/g, "_");
+  const base = String(k).trim().toLowerCase().replace(/\s+/g, "_").replace(/[()./]/g, "");
+  return HEADER_ALIASES[base] ?? base;
 }
 
 function parseSheet(wb: XLSX.WorkBook): Record<string, any>[] {
@@ -132,11 +159,56 @@ function parseSheet(wb: XLSX.WorkBook): Record<string, any>[] {
   });
 }
 
+const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
+  lands: [
+    ["Column", "Required", "Format / Notes"],
+    ["account_number", "Yes", "Farmer Voter / Savings A/C No (12 digits)."],
+    ["dag_no", "Yes", "One or more dag numbers, comma separated. Canonical: \"123, 124/A, 125-B\". Allowed chars per token: digits, letters, '/', '-' (max 32). No duplicates."],
+    ["land_size", "Yes", "Decimal (acre/decimal as per office unit). > 0."],
+    ["owner_type", "No", "owner | borgadar (default: owner)"],
+    ["field_type", "No", "high_land | medium_land | low_land (default: medium_land)"],
+    ["mouza", "No", "Free text mouza name."],
+    [],
+    ["Examples", "", ""],
+    ["100000000001", "", "dag_no = 123  → single dag"],
+    ["100000000001", "", "dag_no = 123, 124/A, 125-B  → multi-dag (canonical)"],
+  ],
+  land_relations: [
+    ["Column", "Required", "Format / Notes"],
+    ["owner_account_number", "Yes", "Owner farmer A/C No (12 digits)."],
+    ["tenant_account_number", "Yes", "Tenant / sharecropper farmer A/C No."],
+    ["dag_no", "Yes", "Must EXACTLY match the owner's land dag_no in canonical comma-separated form (e.g. \"123, 124/A\")."],
+    ["share_percentage", "Yes", "0 < value ≤ 100. Combined overlap must not exceed 100%."],
+    ["valid_from", "Yes", "YYYY-MM-DD"],
+    ["valid_to", "No", "YYYY-MM-DD or empty for open-ended."],
+    ["note", "No", "Free text."],
+  ],
+  irrigation: [
+    ["Column", "Required", "Format / Notes"],
+    ["account_number", "Yes", "Farmer A/C No (12 digits)."],
+    ["dag_no", "Yes", "Must match an existing land for this farmer. Canonical comma-separated form supported (e.g. \"123, 124/A\")."],
+    ["season_year", "Yes", "e.g. 2026"],
+    ["season_type", "Yes", "boro | aman | aus"],
+    ["quantity", "Yes", "Decimal — irrigated land size."],
+    ["base_charge", "Yes", "Numeric"],
+    ["canal_charge / maintenance_charge / other_charge", "No", "Numeric, default 0"],
+    ["previous_due_brought", "No", "Numeric, default 0"],
+    ["penalty_amount", "No", "Numeric, default 0"],
+    ["entry_date", "Yes", "YYYY-MM-DD"],
+    ["note", "No", "Free text"],
+  ],
+};
+
 function downloadTemplate(mod: Module) {
   const tpl = TEMPLATES[mod];
   const ws = XLSX.utils.json_to_sheet([tpl.sample], { header: tpl.columns });
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, mod);
+  const guide = TPL_INSTRUCTIONS[mod];
+  if (guide) {
+    const gws = XLSX.utils.aoa_to_sheet(guide);
+    XLSX.utils.book_append_sheet(wb, gws, "Instructions");
+  }
   XLSX.writeFile(wb, `import_template_${mod}.xlsx`);
 }
 
