@@ -58,6 +58,7 @@ export default function FarmerDetail() {
   const [editLoanForm, setEditLoanForm] = useState<{ plan_id: string; principal: number; interest_rate: number; interest_enabled: boolean; issued_on: string; next_due_on: string; note: string }>({ plan_id: "", principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
   const [loanPlans, setLoanPlans] = useState<any[]>([]);
   const [irr, setIrr] = useState<any[]>([]);
+  const [invDue, setInvDue] = useState<number>(0);
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   
@@ -124,6 +125,13 @@ export default function FarmerDetail() {
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
     setPayments(pm.data ?? []);
 
+    // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
+    const inv = await supabase
+      .from("irrigation_invoices")
+      .select("due_amount")
+      .eq("farmer_id", id!)
+      .is("deleted_at", null);
+    setInvDue((inv.data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
   }
 
   function farmerLocationLine(fr: any): string {
@@ -631,7 +639,8 @@ export default function FarmerDetail() {
     const paid = (l.loan_payments ?? []).reduce((x: number, p: any) => x + Number(p.amount), 0);
     return a + (Number(l.total_payable) - paid);
   }, 0);
-  const irrDue = irr.reduce((a, i) => a + Number(i.due_amount), 0);
+  // Irrigation due now sourced from irrigation_invoices (legacy irrigation_charges removed from UI).
+  const irrDue = invDue;
 
   const buildLocLine = (l: LandRow) => {
     const parts = [l.division_name, l.district_name, l.upazila_name, l.union_name, l.ward_name, l.village_name, l.mouza_name].filter(Boolean);
@@ -698,8 +707,7 @@ export default function FarmerDetail() {
           {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="loans">{t("loans")}</TabsTrigger>}
-          <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
-          <TabsTrigger value="irr_invoices">{t("farmerIrrigationInvoices" as any)}</TabsTrigger>
+          <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
         </TabsList>
@@ -947,34 +955,6 @@ export default function FarmerDetail() {
               );
             })}
             {loans.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}</TableBody>
-          </Table></Card>
-        </TabsContent>
-
-        <TabsContent value="irrigation">
-          <Card><Table>
-            <TableHeader><TableRow>
-              <TableHead>{t("date")}</TableHead><TableHead>{t("season")}</TableHead>
-              <TableHead>{t("dagNo")}</TableHead><TableHead>{t("total")}</TableHead>
-              <TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
-              <TableHead className="text-right">{t("actions")}</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {irr.map(i => (
-                <TableRow key={i.id}>
-                  <TableCell>{fmtDate(i.entry_date)}</TableCell>
-                  <TableCell>{i.seasons?.name}</TableCell>
-                  <TableCell>{i.lands?.dag_no}</TableCell>
-                  <TableCell>{money(i.total)}</TableCell>
-                  <TableCell>{money(i.paid_amount)}</TableCell>
-                  <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
-                  <TableCell className="text-right">
-                    <ReceiptCopyMenu onSelect={(c) => printIrrigation(i, c)} title={t("print")} />
-                    {isSuper && <DeleteButton onConfirm={() => deleteIrrigation(i)} title={t("delete")} />}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {irr.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
-            </TableBody>
           </Table></Card>
         </TabsContent>
 
