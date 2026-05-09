@@ -1,66 +1,63 @@
-## লক্ষ্য
+# Irrigation Module Stabilization Plan
 
-বর্তমানে **Seasons** তৈরির সময় season type হার্ডকোড enum (`aman`, `boro`, `iri`, `other`)। আর **irrigation_rates** এ পুরো সিজনের জন্য মাত্র একটা flat `base_rate` — জমির ধরন (high/medium/low/পুকুর/ডোবা) আলাদা করে রেট বসানো যায় না।
+This is a large, multi-area cleanup. To stay safe and avoid breaking existing flows (ledger, receipts, payments, QR, accounting), I'll deliver it in **phased PRs** rather than one massive change. Each phase is independently shippable and testable.
 
-আপনি চান:
-1. Admin panel থেকে season type list নিজের মতো করে তৈরি/সম্পাদনা — বোরো, আমন, ইরি, পুকুর, ডোবা ইত্যাদি।
-2. সিজন তৈরির সময় ওই dynamic list থেকে type বাছাই।
-3. প্রতিটি সিজনের জন্য **জমির ধরন অনুযায়ী** শতক প্রতি রেট সেট করা — যেমন বোরো-২০২৬ এ high_land=১৫, medium_land=১২, low_land=১০, পুকুর=২০।
-4. ইনভয়েস তৈরির সময় land.field_type দেখে ওই matrix থেকে রেট auto-pickup হবে।
+## Phase 1 — Snapshot Safety + Rate Fallback (highest risk, ship first)
 
-## পরিবর্তন
+**DB migration**
+- Add `irrigation_invoices.is_manual_rate boolean default false`, `manual_rate_reason text`, `recalculated_at timestamptz`, `recalculated_by uuid`.
+- Add trigger `trg_protect_invoice_snapshot` on `irrigation_invoices` UPDATE: blocks changes to `calculation_snapshot`, `season_rate`, `land_type_id`, `land_type_name` unless the SQL `set local app.allow_snapshot_rewrite = 'on'` flag is set (used only by the recalc RPC).
+- Add RPC `recalculate_irrigation_invoice(invoice_id, reason)` — admin-only, archives old snapshot into `irrigation_invoice_audit`, writes new snapshot, sets `recalculated_*`.
 
-### 1. Database (migration)
+**Frontend (`src/pages/IrrigationInvoices.tsx`)**
+- Edit dialog: snapshot fields (rate, land type, snapshot JSON) become **read-only** with a "স্ন্যাপশট সুরক্ষিত" badge.
+- New "পুনঃগণনা" button (admin only) → opens reason dialog → calls RPC.
+- Bulk + manual generation: before insert, run rate check. If missing, open `RateMissingDialog` with three actions: *Set manual rate*, *Go to rate config*, *Cancel*. Manual rate path stores `is_manual_rate=true` + reason.
 
-- নতুন lookup table **`season_types`**: `code` (slug), `name`, `name_bn`, `is_active`, `sort_order`, `office_id` (nullable = global)
-- নতুন lookup table **`field_types`**: একই pattern — যাতে পুকুর/ডোবা ইত্যাদি field_type ও admin add করতে পারেন
-- Seed করা: বর্তমান enum values (`boro`, `aman`, `iri`, `other`) + (`high_land`, `medium_land`, `low_land`, `other`)
-- `seasons` এ `season_type_id` (nullable, fk → season_types) যোগ। পুরোনো `type` enum কলাম রাখা হবে backward compat-এর জন্য — নতুন রো লিখলে দুটোই fill হবে যদি match করে
-- নতুন table **`season_field_rates`**: `(season_id, field_type_code, rate_per_shotok, office_id)` — composite unique `(season_id, field_type_code, office_id)`
-- RLS: office_read + admin_manage (existing pattern অনুসরণ করে)
+## Phase 2 — Sidebar Restructure + Rate Audit Log
 
-### 2. Admin UI
-
-- নতুন route **`/admin/season-types`**: `code`, `নাম`, `বাংলা নাম`, `সক্রিয়` — CRUD
-- নতুন route **`/admin/field-types`**: একই pattern
-- Sidebar এর Admin section এ দুটো entry যোগ
-
-### 3. Seasons page (`src/pages/Seasons.tsx`)
-
-- Type dropdown হার্ডকোড enum-এর বদলে `season_types` থেকে লোড
-- Save করার সময় `season_type_id` সেট, সাথে `type` enum-এ map করতে চেষ্টা করবে (custom হলে `other`)
-- প্রতিটি সিজনের রো-তে নতুন button **"রেট সেট করুন"** → একটা dialog খুলবে যেখানে field_types এর প্রতিটি row-এর পাশে rate input থাকবে। Save করলে `season_field_rates` upsert হবে।
-
-### 4. Invoice generation
-
-- `IrrigationInvoices.tsx > GenerateTab`:
-  - একক `rate` input তুলে দেওয়া হবে (অথবা override হিসেবে রাখা হবে)
-  - সিজন বাছাইয়ের পর `season_field_rates` লোড → preview generation এ প্রতিটি land-এর `field_type` দেখে rate map থেকে বের করবে
-  - রেট খুঁজে না পেলে warning দেখাবে এবং ওই land skip করবে (count আলাদা দেখাবে)
-- Manual dialog এও field_type অনুযায়ী auto-rate, কিন্তু override input থাকবে
-
-### 5. টেস্ট
-
-- `irrigationInvoice.extra.test.ts` এ rate matrix lookup helper-এর test যোগ
-- `IrrigationRates.test.tsx` legacy — কেবল pass হলেই হবে; নতুন tab আলাদা টেস্ট পরে
-
-### Out of scope (এই step-এ নয়)
-
-- পুরোনো `irrigation_rates` table delete নয় — কেবল legacy fallback হিসেবে থাকবে
-- enum `season_type` / `field_type` থেকে কলাম drop করা হবে না — runtime backward compat রক্ষা
-
-## টেকনিক্যাল ডিটেইল
-
-```text
-season_types (id, code unique, name, name_bn, is_active, sort_order, office_id)
-field_types  (id, code unique, name, name_bn, is_active, sort_order, office_id)
-season_field_rates (id, season_id fk, field_type_code text, rate_per_shotok numeric,
-                    office_id, created_by, created_at, updated_at,
-                    UNIQUE(season_id, field_type_code, office_id))
-seasons + season_type_id uuid REFERENCES season_types(id)
+**DB migration**
 ```
+irrigation_rate_audit_logs(id, office_id, irrigation_season_id, land_type_id,
+  old_rate numeric, new_rate numeric, change_reason text,
+  changed_by uuid, changed_at timestamptz default now(), ip text)
+```
+- Trigger on `irrigation_season_rates` INSERT/UPDATE/DELETE → writes audit row.
+- RLS: admin/super read; insert via trigger only.
 
-Invoice rate resolution order:
-1. `season_field_rates` লুকআপ by `(season_id, land.field_type, office_id)` → fallback office_id NULL
-2. না পেলে legacy `irrigation_rates.base_rate` (per_size, active)
-3. না পেলে user-entered override
+**New page** `src/pages/admin/RateAuditLog.tsx` at `/admin/rate-audit` with filters (date, office, season, land type), export to CSV, detail modal.
+
+**Sidebar (`src/components/layout/AppSidebar.tsx`)** — split current Operations group:
+```
+Operations:           সেচ ইনভয়েস, পেমেন্ট, রসিদসমূহ
+Irrigation Reports:   সেচ রিপোর্ট, ওভারডিউ, বিলম্ব ফি, বর্গা, সিজন
+Irrigation Settings:  সিজন টাইপ, জমির ধরন, সিজন রেট, সেচ চার্জ সেটিংস, রেট পরিবর্তন ইতিহাস
+```
+Move existing irrigation entries; keep permission gating; add icons + dividers (already supported by current Collapsible groups).
+
+## Phase 3 — i18n Cleanup + Export Enrichment
+
+**i18n** — add canonical keys to `src/i18n/translations.ts`:
+`irrigationInvoice, irrigationCollection, seasonRate, landType, delayFee, canalCharge, maintenanceCharge, payableAmount, dueAmount, paidAmount, manualRate, snapshotProtected, recalculate, rateMissingTitle, rateMissingBody`.
+Replace hardcoded Bangla/English mixes in: `IrrigationInvoices.tsx`, `Seasons.tsx`, `admin/Lookups.tsx`, `IrrigationRates.tsx`, `reports/IrrigationDueReport.tsx`, `reports/InvoiceReport.tsx`, related toast/validation strings.
+
+**Exports** (`src/lib/exports.ts` + report pages) — add columns:
+`season_rate, land_type_name, is_manual_rate, manual_rate_reason, generated_by_name, payment_status, calculation_snapshot` (JSON column for Excel; flattened summary for PDF).
+
+## Phase 4 — Demo Refresh + Tests
+
+- Update `supabase/functions/demo-reset/index.ts` to seed: 3 season types, 5 land types, 2 seasons with full rate matrix, sample invoices (paid/partial/overdue/borga/manual-rate), rate audit history, SMS logs. Preserve admin user.
+- Vitest additions:
+  - `irrigationInvoice.snapshot.test.ts` — trigger blocks snapshot mutation.
+  - `irrigationInvoice.rateMissing.test.ts` — fallback dialog flow.
+  - `rateAuditLog.test.ts` — trigger writes audit row on rate change.
+  - `exports.irrigationColumns.test.ts` — new fields present.
+  - `AppSidebar.irrigationGroups.test.tsx` — three groups render with permissions.
+
+## Out of Scope / Non-Goals
+- No changes to ledger, payments, receipts, QR, or accounting code paths.
+- No schema changes to `irrigation_charge_settings` or `lands`.
+- Backward compatible: old invoices without `is_manual_rate` default to `false`.
+
+## Suggested Execution Order
+I recommend approving and shipping **Phase 1 first** (highest value + risk), validating in preview, then proceeding sequentially. Reply with "next phase 1" (or which phase to start) and I'll implement.

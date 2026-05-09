@@ -1209,16 +1209,20 @@ export type Database = {
           invoice_status: Database["public"]["Enums"]["invoice_status"]
           irrigation_amount: number
           is_borga: boolean
+          is_manual_rate: boolean
           land_id: string
           land_type_id: string | null
           land_type_name: string | null
           maintenance_amount: number
+          manual_rate_reason: string | null
           note: string | null
           office_id: string | null
           other_charge: number
           owner_farmer_id: string
           paid_amount: number
           payable_amount: number
+          recalculated_at: string | null
+          recalculated_by: string | null
           season_id: string
           season_rate: number | null
           updated_at: string
@@ -1242,16 +1246,20 @@ export type Database = {
           invoice_status?: Database["public"]["Enums"]["invoice_status"]
           irrigation_amount?: number
           is_borga?: boolean
+          is_manual_rate?: boolean
           land_id: string
           land_type_id?: string | null
           land_type_name?: string | null
           maintenance_amount?: number
+          manual_rate_reason?: string | null
           note?: string | null
           office_id?: string | null
           other_charge?: number
           owner_farmer_id: string
           paid_amount?: number
           payable_amount?: number
+          recalculated_at?: string | null
+          recalculated_by?: string | null
           season_id: string
           season_rate?: number | null
           updated_at?: string
@@ -1275,16 +1283,20 @@ export type Database = {
           invoice_status?: Database["public"]["Enums"]["invoice_status"]
           irrigation_amount?: number
           is_borga?: boolean
+          is_manual_rate?: boolean
           land_id?: string
           land_type_id?: string | null
           land_type_name?: string | null
           maintenance_amount?: number
+          manual_rate_reason?: string | null
           note?: string | null
           office_id?: string | null
           other_charge?: number
           owner_farmer_id?: string
           paid_amount?: number
           payable_amount?: number
+          recalculated_at?: string | null
+          recalculated_by?: string | null
           season_id?: string
           season_rate?: number | null
           updated_at?: string
@@ -3571,6 +3583,52 @@ export type Database = {
       reactivate_voter_membership: {
         Args: { _farmer_id: string; _reason: string }
         Returns: Json
+      }
+      recalculate_irrigation_invoice: {
+        Args: { _invoice_id: string; _reason: string }
+        Returns: {
+          calculation_snapshot: Json | null
+          canal_amount: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          delay_fee: number
+          deleted_at: string | null
+          due_amount: number
+          due_date: string
+          farmer_id: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+          invoice_no: string
+          invoice_status: Database["public"]["Enums"]["invoice_status"]
+          irrigation_amount: number
+          is_borga: boolean
+          is_manual_rate: boolean
+          land_id: string
+          land_type_id: string | null
+          land_type_name: string | null
+          maintenance_amount: number
+          manual_rate_reason: string | null
+          note: string | null
+          office_id: string | null
+          other_charge: number
+          owner_farmer_id: string
+          paid_amount: number
+          payable_amount: number
+          recalculated_at: string | null
+          recalculated_by: string | null
+          season_id: string
+          season_rate: number | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "irrigation_invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       recompute_share_balance: {
         Args: { _farmer_id: string }
