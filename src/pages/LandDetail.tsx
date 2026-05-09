@@ -128,9 +128,9 @@ export default function LandDetail() {
           <TableBody>
             {charges.map((c) => (
               <TableRow key={c.id}>
-                <TableCell>{fmtDate(c.entry_date)}</TableCell>
+                <TableCell>{fmtDate((c.generated_at || "").slice(0, 10))}</TableCell>
                 <TableCell>{c.seasons ? `${c.seasons.year} · ${c.seasons.type}` : "—"}</TableCell>
-                <TableCell>{c.total}</TableCell>
+                <TableCell>{c.payable_amount}</TableCell>
                 <TableCell>{c.paid_amount}</TableCell>
                 <TableCell>{c.due_amount}</TableCell>
               </TableRow>
