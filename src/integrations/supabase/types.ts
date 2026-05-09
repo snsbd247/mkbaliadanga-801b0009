@@ -935,6 +935,48 @@ export type Database = {
         }
         Relationships: []
       }
+      irrigation_charge_settings: {
+        Row: {
+          auto_apply_delay_fee: boolean
+          canal_percent: number
+          created_at: string
+          created_by: string | null
+          delay_fee_percent: number
+          grace_days: number
+          id: string
+          maintenance_percent: number
+          office_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_apply_delay_fee?: boolean
+          canal_percent?: number
+          created_at?: string
+          created_by?: string | null
+          delay_fee_percent?: number
+          grace_days?: number
+          id?: string
+          maintenance_percent?: number
+          office_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_apply_delay_fee?: boolean
+          canal_percent?: number
+          created_at?: string
+          created_by?: string | null
+          delay_fee_percent?: number
+          grace_days?: number
+          id?: string
+          maintenance_percent?: number
+          office_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       irrigation_charges: {
         Row: {
           base_charge: number
@@ -1052,6 +1094,190 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      irrigation_invoice_audit: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          invoice_id: string
+          new_values: Json | null
+          note: string | null
+          office_id: string | null
+          old_values: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          invoice_id: string
+          new_values?: Json | null
+          note?: string | null
+          office_id?: string | null
+          old_values?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          new_values?: Json | null
+          note?: string | null
+          office_id?: string | null
+          old_values?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "irrigation_invoice_audit_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "irrigation_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      irrigation_invoice_payments: {
+        Row: {
+          canal_collected: number
+          collected_amount: number
+          created_at: string
+          created_by: string | null
+          delay_fee_collected: number
+          id: string
+          invoice_id: string
+          irrigation_collected: number
+          maintenance_collected: number
+          office_id: string | null
+          payment_id: string | null
+        }
+        Insert: {
+          canal_collected?: number
+          collected_amount?: number
+          created_at?: string
+          created_by?: string | null
+          delay_fee_collected?: number
+          id?: string
+          invoice_id: string
+          irrigation_collected?: number
+          maintenance_collected?: number
+          office_id?: string | null
+          payment_id?: string | null
+        }
+        Update: {
+          canal_collected?: number
+          collected_amount?: number
+          created_at?: string
+          created_by?: string | null
+          delay_fee_collected?: number
+          id?: string
+          invoice_id?: string
+          irrigation_collected?: number
+          maintenance_collected?: number
+          office_id?: string | null
+          payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "irrigation_invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "irrigation_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      irrigation_invoices: {
+        Row: {
+          canal_amount: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          delay_fee: number
+          deleted_at: string | null
+          due_amount: number
+          due_date: string
+          farmer_id: string
+          generated_at: string
+          generated_by: string | null
+          id: string
+          invoice_no: string
+          invoice_status: Database["public"]["Enums"]["invoice_status"]
+          irrigation_amount: number
+          is_borga: boolean
+          land_id: string
+          maintenance_amount: number
+          note: string | null
+          office_id: string | null
+          other_charge: number
+          owner_farmer_id: string
+          paid_amount: number
+          payable_amount: number
+          season_id: string
+          updated_at: string
+        }
+        Insert: {
+          canal_amount?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          delay_fee?: number
+          deleted_at?: string | null
+          due_amount?: number
+          due_date: string
+          farmer_id: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          invoice_no: string
+          invoice_status?: Database["public"]["Enums"]["invoice_status"]
+          irrigation_amount?: number
+          is_borga?: boolean
+          land_id: string
+          maintenance_amount?: number
+          note?: string | null
+          office_id?: string | null
+          other_charge?: number
+          owner_farmer_id: string
+          paid_amount?: number
+          payable_amount?: number
+          season_id: string
+          updated_at?: string
+        }
+        Update: {
+          canal_amount?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          delay_fee?: number
+          deleted_at?: string | null
+          due_amount?: number
+          due_date?: string
+          farmer_id?: string
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          invoice_no?: string
+          invoice_status?: Database["public"]["Enums"]["invoice_status"]
+          irrigation_amount?: number
+          is_borga?: boolean
+          land_id?: string
+          maintenance_amount?: number
+          note?: string | null
+          office_id?: string | null
+          other_charge?: number
+          owner_farmer_id?: string
+          paid_amount?: number
+          payable_amount?: number
+          season_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       irrigation_rates: {
         Row: {
@@ -3017,11 +3243,20 @@ export type Database = {
         Returns: Json
       }
       generate_farmer_voter_number: { Args: never; Returns: string }
+      generate_invoice_no: { Args: never; Returns: string }
       generate_loan_installments: { Args: { _loan_id: string }; Returns: Json }
       generate_member_no: { Args: never; Returns: string }
       generate_receipt_no: {
         Args: { _office_id: string; _ts?: string }
         Returns: string
+      }
+      get_billed_farmer_for_land: {
+        Args: { _as_of?: string; _land_id: string }
+        Returns: {
+          farmer_id: string
+          is_borga: boolean
+          owner_farmer_id: string
+        }[]
       }
       get_previous_due: {
         Args: { _exclude_season: string; _farmer: string; _land: string }
@@ -3134,6 +3369,13 @@ export type Database = {
       approval_status: "pending" | "approved" | "rejected"
       field_type: "high_land" | "medium_land" | "low_land" | "other"
       installment_status: "due" | "paid" | "missed" | "partial"
+      invoice_status:
+        | "draft"
+        | "generated"
+        | "partial_paid"
+        | "paid"
+        | "overdue"
+        | "cancelled"
       irrigation_basis: "per_size" | "per_day" | "per_hour"
       loan_installment_type: "daily" | "weekly" | "monthly"
       loan_payment_status: "pending" | "approved" | "rejected"
@@ -3294,6 +3536,14 @@ export const Constants = {
       approval_status: ["pending", "approved", "rejected"],
       field_type: ["high_land", "medium_land", "low_land", "other"],
       installment_status: ["due", "paid", "missed", "partial"],
+      invoice_status: [
+        "draft",
+        "generated",
+        "partial_paid",
+        "paid",
+        "overdue",
+        "cancelled",
+      ],
       irrigation_basis: ["per_size", "per_day", "per_hour"],
       loan_installment_type: ["daily", "weekly", "monthly"],
       loan_payment_status: ["pending", "approved", "rejected"],
