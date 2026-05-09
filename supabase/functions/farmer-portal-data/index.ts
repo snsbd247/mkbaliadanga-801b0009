@@ -87,6 +87,11 @@ Deno.serve(async (req) => {
     const irrigation = irrigationRes.data ?? [];
     const irrigationDue = irrigation.reduce((a: number, i: any) => a + Number(i.due_amount ?? 0), 0);
 
+    const irrigationInvoices = irrigationInvoicesRes.data ?? [];
+    const irrigationInvoiceDue = irrigationInvoices
+      .filter((i: any) => i.invoice_status !== "cancelled")
+      .reduce((a: number, i: any) => a + Number(i.due_amount ?? 0), 0);
+
     return new Response(JSON.stringify({
       ok: true,
       farmer: {
@@ -103,12 +108,14 @@ Deno.serve(async (req) => {
       summary: {
         savings_balance: savingsBalance,
         loan_due: loanBalance,
-        irrigation_due: irrigationDue,
+        irrigation_due: irrigationDue + irrigationInvoiceDue,
+        irrigation_invoice_due: irrigationInvoiceDue,
       },
       savings,
       loans: loansWithDue,
       loan_payments: payments,
       irrigation,
+      irrigation_invoices: irrigationInvoices,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("farmer-portal-data error", e);
