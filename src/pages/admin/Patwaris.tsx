@@ -15,6 +15,7 @@ import { Plus } from "lucide-react";
 import { ViewButton, EditButton } from "@/components/ui/action-icon-button";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Patwari = {
   id: string;
@@ -37,6 +38,7 @@ const empty = {
 
 export default function Patwaris() {
   const { user, isSuper } = useAuth();
+  const { tx } = useLang();
   const [rows, setRows] = useState<Patwari[]>([]);
   const [mouzas, setMouzas] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
@@ -46,7 +48,7 @@ export default function Patwaris() {
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
 
-  useEffect(() => { document.title = "পাটুয়ারী — তালিকা"; load(); }, [showInactive]);
+  useEffect(() => { document.title = tx("Patwari — list", "পাটুয়ারী — তালিকা"); load(); }, [showInactive]);
 
   async function load() {
     const [p, m, o] = await Promise.all([
@@ -79,7 +81,7 @@ export default function Patwaris() {
   }
 
   async function save() {
-    if (!form.name?.trim()) return toast.error("নাম দিন");
+    if (!form.name?.trim()) return toast.error(tx("Enter name", "নাম দিন"));
     const payload: any = {
       name: form.name.trim(),
       name_bn: form.name_bn?.trim() || null,
@@ -99,7 +101,7 @@ export default function Patwaris() {
       ({ error } = await supabase.from("patwaris").insert(payload));
     }
     if (error) return toast.error(error.message);
-    toast.success("সংরক্ষিত হয়েছে");
+    toast.success(tx("Saved", "সংরক্ষিত হয়েছে"));
     setOpen(false); setEditId(null); load();
   }
 
@@ -117,26 +119,26 @@ export default function Patwaris() {
   return (
     <>
       <PageHeader
-        title="পাটুয়ারী ব্যবস্থাপনা"
+        title={tx("Patwari management", "পাটুয়ারী ব্যবস্থাপনা")}
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />নতুন পাটুয়ারী</Button>
+              <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />{tx("New patwari", "নতুন পাটুয়ারী")}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>{editId ? "পাটুয়ারী এডিট" : "নতুন পাটুয়ারী"}</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editId ? tx("Edit patwari", "পাটুয়ারী এডিট") : tx("New patwari", "নতুন পাটুয়ারী")}</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>নাম (English) *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-                <div><Label>নাম (বাংলা)</Label><Input value={form.name_bn} onChange={(e) => setForm({ ...form, name_bn: e.target.value })} /></div>
-                <div><Label>মোবাইল</Label><Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></div>
+                <div><Label>{tx("Name (English) *", "নাম (English) *")}</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+                <div><Label>{tx("Name (Bangla)", "নাম (বাংলা)")}</Label><Input value={form.name_bn} onChange={(e) => setForm({ ...form, name_bn: e.target.value })} /></div>
+                <div><Label>{tx("Mobile", "মোবাইল")}</Label><Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></div>
                 <div><Label>NID</Label><Input value={form.nid} onChange={(e) => setForm({ ...form, nid: e.target.value })} /></div>
-                <div className="col-span-2"><Label>ঠিকানা</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+                <div className="col-span-2"><Label>{tx("Address", "ঠিকানা")}</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
                 <div>
-                  <Label>মৌজা (দায়িত্বরত)</Label>
+                  <Label>{tx("Mouza (assigned)", "মৌজা (দায়িত্বরত)")}</Label>
                   <Select value={form.mouza_id || "none"} onValueChange={(v) => setForm({ ...form, mouza_id: v === "none" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— কোনটি না —</SelectItem>
+                      <SelectItem value="none">{tx("— None —", "— কোনটি না —")}</SelectItem>
                       {mouzas.map((m) => (
                         <SelectItem key={m.id} value={m.id}>{m.name_bn || m.name}</SelectItem>
                       ))}
@@ -145,11 +147,11 @@ export default function Patwaris() {
                 </div>
                 {isSuper && (
                   <div>
-                    <Label>অফিস</Label>
+                    <Label>{tx("Office", "অফিস")}</Label>
                     <Select value={form.office_id || "none"} onValueChange={(v) => setForm({ ...form, office_id: v === "none" ? "" : v })}>
                       <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">— কোনটি না —</SelectItem>
+                        <SelectItem value="none">{tx("— None —", "— কোনটি না —")}</SelectItem>
                         {offices.map((o) => (
                           <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                         ))}
@@ -159,13 +161,13 @@ export default function Patwaris() {
                 )}
                 <div className="col-span-2 flex items-center gap-2">
                   <Switch checked={!!form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-                  <Label>সক্রিয়</Label>
+                  <Label>{tx("Active", "সক্রিয়")}</Label>
                 </div>
-                <div className="col-span-2"><Label>নোট</Label><Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
+                <div className="col-span-2"><Label>{tx("Note", "নোট")}</Label><Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>বাতিল</Button>
-                <Button onClick={save}>সংরক্ষণ</Button>
+                <Button variant="outline" onClick={() => setOpen(false)}>{tx("Cancel", "বাতিল")}</Button>
+                <Button onClick={save}>{tx("Save", "সংরক্ষণ")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -173,23 +175,23 @@ export default function Patwaris() {
       />
 
       <Card className="p-3 mb-3 flex flex-wrap items-center gap-3">
-        <Input className="max-w-xs" placeholder="নাম, মোবাইল, মৌজা খুঁজুন…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Input className="max-w-xs" placeholder={tx("Search by name, mobile, mouza…", "নাম, মোবাইল, মৌজা খুঁজুন…")} value={search} onChange={(e) => setSearch(e.target.value)} />
         <Label className="text-sm flex items-center gap-2 cursor-pointer">
           <Switch checked={showInactive} onCheckedChange={setShowInactive} />
-          নিষ্ক্রিয় দেখান
+          {tx("Show inactive", "নিষ্ক্রিয় দেখান")}
         </Label>
-        <span className="text-xs text-muted-foreground ml-auto">মোট: {filtered.length}</span>
+        <span className="text-xs text-muted-foreground ml-auto">{tx("Total", "মোট")}: {filtered.length}</span>
       </Card>
 
       <Card>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>নাম</TableHead>
-              <TableHead>মোবাইল</TableHead>
-              <TableHead>মৌজা</TableHead>
-              <TableHead>স্ট্যাটাস</TableHead>
-              <TableHead className="text-right">অ্যাকশন</TableHead>
+              <TableHead>{tx("Name", "নাম")}</TableHead>
+              <TableHead>{tx("Mobile", "মোবাইল")}</TableHead>
+              <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+              <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
+              <TableHead className="text-right">{tx("Actions", "অ্যাকশন")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -199,18 +201,18 @@ export default function Patwaris() {
                 <TableCell>{r.mobile ?? "—"}</TableCell>
                 <TableCell>{r.mouzas?.name_bn || r.mouzas?.name || "—"}</TableCell>
                 <TableCell>
-                  {r.is_active ? <Badge variant="default">সক্রিয়</Badge> : <Badge variant="secondary">নিষ্ক্রিয়</Badge>}
+                  {r.is_active ? <Badge variant="default">{tx("Active", "সক্রিয়")}</Badge> : <Badge variant="secondary">{tx("Inactive", "নিষ্ক্রিয়")}</Badge>}
                 </TableCell>
                 <TableCell className="text-right">
                   <Link to={`/admin/patwaris/${r.id}`}>
-                    <ViewButton title="প্রোফাইল" />
+                    <ViewButton title={tx("Profile", "প্রোফাইল")} />
                   </Link>
-                  <EditButton onClick={() => openEdit(r)} title="এডিট" />
+                  <EditButton onClick={() => openEdit(r)} title={tx("Edit", "এডিট")} />
                 </TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">কোন পাটুয়ারী নেই</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{tx("No patwari found", "কোন পাটুয়ারী নেই")}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
