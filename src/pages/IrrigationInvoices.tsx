@@ -146,8 +146,11 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     return rows.filter((r: any) =>
       r.invoice_no?.toLowerCase().includes(s) ||
       r.farmers?.name_en?.toLowerCase().includes(s) ||
+      r.farmers?.name_bn?.toLowerCase().includes(s) ||
       r.farmers?.farmer_code?.toLowerCase().includes(s) ||
-      r.farmers?.mobile?.includes(s)
+      r.farmers?.mobile?.includes(s) ||
+      matchesDagSearch(r.lands?.dag_no, s) ||
+      r.lands?.mouza?.toLowerCase().includes(s)
     );
   }, [rows, search]);
 
