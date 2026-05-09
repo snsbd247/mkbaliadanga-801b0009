@@ -844,9 +844,14 @@ export default function DataImport() {
             <Badge variant="secondary">Pending: {stats.pending}</Badge>
             <div className="ml-auto flex gap-2">
               {stats.err > 0 && (
-                <Button variant="outline" onClick={() => downloadErrorReport(rows)}>
-                  <Download className="h-4 w-4 mr-1" /> Error Report
-                </Button>
+                <>
+                  <Button variant="outline" onClick={() => downloadErrorReport(rows, "xlsx")}>
+                    <Download className="h-4 w-4 mr-1" /> Error Report (.xlsx)
+                  </Button>
+                  <Button variant="outline" onClick={() => downloadErrorReport(rows, "csv")}>
+                    <FileSpreadsheet className="h-4 w-4 mr-1" /> Error Report (.csv)
+                  </Button>
+                </>
               )}
               <Button variant="outline" onClick={() => importAll(true)} disabled={working || stats.pending === 0}>
                 {working ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
