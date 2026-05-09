@@ -83,6 +83,7 @@ import PatwariDetail from "./pages/admin/PatwariDetail";
 import FarmerStatement from "./pages/FarmerStatement";
 
 import LoanPlans from "./pages/LoanPlans";
+import LoanDetail from "./pages/LoanDetail";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
