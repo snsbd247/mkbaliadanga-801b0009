@@ -793,9 +793,10 @@ export default function FarmerDetail() {
                     {/* 3. For owner only: Dag No input */}
                     {land.owner_type === "owner" && (
                       <div className="grid grid-cols-2 gap-3">
-                        <div>
+                       <div>
                           <Label>{t("dagNo")} <span className="text-destructive">*</span></Label>
-                          <Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} />
+                          <Input disabled={savingLand} value={land.dag_no} onChange={e => setLand({ ...land, dag_no: e.target.value })} placeholder="123, 124/A, 125" />
+                          <p className="text-xs text-muted-foreground mt-1">একাধিক দাগ নং কমা (,) দিয়ে আলাদা করে লিখুন</p>
                         </div>
                       </div>
                     )}
