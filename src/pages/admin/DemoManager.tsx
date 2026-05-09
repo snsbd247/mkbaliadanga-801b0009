@@ -36,7 +36,7 @@ type Action = "reset" | "import" | "both";
 
 
 export default function DemoManager() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const [action, setAction] = useState<Action>("both");
   const [size, setSize] = useState(50);
   const [selected, setSelected] = useState<string[]>(MODULE_KEYS.map((m) => m.id));
@@ -276,7 +276,7 @@ export default function DemoManager() {
         <Card>
           <CardHeader>
             <CardTitle>Voter Configuration</CardTitle>
-            <CardDescription>প্রতি কতজনে ১জন voter হবে এবং voter/account number ফরম্যাট সেট করুন। টোকেন: {"{seq:N}"}, {"{office}"}, {"{year}"}</CardDescription>
+            <CardDescription>{tx("Set how many of every N farmers become voters and the voter/account number format. Tokens:", "প্রতি কতজনে ১জন voter হবে এবং voter/account number ফরম্যাট সেট করুন। টোকেন:")} {"{seq:N}"}, {"{office}"}, {"{year}"}</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -301,7 +301,7 @@ export default function DemoManager() {
           <CardHeader>
             <CardTitle>Real Farmer Names (CSV — Optional)</CardTitle>
             <CardDescription>
-              CSV আপলোড করলে demo নামের বদলে এই নামগুলো ব্যবহার হবে। কলাম: <code>name_en, name_bn, father_name, mother_name, mobile, nid</code> (শুধু <code>name_en</code> বাধ্যতামূলক)। ডুপ্লিকেট NID/farmer_code স্বয়ংক্রিয়ভাবে স্কিপ হবে।
+              {tx("If a CSV is uploaded, these names are used instead of demo names. Columns: name_en, name_bn, father_name, mother_name, mobile, nid (only name_en is required). Duplicate NID/farmer_code are auto-skipped.", "CSV আপলোড করলে demo নামের বদলে এই নামগুলো ব্যবহার হবে। কলাম: name_en, name_bn, father_name, mother_name, mobile, nid (শুধু name_en বাধ্যতামূলক)। ডুপ্লিকেট NID/farmer_code স্বয়ংক্রিয়ভাবে স্কিপ হবে।")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -329,18 +329,18 @@ export default function DemoManager() {
                     nid: o["nid"] ?? "",
                   };
                 }).filter((r) => r.en);
-                if (!rows.length) { toast.error("name_en কলাম পাওয়া যায়নি"); return; }
+                if (!rows.length) { toast.error(tx("name_en column not found", "name_en কলাম পাওয়া যায়নি")); return; }
                 setCustomNames(rows);
                 setCsvFileName(f.name);
-                toast.success(`${rows.length} জন farmer নাম লোড হয়েছে`);
+                toast.success(`${rows.length} ${tx("farmer names loaded", "জন farmer নাম লোড হয়েছে")}`);
               } catch (err: any) {
-                toast.error("ফাইল পড়া যায়নি: " + (err?.message ?? "unknown"));
+                toast.error(tx("Could not read file: ", "ফাইল পড়া যায়নি: ") + (err?.message ?? "unknown"));
               }
             }} />
             {customNames && (
               <div className="text-xs text-muted-foreground flex items-center gap-2">
-                <Badge>{customNames.length} নাম লোড: {csvFileName}</Badge>
-                <Button size="sm" variant="ghost" onClick={() => { setCustomNames(null); setCsvFileName(""); }}>সরান</Button>
+                <Badge>{customNames.length} {tx("names loaded:", "নাম লোড:")} {csvFileName}</Badge>
+                <Button size="sm" variant="ghost" onClick={() => { setCustomNames(null); setCsvFileName(""); }}>{tx("Remove", "সরান")}</Button>
               </div>
             )}
           </CardContent>
@@ -535,7 +535,7 @@ export default function DemoManager() {
         <Card>
           <CardHeader>
             <CardTitle>Import Summary — Farmer Samples ({farmerSamples.length})</CardTitle>
-            <CardDescription>প্রথম কয়েকজন farmer-এর নাম (EN/BN) এবং mouza_id দেখুন।</CardDescription>
+            <CardDescription>{tx("View the first few farmers' names (EN/BN) and mouza_id.", "প্রথম কয়েকজন farmer-এর নাম (EN/BN) এবং mouza_id দেখুন।")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div data-table-wrap className="w-full overflow-x-auto">
@@ -568,7 +568,7 @@ export default function DemoManager() {
         <Card>
           <CardHeader>
             <CardTitle>Per-Farmer Seed Log ({seedLog.length})</CardTitle>
-            <CardDescription>প্রতিটি ফার্মারের voter status এবং কোন মডিউলে seed হয়েছে</CardDescription>
+            <CardDescription>{tx("Each farmer's voter status and which modules were seeded", "প্রতিটি ফার্মারের voter status এবং কোন মডিউলে seed হয়েছে")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="max-h-80 overflow-auto border rounded">
@@ -614,7 +614,7 @@ export default function DemoManager() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="destructive" size="sm" disabled={clearing} onClick={async () => {
-              if (!confirm("সব audit log মুছে ফেলবেন? এটা ফেরানো যাবে না।")) return;
+              if (!confirm(tx("Delete all audit logs? This cannot be undone.", "সব audit log মুছে ফেলবেন? এটা ফেরানো যাবে না।"))) return;
               setClearing(true);
               try {
                 const { data, error } = await supabase.functions.invoke("demo-reset", { body: { action: "clear_audit", confirm: "CLEAR" } });

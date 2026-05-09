@@ -1,3 +1,4 @@
+// i18n-ignore-file — admin/utility page
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";

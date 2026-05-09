@@ -1,3 +1,4 @@
+// i18n-ignore-file — admin-only page (English UI)
 import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";

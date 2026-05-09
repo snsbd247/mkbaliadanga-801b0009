@@ -17,7 +17,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from "
 import { join } from "node:path";
 
 const ROOTS = ["src/pages", "src/components"];
-const SKIP = [/i18n\//, /__tests__/, /\/test\//, /integrations\//, /bnNumber\.ts$/, /bnReceipts\.ts$/];
+const SKIP = [/i18n\//, /__tests__/, /\/test\//, /integrations\//, /bnNumber\.ts$/, /bnReceipts\.ts$/, /components\/ui\//];
 const BN = /[\u0980-\u09FF]{2,}/;
 const BASELINE = "scripts/i18n-scan-baseline.json";
 const args = new Set(process.argv.slice(2));
@@ -51,13 +51,18 @@ const findings = [];
 for (const file of files) {
   if (SKIP.some(re => re.test(file))) continue;
   const src = readFileSync(file, "utf8");
+  if (/i18n-ignore-file/.test(src)) continue;
   const usesT = /from ["']@\/i18n\/LanguageProvider["']/.test(src);
 
+  // Capture i18n-ignore lines BEFORE stripping comments (so block comments still mark the line).
+  const rawLines = src.split("\n");
+  const ignoreSet = new Set(rawLines.map((l, i) => /i18n-ignore/.test(l) ? i : -1).filter(i => i >= 0));
   // Strip block comments before line-by-line scan
   const stripped = src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
   let inI18nBlock = false;
   let i18nBraceDepth = 0;
   stripped.split("\n").forEach((line, i) => {
+    if (ignoreSet.has(i)) return;
     // Track i18n dict block (bn: { ... }  or  en: { ... })
     if (!inI18nBlock && isI18nBlockOpen(line)) {
       inI18nBlock = true;

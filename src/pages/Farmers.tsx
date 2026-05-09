@@ -29,7 +29,7 @@ function downloadFarmerTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     FARMER_TEMPLATE_HEADERS,
     [
-      "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000",
+      "Karim Uddin", "করিম উদ্দিন", "Abdul", "Salma", "1234567890123", "01700000000", // i18n-ignore
       "", "false", "active", "Free-text village", "Holding/road",
       "Dhaka", "Dhaka", "Savar", "Aminbazar", "Ward 1", "Bagbari", "Mouza A",
     ],
@@ -56,7 +56,7 @@ import { History } from "lucide-react";
 function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: any) => void; disabled: boolean; isSuper: boolean }) {
   const [generating, setGenerating] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const hasNumber = !!f.voter_number;
   // Existing voter_number is immutable for non-super (DB trigger). Only super can edit existing.
   const inputDisabled = disabled || generating || (hasNumber && !isSuper && !!f.id);
@@ -83,7 +83,7 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
           disabled={inputDisabled}
           maxLength={20}
           inputMode="numeric"
-          placeholder="খালি রাখলে Generate চাপুন"
+          placeholder={tx("Leave blank and press Generate", "খালি রাখলে Generate চাপুন")}
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "");
             setF({ ...f, voter_number: v, account_number: v, is_voter: !!v });
@@ -102,7 +102,7 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
         )}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        {hasNumber ? `✓ ${t("voterSavingsActive")}` : "নম্বর থাকলেই স্বয়ংক্রিয়ভাবে Voter / Savings সদস্য হিসেবে গণ্য হবে"}
+        {hasNumber ? `✓ ${t("voterSavingsActive")}` : tx("If a number is set, will be auto-treated as Voter / Savings member", "নম্বর থাকলেই স্বয়ংক্রিয়ভাবে Voter / Savings সদস্য হিসেবে গণ্য হবে")}
       </p>
       <VoterHistoryDialog farmerId={f.id ?? null} open={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
@@ -111,6 +111,7 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
 
 /** Farmer ID field — always visible, auto-generated on add, super admin can override. */
 function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF: (n: any) => void; disabled: boolean; isSuper: boolean; currentId?: string | null }) {
+  const { tx } = useLang();
   const [checking, setChecking] = useState(false);
   const [dupErr, setDupErr] = useState<string | null>(null);
   const tRef = useRef<any>(null);
@@ -126,14 +127,14 @@ function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF
         _member_no: v.trim(), _exclude_id: currentId ?? null,
       });
       setChecking(false);
-      if (!error && data === true) setDupErr("এই Farmer ID আগে থেকেই ব্যবহৃত।");
+      if (!error && data === true) setDupErr(tx("This Farmer ID is already in use.", "এই Farmer ID আগে থেকেই ব্যবহৃত।"));
     }, 350);
   }
 
   return (
     <div className="col-span-2">
       <Label className={dupErr ? "text-destructive" : ""}>
-        Farmer ID * <span className="text-xs text-muted-foreground">(অটো-জেনারেট, Super Admin পরিবর্তন করতে পারবে)</span>
+        Farmer ID * <span className="text-xs text-muted-foreground">{tx("(auto-generated, Super Admin can change)", "(অটো-জেনারেট, Super Admin পরিবর্তন করতে পারবে)")}</span>
       </Label>
       <Input
         value={f.member_no || ""}
@@ -145,7 +146,7 @@ function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF
       />
       {checking && <p className="mt-1 text-xs text-muted-foreground">Checking…</p>}
       {dupErr && <p className="mt-1 text-xs text-destructive" role="alert">{dupErr}</p>}
-      {!isSuper && <p className="mt-1 text-xs text-muted-foreground">শুধু Super Admin পরিবর্তন করতে পারবে।</p>}
+      {!isSuper && <p className="mt-1 text-xs text-muted-foreground">{tx("Only Super Admin can change.", "শুধু Super Admin পরিবর্তন করতে পারবে।")}</p>}
     </div>
   );
 }

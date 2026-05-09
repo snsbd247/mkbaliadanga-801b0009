@@ -29,7 +29,7 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
         className="h-7 px-2 text-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         onClick={() => setLang("bn")}
         aria-pressed={lang === "bn"}
-        aria-label="বাংলায় পরিবর্তন করুন (Switch to Bengali)"
+        aria-label="বাংলায় পরিবর্তন করুন (Switch to Bengali)" /* i18n-ignore */
       >
         বাংলা{/* i18n-ignore */}
       </Button>

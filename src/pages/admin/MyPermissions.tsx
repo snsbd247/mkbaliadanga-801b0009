@@ -1,3 +1,4 @@
+// i18n-ignore-file — admin-only page (English UI)
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

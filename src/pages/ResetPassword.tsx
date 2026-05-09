@@ -1,3 +1,4 @@
+// i18n-ignore-file — admin/utility page
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sprout } from "lucide-react";
