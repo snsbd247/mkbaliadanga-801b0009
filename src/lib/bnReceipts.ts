@@ -275,7 +275,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.remark, String(d.remark).trim()]);
   }
 
-  const pad = getReceiptLayoutSettings().rowSpacingPx;
+  const pad = getRowSpacingForKind(d.kind);
   const tableRows = rows.map(([k, v]) => `
     <tr>
       <td style="padding:${pad}px 8px;vertical-align:top;width:38%;color:#111;">${k}</td>
