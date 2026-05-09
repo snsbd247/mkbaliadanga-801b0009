@@ -958,34 +958,6 @@ export default function FarmerDetail() {
           </Table></Card>
         </TabsContent>
 
-        <TabsContent value="irrigation">
-          <Card><Table>
-            <TableHeader><TableRow>
-              <TableHead>{t("date")}</TableHead><TableHead>{t("season")}</TableHead>
-              <TableHead>{t("dagNo")}</TableHead><TableHead>{t("total")}</TableHead>
-              <TableHead>{t("paidAmount")}</TableHead><TableHead>{t("dueAmount")}</TableHead>
-              <TableHead className="text-right">{t("actions")}</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {irr.map(i => (
-                <TableRow key={i.id}>
-                  <TableCell>{fmtDate(i.entry_date)}</TableCell>
-                  <TableCell>{i.seasons?.name}</TableCell>
-                  <TableCell>{i.lands?.dag_no}</TableCell>
-                  <TableCell>{money(i.total)}</TableCell>
-                  <TableCell>{money(i.paid_amount)}</TableCell>
-                  <TableCell className={i.due_amount > 0 ? "due-text" : ""}>{money(i.due_amount)}</TableCell>
-                  <TableCell className="text-right">
-                    <ReceiptCopyMenu onSelect={(c) => printIrrigation(i, c)} title={t("print")} />
-                    {isSuper && <DeleteButton onConfirm={() => deleteIrrigation(i)} title={t("delete")} />}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {irr.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
-            </TableBody>
-          </Table></Card>
-        </TabsContent>
-
         <TabsContent value="irr_invoices">
           <IrrigationInvoicesTab farmerId={farmer.id} />
         </TabsContent>
