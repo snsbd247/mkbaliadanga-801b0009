@@ -17,6 +17,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { formatLandSize } from "@/lib/irrigationCalc";
+import { matchesDagSearch, formatDagNumbers } from "@/lib/dagNumbers";
 import {
   calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
@@ -145,8 +146,11 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     return rows.filter((r: any) =>
       r.invoice_no?.toLowerCase().includes(s) ||
       r.farmers?.name_en?.toLowerCase().includes(s) ||
+      r.farmers?.name_bn?.toLowerCase().includes(s) ||
       r.farmers?.farmer_code?.toLowerCase().includes(s) ||
-      r.farmers?.mobile?.includes(s)
+      r.farmers?.mobile?.includes(s) ||
+      matchesDagSearch(r.lands?.dag_no, s) ||
+      r.lands?.mouza?.toLowerCase().includes(s)
     );
   }, [rows, search]);
 
@@ -353,7 +357,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           </div>
           <div className="lg:col-span-2">
             <Label>{tx("Search", "খুঁজুন")}</Label>
-            <Input placeholder={tx("Invoice no / farmer name / code / mobile", "ইনভয়েস নং / কৃষক নাম / কোড / মোবাইল")} value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input placeholder={tx("Invoice no / farmer / code / mobile / dag / mouza", "ইনভয়েস নং / কৃষক / কোড / মোবাইল / দাগ / মৌজা")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -423,7 +427,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                     <div className="text-xs text-muted-foreground">{r.farmers?.farmer_code} {r.is_borga && <span className="ml-1">🤝 {tx("Sharecropper", "বর্গা")}</span>}</div>
                   </TableCell>
                   <TableCell className="text-xs">
-                    {r.lands?.mouza ? `${r.lands.mouza} • ` : ""}Dag {r.lands?.dag_no ?? "—"}<br />
+                    {r.lands?.mouza ? `${r.lands.mouza} • ` : ""}Dag {formatDagNumbers(r.lands?.dag_no) || "—"}<br />
                     {formatLandSize(r.lands?.land_size, "short")}
                   </TableCell>
                   <TableCell className="text-xs">{r.seasons?.name ?? r.seasons?.type} {r.seasons?.year}</TableCell>
@@ -730,7 +734,7 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
         <div className="space-y-2 text-sm">
           <Row k={tx("Farmer", "কৃষক")} v={`${inv.farmers?.name_bn ?? inv.farmers?.name_en} (${inv.farmers?.farmer_code})`} />
           <Row k={tx("Type", "ধরন")} v={inv.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "নিজ মালিক")}`} />
-          <Row k={tx("Land", "জমি")} v={`${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no} • ${formatLandSize(inv.lands?.land_size)}`} />
+          <Row k={tx("Land", "জমি")} v={`${inv.lands?.mouza ?? ""} • Dag ${formatDagNumbers(inv.lands?.dag_no) || "—"} • ${formatLandSize(inv.lands?.land_size)}`} />
           <Row k={tx("Land type", "জমির ধরন")} v={inv.land_type_name ?? "—"} />
           <Row k={tx("Season", "সিজন")} v={`${inv.seasons?.name ?? inv.seasons?.type} ${inv.seasons?.year}`} />
           <Row k={tx("Season rate / shotok", "সিজন রেট/শতক")} v={inv.season_rate != null ? money(inv.season_rate) : "—"} />
@@ -1001,7 +1005,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                 <TableBody>
                   {previewRows.slice(0, 100).map((r: any, i: number) => (
                     <TableRow key={i}>
-                      <TableCell className="text-xs">{r.land.mouza} • Dag {r.land.dag_no}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
+                      <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
                       <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
                       <TableCell className="text-right">{money(r.calc.irrigation_amount)}</TableCell>
                       <TableCell className="text-right">{money(r.calc.maintenance_amount)}</TableCell>
@@ -1144,7 +1148,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
               <SelectContent>
                 {lands.map((l: any) => (
                   <SelectItem key={l.id} value={l.id}>
-                    {l.mouza} • Dag {l.dag_no} ({formatLandSize(l.land_size, "short")})
+                    {l.mouza} • Dag {formatDagNumbers(l.dag_no)} ({formatLandSize(l.land_size, "short")})
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 
 import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
 import { validateLocationChain } from "@/lib/locationValidation";
+import { validateDagNumbers } from "@/lib/dagNumbers";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
@@ -492,6 +493,10 @@ export default function FarmerDetail() {
     if (!v.ok) { setLandLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
     if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) }); return; }
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
+    if (land.owner_type === "owner") {
+      const dv = validateDagNumbers(land.dag_no);
+      if (dv.ok === false) return toast.error(dv.error);
+    }
     if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
       return toast.error(t("ownerRequiredForBorgadar" as any));
@@ -569,6 +574,10 @@ export default function FarmerDetail() {
       const v = validateLocationChain(editLoc);
       if (!v.ok) { setEditLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
       if (!(editLoc as any).mouza_id) { setEditLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "Mouza required" }); return; }
+      if (editForm.owner_type === "owner") {
+        const dv = validateDagNumbers(editForm.dag_no);
+        if (dv.ok === false) { toast.error(dv.error); return; }
+      }
       const { error } = await supabase.from("lands").update({
         mouza: (editLoc as any).mouza_name ?? "",
         division_id: (editLoc as any).division_id ?? null,
