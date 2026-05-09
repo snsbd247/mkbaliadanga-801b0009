@@ -237,6 +237,80 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     }
   }
 
+  async function bulkDownload(copy: InvoiceCopy) {
+    const items = filtered.filter((r: any) => selected.has(r.id));
+    if (!items.length) return toast.error(tx("Select invoices first", "প্রথমে ইনভয়েস নির্বাচন করুন"));
+    if (items.length > 50) {
+      const ok = await confirm({
+        title: tx("Large batch", "বড় ব্যাচ"),
+        description: tx("This may take a while and use a lot of memory. Continue?", "এটি সময়সাপেক্ষ এবং প্রচুর মেমরি ব্যবহার করতে পারে। চালিয়ে যাবেন?"),
+      });
+      if (!ok) return;
+    }
+    setBulkBusy(true);
+    try {
+      saveLastInvoiceCopy(copy); setLastCopy(copy);
+      await downloadIrrigationInvoicesBulkPdf(items.map(buildInvoicePdfPayload), copy, pdfSettings);
+      toast.success(tx(`Downloaded ${items.length} invoices`, `${items.length} টি ইনভয়েস ডাউনলোড হয়েছে`));
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Bulk download failed", "ব্যাচ ডাউনলোড ব্যর্থ"));
+    } finally { setBulkBusy(false); }
+  }
+
+  async function bulkPreview(copy: InvoiceCopy) {
+    const items = filtered.filter((r: any) => selected.has(r.id));
+    if (!items.length) return toast.error(tx("Select invoices first", "প্রথমে ইনভয়েস নির্বাচন করুন"));
+    setBulkBusy(true);
+    try {
+      saveLastInvoiceCopy(copy); setLastCopy(copy);
+      const url = await previewIrrigationInvoicesBulkPdf(items.map(buildInvoicePdfPayload), copy, pdfSettings);
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(url);
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Preview failed", "প্রিভিউ ব্যর্থ"));
+    } finally { setBulkBusy(false); }
+  }
+
+  async function shareInvoice(inv: any) {
+    try {
+      const result = await shareIrrigationInvoicePdf(buildInvoicePdfPayload(inv), lastCopy, pdfSettings);
+      if (result === "downloaded") {
+        toast.info(tx("Sharing not supported — PDF downloaded instead. Attach it manually.", "শেয়ার সাপোর্ট নেই — PDF ডাউনলোড হয়েছে। ম্যানুয়ালি সংযুক্ত করুন।"));
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Share failed", "শেয়ার ব্যর্থ"));
+    }
+  }
+
+  function shareWhatsApp(inv: any) {
+    const url = buildWhatsAppShareLink(buildInvoicePdfPayload(inv), inv.farmers?.mobile);
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function shareEmail(inv: any) {
+    const url = buildMailtoLink(buildInvoicePdfPayload(inv), inv.farmers?.email);
+    window.location.href = url;
+  }
+
+  function applyPreset(presetId: string) {
+    const p = PRINTER_PRESETS.find((x) => x.id === presetId);
+    if (!p) return;
+    setPdfSettings({ ...pdfSettings, ...p.settings });
+    toast.success(tx("Preset applied", "প্রিসেট প্রয়োগ হয়েছে"));
+  }
+
+  const eligibleIds = useMemo(() => filtered.map((r: any) => r.id), [filtered]);
+  const allSelected = eligibleIds.length > 0 && eligibleIds.every((id: string) => selected.has(id));
+  function toggleAll() {
+    if (allSelected) setSelected(new Set());
+    else setSelected(new Set(eligibleIds));
+  }
+  function toggleOne(id: string, v: boolean) {
+    const s = new Set(selected);
+    if (v) s.add(id); else s.delete(id);
+    setSelected(s);
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-3">
