@@ -87,24 +87,17 @@ export default function PromiseDueReport() {
     amount: filtered.reduce((s, r) => s + r.previous_due_amount, 0),
   }), [filtered]);
 
-  const tableCols = [
-    { header: "Farmer", accessor: "farmer_name" as const },
-    { header: "Code", accessor: "farmer_code" as const },
-    { header: "Previous Due", accessor: "previous_due_amount" as const },
-    { header: "Promise Date", accessor: "promise_date" as const },
-    { header: "Status", accessor: "status" as const },
-    { header: "Remarks", accessor: "remarks" as const },
-  ];
+  const head = ["Farmer", "Code", "Previous Due", "Promise Date", "Status", "Remarks"];
+  const bodyRows = () => filtered.map(r => [
+    r.farmer_name, r.farmer_code ?? "", money(r.previous_due_amount),
+    r.promise_date, r.status, r.remarks ?? "",
+  ]);
 
   function exportPdf() {
-    exportTablePDF({
-      title: "Promise Due Report",
-      columns: tableCols.map(c => ({ header: c.header, accessor: c.accessor })),
-      rows: filtered.map(r => ({ ...r, previous_due_amount: money(r.previous_due_amount) })),
-    });
+    exportTablePDF("Promise Due Report", head, bodyRows());
   }
   function exportXlsx() {
-    exportExcel("promise_due_report", filtered);
+    exportExcel("promise_due_report", "Promises", filtered);
   }
 
   const statusBadge = (s: string) => {
