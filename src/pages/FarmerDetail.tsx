@@ -42,7 +42,7 @@ const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: 
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
-  const { t, lang } = useLang();
+  const { t, lang, tx } = useLang();
   const { isSuper } = useAuth();
   const nav = useNavigate();
   const [farmer, setFarmer] = useState<any>(null);
@@ -183,7 +183,7 @@ export default function FarmerDetail() {
       receipt_no: s.receipt_no || autoReceiptNo("SAV", s.id, new Date(s.txn_date ?? s.created_at)),
       date: s.txn_date ?? s.created_at,
       farmer: farmerForReceipt(),
-      description: s.note ?? `সঞ্চয় ${s.type} (${s.status})`,
+      description: s.note ?? `${tx("Savings", "সঞ্চয়")} ${s.type} (${s.status})`,
       collected_amount: Number(s.amount),
     }, copy, receiptArgs.options);
   }
@@ -194,7 +194,7 @@ export default function FarmerDetail() {
       receipt_no: l.receipt_no || autoReceiptNo("LOAN", l.id, new Date(l.issued_on)),
       date: l.issued_on,
       farmer: farmerForReceipt(),
-      description: `ঋণ বিতরণ — মোট পরিশোধ্য ${money(l.total_payable)}`,
+      description: `${tx("Loan disbursed — total payable", "ঋণ বিতরণ — মোট পরিশোধ্য")} ${money(l.total_payable)}`,
       outstanding: Number(l.total_payable),
       collected_amount: Number(l.principal),
     }, copy, receiptArgs.options);
@@ -218,16 +218,16 @@ export default function FarmerDetail() {
           landOwnerLabel = "—";
         }
       } else {
-        landOwnerLabel = "নিজ";
+        landOwnerLabel = tx("Self", "নিজ");
       }
     }
 
     // Field type Bangla label
     const fieldTypeBn = ({
-      high_land: "উঁচু জমি",
-      medium_land: "মাঝারি জমি",
-      low_land: "নিচু জমি",
-      other: "অন্যান্য",
+      high_land: tx("High land", "উঁচু জমি"),
+      medium_land: tx("Medium land", "মাঝারি জমি"),
+      low_land: tx("Low land", "নিচু জমি"),
+      other: tx("Other", "অন্যান্য"),
     } as Record<string, string>)[land?.field_type as string] ?? null;
 
     // Full ledger outstanding for this farmer (sum of due across all open charges)
@@ -668,7 +668,7 @@ export default function FarmerDetail() {
 
       {!farmer.is_voter && (
         <Card className="p-3 mb-4 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 text-sm">
-          ⚠️ এই ফার্মার Voter / Savings A/C হিসেবে এনাবল নেই। সঞ্চয়, ঋণ এবং শেয়ার সংক্রান্ত কোন তথ্য বা ট্রাঞ্জেকশন থাকবে না। এনাবল করতে উপরে Edit থেকে Voter টগল চালু করুন।
+          ⚠️ {tx("This farmer is not enabled as Voter / Savings A/C. No savings, loan or share data will exist. Toggle Voter from Edit above to enable.", "এই ফার্মার Voter / Savings A/C হিসেবে এনাবল নেই। সঞ্চয়, ঋণ এবং শেয়ার সংক্রান্ত কোন তথ্য বা ট্রাঞ্জেকশন থাকবে না। এনাবল করতে উপরে Edit থেকে Voter টগল চালু করুন।")}
         </Card>
       )}
 

@@ -34,7 +34,7 @@ const newKey = () =>
   (typeof crypto !== "undefined" && "randomUUID" in crypto) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
 export default function Payments() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { user } = useAuth();
   const [params] = useSearchParams();
   const brand = useBranding();
@@ -178,7 +178,7 @@ export default function Payments() {
       const matched = (i.data ?? []).filter((x: any) => ids.includes(x.id) && Number(x.due_amount || 0) > 0);
       if (matched.length) {
         setAllocs(matched.map((x: any) => ({ kind: "irrigation" as const, reference_id: x.id, amount: Number(x.due_amount) })));
-        toast.success(`${matched.length} টি ইনভয়েস প্রিলোড হয়েছে`);
+        toast.success(`${matched.length} ${tx("invoices preloaded", "টি ইনভয়েস প্রিলোড হয়েছে")}`);
       }
     }
   }
@@ -277,7 +277,10 @@ export default function Payments() {
       const { data: full } = await supabase.from("farmers").select("mobile,name_bn,name_en").eq("id", fId).maybeSingle();
       const mobile = full?.mobile ?? farmer?.mobile;
       if (!mobile) return;
-      const message = `আপনার সেচ ইনভয়েসের ৳${irrTotal.toLocaleString()} টাকা গ্রহণ করা হয়েছে।${receiptNo ? `\nরসিদ নং: ${receiptNo}` : ""}\nধন্যবাদ।`;
+      const message = tx(
+        `BDT ${irrTotal.toLocaleString()} received against your irrigation invoice.${receiptNo ? `\nReceipt no: ${receiptNo}` : ""}\nThank you.`,
+        `আপনার সেচ ইনভয়েসের ৳${irrTotal.toLocaleString()} টাকা গ্রহণ করা হয়েছে।${receiptNo ? `\nরসিদ নং: ${receiptNo}` : ""}\nধন্যবাদ।`
+      );
       await supabase.functions.invoke("send-sms", { body: { mobile, message, event_type: "irrigation_payment", farmer_id: fId } });
     } catch (_) { /* SMS failure must not break payment flow */ }
   }
@@ -393,16 +396,16 @@ export default function Payments() {
         description="Unified payment — splits across loan, savings & irrigation in one entry"
         actions={<div className="flex gap-2"><Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" disabled={!farmerId}><ArrowDownToLine className="h-4 w-4 mr-1" />সঞ্চয় উত্তোলন</Button>
+            <Button variant="outline" size="sm" disabled={!farmerId}><ArrowDownToLine className="h-4 w-4 mr-1" />{tx("Withdraw savings", "সঞ্চয় উত্তোলন")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>সঞ্চয় উত্তোলনের অনুরোধ</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{tx("Savings withdrawal request", "সঞ্চয় উত্তোলনের অনুরোধ")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div className="rounded-md bg-muted/40 p-2 text-sm flex justify-between">
-                <span>উপলব্ধ ব্যালেন্স</span>
+                <span>{tx("Available balance", "উপলব্ধ ব্যালেন্স")}</span>
                 <span className="font-mono font-semibold">৳{savingsBalance.toLocaleString()}</span>
               </div>
-              <div><Label>পরিমাণ</Label>
+              <div><Label>{tx("Amount", "পরিমাণ")}</Label>
                 <Input type="number" min="1" max={savingsBalance} value={withdrawForm.amount || ""} onChange={e => setWithdrawForm(f => ({ ...f, amount: +e.target.value }))} /></div>
               <div><Label>{t("note")}</Label>
                 <Input value={withdrawForm.note} onChange={e => setWithdrawForm(f => ({ ...f, note: e.target.value }))} /></div>
@@ -410,7 +413,7 @@ export default function Payments() {
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setWithdrawOpen(false)}>{t("cancel")}</Button>
-              <Button onClick={submitWithdraw}>জমা দিন</Button>
+              <Button onClick={submitWithdraw}>{tx("Submit", "জমা দিন")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog><ReceiptSettingsButton /></div>}
@@ -564,9 +567,9 @@ export default function Payments() {
                         const kind = (k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings") as "loan" | "irrigation" | "savings";
                         const prefix = kind === "loan" ? "LOAN" : kind === "irrigation" ? "IRR" : "SAV";
                         const description = p.note
-                          ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ"
-                            : kind === "savings" ? "সঞ্চয় জমা গ্রহণ"
-                            : "সেচ চার্জ গ্রহণ");
+                          ?? (kind === "loan" ? tx("Loan installment received", "ঋণের কিস্তি গ্রহণ")
+                            : kind === "savings" ? tx("Savings deposit received", "সঞ্চয় জমা গ্রহণ")
+                            : tx("Irrigation charge received", "সেচ চার্জ গ্রহণ"));
 
                         // owner_type label now derived from invoice.is_borga; helper kept inline above.
                         const memberTypeBn = (f: any) =>
