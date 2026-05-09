@@ -547,12 +547,13 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   const savingsSeeded: string[] = [];
   const sharesSeeded: string[] = [];
   const fspSeeded: string[] = [];
-  const { data: planRow } = await admin.from("savings_plans").insert({
-    name: "DPS 24", name_bn: "ডিপিএস ২৪", office_id: officeId,
-    duration_months: 24, installment_type: "monthly", installment_amount: 500,
-    interest_rate: 6, maturity_type: "simple", is_active: true,
-  }).select("id").single();
-  const planId = planRow?.id ?? null;
+  const { data: plans } = await admin.from("savings_plans").insert([
+    { name: "DPS 12",  name_bn: "ডিপিএস ১২", office_id: officeId, duration_months: 12, installment_type: "monthly", installment_amount: 300, interest_rate: 5, maturity_type: "simple", is_active: true },
+    { name: "DPS 24",  name_bn: "ডিপিএস ২৪", office_id: officeId, duration_months: 24, installment_type: "monthly", installment_amount: 500, interest_rate: 6, maturity_type: "simple", is_active: true },
+    { name: "FDR 36",  name_bn: "এফডিআর ৩৬", office_id: officeId, duration_months: 36, installment_type: "monthly", installment_amount: 1000, interest_rate: 8, maturity_type: "compound", is_active: true },
+  ]).select("id");
+  const planList = plans ?? [];
+  const planId = planList[1]?.id ?? planList[0]?.id ?? null;
 
   // Enroll ~30% of voters into a farmer_savings_plan
   if (planId) {
