@@ -238,15 +238,10 @@ export default function IdReview() {
                   maxLength={20}
                 />
               </div>
-              <div>
-                <Label>{t("voterNo")}</Label>
-                <Input
-                  value={(draft.voter_number ?? "") as string}
-                  onChange={(e) => setDraft(d => ({ ...d, voter_number: e.target.value.replace(/\D/g, "") }))}
-                  maxLength={20}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">{t("auditOnSave")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("auditOnSave")}<br />
+                Voter No = Savings A/C No (auto-synced; one and the same value).
+              </p>
             </div>
           )}
           <DialogFooter>
