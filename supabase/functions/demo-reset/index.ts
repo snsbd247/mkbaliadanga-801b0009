@@ -12,7 +12,8 @@ const json = (b: unknown, s = 200) =>
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
   "loan_payments", "loan_installments", "loans", "loan_plans",
-  "irrigation_charges", "irrigation_rates",
+  "irrigation_invoice_payments", "irrigation_invoice_audit", "irrigation_invoices",
+  "irrigation_charges", "irrigation_rates", "irrigation_season_rates",
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
