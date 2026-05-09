@@ -741,11 +741,30 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
               <Input type="number" value={otherCharge} onChange={(e) => setOtherCharge(Number(e.target.value))} />
             </div>
           </div>
+          {seasonId && landId && (
+            isManualRate ? (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>সিজন রেট কনফিগার নেই</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>এই সিজন ও জমির ধরনের জন্য কোনো সেচ রেট কনফিগার করা নেই। নিচে ম্যানুয়াল রেট ও কারণ দিন, অথবা প্রথমে সিজন রেট কনফিগার করুন।</p>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/seasons" target="_blank">সিজন রেটে যান</Link>
+                  </Button>
+                  <div>
+                    <Label>ম্যানুয়াল রেটের কারণ *</Label>
+                    <Textarea rows={2} value={manualReason} onChange={(e) => setManualReason(e.target.value)}
+                      placeholder="যেমন: এক-বার পরীক্ষামূলক ইনভয়েস" />
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                স্বয়ংক্রিয় রেট প্রয়োগ: {rateRow?.land_type_name} → {money(rateRow?.rate_per_shotok ?? 0)}/শতক
+              </p>
+            )
+          )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>বাতিল</Button>
-          <Button onClick={save} disabled={busy}>{busy ? "…" : "তৈরি করুন"}</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
