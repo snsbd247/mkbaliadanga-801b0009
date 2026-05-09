@@ -239,9 +239,9 @@ export default function FarmerDetail() {
       other: tx("Other", "অন্যান্য"),
     } as Record<string, string>)[land?.field_type as string] ?? null;
 
-    // Full ledger outstanding for this farmer (sum of due across all open charges)
+    // Full ledger outstanding for this farmer (sum of due across all open invoices)
     const { data: dueRows } = await supabase
-      .from("irrigation_charges")
+      .from("irrigation_invoices")
       .select("due_amount")
       .eq("farmer_id", farmer?.id ?? id!)
       .is("deleted_at", null);
@@ -613,13 +613,15 @@ export default function FarmerDetail() {
     if (!delTarget) return;
     setDeleting(true);
     try {
-      // Block if referenced by irrigation_charges or land_relations
-      const [{ count: irrCnt }, { count: relCnt }] = await Promise.all([
-        supabase.from("irrigation_charges").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id),
+      // Block if referenced by irrigation_invoices, legacy irrigation_charges, or land_relations
+      const [{ count: invCnt }, { count: irrCnt }, { count: relCnt }] = await Promise.all([
+        supabase.from("irrigation_invoices").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id).is("deleted_at", null),
+        supabase.from("irrigation_charges").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id).is("deleted_at", null),
         supabase.from("land_relations").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id),
       ]);
-      if ((irrCnt ?? 0) > 0 || (relCnt ?? 0) > 0) {
-        toast.error(`Cannot delete: linked to ${irrCnt ?? 0} irrigation entries and ${relCnt ?? 0} relations.`);
+      const totalIrr = (invCnt ?? 0) + (irrCnt ?? 0);
+      if (totalIrr > 0 || (relCnt ?? 0) > 0) {
+        toast.error(`Cannot delete: linked to ${totalIrr} irrigation entries and ${relCnt ?? 0} relations.`);
         return;
       }
       const { error } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", delTarget.id);

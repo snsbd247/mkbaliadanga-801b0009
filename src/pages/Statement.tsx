@@ -119,20 +119,20 @@ export default function Statement() {
     const tid = toast.loading("Building combined statement…");
     try {
       const [irrRes, loansRes] = await Promise.all([
-        supabase.from("irrigation_charges")
-          .select("entry_date,total,paid_amount,due_amount,seasons(name,year),lands(dag_no)")
-          .eq("farmer_id", farmerId).is("deleted_at", null).gte("entry_date", f1).lte("entry_date", t1)
-          .order("entry_date", { ascending: true }),
+        supabase.from("irrigation_invoices")
+          .select("generated_at,payable_amount,paid_amount,due_amount,seasons(name,year),lands(dag_no)")
+          .eq("farmer_id", farmerId).is("deleted_at", null).gte("generated_at", f1).lte("generated_at", t1)
+          .order("generated_at", { ascending: true }),
         supabase.from("loans")
           .select("issued_on,principal,interest_rate,total_payable,status,loan_payments(amount)")
           .eq("farmer_id", farmerId).is("deleted_at", null).gte("issued_on", f1).lte("issued_on", t1)
           .order("issued_on", { ascending: true }),
       ]);
       const irrigation = (irrRes.data ?? []).map((r: any) => ({
-        entry_date: r.entry_date,
+        entry_date: (r.generated_at || "").slice(0, 10),
         season: r.seasons ? `${r.seasons.name} ${r.seasons.year}` : "—",
         dag: r.lands?.dag_no ?? "—",
-        total: Number(r.total || 0),
+        total: Number(r.payable_amount || 0),
         paid_amount: Number(r.paid_amount || 0),
         due_amount: Number(r.due_amount || 0),
       }));
