@@ -174,6 +174,54 @@ export type Database = {
         }
         Relationships: []
       }
+      background_retry_jobs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          job_type: string
+          last_error: string | null
+          max_retry: number
+          next_retry_at: string
+          office_id: string | null
+          payload: Json
+          reference_id: string | null
+          retry_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          job_type: string
+          last_error?: string | null
+          max_retry?: number
+          next_retry_at?: string
+          office_id?: string | null
+          payload?: Json
+          reference_id?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          job_type?: string
+          last_error?: string | null
+          max_retry?: number
+          next_retry_at?: string
+          office_id?: string | null
+          payload?: Json
+          reference_id?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       card_settings: {
         Row: {
           accent_color: string

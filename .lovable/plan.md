@@ -1,121 +1,105 @@
-# Irrigation = `irrigation_invoices` Single Source of Truth — Plan
+# Reliability, Retry, Audit & Permission Matrix — Rollout Plan
 
-This is a high-blast-radius change touching dashboard, reports, statements, cashbook, exports, SMS, and demo import. Proposing a phased rollout so existing accounting/receipts/QR verify don't break.
-
-## Current state (audit findings)
-
-Files still reading the **legacy `irrigation_charges`** table for due/aggregation:
-
-```text
-Dashboard.tsx          — total/overdue irrigation cards
-Cashbook.tsx           — daily irrigation aggregation
-Statement.tsx          — farmer ledger line items
-Dues.tsx               — global dues page
-DuesAudit.tsx          — season-wise audit
-Reports.tsx            — irrigation summary
-reports/IrrigationDueReport.tsx
-reports/CollectionReport.tsx
-FarmerProfileReport.tsx
-Ledger.tsx             — farmer subset filter
-LandDetail.tsx         — per-land charge list
-admin/PatwariDetail.tsx
-SmsLogs.tsx            — SMS reference resolve
-FarmerDetail.tsx       — invoices tab + delete-block
-```
-
-Already migrated to `irrigation_invoices`: `IrrigationInvoicesTab`, `IrrigationInvoices`, `IrrigationReports`, `IrrigationPaymentPanel`, `admin/IrrigationDueMismatch`.
-
-## Phase A — Shared helper (safety net)
-
-Create `src/lib/irrigationDue.ts`:
-
-```ts
-// Single function used by every dashboard/report.
-export async function getIrrigationDueForFarmer(farmerId, opts?)
-export async function getIrrigationDueAggregate(officeId?, opts?)
-export async function getIrrigationCollections(opts: { from, to, officeId? })
-```
-
-All read **only** from `irrigation_invoices` + `irrigation_invoice_payments`. Returns: `{ payable, paid, due, by_season, by_office }`.
-
-Add unit tests with a mocked supabase client.
-
-## Phase B — Migrate read sites (one PR per group, no behavior change beyond data source)
-
-1. **Aggregates / cards** — `Dashboard.tsx`, `Cashbook.tsx`, `Reports.tsx`, `Dues.tsx`, `DuesAudit.tsx`. Replace `irrigation_charges` aggregations with the helper. Keep card titles/UI identical.
-2. **Per-farmer views** — `Statement.tsx`, `FarmerProfileReport.tsx`, `FarmerDetail.tsx` (irrigation due display only — keep legacy charge list tab visible for audit history but mark as “legacy entries”).
-3. **Reports** — `IrrigationDueReport.tsx`, `CollectionReport.tsx`. Switch base table to `irrigation_invoices` + `irrigation_invoice_payments`. Add columns: `current_collected / previous_collected / delay_fee / maintenance / canal` (sourced from new split fields).
-4. **Land/admin views** — `LandDetail.tsx`, `admin/PatwariDetail.tsx`. Show invoice list (not charge list).
-5. **SMS resolve** — `SmsLogs.tsx`: when `reference_table` is `irrigation_invoices` resolve from there; keep `irrigation_charges` fallback for old logs.
-
-`Diagnostics.tsx`, `AuditLogs.tsx`, `Backup.tsx`, `DataImport.tsx` — leave `irrigation_charges` references (these are explicitly legacy-table tools).
-
-## Phase C — Mismatch report upgrade
-
-`admin/IrrigationDueMismatch.tsx` already exists. Extend with:
-
-- Compare `irrigation_invoices` totals vs. legacy `irrigation_charges` totals per farmer.
-- Add "View Farmer", "Export CSV", and "Recalculate" (re-derives `paid_amount` on each invoice from `irrigation_invoice_payments`) actions.
-- Recalc writes to `irrigation_invoice_audit` for traceability.
-
-## Phase D — Demo importer audit
-
-`DataImport.tsx` + `supabase/functions/demo-reset/index.ts`:
-
-- Verify modules import: farmers, lands, land_relations, voter status, savings plans/balances, loan plans/schedules/installments, irrigation seasons/rates/invoices, payments + allocations, **share balances**, accounting (CoA, journals).
-- Add a post-import validation summary (counts: imported / skipped / failed) returned to the UI.
-- Share Balance importer was added previously — verify mapping (`account_number` → farmer) and add a smoke test.
-
-## Phase E — Tests
-
-- Unit: `irrigationDue.ts` (FIFO, splits, aggregate).
-- Component: `Dashboard.tsx` irrigation card reads from invoices.
-- E2E (Playwright): create invoice → pay current+previous → dashboard / due report / farmer statement all show identical due.
-- Importer smoke: run demo reset, assert share_balance count > 0.
-
-## Phase F — Legacy cleanup (final, optional)
-
-Once Phases A–E ship and run cleanly for one cycle:
-
-- Mark `irrigation_charges` as **read-only legacy** in code comments.
-- Add admin-only tool to bulk-migrate orphan `irrigation_charges` rows into `irrigation_invoices` (idempotent).
-- Hide the legacy charges section from `FarmerDetail` behind a "Show legacy entries" toggle.
-
-## Rollout order
-
-1. Phase A (helper + tests) — small, low risk.
-2. Phase B group 1 (aggregates) — visual diff easy to verify.
-3. Phase B groups 2–5.
-4. Phase C, D, E in parallel.
-5. Phase F when stable.
-
-Estimated change footprint: **~16 files edited**, **3 new files** (helper + tests + recalc action), **0 schema changes** (Phase 1 migration already covers it).
-
-Given the size, I suggest splitting into **3 messages**:
-- **Msg 1**: Phase A + Phase B group 1 (aggregates)
-- **Msg 2**: Phase B groups 2–5
-- **Msg 3**: Phase C + D + E
-
-Reply **"go"** to proceed with Msg 1, or tell me to skip/reorder phases.
+This is 5 large epics. Shipping all at once would be risky — proposing a phased rollout that leaves the app working after every phase. Each phase is one chat message.
 
 ---
 
-## Status — Completed
+## Phase 1 — Retry Queue + SMS/Receipt Status (foundation)
 
-- **Phase A**: `src/lib/irrigationDue.ts` + 12 unit tests ✓
-- **Phase B-1**: Dashboard, Cashbook, Reports, Dues, DuesAudit ✓
-- **Phase B-2**: Statement, FarmerProfileReport, FarmerDetail (receipt outstanding + delete-block) ✓
-- **Phase B-3**: reports/IrrigationDueReport, reports/CollectionReport ✓
-- **Phase B-4**: Ledger, LandDetail ✓
-- **Phase B-5**: SmsLogs (invoice-first with charge fallback) ✓
-- **Phase C**: IrrigationDueMismatch — added Excel export, View Farmer link, per-farmer Recalculate (rebuilds invoice paid/due from `irrigation_invoice_payments` and writes audit row) ✓
-- **Phase D**: Verified `DataImport.tsx` already supports `shares` module with account_number + balance ✓
+**DB migration**
 
-## Intentionally retained on `irrigation_charges` (legacy/audit only)
+- `background_retry_jobs` table: `id, office_id, job_type, reference_id, payload jsonb, status, retry_count, max_retry, next_retry_at, last_error, created_at, updated_at` + RLS (office-scoped read, super-admin manage, system insert via edge function).
+- Extend `irrigation_sms_logs.status` allowed values: `pending|sent|delivered|failed|retrying|permanently_failed`.
+- New `receipt_jobs` table (or reuse `background_retry_jobs` with `job_type='receipt_generation'`) — go with the latter to keep one queue.
+- Status enum constraint via trigger (no CHECK with non-immutable funcs).
 
-- `Diagnostics.tsx` — RLS/data probe across all tables
-- `AuditLogs.tsx` — historical audit timeline
-- `Backup.tsx` — full table snapshot list
-- `DataImport.tsx` — legacy import path (still supported)
-- `admin/PatwariDetail.tsx` — patwari "special entries" (invoices have no `patwari_id`)
-- `FarmerDetail.tsx` line 120 — legacy charge-list tab kept as audit history
+**Code**
+
+- `src/lib/retryQueue.ts` — `enqueue(jobType, refId, payload)`, `markSuccess`, `markFailed` (computes next_retry_at via 1m / 5m / 15m / 1h schedule).
+- Wrap SMS + receipt calls in `IrrigationPaymentPanel` so payment is never rolled back on SMS/PDF failure — failures enqueue retry job.
+- Edge function `process-retry-jobs` (cron-eligible) — picks `next_retry_at <= now()`, dispatches by `job_type`, updates status; transitions to `permanently_failed` after `max_retry`.
+- Admin notification: surface failed jobs in existing notifications panel + dashboard alert card.
+- Manual actions: "Retry" / "Regenerate Receipt" / "View failure" buttons on failed-jobs admin page (`/admin/retry-jobs`).
+
+**Tests**
+
+- Unit: schedule computation (`nextRetryAt(attempt)`).
+- Integration: enqueue → process → success / exhaust path.
+
+---
+
+## Phase 2 — Centralized Audit Log (`system_audit_logs`)
+
+**DB migration**
+
+- `system_audit_logs(id, office_id, user_id, module, action_type, reference_id, old_data jsonb, new_data jsonb, ip, user_agent, created_at)` — insert-only (no UPDATE/DELETE policy).
+- RLS: office-scoped read + super-admin all; INSERT via authenticated.
+
+**Code**
+
+- `src/lib/audit.ts` — `logAudit({ module, action, refId, before, after })`. Used everywhere financial actions occur.
+- Wire into: payment create/edit/cancel/retry, receipt generated/regenerated/failed/downloaded, SMS sent/failed/retried, journal posted/reversed/corrected.
+- Admin page `/admin/audit-timeline` — search, filter by module/user/date, timeline view, CSV export.
+
+**Tests**
+
+- Unit: `logAudit` payload shape.
+- Integration: payment flow writes 4+ audit rows.
+
+---
+
+## Phase 3 — CSV Export (Promise Due + Mismatch)
+
+- Add `Export CSV` button (UTF-8 BOM for Bangla) to `PromiseDueReport.tsx` and `IrrigationDueMismatch.tsx`.
+- Respect active filters; stream rows in chunks of 5k for large datasets.
+- Columns exactly per spec.
+
+**Tests**
+
+- Unit: CSV escaping + Bangla UTF-8 round-trip.
+
+---
+
+## Phase 4 — Role Permission Matrix UI
+
+**DB migration**
+
+- `role_permissions(id, role app_role, module text, action text, allowed boolean, office_id uuid null, updated_by, updated_at)` — unique `(role, module, action, office_id)`.
+- `permission_audit_logs(id, role, module, action, old_value, new_value, office_id, changed_by, created_at)`.
+- Helper SQL fn `has_permission(_user, _module, _action) returns boolean` (security definer).
+- Seed sensible defaults from current hardcoded role checks.
+
+**Code**
+
+- Page `/admin/permissions` (route + sidebar entry "রোল ও অনুমতি ম্যাট্রিক্স").
+- Matrix table: rows = module × action; columns = roles. Inline toggle, bulk select, role cloning, search, sticky headers, Bangla labels.
+- Guards: super-admin only; can't toggle off own role's "manage permissions"; confirm dialog for destructive toggles; every change writes `permission_audit_logs` + `system_audit_logs`.
+- Optional `usePermission(module, action)` hook used by sensitive UI buttons (gradual adoption — does NOT replace existing RLS / role checks).
+
+**Tests**
+
+- Unit: privilege escalation guard.
+- Integration: toggle persists + audit row.
+
+---
+
+## Phase 5 — E2E Tests (Playwright)
+
+- Add Playwright + seed script + `npm run test:e2e`, `npm run test:irrigation`.
+- Scenarios: invoice payment, promise-date flow, delay-fee override, receipt failure recovery, SMS failure recovery, duplicate prevention.
+- Failure screenshots, retry logs, JUnit report, optional GH Actions nightly job.
+
+---
+
+## Out of scope / kept compatible
+
+- Existing accounting, ledger, receipt verify, SMS gateway, RLS, role checks, reports — untouched. New audit/permission systems are additive.
+- `irrigation_charges` legacy reads remain in audit/legacy pages (per previous phase).
+
+---
+
+## Suggested order
+
+Ship Phase 1 next (highest value, unblocks reliability). Then 2 → 3 → 4 → 5.
+
+Reply **"ok phase 1"** (or specify a different phase) to proceed.
