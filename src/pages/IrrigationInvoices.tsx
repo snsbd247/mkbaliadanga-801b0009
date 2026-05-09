@@ -22,8 +22,11 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
-import { Sparkles, Plus, Eye, Ban, RefreshCw } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Link } from "react-router-dom";
 
 type Invoice = any;
 
@@ -242,6 +245,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           invoiceId={previewId}
           onClose={() => setPreviewId(null)}
           allRows={rows}
+          onRecalculated={load}
         />
       </CardContent>
     </Card>
@@ -251,22 +255,51 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 // ============================================================
 // PREVIEW DIALOG
 // ============================================================
-function InvoicePreviewDialog({ invoiceId, onClose, allRows }: any) {
+function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: any) {
+  const { isSuper } = useAuth();
   const inv = allRows.find((r: any) => r.id === invoiceId);
+  const [recalcOpen, setRecalcOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
   if (!inv) return null;
+
+  async function recalc() {
+    if (reason.trim().length < 3) return toast.error("কারণ লিখুন (অন্তত ৩ অক্ষর)");
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("recalculate_irrigation_invoice" as any, {
+        _invoice_id: inv.id, _reason: reason.trim(),
+      });
+      if (error) throw error;
+      toast.success("ইনভয়েস পুনঃগণনা হয়েছে");
+      setRecalcOpen(false); setReason("");
+      onRecalculated?.();
+      onClose();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
+  }
+
   return (
     <Dialog open={!!invoiceId} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>ইনভয়েস {inv.invoice_no}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            ইনভয়েস {inv.invoice_no}
+            {inv.is_manual_rate && <Badge variant="outline" className="text-xs">ম্যানুয়াল রেট</Badge>}
+            <Badge variant="secondary" className="text-xs gap-1"><ShieldCheck className="h-3 w-3" />স্ন্যাপশট সুরক্ষিত</Badge>
+          </DialogTitle>
+        </DialogHeader>
         <div className="space-y-2 text-sm">
           <Row k="কৃষক" v={`${inv.farmers?.name_bn ?? inv.farmers?.name_en} (${inv.farmers?.farmer_code})`} />
           <Row k="ধরন" v={inv.is_borga ? "🤝 বর্গাদার" : "🏠 নিজ মালিক"} />
           <Row k="জমি" v={`${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no} • ${formatLandSize(inv.lands?.land_size)}`} />
+          <Row k="জমির ধরন" v={inv.land_type_name ?? "—"} />
           <Row k="সিজন" v={`${inv.seasons?.name ?? inv.seasons?.type} ${inv.seasons?.year}`} />
+          <Row k="সিজন রেট/শতক" v={inv.season_rate != null ? money(inv.season_rate) : "—"} />
           <Row k="মেয়াদ" v={fmtDate(inv.due_date)} />
           <hr />
           <Row k="সেচ চার্জ" v={money(inv.irrigation_amount)} />
-          <Row k="রক্ষণাবেক্ষণ" v={money(inv.maintenance_amount)} />
+          <Row k="রক্ষণাবেক্ষণ চার্জ" v={money(inv.maintenance_amount)} />
           <Row k="খাল/নালা চার্জ" v={money(inv.canal_amount)} />
           <Row k="অন্যান্য" v={money(inv.other_charge)} />
           <Row k="বিলম্ব ফি" v={money(inv.delay_fee)} />
@@ -277,10 +310,47 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows }: any) {
           <hr />
           <Row k="স্ট্যাটাস" v={STATUS_LABEL_BN[inv.invoice_status as InvoiceStatus]} />
           <Row k="তৈরির তারিখ" v={fmtDate(inv.generated_at)} />
+          {inv.recalculated_at && <Row k="শেষ পুনঃগণনা" v={fmtDate(inv.recalculated_at)} />}
+          {inv.manual_rate_reason && <Row k="ম্যানুয়াল রেটের কারণ" v={inv.manual_rate_reason} />}
+          {inv.calculation_snapshot && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-xs text-muted-foreground">গণনা স্ন্যাপশট (অপরিবর্তনীয়)</summary>
+              <pre className="text-[10px] bg-muted/40 p-2 rounded mt-1 overflow-auto max-h-40">
+{JSON.stringify(inv.calculation_snapshot, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
+          {isSuper && inv.invoice_status !== "cancelled" && (
+            <Button variant="outline" onClick={() => setRecalcOpen(true)}>
+              <RefreshCw className="h-4 w-4 mr-1" />পুনঃগণনা
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>বন্ধ করুন</Button>
         </DialogFooter>
+
+        <Dialog open={recalcOpen} onOpenChange={setRecalcOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>ইনভয়েস পুনঃগণনা</DialogTitle></DialogHeader>
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>সতর্কতা</AlertTitle>
+              <AlertDescription>
+                বর্তমান সিজন রেট ব্যবহার করে এই ইনভয়েস পুনঃগণনা হবে। পুরোনো স্ন্যাপশট অডিট লগে সংরক্ষণ থাকবে।
+              </AlertDescription>
+            </Alert>
+            <div>
+              <Label>কারণ *</Label>
+              <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
+                placeholder="যেমন: রেট ভুল কনফিগার করা হয়েছিল" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRecalcOpen(false)}>বাতিল</Button>
+              <Button onClick={recalc} disabled={busy}>{busy ? "…" : "পুনঃগণনা করুন"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
@@ -562,8 +632,12 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     });
   }, [seasonId, landId, lands]);
 
+  const [manualReason, setManualReason] = useState("");
+  const isManualRate = !!seasonId && !!landId && (!rateRow || rateRow.rate_per_shotok <= 0);
+
   async function save() {
     if (!farmerId || !landId || !seasonId || !rate) return toast.error("সব ফিল্ড পূরণ করুন");
+    if (isManualRate && manualReason.trim().length < 3) return toast.error("ম্যানুয়াল রেটের কারণ লিখুন (অন্তত ৩ অক্ষর)");
     setBusy(true);
     try {
       const land = lands.find((l: any) => l.id === landId);
@@ -598,6 +672,8 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         season_rate: rate,
         land_type_id: rateRow?.land_type_id ?? null,
         land_type_name: rateRow?.land_type_name ?? land?.field_type ?? null,
+        is_manual_rate: isManualRate,
+        manual_rate_reason: isManualRate ? manualReason.trim() : null,
         calculation_snapshot: {
           rate_per_shotok: rate,
           land_size_shotok: Number(land?.land_size ?? 0),
@@ -607,12 +683,14 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
           calc,
           generated_at: new Date().toISOString(),
           source: "manual",
+          is_manual_rate: isManualRate,
+          manual_rate_reason: isManualRate ? manualReason.trim() : null,
         },
       } as any);
       if (error) throw error;
       toast.success(`ইনভয়েস ${invoice_no} তৈরি হয়েছে`);
       onOpenChange(false);
-      setFarmerId(null); setLandId(""); setSeasonId(""); setRate(0); setOtherCharge(0);
+      setFarmerId(null); setLandId(""); setSeasonId(""); setRate(0); setOtherCharge(0); setManualReason("");
     } catch (e: any) {
       toast.error(e.message);
     } finally { setBusy(false); }
@@ -663,6 +741,29 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
               <Input type="number" value={otherCharge} onChange={(e) => setOtherCharge(Number(e.target.value))} />
             </div>
           </div>
+          {seasonId && landId && (
+            isManualRate ? (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>সিজন রেট কনফিগার নেই</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>এই সিজন ও জমির ধরনের জন্য কোনো সেচ রেট কনফিগার করা নেই। নিচে ম্যানুয়াল রেট ও কারণ দিন, অথবা প্রথমে সিজন রেট কনফিগার করুন।</p>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/seasons" target="_blank">সিজন রেটে যান</Link>
+                  </Button>
+                  <div>
+                    <Label>ম্যানুয়াল রেটের কারণ *</Label>
+                    <Textarea rows={2} value={manualReason} onChange={(e) => setManualReason(e.target.value)}
+                      placeholder="যেমন: এক-বার পরীক্ষামূলক ইনভয়েস" />
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                স্বয়ংক্রিয় রেট প্রয়োগ: {rateRow?.land_type_name} → {money(rateRow?.rate_per_shotok ?? 0)}/শতক
+              </p>
+            )
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>বাতিল</Button>
