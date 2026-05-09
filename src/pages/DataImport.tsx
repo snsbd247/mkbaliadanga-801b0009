@@ -36,6 +36,7 @@ type Module =
   | "land_relations"
   | "loans"
   | "loan_payments"
+  | "loan_installments"
   | "savings"
   | "payments"
   | "irrigation"
@@ -68,6 +69,10 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   loan_payments: {
     columns: ["account_number", "amount", "paid_on", "note"],
     sample: { account_number: "100000000001", amount: 1000, paid_on: "2026-02-15", note: "1st installment" },
+  },
+  loan_installments: {
+    columns: ["account_number", "installment_no", "due_date", "amount", "status"],
+    sample: { account_number: "100000000001", installment_no: 1, due_date: "2026-02-15", amount: 1000, status: "due" },
   },
   savings: {
     columns: ["account_number", "type", "amount", "txn_date", "note"],
@@ -296,6 +301,7 @@ export default function DataImport() {
       irrigation: ["account_number", "dag_no", "season_year", "season_type", "base_charge", "entry_date"],
       loans: ["account_number", "principal"],
       loan_payments: ["account_number", "amount"],
+      loan_installments: ["account_number", "installment_no", "due_date", "amount"],
       savings: ["account_number", "type", "amount"],
       payments: ["account_number", "kind", "amount"],
       cashbook_receipts: ["receipt_date", "kind", "amount"],
@@ -377,9 +383,9 @@ export default function DataImport() {
         ? await resolveAccountsByCode(next.map((r) => String(r.raw.account_code ?? "").trim()))
         : new Map<string, string>();
 
-      // Pre-fetch latest active loan per farmer for loan_payments mode
+      // Pre-fetch latest active loan per farmer for loan_payments / loan_installments mode
       let loanByFarmer = new Map<string, string>();
-      if (mod === "loan_payments") {
+      if (mod === "loan_payments" || mod === "loan_installments") {
         const farmerIds = Array.from(new Set(Array.from(farmerMap.values()).map((v) => v.id)));
         if (farmerIds.length) {
           const { data: loans } = await supabase
@@ -545,6 +551,28 @@ export default function DataImport() {
               collected_by: user?.id,
               approved_by: user?.id,
               approved_at: new Date().toISOString(),
+            };
+          } else if (mod === "loan_installments") {
+            const f = farmerMap.get(String(raw.account_number));
+            if (!f) throw new Error("Farmer not found for account_number");
+            const loanId = loanByFarmer.get(f.id);
+            if (!loanId) throw new Error("ইন্সটলমেন্ট ডাটা অনুপস্থিত। অটো-জেনারেট অথবা ইমপোর্ট সংশোধন করুন।");
+            const instNo = Number(raw.installment_no);
+            if (!Number.isFinite(instNo) || instNo < 1) throw new Error("invalid installment_no");
+            if (!raw.due_date) throw new Error("due_date required");
+            if (!raw.amount || Number(raw.amount) <= 0) throw new Error("amount required");
+            const allowedStatus = ["due", "paid", "missed", "partial"];
+            const st = String(raw.status ?? "due").toLowerCase();
+            if (!allowedStatus.includes(st)) throw new Error("status must be due/paid/missed/partial");
+            table = "loan_installments";
+            payload = {
+              loan_id: loanId,
+              office_id: f.office_id,
+              installment_no: instNo,
+              due_date: raw.due_date,
+              amount: Number(raw.amount),
+              status: st as any,
+              paid_amount: st === "paid" ? Number(raw.amount) : 0,
             };
           } else if (mod === "savings") {
             const f = farmerMap.get(String(raw.account_number));
@@ -809,6 +837,7 @@ export default function DataImport() {
                 <SelectItem value="land_relations">Land Relations (owner/tenant)</SelectItem>
                 <SelectItem value="loans">Loans</SelectItem>
                 <SelectItem value="loan_payments">Loan Payments</SelectItem>
+                <SelectItem value="loan_installments">Loan Installments</SelectItem>
                 <SelectItem value="savings">Savings Transactions</SelectItem>
                 <SelectItem value="payments">Payments (generic)</SelectItem>
                 <SelectItem value="irrigation">Irrigation Charges</SelectItem>

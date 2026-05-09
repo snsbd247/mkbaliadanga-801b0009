@@ -2154,8 +2154,11 @@ export type Database = {
           auto_apply: boolean
           created_at: string
           created_by: string | null
+          daily_penalty: number
+          enforcement_mode: string
           grace_days: number
           id: string
+          max_penalty: number | null
           mode: string
           office_id: string | null
           updated_at: string
@@ -2167,8 +2170,11 @@ export type Database = {
           auto_apply?: boolean
           created_at?: string
           created_by?: string | null
+          daily_penalty?: number
+          enforcement_mode?: string
           grace_days?: number
           id?: string
+          max_penalty?: number | null
           mode?: string
           office_id?: string | null
           updated_at?: string
@@ -2180,8 +2186,11 @@ export type Database = {
           auto_apply?: boolean
           created_at?: string
           created_by?: string | null
+          daily_penalty?: number
+          enforcement_mode?: string
           grace_days?: number
           id?: string
+          max_penalty?: number | null
           mode?: string
           office_id?: string | null
           updated_at?: string
@@ -2238,10 +2247,13 @@ export type Database = {
           installment_no: number
           loan_id: string
           office_id: string | null
+          overdue_days: number
           paid_amount: number
           paid_on: string | null
           penalty_amount: number
+          penalty_rule_snapshot: Json | null
           status: Database["public"]["Enums"]["installment_status"]
+          strict_validation_override: boolean
           updated_at: string
         }
         Insert: {
@@ -2252,10 +2264,13 @@ export type Database = {
           installment_no: number
           loan_id: string
           office_id?: string | null
+          overdue_days?: number
           paid_amount?: number
           paid_on?: string | null
           penalty_amount?: number
+          penalty_rule_snapshot?: Json | null
           status?: Database["public"]["Enums"]["installment_status"]
+          strict_validation_override?: boolean
           updated_at?: string
         }
         Update: {
@@ -2266,10 +2281,13 @@ export type Database = {
           installment_no?: number
           loan_id?: string
           office_id?: string | null
+          overdue_days?: number
           paid_amount?: number
           paid_on?: string | null
           penalty_amount?: number
+          penalty_rule_snapshot?: Json | null
           status?: Database["public"]["Enums"]["installment_status"]
+          strict_validation_override?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -2294,7 +2312,10 @@ export type Database = {
           loan_id: string
           note: string | null
           office_id: string | null
+          override_by: string | null
+          override_reason: string | null
           paid_on: string
+          penalty_collected: number
           status: Database["public"]["Enums"]["loan_payment_status"]
         }
         Insert: {
@@ -2308,7 +2329,10 @@ export type Database = {
           loan_id: string
           note?: string | null
           office_id?: string | null
+          override_by?: string | null
+          override_reason?: string | null
           paid_on?: string
+          penalty_collected?: number
           status?: Database["public"]["Enums"]["loan_payment_status"]
         }
         Update: {
@@ -2322,7 +2346,10 @@ export type Database = {
           loan_id?: string
           note?: string | null
           office_id?: string | null
+          override_by?: string | null
+          override_reason?: string | null
           paid_on?: string
+          penalty_collected?: number
           status?: Database["public"]["Enums"]["loan_payment_status"]
         }
         Relationships: [
@@ -4127,7 +4154,13 @@ export type Database = {
       loan_installment_type: "daily" | "weekly" | "monthly"
       loan_payment_status: "pending" | "approved" | "rejected"
       loan_penalty_type: "percentage" | "fixed"
-      loan_status: "pending" | "approved" | "paid" | "rejected"
+      loan_status:
+        | "pending"
+        | "approved"
+        | "paid"
+        | "rejected"
+        | "completed"
+        | "overdue"
       owner_type: "owner" | "borgadar"
       payment_kind: "loan" | "savings" | "irrigation"
       payment_status: "pending" | "approved" | "rejected"
@@ -4295,7 +4328,14 @@ export const Constants = {
       loan_installment_type: ["daily", "weekly", "monthly"],
       loan_payment_status: ["pending", "approved", "rejected"],
       loan_penalty_type: ["percentage", "fixed"],
-      loan_status: ["pending", "approved", "paid", "rejected"],
+      loan_status: [
+        "pending",
+        "approved",
+        "paid",
+        "rejected",
+        "completed",
+        "overdue",
+      ],
       owner_type: ["owner", "borgadar"],
       payment_kind: ["loan", "savings", "irrigation"],
       payment_status: ["pending", "approved", "rejected"],

@@ -211,7 +211,8 @@ export default function Payments() {
       if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
 
-    // Strict installment enforcement for loan allocations
+    // Strict installment enforcement for loan allocations (engine v2)
+    const loanContext: Record<string, { settings: any; next: any; breakdown: any; override?: string }> = {};
     for (const a of allocs) {
       if (a.kind !== "loan" || !a.reference_id) continue;
       const { data: loanRow } = await supabase.from("loans").select("office_id").eq("id", a.reference_id).maybeSingle();
@@ -220,13 +221,28 @@ export default function Payments() {
         supabase.from("loan_installments").select("id,installment_no,amount,paid_amount,due_date,status").eq("loan_id", a.reference_id).order("installment_no"),
         supabase.from("loan_delay_fee_settings").select("*").or(officeId ? `office_id.eq.${officeId},office_id.is.null` : "office_id.is.null"),
       ]);
-      const next = (await import("@/lib/loanDelayFee")).nextDueInstallment((instList ?? []) as any);
+      const engine = await import("@/lib/loanDelayFee");
+      const next = engine.nextDueInstallment((instList ?? []) as any);
       if (!next) continue; // no schedule → fall through (legacy loans)
-      const settings = (settingsList && settingsList[0]) || (await import("@/lib/loanDelayFee")).DEFAULT_DELAY_SETTINGS;
-      const v = (await import("@/lib/loanDelayFee")).validateInstallmentPayment(next as any, settings as any, Number(a.amount));
-      if (!v.ok) {
-        return toast.error(`${v.reason} (নির্ধারিত: ৳${v.required.toFixed(2)}, প্রদত্ত: ৳${Number(a.amount).toFixed(2)})`);
+      const settings = (settingsList && settingsList[0]) || engine.DEFAULT_DELAY_SETTINGS;
+      const v = engine.validateInstallmentPayment(next as any, settings as any, Number(a.amount));
+      const breakdown = engine.computePenaltyBreakdown(next as any, settings as any);
+      let overrideReason: string | undefined;
+      if (!v.ok || v.needsOverride) {
+        const enf = v.enforcement;
+        if (enf === "block") {
+          return toast.error(`${v.reason} (নির্ধারিত: ৳${v.required.toFixed(2)}, প্রদত্ত: ৳${Number(a.amount).toFixed(2)})`);
+        }
+        if (enf === "warn") {
+          if (!window.confirm(`⚠ নির্ধারিত: ৳${v.required.toFixed(2)} | প্রদত্ত: ৳${Number(a.amount).toFixed(2)}\nতবুও সংরক্ষণ করবেন?`)) return;
+        }
+        if (enf === "allow") {
+          const reason = window.prompt("আংশিক পেমেন্ট override কারণ লিখুন (অডিটে সংরক্ষিত হবে):", "")?.trim();
+          if (!reason) return toast.error("Override কারণ আবশ্যক");
+          overrideReason = reason;
+        }
       }
+      loanContext[a.reference_id] = { settings, next, breakdown, override: overrideReason };
     }
 
     setSubmitting(true);
@@ -277,7 +293,7 @@ export default function Payments() {
       }
 
       if (status === "approved") {
-        await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note);
+        await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note, loanContext);
         await sendIrrigationPaymentSms(farmerId, allocs, finalReceiptNo);
       }
 
@@ -302,11 +318,45 @@ export default function Payments() {
     } catch (_) { /* SMS failure must not break payment flow */ }
   }
 
-  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string) {
+  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string, loanContext: Record<string, any> = {}) {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
       if (a.kind === "loan" && a.reference_id) {
-        await supabase.from("loan_payments").insert({ loan_id: a.reference_id, amount: Number(a.amount), collected_by: user?.id, note: noteText });
+        const ctx = loanContext[a.reference_id];
+        const penalty = Math.min(Number(a.amount), ctx?.breakdown?.total ?? 0);
+        await supabase.from("loan_payments").insert({
+          loan_id: a.reference_id,
+          amount: Number(a.amount),
+          collected_by: user?.id,
+          note: noteText,
+          penalty_collected: penalty,
+          override_reason: ctx?.override ?? null,
+          override_by: ctx?.override ? user?.id : null,
+        } as any);
+        if (ctx?.next) {
+          const engine = await import("@/lib/loanDelayFee");
+          const snapshot = engine.buildPenaltySnapshot(ctx.next, ctx.settings);
+          const newPaid = Number(ctx.next.paid_amount || 0) + Math.max(0, Number(a.amount) - penalty);
+          const fullyPaid = newPaid + 0.005 >= Number(ctx.next.amount);
+          await supabase.from("loan_installments").update({
+            paid_amount: newPaid,
+            penalty_amount: (Number(ctx.next.penalty_amount || 0) + penalty),
+            overdue_days: ctx.breakdown?.overdueDays ?? 0,
+            penalty_rule_snapshot: snapshot as any,
+            strict_validation_override: !!ctx.override,
+            status: fullyPaid ? "paid" : (newPaid > 0 ? "partial" : ctx.next.status),
+            paid_on: fullyPaid ? new Date().toISOString().slice(0, 10) : ctx.next.paid_on,
+          } as any).eq("id", ctx.next.id);
+          if (ctx.override) {
+            await supabase.from("loan_installment_delay_audit").insert({
+              installment_id: ctx.next.id,
+              original_amount: ctx.breakdown?.total ?? 0,
+              modified_amount: penalty,
+              reason: ctx.override,
+              changed_by: user?.id,
+            } as any);
+          }
+        }
       } else if (a.kind === "irrigation" && a.reference_id) {
         const { data: inv } = await supabase
           .from("irrigation_invoices")
