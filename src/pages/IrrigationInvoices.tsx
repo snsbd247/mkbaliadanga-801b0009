@@ -21,6 +21,7 @@ import {
   calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
+import { loadSeasonRateMap, resolveRate } from "@/lib/seasonRates";
 import { Sparkles, Plus, Eye, Ban, RefreshCw } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
