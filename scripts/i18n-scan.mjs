@@ -41,7 +41,7 @@ function walk(dir, out = []) {
 //   - SMS template defaults:  tpl_<name>(_en)?: "..."
 const isCommentLine = (l) => /^\s*(\/\/|\*|\/\*)/.test(l);
 const isSeedDataField = (l) => /\b(name_bn|label_bn|title_bn|desc_bn|company_name_bn|name_en|label_en|title_en)\s*:/.test(l);
-const isLangGuarded = (l) => /lang\s*===\s*["'](bn|en)["']|case\s+["'](bn|en)["']|\?\s*["'][^"']*[\u0980-\u09FF]/.test(l);
+const isLangGuarded = (l) => /lang\s*===\s*["'](bn|en)["']|case\s+["'](bn|en)["']|\?\s*["'][^"']*[\u0980-\u09FF]|\w+\(\s*["'][^"']*["']\s*,\s*["'][^"']*[\u0980-\u09FF]/.test(l);
 const isSampleArrayRow = (l) => /^\s*\[\s*"/.test(l) && /,\s*"/.test(l);
 const isTemplateDefault = (l) => /^\s*tpl_[a-z_]+(_en)?\s*:\s*["'`]/.test(l);
 const isI18nBlockOpen = (l) => /^\s*(en|bn)\s*:\s*\{\s*$/.test(l);
