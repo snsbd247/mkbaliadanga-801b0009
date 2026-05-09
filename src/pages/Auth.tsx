@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sprout, Mail, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Sprout, Mail, AlertCircle, CheckCircle2, XCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
