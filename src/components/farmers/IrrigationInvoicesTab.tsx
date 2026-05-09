@@ -18,6 +18,7 @@ type SortKey = "due_date" | "payable_amount" | "due_amount" | "paid_amount" | "i
 
 export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }) {
   const nav = useNavigate();
+  const { t } = useLang();
   const [rows, setRows] = useState<Inv[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
