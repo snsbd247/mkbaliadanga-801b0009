@@ -2042,6 +2042,27 @@ export type Database = {
         }
         Relationships: []
       }
+      receipt_counters: {
+        Row: {
+          kind: string
+          last_no: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          kind: string
+          last_no?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          kind?: string
+          last_no?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       receipt_settings: {
         Row: {
           accent_color: string
@@ -3039,6 +3060,7 @@ export type Database = {
         Args: { _exclude_id?: string; _member_no: string }
         Returns: boolean
       }
+      next_receipt_no: { Args: { p_kind: string }; Returns: string }
       reactivate_voter_membership: {
         Args: { _farmer_id: string; _reason: string }
         Returns: Json
