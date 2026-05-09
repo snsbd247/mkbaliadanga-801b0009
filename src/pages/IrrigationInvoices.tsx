@@ -299,9 +299,16 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" title="দেখুন" onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" title="প্রিন্ট" onClick={() => printInvoice(r)}><Printer className="h-4 w-4" /></Button>
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
-                        <Button size="sm" variant="ghost" onClick={() => cancelInvoice(r)}><Ban className="h-4 w-4 text-destructive" /></Button>
+                        <Button size="sm" variant="ghost" title="এডিট" onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
+                      )}
+                      {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
+                        <Button size="sm" variant="ghost" title="বাতিল" onClick={() => cancelInvoice(r)}><Ban className="h-4 w-4 text-destructive" /></Button>
+                      )}
+                      {isSuper && (
+                        <Button size="sm" variant="ghost" title="মুছুন" onClick={() => deleteInvoice(r)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       )}
                     </div>
                   </TableCell>
@@ -319,8 +326,96 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           allRows={rows}
           onRecalculated={load}
         />
+        <InvoiceEditDialog inv={editInv} onClose={() => setEditInv(null)} onSaved={load} />
       </CardContent>
     </Card>
+  );
+}
+
+// ============================================================
+// EDIT DIALOG (due_date, other_charge, delay_fee, note)
+// ============================================================
+function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
+  const [dueDate, setDueDate] = useState("");
+  const [otherCharge, setOtherCharge] = useState("0");
+  const [delayFee, setDelayFee] = useState("0");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!inv) return;
+    setDueDate(inv.due_date ?? "");
+    setOtherCharge(String(inv.other_charge ?? 0));
+    setDelayFee(String(inv.delay_fee ?? 0));
+    setNote(inv.note ?? "");
+  }, [inv?.id]);
+
+  if (!inv) return null;
+
+  async function save() {
+    const oc = Number(otherCharge) || 0;
+    const df = Number(delayFee) || 0;
+    if (oc < 0 || df < 0) return toast.error("ঋণাত্মক মান দেওয়া যাবে না");
+    if (!dueDate) return toast.error("মেয়াদ তারিখ দিন");
+    setBusy(true);
+    const payable = Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + oc + df;
+    const due = Math.max(0, payable - Number(inv.paid_amount ?? 0));
+    const newStatus =
+      inv.invoice_status === "cancelled" ? inv.invoice_status :
+      due === 0 ? "paid" :
+      Number(inv.paid_amount ?? 0) > 0 ? "partial_paid" :
+      new Date(dueDate) < new Date() ? "overdue" : "generated";
+    const { error } = await supabase
+      .from("irrigation_invoices" as any)
+      .update({
+        due_date: dueDate,
+        other_charge: oc,
+        delay_fee: df,
+        note: note || null,
+        payable_amount: payable,
+        due_amount: due,
+        invoice_status: newStatus,
+      } as any)
+      .eq("id", inv.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("ইনভয়েস হালনাগাদ হয়েছে");
+    onSaved?.(); onClose();
+  }
+
+  return (
+    <Dialog open={!!inv} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>ইনভয়েস এডিট — {inv.invoice_no}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>মেয়াদ তারিখ</Label>
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>অন্যান্য চার্জ</Label>
+              <Input type="number" min="0" step="0.01" value={otherCharge} onChange={(e) => setOtherCharge(e.target.value)} />
+            </div>
+            <div>
+              <Label>বিলম্ব ফি</Label>
+              <Input type="number" min="0" step="0.01" value={delayFee} onChange={(e) => setDelayFee(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>মন্তব্য</Label>
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            সেচ/রক্ষণাবেক্ষণ/খাল চার্জ পরিবর্তনের জন্য “পুনঃগণনা” ব্যবহার করুন।
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={busy}>বন্ধ</Button>
+          <Button onClick={save} disabled={busy}>{busy ? "সংরক্ষণ…" : "সংরক্ষণ করুন"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
