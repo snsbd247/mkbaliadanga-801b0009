@@ -383,9 +383,9 @@ export default function DataImport() {
         ? await resolveAccountsByCode(next.map((r) => String(r.raw.account_code ?? "").trim()))
         : new Map<string, string>();
 
-      // Pre-fetch latest active loan per farmer for loan_payments mode
+      // Pre-fetch latest active loan per farmer for loan_payments / loan_installments mode
       let loanByFarmer = new Map<string, string>();
-      if (mod === "loan_payments") {
+      if (mod === "loan_payments" || mod === "loan_installments") {
         const farmerIds = Array.from(new Set(Array.from(farmerMap.values()).map((v) => v.id)));
         if (farmerIds.length) {
           const { data: loans } = await supabase
