@@ -92,7 +92,7 @@ export default function InvoiceReport() {
   const body = filtered.map((r) => [
     r.invoice_no,
     `${r.farmers?.name_en ?? ""} (${r.farmers?.farmer_code ?? ""})`,
-    `${r.lands?.mouza ?? ""}/${r.lands?.dag_no ?? ""}`,
+    `${r.lands?.mouza ?? ""}/${formatDagNumbers(r.lands?.dag_no)}`,
     r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
     r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ"),
     money(r.payable_amount), money(r.paid_amount), money(r.due_amount), money(r.delay_fee),
