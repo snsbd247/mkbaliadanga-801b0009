@@ -71,7 +71,10 @@ export default function Users() {
     Object.keys(rolesByUser).forEach((uid) => {
       rolesByUser[uid].sort((a, b) => (ROLE_RANK[b] ?? 0) - (ROLE_RANK[a] ?? 0));
     });
-    setList((p.data ?? []).map((x: any) => ({ ...x, roles: rolesByUser[x.id] ?? [] })));
+    const mapped = (p.data ?? []).map((x: any) => ({ ...x, roles: rolesByUser[x.id] ?? [] }));
+    // Hide developer accounts from non-developer viewers (super admin, admin, etc.)
+    const visible = isDeveloper ? mapped : mapped.filter((u: any) => !u.roles.includes("developer"));
+    setList(visible);
   }
 
   async function callAdmin(payload: any) {
