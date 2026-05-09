@@ -541,9 +541,9 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     if (!seasonId || !landId) return;
     const land = lands.find((l: any) => l.id === landId);
     if (!land) return;
-    loadSeasonRateMap(seasonId, land.office_id ?? null).then((m) => {
-      const r = resolveRate(m, land.field_type);
-      if (r > 0) setRate(r);
+    loadSeasonRateMap(seasonId, land.office_id ?? null).then((rows) => {
+      const matched = resolveRateForLand(rows, land);
+      if (matched && matched.rate_per_shotok > 0) setRate(matched.rate_per_shotok);
     });
   }, [seasonId, landId, lands]);
 
