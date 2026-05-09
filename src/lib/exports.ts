@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { money, moneyPdf, fmtDate } from "./format";
 import { loadBranding } from "./branding";
 import { ensureBanglaFont, BANGLA_FONT } from "./pdfFonts";
+import { formatDagNumbers } from "./dagNumbers";
 
 
 // Resolve current PDF language from the app's persisted user choice. Reports
