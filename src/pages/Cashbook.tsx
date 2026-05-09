@@ -90,7 +90,7 @@ export default function Cashbook() {
       date(supabase.from("savings_transactions").select("amount,type,status,txn_date").is("deleted_at", null).eq("status", "approved"), "txn_date"),
       date(supabase.from("loans").select("principal,total_payable,status,issued_on,loan_payments(amount)").is("deleted_at", null), "issued_on"),
       date(supabase.from("loan_payments").select("amount,paid_on"), "paid_on"),
-      date(supabase.from("irrigation_charges").select("total,paid_amount,due_amount,entry_date").is("deleted_at", null), "entry_date"),
+      date(supabase.from("irrigation_invoices").select("payable_amount,paid_amount,due_amount,generated_at").is("deleted_at", null).neq("invoice_status", "cancelled"), "generated_at"),
     ]);
     setReceipts(rec.data ?? []); setExpenses(exp.data ?? []);
     setSavings(sv.data ?? []); setLoans(ln.data ?? []); setLoanPayments(lp.data ?? []); setIrrigation(ir.data ?? []);
