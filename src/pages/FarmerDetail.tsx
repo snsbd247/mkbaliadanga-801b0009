@@ -493,6 +493,10 @@ export default function FarmerDetail() {
     if (!v.ok) { setLandLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
     if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) }); return; }
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
+    if (land.owner_type === "owner") {
+      const dv = validateDagNumbers(land.dag_no);
+      if (!dv.ok) return toast.error(dv.error);
+    }
     if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
       return toast.error(t("ownerRequiredForBorgadar" as any));
