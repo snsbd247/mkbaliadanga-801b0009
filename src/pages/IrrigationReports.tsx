@@ -9,8 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import { money } from "@/lib/format";
-import { exportInvoicesCSV, exportInvoicesXLSX } from "@/lib/irrigationExports";
-import { FileDown, FileSpreadsheet } from "lucide-react";
+import { fmtDate } from "@/lib/format";
+import { ExportDialog, type ExportColumn } from "@/components/exports/ExportDialog";
+import { FileDown } from "lucide-react";
 
 const IrrigationReportCharts = lazy(() => import("./irrigation/IrrigationReportCharts"));
 
