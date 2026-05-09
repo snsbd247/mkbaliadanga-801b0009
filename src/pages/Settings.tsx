@@ -199,83 +199,214 @@ function RoundingCard() {
 
 function ReceiptLayoutCard() {
   const [s, setS] = useState(() => getReceiptLayoutSettings());
+  const [lang, setLang] = useState<"bn" | "en">("bn");
   const update = (patch: any) => {
     const next = setReceiptLayoutSettings(patch);
     setS(next);
-    toast.success("রিসিপ্ট লে-আউট আপডেট হয়েছে");
   };
   const seps: Array<{ v: "comma" | "newline" | "semicolon"; label: string }> = [
     { v: "comma", label: "কমা ( , )" },
     { v: "newline", label: "নতুন লাইন" },
     { v: "semicolon", label: "সেমিকোলন ( ; )" },
   ];
+
+  // Build live preview HTML — re-renders whenever `s` or `lang` changes.
+  // We import lazily to avoid loading PDF deps on Settings page.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { buildReceiptCopyHtmlForTest } = require("@/lib/bnReceipts");
+  const previewHtml = buildReceiptCopyHtmlForTest(
+    {
+      kind: "irrigation",
+      receipt_no: "PREVIEW-001",
+      date: new Date().toISOString(),
+      farmer: {
+        name: lang === "bn" ? "করিম মিয়া" : "Karim Mia",
+        member_no: "M-101",
+        village: lang === "bn" ? "বালিয়াডাঙ্গা" : "Baliadanga",
+        mobile: "017XXXXXXXX",
+        mouza: lang === "bn" ? "বালিয়াডাঙ্গা" : "Baliadanga",
+        land_size: 33,
+        dag_no: "123, 124/A, 125-B",
+      },
+      collected_amount: 500,
+      collector_signature_url: null,
+      total_outstanding: 0,
+    },
+    "farmer",
+    lang,
+  );
+
+  async function downloadSamplePdf() {
+    try {
+      const { downloadIrrigationInvoicePdf } = await import("@/lib/irrigationInvoicePdf");
+      await downloadIrrigationInvoicePdf({
+        invoice_no: "PREVIEW-001",
+        generated_at: new Date().toISOString(),
+        irrigation_amount: 400, maintenance_amount: 50, canal_amount: 25, delay_fee: 25,
+        payable_amount: 500, paid_amount: 0, due_amount: 500,
+        invoice_status: "generated",
+        farmer: { name: "Karim Mia", farmer_code: "F-101", mobile: "017", village: "Baliadanga" },
+        land: { mouza: "Baliadanga", dag_no: "123, 124/A, 125-B", land_size: 33 },
+        season: { name: "Boro", year: 2026 },
+      } as any, "farmer");
+      toast.success("নমুনা PDF ডাউনলোড হয়েছে");
+    } catch (e: any) { toast.error(e?.message ?? "PDF generate failed"); }
+  }
+
+  async function downloadSampleExcel() {
+    try {
+      const { exportInvoicesXLSX } = await import("@/lib/irrigationExports");
+      exportInvoicesXLSX([{
+        invoice_no: "PREVIEW-001",
+        farmers: { name_bn: "Karim Mia", farmer_code: "F-101", mobile: "017" },
+        lands: { mouza: "Baliadanga", dag_no: "123, 124/A, 125-B", land_size: 33 },
+        seasons: { name: "Boro", year: 2026 },
+        invoice_status: "generated",
+        payable_amount: 500, paid_amount: 0, due_amount: 500,
+      }], "preview-irrigation-sample.xlsx");
+      toast.success("নমুনা Excel ডাউনলোড হয়েছে");
+    } catch (e: any) { toast.error(e?.message ?? "Excel export failed"); }
+  }
+
   return (
     <Card className="max-w-2xl p-6 mt-4">
       <div className="font-semibold mb-1">সেচ রিসিপ্ট লে-আউট</div>
       <div className="text-sm text-muted-foreground mb-3">
-        মাল্টিপল দাগ নম্বর কীভাবে দেখাবে, রো-এর লেবেল ও স্পেসিং কাস্টমাইজ করুন। অন্য মডিউলে প্রভাব পড়বে না।
+        মাল্টিপল দাগ নম্বর কীভাবে দেখাবে, রো-এর লেবেল ও স্পেসিং কাস্টমাইজ করুন। লাইভ প্রিভিউ পাশে দেখুন। অন্য মডিউলে প্রভাব পড়বে না।
       </div>
 
-      <div className="mb-4">
-        <div className="text-sm font-medium mb-2">দাগ নম্বর সেপারেটর</div>
-        <div className="grid gap-2">
-          {seps.map((o) => (
-            <label key={o.v} className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="radio" name="dag-sep" checked={s.dagSeparator === o.v}
-                onChange={() => update({ dagSeparator: o.v })} />
-              <span>{o.label}</span>
+      <div className="grid lg:grid-cols-2 gap-4">
+        <div>
+          <div className="mb-4">
+            <div className="text-sm font-medium mb-2">দাগ নম্বর সেপারেটর</div>
+            <div className="grid gap-2">
+              {seps.map((o) => (
+                <label key={o.v} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="dag-sep" checked={s.dagSeparator === o.v}
+                    onChange={() => update({ dagSeparator: o.v })} />
+                  <span>{o.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 mb-4">
+            <div className="text-xs font-semibold text-muted-foreground uppercase">সেচ লেবেল</div>
+            <label className="text-sm">
+              <div className="font-medium mb-1">মৌজা/জমির পরিমান (BN)</div>
+              <input className="w-full border rounded px-2 py-1 bg-background" value={s.mouzaLabelBn}
+                placeholder="মৌজা / জমির পরিমান:" onChange={(e) => update({ mouzaLabelBn: e.target.value })} />
             </label>
-          ))}
+            <label className="text-sm">
+              <div className="font-medium mb-1">Mouza/Land (EN)</div>
+              <input className="w-full border rounded px-2 py-1 bg-background" value={s.mouzaLabelEn}
+                placeholder="Mouza / Land size:" onChange={(e) => update({ mouzaLabelEn: e.target.value })} />
+            </label>
+            <label className="text-sm">
+              <div className="font-medium mb-1">দাগ নং (BN)</div>
+              <input className="w-full border rounded px-2 py-1 bg-background" value={s.dagLabelBn}
+                placeholder="দাগ নং:" onChange={(e) => update({ dagLabelBn: e.target.value })} />
+            </label>
+            <label className="text-sm">
+              <div className="font-medium mb-1">Dag no (EN)</div>
+              <input className="w-full border rounded px-2 py-1 bg-background" value={s.dagLabelEn}
+                placeholder="Dag no:" onChange={(e) => update({ dagLabelEn: e.target.value })} />
+            </label>
+          </div>
+
+          <div className="grid gap-3 mb-4">
+            <div className="text-xs font-semibold text-muted-foreground uppercase">সঞ্চয় লেবেল</div>
+            <label className="text-sm">
+              <div className="font-medium mb-1">বিবরণ (BN) / Description (EN)</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input className="border rounded px-2 py-1 bg-background" value={s.savingsDescLabelBn}
+                  placeholder="বিবরণ:" onChange={(e) => update({ savingsDescLabelBn: e.target.value })} />
+                <input className="border rounded px-2 py-1 bg-background" value={s.savingsDescLabelEn}
+                  placeholder="Description:" onChange={(e) => update({ savingsDescLabelEn: e.target.value })} />
+              </div>
+            </label>
+            <label className="text-sm">
+              <div className="font-medium mb-1">বর্তমান স্থিতি / Balance</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input className="border rounded px-2 py-1 bg-background" value={s.savingsBalanceLabelBn}
+                  placeholder="বর্তমান স্থিতি:" onChange={(e) => update({ savingsBalanceLabelBn: e.target.value })} />
+                <input className="border rounded px-2 py-1 bg-background" value={s.savingsBalanceLabelEn}
+                  placeholder="Current balance:" onChange={(e) => update({ savingsBalanceLabelEn: e.target.value })} />
+              </div>
+            </label>
+          </div>
+
+          <div className="grid gap-3 mb-4">
+            <div className="text-xs font-semibold text-muted-foreground uppercase">ঋণ লেবেল</div>
+            <label className="text-sm">
+              <div className="font-medium mb-1">ঋণের বিবরণ / Loan description</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input className="border rounded px-2 py-1 bg-background" value={s.loanDescLabelBn}
+                  placeholder="ঋণের বিবরণ:" onChange={(e) => update({ loanDescLabelBn: e.target.value })} />
+                <input className="border rounded px-2 py-1 bg-background" value={s.loanDescLabelEn}
+                  placeholder="Loan description:" onChange={(e) => update({ loanDescLabelEn: e.target.value })} />
+              </div>
+            </label>
+            <label className="text-sm">
+              <div className="font-medium mb-1">অবশিষ্ট ঋণ / Loan outstanding</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input className="border rounded px-2 py-1 bg-background" value={s.loanOutstandingLabelBn}
+                  placeholder="অবশিষ্ট ঋণ:" onChange={(e) => update({ loanOutstandingLabelBn: e.target.value })} />
+                <input className="border rounded px-2 py-1 bg-background" value={s.loanOutstandingLabelEn}
+                  placeholder="Loan outstanding:" onChange={(e) => update({ loanOutstandingLabelEn: e.target.value })} />
+              </div>
+            </label>
+          </div>
+
+          <label className="text-sm block mb-2">
+            <div className="font-medium mb-1">সেচ রিসিপ্ট রো স্পেসিং (px): {s.rowSpacingPx}</div>
+            <input type="range" min={2} max={12} value={s.rowSpacingPx}
+              onChange={(e) => update({ rowSpacingPx: Number(e.target.value) })}
+              className="w-full" />
+          </label>
+          <label className="text-sm block mb-2">
+            <div className="font-medium mb-1">সঞ্চয় রিসিপ্ট রো স্পেসিং (px): {s.savingsRowSpacingPx}</div>
+            <input type="range" min={2} max={12} value={s.savingsRowSpacingPx}
+              onChange={(e) => update({ savingsRowSpacingPx: Number(e.target.value) })}
+              className="w-full" />
+          </label>
+          <label className="text-sm block mb-4">
+            <div className="font-medium mb-1">ঋণ রিসিপ্ট রো স্পেসিং (px): {s.loanRowSpacingPx}</div>
+            <input type="range" min={2} max={12} value={s.loanRowSpacingPx}
+              onChange={(e) => update({ loanRowSpacingPx: Number(e.target.value) })}
+              className="w-full" />
+          </label>
+
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => {
+              const next = resetReceiptLayoutSettings();
+              setS(next);
+              toast.success("রিসিপ্ট লে-আউট ডিফল্টে রিসেট হয়েছে");
+            }}>ডিফল্টে রিসেট</Button>
+            <Button variant="outline" size="sm" onClick={downloadSamplePdf}>নমুনা PDF</Button>
+            <Button variant="outline" size="sm" onClick={downloadSampleExcel}>নমুনা Excel</Button>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm font-medium">লাইভ প্রিভিউ (HTML রিসিপ্ট)</div>
+            <div className="flex gap-1">
+              <button className={`text-xs px-2 py-1 rounded border ${lang === "bn" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                onClick={() => setLang("bn")}>BN</button>
+              <button className={`text-xs px-2 py-1 rounded border ${lang === "en" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                onClick={() => setLang("en")}>EN</button>
+            </div>
+          </div>
+          <div className="border rounded bg-card overflow-auto max-h-[640px] text-foreground"
+            style={{ transform: "scale(0.78)", transformOrigin: "top left", width: "128%" }}
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          <div className="text-xs text-muted-foreground mt-2">
+            পরিবর্তন করার সাথে সাথে এখানে ইনস্ট্যান্টলি দেখাবে। PDF/Excel-এও ঠিক একই লেবেল ও সেপারেটর ব্যবহার হবে।
+          </div>
         </div>
       </div>
-
-      <div className="grid sm:grid-cols-2 gap-3 mb-4">
-        <label className="text-sm">
-          <div className="font-medium mb-1">মৌজা/জমির পরিমান লেবেল (BN)</div>
-          <input className="w-full border rounded px-2 py-1 bg-background" value={s.mouzaLabelBn}
-            placeholder="মৌজা / জমির পরিমান:" onChange={(e) => update({ mouzaLabelBn: e.target.value })} />
-        </label>
-        <label className="text-sm">
-          <div className="font-medium mb-1">Mouza/Land label (EN)</div>
-          <input className="w-full border rounded px-2 py-1 bg-background" value={s.mouzaLabelEn}
-            placeholder="Mouza / Land size:" onChange={(e) => update({ mouzaLabelEn: e.target.value })} />
-        </label>
-        <label className="text-sm">
-          <div className="font-medium mb-1">দাগ নং লেবেল (BN)</div>
-          <input className="w-full border rounded px-2 py-1 bg-background" value={s.dagLabelBn}
-            placeholder="দাগ নং:" onChange={(e) => update({ dagLabelBn: e.target.value })} />
-        </label>
-        <label className="text-sm">
-          <div className="font-medium mb-1">Dag no label (EN)</div>
-          <input className="w-full border rounded px-2 py-1 bg-background" value={s.dagLabelEn}
-            placeholder="Dag no:" onChange={(e) => update({ dagLabelEn: e.target.value })} />
-        </label>
-      </div>
-
-      <label className="text-sm block mb-3">
-        <div className="font-medium mb-1">সেচ রিসিপ্ট রো স্পেসিং (px): {s.rowSpacingPx}</div>
-        <input type="range" min={2} max={12} value={s.rowSpacingPx}
-          onChange={(e) => update({ rowSpacingPx: Number(e.target.value) })}
-          className="w-full" />
-      </label>
-      <label className="text-sm block mb-3">
-        <div className="font-medium mb-1">সঞ্চয় রিসিপ্ট রো স্পেসিং (px): {s.savingsRowSpacingPx}</div>
-        <input type="range" min={2} max={12} value={s.savingsRowSpacingPx}
-          onChange={(e) => update({ savingsRowSpacingPx: Number(e.target.value) })}
-          className="w-full" />
-      </label>
-      <label className="text-sm block mb-4">
-        <div className="font-medium mb-1">ঋণ রিসিপ্ট রো স্পেসিং (px): {s.loanRowSpacingPx}</div>
-        <input type="range" min={2} max={12} value={s.loanRowSpacingPx}
-          onChange={(e) => update({ loanRowSpacingPx: Number(e.target.value) })}
-          className="w-full" />
-      </label>
-
-      <Button variant="outline" size="sm" onClick={() => {
-        const next = resetReceiptLayoutSettings();
-        setS(next);
-        toast.success("রিসিপ্ট লে-আউট ডিফল্টে রিসেট হয়েছে");
-      }}>ডিফল্টে রিসেট করুন</Button>
     </Card>
   );
 }
