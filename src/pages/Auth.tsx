@@ -85,12 +85,16 @@ export default function AuthPage() {
       }
       if (!data) {
         setBusy(false);
+        const msg = lang === "bn"
+          ? `"${u}" নামে কোন একাউন্ট নেই। বানান চেক করুন বা ইমেইল দিয়ে চেষ্টা করুন।`
+          : `No account found for username "${u}". Check spelling or try email instead.`;
+        setUsernameError(lang === "bn" ? "ইউজারনেম পাওয়া যায়নি" : "Username not found");
         setDebug({
           ...d, lookup: "fail",
-          errorMessage: `No account found for username "${u}"`,
+          errorMessage: msg,
           hint: "The username does not exist. Check spelling, or use email instead.",
         });
-        return toast.error(t("noAccountFor").replace("{u}", u));
+        return toast.error(msg);
       }
       email = data as string;
     }
