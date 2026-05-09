@@ -3,7 +3,7 @@ import html2canvas from "html2canvas";
 import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
-import { getReceiptLayoutSettings, dagSeparatorHtml } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind } from "@/lib/receiptLayoutSettings";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
 export type ReceiptCopy = "both" | "farmer" | "office";
@@ -240,8 +240,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         : `${bigha.toFixed(2)} bigha (${shatak.toFixed(2)} shatak)`;
     }
     const layout = getReceiptLayoutSettings();
-    const mouzaLabel = (lang === "bn" ? layout.mouzaLabelBn : layout.mouzaLabelEn).trim() || t.mouza;
-    const dagLabel = (lang === "bn" ? layout.dagLabelBn : layout.dagLabelEn).trim() || t.dag;
+    const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels(lang);
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
     const dagFormatted = dagTokens.join(dagSeparatorHtml(layout.dagSeparator));
     const mouzaParts = [d.farmer.mouza, sizeLabel].filter(Boolean) as string[];
@@ -276,7 +275,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.remark, String(d.remark).trim()]);
   }
 
-  const pad = getReceiptLayoutSettings().rowSpacingPx;
+  const pad = getRowSpacingForKind(d.kind);
   const tableRows = rows.map(([k, v]) => `
     <tr>
       <td style="padding:${pad}px 8px;vertical-align:top;width:38%;color:#111;">${k}</td>

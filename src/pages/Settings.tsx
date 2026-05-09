@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Navigate } from "react-router-dom";
 import { notifyBrandingChange, useBranding } from "@/lib/branding";
-import { getReceiptLayoutSettings, setReceiptLayoutSettings } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, setReceiptLayoutSettings, resetReceiptLayoutSettings } from "@/lib/receiptLayoutSettings";
 
 export default function Settings() {
   const { t } = useLang();
@@ -252,12 +252,30 @@ function ReceiptLayoutCard() {
         </label>
       </div>
 
-      <label className="text-sm block">
-        <div className="font-medium mb-1">রো স্পেসিং (px): {s.rowSpacingPx}</div>
+      <label className="text-sm block mb-3">
+        <div className="font-medium mb-1">সেচ রিসিপ্ট রো স্পেসিং (px): {s.rowSpacingPx}</div>
         <input type="range" min={2} max={12} value={s.rowSpacingPx}
           onChange={(e) => update({ rowSpacingPx: Number(e.target.value) })}
           className="w-full" />
       </label>
+      <label className="text-sm block mb-3">
+        <div className="font-medium mb-1">সঞ্চয় রিসিপ্ট রো স্পেসিং (px): {s.savingsRowSpacingPx}</div>
+        <input type="range" min={2} max={12} value={s.savingsRowSpacingPx}
+          onChange={(e) => update({ savingsRowSpacingPx: Number(e.target.value) })}
+          className="w-full" />
+      </label>
+      <label className="text-sm block mb-4">
+        <div className="font-medium mb-1">ঋণ রিসিপ্ট রো স্পেসিং (px): {s.loanRowSpacingPx}</div>
+        <input type="range" min={2} max={12} value={s.loanRowSpacingPx}
+          onChange={(e) => update({ loanRowSpacingPx: Number(e.target.value) })}
+          className="w-full" />
+      </label>
+
+      <Button variant="outline" size="sm" onClick={() => {
+        const next = resetReceiptLayoutSettings();
+        setS(next);
+        toast.success("রিসিপ্ট লে-আউট ডিফল্টে রিসেট হয়েছে");
+      }}>ডিফল্টে রিসেট করুন</Button>
     </Card>
   );
 }

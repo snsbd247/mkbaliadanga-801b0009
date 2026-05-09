@@ -13,8 +13,11 @@ export interface ReceiptLayoutSettings {
   /** Override label for "দাগ নং" row. Empty = use default. */
   dagLabelBn: string;
   dagLabelEn: string;
-  /** Vertical padding (px) applied to each receipt row. 2-12. */
-  rowSpacingPx: number;
+  /** Vertical padding (px) applied to each receipt row. 2-12.
+   *  Per-module so changing irrigation never affects savings/loan. */
+  rowSpacingPx: number;          // irrigation (kept for backward compat)
+  savingsRowSpacingPx: number;   // savings receipts only
+  loanRowSpacingPx: number;      // loan receipts only
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
@@ -24,9 +27,22 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   dagLabelBn: "",
   dagLabelEn: "",
   rowSpacingPx: 4,
+  savingsRowSpacingPx: 4,
+  loanRowSpacingPx: 4,
 };
 
+/** Default labels — single source of truth shared by HTML/PDF/Excel. */
+export const DEFAULT_LABELS = {
+  bn: { mouza: "মৌজা / জমির পরিমান:", dag: "দাগ নং:" },
+  en: { mouza: "Mouza / Land size:", dag: "Dag no:" },
+} as const;
+
 const STORAGE_KEY = "receipt_layout_settings_v1";
+
+function clampSpacing(v: any, fallback = 4): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(2, Math.min(12, Math.round(n))) : fallback;
+}
 
 export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
   if (typeof localStorage === "undefined") return { ...DEFAULT_RECEIPT_LAYOUT };
@@ -38,8 +54,13 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     if (!["comma", "newline", "semicolon"].includes(merged.dagSeparator)) {
       merged.dagSeparator = "comma";
     }
-    const sp = Number(merged.rowSpacingPx);
-    merged.rowSpacingPx = Number.isFinite(sp) ? Math.max(2, Math.min(12, Math.round(sp))) : 4;
+    merged.rowSpacingPx = clampSpacing(merged.rowSpacingPx);
+    merged.savingsRowSpacingPx = clampSpacing(
+      parsed?.savingsRowSpacingPx ?? DEFAULT_RECEIPT_LAYOUT.savingsRowSpacingPx,
+    );
+    merged.loanRowSpacingPx = clampSpacing(
+      parsed?.loanRowSpacingPx ?? DEFAULT_RECEIPT_LAYOUT.loanRowSpacingPx,
+    );
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
@@ -52,6 +73,22 @@ export function setReceiptLayoutSettings(next: Partial<ReceiptLayoutSettings>): 
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch { /* noop */ }
   }
   return merged;
+}
+
+/** Reset all receipt layout settings to defaults. */
+export function resetReceiptLayoutSettings(): ReceiptLayoutSettings {
+  if (typeof localStorage !== "undefined") {
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
+  }
+  return { ...DEFAULT_RECEIPT_LAYOUT };
+}
+
+/** Per-module row spacing — guarantees changes are isolated. */
+export function getRowSpacingForKind(kind: "irrigation" | "savings" | "loan"): number {
+  const s = getReceiptLayoutSettings();
+  if (kind === "savings") return s.savingsRowSpacingPx;
+  if (kind === "loan") return s.loanRowSpacingPx;
+  return s.rowSpacingPx;
 }
 
 /** Return the literal joiner string for the active/passed separator. */
@@ -71,4 +108,20 @@ export function dagSeparatorHtml(sep?: DagSeparator): string {
   if (s === "newline") return "<br/>";
   if (s === "semicolon") return "; ";
   return ", ";
+}
+
+/** Resolve the irrigation mouza/dag labels for the given language —
+ *  used by HTML, PDF and Excel renderers so they always match. */
+export function getIrrigationLabels(lang: "bn" | "en"): { mouza: string; dag: string } {
+  const s = getReceiptLayoutSettings();
+  if (lang === "en") {
+    return {
+      mouza: (s.mouzaLabelEn || "").trim() || DEFAULT_LABELS.en.mouza,
+      dag: (s.dagLabelEn || "").trim() || DEFAULT_LABELS.en.dag,
+    };
+  }
+  return {
+    mouza: (s.mouzaLabelBn || "").trim() || DEFAULT_LABELS.bn.mouza,
+    dag: (s.dagLabelBn || "").trim() || DEFAULT_LABELS.bn.dag,
+  };
 }

@@ -7,7 +7,7 @@ import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { loadBranding, type CompanyBranding } from "@/lib/branding";
 import { formatLandSize } from "@/lib/irrigationCalc";
 import { parseDagNumbers } from "@/lib/dagNumbers";
-import { getReceiptLayoutSettings, dagSeparatorString } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, dagSeparatorString, getIrrigationLabels } from "@/lib/receiptLayoutSettings";
 
 export type InvoiceCopy = "both" | "office" | "farmer";
 export type PaperFormat = "a4" | "letter";
@@ -178,8 +178,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   const amountWords = bnAmountInWords(Number(d.payable_amount ?? 0));
 
   const layout = getReceiptLayoutSettings();
-  const mouzaLabel = layout.mouzaLabelBn.trim() || "মৌজা / জমির পরিমাণ";
-  const dagLabel = layout.dagLabelBn.trim() || "দাগ নং";
+  const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels("bn");
   const dagJoined = parseDagNumbers(land.dag_no).join(dagSeparatorString(layout.dagSeparator));
   const rows: Array<[string, string]> = [
     ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
@@ -429,4 +428,15 @@ export function buildMailtoLink(d: IrrigationInvoiceData, to?: string | null): s
   const subject = `সেচ ইনভয়েস ${d.invoice_no}`;
   const body = `প্রিয় ${d.farmer?.name ?? "কৃষক"},\n\nইনভয়েস নং: ${d.invoice_no}\nমোট প্রদেয়: ${fmt2(d.payable_amount)} টাকা\nপরিশোধিত: ${fmt2(d.paid_amount)} টাকা\nবকেয়া: ${fmt2(d.due_amount)} টাকা\nমেয়াদ: ${fmtDate(d.due_date)}\n\nধন্যবাদ।`;
   return `mailto:${to ?? ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+/** Test-only: build the irrigation invoice copy HTML (no DOM, no canvas). */
+export function buildIrrigationInvoiceHtmlForTest(
+  d: IrrigationInvoiceData,
+  brand: Partial<CompanyBranding> = { company_name_bn: "Test Org" } as any,
+  role: "office" | "farmer" = "farmer",
+  settings: InvoicePdfSettings = DEFAULT_INVOICE_SETTINGS,
+): string {
+  const label = role === "office" ? "অফিস কপি" : "কৃষকের কপি";
+  return copyHtml(d, brand as CompanyBranding, label, settings, role);
 }

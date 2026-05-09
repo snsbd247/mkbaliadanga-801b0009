@@ -1,0 +1,552 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`irrigation Excel snapshots — separator settings > Excel row snapshot: comma 1`] = `
+{
+  "ইনভয়েস নং": "INV-100",
+  "ইস্যু তারিখ": "",
+  "কৃষক": "Karim",
+  "কৃষক কোড": "F1",
+  "জমির ধরন": "",
+  "জমির পরিমাণ": 33,
+  "দাগ নং": "123, 124/A, 125-B",
+  "পরিশোধিত": 0,
+  "পুনঃগণনা": "",
+  "প্রতি ইউনিট রেট": "",
+  "প্রদেয়": "",
+  "বকেয়া": 0,
+  "বছর": 2026,
+  "বর্গা": "না",
+  "বিলম্ব ফি": 0,
+  "মূল চার্জ": "",
+  "মেয়াদ": "",
+  "মোবাইল": "017",
+  "মৌজা": "Baliadanga",
+  "ম্যানুয়াল কারণ": "",
+  "ম্যানুয়াল রেট": "না",
+  "রক্ষণাবেক্ষণ চার্জ": 0,
+  "সিজন": "Boro",
+  "স্ট্যাটাস": "ইস্যু",
+}
+`;
+
+exports[`irrigation Excel snapshots — separator settings > Excel row snapshot: newline 1`] = `
+{
+  "ইনভয়েস নং": "INV-100",
+  "ইস্যু তারিখ": "",
+  "কৃষক": "Karim",
+  "কৃষক কোড": "F1",
+  "জমির ধরন": "",
+  "জমির পরিমাণ": 33,
+  "দাগ নং": "123
+124/A
+125-B",
+  "পরিশোধিত": 0,
+  "পুনঃগণনা": "",
+  "প্রতি ইউনিট রেট": "",
+  "প্রদেয়": "",
+  "বকেয়া": 0,
+  "বছর": 2026,
+  "বর্গা": "না",
+  "বিলম্ব ফি": 0,
+  "মূল চার্জ": "",
+  "মেয়াদ": "",
+  "মোবাইল": "017",
+  "মৌজা": "Baliadanga",
+  "ম্যানুয়াল কারণ": "",
+  "ম্যানুয়াল রেট": "না",
+  "রক্ষণাবেক্ষণ চার্জ": 0,
+  "সিজন": "Boro",
+  "স্ট্যাটাস": "ইস্যু",
+}
+`;
+
+exports[`irrigation Excel snapshots — separator settings > Excel row snapshot: semicolon 1`] = `
+{
+  "ইনভয়েস নং": "INV-100",
+  "ইস্যু তারিখ": "",
+  "কৃষক": "Karim",
+  "কৃষক কোড": "F1",
+  "জমির ধরন": "",
+  "জমির পরিমাণ": 33,
+  "দাগ নং": "123; 124/A; 125-B",
+  "পরিশোধিত": 0,
+  "পুনঃগণনা": "",
+  "প্রতি ইউনিট রেট": "",
+  "প্রদেয়": "",
+  "বকেয়া": 0,
+  "বছর": 2026,
+  "বর্গা": "না",
+  "বিলম্ব ফি": 0,
+  "মূল চার্জ": "",
+  "মেয়াদ": "",
+  "মোবাইল": "017",
+  "মৌজা": "Baliadanga",
+  "ম্যানুয়াল কারণ": "",
+  "ম্যানুয়াল রেট": "না",
+  "রক্ষণাবেক্ষণ চার্জ": 0,
+  "সিজন": "Boro",
+  "স্ট্যাটাস": "ইস্যু",
+}
+`;
+
+exports[`irrigation receipt snapshots — separator × language > snapshot: bn / comma 1`] = `
+"
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    <div style="text-align:center;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">কৃষকের কপি</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>রসিদ নম্বরঃ R-১০০</div>
+        
+      </div>
+      <div style="text-align:right;">
+        <div>সংগৃহীত তারিখ: Jan 15, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">কৃষকের নাম এবং কৃষক সদস্য নং:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Karim</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">গ্রাম/মহল্লা/মোবাইল:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জমির মালিক:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">তথ্য পাওয়া যায়নি</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">মৌজা / জমির পরিমান:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা (33.00 শতক)</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">দাগ নং:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;"><span data-receipt-row="dag">123, 124/A, 125-B</span></td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">বকেয়া:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">সংগৃহীত পরিমাণ:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00 (পাঁচ শত টাকা)</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">সদস্যের স্বাক্ষর</div>
+        <div style="margin-top:18px;font-weight:600;">Karim</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>আদায়কারীর স্বাক্ষর</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
+
+exports[`irrigation receipt snapshots — separator × language > snapshot: bn / newline 1`] = `
+"
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    <div style="text-align:center;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">কৃষকের কপি</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>রসিদ নম্বরঃ R-১০০</div>
+        
+      </div>
+      <div style="text-align:right;">
+        <div>সংগৃহীত তারিখ: Jan 15, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">কৃষকের নাম এবং কৃষক সদস্য নং:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Karim</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">গ্রাম/মহল্লা/মোবাইল:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জমির মালিক:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">তথ্য পাওয়া যায়নি</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">মৌজা / জমির পরিমান:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা (33.00 শতক)</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">দাগ নং:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;"><span data-receipt-row="dag">123<br/>124/A<br/>125-B</span></td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">বকেয়া:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">সংগৃহীত পরিমাণ:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00 (পাঁচ শত টাকা)</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">সদস্যের স্বাক্ষর</div>
+        <div style="margin-top:18px;font-weight:600;">Karim</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>আদায়কারীর স্বাক্ষর</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
+
+exports[`irrigation receipt snapshots — separator × language > snapshot: bn / semicolon 1`] = `
+"
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    <div style="text-align:center;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">কৃষকের কপি</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>রসিদ নম্বরঃ R-১০০</div>
+        
+      </div>
+      <div style="text-align:right;">
+        <div>সংগৃহীত তারিখ: Jan 15, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">কৃষকের নাম এবং কৃষক সদস্য নং:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Karim</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">গ্রাম/মহল্লা/মোবাইল:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জমির মালিক:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">তথ্য পাওয়া যায়নি</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">মৌজা / জমির পরিমান:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা (33.00 শতক)</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">দাগ নং:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;"><span data-receipt-row="dag">123; 124/A; 125-B</span></td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">বকেয়া:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">সংগৃহীত পরিমাণ:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00 (পাঁচ শত টাকা)</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">সদস্যের স্বাক্ষর</div>
+        <div style="margin-top:18px;font-weight:600;">Karim</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>আদায়কারীর স্বাক্ষর</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
+
+exports[`irrigation receipt snapshots — separator × language > snapshot: bn with custom labels 1`] = `
+"
+  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    <div style="text-align:center;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">কৃষকের কপি</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>রসিদ নম্বরঃ R-১০০</div>
+        
+      </div>
+      <div style="text-align:right;">
+        <div>সংগৃহীত তারিখ: Jan 15, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">কৃষকের নাম এবং কৃষক সদস্য নং:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Karim</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">গ্রাম/মহল্লা/মোবাইল:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জমির মালিক:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">তথ্য পাওয়া যায়নি</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জমির বিবরণ:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা (33.00 শতক)</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">দাগ:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;"><span data-receipt-row="dag">123, 124/A, 125-B</span></td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">বকেয়া:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">সংগৃহীত পরিমাণ:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00 (পাঁচ শত টাকা)</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">সদস্যের স্বাক্ষর</div>
+        <div style="margin-top:18px;font-weight:600;">Karim</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>আদায়কারীর স্বাক্ষর</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
+
+exports[`irrigation receipt snapshots — separator × language > snapshot: en / comma 1`] = `
+"
+  <div style="font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
+    <div style="text-align:center;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">Irrigation Charge Receipt</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">Farmer Copy</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>Receipt No: R-100</div>
+        
+      </div>
+      <div style="text-align:right;">
+        <div>Collected on: Jan 15, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Farmer name & member no:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Karim</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Village / Mobile:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Land owner:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Not available</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Mouza / Land size:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha (33.00 shatak)</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Dag no:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;"><span data-receipt-row="dag">123, 124/A, 125-B</span></td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Outstanding:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Amount collected:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">Member signature</div>
+        <div style="margin-top:18px;font-weight:600;">Karim</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>Collector signature</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
+
+exports[`irrigation receipt snapshots — separator × language > snapshot: en / newline 1`] = `
+"
+  <div style="font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
+    <div style="text-align:center;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">Irrigation Charge Receipt</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">Farmer Copy</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>Receipt No: R-100</div>
+        
+      </div>
+      <div style="text-align:right;">
+        <div>Collected on: Jan 15, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Farmer name & member no:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Karim</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Village / Mobile:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Land owner:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Not available</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Mouza / Land size:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha (33.00 shatak)</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Dag no:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;"><span data-receipt-row="dag">123<br/>124/A<br/>125-B</span></td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Outstanding:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Amount collected:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">Member signature</div>
+        <div style="margin-top:18px;font-weight:600;">Karim</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>Collector signature</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
+
+exports[`irrigation receipt snapshots — separator × language > snapshot: en / semicolon 1`] = `
+"
+  <div style="font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
+    <div style="text-align:center;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">Irrigation Charge Receipt</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">Farmer Copy</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>Receipt No: R-100</div>
+        
+      </div>
+      <div style="text-align:right;">
+        <div>Collected on: Jan 15, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Farmer name & member no:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Karim</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Village / Mobile:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Land owner:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Not available</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Mouza / Land size:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha (33.00 shatak)</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Dag no:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;"><span data-receipt-row="dag">123; 124/A; 125-B</span></td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Outstanding:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Amount collected:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">Member signature</div>
+        <div style="margin-top:18px;font-weight:600;">Karim</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>Collector signature</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
