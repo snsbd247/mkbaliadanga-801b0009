@@ -53,7 +53,7 @@ export default function Dashboard() {
       inV(supabase.from("savings_transactions").select("type,amount,status,farmer_id").is("deleted_at", null)),
       inV(supabase.from("shares").select("balance,farmer_id")),
       inV(supabase.from("loans").select("principal,total_payable,status,farmer_id").is("deleted_at", null)),
-      inV(supabase.from("irrigation_charges").select("total,paid_amount,due_amount,farmer_id").is("deleted_at", null)),
+      inV(supabase.from("irrigation_invoices").select("payable_amount,paid_amount,due_amount,due_date,farmer_id").is("deleted_at", null).neq("invoice_status", "cancelled")),
       inV(supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8)),
       inV(supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw")),
       inV(supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending")),
