@@ -58,7 +58,7 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   },
   land_relations: {
     columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
-    sample: { owner_account_number: "100000000001", tenant_account_number: "100000000002", dag_no: "123/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
+    sample: { owner_account_number: "100000000001", tenant_account_number: "100000000002", dag_no: "123, 124/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
   },
   loans: {
     columns: ["account_number", "principal", "interest_rate", "total_payable", "issued_on", "note"],
@@ -677,8 +677,8 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadTemplate(mod)}>
               <Download className="h-4 w-4 mr-1" /> Template (.xlsx)
             </Button>
-            {(["payments","irrigation","cashbook_receipts","cashbook_expenses"] as Module[]).includes(mod) && (
-              <Button variant="outline" onClick={() => downloadCsvTemplate(mod === "irrigation" ? "irrigation" : (mod as any))}>
+            {(["lands","land_relations","payments","irrigation","cashbook_receipts","cashbook_expenses"] as Module[]).includes(mod) && (
+              <Button variant="outline" onClick={() => downloadCsvTemplate(mod as any)}>
                 <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
               </Button>
             )}
