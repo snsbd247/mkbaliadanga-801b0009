@@ -1052,13 +1052,34 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
 
         send({ type: "complete", percent: 100, summary });
       } catch (e: any) {
+        const errMsg = e?.message ?? String(e);
+        let rollback_summary: any = null;
+        // Transactional rollback: wipe partial data so DB doesn't end up in
+        // an inconsistent half-seeded state. Only when the run actually
+        // attempted to import (reset alone has nothing to roll back).
+        if (transactional && (action === "import" || action === "both")) {
+          send({ type: "step", key: "rollback", label: "ত্রুটি হয়েছে — partial data মুছছে (rollback)", percent: 99 });
+          const wiped: Record<string, number | string> = {};
+          for (const t of FULL_WIPE_ORDER) {
+            try {
+              const { count: before } = await admin.from(t).select("*", { count: "exact", head: true });
+              const { error: derr } = await admin.from(t).delete().not("id", "is", null);
+              wiped[t] = derr ? `error: ${derr.message}` : (before ?? 0);
+            } catch (re: any) {
+              wiped[t] = `error: ${re?.message ?? String(re)}`;
+            }
+          }
+          rollback_summary = wiped;
+          send({ type: "rollback", wiped });
+        }
         try {
           await admin.from("demo_operations_log").insert({
             user_id: ctx.userId, user_email: ctx.userEmail, action, modules, size,
-            ip: ctx.ip, user_agent: ctx.ua, success: false, error_message: e?.message ?? String(e),
+            ip: ctx.ip, user_agent: ctx.ua, success: false, error_message: errMsg,
+            summary: { ...summary, rollback_summary, rolled_back: !!rollback_summary },
           });
         } catch (_) {/* */}
-        controller.enqueue(encoder.encode(JSON.stringify({ type: "fatal", message: e?.message ?? String(e) }) + "\n"));
+        controller.enqueue(encoder.encode(JSON.stringify({ type: "fatal", message: errMsg, rolled_back: !!rollback_summary, rollback_summary }) + "\n"));
       } finally {
         controller.close();
       }
