@@ -177,11 +177,11 @@ export function ExportDialog<T = any>({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
-            বাতিল
+            {t("exp_cancel" as any)}
           </Button>
           <Button onClick={handleExport} disabled={busy || selectedCount === 0}>
             {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}
-            এক্সপোর্ট
+            {t("exp_export" as any)}
           </Button>
         </DialogFooter>
       </DialogContent>
