@@ -97,7 +97,7 @@ export default function IrrigationReports() {
       <PageHeader title="সেচ রিপোর্ট" description="সিজন ও জমির ধরন অনুযায়ী রাজস্ব ও কালেকশন বিশ্লেষণ" />
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             <div>
               <Label>সিজন</Label>
               <Select value={seasonId} onValueChange={setSeasonId}>
@@ -120,14 +120,28 @@ export default function IrrigationReports() {
                 </Select>
               </div>
             )}
-            <div className="flex items-end gap-2">
-              <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(rows, "irrigation-report.csv")} disabled={!rows.length}>
-                <FileDown className="h-4 w-4 mr-1" /> CSV
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(rows, "irrigation-report.xlsx")} disabled={!rows.length}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
-              </Button>
+            <div>
+              <Label>শুরু তারিখ</Label>
+              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
             </div>
+            <div>
+              <Label>শেষ তারিখ</Label>
+              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(rows, "irrigation-report.csv")} disabled={!rows.length}>
+              <FileDown className="h-4 w-4 mr-1" /> CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(rows, "irrigation-report.xlsx")} disabled={!rows.length}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+            </Button>
+            {(fromDate || toDate || seasonId !== "all" || officeId !== "all") && (
+              <Button size="sm" variant="ghost" onClick={() => { setSeasonId("all"); setOfficeId("all"); setFromDate(""); setToDate(""); }}>
+                ফিল্টার রিসেট
+              </Button>
+            )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
@@ -140,6 +154,10 @@ export default function IrrigationReports() {
           <p className="text-sm text-muted-foreground">{loading ? "লোড হচ্ছে…" : `${rows.length} টি ইনভয়েস`}</p>
         </CardContent>
       </Card>
+
+      <Suspense fallback={<div className="mt-4 text-sm text-muted-foreground">চার্ট লোড হচ্ছে…</div>}>
+        <IrrigationReportCharts rows={rows} />
+      </Suspense>
 
       <Card className="mt-4">
         <CardContent className="pt-6">
