@@ -198,9 +198,20 @@ export default function FarmerDetail() {
       collected_amount: Number(l.principal),
     }, copy, receiptArgs.options);
   }
-  function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
+  async function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id);
     const pw = i.patwaris ?? null;
+    let landOwnerLabel: string | null = "নিজ";
+    if (land && (land as any).owner_type === "borgadar" && (land as any).owner_farmer_id) {
+      const { data: own } = await supabase
+        .from("farmers")
+        .select("name_bn,name_en,member_no")
+        .eq("id", (land as any).owner_farmer_id)
+        .maybeSingle();
+      if (own) {
+        landOwnerLabel = `${own.name_bn || own.name_en}${own.member_no ? " (" + own.member_no + ")" : ""}`;
+      }
+    }
     downloadBnReceiptPdf({
       kind: "irrigation",
       ...commonReceipt(),
@@ -216,6 +227,12 @@ export default function FarmerDetail() {
       rate: Number(i.base_charge) + Number(i.canal_charge) + Number(i.maintenance_charge) + Number(i.other_charge),
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
+      land_owner_label: landOwnerLabel,
+      current_season_charge: Number(i.base_charge ?? 0),
+      penalty_amount: Number(i.penalty_amount ?? 0),
+      maintenance_charge: Number(i.maintenance_charge ?? 0),
+      canal_charge: Number(i.canal_charge ?? 0),
+      total_outstanding: Number(i.due_amount ?? 0),
       patwari_name: pw ? (pw.name_bn || pw.name) : null,
       patwari_mobile: pw?.mobile ?? null,
       collected_amount: Number(i.paid_amount || i.total),
