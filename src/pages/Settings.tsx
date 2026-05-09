@@ -198,14 +198,9 @@ function RoundingCard() {
 }
 
 function ReceiptLayoutCard() {
-  const [s, setS] = useState(() => {
-    // lazy import to avoid circular deps
-    const mod = require("@/lib/receiptLayoutSettings");
-    return mod.getReceiptLayoutSettings();
-  });
+  const [s, setS] = useState(() => getReceiptLayoutSettings());
   const update = (patch: any) => {
-    const mod = require("@/lib/receiptLayoutSettings");
-    const next = mod.setReceiptLayoutSettings(patch);
+    const next = setReceiptLayoutSettings(patch);
     setS(next);
     toast.success("রিসিপ্ট লে-আউট আপডেট হয়েছে");
   };
