@@ -12,7 +12,7 @@ describe("normalizeFarmerCode", () => {
     ["1", "00001"],
     [1, "00001"],
     ["12345", "12345"],
-    ["123456", "123456"], // already wider than pad
+    ["123456", "123456"], // wider than 5 digits is preserved as-is
   ])("normalizes %p -> %p", (input, expected) => {
     const r = normalizeFarmerCode(input as any);
     expect(r.ok).toBe(true);
