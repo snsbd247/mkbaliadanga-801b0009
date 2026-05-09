@@ -133,11 +133,8 @@ export default function IrrigationReports() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(rows, "irrigation-report.csv")} disabled={!rows.length}>
-              <FileDown className="h-4 w-4 mr-1" /> CSV
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(rows, "irrigation-report.xlsx")} disabled={!rows.length}>
-              <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+            <Button size="sm" variant="outline" onClick={() => setExportOpen(true)} disabled={!rows.length}>
+              <FileDown className="h-4 w-4 mr-1" /> এক্সপোর্ট
             </Button>
             {(fromDate || toDate || seasonId !== "all" || officeId !== "all") && (
               <Button size="sm" variant="ghost" onClick={() => { setSeasonId("all"); setOfficeId("all"); setFromDate(""); setToDate(""); }}>
