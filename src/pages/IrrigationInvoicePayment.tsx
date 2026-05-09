@@ -176,7 +176,7 @@ export default function IrrigationInvoicePayment() {
       }
 
       // 2. Generate receipt no
-      const receipt_no = await autoReceiptNo("irrigation");
+      const receipt_no = autoReceiptNo("irrigation", farmerId);
 
       // 3. Create payments row
       const { data: pay, error: payErr } = await supabase.from("payments").insert({
