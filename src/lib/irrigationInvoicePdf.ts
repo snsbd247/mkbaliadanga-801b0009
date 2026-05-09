@@ -1,4 +1,4 @@
-// Irrigation Invoice PDF — A4 page with two A5 halves (Office copy + Farmer copy).
+// Irrigation Invoice PDF — A4/Letter page with two halves (Office copy + Farmer copy).
 // Each copy is rendered independently to its own canvas so margins, cut-line
 // position, and signature blocks are configurable per print run.
 import jsPDF from "jspdf";
@@ -8,14 +8,17 @@ import { loadBranding, type CompanyBranding } from "@/lib/branding";
 import { formatLandSize } from "@/lib/irrigationCalc";
 
 export type InvoiceCopy = "both" | "office" | "farmer";
+export type PaperFormat = "a4" | "letter";
 
 export interface InvoicePdfSettings {
+  /** Paper size. */
+  paperFormat: PaperFormat;
   /** Page margins in mm. */
   marginTopMm: number;
   marginBottomMm: number;
   marginLeftMm: number;
   marginRightMm: number;
-  /** Distance from page top (mm) where the dashed cut line is drawn. Default ≈ A4 mid (148.5). */
+  /** Distance from page top (mm) where the dashed cut line is drawn. */
   cutLineMm: number;
   /** Signature labels under the lines. */
   farmerSignName: string;
@@ -25,6 +28,7 @@ export interface InvoicePdfSettings {
 }
 
 export const DEFAULT_INVOICE_SETTINGS: InvoicePdfSettings = {
+  paperFormat: "a4",
   marginTopMm: 8,
   marginBottomMm: 8,
   marginLeftMm: 8,
@@ -35,6 +39,47 @@ export const DEFAULT_INVOICE_SETTINGS: InvoicePdfSettings = {
   collectorSignName: "",
   collectorSignTitle: "আদায়কারীর স্বাক্ষর",
 };
+
+export interface PrinterPreset {
+  id: string;
+  labelEn: string;
+  labelBn: string;
+  settings: Partial<InvoicePdfSettings>;
+}
+
+/** Quick presets for common printers / paper combinations. */
+export const PRINTER_PRESETS: PrinterPreset[] = [
+  {
+    id: "a4-default",
+    labelEn: "A4 — Standard office printer",
+    labelBn: "A4 — সাধারণ অফিস প্রিন্টার",
+    settings: { paperFormat: "a4", marginTopMm: 8, marginBottomMm: 8, marginLeftMm: 8, marginRightMm: 8, cutLineMm: 148.5 },
+  },
+  {
+    id: "a4-tight",
+    labelEn: "A4 — Tight margins (more space)",
+    labelBn: "A4 — ছোট মার্জিন (বেশি জায়গা)",
+    settings: { paperFormat: "a4", marginTopMm: 5, marginBottomMm: 5, marginLeftMm: 5, marginRightMm: 5, cutLineMm: 148.5 },
+  },
+  {
+    id: "a4-inkjet",
+    labelEn: "A4 — Inkjet (large unprintable border)",
+    labelBn: "A4 — ইঙ্কজেট (বড় বর্ডার)",
+    settings: { paperFormat: "a4", marginTopMm: 12, marginBottomMm: 12, marginLeftMm: 10, marginRightMm: 10, cutLineMm: 148.5 },
+  },
+  {
+    id: "letter-default",
+    labelEn: "Letter — Standard office printer",
+    labelBn: "Letter — সাধারণ অফিস প্রিন্টার",
+    settings: { paperFormat: "letter", marginTopMm: 10, marginBottomMm: 10, marginLeftMm: 10, marginRightMm: 10, cutLineMm: 139.7 }, // 11"/2 = 139.7mm
+  },
+  {
+    id: "letter-tight",
+    labelEn: "Letter — Tight margins",
+    labelBn: "Letter — ছোট মার্জিন",
+    settings: { paperFormat: "letter", marginTopMm: 6, marginBottomMm: 6, marginLeftMm: 6, marginRightMm: 6, cutLineMm: 139.7 },
+  },
+];
 
 const SETTINGS_KEY = "mk:irrigation-invoice-pdf:v1";
 const LAST_COPY_KEY = "mk:irrigation-invoice-copy:v1";
@@ -236,11 +281,13 @@ async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBrandi
   }
 }
 
-async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy, settings: InvoicePdfSettings): Promise<jsPDF> {
-  const brand = await loadBranding();
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "p" });
-  const pageW = pdf.internal.pageSize.getWidth();   // 210
-  const pageH = pdf.internal.pageSize.getHeight();  // 297
+function makePdf(settings: InvoicePdfSettings): jsPDF {
+  return new jsPDF({ unit: "mm", format: settings.paperFormat === "letter" ? "letter" : "a4", orientation: "p" });
+}
+
+async function paintInvoiceOnPage(pdf: jsPDF, d: IrrigationInvoiceData, brand: CompanyBranding, copy: InvoiceCopy, settings: InvoicePdfSettings) {
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
   const innerW = pageW - settings.marginLeftMm - settings.marginRightMm;
   const cutY = Math.min(Math.max(settings.cutLineMm, 60), pageH - 60);
 
@@ -257,19 +304,13 @@ async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy, settings: 
 
   if (copy === "office" || copy === "both") {
     const c = await renderCopyToCanvas(d, brand, "অফিস কপি", settings, "office");
-    if (copy === "office") {
-      placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
-    } else {
-      placeImage(c, settings.marginTopMm, cutY - 3);
-    }
+    if (copy === "office") placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
+    else placeImage(c, settings.marginTopMm, cutY - 3);
   }
   if (copy === "farmer" || copy === "both") {
     const c = await renderCopyToCanvas(d, brand, "কৃষকের কপি", settings, "farmer");
-    if (copy === "farmer") {
-      placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
-    } else {
-      placeImage(c, cutY + 3, pageH - settings.marginBottomMm);
-    }
+    if (copy === "farmer") placeImage(c, settings.marginTopMm, pageH - settings.marginBottomMm);
+    else placeImage(c, cutY + 3, pageH - settings.marginBottomMm);
   }
 
   if (copy === "both") {
@@ -283,7 +324,22 @@ async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy, settings: 
     pdf.text("— এখান থেকে কেটে আলাদা করুন —", pageW / 2, cutY - 1, { align: "center" });
     pdf.setTextColor(0);
   }
+}
 
+async function renderPdf(d: IrrigationInvoiceData, copy: InvoiceCopy, settings: InvoicePdfSettings): Promise<jsPDF> {
+  const brand = await loadBranding();
+  const pdf = makePdf(settings);
+  await paintInvoiceOnPage(pdf, d, brand, copy, settings);
+  return pdf;
+}
+
+async function renderBulkPdf(items: IrrigationInvoiceData[], copy: InvoiceCopy, settings: InvoicePdfSettings): Promise<jsPDF> {
+  const brand = await loadBranding();
+  const pdf = makePdf(settings);
+  for (let i = 0; i < items.length; i++) {
+    if (i > 0) pdf.addPage();
+    await paintInvoiceOnPage(pdf, items[i], brand, copy, settings);
+  }
   return pdf;
 }
 
@@ -299,4 +355,71 @@ export async function previewIrrigationInvoicePdf(d: IrrigationInvoiceData, copy
   const pdf = await renderPdf(d, copy, s);
   const blob = pdf.output("blob");
   return URL.createObjectURL(blob);
+}
+
+/** Bulk download multiple invoices as a single multi-page PDF. */
+export async function downloadIrrigationInvoicesBulkPdf(items: IrrigationInvoiceData[], copy: InvoiceCopy = "both", settings?: InvoicePdfSettings): Promise<void> {
+  if (!items.length) return;
+  const s = settings ?? loadInvoiceSettings();
+  const pdf = await renderBulkPdf(items, copy, s);
+  const stamp = new Date().toISOString().slice(0, 10);
+  pdf.save(`irrigation_invoices_${items.length}_${stamp}.pdf`);
+}
+
+/** Bulk preview as one multi-page PDF (returns object URL). */
+export async function previewIrrigationInvoicesBulkPdf(items: IrrigationInvoiceData[], copy: InvoiceCopy = "both", settings?: InvoicePdfSettings): Promise<string> {
+  const s = settings ?? loadInvoiceSettings();
+  const pdf = await renderBulkPdf(items, copy, s);
+  return URL.createObjectURL(pdf.output("blob"));
+}
+
+/** Get a Blob (used by share). */
+export async function getIrrigationInvoicePdfBlob(d: IrrigationInvoiceData, copy: InvoiceCopy = "both", settings?: InvoicePdfSettings): Promise<Blob> {
+  const s = settings ?? loadInvoiceSettings();
+  const pdf = await renderPdf(d, copy, s);
+  return pdf.output("blob");
+}
+
+/**
+ * Try Web Share API (mobile) with the PDF as a file. Falls back to download.
+ * Returns the action that happened: "shared" | "downloaded".
+ */
+export async function shareIrrigationInvoicePdf(d: IrrigationInvoiceData, copy: InvoiceCopy = "both", settings?: InvoicePdfSettings): Promise<"shared" | "downloaded"> {
+  const blob = await getIrrigationInvoicePdfBlob(d, copy, settings);
+  const fileName = `irrigation_invoice_${d.invoice_no}.pdf`;
+  const file = new File([blob], fileName, { type: "application/pdf" });
+  const nav: any = typeof navigator !== "undefined" ? navigator : null;
+  if (nav?.canShare && nav.canShare({ files: [file] }) && nav.share) {
+    try {
+      await nav.share({ files: [file], title: `সেচ ইনভয়েস ${d.invoice_no}`, text: `ইনভয়েস ${d.invoice_no} — মোট প্রদেয় ${fmt2(d.payable_amount)} টাকা` });
+      return "shared";
+    } catch (e: any) {
+      if (e?.name === "AbortError") return "shared"; // user cancelled
+      // fall through to download
+    }
+  }
+  // Fallback: download the file
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = fileName;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  return "downloaded";
+}
+
+/** Build a WhatsApp share link with text only (PDF must be sent separately on desktop). */
+export function buildWhatsAppShareLink(d: IrrigationInvoiceData, mobile?: string | null): string {
+  const text = `সেচ ইনভয়েস ${d.invoice_no}\nমোট প্রদেয়: ${fmt2(d.payable_amount)} টাকা\nবকেয়া: ${fmt2(d.due_amount)} টাকা\nমেয়াদ: ${fmtDate(d.due_date)}`;
+  const cleaned = (mobile ?? "").replace(/[^\d]/g, "");
+  const phone = cleaned ? (cleaned.startsWith("88") ? cleaned : "88" + cleaned) : "";
+  return phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    : `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
+/** Build an email mailto: link with the invoice summary. */
+export function buildMailtoLink(d: IrrigationInvoiceData, to?: string | null): string {
+  const subject = `সেচ ইনভয়েস ${d.invoice_no}`;
+  const body = `প্রিয় ${d.farmer?.name ?? "কৃষক"},\n\nইনভয়েস নং: ${d.invoice_no}\nমোট প্রদেয়: ${fmt2(d.payable_amount)} টাকা\nপরিশোধিত: ${fmt2(d.paid_amount)} টাকা\nবকেয়া: ${fmt2(d.due_amount)} টাকা\nমেয়াদ: ${fmtDate(d.due_date)}\n\nধন্যবাদ।`;
+  return `mailto:${to ?? ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
