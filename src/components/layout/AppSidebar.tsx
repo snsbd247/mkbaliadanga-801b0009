@@ -71,9 +71,18 @@ export function AppSidebar() {
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
         { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
         { url: "/irrigation/invoices", icon: Droplets, label: "সেচ ইনভয়েস", permKey: "irrigation" },
-        { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
-        { url: "/admin/lookups", icon: SettingsIcon, label: "সেচ সেটিংস (সিজন/জমির ধরন)" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
+      ],
+    },
+
+    // ── Irrigation Settings ──
+    {
+      key: "irrigationSettings", icon: SettingsIcon, label: "সেচ সেটিংস",
+      children: [
+        { url: "/admin/lookups", icon: Sprout, label: "সিজন টাইপ ও জমির ধরন" },
+        { url: "/seasons", icon: CalendarDays, label: "সিজন রেট কনফিগারেশন", permKey: "seasons" },
+        { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
+        { url: "/admin/rate-audit", icon: ScrollText, label: "রেট পরিবর্তন ইতিহাস" },
       ],
     },
 
