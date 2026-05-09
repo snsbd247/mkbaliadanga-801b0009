@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileDown, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { exportCSV, exportExcel, exportTablePDF } from "@/lib/exports";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 export type ExportColumn<T = any> = {
   /** unique key, also used as Excel/CSV header when label not given */
