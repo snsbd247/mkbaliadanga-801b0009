@@ -238,9 +238,10 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         ? `${bigha.toFixed(2)} বিঘা (${shatak.toFixed(2)} শতক)`
         : `${bigha.toFixed(2)} bigha (${shatak.toFixed(2)} shatak)`;
     }
+    const dagFormatted = formatDagNumbers(d.farmer.dag_no);
     const mouzaParts = [
       d.farmer.mouza,
-      d.farmer.dag_no,
+      dagFormatted || undefined,
       sizeLabel,
     ].filter(Boolean) as string[];
     if (mouzaParts.length) rows.push([t.mouza, mouzaParts.join(" / ")]);
