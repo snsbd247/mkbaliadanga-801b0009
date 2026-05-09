@@ -552,6 +552,28 @@ export default function DataImport() {
               approved_by: user?.id,
               approved_at: new Date().toISOString(),
             };
+          } else if (mod === "loan_installments") {
+            const f = farmerMap.get(String(raw.account_number));
+            if (!f) throw new Error("Farmer not found for account_number");
+            const loanId = loanByFarmer.get(f.id);
+            if (!loanId) throw new Error("ইন্সটলমেন্ট ডাটা অনুপস্থিত। অটো-জেনারেট অথবা ইমপোর্ট সংশোধন করুন।");
+            const instNo = Number(raw.installment_no);
+            if (!Number.isFinite(instNo) || instNo < 1) throw new Error("invalid installment_no");
+            if (!raw.due_date) throw new Error("due_date required");
+            if (!raw.amount || Number(raw.amount) <= 0) throw new Error("amount required");
+            const allowedStatus = ["due", "paid", "missed", "partial"];
+            const st = String(raw.status ?? "due").toLowerCase();
+            if (!allowedStatus.includes(st)) throw new Error("status must be due/paid/missed/partial");
+            table = "loan_installments";
+            payload = {
+              loan_id: loanId,
+              office_id: f.office_id,
+              installment_no: instNo,
+              due_date: raw.due_date,
+              amount: Number(raw.amount),
+              status: st as any,
+              paid_amount: st === "paid" ? Number(raw.amount) : 0,
+            };
           } else if (mod === "savings") {
             const f = farmerMap.get(String(raw.account_number));
             if (!f) throw new Error("Farmer not found for account_number");
