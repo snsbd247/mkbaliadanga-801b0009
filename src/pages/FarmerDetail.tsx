@@ -487,13 +487,11 @@ export default function FarmerDetail() {
     if (initialLoc.mouza_id) {
       const { data: m } = await supabase
         .from("mouzas")
-        .select("id,name,union_id,unions:union_id(id,name,ward_id,wards:ward_id(id,name,upazila_id,upazilas:upazila_id(id,name,district_id,districts:district_id(id,name,division_id,divisions:division_id(id,name)))))")
+        .select("id,name,upazila_id,upazilas:upazila_id(id,name,district_id,districts:district_id(id,name,division_id,divisions:division_id(id,name)))")
         .eq("id", initialLoc.mouza_id)
         .maybeSingle();
       if (m) {
-        const u: any = (m as any).unions;
-        const w: any = u?.wards;
-        const up: any = w?.upazilas;
+        const up: any = (m as any).upazilas;
         const di: any = up?.districts;
         const dv: any = di?.divisions;
         initialLoc = {
@@ -503,12 +501,8 @@ export default function FarmerDetail() {
           district_name: di?.name ?? null,
           upazila_id: up?.id ?? initialLoc.upazila_id,
           upazila_name: up?.name ?? null,
-          ward_id: w?.id ?? null,
-          ward_name: w?.name ?? null,
-          union_id: u?.id ?? null,
-          union_name: u?.name ?? null,
-          mouza_id: m.id,
-          mouza_name: m.name ?? row.mouza,
+          mouza_id: (m as any).id,
+          mouza_name: (m as any).name ?? row.mouza,
         };
       }
     }
