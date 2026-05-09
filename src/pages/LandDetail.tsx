@@ -41,9 +41,9 @@ export default function LandDetail() {
         supabase.from("land_relations")
           .select("*, owner:farmers!land_relations_owner_farmer_id_fkey(name_en,member_no,farmer_code), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,member_no,farmer_code)")
           .eq("land_id", id).order("valid_from", { ascending: false }),
-        supabase.from("irrigation_charges")
-          .select("id,entry_date,total,paid_amount,due_amount,seasons(year,type)")
-          .eq("land_id", id).order("entry_date", { ascending: false }).limit(50),
+        supabase.from("irrigation_invoices")
+          .select("id,generated_at,payable_amount,paid_amount,due_amount,seasons(year,type)")
+          .eq("land_id", id).is("deleted_at", null).order("generated_at", { ascending: false }).limit(50),
       ]);
       setRelations(rels ?? []);
       setCharges(ch ?? []);
@@ -128,9 +128,9 @@ export default function LandDetail() {
           <TableBody>
             {charges.map((c) => (
               <TableRow key={c.id}>
-                <TableCell>{fmtDate(c.entry_date)}</TableCell>
+                <TableCell>{fmtDate((c.generated_at || "").slice(0, 10))}</TableCell>
                 <TableCell>{c.seasons ? `${c.seasons.year} · ${c.seasons.type}` : "—"}</TableCell>
-                <TableCell>{c.total}</TableCell>
+                <TableCell>{c.payable_amount}</TableCell>
                 <TableCell>{c.paid_amount}</TableCell>
                 <TableCell>{c.due_amount}</TableCell>
               </TableRow>

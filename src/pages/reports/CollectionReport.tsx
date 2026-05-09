@@ -97,25 +97,25 @@ export default function CollectionReport() {
     try {
       const out: CollectionRow[] = [];
 
-      // 1) Irrigation collections (paid_amount on irrigation_charges)
+      // 1) Irrigation collections (from irrigation_invoice_payments)
       let irrQ: any = supabase
-        .from("irrigation_charges")
-        .select("id,entry_date,paid_amount,farmer_id,created_by,farmers(name_en,farmer_code,member_no)")
-        .is("deleted_at", null)
-        .gt("paid_amount", 0)
-        .order("entry_date", { ascending: false });
-      if (from) irrQ = irrQ.gte("entry_date", from);
-      if (to) irrQ = irrQ.lte("entry_date", to);
-      if (farmerId !== ALL) irrQ = irrQ.eq("farmer_id", farmerId);
+        .from("irrigation_invoice_payments")
+        .select("id,created_at,collected_amount,created_by,invoice_id,irrigation_invoices!inner(farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
+        .gt("collected_amount", 0)
+        .order("created_at", { ascending: false });
+      if (from) irrQ = irrQ.gte("created_at", from);
+      if (to) irrQ = irrQ.lte("created_at", to + "T23:59:59");
+      if (farmerId !== ALL) irrQ = irrQ.eq("irrigation_invoices.farmer_id", farmerId);
       if (effectiveUserId) irrQ = irrQ.eq("created_by", effectiveUserId);
       const { data: irr } = await irrQ;
       for (const r of irr ?? []) {
-        const fn = nameForFarmer(r.farmers);
+        const inv = (r as any).irrigation_invoices;
+        const fn = nameForFarmer(inv?.farmers);
         out.push({
           source: "irrigation",
-          date: r.entry_date,
-          amount: Number(r.paid_amount || 0),
-          farmer_id: r.farmer_id,
+          date: (r.created_at || "").slice(0, 10),
+          amount: Number(r.collected_amount || 0),
+          farmer_id: inv?.farmer_id ?? null,
           farmer_code: fn.code,
           farmer_name: fn.name,
           user_id: r.created_by,
