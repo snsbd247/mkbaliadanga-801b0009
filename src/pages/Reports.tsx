@@ -418,8 +418,8 @@ export default function Reports() {
 
         <TabsContent value="irrigation">
           <ExportBar
-            onPdf={() => exportTablePDF(`Irrigation Detail${filterTitleSuffix()}`, ["Date", "Farmer", "Season", "Dag", "Base", "Canal", "Maint.", "Other", "Total", "Paid", "Due"], irr.map(r => [fmtDate(r.entry_date), `${r.farmers?.farmer_code} ${r.farmers?.name_en}`, r.seasons?.name, r.lands?.dag_no, r.base_charge, r.canal_charge, r.maintenance_charge, r.other_charge, r.total, r.paid_amount, r.due_amount]))}
-            onXlsx={() => exportExcel("irrigation-detail", "Irrigation", irr.map(r => ({ Date: r.entry_date, Farmer: r.farmers?.name_en, Code: r.farmers?.farmer_code, Season: r.seasons?.name, Dag: r.lands?.dag_no, Mouza: r.lands?.mouza, Size: r.lands?.land_size, Base: r.base_charge, Canal: r.canal_charge, Maintenance: r.maintenance_charge, Other: r.other_charge, Total: r.total, Paid: r.paid_amount, Due: r.due_amount })))}
+            onPdf={() => exportTablePDF(`Irrigation Detail${filterTitleSuffix()}`, ["Date", "Farmer", "Season", "Dag", "Base", "Canal", "Maint.", "Other", "Total", "Paid", "Due"], irr.map(r => [fmtDate(r.entry_date), `${r.farmers?.farmer_code} ${r.farmers?.name_en}`, r.seasons?.name, formatDagNumbers(r.lands?.dag_no), r.base_charge, r.canal_charge, r.maintenance_charge, r.other_charge, r.total, r.paid_amount, r.due_amount]))}
+            onXlsx={() => exportExcel("irrigation-detail", "Irrigation", irr.map(r => ({ Date: r.entry_date, Farmer: r.farmers?.name_en, Code: r.farmers?.farmer_code, Season: r.seasons?.name, Dag: formatDagNumbers(r.lands?.dag_no), Mouza: r.lands?.mouza, Size: r.lands?.land_size, Base: r.base_charge, Canal: r.canal_charge, Maintenance: r.maintenance_charge, Other: r.other_charge, Total: r.total, Paid: r.paid_amount, Due: r.due_amount })))}
           />
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
