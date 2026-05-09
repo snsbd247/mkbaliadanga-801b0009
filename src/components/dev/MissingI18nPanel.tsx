@@ -329,9 +329,26 @@ export function MissingI18nPanel() {
               ) : hard.map((h, i) => (
                 <div key={i} className="px-3 py-1.5 border-b">
                   <div className="text-[12px]">{h.text}</div>
-                  <div className="font-mono text-[10px] text-muted-foreground truncate">
-                    {h.tag}
-                  </div>
+                  <div className="font-mono text-[10px] text-muted-foreground truncate">{h.tag}</div>
+                  {h.suggestion ? (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <code className="flex-1 truncate rounded bg-muted px-1.5 py-0.5 text-[10px]">
+                        t("{h.suggestion.key}")
+                      </code>
+                      <span className="text-[10px] text-muted-foreground">
+                        {Math.round(h.suggestion.score * 100)}%
+                      </span>
+                      <button
+                        title="Copy"
+                        className="rounded p-1 hover:bg-muted"
+                        onClick={() => navigator.clipboard?.writeText(`t("${h.suggestion!.key}")`)}
+                      ><Copy className="h-3 w-3" /></button>
+                    </div>
+                  ) : (
+                    <div className="mt-0.5 text-[10px] italic text-muted-foreground">
+                      No close key — add a new one.
+                    </div>
+                  )}
                 </div>
               ))
             )}
