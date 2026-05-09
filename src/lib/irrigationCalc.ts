@@ -84,3 +84,31 @@ export function dailyDue(totalDue: number, days: number): number {
   const d = Math.max(1, Math.floor(days));
   return round2(n(totalDue) / d);
 }
+
+/** Bigha ↔ Shatak conversion. 1 বিঘা = 33 শতক (Bangladesh standard). */
+export const SHATAK_PER_BIGHA = 33;
+export const shatakToBigha = (shatak: number | string | null | undefined): number =>
+  round2(n(shatak) / SHATAK_PER_BIGHA);
+export const bighaToShatak = (bigha: number | string | null | undefined): number =>
+  round2(n(bigha) * SHATAK_PER_BIGHA);
+
+/**
+ * Format a land size (stored in শতক) for human display showing both বিঘা & শতক.
+ * - "long" (default): "1.50 বিঘা (49.50 শতক)"
+ * - "short": "1.50 বিঘা / 49.50 শতক"
+ * - "ascii": "1.50 bigha (49.50 shatak)" — for PDFs/Excels without Bangla fonts
+ */
+export function formatLandSize(
+  shatak: number | string | null | undefined,
+  variant: "long" | "short" | "ascii" = "long",
+): string {
+  if (shatak == null || shatak === "") return "—";
+  const s = n(shatak);
+  if (s <= 0) return variant === "ascii" ? "0 bigha (0 shatak)" : "০ বিঘা (০ শতক)";
+  const b = shatakToBigha(s);
+  const sf = s.toFixed(2);
+  const bf = b.toFixed(2);
+  if (variant === "ascii") return `${bf} bigha (${sf} shatak)`;
+  if (variant === "short") return `${bf} বিঘা / ${sf} শতক`;
+  return `${bf} বিঘা (${sf} শতক)`;
+}
