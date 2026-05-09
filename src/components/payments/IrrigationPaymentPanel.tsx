@@ -248,7 +248,62 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         });
       }
 
-      // 5) Receipt + SMS — uses split breakdown (current vs previous due)
+      // 4b) Split-ledger journal posting (Dr Cash / Cr 5 income heads)
+      try {
+        const totalDelayCollected = sorted.reduce((s, inv) => {
+          const fee = delayFee[inv.id] ?? Number(inv.delay_fee || 0);
+          return s + fee;
+        }, 0);
+        const totalMaintCollected = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
+        const totalCanalCollected = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
+        // Irrigation portion = current_collected − (delay+maint+canal portions, capped)
+        const cur = Number(currentCollected || 0);
+        const overhead = Math.min(cur, totalDelayCollected + totalMaintCollected + totalCanalCollected);
+        const scale = overhead > 0 ? Math.min(1, cur / (totalDelayCollected + totalMaintCollected + totalCanalCollected)) : 0;
+        const delayPart = +(totalDelayCollected * scale).toFixed(2);
+        const maintPart = +(totalMaintCollected * scale).toFixed(2);
+        const canalPart = +(totalCanalCollected * scale).toFixed(2);
+        const irrPart = +(cur - delayPart - maintPart - canalPart).toFixed(2);
+        const prevPart = +Number(previousCollected || 0).toFixed(2);
+
+        const codes = ["1010", "IRR-INCOME", "IRR-PREV-DUE", "IRR-DELAY", "IRR-MAINT", "IRR-CANAL"];
+        const { data: accs } = await supabase.from("accounts").select("id,code").in("code", codes);
+        const byCode = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
+
+        if (byCode["1010"]) {
+          const { data: je, error: jeErr } = await supabase.from("journal_entries").insert({
+            entry_date: new Date().toISOString().slice(0, 10),
+            reference: `IRR-PAY-${paymentId.slice(0, 8)}`,
+            description: `Irrigation payment ${paymentId.slice(0, 8)}`,
+            office_id: officeId,
+            posted: true,
+            posted_at: new Date().toISOString(),
+            created_by: user?.id,
+          }).select("id").single();
+          if (!jeErr && je) {
+            const lines: any[] = [
+              { journal_id: je.id, account_id: byCode["1010"], debit: grandTotal, credit: 0, position: 0, description: "Cash received" },
+            ];
+            let pos = 1;
+            const credits: Array<[string, number]> = [
+              ["IRR-INCOME", irrPart],
+              ["IRR-DELAY", delayPart],
+              ["IRR-MAINT", maintPart],
+              ["IRR-CANAL", canalPart],
+              ["IRR-PREV-DUE", prevPart],
+            ];
+            for (const [code, amt] of credits) {
+              if (amt > 0 && byCode[code]) {
+                lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
+              }
+            }
+            await supabase.from("journal_entry_lines").insert(lines);
+          }
+        }
+      } catch (jErr) {
+        console.warn("[irrigation-pay] journal posting failed", jErr);
+      }
+
       const receiptNo = autoReceiptNo("IRR", paymentId);
       try {
         const [{ data: farmer }, { data: company }] = await Promise.all([
