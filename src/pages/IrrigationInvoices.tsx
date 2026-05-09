@@ -22,14 +22,17 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
-import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
+  downloadIrrigationInvoicesBulkPdf, previewIrrigationInvoicesBulkPdf,
+  shareIrrigationInvoicePdf, buildWhatsAppShareLink, buildMailtoLink,
   loadInvoiceSettings, saveInvoiceSettings, loadLastInvoiceCopy, saveLastInvoiceCopy,
-  DEFAULT_INVOICE_SETTINGS, type InvoiceCopy, type InvoicePdfSettings,
+  DEFAULT_INVOICE_SETTINGS, PRINTER_PRESETS, type InvoiceCopy, type InvoicePdfSettings,
 } from "@/lib/irrigationInvoicePdf";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
