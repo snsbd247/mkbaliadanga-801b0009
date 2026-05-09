@@ -2890,6 +2890,15 @@ export const translations = {
     low_land: "নিচু জমি",
     locationsManagementDesc: "বিভাগ, জেলা, উপজেলা, ইউনিয়ন, ওয়ার্ড, গ্রাম এবং মৌজা ব্যবস্থাপনা করুন।",
     locationsHierarchyNote: "প্রতিটি স্তর তার মূল স্তরের অধীনে হতে হবে। নিষ্ক্রিয় মূল স্তরের সন্তান লুকানো থাকবে।",
+    p5c_pageTitle: "ভোটার বাতিল/পুনঃসক্রিয় ইতিহাস",
+    p5c_pageDesc: "কৃষকদের ভোটার স্ট্যাটাস পরিবর্তনের অডিট ট্রেইল।",
+    share_collection: "শেয়ার সংগ্রহ",
+    savingsLoanReport: "সঞ্চয় ও ঋণ রিপোর্ট",
+    missingFarmerId: "অনুপস্থিত কৃষক আইডি",
+    missingAccountNo: "অনুপস্থিত অ্যাকাউন্ট নং",
+    duplicateFarmerIdIssue: "ডুপ্লিকেট কৃষক আইডি",
+    duplicateAccountNo: "ডুপ্লিকেট অ্যাকাউন্ট নং",
+    duplicateFarmerCode: "ডুপ্লিকেট কৃষক কোড",
   },
 } as const;
 
