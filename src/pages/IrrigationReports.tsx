@@ -22,6 +22,8 @@ export default function IrrigationReports() {
   const [offices, setOffices] = useState<any[]>([]);
   const [seasonId, setSeasonId] = useState("all");
   const [officeId, setOfficeId] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [rows, setRows] = useState<Inv[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -43,8 +45,10 @@ export default function IrrigationReports() {
       .limit(2000);
     if (seasonId !== "all") q = q.eq("season_id", seasonId);
     if (officeId !== "all") q = q.eq("office_id", officeId);
+    if (fromDate) q = q.gte("generated_at", fromDate);
+    if (toDate) q = q.lte("generated_at", `${toDate}T23:59:59`);
     q.then(({ data }) => { setRows((data as any) ?? []); setLoading(false); });
-  }, [seasonId, officeId]);
+  }, [seasonId, officeId, fromDate, toDate]);
 
   const totals = useMemo(() => {
     const t = { count: rows.length, payable: 0, paid: 0, due: 0, manual: 0 };
