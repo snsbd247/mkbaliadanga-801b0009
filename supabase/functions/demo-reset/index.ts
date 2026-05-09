@@ -11,9 +11,11 @@ const json = (b: unknown, s = 200) =>
 // Wipe everything EXCEPT: profiles, user_roles, role_permissions, user_permissions, demo_operations_log, developer_update_logs
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
-  "loan_payments", "loan_installments", "loans", "loan_plans",
+  "loan_payments", "loan_installments", "loans", "loan_plans", "loan_delay_fee_settings",
   "irrigation_sms_logs",
+  "irrigation_due_promises",
   "irrigation_invoice_payments", "irrigation_invoice_audit", "irrigation_invoices",
+  "irrigation_delay_fee_audit",
   "irrigation_charges", "irrigation_rates", "irrigation_season_rates", "irrigation_charge_settings",
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
@@ -451,20 +453,24 @@ async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: st
 async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const seeded: string[] = [];
-  const { data: plan } = await admin.from("loan_plans").insert({
-    name: "Standard 12mo", name_bn: "১২ মাসের সাধারণ", office_id: officeId,
-    duration_months: 12, interest_rate: 12, installment_type: "monthly",
-    penalty_type: "percentage", penalty_value: 2, grace_period_days: 7, is_active: true,
-  }).select("id").single();
-  const planId = plan?.id ?? null;
+  // Seed 3 plans (6/12/24 months)
+  const planDefs = [
+    { name: "Short Term 6mo", name_bn: "৬ মাসের স্বল্প-মেয়াদী", duration_months: 6,  interest_rate: 10, installment_type: "monthly", penalty_type: "percentage", penalty_value: 2, grace_period_days: 5,  is_active: true, office_id: officeId },
+    { name: "Standard 12mo",  name_bn: "১২ মাসের সাধারণ",       duration_months: 12, interest_rate: 12, installment_type: "monthly", penalty_type: "percentage", penalty_value: 2, grace_period_days: 7,  is_active: true, office_id: officeId },
+    { name: "Long Term 24mo", name_bn: "২৪ মাসের দীর্ঘ-মেয়াদী", duration_months: 24, interest_rate: 14, installment_type: "monthly", penalty_type: "flat",       penalty_value: 100, grace_period_days: 10, is_active: true, office_id: officeId },
+  ];
+  const { data: plans } = await admin.from("loan_plans").insert(planDefs).select("id, duration_months, interest_rate");
+  const planList = plans ?? [];
+  const planId = planList[1]?.id ?? planList[0]?.id ?? null;
   const targets = voters.slice(0, Math.ceil(voters.length * 0.4));
   const loanRows = targets.map((f, i) => {
+    const p = planList[i % Math.max(1, planList.length)] ?? { id: planId, duration_months: 12, interest_rate: 12 };
     const principal = 10000 + (i % 5) * 5000;
-    const totalPay = principal * 1.12;
+    const totalPay = principal * (1 + Number(p.interest_rate) / 100);
     seeded.push(f.id);
     return {
-      farmer_id: f.id, principal, interest_rate: 12, total_payable: totalPay, total_due: totalPay,
-      installment_amount: totalPay / 12, plan_id: planId,
+      farmer_id: f.id, principal, interest_rate: p.interest_rate, total_payable: totalPay, total_due: totalPay,
+      installment_amount: totalPay / p.duration_months, plan_id: p.id,
       status: i % 4 === 0 ? "pending" : "approved", office_id: officeId,
     };
   });
@@ -482,7 +488,7 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
       enforcement_mode: "block",
     }, { onConflict: "office_id" });
 
-    const { data: ins } = await admin.from("loans").insert(loanRows).select("id, total_payable, status, issued_on");
+    const { data: ins } = await admin.from("loans").insert(loanRows).select("id, total_payable, status, issued_on, installment_amount");
     // Generate installment schedules + payments
     const allInst: any[] = [];
     const pays: any[] = [];
@@ -490,13 +496,15 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
     for (const l of (ins ?? [])) {
       if (l.status !== "approved") continue;
       const totalPay = Number(l.total_payable);
-      const monthly = +(totalPay / 12).toFixed(2);
+      const monthly = +(Number(l.installment_amount) || (totalPay / 12)).toFixed(2);
+      const duration = Math.max(1, Math.round(totalPay / monthly));
       const start = l.issued_on ? new Date(l.issued_on) : new Date(today.getTime() - 180 * 86400000);
       // 12 installments; first 3 paid, the past-due remaining ones become overdue, future ones stay due
-      for (let n = 1; n <= 12; n++) {
+      const paidCount = Math.min(3, Math.max(1, Math.floor(duration / 4)));
+      for (let n = 1; n <= duration; n++) {
         const due = new Date(start);
         due.setMonth(due.getMonth() + n);
-        const paid = n <= 3;
+        const paid = n <= paidCount;
         const isOverdue = !paid && due < today;
         const overdueDays = isOverdue ? Math.floor((today.getTime() - due.getTime()) / 86400000) : 0;
         // Combined penalty: 2% of monthly + 10/day beyond 5-day grace, capped at 1000
@@ -517,8 +525,8 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
           office_id: officeId,
         });
       }
-      // Corresponding loan_payments rows for the 3 paid installments
-      for (let n = 1; n <= 3; n++) {
+      // Corresponding loan_payments rows
+      for (let n = 1; n <= paidCount; n++) {
         const due = new Date(start);
         due.setMonth(due.getMonth() + n);
         pays.push({
@@ -539,22 +547,24 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   const savingsSeeded: string[] = [];
   const sharesSeeded: string[] = [];
   const fspSeeded: string[] = [];
-  const { data: planRow } = await admin.from("savings_plans").insert({
-    name: "DPS 24", name_bn: "ডিপিএস ২৪", office_id: officeId,
-    duration_months: 24, installment_type: "monthly", installment_amount: 500,
-    interest_rate: 6, maturity_type: "simple", is_active: true,
-  }).select("id").single();
-  const planId = planRow?.id ?? null;
+  const planSpecs = [
+    { name: "DPS 12",  name_bn: "ডিপিএস ১২", office_id: officeId, duration_months: 12, installment_type: "monthly", installment_amount: 300, interest_rate: 5, maturity_type: "simple", is_active: true },
+    { name: "DPS 24",  name_bn: "ডিপিএস ২৪", office_id: officeId, duration_months: 24, installment_type: "monthly", installment_amount: 500, interest_rate: 6, maturity_type: "simple", is_active: true },
+    { name: "FDR 36",  name_bn: "এফডিআর ৩৬", office_id: officeId, duration_months: 36, installment_type: "monthly", installment_amount: 1000, interest_rate: 8, maturity_type: "compound", is_active: true },
+  ];
+  const { data: plans } = await admin.from("savings_plans").insert(planSpecs).select("id, duration_months, installment_amount, interest_rate");
+  const planList = plans ?? [];
 
-  // Enroll ~30% of voters into a farmer_savings_plan
-  if (planId) {
+  // Enroll ~30% of voters across all plans (round-robin)
+  if (planList.length) {
     const enrollTargets = voters.slice(0, Math.ceil(voters.length * 0.3));
     const fspRows = enrollTargets.map((f, i) => {
-      const expected = 500 * 24;
-      const interest = +(expected * 0.06 / 2).toFixed(2);
+      const p = planList[i % planList.length];
+      const expected = Number(p.installment_amount) * Number(p.duration_months);
+      const interest = +(expected * Number(p.interest_rate) / 100 / 2).toFixed(2);
       fspSeeded.push(f.id);
       return {
-        plan_id: planId, farmer_id: f.id, office_id: officeId,
+        plan_id: p.id, farmer_id: f.id, office_id: officeId,
         start_date: new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
         expected_total: expected,
         expected_interest: interest,
@@ -658,10 +668,21 @@ async function seedAccounts(admin: any) {
   if (error) throw error;
 }
 
-async function seedSettings(admin: any) {
+async function seedSettings(admin: any, officeId?: string) {
   await admin.from("company_settings").upsert({
     id: 1, company_name: "Smart Irrigation Cooperative", company_name_bn: "স্মার্ট সেচ সমবায়",
     address: "Baliadanga, Rangpur", mobile: "01700000000", email: "demo@example.com",
+    registration_no: "COOP-2018-0451",
+    default_loan_interest: 12,
+    penalty_type: "percentage", penalty_value: 2, penalty_grace_days: 30,
+    fiscal_year_start_month: 7,
+    loan_receipt_no_format: "LOAN-{YYYYMMDD}-{TAIL}",
+    loan_receipt_header_en: "Smart Irrigation Cooperative — Loan Receipt",
+    loan_receipt_header_bn: "স্মার্ট সেচ সমবায় — ঋণ রসিদ",
+    loan_receipt_footer_en: "Thank you for your timely payment.",
+    loan_receipt_footer_bn: "সময়মত পরিশোধের জন্য ধন্যবাদ।",
+    pdf_footer_text: "If found, please return to the issuing office.",
+    pdf_footer_show_address: true, pdf_footer_show_contact: true,
   });
   await admin.from("card_settings").upsert({ id: 1 });
   // SMS settings — disabled by default for demo, but template fields populated
@@ -671,8 +692,46 @@ async function seedSettings(admin: any) {
     send_on_loan_approved: true,
     send_on_savings_deposit: true, send_on_savings_withdraw: true,
   } as any).then(() => {}).catch(() => {});
+  // Per-office SMS toggle
+  if (officeId) {
+    await admin.from("sms_office_settings").upsert(
+      { office_id: officeId, enabled: false, sender_id: "DEMO" },
+      { onConflict: "office_id" }
+    ).then(() => {}).catch(() => {});
+  }
   // Default receipt settings (best-effort; ignore if shape differs)
   await admin.from("receipt_settings").upsert({ id: 1 } as any).then(() => {}).catch(() => {});
+  // QR rotation defaults
+  await admin.from("qr_rotation_settings").upsert(
+    { id: 1, enabled: false, interval_days: 90, grace_hours: 24 }
+  ).then(() => {}).catch(() => {});
+}
+
+async function seedAccountingPeriod(admin: any, officeId: string) {
+  // Open period for current fiscal year (July → June)
+  const today = new Date();
+  const fyStartYear = today.getMonth() >= 6 ? today.getFullYear() : today.getFullYear() - 1;
+  const period_start = `${fyStartYear}-07-01`;
+  const period_end = `${fyStartYear + 1}-06-30`;
+  await admin.from("accounting_periods").upsert(
+    { office_id: officeId, period_start, period_end, status: "open" },
+    { onConflict: "period_start,period_end,office_id" }
+  ).then(() => {}).catch(() => {});
+}
+
+async function seedDuePromises(admin: any, officeId: string, farmers: any[]) {
+  const voters = farmers.filter((f: any) => f.is_voter).slice(0, 5);
+  if (!voters.length) return 0;
+  const rows = voters.map((f: any, i: number) => ({
+    farmer_id: f.id, office_id: officeId,
+    previous_due_amount: 500 + i * 100,
+    promise_date: new Date(Date.now() + (7 + i * 3) * 86400000).toISOString().slice(0, 10),
+    status: i === 0 ? "fulfilled" : i === 4 ? "overdue" : "pending",
+    remarks: "Demo due promise",
+  }));
+  const { error } = await admin.from("irrigation_due_promises").insert(rows);
+  if (error) return 0;
+  return rows.length;
 }
 
 async function findOrInsert(admin: any, table: string, match: Record<string, any>, insertExtra: Record<string, any> = {}) {
@@ -722,8 +781,10 @@ function estimateImport(modules: string[], size: number) {
   if (modules.includes("accounting")) c["accounts"] = 12;
   if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; c["patwaris"] = 4; c["land_relations"] = Math.ceil(size / 7); }
   if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_charge_settings"] = 1; c["irrigation_season_rates"] = 3; c["irrigation_charges"] = size; c["irrigation_invoices"] = size; }
-  if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 1; c["loans"] = n; c["loan_payments"] = Math.min(3, n); }
-  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 1; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); c["farmer_savings_plans"] = Math.ceil(n * 0.5); }
+  if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 3; c["loan_delay_fee_settings"] = 1; c["loans"] = n; c["loan_installments"] = n * 12; c["loan_payments"] = n * 3; }
+  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 3; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); c["farmer_savings_plans"] = Math.ceil(n * 0.5); }
+  if (modules.includes("accounting")) c["accounting_periods"] = 1;
+  if (modules.includes("irrigation") && modules.includes("farmers")) c["irrigation_due_promises"] = 5;
   if (modules.includes("expenses")) c["expenses"] = 3;
   return c;
 }
@@ -802,7 +863,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           steps.push({ key: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা) seed", fn: async () => { locs = await seedLocations(admin); summary.locations = locs.length; } });
           steps.push({ key: "land_types", label: "জমির ধরন (Land Types) seed", fn: async () => { landTypes = await seedLandTypes(admin, officeId); summary.land_types = landTypes.length; } });
           steps.push({ key: "season_types", label: "সিজন টাইপ (Boro/Aman/Aus) seed", fn: async () => { seasonTypes = await seedSeasonTypes(admin); summary.season_types = seasonTypes.length; } });
-          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed (company/card/SMS/receipt)", fn: async () => { await seedSettings(admin); } });
+          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed (company/card/SMS/receipt/QR)", fn: async () => { await seedSettings(admin, officeId); } });
           const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
             modules.includes("savings") || modules.includes("irrigation") ||
             modules.includes("expenses") || modules.includes("farmers");
@@ -853,6 +914,8 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
             out.fspSeeded.forEach((x) => fspFarmerIds.add(x));
           }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
+          if (modules.includes("accounting")) steps.push({ key: "accounting_period", label: "চলতি অর্থবছরের পিরিয়ড open", fn: async () => { await seedAccountingPeriod(admin, officeId); }});
+          if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
           }
