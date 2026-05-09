@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileDown, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { exportCSV, exportExcel, exportTablePDF } from "@/lib/exports";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 export type ExportColumn<T = any> = {
   /** unique key, also used as Excel/CSV header when label not given */
@@ -62,6 +63,7 @@ export function ExportDialog<T = any>({
   range,
   formats = ["csv", "xlsx", "pdf"],
 }: Props<T>) {
+  const { t } = useLang();
   const initial = useMemo(
     () =>
       Object.fromEntries(
@@ -79,7 +81,7 @@ export function ExportDialog<T = any>({
   const handleExport = async () => {
     const cols = columns.filter((c) => selected[c.key]);
     if (cols.length === 0) {
-      toast.error("কমপক্ষে একটি কলাম নির্বাচন করুন");
+      toast.error(t("exp_pickAtLeastOne" as any));
       return;
     }
     setBusy(true);
@@ -96,10 +98,10 @@ export function ExportDialog<T = any>({
       } else {
         await exportTablePDF(reportName, head, body, range);
       }
-      toast.success("এক্সপোর্ট সম্পন্ন হয়েছে");
+      toast.success(t("exp_done" as any));
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e?.message ?? "এক্সপোর্ট ব্যর্থ হয়েছে");
+      toast.error(e?.message ?? t("exp_failed" as any));
     } finally {
       setBusy(false);
     }
@@ -111,22 +113,22 @@ export function ExportDialog<T = any>({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>এক্সপোর্ট অপশন</DialogTitle>
+          <DialogTitle>{t("exp_dialogTitle" as any)}</DialogTitle>
           <DialogDescription>
-            কলাম ও ফরম্যাট নির্বাচন করুন · {rows.length} টি সারি
+            {t("exp_dialogDesc" as any).replace("{n}", String(rows.length))}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label className="text-sm font-medium">কলাম ({selectedCount}/{columns.length})</Label>
+              <Label className="text-sm font-medium">{t("exp_columns" as any)} ({selectedCount}/{columns.length})</Label>
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant="ghost" onClick={() => toggleAll(true)}>
-                  সব
+                  {t("exp_selectAll" as any)}
                 </Button>
                 <Button type="button" size="sm" variant="ghost" onClick={() => toggleAll(false)}>
-                  কোনটি না
+                  {t("exp_selectNone" as any)}
                 </Button>
               </div>
             </div>
@@ -151,7 +153,7 @@ export function ExportDialog<T = any>({
           </div>
 
           <div>
-            <Label className="text-sm font-medium mb-2 block">ফরম্যাট</Label>
+            <Label className="text-sm font-medium mb-2 block">{t("exp_format" as any)}</Label>
             <RadioGroup
               value={format}
               onValueChange={(v) => setFormat(v as ExportFormat)}
@@ -175,11 +177,11 @@ export function ExportDialog<T = any>({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
-            বাতিল
+            {t("exp_cancel" as any)}
           </Button>
           <Button onClick={handleExport} disabled={busy || selectedCount === 0}>
             {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}
-            এক্সপোর্ট
+            {t("exp_export" as any)}
           </Button>
         </DialogFooter>
       </DialogContent>

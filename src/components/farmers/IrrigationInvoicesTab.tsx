@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { money } from "@/lib/format";
 import { toast } from "sonner";
 import { Wallet, ArrowUpDown } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Inv = any;
 type SortKey = "due_date" | "payable_amount" | "due_amount" | "paid_amount" | "invoice_status" | "generated_at";
 
 export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }) {
   const nav = useNavigate();
+  const { t } = useLang();
   const [rows, setRows] = useState<Inv[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -114,9 +116,9 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
   }
 
   function payNow() {
-    if (selected.size === 0) return toast.error("কমপক্ষে একটি ইনভয়েস বেছে নিন");
+    if (selected.size === 0) return toast.error(t("irr_selectAtLeastOne" as any));
     const ids = filtered.filter((r) => selected.has(r.id) && Number(r.due_amount || 0) > 0 && r.invoice_status !== "cancelled").map((r) => r.id);
-    if (!ids.length) return toast.error("নির্বাচিত ইনভয়েসগুলো পরিশোধযোগ্য নয়");
+    if (!ids.length) return toast.error(t("irr_notPayable" as any));
     nav(`/payments?farmer=${farmerId}&irr=${ids.join(",")}`);
   }
 
@@ -125,22 +127,22 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
       <CardContent className="pt-6 space-y-3">
         {/* Filters */}
         <div className="grid gap-2 md:grid-cols-5">
-          <Input placeholder="খুঁজুন (ইনভয়েস, সিজন, মৌজা, ধরন)" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder={t("irr_search" as any)} value={search} onChange={(e) => setSearch(e.target.value)} />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">সব স্ট্যাটাস</SelectItem>
-              <SelectItem value="pending">পেন্ডিং</SelectItem>
-              <SelectItem value="partial">আংশিক</SelectItem>
-              <SelectItem value="paid">পরিশোধিত</SelectItem>
-              <SelectItem value="overdue">মেয়াদোত্তীর্ণ</SelectItem>
-              <SelectItem value="cancelled">বাতিল</SelectItem>
+              <SelectItem value="all">{t("irr_allStatuses" as any)}</SelectItem>
+              <SelectItem value="pending">{t("irr_statusPending" as any)}</SelectItem>
+              <SelectItem value="partial">{t("irr_statusPartial" as any)}</SelectItem>
+              <SelectItem value="paid">{t("irr_statusPaid" as any)}</SelectItem>
+              <SelectItem value="overdue">{t("irr_statusOverdue" as any)}</SelectItem>
+              <SelectItem value="cancelled">{t("irr_statusCancelled" as any)}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={seasonFilter} onValueChange={setSeasonFilter}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">সব সিজন</SelectItem>
+              <SelectItem value="all">{t("irr_allSeasons" as any)}</SelectItem>
               {seasons.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -152,12 +154,12 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
         {selected.size > 0 && (
           <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
             <div className="text-sm">
-              <span className="font-medium">{totals.count} টি ইনভয়েস</span>
-              <span className="ml-3 text-muted-foreground">মোট বকেয়া: <span className="font-mono font-semibold">{money(totals.due)}</span></span>
+              <span className="font-medium">{t("irr_invoiceCount" as any).replace("{n}", String(totals.count))}</span>
+              <span className="ml-3 text-muted-foreground">{t("irr_totalDue" as any)}: <span className="font-mono font-semibold">{money(totals.due)}</span></span>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>রিসেট</Button>
-              <Button size="sm" onClick={payNow}><Wallet className="h-4 w-4 mr-1" /> পেমেন্ট করুন</Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>{t("irr_reset" as any)}</Button>
+              <Button size="sm" onClick={payNow}><Wallet className="h-4 w-4 mr-1" /> {t("irr_payNow" as any)}</Button>
             </div>
           </div>
         )}
@@ -173,21 +175,21 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
                     aria-label="Select all"
                   />
                 </TableHead>
-                <TableHead>ইনভয়েস</TableHead>
-                <TableHead>সিজন</TableHead>
-                <TableHead>জমি</TableHead>
-                <SortHead label="মেয়াদ" k="due_date" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                <SortHead label="প্রদেয়" k="payable_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
-                <SortHead label="পরিশোধিত" k="paid_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
-                <SortHead label="বকেয়া" k="due_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
-                <SortHead label="স্ট্যাটাস" k="invoice_status" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <TableHead>{t("irr_colInvoice" as any)}</TableHead>
+                <TableHead>{t("irr_colSeason" as any)}</TableHead>
+                <TableHead>{t("irr_colLand" as any)}</TableHead>
+                <SortHead label={t("irr_colDueDate" as any)} k="due_date" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                <SortHead label={t("irr_chartLegendPayable" as any)} k="payable_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
+                <SortHead label={t("irr_colPaid" as any)} k="paid_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
+                <SortHead label={t("irr_colDue" as any)} k="due_amount" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} className="text-right" />
+                <SortHead label={t("irr_colStatus" as any)} k="invoice_status" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">লোড হচ্ছে…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">{t("irr_loading" as any)}</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">কোন ইনভয়েস নেই</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">{t("irr_noInvoice" as any)}</TableCell></TableRow>
               ) : filtered.map((r) => {
                 const st = effectiveStatus(r);
                 const eligible = Number(r.due_amount || 0) > 0 && r.invoice_status !== "cancelled";
@@ -218,7 +220,7 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
             </TableBody>
           </Table>
         </div>
-        <p className="text-xs text-muted-foreground">{filtered.length} টি ইনভয়েস (মোট {rows.length})</p>
+        <p className="text-xs text-muted-foreground">{t("irr_invoiceCount" as any).replace("{n}", String(filtered.length))} ({rows.length})</p>
       </CardContent>
     </Card>
   );
@@ -238,12 +240,13 @@ function SortHead({ label, k, sortKey, sortDir, onClick, className }: { label: s
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useLang();
   const map: Record<string, { label: string; variant: any; className?: string }> = {
-    pending: { label: "পেন্ডিং", variant: "outline" },
-    partial: { label: "আংশিক", variant: "secondary" },
-    paid: { label: "পরিশোধিত", variant: "default" },
-    overdue: { label: "মেয়াদোত্তীর্ণ", variant: "destructive" },
-    cancelled: { label: "বাতিল", variant: "outline", className: "opacity-60" },
+    pending: { label: t("irr_statusPending" as any), variant: "outline" },
+    partial: { label: t("irr_statusPartial" as any), variant: "secondary" },
+    paid: { label: t("irr_statusPaid" as any), variant: "default" },
+    overdue: { label: t("irr_statusOverdue" as any), variant: "destructive" },
+    cancelled: { label: t("irr_statusCancelled" as any), variant: "outline", className: "opacity-60" },
   };
   const c = map[status] ?? { label: status, variant: "outline" };
   return <Badge variant={c.variant} className={c.className}>{c.label}</Badge>;
