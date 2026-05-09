@@ -228,19 +228,19 @@ export default function IrrigationReports() {
         rows={rows}
         range={{ from: fromDate || null, to: toDate || null }}
         columns={[
-          { key: "date", label: "তারিখ", accessor: (r: any) => fmtDate(r.entry_date) },
-          { key: "season", label: "সিজন", accessor: (r: any) => r.seasons?.name ?? "" },
-          { key: "farmer_code", label: "কৃষক কোড", accessor: (r: any) => r.farmers?.farmer_code ?? "" },
-          { key: "farmer_name", label: "কৃষকের নাম", accessor: (r: any) => r.farmers?.name_bn || r.farmers?.name_en || "" },
-          { key: "mobile", label: "মোবাইল", accessor: (r: any) => r.farmers?.mobile ?? "" },
-          { key: "dag_no", label: "দাগ নং", accessor: (r: any) => r.lands?.dag_no ?? "" },
-          { key: "mouza", label: "মৌজা", accessor: (r: any) => r.lands?.mouza ?? "" },
-          { key: "land_size", label: "জমির পরিমাণ", accessor: (r: any) => r.lands?.land_size ?? "" },
-          { key: "rate", label: "রেট", accessor: (r: any) => r.rate ?? "" },
-          { key: "total", label: "মোট", accessor: (r: any) => r.total ?? 0 },
-          { key: "paid_amount", label: "পরিশোধিত", accessor: (r: any) => r.paid_amount ?? 0 },
-          { key: "due_amount", label: "বকেয়া", accessor: (r: any) => r.due_amount ?? 0, defaultSelected: true },
-          { key: "status", label: "স্ট্যাটাস", accessor: (r: any) => r.status ?? "" },
+          { key: "date", label: t("irr_colDate" as any), accessor: (r: any) => fmtDate(r.entry_date) },
+          { key: "season", label: t("irr_colSeason" as any), accessor: (r: any) => r.seasons?.name ?? "" },
+          { key: "farmer_code", label: t("irr_colFarmerCode" as any), accessor: (r: any) => r.farmers?.farmer_code ?? "" },
+          { key: "farmer_name", label: t("irr_colFarmerName" as any), accessor: (r: any) => r.farmers?.name_bn || r.farmers?.name_en || "" },
+          { key: "mobile", label: t("irr_colMobile" as any), accessor: (r: any) => r.farmers?.mobile ?? "" },
+          { key: "dag_no", label: t("irr_colDagNo" as any), accessor: (r: any) => r.lands?.dag_no ?? "" },
+          { key: "mouza", label: t("irr_colMouza" as any), accessor: (r: any) => r.lands?.mouza ?? "" },
+          { key: "land_size", label: t("irr_colLandSize" as any), accessor: (r: any) => r.lands?.land_size ?? "" },
+          { key: "rate", label: t("irr_colRate" as any), accessor: (r: any) => r.rate ?? "" },
+          { key: "total", label: t("irr_colTotal" as any), accessor: (r: any) => r.total ?? 0 },
+          { key: "paid_amount", label: t("irr_colPaid" as any), accessor: (r: any) => r.paid_amount ?? 0 },
+          { key: "due_amount", label: t("irr_colDue" as any), accessor: (r: any) => r.due_amount ?? 0, defaultSelected: true },
+          { key: "status", label: t("irr_colStatus" as any), accessor: (r: any) => r.status ?? "" },
         ]}
       />
     </>
