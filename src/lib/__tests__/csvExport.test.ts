@@ -14,7 +14,7 @@ describe("rowsToCsvBlob", () => {
       ],
     );
     const buf = await new Response(blob).arrayBuffer();
-    const text = new TextDecoder("utf-8").decode(buf);
+    const text = new TextDecoder("utf-8", { ignoreBOM: true }).decode(buf);
     expect(text.charCodeAt(0)).toBe(0xfeff);
     expect(text).toContain('"Alice, A"');
     expect(text).toContain('"He said ""hi"""');
