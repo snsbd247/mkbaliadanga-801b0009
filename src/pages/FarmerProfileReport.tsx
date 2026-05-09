@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/branding";
+import { useLang } from "@/i18n/LanguageProvider";
 
 function safeText(value: unknown) {
   if (value === null || value === undefined || value === "") return "";
