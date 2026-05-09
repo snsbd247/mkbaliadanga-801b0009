@@ -1,111 +1,66 @@
-# Irrigation Module Refactor — Invoice-Based Workflow Plan
+## লক্ষ্য
 
-This is a large, multi-phase refactor. To keep production safe and avoid breaking accounting, ledger, receipts, QR verification, and FIFO allocation, I'll deliver it in **6 sequential phases**. Each phase ends in a working, deployable state. You can approve the plan and I'll start with Phase 1, then check in before Phase 2.
+বর্তমানে **Seasons** তৈরির সময় season type হার্ডকোড enum (`aman`, `boro`, `iri`, `other`)। আর **irrigation_rates** এ পুরো সিজনের জন্য মাত্র একটা flat `base_rate` — জমির ধরন (high/medium/low/পুকুর/ডোবা) আলাদা করে রেট বসানো যায় না।
 
----
+আপনি চান:
+1. Admin panel থেকে season type list নিজের মতো করে তৈরি/সম্পাদনা — বোরো, আমন, ইরি, পুকুর, ডোবা ইত্যাদি।
+2. সিজন তৈরির সময় ওই dynamic list থেকে type বাছাই।
+3. প্রতিটি সিজনের জন্য **জমির ধরন অনুযায়ী** শতক প্রতি রেট সেট করা — যেমন বোরো-২০২৬ এ high_land=১৫, medium_land=১২, low_land=১০, পুকুর=২০।
+4. ইনভয়েস তৈরির সময় land.field_type দেখে ওই matrix থেকে রেট auto-pickup হবে।
 
-## Phase 1 — Database Foundation (Safe Migration)
+## পরিবর্তন
 
-New tables (additive — old `irrigation_charges` stays untouched for backward compatibility):
+### 1. Database (migration)
 
-- **`irrigation_invoices`** — one row per land per season
-  - `invoice_no` (unique, auto-generated: `INV-{YYYYMMDD}-{seq}`)
-  - `office_id, season_id, farmer_id` (assigned/billed farmer), `land_id`, `owner_farmer_id`
-  - `irrigation_amount, maintenance_amount, canal_amount, delay_fee, other_charge`
-  - `payable_amount, paid_amount, due_amount`
-  - `due_date, invoice_status` (enum: `draft|generated|partial_paid|paid|overdue|cancelled`)
-  - `generated_by, generated_at, cancelled_by, cancelled_at, cancel_reason, deleted_at`
-  - Unique constraint: `(season_id, land_id) WHERE deleted_at IS NULL` → duplicate prevention
-  - Indexes on `farmer_id`, `season_id`, `office_id`, `invoice_status`, `due_date`
+- নতুন lookup table **`season_types`**: `code` (slug), `name`, `name_bn`, `is_active`, `sort_order`, `office_id` (nullable = global)
+- নতুন lookup table **`field_types`**: একই pattern — যাতে পুকুর/ডোবা ইত্যাদি field_type ও admin add করতে পারেন
+- Seed করা: বর্তমান enum values (`boro`, `aman`, `iri`, `other`) + (`high_land`, `medium_land`, `low_land`, `other`)
+- `seasons` এ `season_type_id` (nullable, fk → season_types) যোগ। পুরোনো `type` enum কলাম রাখা হবে backward compat-এর জন্য — নতুন রো লিখলে দুটোই fill হবে যদি match করে
+- নতুন table **`season_field_rates`**: `(season_id, field_type_code, rate_per_shotok, office_id)` — composite unique `(season_id, field_type_code, office_id)`
+- RLS: office_read + admin_manage (existing pattern অনুসরণ করে)
 
-- **`irrigation_charge_settings`** — per office config
-  - `delay_fee_percent, maintenance_percent, canal_percent, grace_days, auto_apply_delay_fee`
+### 2. Admin UI
 
-- **`irrigation_invoice_payments`** — link table between invoices and `payments`
-  - `invoice_id, payment_id, collected_amount, delay_fee_collected, maintenance_collected, canal_collected`
+- নতুন route **`/admin/season-types`**: `code`, `নাম`, `বাংলা নাম`, `সক্রিয়` — CRUD
+- নতুন route **`/admin/field-types`**: একই pattern
+- Sidebar এর Admin section এ দুটো entry যোগ
 
-- **`irrigation_invoice_audit`** — every edit/override/cancel logged
+### 3. Seasons page (`src/pages/Seasons.tsx`)
 
-- **Enum**: `invoice_status`
-- **RLS**: office isolation + admin/super override (mirror existing `irrigation_charges` policies)
-- **Trigger**: auto-update `invoice_status` and `due_amount` on payment insert/update; auto-mark `overdue` via daily cron or on-read computed field
-- **Backfill**: optional script to convert existing `irrigation_charges` into invoices (keeps old data intact)
+- Type dropdown হার্ডকোড enum-এর বদলে `season_types` থেকে লোড
+- Save করার সময় `season_type_id` সেট, সাথে `type` enum-এ map করতে চেষ্টা করবে (custom হলে `other`)
+- প্রতিটি সিজনের রো-তে নতুন button **"রেট সেট করুন"** → একটা dialog খুলবে যেখানে field_types এর প্রতিটি row-এর পাশে rate input থাকবে। Save করলে `season_field_rates` upsert হবে।
 
-## Phase 2 — Borga (Sharecropper) Assignment Logic
+### 4. Invoice generation
 
-Helper: `getBilledFarmerForLand(land_id, as_of_date)` →
-- Checks `land_relations` for active `sharecropper_farmer_id`
-- If active borga → bill sharecropper
-- Else → bill `owner_farmer_id`
+- `IrrigationInvoices.tsx > GenerateTab`:
+  - একক `rate` input তুলে দেওয়া হবে (অথবা override হিসেবে রাখা হবে)
+  - সিজন বাছাইয়ের পর `season_field_rates` লোড → preview generation এ প্রতিটি land-এর `field_type` দেখে rate map থেকে বের করবে
+  - রেট খুঁজে না পেলে warning দেখাবে এবং ওই land skip করবে (count আলাদা দেখাবে)
+- Manual dialog এও field_type অনুযায়ী auto-rate, কিন্তু override input থাকবে
 
-Used by: bulk generation, manual generation, regeneration, reports.
+### 5. টেস্ট
 
-## Phase 3 — Irrigation Page Refactor (Invoice Generation Only)
+- `irrigationInvoice.extra.test.ts` এ rate matrix lookup helper-এর test যোগ
+- `IrrigationRates.test.tsx` legacy — কেবল pass হলেই হবে; নতুন tab আলাদা টেস্ট পরে
 
-- Remove all payment collection UI from `Irrigation.tsx`
-- New tabs: **Generate Invoices** | **Invoice List** | **Settings**
-- **Generate Invoices**: Select Season + Office → preview eligible lands → bulk generate (with skip-existing) OR manual single invoice
-- **Invoice List**: filters (season/office/status/farmer/overdue), invoice preview modal, cancel workflow, regenerate, bulk SMS
-- **Settings tab**: edit `irrigation_charge_settings`
-- Invoice preview modal shows full breakdown with Bigha+Shatak
+### Out of scope (এই step-এ নয়)
 
-## Phase 4 — Payment Page Refactor (Single Source of Collection)
+- পুরোনো `irrigation_rates` table delete নয় — কেবল legacy fallback হিসেবে থাকবে
+- enum `season_type` / `field_type` থেকে কলাম drop করা হবে না — runtime backward compat রক্ষা
 
-- Search farmer → load all unpaid + overdue invoices for that farmer
-- Two sections: **Overdue (red)** | **Current Due**
-- Per-invoice: editable Delay Fee / Maintenance / Canal / Other (with audit log on override)
-- Auto-calc payable on edit; allow full or partial payment
-- On submit:
-  - Insert `payments` row
-  - Insert `irrigation_invoice_payments` link rows
-  - Update invoice `paid_amount`, `due_amount`, `invoice_status`
-  - Post double-entry ledger (separate accounts: Irrigation Income / Maintenance / Canal / Delay Fee)
-  - FIFO allocation preserved
-- Reuses existing receipt + QR verification pipeline
+## টেকনিক্যাল ডিটেইল
 
-## Phase 5 — Receipts, Reports, SMS
+```text
+season_types (id, code unique, name, name_bn, is_active, sort_order, office_id)
+field_types  (id, code unique, name, name_bn, is_active, sort_order, office_id)
+season_field_rates (id, season_id fk, field_type_code text, rate_per_shotok numeric,
+                    office_id, created_by, created_at, updated_at,
+                    UNIQUE(season_id, field_type_code, office_id))
+seasons + season_type_id uuid REFERENCES season_types(id)
+```
 
-**Receipt** (`bnReceipts.ts`): adds Invoice No, Due Date, breakdown rows (Irrigation/Maintenance/Canal/Delay Fee), Owner vs Borga label, Bigha+Shatak land size. QR verification stays compatible (signs invoice_no + amount).
-
-**Reports** (update + new):
-- Update: Irrigation Due Report, Collection Report, Farmer Statement, Ledger Summary
-- New: Overdue Invoice Report, Delay Fee Collection Report, Borga Irrigation Report, Season-wise Invoice Report
-- All export PDF + Excel with Bigha+Shatak
-
-**SMS** (via existing `send-sms` edge function):
-- Invoice generated, Due reminder (T-3 days), Overdue reminder (daily cron), Payment confirmation
-- Bulk SMS button on invoice list
-
-## Phase 6 — Tests & Polish
-
-- 30+ automated tests:
-  - Unit: invoice calculation, delay fee formula, borga resolution, status transitions
-  - Integration: bulk generation, payment posting → ledger, FIFO allocation, regeneration protection
-  - E2E (Playwright): generate → view → pay → verify receipt → check ledger
-- Mobile responsive invoice list/preview
-- Season lock check on generation
-- Soft delete + cancel workflow audit trail
-- Recalculation utility (admin tool to recompute charges for a season)
-
----
-
-## Technical Notes
-
-- **No breaking changes**: `irrigation_charges` table and existing receipts continue to work. New `irrigation_invoices` runs alongside; reports gradually migrate to read from invoices.
-- **Accounting safety**: New ledger account codes for Maintenance / Canal / Delay Fee will be created via migration with `is_system=true`. Existing Irrigation Income account stays.
-- **FIFO preservation**: Payment allocation continues to use existing `farmerDues.ts` logic — invoice records become the new "due rows".
-- **Performance**: Indexes on (farmer_id, status), (season_id, office_id, status), (due_date) for overdue queries.
-
----
-
-## Delivery Checkpoints
-
-1. Phase 1 (DB migration) — I'll send the migration for your approval first
-2. After Phase 1 applied → Phase 2+3 (logic + Irrigation UI)
-3. Phase 4 (Payment UI) — most sensitive, separate checkpoint
-4. Phase 5 (Receipts/Reports/SMS)
-5. Phase 6 (Tests)
-
-**Estimated scope**: ~25-35 files touched/created across 5-6 working sessions. Old data preserved throughout.
-
-Reply **"start phase 1"** to begin with the database migration, or tell me which phase to prioritize / skip.
+Invoice rate resolution order:
+1. `season_field_rates` লুকআপ by `(season_id, land.field_type, office_id)` → fallback office_id NULL
+2. না পেলে legacy `irrigation_rates.base_rate` (per_size, active)
+3. না পেলে user-entered override
