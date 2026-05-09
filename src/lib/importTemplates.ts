@@ -33,6 +33,11 @@ const TEMPLATES: Record<string, Tpl> = {
     columns: ["expense_date", "head", "payee", "amount", "method", "note"],
     sample: { expense_date: "2026-02-01", head: "Office", payee: "Stationery", amount: 500, method: "cash", note: "" },
   },
+  shares: {
+    columns: ["account_number", "balance"],
+    sample: { account_number: "100000000001", balance: 500 },
+    instructions: "Sets share capital balance per farmer (one row per farmer). Existing balance is overwritten.",
+  },
 };
 
 function csvEscape(v: any): string {

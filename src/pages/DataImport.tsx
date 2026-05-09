@@ -39,6 +39,7 @@ type Module =
   | "savings"
   | "payments"
   | "irrigation"
+  | "shares"
   | "cashbook_receipts"
   | "cashbook_expenses"
   | "ledger";
@@ -91,6 +92,10 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   cashbook_expenses: {
     columns: ["expense_date", "head", "payee", "amount", "method", "note"],
     sample: { expense_date: "2026-02-01", head: "Office", payee: "Stationery shop", amount: 500, method: "cash", note: "Pens & paper" },
+  },
+  shares: {
+    columns: ["account_number", "balance"],
+    sample: { account_number: "100000000001", balance: 500 },
   },
 };
 
@@ -296,6 +301,7 @@ export default function DataImport() {
       cashbook_receipts: ["receipt_date", "kind", "amount"],
       cashbook_expenses: ["expense_date", "head", "amount"],
       ledger: ["entry_date", "account_code"],
+      shares: ["account_number", "balance"],
     };
     const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
     const req = required[m] ?? TEMPLATES[m].columns;
@@ -677,6 +683,23 @@ export default function DataImport() {
               expense_date: raw.expense_date ?? new Date().toISOString().slice(0, 10),
               created_by: user?.id,
             };
+          } else if (mod === "shares") {
+            const f = farmerMap.get(String(raw.account_number));
+            if (!f) throw new Error("Farmer not found for account_number");
+            const bal = Number(raw.balance ?? 0);
+            if (!(bal >= 0)) throw new Error("balance must be ≥ 0");
+            if (dryRun) {
+              next[i] = { ...next[i], status: "ok", message: `Will upsert share balance=${bal} (preview)` };
+              if (i % 10 === 0) setRows([...next]);
+              continue;
+            }
+            const { error: upErr } = await supabase
+              .from("shares")
+              .upsert({ farmer_id: f.id, office_id: f.office_id, balance: bal }, { onConflict: "farmer_id" });
+            if (upErr) throw upErr;
+            next[i] = { ...next[i], status: "ok" };
+            if (i % 10 === 0) setRows([...next]);
+            continue;
           }
 
           if (dryRun) {
@@ -791,6 +814,7 @@ export default function DataImport() {
                 <SelectItem value="irrigation">Irrigation Charges</SelectItem>
                 <SelectItem value="cashbook_receipts">Cashbook — Receipts</SelectItem>
                 <SelectItem value="cashbook_expenses">Cashbook — Expenses</SelectItem>
+                <SelectItem value="shares">Share Balance (upsert)</SelectItem>
                 {isSuper && <SelectItem value="ledger">Ledger Entries (super-admin)</SelectItem>}
               </SelectContent>
             </Select>
@@ -799,7 +823,7 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadTemplate(mod)}>
               <Download className="h-4 w-4 mr-1" /> Template (.xlsx)
             </Button>
-            {(["lands","land_relations","payments","irrigation","cashbook_receipts","cashbook_expenses"] as Module[]).includes(mod) && (
+            {(["lands","land_relations","payments","irrigation","cashbook_receipts","cashbook_expenses","shares"] as Module[]).includes(mod) && (
               <Button variant="outline" onClick={() => downloadCsvTemplate(mod as any)}>
                 <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
               </Button>
