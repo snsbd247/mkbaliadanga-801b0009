@@ -64,10 +64,10 @@ export default function MyPermissions() {
             {ALL_MODULES.map((mod) => (
               <TableRow key={mod}>
                 <TableCell className="font-medium capitalize">{mod}</TableCell>
-                {ACTIONS.map((a) => {
+                {ACTIONS.map((a, idx) => {
                   const ok = can(mod, a.key);
                   return (
-                    <TableCell key={a.key} className="text-center">
+                    <TableCell key={`${a.label}-${idx}`} className="text-center">
                       {ok ? (
                         <Check className="inline h-4 w-4 text-green-600" aria-label="allowed" />
                       ) : (
