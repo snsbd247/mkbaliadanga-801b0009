@@ -40,7 +40,7 @@ function rows(list: LandRelationExportRow[]): (string | number)[][] {
   return list.map((r, i) => [
     i + 1,
     buildLocation(r) || "-",
-    r.dag_no ?? "-",
+    formatDagNumbers(r.dag_no) || "-",
     r.land_size ?? 0,
     r.owner_name ? `${r.owner_name}${r.owner_account ? ` (${r.owner_account})` : ""}` : "-",
     r.sc_name ? `${r.sc_name}${r.sc_account ? ` (${r.sc_account})` : ""}` : "-",
