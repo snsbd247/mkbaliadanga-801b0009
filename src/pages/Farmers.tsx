@@ -138,7 +138,7 @@ function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF
     const v = (f.member_no ?? "").trim();
     if (!v) return;
     const r = normalizeFarmerCode(v);
-    if (!r.ok) { setFmtErr(r.error); return; }
+    if (r.ok === false) { setFmtErr(r.error); return; }
     if (r.value !== v) setF({ ...f, member_no: r.value });
   }
 
