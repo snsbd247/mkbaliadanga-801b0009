@@ -16,6 +16,7 @@ import { Upload, Download, AlertTriangle, Loader2 } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
+import { normalizeFarmerCode } from "@/lib/farmerCode";
 
 /**
  * Bulk Farmer Import — simplified
@@ -96,8 +97,8 @@ export default function FarmersImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const headers = [...COLUMNS];
     const sample = [
-      ["01001", "10001", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
-      ["",       "",      "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
+      ["00001", "10001", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
+      ["",      "",      "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
     ];
     if (format === "csv") {
       const csv = [headers, ...sample]
@@ -113,7 +114,7 @@ export default function FarmersImport() {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
     const notes = XLSX.utils.aoa_to_sheet([
       ["Column", "Required", "Notes"],
-      ["farmer_id", "No", "Existing farmer code → row will UPDATE; খালি হলে নতুন farmer তৈরি হবে।"],
+      ["farmer_id", "No", "5-digit padded code (e.g. 00001). 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে। existing হলে UPDATE, খালি হলে নতুন তৈরি হবে।"],
       ["voter_number", "No", "নম্বর থাকলে অটো Voter / Savings active সদস্য।"],
       ["name_en", "Yes", "ইংরেজী নাম"],
       ["name_bn", "No", "বাংলা নাম"],
@@ -135,13 +136,20 @@ export default function FarmersImport() {
       if (parsed.length === 0) { toast.error("File is empty."); return; }
       const initial: RowState[] = parsed.map((raw, idx) => {
         const nameEn = String(raw.name_en ?? "").trim();
-        const farmerId = String(raw.farmer_id ?? raw.member_no ?? "").trim();
+        const farmerIdRaw = String(raw.farmer_id ?? raw.member_no ?? "").trim();
+        let farmerIdErr: string | null = null;
+        if (farmerIdRaw) {
+          const r = normalizeFarmerCode(farmerIdRaw);
+          if (r.ok === false) farmerIdErr = r.error;
+          else raw.farmer_id = r.value; // canonicalize in-place for the save loop
+        }
+        const errorMsg = !nameEn ? "name_en is required" : farmerIdErr;
         return {
           idx,
           raw,
-          status: nameEn ? "valid" : "invalid",
-          errorMsg: nameEn ? null : "name_en is required",
-          action: farmerId ? "update" : "insert",
+          status: errorMsg ? "invalid" : "valid",
+          errorMsg,
+          action: farmerIdRaw && !farmerIdErr ? "update" : "insert",
         };
       });
       setRows(initial);
@@ -256,6 +264,13 @@ export default function FarmersImport() {
         <p className="text-xs text-muted-foreground mt-2">
           Required: <code>name_en</code>. Optional: <code>farmer_id, voter_number, name_bn, father_name, mobile, village</code>.
           <br />
+          <span
+            title={tx(
+              "Farmer ID format: 5-digit padded number (e.g. 00001). Inputs like 'F-00001', '1', '2026-00000001' are auto-normalized to 00001. Letters or non-numeric values are rejected.",
+              "Farmer ID ফরম্যাট: 5-digit padded (যেমন 00001)। 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে। অক্ষর / সংখ্যা ছাড়া ভ্যালু রিজেক্ট হবে।"
+            )}
+            className="inline-flex h-4 w-4 mr-1 items-center justify-center rounded-full border text-[10px] cursor-help"
+          >?</span>
           {tx("If farmer_id is given, existing farmer is updated, else a new one is created.", "farmer_id দিলে existing farmer থাকলে update, না থাকলে নতুন তৈরি হবে।")}
           <span className="ml-2">{tx("If voter_number is given, auto Voter / Savings active member.", "voter_number দিলে অটো Voter / Savings active সদস্য।")}</span>
         </p>
