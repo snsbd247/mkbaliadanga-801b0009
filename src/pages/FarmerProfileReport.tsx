@@ -24,6 +24,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 export default function FarmerProfileReport() {
+  const { tx } = useLang();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const nav = useNavigate();
