@@ -482,11 +482,36 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const savingsSeeded: string[] = [];
   const sharesSeeded: string[] = [];
-  await admin.from("savings_plans").insert({
+  const fspSeeded: string[] = [];
+  const { data: planRow } = await admin.from("savings_plans").insert({
     name: "DPS 24", name_bn: "ডিপিএস ২৪", office_id: officeId,
     duration_months: 24, installment_type: "monthly", installment_amount: 500,
     interest_rate: 6, maturity_type: "simple", is_active: true,
-  });
+  }).select("id").single();
+  const planId = planRow?.id ?? null;
+
+  // Enroll ~30% of voters into a farmer_savings_plan
+  if (planId) {
+    const enrollTargets = voters.slice(0, Math.ceil(voters.length * 0.3));
+    const fspRows = enrollTargets.map((f, i) => {
+      const expected = 500 * 24;
+      const interest = +(expected * 0.06 / 2).toFixed(2);
+      fspSeeded.push(f.id);
+      return {
+        plan_id: planId, farmer_id: f.id, office_id: officeId,
+        start_date: new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
+        expected_total: expected,
+        expected_interest: interest,
+        maturity_amount: expected + interest,
+        status: i % 4 === 0 ? "pending" : "approved",
+      };
+    });
+    if (fspRows.length) {
+      const { error } = await admin.from("farmer_savings_plans").insert(fspRows);
+      if (error) throw new Error(`farmer_savings_plans: ${error.message}`);
+    }
+  }
+
   const targets = voters.slice(0, Math.ceil(voters.length * 0.6));
   const txns = targets.flatMap((f, i) => {
     savingsSeeded.push(f.id);
