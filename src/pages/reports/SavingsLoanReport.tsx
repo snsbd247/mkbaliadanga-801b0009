@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useLang } from "@/i18n/LanguageProvider";
+
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
@@ -30,7 +30,7 @@ function bucketKey(d: string, b: Bucket): string {
 }
 
 export default function SavingsLoanReport() {
-  const { t } = useLang();
+  // i18n labels not localised yet — see roadmap.
   const [source, setSource] = useState<Source>("savings");
   const [bucket, setBucket] = useState<Bucket>("daily");
   const [from, setFrom] = useState(monthAgo());
