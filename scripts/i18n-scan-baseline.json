@@ -1,7 +1,6 @@
 {
-  "generatedAt": "2026-05-09T11:43:29.295Z",
+  "generatedAt": "2026-05-09T11:43:39.780Z",
   "counts": {
-    "src/pages/Payments.tsx": 2,
     "src/components/LanguageToggle.tsx": 1
   }
 }
