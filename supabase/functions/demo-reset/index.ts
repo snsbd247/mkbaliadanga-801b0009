@@ -488,7 +488,7 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
       enforcement_mode: "block",
     }, { onConflict: "office_id" });
 
-    const { data: ins } = await admin.from("loans").insert(loanRows).select("id, total_payable, status, issued_on");
+    const { data: ins } = await admin.from("loans").insert(loanRows).select("id, total_payable, status, issued_on, installment_amount");
     // Generate installment schedules + payments
     const allInst: any[] = [];
     const pays: any[] = [];
@@ -496,7 +496,8 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
     for (const l of (ins ?? [])) {
       if (l.status !== "approved") continue;
       const totalPay = Number(l.total_payable);
-      const monthly = +(totalPay / 12).toFixed(2);
+      const monthly = +(Number(l.installment_amount) || (totalPay / 12)).toFixed(2);
+      const duration = Math.max(1, Math.round(totalPay / monthly));
       const start = l.issued_on ? new Date(l.issued_on) : new Date(today.getTime() - 180 * 86400000);
       // 12 installments; first 3 paid, the past-due remaining ones become overdue, future ones stay due
       for (let n = 1; n <= 12; n++) {
