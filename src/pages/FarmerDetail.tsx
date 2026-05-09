@@ -639,7 +639,8 @@ export default function FarmerDetail() {
     const paid = (l.loan_payments ?? []).reduce((x: number, p: any) => x + Number(p.amount), 0);
     return a + (Number(l.total_payable) - paid);
   }, 0);
-  const irrDue = irr.reduce((a, i) => a + Number(i.due_amount), 0);
+  // Irrigation due now sourced from irrigation_invoices (legacy irrigation_charges removed from UI).
+  const irrDue = invDue;
 
   const buildLocLine = (l: LandRow) => {
     const parts = [l.division_name, l.district_name, l.upazila_name, l.union_name, l.ward_name, l.village_name, l.mouza_name].filter(Boolean);
