@@ -215,17 +215,23 @@ export default function SmsLogs() {
         const due = Math.max(0, Number(loanRes.data.total_payable || 0) - paid);
         setDrawer({ log: l, loading: false, kind, record: loanRes.data, paid, due, payments: paySumRes.data ?? [], farmer: (farmerRes as any).data });
       } else {
-        const [irrRes, farmerRes] = await Promise.all([
-          supabase.from("irrigation_charges").select("*").eq("id", l.reference_id).maybeSingle(),
+        // Try invoice first (new SoT), then legacy charge fallback
+        const [invRes, farmerRes] = await Promise.all([
+          supabase.from("irrigation_invoices").select("*").eq("id", l.reference_id).maybeSingle(),
           farmerPromise,
         ]);
-        if (irrRes.error || !irrRes.data) {
-          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: irrRes.error?.message ?? t("irrChargeNotFound") });
+        let record: any = invRes.data ?? null;
+        if (!record) {
+          const { data: chRow } = await supabase.from("irrigation_charges").select("*").eq("id", l.reference_id).maybeSingle();
+          record = chRow ?? null;
+        }
+        if (!record) {
+          setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: t("irrChargeNotFound") });
           return;
         }
-        const paid = Number(irrRes.data.paid_amount || 0);
-        const due = Number(irrRes.data.due_amount || 0);
-        setDrawer({ log: l, loading: false, kind, record: irrRes.data, paid, due, farmer: (farmerRes as any).data });
+        const paid = Number(record.paid_amount || 0);
+        const due = Number(record.due_amount || 0);
+        setDrawer({ log: l, loading: false, kind, record, paid, due, farmer: (farmerRes as any).data });
       }
     } catch (e: any) {
       setDrawer({ log: l, loading: false, kind, record: null, paid: 0, due: 0, error: e?.message ?? t("failedLoadDetails") });
