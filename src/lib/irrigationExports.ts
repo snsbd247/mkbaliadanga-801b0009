@@ -2,6 +2,9 @@
 // snapshot data and manual-rate flags. Phase 3 — i18n cleanup & enrichment.
 import * as XLSX from "xlsx";
 import { formatDagNumbers } from "@/lib/dagNumbers";
+import { roundTaka } from "@/lib/rounding";
+
+const r = (v: any) => (v === "" || v === null || v === undefined) ? v : roundTaka(Number(v));
 
 export const IRR_BN = {
   invoiceNo: "ইনভয়েস নং",
