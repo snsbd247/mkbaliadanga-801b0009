@@ -98,10 +98,10 @@ export function ExportDialog<T = any>({
       } else {
         await exportTablePDF(reportName, head, body, range);
       }
-      toast.success("এক্সপোর্ট সম্পন্ন হয়েছে");
+      toast.success(t("exp_done" as any));
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e?.message ?? "এক্সপোর্ট ব্যর্থ হয়েছে");
+      toast.error(e?.message ?? t("exp_failed" as any));
     } finally {
       setBusy(false);
     }
