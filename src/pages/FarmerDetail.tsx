@@ -1062,7 +1062,34 @@ export default function FarmerDetail() {
                 errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} showVillage={false} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t("dagNo")}</Label><Input disabled={editSaving} value={editForm.dag_no} onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })} placeholder="123, 124/A" /><p className="text-xs text-muted-foreground mt-1">একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন</p></div>
+              <div>
+                <Label>{t("dagNo")}</Label>
+                {(() => {
+                  const live = editForm.dag_no.trim() ? validateDagNumbers(editForm.dag_no) : null;
+                  const liveErr = live && live.ok === false ? live.error : null;
+                  const preview = live && live.ok ? live.values.join(", ") : null;
+                  return (
+                    <>
+                      <Input
+                        disabled={editSaving}
+                        value={editForm.dag_no}
+                        onChange={e => setEditForm({ ...editForm, dag_no: e.target.value })}
+                        placeholder="123, 124/A, 125-B"
+                        aria-invalid={!!liveErr}
+                        className={liveErr ? "border-destructive focus-visible:ring-destructive" : undefined}
+                      />
+                      {liveErr ? (
+                        <p className="text-xs text-destructive mt-1">{liveErr} — কমা দিয়ে আলাদা করুন; শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> অনুমোদিত।</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ: <code>123, 124/A, 125-B</code>
+                          {preview && preview !== editForm.dag_no.trim() && <> — সংরক্ষণে রূপান্তরিত হবে: <strong>{preview}</strong></>}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
               <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.01" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
               <div><Label>{t("ownerType")}</Label>
                 <Select value={editForm.owner_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, owner_type: v })}>
