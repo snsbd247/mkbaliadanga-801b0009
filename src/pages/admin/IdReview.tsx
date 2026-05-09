@@ -172,8 +172,7 @@ export default function IdReview() {
             <TableRow>
               <TableHead>{t("name")}</TableHead>
               <TableHead>{t("farmerIdLabel")}</TableHead>
-              <TableHead>{t("savingsAcNo")}</TableHead>
-              <TableHead>{t("voterNo")}</TableHead>
+              <TableHead>Voter / Savings A/C No</TableHead>
               <TableHead>{t("voterQ")}</TableHead>
               <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow>
@@ -188,7 +187,6 @@ export default function IdReview() {
                 </TableCell>
                 <TableCell className="font-mono text-xs">{r.member_no || "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{r.account_number || "—"}</TableCell>
-                <TableCell className="font-mono text-xs">{r.voter_number || "—"}</TableCell>
                 <TableCell>
                   {r.is_voter
                     ? <Badge variant="default">{t("yes")}</Badge>
@@ -204,7 +202,7 @@ export default function IdReview() {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   {t("noRecordsFound")}
                 </TableCell>
               </TableRow>
