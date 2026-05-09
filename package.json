@@ -12,6 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "i18n:scan": "node scripts/i18n-scan.mjs",
+    "i18n:scan:ci": "node scripts/i18n-scan.mjs --ci",
+    "i18n:scan:update": "node scripts/i18n-scan.mjs --update",
     "i18n:check": "node scripts/i18n-check.mjs",
     "i18n:check:update": "node scripts/i18n-check.mjs --update",
     "i18n:unused": "node scripts/i18n-unused.mjs",
