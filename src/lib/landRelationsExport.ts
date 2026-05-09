@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { formatDagNumbers } from "./dagNumbers";
 
 export type LandRelationExportRow = {
   // Land + location
