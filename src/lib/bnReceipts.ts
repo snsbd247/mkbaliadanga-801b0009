@@ -47,6 +47,10 @@ export interface BnReceiptData {
     name: string;
     member_no?: string | null;
     owner_type_bn?: string | null;
+    /** "ভোটার" বা "সঞ্চয়ী" — irrigation receipt member type label. */
+    member_type_bn?: string | null;
+    /** Voter no or savings account no shown alongside member type. */
+    member_ref_no?: string | null;
     father_or_husband?: string | null;
     village?: string | null;
     mobile?: string | null;
@@ -66,6 +70,16 @@ export interface BnReceiptData {
 
   description?: string | null;
   outstanding?: number | null;
+
+  /** Irrigation receipt — enriched fields */
+  land_owner_label?: string | null;            // "নিজ" or "Owner Name (member_no)"
+  current_season_charge?: number | null;       // হাল
+  penalty_amount?: number | null;              // বিলম্ব ফি
+  maintenance_charge?: number | null;          // রক্ষণাবেক্ষণ
+  canal_charge?: number | null;                // নালা চার্জ
+  total_outstanding?: number | null;           // বকেয়া (whole ledger)
+  collected_from_outstanding?: number | null;  // বকেয়া থেকে সংগৃহীত
+  remark?: string | null;                      // রিমার্ক/নোট
 
   collected_amount: number;
   collector_signature_url?: string | null;
