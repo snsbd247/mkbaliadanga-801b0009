@@ -258,6 +258,19 @@ export default function Payments() {
     }
   }
 
+  async function sendIrrigationPaymentSms(fId: string, list: Allocation[], receiptNo: string | null) {
+    try {
+      const irrTotal = list.filter(a => a.kind === "irrigation").reduce((s, a) => s + Number(a.amount || 0), 0);
+      if (irrTotal <= 0) return;
+      const farmer = farmers.find((x: any) => x.id === fId);
+      const { data: full } = await supabase.from("farmers").select("mobile,name_bn,name_en").eq("id", fId).maybeSingle();
+      const mobile = full?.mobile ?? farmer?.mobile;
+      if (!mobile) return;
+      const message = `আপনার সেচ ইনভয়েসের ৳${irrTotal.toLocaleString()} টাকা গ্রহণ করা হয়েছে।${receiptNo ? `\nরসিদ নং: ${receiptNo}` : ""}\nধন্যবাদ।`;
+      await supabase.functions.invoke("send-sms", { body: { mobile, message, event_type: "irrigation_payment", farmer_id: fId } });
+    } catch (_) { /* SMS failure must not break payment flow */ }
+  }
+
   async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string) {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
