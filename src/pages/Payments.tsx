@@ -145,7 +145,7 @@ export default function Payments() {
   }
 
   async function load() {
-    let pq = supabase.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
+    let pq = supabase.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
     pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
     const [f, p] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
@@ -513,25 +513,99 @@ export default function Payments() {
                           ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ"
                             : kind === "savings" ? "সঞ্চয় জমা গ্রহণ"
                             : "সেচ চার্জ গ্রহণ");
-                        const doDownload = (copy: ReceiptCopy) => downloadBnReceiptPdf({
-                          kind,
-                          company_name: brand.company_name,
-                          company_name_bn: brand.company_name_bn,
-                          logo_url: brand.logo_url ?? null,
-                          org: receiptArgs.org,
-                          receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
-                          date: p.created_at,
-                          bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
-                          farmer: {
-                            name: p.farmers?.name_bn || p.farmers?.name_en || "—",
-                            member_no: p.farmers?.member_no ?? p.farmers?.farmer_code ?? null,
-                            mobile: p.farmers?.mobile ?? null,
-                            village: p.farmers?.village ?? null,
-                          },
-                          collected_amount: Number(p.amount),
-                          description,
-                          verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
-                        }, copy, receiptArgs.options);
+
+                        const ownerTypeBn = (ot?: string | null) =>
+                          ot === "borgadar" ? "বর্গাদার" : ot === "owner" ? "মালিক" : null;
+                        const memberTypeBn = (f: any) =>
+                          f?.is_voter ? "ভোটার নং" : f?.account_number ? "সঞ্চয়ী নং" : null;
+                        const memberRefNo = (f: any) => f?.voter_number ?? f?.account_number ?? null;
+
+                        const doDownload = async (copy: ReceiptCopy) => {
+                          let irrEnriched: any = {};
+                          if (kind === "irrigation") {
+                            // Sum allocated to irrigation; pick the first allocation's irrigation_charges + land.
+                            const irrAllocs = (p.payment_allocations ?? []).filter((a: any) => a.kind === "irrigation");
+                            const refIds = irrAllocs.map((a: any) => a.reference_id).filter(Boolean);
+                            const collectedFromOutstanding = irrAllocs.reduce((s: number, a: any) => s + Number(a.amount || 0), 0) || Number(p.amount || 0);
+                            let primaryCharge: any = null;
+                            let totalOutstanding = 0;
+                            if (refIds.length) {
+                              const { data: charges } = await supabase
+                                .from("irrigation_charges")
+                                .select("id,total,paid_amount,due_amount,base_charge,penalty_amount,maintenance_charge,canal_charge,land_id,lands(mouza,dag_no,land_size,field_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
+                                .in("id", refIds);
+                              primaryCharge = (charges ?? [])[0] ?? null;
+                              // total outstanding = sum of due_amount across the farmer's open charges
+                              const { data: allDues } = await supabase
+                                .from("irrigation_charges")
+                                .select("due_amount")
+                                .eq("farmer_id", p.farmer_id)
+                                .is("deleted_at", null);
+                              totalOutstanding = (allDues ?? []).reduce((s: number, r: any) => s + Number(r.due_amount || 0), 0);
+                            }
+                            const land = primaryCharge?.lands;
+                            const ownerFarmer = land?.farmers;
+                            const isSelf = land?.owner_farmer_id && land.owner_farmer_id === p.farmer_id;
+                            const fieldTypeBn = ({ high_land: "উঁচু জমি", medium_land: "মাঝারি জমি", low_land: "নিচু জমি", other: "অন্যান্য" } as Record<string, string>)[land?.field_type as string] ?? null;
+                            irrEnriched = {
+                              farmerExtras: {
+                                mouza: land?.mouza ?? null,
+                                dag_no: land?.dag_no ?? null,
+                                land_size: land?.land_size != null ? Number(land.land_size) : null,
+                                field_type_bn: fieldTypeBn,
+                                owner_type_bn: ownerTypeBn(land?.owner_farmer_id === p.farmer_id ? "owner" : "borgadar"),
+                              },
+                              land_owner_label: isSelf
+                                ? "নিজ"
+                                : ownerFarmer
+                                  ? `${ownerFarmer.name_bn || ownerFarmer.name_en}${ownerFarmer.member_no ? " (" + ownerFarmer.member_no + ")" : ""}`
+                                  : null,
+                              current_season_charge: primaryCharge?.base_charge != null ? Number(primaryCharge.base_charge) : null,
+                              penalty_amount: primaryCharge?.penalty_amount != null ? Number(primaryCharge.penalty_amount) : 0,
+                              maintenance_charge: primaryCharge?.maintenance_charge != null ? Number(primaryCharge.maintenance_charge) : 0,
+                              canal_charge: primaryCharge?.canal_charge != null ? Number(primaryCharge.canal_charge) : 0,
+                              total_outstanding: totalOutstanding,
+                              collected_from_outstanding: collectedFromOutstanding,
+                              remark: p.note ?? null,
+                            };
+                          }
+
+                          await downloadBnReceiptPdf({
+                            kind,
+                            company_name: brand.company_name,
+                            company_name_bn: brand.company_name_bn,
+                            logo_url: brand.logo_url ?? null,
+                            org: receiptArgs.org,
+                            receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
+                            date: p.created_at,
+                            bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
+                            farmer: {
+                              name: p.farmers?.name_bn || p.farmers?.name_en || "—",
+                              member_no: p.farmers?.member_no ?? p.farmers?.farmer_code ?? null,
+                              mobile: p.farmers?.mobile ?? null,
+                              village: p.farmers?.village ?? null,
+                              father_or_husband: p.farmers?.father_name ?? null,
+                              member_type_bn: memberTypeBn(p.farmers),
+                              member_ref_no: memberRefNo(p.farmers),
+                              ...(irrEnriched.farmerExtras ?? {}),
+                            },
+                            ...(kind === "irrigation"
+                              ? {
+                                  land_owner_label: irrEnriched.land_owner_label,
+                                  current_season_charge: irrEnriched.current_season_charge,
+                                  penalty_amount: irrEnriched.penalty_amount,
+                                  maintenance_charge: irrEnriched.maintenance_charge,
+                                  canal_charge: irrEnriched.canal_charge,
+                                  total_outstanding: irrEnriched.total_outstanding,
+                                  collected_from_outstanding: irrEnriched.collected_from_outstanding,
+                                  remark: irrEnriched.remark,
+                                }
+                              : {}),
+                            collected_amount: Number(p.amount),
+                            description,
+                            verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
+                          }, copy, receiptArgs.options);
+                        };
                         return <ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} />;
                       })()}
                     </div>

@@ -47,6 +47,10 @@ export interface BnReceiptData {
     name: string;
     member_no?: string | null;
     owner_type_bn?: string | null;
+    /** "ভোটার" বা "সঞ্চয়ী" — irrigation receipt member type label. */
+    member_type_bn?: string | null;
+    /** Voter no or savings account no shown alongside member type. */
+    member_ref_no?: string | null;
     father_or_husband?: string | null;
     village?: string | null;
     mobile?: string | null;
@@ -66,6 +70,16 @@ export interface BnReceiptData {
 
   description?: string | null;
   outstanding?: number | null;
+
+  /** Irrigation receipt — enriched fields */
+  land_owner_label?: string | null;            // "নিজ" or "Owner Name (member_no)"
+  current_season_charge?: number | null;       // হাল
+  penalty_amount?: number | null;              // বিলম্ব ফি
+  maintenance_charge?: number | null;          // রক্ষণাবেক্ষণ
+  canal_charge?: number | null;                // নালা চার্জ
+  total_outstanding?: number | null;           // বকেয়া (whole ledger)
+  collected_from_outstanding?: number | null;  // বকেয়া থেকে সংগৃহীত
+  remark?: string | null;                      // রিমার্ক/নোট
 
   collected_amount: number;
   collector_signature_url?: string | null;
@@ -95,12 +109,16 @@ const STR = {
     farmerLine: "কৃষকের নাম এবং কৃষক সদস্য নং:",
     fatherLine: "পিতা/স্বামী নাম:",
     villageLine: "গ্রাম/মহল্লা/মোবাইল:",
-    mouza: "মৌজা:",
-    landKind: "জমির ধরণ-পরিমান:",
+    mouza: "মৌজা/দাগ/জমির পরিমান:",
+    landKind: "জমির ধরন:",
+    landOwner: "জমির মালিক:",
     dag: "দাগ নং:",
     rate: "চার্জ রেট:",
     charge: "চার্জের পরিমাণ:",
     due: "বকেয়া:",
+    collectedFromDue: "বকেয়া থেকে সংগৃহীত:",
+    currentCharge: "হাল:",
+    extraCharges: "বিলম্ব ফি / রক্ষণাবেক্ষণ / নালা চার্জ:",
     desc: "বিবরণ:",
     loanDesc: "ঋণের বিবরণ:",
     balance: "বর্তমান স্থিতি:",
@@ -108,6 +126,7 @@ const STR = {
     totalSav: "জমাকৃত পরিমাণ:",
     totalLoan: "প্রাপ্ত কিস্তি:",
     totalIrr: "সংগৃহীত পরিমাণ:",
+    remark: "রিমার্ক/নোট:",
     memberSig: "সদস্যের স্বাক্ষর",
     collectorSig: "আদায়কারীর স্বাক্ষর",
     regNo: "নিবন্ধন নং:",
@@ -125,12 +144,16 @@ const STR = {
     farmerLine: "Farmer name & member no:",
     fatherLine: "Father/Husband:",
     villageLine: "Village / Mobile:",
-    mouza: "Mouza:",
-    landKind: "Land type-size:",
+    mouza: "Mouza / Dag / Land size:",
+    landKind: "Land type:",
+    landOwner: "Land owner:",
     dag: "Dag no:",
     rate: "Rate:",
     charge: "Charge amount:",
-    due: "Previous due:",
+    due: "Outstanding:",
+    collectedFromDue: "Collected from outstanding:",
+    currentCharge: "Current season charge:",
+    extraCharges: "Penalty / Maintenance / Canal:",
     desc: "Description:",
     loanDesc: "Loan description:",
     balance: "Current balance:",
@@ -138,6 +161,7 @@ const STR = {
     totalSav: "Amount deposited:",
     totalLoan: "Installment received:",
     totalIrr: "Amount collected:",
+    remark: "Remark / Note:",
     memberSig: "Member signature",
     collectorSig: "Collector signature",
     regNo: "Reg. No:",
@@ -185,18 +209,36 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
 
   const rows: Array<[string, string]> = [];
-  rows.push([t.farmerLine, `${d.farmer.name}${d.farmer.member_no ? " - " + d.farmer.member_no : ""}${d.farmer.owner_type_bn ? " (" + d.farmer.owner_type_bn + ")" : ""}`]);
-  if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
+  // কৃষকের নাম এবং কৃষক সদস্য নং: name - member_no - owner_type - voter/savings ref
+  const memberRefSuffix = d.farmer.member_type_bn || d.farmer.member_ref_no
+    ? ` - ${[d.farmer.member_type_bn, d.farmer.member_ref_no].filter(Boolean).join(" ")}`.trimEnd()
+    : "";
+  rows.push([
+    t.farmerLine,
+    `${d.farmer.name}${d.farmer.member_no ? " - " + d.farmer.member_no : ""}${d.farmer.owner_type_bn ? " - " + d.farmer.owner_type_bn : ""}${memberRefSuffix}`,
+  ]);
   rows.push([t.villageLine, `${d.farmer.village ?? "—"}${d.farmer.mobile ? " / " + d.farmer.mobile : ""}`]);
+  if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
 
   if (d.kind === "irrigation") {
-    if (d.farmer.mouza) rows.push([t.mouza, d.farmer.mouza]);
-    if (d.farmer.field_type_bn || d.farmer.land_size != null)
-      rows.push([t.landKind, `${d.farmer.field_type_bn ?? "—"}${d.farmer.land_size != null ? "-" + Number(d.farmer.land_size).toFixed(6) : ""}`]);
-    if (d.farmer.dag_no) rows.push([t.dag, d.farmer.dag_no]);
-    if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
-    if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
-    rows.push([t.due, fmt2(Number(d.previous_due ?? 0))]);
+    if (d.land_owner_label) rows.push([t.landOwner, d.land_owner_label]);
+    const mouzaParts = [
+      d.farmer.mouza,
+      d.farmer.dag_no,
+      d.farmer.land_size != null ? Number(d.farmer.land_size).toFixed(2) : null,
+    ].filter(Boolean) as string[];
+    if (mouzaParts.length) rows.push([t.mouza, mouzaParts.join(" / ")]);
+    if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
+    rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
+    if (d.collected_from_outstanding != null)
+      rows.push([t.collectedFromDue, fmt2(Number(d.collected_from_outstanding))]);
+    if (d.current_season_charge != null)
+      rows.push([t.currentCharge, fmt2(Number(d.current_season_charge))]);
+    const extras = [d.penalty_amount, d.maintenance_charge, d.canal_charge]
+      .map((n) => fmt2(Number(n ?? 0)))
+      .join(" / ");
+    if (d.penalty_amount != null || d.maintenance_charge != null || d.canal_charge != null)
+      rows.push([t.extraCharges, extras]);
     if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
     if (d.description) rows.push([t.desc, d.description]);
@@ -211,6 +253,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     ? `${fmt2(d.collected_amount)} (${bnAmountInWords(d.collected_amount)})`
     : `${fmt2(d.collected_amount)}`;
   rows.push([totalLabel, amountText]);
+  if (d.kind === "irrigation" && (d.remark ?? "").trim()) {
+    rows.push([t.remark, String(d.remark).trim()]);
+  }
 
   const tableRows = rows.map(([k, v]) => `
     <tr>
