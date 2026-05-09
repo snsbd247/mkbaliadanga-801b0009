@@ -32,14 +32,29 @@ function walk(dir, out = []) {
   return out;
 }
 
+// Lines we ignore even if they contain Bangla/English literals.
+//   - JS/TS line comments and JSDoc/block-comment bodies
+//   - Bilingual seed/data fields like  name_bn: "..."  / label_bn: "..."
+//   - Sample CSV/template rows ([ "...", "..." ])
+//   - Lines guarded by  lang === "bn" / "en"  ternaries (already i18n-aware)
+//   - String concatenation glue: toast(`${name} এর ...`) when wrapped in lang check elsewhere
+const isCommentLine = (l) => /^\s*(\/\/|\*|\/\*)/.test(l);
+const isSeedDataField = (l) => /\b(name_bn|label_bn|title_bn|desc_bn|company_name_bn|name_en|label_en|title_en)\s*:/.test(l);
+const isLangGuarded = (l) => /lang\s*===\s*["'](bn|en)["']|case\s+["'](bn|en)["']|\?\s*["'][^"']*[\u0980-\u09FF]/.test(l);
+const isSampleArrayRow = (l) => /^\s*\[\s*"/.test(l) && /,\s*"/.test(l);
+
 const files = ROOTS.flatMap(r => walk(r));
 const findings = [];
 for (const file of files) {
   if (SKIP.some(re => re.test(file))) continue;
   const src = readFileSync(file, "utf8");
   const usesT = /from ["']@\/i18n\/LanguageProvider["']/.test(src);
-  src.split("\n").forEach((line, i) => {
-    if (BN.test(line) && !/lang ===|"bn"|case "bn"|t\(/.test(line)) {
+
+  // Strip block comments before line-by-line scan
+  const stripped = src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
+  stripped.split("\n").forEach((line, i) => {
+    if (isCommentLine(line) || isSeedDataField(line) || isLangGuarded(line) || isSampleArrayRow(line)) return;
+    if (BN.test(line) && !/\bt\(|\btx\(/.test(line)) {
       findings.push({ file, line: i + 1, kind: "bn", text: line.trim().slice(0, 140) });
     }
     const m = line.match(/>([A-Z][A-Za-z][A-Za-z ,.'!?-]{6,60})</);

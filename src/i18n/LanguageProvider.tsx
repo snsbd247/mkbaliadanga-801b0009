@@ -5,6 +5,12 @@ interface Ctx {
   lang: Lang;
   setLang: (l: Lang) => void;
   t: (k: TranslationKey) => string;
+  /**
+   * Inline bilingual helper — returns `en` or `bn` based on active language.
+   * Use for one-off page-local strings instead of polluting translations.ts.
+   *   <Button>{tx("Save", "সংরক্ষণ")}</Button>
+   */
+  tx: (en: string, bn: string) => string;
 }
 
 const LanguageContext = createContext<Ctx | undefined>(undefined);
@@ -115,7 +121,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       .replace(/^./, (c) => c.toUpperCase());
   };
 
-  return <LanguageContext.Provider value={{ lang, setLang, t }}>{children}</LanguageContext.Provider>;
+  const tx = (en: string, bn: string) => (lang === "bn" ? bn : en);
+
+  return <LanguageContext.Provider value={{ lang, setLang, t, tx }}>{children}</LanguageContext.Provider>;
 }
 
 export function useLang() {

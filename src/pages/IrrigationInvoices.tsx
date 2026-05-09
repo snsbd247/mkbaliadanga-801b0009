@@ -40,17 +40,19 @@ const STATUS_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "destructi
   cancelled: "outline",
 };
 
-const STATUS_LABEL_BN: Record<InvoiceStatus, string> = {
-  draft: "খসড়া",
-  generated: "ইস্যু",
-  partial_paid: "আংশিক",
-  paid: "পরিশোধিত",
-  overdue: "মেয়াদোত্তীর্ণ",
-  cancelled: "বাতিল",
-};
+function statusLabel(tx: (en: string, bn: string) => string, st: InvoiceStatus) {
+  switch (st) {
+    case "draft": return tx("Draft", "খসড়া");
+    case "generated": return tx("Issued", "ইস্যু");
+    case "partial_paid": return tx("Partial", "আংশিক");
+    case "paid": return tx("Paid", "পরিশোধিত");
+    case "overdue": return tx("Overdue", "মেয়াদোত্তীর্ণ");
+    case "cancelled": return tx("Cancelled", "বাতিল");
+  }
+}
 
 export default function IrrigationInvoices() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { user, isSuper } = useAuth();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -59,7 +61,7 @@ export default function IrrigationInvoices() {
   const [offices, setOffices] = useState<any[]>([]);
 
   useEffect(() => {
-    document.title = `সেচ ইনভয়েস — ${t("appName")}`;
+    document.title = `${tx("Irrigation Invoices", "সেচ ইনভয়েস")} — ${t("appName")}`;
     Promise.all([
       supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
       supabase.from("offices").select("id,name").order("name"),
@@ -68,12 +70,12 @@ export default function IrrigationInvoices() {
 
   return (
     <>
-      <PageHeader title="সেচ ইনভয়েস" description="ইনভয়েস তৈরি, তালিকা ও সেটিংস। অর্থ গ্রহণ পেমেন্ট পেজ থেকে করুন।" />
+      <PageHeader title={tx("Irrigation Invoices", "সেচ ইনভয়েস")} description={tx("Create, list and configure invoices. Receive payments from the Payments page.", "ইনভয়েস তৈরি, তালিকা ও সেটিংস। অর্থ গ্রহণ পেমেন্ট পেজ থেকে করুন।")} />
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
         <TabsList>
-          <TabsTrigger value="list">ইনভয়েস তালিকা</TabsTrigger>
-          <TabsTrigger value="generate">ইনভয়েস তৈরি</TabsTrigger>
-          <TabsTrigger value="settings">সেটিংস</TabsTrigger>
+          <TabsTrigger value="list">{tx("Invoice list", "ইনভয়েস তালিকা")}</TabsTrigger>
+          <TabsTrigger value="generate">{tx("Create invoice", "ইনভয়েস তৈরি")}</TabsTrigger>
+          <TabsTrigger value="settings">{tx("Settings", "সেটিংস")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list"><InvoiceListTab seasons={seasons} offices={offices} isSuper={isSuper} /></TabsContent>
@@ -85,10 +87,8 @@ export default function IrrigationInvoices() {
   );
 }
 
-// ============================================================
-// LIST TAB
-// ============================================================
 function InvoiceListTab({ seasons, offices, isSuper }: any) {
+  const { tx } = useLang();
   const { confirm } = useConfirm();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
@@ -130,9 +130,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
   async function cancelInvoice(inv: any) {
     const ok = await confirm({
-      title: "ইনভয়েস বাতিল করুন?",
-      description: `${inv.invoice_no} — ${money(inv.payable_amount)} টাকা। এটি পুনরুদ্ধার করা যাবে না।`,
-      destructive: true, confirmText: "বাতিল করুন",
+      title: tx("Cancel invoice?", "ইনভয়েস বাতিল করুন?"),
+      description: `${inv.invoice_no} — ${money(inv.payable_amount)} ${tx("BDT. This cannot be undone.", "টাকা। এটি পুনরুদ্ধার করা যাবে না।")}`,
+      destructive: true, confirmText: tx("Cancel it", "বাতিল করুন"),
     });
     if (!ok) return;
     const { error } = await supabase
@@ -140,14 +140,14 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       .update({ invoice_status: "cancelled", cancelled_at: new Date().toISOString(), cancel_reason: "Manually cancelled" } as any)
       .eq("id", inv.id);
     if (error) return toast.error(error.message);
-    toast.success("ইনভয়েস বাতিল করা হয়েছে"); load();
+    toast.success(tx("Invoice cancelled", "ইনভয়েস বাতিল করা হয়েছে")); load();
   }
 
   async function deleteInvoice(inv: any) {
     const ok = await confirm({
-      title: "ইনভয়েস মুছে ফেলবেন?",
-      description: `${inv.invoice_no} — মুছে ফেলা ইনভয়েস তালিকায় দেখাবে না।`,
-      destructive: true, confirmText: "মুছুন",
+      title: tx("Delete invoice?", "ইনভয়েস মুছে ফেলবেন?"),
+      description: `${inv.invoice_no} — ${tx("Deleted invoices won't appear in the list.", "মুছে ফেলা ইনভয়েস তালিকায় দেখাবে না।")}`,
+      destructive: true, confirmText: tx("Delete", "মুছুন"),
     });
     if (!ok) return;
     const { error } = await supabase
@@ -155,11 +155,12 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       .update({ deleted_at: new Date().toISOString() } as any)
       .eq("id", inv.id);
     if (error) return toast.error(error.message);
-    toast.success("ইনভয়েস মুছে ফেলা হয়েছে"); load();
+    toast.success(tx("Invoice deleted", "ইনভয়েস মুছে ফেলা হয়েছে")); load();
   }
 
   function printInvoice(inv: any) {
     const farmer = inv.farmers?.name_bn ?? inv.farmers?.name_en ?? "—";
+    const L = (en: string, bn: string) => tx(en, bn);
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${inv.invoice_no}</title>
 <style>
   body{font-family:'Noto Sans Bengali',system-ui,sans-serif;padding:24px;color:#111}
@@ -171,35 +172,35 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   .meta td{border:none;padding:2px 0}
   @media print{button{display:none}}
 </style></head><body>
-  <h1>সেচ ইনভয়েস — ${inv.invoice_no}</h1>
+  <h1>${L("Irrigation Invoice", "সেচ ইনভয়েস")} — ${inv.invoice_no}</h1>
   <h2>${inv.seasons?.name ?? inv.seasons?.type ?? ""} ${inv.seasons?.year ?? ""}</h2>
   <table class="meta">
-    <tr><td><b>কৃষক:</b></td><td>${farmer} (${inv.farmers?.farmer_code ?? ""})</td></tr>
-    <tr><td><b>মোবাইল:</b></td><td>${inv.farmers?.mobile ?? "—"}</td></tr>
-    <tr><td><b>জমি:</b></td><td>${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no ?? "—"} • ${formatLandSize(inv.lands?.land_size) ?? ""}</td></tr>
-    <tr><td><b>ধরন:</b></td><td>${inv.is_borga ? "বর্গাদার" : "নিজ মালিক"}</td></tr>
-    <tr><td><b>ইস্যু তারিখ:</b></td><td>${fmtDate(inv.generated_at)}</td></tr>
-    <tr><td><b>মেয়াদ:</b></td><td>${fmtDate(inv.due_date)}</td></tr>
+    <tr><td><b>${L("Farmer:", "কৃষক:")}</b></td><td>${farmer} (${inv.farmers?.farmer_code ?? ""})</td></tr>
+    <tr><td><b>${L("Mobile:", "মোবাইল:")}</b></td><td>${inv.farmers?.mobile ?? "—"}</td></tr>
+    <tr><td><b>${L("Land:", "জমি:")}</b></td><td>${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no ?? "—"} • ${formatLandSize(inv.lands?.land_size) ?? ""}</td></tr>
+    <tr><td><b>${L("Type:", "ধরন:")}</b></td><td>${inv.is_borga ? L("Sharecropper", "বর্গাদার") : L("Owner", "নিজ মালিক")}</td></tr>
+    <tr><td><b>${L("Issue date:", "ইস্যু তারিখ:")}</b></td><td>${fmtDate(inv.generated_at)}</td></tr>
+    <tr><td><b>${L("Due:", "মেয়াদ:")}</b></td><td>${fmtDate(inv.due_date)}</td></tr>
   </table>
   <table>
-    <thead><tr><th>বিবরণ</th><th class="right">টাকা</th></tr></thead>
+    <thead><tr><th>${L("Description", "বিবরণ")}</th><th class="right">${L("Amount", "টাকা")}</th></tr></thead>
     <tbody>
-      <tr><td>সেচ চার্জ</td><td class="right">${money(inv.irrigation_amount)}</td></tr>
-      <tr><td>রক্ষণাবেক্ষণ</td><td class="right">${money(inv.maintenance_amount)}</td></tr>
-      <tr><td>খাল/নালা</td><td class="right">${money(inv.canal_amount)}</td></tr>
-      <tr><td>অন্যান্য</td><td class="right">${money(inv.other_charge)}</td></tr>
-      <tr><td>বিলম্ব ফি</td><td class="right">${money(inv.delay_fee)}</td></tr>
-      <tr class="total"><td>মোট প্রদেয়</td><td class="right">${money(inv.payable_amount)}</td></tr>
-      <tr><td>পরিশোধিত</td><td class="right">${money(inv.paid_amount)}</td></tr>
-      <tr class="total"><td>বকেয়া</td><td class="right">${money(inv.due_amount)}</td></tr>
+      <tr><td>${L("Irrigation charge", "সেচ চার্জ")}</td><td class="right">${money(inv.irrigation_amount)}</td></tr>
+      <tr><td>${L("Maintenance", "রক্ষণাবেক্ষণ")}</td><td class="right">${money(inv.maintenance_amount)}</td></tr>
+      <tr><td>${L("Canal", "খাল/নালা")}</td><td class="right">${money(inv.canal_amount)}</td></tr>
+      <tr><td>${L("Other", "অন্যান্য")}</td><td class="right">${money(inv.other_charge)}</td></tr>
+      <tr><td>${L("Late fee", "বিলম্ব ফি")}</td><td class="right">${money(inv.delay_fee)}</td></tr>
+      <tr class="total"><td>${L("Total payable", "মোট প্রদেয়")}</td><td class="right">${money(inv.payable_amount)}</td></tr>
+      <tr><td>${L("Paid", "পরিশোধিত")}</td><td class="right">${money(inv.paid_amount)}</td></tr>
+      <tr class="total"><td>${L("Due", "বকেয়া")}</td><td class="right">${money(inv.due_amount)}</td></tr>
     </tbody>
   </table>
-  ${inv.note ? `<p><b>মন্তব্য:</b> ${inv.note}</p>` : ""}
-  <p style="margin-top:24px;font-size:11px;color:#777">প্রিন্ট: ${new Date().toLocaleString("bn-BD")}</p>
+  ${inv.note ? `<p><b>${L("Note:", "মন্তব্য:")}</b> ${inv.note}</p>` : ""}
+  <p style="margin-top:24px;font-size:11px;color:#777">${L("Printed:", "প্রিন্ট:")} ${new Date().toLocaleString(L("en-US","bn-BD"))}</p>
   <script>window.onload=()=>{window.print();}</script>
 </body></html>`;
     const w = window.open("", "_blank", "width=800,height=900");
-    if (!w) return toast.error("পপআপ অনুমতি দিন");
+    if (!w) return toast.error(tx("Allow popups", "পপআপ অনুমতি দিন"));
     w.document.write(html); w.document.close();
   }
 
@@ -208,48 +209,48 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       <CardContent className="pt-6 space-y-3">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           <div>
-            <Label>সিজন</Label>
+            <Label>{tx("Season", "সিজন")}</Label>
             <Select value={seasonId} onValueChange={setSeasonId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">সব</SelectItem>
+                <SelectItem value="all">{tx("All", "সব")}</SelectItem>
                 {seasons.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name ?? s.type} {s.year}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           {isSuper && (
             <div>
-              <Label>অফিস</Label>
+              <Label>{tx("Office", "অফিস")}</Label>
               <Select value={officeId} onValueChange={setOfficeId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">সব</SelectItem>
+                  <SelectItem value="all">{tx("All", "সব")}</SelectItem>
                   {offices.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           )}
           <div>
-            <Label>স্ট্যাটাস</Label>
+            <Label>{tx("Status", "স্ট্যাটাস")}</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">সব</SelectItem>
-                <SelectItem value="generated">ইস্যু</SelectItem>
-                <SelectItem value="partial_paid">আংশিক</SelectItem>
-                <SelectItem value="paid">পরিশোধিত</SelectItem>
-                <SelectItem value="overdue">মেয়াদোত্তীর্ণ</SelectItem>
-                <SelectItem value="cancelled">বাতিল</SelectItem>
+                <SelectItem value="all">{tx("All", "সব")}</SelectItem>
+                <SelectItem value="generated">{tx("Issued", "ইস্যু")}</SelectItem>
+                <SelectItem value="partial_paid">{tx("Partial", "আংশিক")}</SelectItem>
+                <SelectItem value="paid">{tx("Paid", "পরিশোধিত")}</SelectItem>
+                <SelectItem value="overdue">{tx("Overdue", "মেয়াদোত্তীর্ণ")}</SelectItem>
+                <SelectItem value="cancelled">{tx("Cancelled", "বাতিল")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="lg:col-span-2">
-            <Label>খুঁজুন</Label>
-            <Input placeholder="ইনভয়েস নং / কৃষক নাম / কোড / মোবাইল" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Label>{tx("Search", "খুঁজুন")}</Label>
+            <Input placeholder={tx("Invoice no / farmer name / code / mobile", "ইনভয়েস নং / কৃষক নাম / কোড / মোবাইল")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">{filtered.length} টি ইনভয়েস {loading && "(লোড হচ্ছে…)"}</p>
+          <p className="text-sm text-muted-foreground">{filtered.length} {tx("invoices", "টি ইনভয়েস")} {loading && tx("(loading…)", "(লোড হচ্ছে…)")}</p>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(filtered)} disabled={!filtered.length}>
               <FileDown className="h-4 w-4 mr-1" /> CSV
@@ -263,15 +264,15 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ইনভয়েস নং</TableHead>
-                <TableHead>কৃষক</TableHead>
-                <TableHead>জমি</TableHead>
-                <TableHead>সিজন</TableHead>
-                <TableHead className="text-right">প্রদেয়</TableHead>
-                <TableHead className="text-right">পরিশোধিত</TableHead>
-                <TableHead className="text-right">বকেয়া</TableHead>
-                <TableHead>মেয়াদ</TableHead>
-                <TableHead>স্ট্যাটাস</TableHead>
+                <TableHead>{tx("Invoice No", "ইনভয়েস নং")}</TableHead>
+                <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
+                <TableHead>{tx("Land", "জমি")}</TableHead>
+                <TableHead>{tx("Season", "সিজন")}</TableHead>
+                <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
+                <TableHead className="text-right">{tx("Paid", "পরিশোধিত")}</TableHead>
+                <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
+                <TableHead>{tx("Due date", "মেয়াদ")}</TableHead>
+                <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -281,7 +282,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   <TableCell className="font-mono text-xs">{r.invoice_no}</TableCell>
                   <TableCell>
                     <div className="font-medium">{r.farmers?.name_bn ?? r.farmers?.name_en ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">{r.farmers?.farmer_code} {r.is_borga && <span className="ml-1">🤝 বর্গা</span>}</div>
+                    <div className="text-xs text-muted-foreground">{r.farmers?.farmer_code} {r.is_borga && <span className="ml-1">🤝 {tx("Sharecropper", "বর্গা")}</span>}</div>
                   </TableCell>
                   <TableCell className="text-xs">
                     {r.lands?.mouza ? `${r.lands.mouza} • ` : ""}Dag {r.lands?.dag_no ?? "—"}<br />
@@ -294,28 +295,28 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   <TableCell className="text-xs">{fmtDate(r.due_date)}</TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[r.invoice_status as InvoiceStatus]}>
-                      {STATUS_LABEL_BN[r.invoice_status as InvoiceStatus]}
+                      {statusLabel(tx, r.invoice_status as InvoiceStatus)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" title="দেখুন" onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
-                      <Button size="sm" variant="ghost" title="প্রিন্ট" onClick={() => printInvoice(r)}><Printer className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" title={tx("View", "দেখুন")} onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" title={tx("Print", "প্রিন্ট")} onClick={() => printInvoice(r)}><Printer className="h-4 w-4" /></Button>
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
-                        <Button size="sm" variant="ghost" title="এডিট" onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" title={tx("Edit", "এডিট")} onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
                       )}
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
-                        <Button size="sm" variant="ghost" title="বাতিল" onClick={() => cancelInvoice(r)}><Ban className="h-4 w-4 text-destructive" /></Button>
+                        <Button size="sm" variant="ghost" title={tx("Cancel", "বাতিল")} onClick={() => cancelInvoice(r)}><Ban className="h-4 w-4 text-destructive" /></Button>
                       )}
                       {isSuper && (
-                        <Button size="sm" variant="ghost" title="মুছুন" onClick={() => deleteInvoice(r)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        <Button size="sm" variant="ghost" title={tx("Delete", "মুছুন")} onClick={() => deleteInvoice(r)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       )}
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={10} className="text-center py-6 text-muted-foreground">কোন ইনভয়েস নেই</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center py-6 text-muted-foreground">{tx("No invoices", "কোন ইনভয়েস নেই")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -332,10 +333,8 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   );
 }
 
-// ============================================================
-// EDIT DIALOG (due_date, other_charge, delay_fee, note)
-// ============================================================
 function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
+  const { tx } = useLang();
   const [dueDate, setDueDate] = useState("");
   const [otherCharge, setOtherCharge] = useState("0");
   const [delayFee, setDelayFee] = useState("0");
@@ -355,8 +354,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   async function save() {
     const oc = Number(otherCharge) || 0;
     const df = Number(delayFee) || 0;
-    if (oc < 0 || df < 0) return toast.error("ঋণাত্মক মান দেওয়া যাবে না");
-    if (!dueDate) return toast.error("মেয়াদ তারিখ দিন");
+    if (oc < 0 || df < 0) return toast.error(tx("Negative values not allowed", "ঋণাত্মক মান দেওয়া যাবে না"));
+    if (!dueDate) return toast.error(tx("Enter due date", "মেয়াদ তারিখ দিন"));
     setBusy(true);
     const payable = Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + oc + df;
     const due = Math.max(0, payable - Number(inv.paid_amount ?? 0));
@@ -379,50 +378,48 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
       .eq("id", inv.id);
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("ইনভয়েস হালনাগাদ হয়েছে");
+    toast.success(tx("Invoice updated", "ইনভয়েস হালনাগাদ হয়েছে"));
     onSaved?.(); onClose();
   }
 
   return (
     <Dialog open={!!inv} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>ইনভয়েস এডিট — {inv.invoice_no}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tx("Edit invoice", "ইনভয়েস এডিট")} — {inv.invoice_no}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>মেয়াদ তারিখ</Label>
+            <Label>{tx("Due date", "মেয়াদ তারিখ")}</Label>
             <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>অন্যান্য চার্জ</Label>
+              <Label>{tx("Other charge", "অন্যান্য চার্জ")}</Label>
               <Input type="number" min="0" step="0.01" value={otherCharge} onChange={(e) => setOtherCharge(e.target.value)} />
             </div>
             <div>
-              <Label>বিলম্ব ফি</Label>
+              <Label>{tx("Late fee", "বিলম্ব ফি")}</Label>
               <Input type="number" min="0" step="0.01" value={delayFee} onChange={(e) => setDelayFee(e.target.value)} />
             </div>
           </div>
           <div>
-            <Label>মন্তব্য</Label>
+            <Label>{tx("Note", "মন্তব্য")}</Label>
             <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
           </div>
           <p className="text-xs text-muted-foreground">
-            সেচ/রক্ষণাবেক্ষণ/খাল চার্জ পরিবর্তনের জন্য “পুনঃগণনা” ব্যবহার করুন।
+            {tx("Use \"Recalculate\" to change irrigation/maintenance/canal amounts.", "সেচ/রক্ষণাবেক্ষণ/খাল চার্জ পরিবর্তনের জন্য “পুনঃগণনা” ব্যবহার করুন।")}
           </p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={busy}>বন্ধ</Button>
-          <Button onClick={save} disabled={busy}>{busy ? "সংরক্ষণ…" : "সংরক্ষণ করুন"}</Button>
+          <Button variant="outline" onClick={onClose} disabled={busy}>{tx("Close", "বন্ধ")}</Button>
+          <Button onClick={save} disabled={busy}>{busy ? tx("Saving…", "সংরক্ষণ…") : tx("Save", "সংরক্ষণ করুন")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-// ============================================================
-// PREVIEW DIALOG
-// ============================================================
 function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: any) {
+  const { tx } = useLang();
   const { isSuper } = useAuth();
   const inv = allRows.find((r: any) => r.id === invoiceId);
   const [recalcOpen, setRecalcOpen] = useState(false);
@@ -431,14 +428,14 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
   if (!inv) return null;
 
   async function recalc() {
-    if (reason.trim().length < 3) return toast.error("কারণ লিখুন (অন্তত ৩ অক্ষর)");
+    if (reason.trim().length < 3) return toast.error(tx("Enter a reason (at least 3 chars)", "কারণ লিখুন (অন্তত ৩ অক্ষর)"));
     setBusy(true);
     try {
       const { error } = await supabase.rpc("recalculate_irrigation_invoice" as any, {
         _invoice_id: inv.id, _reason: reason.trim(),
       });
       if (error) throw error;
-      toast.success("ইনভয়েস পুনঃগণনা হয়েছে");
+      toast.success(tx("Invoice recalculated", "ইনভয়েস পুনঃগণনা হয়েছে"));
       setRecalcOpen(false); setReason("");
       onRecalculated?.();
       onClose();
@@ -451,37 +448,37 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            ইনভয়েস {inv.invoice_no}
-            {inv.is_manual_rate && <Badge variant="outline" className="text-xs">ম্যানুয়াল রেট</Badge>}
-            <Badge variant="secondary" className="text-xs gap-1"><ShieldCheck className="h-3 w-3" />স্ন্যাপশট সুরক্ষিত</Badge>
+            {tx("Invoice", "ইনভয়েস")} {inv.invoice_no}
+            {inv.is_manual_rate && <Badge variant="outline" className="text-xs">{tx("Manual rate", "ম্যানুয়াল রেট")}</Badge>}
+            <Badge variant="secondary" className="text-xs gap-1"><ShieldCheck className="h-3 w-3" />{tx("Snapshot protected", "স্ন্যাপশট সুরক্ষিত")}</Badge>
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-2 text-sm">
-          <Row k="কৃষক" v={`${inv.farmers?.name_bn ?? inv.farmers?.name_en} (${inv.farmers?.farmer_code})`} />
-          <Row k="ধরন" v={inv.is_borga ? "🤝 বর্গাদার" : "🏠 নিজ মালিক"} />
-          <Row k="জমি" v={`${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no} • ${formatLandSize(inv.lands?.land_size)}`} />
-          <Row k="জমির ধরন" v={inv.land_type_name ?? "—"} />
-          <Row k="সিজন" v={`${inv.seasons?.name ?? inv.seasons?.type} ${inv.seasons?.year}`} />
-          <Row k="সিজন রেট/শতক" v={inv.season_rate != null ? money(inv.season_rate) : "—"} />
-          <Row k="মেয়াদ" v={fmtDate(inv.due_date)} />
+          <Row k={tx("Farmer", "কৃষক")} v={`${inv.farmers?.name_bn ?? inv.farmers?.name_en} (${inv.farmers?.farmer_code})`} />
+          <Row k={tx("Type", "ধরন")} v={inv.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "নিজ মালিক")}`} />
+          <Row k={tx("Land", "জমি")} v={`${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no} • ${formatLandSize(inv.lands?.land_size)}`} />
+          <Row k={tx("Land type", "জমির ধরন")} v={inv.land_type_name ?? "—"} />
+          <Row k={tx("Season", "সিজন")} v={`${inv.seasons?.name ?? inv.seasons?.type} ${inv.seasons?.year}`} />
+          <Row k={tx("Season rate / shotok", "সিজন রেট/শতক")} v={inv.season_rate != null ? money(inv.season_rate) : "—"} />
+          <Row k={tx("Due date", "মেয়াদ")} v={fmtDate(inv.due_date)} />
           <hr />
-          <Row k="সেচ চার্জ" v={money(inv.irrigation_amount)} />
-          <Row k="রক্ষণাবেক্ষণ চার্জ" v={money(inv.maintenance_amount)} />
-          <Row k="খাল/নালা চার্জ" v={money(inv.canal_amount)} />
-          <Row k="অন্যান্য" v={money(inv.other_charge)} />
-          <Row k="বিলম্ব ফি" v={money(inv.delay_fee)} />
+          <Row k={tx("Irrigation charge", "সেচ চার্জ")} v={money(inv.irrigation_amount)} />
+          <Row k={tx("Maintenance charge", "রক্ষণাবেক্ষণ চার্জ")} v={money(inv.maintenance_amount)} />
+          <Row k={tx("Canal charge", "খাল/নালা চার্জ")} v={money(inv.canal_amount)} />
+          <Row k={tx("Other", "অন্যান্য")} v={money(inv.other_charge)} />
+          <Row k={tx("Late fee", "বিলম্ব ফি")} v={money(inv.delay_fee)} />
           <hr />
-          <Row k="মোট প্রদেয়" v={money(inv.payable_amount)} bold />
-          <Row k="পরিশোধিত" v={money(inv.paid_amount)} />
-          <Row k="বকেয়া" v={money(inv.due_amount)} bold />
+          <Row k={tx("Total payable", "মোট প্রদেয়")} v={money(inv.payable_amount)} bold />
+          <Row k={tx("Paid", "পরিশোধিত")} v={money(inv.paid_amount)} />
+          <Row k={tx("Due", "বকেয়া")} v={money(inv.due_amount)} bold />
           <hr />
-          <Row k="স্ট্যাটাস" v={STATUS_LABEL_BN[inv.invoice_status as InvoiceStatus]} />
-          <Row k="তৈরির তারিখ" v={fmtDate(inv.generated_at)} />
-          {inv.recalculated_at && <Row k="শেষ পুনঃগণনা" v={fmtDate(inv.recalculated_at)} />}
-          {inv.manual_rate_reason && <Row k="ম্যানুয়াল রেটের কারণ" v={inv.manual_rate_reason} />}
+          <Row k={tx("Status", "স্ট্যাটাস")} v={statusLabel(tx, inv.invoice_status as InvoiceStatus)} />
+          <Row k={tx("Created", "তৈরির তারিখ")} v={fmtDate(inv.generated_at)} />
+          {inv.recalculated_at && <Row k={tx("Last recalculation", "শেষ পুনঃগণনা")} v={fmtDate(inv.recalculated_at)} />}
+          {inv.manual_rate_reason && <Row k={tx("Manual rate reason", "ম্যানুয়াল রেটের কারণ")} v={inv.manual_rate_reason} />}
           {inv.calculation_snapshot && (
             <details className="mt-2">
-              <summary className="cursor-pointer text-xs text-muted-foreground">গণনা স্ন্যাপশট (অপরিবর্তনীয়)</summary>
+              <summary className="cursor-pointer text-xs text-muted-foreground">{tx("Calculation snapshot (immutable)", "গণনা স্ন্যাপশট (অপরিবর্তনীয়)")}</summary>
               <pre className="text-[10px] bg-muted/40 p-2 rounded mt-1 overflow-auto max-h-40">
 {JSON.stringify(inv.calculation_snapshot, null, 2)}
               </pre>
@@ -491,30 +488,30 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
         <DialogFooter className="gap-2">
           {isSuper && inv.invoice_status !== "cancelled" && (
             <Button variant="outline" onClick={() => setRecalcOpen(true)}>
-              <RefreshCw className="h-4 w-4 mr-1" />পুনঃগণনা
+              <RefreshCw className="h-4 w-4 mr-1" />{tx("Recalculate", "পুনঃগণনা")}
             </Button>
           )}
-          <Button variant="outline" onClick={onClose}>বন্ধ করুন</Button>
+          <Button variant="outline" onClick={onClose}>{tx("Close", "বন্ধ করুন")}</Button>
         </DialogFooter>
 
         <Dialog open={recalcOpen} onOpenChange={setRecalcOpen}>
           <DialogContent>
-            <DialogHeader><DialogTitle>ইনভয়েস পুনঃগণনা</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{tx("Recalculate invoice", "ইনভয়েস পুনঃগণনা")}</DialogTitle></DialogHeader>
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>সতর্কতা</AlertTitle>
+              <AlertTitle>{tx("Warning", "সতর্কতা")}</AlertTitle>
               <AlertDescription>
-                বর্তমান সিজন রেট ব্যবহার করে এই ইনভয়েস পুনঃগণনা হবে। পুরোনো স্ন্যাপশট অডিট লগে সংরক্ষণ থাকবে।
+                {tx("This invoice will be recalculated using the current season rate. The previous snapshot is preserved in the audit log.", "বর্তমান সিজন রেট ব্যবহার করে এই ইনভয়েস পুনঃগণনা হবে। পুরোনো স্ন্যাপশট অডিট লগে সংরক্ষণ থাকবে।")}
               </AlertDescription>
             </Alert>
             <div>
-              <Label>কারণ *</Label>
+              <Label>{tx("Reason *", "কারণ *")}</Label>
               <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
-                placeholder="যেমন: রেট ভুল কনফিগার করা হয়েছিল" />
+                placeholder={tx("e.g. rate was misconfigured", "যেমন: রেট ভুল কনফিগার করা হয়েছিল")} />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setRecalcOpen(false)}>বাতিল</Button>
-              <Button onClick={recalc} disabled={busy}>{busy ? "…" : "পুনঃগণনা করুন"}</Button>
+              <Button variant="outline" onClick={() => setRecalcOpen(false)}>{tx("Cancel", "বাতিল")}</Button>
+              <Button onClick={recalc} disabled={busy}>{busy ? "…" : tx("Recalculate", "পুনঃগণনা করুন")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -529,10 +526,8 @@ const Row = ({ k, v, bold }: { k: string; v: any; bold?: boolean }) => (
   </div>
 );
 
-// ============================================================
-// GENERATE TAB
-// ============================================================
 function GenerateTab({ seasons, offices, userId, isSuper }: any) {
+  const { tx } = useLang();
   const [seasonId, setSeasonId] = useState("");
   const [officeId, setOfficeId] = useState("");
   const [rateOverride, setRateOverride] = useState<number>(0);
@@ -547,14 +542,13 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
   const [manualOpen, setManualOpen] = useState(false);
 
-  // Load per-land-type rate matrix when season/office changes.
   useEffect(() => {
     if (!seasonId) { setRateMap([]); return; }
     loadSeasonRateMap(seasonId, officeId || null).then(setRateMap);
   }, [seasonId, officeId]);
 
   async function preview() {
-    if (!seasonId) return toast.error("সিজন বাছাই করুন");
+    if (!seasonId) return toast.error(tx("Select a season", "সিজন বাছাই করুন"));
     setBusy(true);
     setSkippedNoRate(0);
     try {
@@ -597,7 +591,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       }
       setPreviewRows(previewArr);
       setSkippedNoRate(noRate);
-      toast.success(`${previewArr.length} টি প্রিভিউ${noRate ? ` • ${noRate} টি জমিতে রেট নেই` : ""}`);
+      toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
       toast.error(e.message);
     } finally { setBusy(false); }
@@ -646,7 +640,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           if (error) { failed++; console.error(error); } else success++;
         } catch (e) { failed++; console.error(e); }
       }
-      toast.success(`${success} টি তৈরি হয়েছে${failed ? `, ${failed} ব্যর্থ` : ""}`);
+      toast.success(`${success} ${tx("created", "টি তৈরি হয়েছে")}${failed ? `, ${failed} ${tx("failed", "ব্যর্থ")}` : ""}`);
       setPreviewRows(null);
     } finally { setBusy(false); }
   }
@@ -657,7 +651,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         <CardContent className="pt-6 space-y-3">
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <div>
-              <Label>সিজন *</Label>
+              <Label>{tx("Season *", "সিজন *")}</Label>
               <Select value={seasonId} onValueChange={setSeasonId}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
@@ -667,49 +661,49 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             </div>
             {isSuper && (
               <div>
-                <Label>অফিস (ঐচ্ছিক)</Label>
+                <Label>{tx("Office (optional)", "অফিস (ঐচ্ছিক)")}</Label>
                 <Select value={officeId || "all"} onValueChange={(v) => setOfficeId(v === "all" ? "" : v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">সব অফিস</SelectItem>
+                    <SelectItem value="all">{tx("All offices", "সব অফিস")}</SelectItem>
                     {offices.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             )}
             <div>
-              <Label>ফলব্যাক রেট/শতক <span className="text-xs text-muted-foreground">(ধরনের রেট না থাকলে)</span></Label>
+              <Label>{tx("Fallback rate / shotok", "ফলব্যাক রেট/শতক")} <span className="text-xs text-muted-foreground">{tx("(if type rate missing)", "(ধরনের রেট না থাকলে)")}</span></Label>
               <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(Number(e.target.value))} />
             </div>
             <div>
-              <Label>মেয়াদ *</Label>
+              <Label>{tx("Due *", "মেয়াদ *")}</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
           </div>
           {seasonId && (
             <div className="text-xs text-muted-foreground">
               {Object.keys(rateMap).length > 0
-                ? `কনফিগার্ড রেট: ${Object.entries(rateMap).map(([k, v]) => `${k}=${v}`).join(", ")}`
-                : "এই সিজনে কোনো জমির ধরনভিত্তিক রেট নেই — Seasons পেজ থেকে রেট সেট করুন বা ফলব্যাক রেট দিন।"}
+                ? `${tx("Configured rates:", "কনফিগার্ড রেট:")} ${Object.entries(rateMap).map(([k, v]) => `${k}=${v}`).join(", ")}`
+                : tx("No per-land-type rate for this season — set them on the Seasons page or provide a fallback rate.", "এই সিজনে কোনো জমির ধরনভিত্তিক রেট নেই — Seasons পেজ থেকে রেট সেট করুন বা ফলব্যাক রেট দিন।")}
             </div>
           )}
           {skippedNoRate > 0 && (
-            <div className="text-xs text-destructive">{skippedNoRate} টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।</div>
+            <div className="text-xs text-destructive">{skippedNoRate} {tx("lands had no rate — skipped.", "টি জমিতে রেট পাওয়া যায়নি — বাদ দেওয়া হয়েছে।")}</div>
           )}
           <div className="flex items-center gap-2">
             <Switch checked={skipExisting} onCheckedChange={setSkipExisting} id="skip" />
-            <Label htmlFor="skip">আগে তৈরি হওয়া ইনভয়েস বাদ দিন (ডুপ্লিকেট প্রতিরোধ)</Label>
+            <Label htmlFor="skip">{tx("Skip already-created invoices (prevent duplicates)", "আগে তৈরি হওয়া ইনভয়েস বাদ দিন (ডুপ্লিকেট প্রতিরোধ)")}</Label>
           </div>
           <div className="flex gap-2">
             <Button onClick={preview} disabled={busy || !seasonId}>
-              <Sparkles className="h-4 w-4 mr-1" /> প্রিভিউ
+              <Sparkles className="h-4 w-4 mr-1" /> {tx("Preview", "প্রিভিউ")}
             </Button>
             {previewRows && previewRows.length > 0 && (
               <Button variant="default" onClick={commit} disabled={busy}>
-                {busy ? "প্রক্রিয়াকরণ…" : `${previewRows.length} টি ইনভয়েস তৈরি করুন`}
+                {busy ? tx("Processing…", "প্রক্রিয়াকরণ…") : `${tx("Create", "তৈরি করুন")} ${previewRows.length} ${tx("invoices", "টি ইনভয়েস")}`}
               </Button>
             )}
-            <Button variant="outline" onClick={() => setManualOpen(true)}><Plus className="h-4 w-4 mr-1" /> ম্যানুয়াল</Button>
+            <Button variant="outline" onClick={() => setManualOpen(true)}><Plus className="h-4 w-4 mr-1" /> {tx("Manual", "ম্যানুয়াল")}</Button>
           </div>
         </CardContent>
       </Card>
@@ -717,24 +711,24 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       {previewRows && (
         <Card>
           <CardContent className="pt-6">
-            <h3 className="font-semibold mb-3">প্রিভিউ — {previewRows.length} টি ইনভয়েস</h3>
+            <h3 className="font-semibold mb-3">{tx("Preview", "প্রিভিউ")} — {previewRows.length} {tx("invoices", "টি ইনভয়েস")}</h3>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>জমি</TableHead>
-                    <TableHead>বিল প্রাপক</TableHead>
-                    <TableHead className="text-right">সেচ</TableHead>
-                    <TableHead className="text-right">রক্ষণা.</TableHead>
-                    <TableHead className="text-right">খাল</TableHead>
-                    <TableHead className="text-right">প্রদেয়</TableHead>
+                    <TableHead>{tx("Land", "জমি")}</TableHead>
+                    <TableHead>{tx("Billed to", "বিল প্রাপক")}</TableHead>
+                    <TableHead className="text-right">{tx("Irrigation", "সেচ")}</TableHead>
+                    <TableHead className="text-right">{tx("Maint.", "রক্ষণা.")}</TableHead>
+                    <TableHead className="text-right">{tx("Canal", "খাল")}</TableHead>
+                    <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {previewRows.slice(0, 100).map((r: any, i: number) => (
                     <TableRow key={i}>
                       <TableCell className="text-xs">{r.land.mouza} • Dag {r.land.dag_no}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
-                      <TableCell className="text-xs">{r.billed.is_borga ? "🤝 বর্গাদার" : "🏠 মালিক"}</TableCell>
+                      <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
                       <TableCell className="text-right">{money(r.calc.irrigation_amount)}</TableCell>
                       <TableCell className="text-right">{money(r.calc.maintenance_amount)}</TableCell>
                       <TableCell className="text-right">{money(r.calc.canal_amount)}</TableCell>
@@ -743,7 +737,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   ))}
                 </TableBody>
               </Table>
-              {previewRows.length > 100 && <p className="text-xs text-muted-foreground mt-2">শুধু প্রথম ১০০ টি দেখানো হয়েছে</p>}
+              {previewRows.length > 100 && <p className="text-xs text-muted-foreground mt-2">{tx("Showing first 100 only", "শুধু প্রথম ১০০ টি দেখানো হয়েছে")}</p>}
             </div>
           </CardContent>
         </Card>
@@ -759,10 +753,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   );
 }
 
-// ============================================================
-// MANUAL CREATE DIALOG
-// ============================================================
 function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
+  const { tx } = useLang();
   const [farmerId, setFarmerId] = useState<string | null>(null);
   const [lands, setLands] = useState<any[]>([]);
   const [landId, setLandId] = useState("");
@@ -787,7 +779,6 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
 
   const [rateRow, setRateRow] = useState<RateRow | null>(null);
 
-  // Auto-fill rate from season matrix based on selected land's field_type
   useEffect(() => {
     if (!seasonId || !landId) { setRateRow(null); return; }
     const land = lands.find((l: any) => l.id === landId);
@@ -803,8 +794,8 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
   const isManualRate = !!seasonId && !!landId && (!rateRow || rateRow.rate_per_shotok <= 0);
 
   async function save() {
-    if (!farmerId || !landId || !seasonId || !rate) return toast.error("সব ফিল্ড পূরণ করুন");
-    if (isManualRate && manualReason.trim().length < 3) return toast.error("ম্যানুয়াল রেটের কারণ লিখুন (অন্তত ৩ অক্ষর)");
+    if (!farmerId || !landId || !seasonId || !rate) return toast.error(tx("Fill all fields", "সব ফিল্ড পূরণ করুন"));
+    if (isManualRate && manualReason.trim().length < 3) return toast.error(tx("Enter manual rate reason (at least 3 chars)", "ম্যানুয়াল রেটের কারণ লিখুন (অন্তত ৩ অক্ষর)"));
     setBusy(true);
     try {
       const land = lands.find((l: any) => l.id === landId);
@@ -855,7 +846,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         },
       } as any);
       if (error) throw error;
-      toast.success(`ইনভয়েস ${invoice_no} তৈরি হয়েছে`);
+      toast.success(`${tx("Invoice", "ইনভয়েস")} ${invoice_no} ${tx("created", "তৈরি হয়েছে")}`);
       onOpenChange(false);
       setFarmerId(null); setLandId(""); setSeasonId(""); setRate(0); setOtherCharge(0); setManualReason("");
     } catch (e: any) {
@@ -866,14 +857,14 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
-        <DialogHeader><DialogTitle>ম্যানুয়াল ইনভয়েস তৈরি</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{tx("Create manual invoice", "ম্যানুয়াল ইনভয়েস তৈরি")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>কৃষক</Label>
-            <FarmerSearchSelect value={farmerId} onChange={(id) => { setFarmerId(id); setLandId(""); }} placeholder="কৃষক খুঁজুন" />
+            <Label>{tx("Farmer", "কৃষক")}</Label>
+            <FarmerSearchSelect value={farmerId} onChange={(id) => { setFarmerId(id); setLandId(""); }} placeholder={tx("Search farmer", "কৃষক খুঁজুন")} />
           </div>
           <div>
-            <Label>জমি</Label>
+            <Label>{tx("Land", "জমি")}</Label>
             <Select value={landId} onValueChange={setLandId}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
@@ -887,7 +878,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>সিজন</Label>
+              <Label>{tx("Season", "সিজন")}</Label>
               <Select value={seasonId} onValueChange={setSeasonId}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
@@ -896,15 +887,15 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
               </Select>
             </div>
             <div>
-              <Label>মেয়াদ</Label>
+              <Label>{tx("Due date", "মেয়াদ")}</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
             <div>
-              <Label>রেট/শতক</Label>
+              <Label>{tx("Rate / shotok", "রেট/শতক")}</Label>
               <Input type="number" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
             </div>
             <div>
-              <Label>অন্যান্য চার্জ</Label>
+              <Label>{tx("Other charge", "অন্যান্য চার্জ")}</Label>
               <Input type="number" value={otherCharge} onChange={(e) => setOtherCharge(Number(e.target.value))} />
             </div>
           </div>
@@ -912,39 +903,37 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
             isManualRate ? (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>সিজন রেট কনফিগার নেই</AlertTitle>
+                <AlertTitle>{tx("Season rate not configured", "সিজন রেট কনফিগার নেই")}</AlertTitle>
                 <AlertDescription className="space-y-2">
-                  <p>এই সিজন ও জমির ধরনের জন্য কোনো সেচ রেট কনফিগার করা নেই। নিচে ম্যানুয়াল রেট ও কারণ দিন, অথবা প্রথমে সিজন রেট কনফিগার করুন।</p>
+                  <p>{tx("No irrigation rate is configured for this season and land type. Enter a manual rate and reason below, or configure the season rate first.", "এই সিজন ও জমির ধরনের জন্য কোনো সেচ রেট কনফিগার করা নেই। নিচে ম্যানুয়াল রেট ও কারণ দিন, অথবা প্রথমে সিজন রেট কনফিগার করুন।")}</p>
                   <Button asChild size="sm" variant="outline">
-                    <Link to="/seasons" target="_blank">সিজন রেটে যান</Link>
+                    <Link to="/seasons" target="_blank">{tx("Go to season rates", "সিজন রেটে যান")}</Link>
                   </Button>
                   <div>
-                    <Label>ম্যানুয়াল রেটের কারণ *</Label>
+                    <Label>{tx("Manual rate reason *", "ম্যানুয়াল রেটের কারণ *")}</Label>
                     <Textarea rows={2} value={manualReason} onChange={(e) => setManualReason(e.target.value)}
-                      placeholder="যেমন: এক-বার পরীক্ষামূলক ইনভয়েস" />
+                      placeholder={tx("e.g. one-off pilot invoice", "যেমন: এক-বার পরীক্ষামূলক ইনভয়েস")} />
                   </div>
                 </AlertDescription>
               </Alert>
             ) : (
               <p className="text-xs text-muted-foreground">
-                স্বয়ংক্রিয় রেট প্রয়োগ: {rateRow?.land_type_name} → {money(rateRow?.rate_per_shotok ?? 0)}/শতক
+                {tx("Auto rate applied:", "স্বয়ংক্রিয় রেট প্রয়োগ:")} {rateRow?.land_type_name} → {money(rateRow?.rate_per_shotok ?? 0)}/{tx("shotok", "শতক")}
               </p>
             )
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>বাতিল</Button>
-          <Button onClick={save} disabled={busy}>{busy ? "…" : "তৈরি করুন"}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{tx("Cancel", "বাতিল")}</Button>
+          <Button onClick={save} disabled={busy}>{busy ? "…" : tx("Create", "তৈরি করুন")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-// ============================================================
-// SETTINGS TAB
-// ============================================================
 function SettingsTab({ offices, userId, isSuper }: any) {
+  const { tx } = useLang();
   const [officeId, setOfficeId] = useState<string>("");
   const [s, setS] = useState<ChargeSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(false);
@@ -964,7 +953,7 @@ function SettingsTab({ offices, userId, isSuper }: any) {
   }, [officeId]);
 
   async function save() {
-    if (!officeId) return toast.error("একটি অফিস নির্বাচন করুন");
+    if (!officeId) return toast.error(tx("Select an office", "একটি অফিস নির্বাচন করুন"));
     const { error } = await supabase
       .from("irrigation_charge_settings" as any)
       .upsert({
@@ -977,16 +966,16 @@ function SettingsTab({ offices, userId, isSuper }: any) {
         updated_by: userId,
       } as any, { onConflict: "office_id" });
     if (error) return toast.error(error.message);
-    toast.success("সেটিংস সংরক্ষিত হয়েছে");
+    toast.success(tx("Settings saved", "সেটিংস সংরক্ষিত হয়েছে"));
   }
 
   return (
     <Card>
       <CardContent className="pt-6 space-y-4 max-w-xl">
         <div>
-          <Label>অফিস</Label>
+          <Label>{tx("Office", "অফিস")}</Label>
           <Select value={officeId} onValueChange={setOfficeId}>
-            <SelectTrigger><SelectValue placeholder="অফিস নির্বাচন করুন" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={tx("Select an office", "অফিস নির্বাচন করুন")} /></SelectTrigger>
             <SelectContent>
               {offices.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
             </SelectContent>
@@ -996,22 +985,22 @@ function SettingsTab({ offices, userId, isSuper }: any) {
           <>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>রক্ষণাবেক্ষণ % (সেচ চার্জের উপর)</Label>
+                <Label>{tx("Maintenance % (on irrigation charge)", "রক্ষণাবেক্ষণ % (সেচ চার্জের উপর)")}</Label>
                 <Input type="number" step="0.01" value={s.maintenance_percent}
                   onChange={(e) => setS({ ...s, maintenance_percent: Number(e.target.value) })} />
               </div>
               <div>
-                <Label>খাল/নালা চার্জ %</Label>
+                <Label>{tx("Canal charge %", "খাল/নালা চার্জ %")}</Label>
                 <Input type="number" step="0.01" value={s.canal_percent}
                   onChange={(e) => setS({ ...s, canal_percent: Number(e.target.value) })} />
               </div>
               <div>
-                <Label>বিলম্ব ফি %</Label>
+                <Label>{tx("Late fee %", "বিলম্ব ফি %")}</Label>
                 <Input type="number" step="0.01" value={s.delay_fee_percent}
                   onChange={(e) => setS({ ...s, delay_fee_percent: Number(e.target.value) })} />
               </div>
               <div>
-                <Label>গ্রেস পিরিয়ড (দিন)</Label>
+                <Label>{tx("Grace period (days)", "গ্রেস পিরিয়ড (দিন)")}</Label>
                 <Input type="number" value={s.grace_days}
                   onChange={(e) => setS({ ...s, grace_days: Number(e.target.value) })} />
               </div>
@@ -1019,9 +1008,9 @@ function SettingsTab({ offices, userId, isSuper }: any) {
             <div className="flex items-center gap-2">
               <Switch id="auto" checked={s.auto_apply_delay_fee}
                 onCheckedChange={(v) => setS({ ...s, auto_apply_delay_fee: v })} />
-              <Label htmlFor="auto">স্বয়ংক্রিয়ভাবে বিলম্ব ফি প্রযোজ্য করুন</Label>
+              <Label htmlFor="auto">{tx("Apply late fee automatically", "স্বয়ংক্রিয়ভাবে বিলম্ব ফি প্রযোজ্য করুন")}</Label>
             </div>
-            <Button onClick={save}>সংরক্ষণ করুন</Button>
+            <Button onClick={save}>{tx("Save", "সংরক্ষণ করুন")}</Button>
           </>
         )}
       </CardContent>
