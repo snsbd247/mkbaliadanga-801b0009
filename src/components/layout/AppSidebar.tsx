@@ -151,6 +151,7 @@ export function AppSidebar() {
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
         { url: "/admin/irrigation-due-mismatch", icon: ShieldAlert, label: t("irrigationDueMismatch" as any) || "Irrigation Due Mismatch", permKey: "reports" },
         { url: "/admin/retry-jobs", icon: ShieldAlert, label: t("retryJobs" as any) || "Retry Jobs", developerOnly: true },
+        { url: "/admin/audit-timeline", icon: ScrollText, label: t("auditTimeline" as any) || "Audit Timeline", developerOnly: true },
       ],
     },
 
