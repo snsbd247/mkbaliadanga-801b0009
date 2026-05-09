@@ -1129,8 +1129,23 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action: "preview" | "reset" | "import" | "both" | "clear_audit" = body?.action ?? "both";
-    const modules: string[] = Array.isArray(body?.modules) ? body.modules : [];
-    const size: number = Math.max(5, Math.min(500, Number(body?.size) || 50));
+
+    // Preset (small/medium/large/loans_only/savings_only/irrigation_only)
+    // overrides modules+size unless caller explicitly supplied them.
+    const presetId: string | undefined = typeof body?.preset === "string" ? body.preset : undefined;
+    const preset = presetId ? PRESETS[presetId] : undefined;
+    if (presetId && !preset) return json({ error: `Unknown preset: ${presetId}` }, 400);
+
+    const rawModules: string[] = Array.isArray(body?.modules) && body.modules.length
+      ? body.modules
+      : (preset?.modules ?? []);
+    const modules: string[] = rawModules;
+    const size: number = Math.max(5, Math.min(500,
+      Number(body?.size) || preset?.size || 50,
+    ));
+    // transactional rollback default ON; caller may opt out with `transactional: false`
+    const transactional: boolean = body?.transactional !== false;
+
     const voterCfg: VoterCfg = {
       voterRatio: Math.max(2, Math.min(20, Number(body?.voterCfg?.voterRatio) || 3)),
       voterNumberFormat: typeof body?.voterCfg?.voterNumberFormat === "string" && body.voterCfg.voterNumberFormat.trim()
@@ -1142,7 +1157,7 @@ Deno.serve(async (req) => {
     if (action === "preview") {
       const wipePreview = await previewWipe(admin);
       const importPreview = estimateImport(modules, size);
-      return json({ ok: true, action: "preview", wipe_preview: wipePreview, import_preview: importPreview });
+      return json({ ok: true, action: "preview", wipe_preview: wipePreview, import_preview: importPreview, preset: presetId ?? null, resolved_modules: modules, resolved_size: size });
     }
 
     if (action === "clear_audit") {
@@ -1158,9 +1173,9 @@ Deno.serve(async (req) => {
       ? body.customNames.filter((r: any) => r && typeof r.en === "string" && r.en.trim()).slice(0, 1000)
       : undefined;
 
-    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx, customNames);
+    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId);
 
-    const resp = await runStream(admin, action, modules, size, voterCfg, ctx, customNames);
+    const resp = await runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId);
     const text = await resp.text();
     return json({ ok: true, log: text.split("\n").filter(Boolean).map((l) => JSON.parse(l)) });
   } catch (e: any) {
