@@ -121,7 +121,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       .replace(/^./, (c) => c.toUpperCase());
   };
 
-  return <LanguageContext.Provider value={{ lang, setLang, t }}>{children}</LanguageContext.Provider>;
+  const tx = (en: string, bn: string) => (lang === "bn" ? bn : en);
+
+  return <LanguageContext.Provider value={{ lang, setLang, t, tx }}>{children}</LanguageContext.Provider>;
 }
 
 export function useLang() {
