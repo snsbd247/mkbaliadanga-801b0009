@@ -765,6 +765,10 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
             )
           )}
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>বাতিল</Button>
+          <Button onClick={save} disabled={busy}>{busy ? "…" : "তৈরি করুন"}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
