@@ -22,8 +22,10 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
-import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2 } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
+import { downloadIrrigationInvoicePdf, type InvoiceCopy } from "@/lib/irrigationInvoicePdf";
+import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -158,50 +160,39 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     toast.success(tx("Invoice deleted", "ইনভয়েস মুছে ফেলা হয়েছে")); load();
   }
 
-  function printInvoice(inv: any) {
-    const farmer = inv.farmers?.name_bn ?? inv.farmers?.name_en ?? "—";
-    const L = (en: string, bn: string) => tx(en, bn);
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${inv.invoice_no}</title>
-<style>
-  body{font-family:'Noto Sans Bengali',system-ui,sans-serif;padding:24px;color:#111}
-  h1{font-size:20px;margin:0 0 4px} h2{font-size:14px;margin:0 0 16px;color:#555;font-weight:500}
-  table{width:100%;border-collapse:collapse;margin-top:12px}
-  td,th{border:1px solid #ddd;padding:6px 10px;font-size:13px;text-align:left}
-  th{background:#f6f6f6}
-  .right{text-align:right} .total{font-weight:700;background:#fafafa}
-  .meta td{border:none;padding:2px 0}
-  @media print{button{display:none}}
-</style></head><body>
-  <h1>${L("Irrigation Invoice", "সেচ ইনভয়েস")} — ${inv.invoice_no}</h1>
-  <h2>${inv.seasons?.name ?? inv.seasons?.type ?? ""} ${inv.seasons?.year ?? ""}</h2>
-  <table class="meta">
-    <tr><td><b>${L("Farmer:", "কৃষক:")}</b></td><td>${farmer} (${inv.farmers?.farmer_code ?? ""})</td></tr>
-    <tr><td><b>${L("Mobile:", "মোবাইল:")}</b></td><td>${inv.farmers?.mobile ?? "—"}</td></tr>
-    <tr><td><b>${L("Land:", "জমি:")}</b></td><td>${inv.lands?.mouza ?? ""} • Dag ${inv.lands?.dag_no ?? "—"} • ${formatLandSize(inv.lands?.land_size) ?? ""}</td></tr>
-    <tr><td><b>${L("Type:", "ধরন:")}</b></td><td>${inv.is_borga ? L("Sharecropper", "বর্গাদার") : L("Owner", "নিজ মালিক")}</td></tr>
-    <tr><td><b>${L("Issue date:", "ইস্যু তারিখ:")}</b></td><td>${fmtDate(inv.generated_at)}</td></tr>
-    <tr><td><b>${L("Due:", "মেয়াদ:")}</b></td><td>${fmtDate(inv.due_date)}</td></tr>
-  </table>
-  <table>
-    <thead><tr><th>${L("Description", "বিবরণ")}</th><th class="right">${L("Amount", "টাকা")}</th></tr></thead>
-    <tbody>
-      <tr><td>${L("Irrigation charge", "সেচ চার্জ")}</td><td class="right">${money(inv.irrigation_amount)}</td></tr>
-      <tr><td>${L("Maintenance", "রক্ষণাবেক্ষণ")}</td><td class="right">${money(inv.maintenance_amount)}</td></tr>
-      <tr><td>${L("Canal", "খাল/নালা")}</td><td class="right">${money(inv.canal_amount)}</td></tr>
-      <tr><td>${L("Other", "অন্যান্য")}</td><td class="right">${money(inv.other_charge)}</td></tr>
-      <tr><td>${L("Late fee", "বিলম্ব ফি")}</td><td class="right">${money(inv.delay_fee)}</td></tr>
-      <tr class="total"><td>${L("Total payable", "মোট প্রদেয়")}</td><td class="right">${money(inv.payable_amount)}</td></tr>
-      <tr><td>${L("Paid", "পরিশোধিত")}</td><td class="right">${money(inv.paid_amount)}</td></tr>
-      <tr class="total"><td>${L("Due", "বকেয়া")}</td><td class="right">${money(inv.due_amount)}</td></tr>
-    </tbody>
-  </table>
-  ${inv.note ? `<p><b>${L("Note:", "মন্তব্য:")}</b> ${inv.note}</p>` : ""}
-  <p style="margin-top:24px;font-size:11px;color:#777">${L("Printed:", "প্রিন্ট:")} ${new Date().toLocaleString(L("en-US","bn-BD"))}</p>
-  <script>window.onload=()=>{window.print();}</script>
-</body></html>`;
-    const w = window.open("", "_blank", "width=800,height=900");
-    if (!w) return toast.error(tx("Allow popups", "পপআপ অনুমতি দিন"));
-    w.document.write(html); w.document.close();
+  async function printInvoice(inv: any, copy: InvoiceCopy = "both") {
+    try {
+      await downloadIrrigationInvoicePdf({
+        invoice_no: inv.invoice_no,
+        generated_at: inv.generated_at,
+        due_date: inv.due_date,
+        is_borga: inv.is_borga,
+        note: inv.note,
+        irrigation_amount: inv.irrigation_amount,
+        maintenance_amount: inv.maintenance_amount,
+        canal_amount: inv.canal_amount,
+        other_charge: inv.other_charge,
+        delay_fee: inv.delay_fee,
+        payable_amount: inv.payable_amount,
+        paid_amount: inv.paid_amount,
+        due_amount: inv.due_amount,
+        invoice_status: inv.invoice_status,
+        farmer: {
+          name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
+          farmer_code: inv.farmers?.farmer_code,
+          mobile: inv.farmers?.mobile,
+          village: inv.farmers?.village ?? null,
+        },
+        land: {
+          mouza: inv.lands?.mouza,
+          dag_no: inv.lands?.dag_no,
+          land_size: inv.lands?.land_size,
+        },
+        season: inv.seasons,
+      }, copy);
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Failed to generate PDF", "পিডিএফ তৈরি ব্যর্থ"));
+    }
   }
 
   return (
@@ -301,7 +292,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" title={tx("View", "দেখুন")} onClick={() => setPreviewId(r.id)}><Eye className="h-4 w-4" /></Button>
-                      <Button size="sm" variant="ghost" title={tx("Print", "প্রিন্ট")} onClick={() => printInvoice(r)}><Printer className="h-4 w-4" /></Button>
+                      <ReceiptCopyMenu onSelect={(c) => printInvoice(r, c as InvoiceCopy)} title={tx("Print", "প্রিন্ট")} />
                       {r.invoice_status !== "cancelled" && r.invoice_status !== "paid" && (
                         <Button size="sm" variant="ghost" title={tx("Edit", "এডিট")} onClick={() => setEditInv(r)}><Pencil className="h-4 w-4" /></Button>
                       )}
