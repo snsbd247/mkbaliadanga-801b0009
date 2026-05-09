@@ -15,6 +15,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Loader2, AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
+import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
+import { autoReceiptNo } from "@/lib/receiptNo";
 
 type Invoice = {
   id: string;
