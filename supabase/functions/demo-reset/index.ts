@@ -731,14 +731,21 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
         let officeId = "11111111-1111-1111-1111-111111111111";
         let locs: LocPick[] = [];
         let farmers: any[] = [];
+        let landTypes: { id: string; code: string; rate: number }[] = [];
+        let seasonTypes: { id: string; code: string }[] = [];
+        let lands: any[] = [];
+        let seasonId: string | undefined;
         const loanFarmerIds = new Set<string>();
         const savingsFarmerIds = new Set<string>();
         const sharesFarmerIds = new Set<string>();
+        const fspFarmerIds = new Set<string>();
 
         if (action === "import" || action === "both") {
           steps.push({ key: "office", label: "অফিস তৈরি/যাচাই", fn: async () => { officeId = await ensureOffice(admin); } });
           steps.push({ key: "locations", label: "লোকেশন (বিভাগ/জেলা/উপজেলা/মৌজা) seed", fn: async () => { locs = await seedLocations(admin); summary.locations = locs.length; } });
-          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed", fn: async () => { await seedSettings(admin); } });
+          steps.push({ key: "land_types", label: "জমির ধরন (Land Types) seed", fn: async () => { landTypes = await seedLandTypes(admin, officeId); summary.land_types = landTypes.length; } });
+          steps.push({ key: "season_types", label: "সিজন টাইপ (Boro/Aman/Aus) seed", fn: async () => { seasonTypes = await seedSeasonTypes(admin); summary.season_types = seasonTypes.length; } });
+          if (modules.includes("settings")) steps.push({ key: "settings", label: "সেটিংস seed (company/card/SMS/receipt)", fn: async () => { await seedSettings(admin); } });
           const needsAccounts = modules.includes("accounting") || modules.includes("loans") ||
             modules.includes("savings") || modules.includes("irrigation") ||
             modules.includes("expenses") || modules.includes("farmers");
@@ -752,7 +759,13 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
                 farmer_code: f.farmer_code, name_en: f.name_en, name_bn: f.name_bn, mouza_id: f.mouza_id,
               }));
             }});
-            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { await seedLands(admin, officeId, farmers); }});
+            steps.push({ key: "lands", label: `${size}টি জমি তৈরি`, fn: async () => { lands = await seedLands(admin, officeId, farmers, landTypes); summary.lands = lands.length; }});
+            steps.push({ key: "land_relations", label: "বর্গা সম্পর্ক (land_relations) seed", fn: async () => {
+              if (lands.length) summary.land_relations = await seedLandRelations(admin, officeId, lands, farmers);
+            }});
+            steps.push({ key: "patwaris", label: "পাটোয়ারী seed", fn: async () => {
+              const p = await seedPatwaris(admin, officeId, locs); summary.patwaris = p.length;
+            }});
           }
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
           if (needFarmers && !modules.includes("farmers")) {
@@ -761,17 +774,26 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               farmers = data ?? [];
             }});
           }
-          if (modules.includes("irrigation")) steps.push({ key: "irrigation", label: "সেচ চার্জ seed", fn: async () => { if (farmers.length) await seedIrrigation(admin, officeId, farmers); }});
+          if (modules.includes("irrigation")) {
+            steps.push({ key: "irr_charge_settings", label: "সেচ চার্জ সেটিংস seed", fn: async () => { await seedIrrigationChargeSettings(admin, officeId); }});
+            steps.push({ key: "irrigation", label: "সেচ সিজন/রেট/চার্জ seed", fn: async () => {
+              if (farmers.length) seasonId = await seedIrrigation(admin, officeId, farmers, landTypes, seasonTypes);
+            }});
+            steps.push({ key: "irrigation_invoices", label: "সেচ ইনভয়েস + পেমেন্ট seed", fn: async () => {
+              if (seasonId) summary.irrigation_invoices = await seedIrrigationInvoices(admin, officeId, seasonId, landTypes);
+            }});
+          }
           if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed (শুধু ভোটার)", fn: async () => {
             if (!farmers.length) return;
             const ids = await seedLoans(admin, officeId, farmers);
             ids.forEach((x) => loanFarmerIds.add(x));
           }});
-          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় + শেয়ার seed (শুধু ভোটার)", fn: async () => {
+          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় + শেয়ার + প্ল্যান এনরোলমেন্ট seed (শুধু ভোটার)", fn: async () => {
             if (!farmers.length) return;
             const out = await seedSavings(admin, officeId, farmers);
             out.savingsSeeded.forEach((x) => savingsFarmerIds.add(x));
             out.sharesSeeded.forEach((x) => sharesFarmerIds.add(x));
+            out.fspSeeded.forEach((x) => fspFarmerIds.add(x));
           }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
           if (modules.includes("farmers") || needFarmers) {
