@@ -145,7 +145,9 @@ export default function DemoManager() {
         },
         body: JSON.stringify({ action, modules: selected, size, confirm: "RESET", stream: true,
           voterCfg: { voterRatio, voterNumberFormat, accountNumberFormat },
-          customNames: customNames ?? undefined }),
+          customNames: customNames ?? undefined,
+          transactional,
+          preset: presetId !== "custom" ? presetId : undefined }),
       });
 
       if (!resp.ok || !resp.body) {
