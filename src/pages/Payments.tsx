@@ -540,8 +540,7 @@ export default function Payments() {
                             : kind === "savings" ? "সঞ্চয় জমা গ্রহণ"
                             : "সেচ চার্জ গ্রহণ");
 
-                        const ownerTypeBn = (ot?: string | null) =>
-                          ot === "borgadar" ? "বর্গাদার" : ot === "owner" ? "মালিক" : null;
+                        // owner_type label now derived from invoice.is_borga; helper kept inline above.
                         const memberTypeBn = (f: any) =>
                           f?.is_voter ? "ভোটার নং" : f?.account_number ? "সঞ্চয়ী নং" : null;
                         const memberRefNo = (f: any) => f?.voter_number ?? f?.account_number ?? null;
