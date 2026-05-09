@@ -500,7 +500,8 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
       const duration = Math.max(1, Math.round(totalPay / monthly));
       const start = l.issued_on ? new Date(l.issued_on) : new Date(today.getTime() - 180 * 86400000);
       // 12 installments; first 3 paid, the past-due remaining ones become overdue, future ones stay due
-      for (let n = 1; n <= 12; n++) {
+      const paidCount = Math.min(3, Math.max(1, Math.floor(duration / 4)));
+      for (let n = 1; n <= duration; n++) {
         const due = new Date(start);
         due.setMonth(due.getMonth() + n);
         const paid = n <= 3;
