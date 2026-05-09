@@ -93,7 +93,7 @@ export default function IdReview() {
     setSaving(true);
     const patch: any = {};
     const old: any = {};
-    (["member_no", "account_number", "voter_number"] as const).forEach(k => {
+    (["member_no", "account_number"] as const).forEach(k => {
       const newV = (draft[k] ?? "") as string;
       const oldV = (editing[k] ?? "") as string;
       if (newV !== oldV) { patch[k] = newV || null; old[k] = oldV || null; }
