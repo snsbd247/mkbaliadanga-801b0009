@@ -113,22 +113,22 @@ export function ExportDialog<T = any>({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>এক্সপোর্ট অপশন</DialogTitle>
+          <DialogTitle>{t("exp_dialogTitle" as any)}</DialogTitle>
           <DialogDescription>
-            কলাম ও ফরম্যাট নির্বাচন করুন · {rows.length} টি সারি
+            {t("exp_dialogDesc" as any).replace("{n}", String(rows.length))}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label className="text-sm font-medium">কলাম ({selectedCount}/{columns.length})</Label>
+              <Label className="text-sm font-medium">{t("exp_columns" as any)} ({selectedCount}/{columns.length})</Label>
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant="ghost" onClick={() => toggleAll(true)}>
-                  সব
+                  {t("exp_selectAll" as any)}
                 </Button>
                 <Button type="button" size="sm" variant="ghost" onClick={() => toggleAll(false)}>
-                  কোনটি না
+                  {t("exp_selectNone" as any)}
                 </Button>
               </div>
             </div>
