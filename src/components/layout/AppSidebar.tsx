@@ -126,6 +126,7 @@ export function AppSidebar() {
        { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
        { url: "/reports/invoices", icon: FileBarChart, label: t("invoicesReport" as any), permKey: "reports" },
        { url: "/irrigation-reports", icon: FileBarChart, label: t("irrigationRevenueCollection" as any), permKey: "reports" },
+       { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
         { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
@@ -148,6 +149,7 @@ export function AppSidebar() {
         
         { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
+        { url: "/admin/irrigation-due-mismatch", icon: ShieldAlert, label: t("irrigationDueMismatch" as any) || "Irrigation Due Mismatch", permKey: "reports" },
       ],
     },
 
