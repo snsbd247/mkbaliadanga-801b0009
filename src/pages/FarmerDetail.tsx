@@ -58,6 +58,7 @@ export default function FarmerDetail() {
   const [editLoanForm, setEditLoanForm] = useState<{ plan_id: string; principal: number; interest_rate: number; interest_enabled: boolean; issued_on: string; next_due_on: string; note: string }>({ plan_id: "", principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
   const [loanPlans, setLoanPlans] = useState<any[]>([]);
   const [irr, setIrr] = useState<any[]>([]);
+  const [invDue, setInvDue] = useState<number>(0);
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   
