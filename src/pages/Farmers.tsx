@@ -246,9 +246,32 @@ export default function Farmers() {
   }, [createErr, editErr]);
 
   async function load() {
+    // If the search includes dag-like tokens (comma / newline / whitespace
+    // separated), also pull farmer_ids whose lands match ANY token. This lets
+    // a search like "123, 124/A" find both single- and multi-dag lands.
+    let dagFarmerIds: string[] = [];
+    if (q && q.trim()) {
+      const { parseDagSearchTokens } = await import("@/lib/dagNumbers");
+      const tokens = parseDagSearchTokens(q).slice(0, 10);
+      if (tokens.length) {
+        const orExpr = tokens.map((t) => `dag_no.ilike.%${t.replace(/[%,]/g, "")}%`).join(",");
+        const { data: lr } = await supabase
+          .from("lands")
+          .select("farmer_id")
+          .is("deleted_at", null)
+          .or(orExpr)
+          .limit(500);
+        dagFarmerIds = Array.from(new Set((lr ?? []).map((x: any) => x.farmer_id).filter(Boolean)));
+      }
+    }
+
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     qy = showDeleted ? qy.not("deleted_at", "is", null) : qy.is("deleted_at", null);
-    if (q) qy = qy.or(`name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`);
+    if (q) {
+      const base = `name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`;
+      const idClause = dagFarmerIds.length ? `,id.in.(${dagFarmerIds.join(",")})` : "";
+      qy = qy.or(base + idClause);
+    }
     const { data } = await qy;
     const farmers = data ?? [];
     setList(farmers);
