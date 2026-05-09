@@ -20,6 +20,7 @@ import {
 import { useLang } from "@/i18n/LanguageProvider";
 import * as XLSX from "xlsx";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
+import { DEMO_PRESETS, type DemoModule } from "@/lib/demoPresets";
 
 const MODULE_KEYS = [
   { id: "locations", tk: "dmModLocations" },
@@ -62,6 +63,9 @@ export default function DemoManager() {
   const [customNames, setCustomNames] = useState<any[] | null>(null);
   const [csvFileName, setCsvFileName] = useState<string>("");
   const [clearing, setClearing] = useState(false);
+  const [presetId, setPresetId] = useState<string>("custom");
+  const [transactional, setTransactional] = useState(true);
+  const [rowCountReport, setRowCountReport] = useState<any>(null);
 
   // logs + filters
   const [logs, setLogs] = useState<any[]>([]);
@@ -127,6 +131,7 @@ export default function DemoManager() {
     setLastResult(null);
     setProgress(0);
     setStepLog([]);
+    setRowCountReport(null);
     setCurrentStep(t("dmStarting" as any));
 
     try {
@@ -141,7 +146,9 @@ export default function DemoManager() {
         },
         body: JSON.stringify({ action, modules: selected, size, confirm: "RESET", stream: true,
           voterCfg: { voterRatio, voterNumberFormat, accountNumberFormat },
-          customNames: customNames ?? undefined }),
+          customNames: customNames ?? undefined,
+          transactional,
+          preset: presetId !== "custom" ? presetId : undefined }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -186,6 +193,7 @@ export default function DemoManager() {
               if (ev.summary?.location_verification) setLocationVerification(ev.summary.location_verification);
               if (ev.summary?.farmer_samples) setFarmerSamples(ev.summary.farmer_samples);
               if (ev.summary?.seed_log) setSeedLog(ev.summary.seed_log);
+              if (ev.summary?.row_count_report) setRowCountReport(ev.summary.row_count_report);
               succeeded = true;
             }
           } catch (parseErr) {
@@ -225,6 +233,37 @@ export default function DemoManager() {
           </CardTitle>
           <CardDescription>{t("dmWarningDesc" as any)}</CardDescription>
         </CardHeader>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Preset</CardTitle>
+          <CardDescription>{tx("Quick presets — auto-fill size + modules. Choose Custom to configure manually.", "দ্রুত preset — size + module অটো-সেট। ম্যানুয়ালি সেট করতে Custom নির্বাচন করুন।")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Select value={presetId} onValueChange={(v) => {
+            setPresetId(v);
+            const p = DEMO_PRESETS.find((x) => x.id === v);
+            if (p) {
+              setSize(p.size);
+              setSelected(p.modules as string[]);
+            }
+          }}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="custom">Custom</SelectItem>
+              {DEMO_PRESETS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.label_en} — {p.description_en}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={transactional} onCheckedChange={(v) => setTransactional(!!v)} />
+            <span>{tx("Transactional — auto-rollback partial data on error", "ট্রানজ্যাকশনাল — error হলে আংশিক ডেটা auto-মুছে যাবে")}</span>
+          </label>
+        </CardContent>
       </Card>
 
       <Card>
@@ -558,6 +597,54 @@ export default function DemoManager() {
                   </tr>
                 ))}
               </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {rowCountReport && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {rowCountReport.allOk
+                ? <CheckCircle2 className="h-5 w-5 text-primary" />
+                : <XCircle className="h-5 w-5 text-destructive" />}
+              {tx("Module Row-Count + Page Mapping", "মডিউল Row-Count + পেজ Mapping")} ({rowCountReport.ok}/{rowCountReport.total})
+            </CardTitle>
+            <CardDescription>
+              {rowCountReport.allOk
+                ? tx("Every required table is populated — no module is empty.", "সব required টেবিলে ডেটা আছে — কোনো মডিউল খালি নেই।")
+                : `${rowCountReport.failed} ${tx("required tables empty", "required টেবিল খালি")}, ${rowCountReport.warnings} ${tx("optional warnings", "optional warning")}`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border rounded">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="p-2 text-left">Module</th>
+                    <th className="p-2 text-left">Table</th>
+                    <th className="p-2 text-left">Page</th>
+                    <th className="p-2 text-right">Rows</th>
+                    <th className="p-2 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(rowCountReport.rows ?? []).map((r: any, i: number) => (
+                    <tr key={i} className={`border-t ${r.status === "empty_required" ? "bg-destructive/5" : ""}`}>
+                      <td className="p-2"><Badge variant="outline">{r.module}</Badge></td>
+                      <td className="p-2 font-mono">{r.table}</td>
+                      <td className="p-2"><a className="underline text-primary" href={r.page}>{r.page_label}</a></td>
+                      <td className={`p-2 text-right tabular-nums ${r.actual === 0 && r.required ? "text-destructive font-bold" : ""}`}>{r.actual}</td>
+                      <td className="p-2">
+                        {r.status === "ok" && <Badge variant="default">OK</Badge>}
+                        {r.status === "empty_required" && <Badge variant="destructive">EMPTY (required)</Badge>}
+                        {r.status === "empty_optional" && <Badge variant="secondary">empty (optional)</Badge>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </CardContent>
