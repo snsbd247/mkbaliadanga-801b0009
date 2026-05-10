@@ -102,7 +102,14 @@ export function AppSidebar() {
       ],
     },
 
-    // ── Accounting ──
+    // ── Assets / এসেট ──
+    {
+      key: "assets", icon: Package, label: t("assetsGroup" as any) || "এসেট",
+      children: [
+        { url: "/assets/items", icon: Package, label: t("assetItems" as any) || "এসেট আইটেম", permKey: "assets" },
+        { url: "/admin/asset-categories", icon: Briefcase, label: t("assetCategories" as any) || "এসেট ক্যাটাগরি", permKey: "assets" },
+      ],
+    },
     {
       key: "accounting", icon: Calculator, label: t("accounting"),
       children: [
