@@ -1101,23 +1101,53 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   <TableRow>
                     <TableHead>{tx("Land", "জমি")}</TableHead>
                     <TableHead>{tx("Billed to", "বিল প্রাপক")}</TableHead>
-                    <TableHead className="text-right">{tx("Irrigation", "সেচ")}</TableHead>
-                    <TableHead className="text-right">{tx("Maint.", "রক্ষণা.")}</TableHead>
-                    <TableHead className="text-right">{tx("Canal", "খাল")}</TableHead>
+                    <TableHead>{tx("Source", "উৎস")}</TableHead>
+                    <TableHead className="text-right">{tx("Rate", "রেট")}</TableHead>
                     <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
+                    <TableHead>{tx("Manual override", "ম্যানুয়াল ওভাররাইড")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {previewRows.slice(0, 100).map((r: any, i: number) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
-                      <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
-                      <TableCell className="text-right">{money(r.calc.irrigation_amount)}</TableCell>
-                      <TableCell className="text-right">{money(r.calc.maintenance_amount)}</TableCell>
-                      <TableCell className="text-right">{money(r.calc.canal_amount)}</TableCell>
-                      <TableCell className="text-right font-semibold">{money(r.calc.payable_amount)}</TableCell>
-                    </TableRow>
-                  ))}
+                  {previewRows.slice(0, 100).map((r: any, i: number) => {
+                    const cat = categories.find((c) => c.id === defaultCategoryId);
+                    const allowManual = !cat || cat.allow_manual_negotiation || r.resolved?.isNegotiable !== false;
+                    const src = r.resolved?.source ?? "STANDARD";
+                    return (
+                      <TableRow key={i}>
+                        <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
+                        <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
+                        <TableCell>
+                          {Number(r.manualRate) > 0 && r.manualReason?.trim()
+                            ? <Badge variant="outline" className="text-xs">{tx("Manual", "ম্যানুয়াল")}</Badge>
+                            : src === "CATEGORY"
+                              ? <Badge variant="secondary" className="text-xs">{r.resolved?.categoryName || tx("Category", "ক্যাটাগরি")}</Badge>
+                              : <Badge variant="outline" className="text-xs">{tx("Standard", "স্ট্যান্ডার্ড")}</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right text-xs">{money(Number(r.manualRate) > 0 ? Number(r.manualRate) : r.rate)}</TableCell>
+                        <TableCell className="text-right font-semibold">{money(r.calc.payable_amount)}</TableCell>
+                        <TableCell>
+                          {allowManual ? (
+                            <div className="flex flex-col gap-1 min-w-[180px]">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder={tx("Rate", "রেট")}
+                                value={r.manualRate}
+                                className="h-7 text-xs"
+                                onChange={(e) => setPreviewRows((prev) => prev?.map((p, idx) => idx === i ? { ...p, manualRate: e.target.value } : p) ?? null)}
+                              />
+                              <Input
+                                placeholder={tx("Reason (required)", "কারণ (আবশ্যক)")}
+                                value={r.manualReason}
+                                className="h-7 text-xs"
+                                onChange={(e) => setPreviewRows((prev) => prev?.map((p, idx) => idx === i ? { ...p, manualReason: e.target.value } : p) ?? null)}
+                              />
+                            </div>
+                          ) : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
               {previewRows.length > 100 && <p className="text-xs text-muted-foreground mt-2">{tx("Showing first 100 only", "শুধু প্রথম ১০০ টি দেখানো হয়েছে")}</p>}
