@@ -69,11 +69,7 @@ export default function AssetItemDetail() {
     <>
       <PageHeader
         title={asset.name_bn || asset.name_en}
-        description={
-          <span className="font-mono text-xs">
-            {asset.asset_code}{asset.serial_no ? ` · SN: ${asset.serial_no}` : ""}
-          </span>
-        }
+        description={`${asset.asset_code}${asset.serial_no ? ` · SN: ${asset.serial_no}` : ""}`}
         actions={
           <Button variant="outline" asChild>
             <Link to="/assets/items"><ArrowLeft className="h-4 w-4 mr-1" />{tx("Back", "ফিরে যান")}</Link>
