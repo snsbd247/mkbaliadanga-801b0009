@@ -106,7 +106,9 @@ export function AppSidebar() {
     {
       key: "assets", icon: Package, label: t("assetsGroup" as any) || "এসেট",
       children: [
+        { url: "/assets/dashboard", icon: Package, label: t("assetDashboard" as any) || "ড্যাশবোর্ড", permKey: "assets" },
         { url: "/assets/items", icon: Package, label: t("assetItems" as any) || "এসেট আইটেম", permKey: "assets" },
+        { url: "/assets/reports", icon: Package, label: t("assetReports" as any) || "এসেট রিপোর্ট", permKey: "assets" },
         { url: "/admin/asset-categories", icon: Briefcase, label: t("assetCategories" as any) || "এসেট ক্যাটাগরি", permKey: "assets" },
       ],
     },
