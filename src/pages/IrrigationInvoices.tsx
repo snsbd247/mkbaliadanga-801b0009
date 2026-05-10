@@ -774,6 +774,24 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
               </pre>
             </details>
           )}
+          {overrides.length > 0 && (
+            <details className="mt-2" open>
+              <summary className="cursor-pointer text-xs font-medium">
+                {tx("Rate override audit", "রেট ওভাররাইড অডিট")} ({overrides.length})
+              </summary>
+              <div className="space-y-2 mt-2">
+                {overrides.map((o) => (
+                  <div key={o.id} className="text-[11px] border rounded p-2 bg-muted/30">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{fmtDate(o.created_at)}</span>
+                      <span><span className="line-through text-muted-foreground">{money(o.original_rate)}</span> → <span className="font-semibold">{money(o.overridden_rate)}</span></span>
+                    </div>
+                    {o.override_reason && <div className="mt-1">{o.override_reason}</div>}
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
         </div>
         <DialogFooter className="gap-2">
           {isSuper && inv.invoice_status !== "cancelled" && (
