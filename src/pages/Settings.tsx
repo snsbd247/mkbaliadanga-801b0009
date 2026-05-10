@@ -165,20 +165,21 @@ export default function Settings() {
 }
 
 function RoundingCard() {
+  const { tx } = useLang();
   const [mode, setMode] = useState<string>(() => {
     try { return localStorage.getItem("taka_rounding_mode_v1") ?? "half_up"; } catch { return "half_up"; }
   });
   const opts: Array<{ v: string; label: string; desc: string }> = [
-    { v: "half_up", label: "≥ .50 → ১ টাকা (default)", desc: "≥ .50 হলে উপরে, নিচে হলে ০" },
-    { v: "half_even", label: "Banker's (half-even)", desc: ".5 হলে নিকটতম জোড় সংখ্যায়" },
-    { v: "floor", label: "Floor (নিচের দিকে)", desc: "সর্বদা নিচের দিকে" },
-    { v: "ceil", label: "Ceil (উপরের দিকে)", desc: "সর্বদা উপরের দিকে" },
+    { v: "half_up", label: tx("≥ .50 → 1 Taka (default)", "≥ .50 → ১ টাকা (default)"), desc: tx("Round up if ≥ .50, else down to 0", "≥ .50 হলে উপরে, নিচে হলে ০") },
+    { v: "half_even", label: tx("Banker's (half-even)", "Banker's (half-even)"), desc: tx("If .5, round to nearest even number", ".5 হলে নিকটতম জোড় সংখ্যায়") },
+    { v: "floor", label: tx("Floor (always down)", "Floor (নিচের দিকে)"), desc: tx("Always round down", "সর্বদা নিচের দিকে") },
+    { v: "ceil", label: tx("Ceil (always up)", "Ceil (উপরের দিকে)"), desc: tx("Always round up", "সর্বদা উপরের দিকে") },
   ];
   return (
     <Card className="max-w-2xl p-6 mt-4">
-      <div className="font-semibold mb-1">টাকা রাউন্ডিং নিয়ম</div>
+      <div className="font-semibold mb-1">{tx("Taka Rounding Rule", "টাকা রাউন্ডিং নিয়ম")}</div>
       <div className="text-sm text-muted-foreground mb-3">
-        ইনভয়েস, রশিদ, পেমেন্ট রিসিপ্ট ও রিপোর্ট সব জায়গায় এই নিয়মে এমাউন্ট পুরো টাকায় দেখাবে।
+        {tx("This rule controls how amounts are rounded to whole taka in invoices, receipts, payment slips, and reports.", "ইনভয়েস, রশিদ, পেমেন্ট রিসিপ্ট ও রিপোর্ট সব জায়গায় এই নিয়মে এমাউন্ট পুরো টাকায় দেখাবে।")}
       </div>
       <div className="grid gap-2">
         {opts.map((o) => (
@@ -187,7 +188,7 @@ function RoundingCard() {
               onChange={() => {
                 setMode(o.v);
                 try { localStorage.setItem("taka_rounding_mode_v1", o.v); } catch { /* ignore */ }
-                toast.success("রাউন্ডিং নিয়ম আপডেট হয়েছে। নতুন রিপোর্ট/রশিদে কার্যকর হবে।");
+                toast.success(tx("Rounding rule updated. Will apply to new reports/receipts.", "রাউন্ডিং নিয়ম আপডেট হয়েছে। নতুন রিপোর্ট/রশিদে কার্যকর হবে।"));
               }} />
             <span>
               <span className="font-medium">{o.label}</span>
