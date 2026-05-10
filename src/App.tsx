@@ -235,6 +235,9 @@ const App = () => (
                 <Route path="/assets/depreciation" element={<RequirePerm module="assets"><AssetDepreciation /></RequirePerm>} />
                 <Route path="/assets/stock" element={<RequirePerm module="assets"><AssetStock /></RequirePerm>} />
                 <Route path="/assets/movements" element={<RequirePerm module="assets"><AssetMovements /></RequirePerm>} />
+                <Route path="/assets/installations" element={<RequirePerm module="assets"><AssetInstallations /></RequirePerm>} />
+                <Route path="/assets/maintenance" element={<RequirePerm module="assets"><AssetMaintenance /></RequirePerm>} />
+                <Route path="/assets/disposal" element={<RequirePerm module="assets"><AssetDisposal /></RequirePerm>} />
                 <Route path="/reports/rate-source" element={<RequireRole roles={["admin","super_admin"]}><RateSourceReport /></RequireRole>} />
                 <Route path="/reports/override-audit" element={<RequireRole roles={["admin","super_admin"]}><OverrideAuditReport /></RequireRole>} />
                 <Route path="/irrigation-reports" element={<IrrigationReports />} />
