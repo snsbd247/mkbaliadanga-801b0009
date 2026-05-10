@@ -913,7 +913,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         });
         previewArr.push({ land: l, billed, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
       }
-      setPreviewRows(previewArr);
+      setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
       setSkippedNoRate(noRate);
       toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
@@ -928,6 +928,23 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       let success = 0, failed = 0;
       for (const row of previewRows) {
         try {
+          const manualRateNum = Number(row.manualRate);
+          const hasManual = manualRateNum > 0 && row.manualReason?.trim();
+          let appliedRate = row.rate;
+          let source: string = row.resolved?.source ?? "STANDARD";
+          let calc = row.calc;
+          if (hasManual) {
+            appliedRate = manualRateNum;
+            source = "MANUAL";
+            calc = calcInvoice({
+              land_size_shotok: Number(row.land.land_size),
+              rate_per_shotok: appliedRate,
+              settings: row.settings,
+              due_date: dueDate,
+              as_of: new Date().toISOString().slice(0, 10),
+            });
+          }
+          const originalStandardRate = row.resolved?.originalStandardRate ?? row.rate;
           const invoice_no = await generateInvoiceNo();
           const payload: any = {
             invoice_no,
@@ -937,42 +954,56 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             owner_farmer_id: row.billed.owner_farmer_id,
             farmer_id: row.billed.billed_farmer_id,
             is_borga: row.billed.is_borga,
-            irrigation_amount: row.calc.irrigation_amount,
-            maintenance_amount: row.calc.maintenance_amount,
-            canal_amount: row.calc.canal_amount,
-            delay_fee: row.calc.delay_fee,
-            other_charge: row.calc.other_charge,
-            payable_amount: row.calc.payable_amount,
+            irrigation_amount: calc.irrigation_amount,
+            maintenance_amount: calc.maintenance_amount,
+            canal_amount: calc.canal_amount,
+            delay_fee: calc.delay_fee,
+            other_charge: calc.other_charge,
+            payable_amount: calc.payable_amount,
             paid_amount: 0,
             due_date: dueDate,
             invoice_status: "generated",
             generated_by: userId,
-            season_rate: row.rate,
+            season_rate: appliedRate,
             land_type_id: row.rateRow?.land_type_id ?? null,
             land_type_name: row.rateRow?.land_type_name ?? row.land.field_type ?? null,
+            rate_source: source,
+            applied_rate: appliedRate,
+            original_standard_rate: originalStandardRate,
+            irrigation_category_id: row.resolved?.categoryId ?? null,
+            irrigation_category_name: row.resolved?.categoryName ?? null,
+            is_manual_rate: hasManual,
+            manual_rate_reason: hasManual ? row.manualReason.trim() : null,
+            override_reason: hasManual ? row.manualReason.trim() : null,
             calculation_snapshot: {
-              rate_per_shotok: row.rate,
+              rate_per_shotok: appliedRate,
               land_size_shotok: Number(row.land.land_size),
               land_type_code: row.rateRow?.land_type_code ?? row.land.field_type ?? null,
               land_type_name: row.rateRow?.land_type_name ?? null,
               settings: row.settings,
-              calc: row.calc,
+              calc,
               generated_at: new Date().toISOString(),
-              rate_source: row.resolved?.source ?? "STANDARD",
-              applied_rate: row.resolved?.rate ?? row.rate,
-              original_standard_rate: row.resolved?.originalStandardRate ?? row.rate,
+              rate_source: source,
+              applied_rate: appliedRate,
+              original_standard_rate: originalStandardRate,
               irrigation_category_id: row.resolved?.categoryId ?? null,
               irrigation_category_name: row.resolved?.categoryName ?? null,
+              manual_reason: hasManual ? row.manualReason.trim() : null,
             },
           };
-          // Hybrid rate engine snapshot fields (Phase 4)
-          payload.rate_source = row.resolved?.source ?? "STANDARD";
-          payload.applied_rate = row.resolved?.rate ?? row.rate;
-          payload.original_standard_rate = row.resolved?.originalStandardRate ?? row.rate;
-          payload.irrigation_category_id = row.resolved?.categoryId ?? null;
-          payload.irrigation_category_name = row.resolved?.categoryName ?? null;
-          const { error } = await supabase.from("irrigation_invoices" as any).insert(payload);
-          if (error) { failed++; console.error(error); } else success++;
+          const { data: ins, error } = await (supabase.from("irrigation_invoices" as any).insert(payload).select("id").maybeSingle() as any);
+          if (error) { failed++; console.error(error); continue; }
+          success++;
+          if (hasManual && ins?.id) {
+            await (supabase.from("irrigation_rate_overrides" as any).insert({
+              irrigation_invoice_id: ins.id,
+              office_id: payload.office_id,
+              original_rate: originalStandardRate,
+              overridden_rate: appliedRate,
+              override_reason: row.manualReason.trim(),
+              created_by: userId,
+            }) as any);
+          }
         } catch (e) { failed++; console.error(e); }
       }
       toast.success(`${success} ${tx("created", "টি তৈরি হয়েছে")}${failed ? `, ${failed} ${tx("failed", "ব্যর্থ")}` : ""}`);
@@ -1070,23 +1101,53 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                   <TableRow>
                     <TableHead>{tx("Land", "জমি")}</TableHead>
                     <TableHead>{tx("Billed to", "বিল প্রাপক")}</TableHead>
-                    <TableHead className="text-right">{tx("Irrigation", "সেচ")}</TableHead>
-                    <TableHead className="text-right">{tx("Maint.", "রক্ষণা.")}</TableHead>
-                    <TableHead className="text-right">{tx("Canal", "খাল")}</TableHead>
+                    <TableHead>{tx("Source", "উৎস")}</TableHead>
+                    <TableHead className="text-right">{tx("Rate", "রেট")}</TableHead>
                     <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
+                    <TableHead>{tx("Manual override", "ম্যানুয়াল ওভাররাইড")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {previewRows.slice(0, 100).map((r: any, i: number) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
-                      <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
-                      <TableCell className="text-right">{money(r.calc.irrigation_amount)}</TableCell>
-                      <TableCell className="text-right">{money(r.calc.maintenance_amount)}</TableCell>
-                      <TableCell className="text-right">{money(r.calc.canal_amount)}</TableCell>
-                      <TableCell className="text-right font-semibold">{money(r.calc.payable_amount)}</TableCell>
-                    </TableRow>
-                  ))}
+                  {previewRows.slice(0, 100).map((r: any, i: number) => {
+                    const cat = categories.find((c) => c.id === defaultCategoryId);
+                    const allowManual = !cat || cat.allow_manual_negotiation || r.resolved?.isNegotiable !== false;
+                    const src = r.resolved?.source ?? "STANDARD";
+                    return (
+                      <TableRow key={i}>
+                        <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
+                        <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
+                        <TableCell>
+                          {Number(r.manualRate) > 0 && r.manualReason?.trim()
+                            ? <Badge variant="outline" className="text-xs">{tx("Manual", "ম্যানুয়াল")}</Badge>
+                            : src === "CATEGORY"
+                              ? <Badge variant="secondary" className="text-xs">{r.resolved?.categoryName || tx("Category", "ক্যাটাগরি")}</Badge>
+                              : <Badge variant="outline" className="text-xs">{tx("Standard", "স্ট্যান্ডার্ড")}</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right text-xs">{money(Number(r.manualRate) > 0 ? Number(r.manualRate) : r.rate)}</TableCell>
+                        <TableCell className="text-right font-semibold">{money(r.calc.payable_amount)}</TableCell>
+                        <TableCell>
+                          {allowManual ? (
+                            <div className="flex flex-col gap-1 min-w-[180px]">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder={tx("Rate", "রেট")}
+                                value={r.manualRate}
+                                className="h-7 text-xs"
+                                onChange={(e) => setPreviewRows((prev) => prev?.map((p, idx) => idx === i ? { ...p, manualRate: e.target.value } : p) ?? null)}
+                              />
+                              <Input
+                                placeholder={tx("Reason (required)", "কারণ (আবশ্যক)")}
+                                value={r.manualReason}
+                                className="h-7 text-xs"
+                                onChange={(e) => setPreviewRows((prev) => prev?.map((p, idx) => idx === i ? { ...p, manualReason: e.target.value } : p) ?? null)}
+                              />
+                            </div>
+                          ) : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
               {previewRows.length > 100 && <p className="text-xs text-muted-foreground mt-2">{tx("Showing first 100 only", "শুধু প্রথম ১০০ টি দেখানো হয়েছে")}</p>}
