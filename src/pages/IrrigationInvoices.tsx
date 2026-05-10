@@ -1091,7 +1091,9 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         other_charge: otherCharge,
       });
       const invoice_no = await generateInvoiceNo();
-      const { error } = await supabase.from("irrigation_invoices" as any).insert({
+      const standardRate = rateRow?.rate_per_shotok ?? 0;
+      const rateSource: "STANDARD" | "MANUAL" = isManualRate ? "MANUAL" : (standardRate > 0 && standardRate === rate ? "STANDARD" : "MANUAL");
+      const { data: insertedRows, error } = await supabase.from("irrigation_invoices" as any).insert({
         invoice_no,
         office_id: land?.office_id ?? null,
         season_id: seasonId,
@@ -1114,6 +1116,11 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         land_type_name: rateRow?.land_type_name ?? land?.field_type ?? null,
         is_manual_rate: isManualRate,
         manual_rate_reason: isManualRate ? manualReason.trim() : null,
+        // Phase 4 hybrid engine snapshot
+        rate_source: rateSource,
+        applied_rate: rate,
+        original_standard_rate: standardRate,
+        override_reason: rateSource === "MANUAL" ? (manualReason.trim() || null) : null,
         calculation_snapshot: {
           rate_per_shotok: rate,
           land_size_shotok: Number(land?.land_size ?? 0),
@@ -1123,11 +1130,24 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
           calc,
           generated_at: new Date().toISOString(),
           source: "manual",
+          rate_source: rateSource,
+          applied_rate: rate,
+          original_standard_rate: standardRate,
           is_manual_rate: isManualRate,
           manual_rate_reason: isManualRate ? manualReason.trim() : null,
         },
-      } as any);
+      } as any).select("id").maybeSingle();
       if (error) throw error;
+      // Audit row for any MANUAL override
+      if (rateSource === "MANUAL" && insertedRows?.id) {
+        await supabase.from("irrigation_rate_overrides" as any).insert({
+          irrigation_invoice_id: insertedRows.id,
+          original_rate: standardRate,
+          overridden_rate: rate,
+          override_reason: manualReason.trim() || "Manual invoice",
+          created_by: userId,
+        } as any);
+      }
       toast.success(`${tx("Invoice", "ইনভয়েস")} ${invoice_no} ${tx("created", "তৈরি হয়েছে")}`);
       onOpenChange(false);
       setFarmerId(null); setLandId(""); setSeasonId(""); setRate(0); setOtherCharge(0); setManualReason("");
