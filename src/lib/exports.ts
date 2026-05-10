@@ -366,7 +366,7 @@ export async function exportAuditReportPDF(opts: {
 }
 
 // ---------- Combined Farmer Statement (Loans + Savings + Irrigation) ----------
-export function exportFarmerCombinedStatementPDF(opts: {
+export async function exportFarmerCombinedStatementPDF(opts: {
   brand: { company_name: string; address?: string; mobile?: string };
   farmer: { name_en: string; name_bn?: string; farmer_code?: string; member_no?: string; mobile?: string; village?: string };
   range: { from: string; to: string };
@@ -376,31 +376,39 @@ export function exportFarmerCombinedStatementPDF(opts: {
   loans: Array<{ issued_on: string; principal: number; interest_rate: number; total_payable: number; status: string; paid: number; due: number }>;
 }) {
   const doc = new jsPDF();
-  doc.setFontSize(15); doc.setFont(undefined, "bold");
+  const lang = pdfLang();
+  const bnFamily = lang === "bn" ? await ensureBanglaFont(doc) : null;
+  const useBn = lang === "bn" && !!bnFamily;
+  const setF = (style: "normal" | "bold" = "normal") => {
+    if (useBn && bnFamily) doc.setFont(bnFamily, "normal");
+    else doc.setFont(undefined, style);
+  };
+  const tableFont: any = useBn && bnFamily ? { font: bnFamily, fontStyle: "normal" } : {};
+
+  doc.setFontSize(15); setF("bold");
   doc.text(opts.brand.company_name, 105, 14, { align: "center" });
-  doc.setFontSize(10); doc.setFont(undefined, "normal");
+  doc.setFontSize(10); setF("normal");
   if (opts.brand.address) doc.text(opts.brand.address, 105, 20, { align: "center" });
-  doc.setFontSize(13); doc.setFont(undefined, "bold");
-  doc.text("Farmer Statement", 105, 28, { align: "center" });
-  doc.setFontSize(9); doc.setFont(undefined, "normal");
-  doc.text(`Period: ${opts.range.from || "—"}  to  ${opts.range.to || "—"}`, 105, 33, { align: "center" });
+  doc.setFontSize(13); setF("bold");
+  doc.text(tPdf("Farmer Statement", "কৃষক স্টেটমেন্ট"), 105, 28, { align: "center" });
+  doc.setFontSize(9); setF("normal");
+  doc.text(`${tPdf("Period", "সময়কাল")}: ${opts.range.from || "—"}  ${tPdf("to", "থেকে")}  ${opts.range.to || "—"}`, 105, 33, { align: "center" });
 
   // Member block
   autoTable(doc, {
     startY: 38,
     theme: "plain",
     body: [[
-      `Farmer ID: ${opts.farmer.name_en}${opts.farmer.name_bn ? " (" + opts.farmer.name_bn + ")" : ""}`,
-      `Code: ${opts.farmer.member_no || opts.farmer.farmer_code || "—"}`,
-      `Mobile: ${opts.farmer.mobile || "—"}`,
-      `Village: ${opts.farmer.village || "—"}`,
+      `${tPdf("Farmer ID", "কৃষক")}: ${opts.farmer.name_en}${opts.farmer.name_bn ? " (" + opts.farmer.name_bn + ")" : ""}`,
+      `${tPdf("Code", "কোড")}: ${opts.farmer.member_no || opts.farmer.farmer_code || "—"}`,
+      `${tPdf("Mobile", "মোবাইল")}: ${opts.farmer.mobile || "—"}`,
+      `${tPdf("Village", "গ্রাম")}: ${opts.farmer.village || "—"}`,
     ]],
-    styles: { fontSize: 9 },
+    styles: { fontSize: 9, ...tableFont },
   });
 
-  // Savings ledger w/ running balance
   let bal = Number(opts.opening_savings || 0);
-  const savRows: any[] = [["—", "Opening Balance", "", "", moneyPdf(bal)]];
+  const savRows: any[] = [["—", tPdf("Opening Balance", "প্রারম্ভিক স্থিতি"), "", "", moneyPdf(bal)]];
   let totDep = 0, totWd = 0;
   for (const s of opts.savings) {
     const dep = s.type === "deposit" ? Number(s.amount) : 0;
@@ -409,21 +417,20 @@ export function exportFarmerCombinedStatementPDF(opts: {
     totDep += dep; totWd += wd;
     savRows.push([fmtDate(s.txn_date), s.note || s.type, dep ? moneyPdf(dep) : "—", wd ? moneyPdf(wd) : "—", moneyPdf(bal)]);
   }
-  savRows.push(["", "Totals", moneyPdf(totDep), moneyPdf(totWd), moneyPdf(bal)]);
+  savRows.push(["", tPdf("Totals", "মোট"), moneyPdf(totDep), moneyPdf(totWd), moneyPdf(bal)]);
 
   let y = (doc as any).lastAutoTable.finalY + 4;
-  doc.setFont(undefined, "bold"); doc.text("Savings", 14, y); doc.setFont(undefined, "normal");
+  setF("bold"); doc.text(tPdf("Savings", "সঞ্চয়"), 14, y); setF("normal");
   autoTable(doc, {
     startY: y + 2,
-    head: [["Date", "Particulars", "Deposit", "Withdraw", "Balance"]],
+    head: [[tPdf("Date", "তারিখ"), tPdf("Particulars", "বিবরণ"), tPdf("Deposit", "জমা"), tPdf("Withdraw", "উত্তোলন"), tPdf("Balance", "স্থিতি")]],
     body: savRows,
     theme: "striped",
-    styles: { fontSize: 8 },
+    styles: { fontSize: 8, ...tableFont }, headStyles: tableFont,
   });
 
-  // Irrigation
   y = (doc as any).lastAutoTable.finalY + 4;
-  doc.setFont(undefined, "bold"); doc.text("Irrigation Charges", 14, y); doc.setFont(undefined, "normal");
+  setF("bold"); doc.text(tPdf("Irrigation Charges", "সেচ চার্জ"), 14, y); setF("normal");
   const irrTotals = opts.irrigation.reduce((a, r) => ({
     total: a.total + Number(r.total || 0),
     paid: a.paid + Number(r.paid_amount || 0),
@@ -431,18 +438,17 @@ export function exportFarmerCombinedStatementPDF(opts: {
   }), { total: 0, paid: 0, due: 0 });
   autoTable(doc, {
     startY: y + 2,
-    head: [["Date", "Season", "Dag", "Total", "Paid", "Due"]],
+    head: [[tPdf("Date", "তারিখ"), tPdf("Season", "মৌসুম"), tPdf("Dag", "দাগ"), tPdf("Total", "মোট"), tPdf("Paid", "পরিশোধিত"), tPdf("Due", "বকেয়া")]],
     body: [
       ...opts.irrigation.map(r => [fmtDate(r.entry_date), r.season || "—", r.dag || "—", moneyPdf(r.total), moneyPdf(r.paid_amount), moneyPdf(r.due_amount)]),
-      ["", "", "Totals", moneyPdf(irrTotals.total), moneyPdf(irrTotals.paid), moneyPdf(irrTotals.due)],
+      ["", "", tPdf("Totals", "মোট"), moneyPdf(irrTotals.total), moneyPdf(irrTotals.paid), moneyPdf(irrTotals.due)],
     ],
     theme: "striped",
-    styles: { fontSize: 8 },
+    styles: { fontSize: 8, ...tableFont }, headStyles: tableFont,
   });
 
-  // Loans
   y = (doc as any).lastAutoTable.finalY + 4;
-  doc.setFont(undefined, "bold"); doc.text("Loans", 14, y); doc.setFont(undefined, "normal");
+  setF("bold"); doc.text(tPdf("Loans", "ঋণ"), 14, y); setF("normal");
   const loanTotals = opts.loans.reduce((a, r) => ({
     principal: a.principal + Number(r.principal || 0),
     payable: a.payable + Number(r.total_payable || 0),
@@ -451,29 +457,28 @@ export function exportFarmerCombinedStatementPDF(opts: {
   }), { principal: 0, payable: 0, paid: 0, due: 0 });
   autoTable(doc, {
     startY: y + 2,
-    head: [["Issued", "Principal", "Rate %", "Payable", "Paid", "Due", "Status"]],
+    head: [[tPdf("Issued", "ইস্যু"), tPdf("Principal", "মূলধন"), tPdf("Rate %", "হার %"), tPdf("Payable", "প্রদেয়"), tPdf("Paid", "পরিশোধিত"), tPdf("Due", "বকেয়া"), tPdf("Status", "অবস্থা")]],
     body: [
       ...opts.loans.map(l => [fmtDate(l.issued_on), moneyPdf(l.principal), l.interest_rate, moneyPdf(l.total_payable), moneyPdf(l.paid), moneyPdf(l.due), l.status]),
-      ["Totals", moneyPdf(loanTotals.principal), "", moneyPdf(loanTotals.payable), moneyPdf(loanTotals.paid), moneyPdf(loanTotals.due), ""],
+      [tPdf("Totals", "মোট"), moneyPdf(loanTotals.principal), "", moneyPdf(loanTotals.payable), moneyPdf(loanTotals.paid), moneyPdf(loanTotals.due), ""],
     ],
     theme: "striped",
-    styles: { fontSize: 8 },
+    styles: { fontSize: 8, ...tableFont }, headStyles: tableFont,
   });
 
-  // Grand summary
   y = (doc as any).lastAutoTable.finalY + 4;
-  doc.setFont(undefined, "bold"); doc.text("Summary", 14, y); doc.setFont(undefined, "normal");
+  setF("bold"); doc.text(tPdf("Summary", "সারাংশ"), 14, y); setF("normal");
   autoTable(doc, {
     startY: y + 2,
-    head: [["Metric", "Amount"]],
+    head: [[tPdf("Metric", "মেট্রিক"), tPdf("Amount", "পরিমাণ")]],
     body: [
-      ["Savings closing balance", moneyPdf(bal)],
-      ["Irrigation total due", moneyPdf(irrTotals.due)],
-      ["Loan total due", moneyPdf(loanTotals.due)],
-      ["Net liability (Irr + Loan due − Savings)", moneyPdf(irrTotals.due + loanTotals.due - bal)],
+      [tPdf("Savings closing balance", "সঞ্চয় সমাপনী স্থিতি"), moneyPdf(bal)],
+      [tPdf("Irrigation total due", "সেচ মোট বকেয়া"), moneyPdf(irrTotals.due)],
+      [tPdf("Loan total due", "ঋণ মোট বকেয়া"), moneyPdf(loanTotals.due)],
+      [tPdf("Net liability (Irr + Loan due − Savings)", "নিট দায় (সেচ + ঋণ বকেয়া − সঞ্চয়)"), moneyPdf(irrTotals.due + loanTotals.due - bal)],
     ],
     theme: "grid",
-    styles: { fontSize: 9 },
+    styles: { fontSize: 9, ...tableFont }, headStyles: tableFont,
   });
 
   doc.save(`statement-${(opts.farmer.member_no || opts.farmer.farmer_code || "member")}.pdf`);
