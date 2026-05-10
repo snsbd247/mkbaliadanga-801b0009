@@ -485,7 +485,7 @@ export async function exportFarmerCombinedStatementPDF(opts: {
 }
 
 // ---------- Bank-style ledger Statement (Savings or Loan) ----------
-export function exportStatementPDF(opts: {
+export async function exportStatementPDF(opts: {
   brand: { company_name: string; address?: string };
   kind: "savings" | "loan";
   farmer: { name_en: string; name_bn?: string | null; account_number?: string | null; farmer_code?: string | null; mobile?: string | null; village?: string | null };
@@ -496,29 +496,40 @@ export function exportStatementPDF(opts: {
 }) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W = 210;
-  const title = opts.kind === "savings" ? "Savings Statement" : "Loan Statement";
+  const lang = pdfLang();
+  const bnFamily = lang === "bn" ? await ensureBanglaFont(doc) : null;
+  const useBn = lang === "bn" && !!bnFamily;
+  const setF = (style: "normal" | "bold" = "normal") => {
+    if (useBn && bnFamily) doc.setFont(bnFamily, "normal");
+    else doc.setFont(undefined, style);
+  };
+  const tableFont: any = useBn && bnFamily ? { font: bnFamily, fontStyle: "normal" } : {};
 
-  doc.setFontSize(15); doc.setFont(undefined, "bold");
+  const title = opts.kind === "savings"
+    ? tPdf("Savings Statement", "সঞ্চয় স্টেটমেন্ট")
+    : tPdf("Loan Statement", "ঋণ স্টেটমেন্ট");
+
+  doc.setFontSize(15); setF("bold");
   doc.text(opts.brand.company_name, W / 2, 14, { align: "center" });
-  doc.setFontSize(10); doc.setFont(undefined, "normal");
+  doc.setFontSize(10); setF("normal");
   if (opts.brand.address) doc.text(opts.brand.address, W / 2, 19, { align: "center" });
 
-  doc.setFontSize(13); doc.setFont(undefined, "bold");
+  doc.setFontSize(13); setF("bold");
   doc.text(title, W / 2, 27, { align: "center" });
-  doc.setFontSize(9); doc.setFont(undefined, "normal");
-  doc.text(`Period: ${opts.from || "—"} to ${opts.to || "—"}`, W / 2, 32, { align: "center" });
+  doc.setFontSize(9); setF("normal");
+  doc.text(`${tPdf("Period", "সময়কাল")}: ${opts.from || "—"} ${tPdf("to", "থেকে")} ${opts.to || "—"}`, W / 2, 32, { align: "center" });
 
   // Member block
   autoTable(doc, {
     startY: 36,
     theme: "plain",
     body: [[
-      `Name: ${opts.farmer.name_en}${opts.farmer.name_bn ? " (" + opts.farmer.name_bn + ")" : ""}`,
-      `A/C: ${opts.farmer.account_number || opts.farmer.farmer_code || "—"}`,
-      `Mobile: ${opts.farmer.mobile || "—"}`,
-      `Village: ${opts.farmer.village || "—"}`,
+      `${tPdf("Name", "নাম")}: ${opts.farmer.name_en}${opts.farmer.name_bn ? " (" + opts.farmer.name_bn + ")" : ""}`,
+      `${tPdf("A/C", "অ্যাকাউন্ট")}: ${opts.farmer.account_number || opts.farmer.farmer_code || "—"}`,
+      `${tPdf("Mobile", "মোবাইল")}: ${opts.farmer.mobile || "—"}`,
+      `${tPdf("Village", "গ্রাম")}: ${opts.farmer.village || "—"}`,
     ]],
-    styles: { fontSize: 9 },
+    styles: { fontSize: 9, ...tableFont },
     margin: { left: 12, right: 12 },
   });
 
@@ -526,7 +537,7 @@ export function exportStatementPDF(opts: {
 
   autoTable(doc, {
     startY,
-    head: [["Date", "Description", "Debit", "Credit", "Balance"]],
+    head: [[tPdf("Date", "তারিখ"), tPdf("Description", "বিবরণ"), tPdf("Debit", "ডেবিট"), tPdf("Credit", "ক্রেডিট"), tPdf("Balance", "স্থিতি")]],
     body: opts.rows.map(r => [
       fmtDate(r.entry_date),
       r.description || "—",
@@ -535,15 +546,15 @@ export function exportStatementPDF(opts: {
       moneyPdf(r.balance),
     ]),
     foot: [[
-      "Totals", "",
+      tPdf("Totals", "মোট"), "",
       moneyPdf(opts.totals.debit),
       moneyPdf(opts.totals.credit),
       moneyPdf(opts.totals.closing),
     ]],
     theme: "grid",
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [30, 110, 70], halign: "center" },
-    footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: "bold" },
+    styles: { fontSize: 9, ...tableFont },
+    headStyles: { fillColor: [30, 110, 70], halign: "center", ...tableFont },
+    footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: "bold", ...tableFont },
     columnStyles: {
       0: { cellWidth: 24 },
       1: { cellWidth: "auto" },
