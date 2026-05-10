@@ -7,7 +7,7 @@ import {
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
   BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, MessageSquare, MessagesSquare, MapPin,
-  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload,
+  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload, Package,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -102,7 +102,14 @@ export function AppSidebar() {
       ],
     },
 
-    // ── Accounting ──
+    // ── Assets / এসেট ──
+    {
+      key: "assets", icon: Package, label: t("assetsGroup" as any) || "এসেট",
+      children: [
+        { url: "/assets/items", icon: Package, label: t("assetItems" as any) || "এসেট আইটেম", permKey: "assets" },
+        { url: "/admin/asset-categories", icon: Briefcase, label: t("assetCategories" as any) || "এসেট ক্যাটাগরি", permKey: "assets" },
+      ],
+    },
     {
       key: "accounting", icon: Calculator, label: t("accounting"),
       children: [

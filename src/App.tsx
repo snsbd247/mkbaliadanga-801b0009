@@ -102,6 +102,9 @@ import AdminLookups from "./pages/admin/Lookups";
 import RateAuditLog from "./pages/admin/RateAuditLog";
 import IrrigationCategories from "./pages/admin/IrrigationCategories";
 import IrrigationCategoryRates from "./pages/admin/IrrigationCategoryRates";
+import AssetCategories from "./pages/admin/AssetCategories";
+import AssetItems from "./pages/assets/AssetItems";
+import AssetItemDetail from "./pages/assets/AssetItemDetail";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
@@ -210,6 +213,9 @@ const App = () => (
                 <Route path="/admin/rate-audit" element={<RequireRole roles={["admin","super_admin"]}><RateAuditLog /></RequireRole>} />
                 <Route path="/admin/irrigation-categories" element={<RequireRole roles={["admin","super_admin"]}><IrrigationCategories /></RequireRole>} />
                 <Route path="/admin/irrigation-category-rates" element={<RequireRole roles={["admin","super_admin"]}><IrrigationCategoryRates /></RequireRole>} />
+                <Route path="/admin/asset-categories" element={<RequirePerm module="assets" action="can_edit"><AssetCategories /></RequirePerm>} />
+                <Route path="/assets/items" element={<RequirePerm module="assets"><AssetItems /></RequirePerm>} />
+                <Route path="/assets/items/:id" element={<RequirePerm module="assets"><AssetItemDetail /></RequirePerm>} />
                 <Route path="/reports/rate-source" element={<RequireRole roles={["admin","super_admin"]}><RateSourceReport /></RequireRole>} />
                 <Route path="/reports/override-audit" element={<RequireRole roles={["admin","super_admin"]}><OverrideAuditReport /></RequireRole>} />
                 <Route path="/irrigation-reports" element={<IrrigationReports />} />
