@@ -90,7 +90,7 @@ export default function IrrigationRates() {
 
   async function save() {
     if (saving) return;
-    if (!form.season_id) return toast.error("Select a season");
+    if (!form.season_id || form.season_id === "null") return toast.error("Select a season");
     if (!(Number(form.base_rate) > 0)) return toast.error("Base rate must be > 0");
     setSaving(true);
     try {
