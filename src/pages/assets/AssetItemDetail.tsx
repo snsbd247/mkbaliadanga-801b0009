@@ -12,6 +12,9 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { statusLabel, statusVariant } from "./AssetItems";
 import { toast } from "sonner";
 import { PurchaseDialog, MovementDialog, InstallationDialog, MaintenanceDialog, DamageDialog, DisposalDialog } from "./AssetActionDialogs";
+import { AssetQRCard } from "./AssetQRCard";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { QrCode } from "lucide-react";
 
 type Asset = any;
 
@@ -72,9 +75,25 @@ export default function AssetItemDetail() {
         title={asset.name_bn || asset.name_en}
         description={`${asset.asset_code}${asset.serial_no ? ` · SN: ${asset.serial_no}` : ""}`}
         actions={
-          <Button variant="outline" asChild>
-            <Link to="/assets/items"><ArrowLeft className="h-4 w-4 mr-1" />{tx("Back", "ফিরে যান")}</Link>
-          </Button>
+          <div className="flex gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline"><QrCode className="h-4 w-4 mr-1" />{tx("QR", "QR")}</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader><DialogTitle>{tx("Asset QR code", "এসেট QR কোড")}</DialogTitle></DialogHeader>
+                <AssetQRCard
+                  assetId={asset.id}
+                  assetCode={asset.asset_code}
+                  name={asset.name_bn || asset.name_en}
+                  serialNo={asset.serial_no}
+                />
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" asChild>
+              <Link to="/assets/items"><ArrowLeft className="h-4 w-4 mr-1" />{tx("Back", "ফিরে যান")}</Link>
+            </Button>
+          </div>
         }
       />
 

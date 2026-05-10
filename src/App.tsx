@@ -107,6 +107,7 @@ import AssetItems from "./pages/assets/AssetItems";
 import AssetItemDetail from "./pages/assets/AssetItemDetail";
 import AssetDashboard from "./pages/assets/AssetDashboard";
 import AssetReports from "./pages/assets/AssetReports";
+import AssetScanner from "./pages/assets/AssetScanner";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
@@ -220,6 +221,7 @@ const App = () => (
                 <Route path="/assets/items/:id" element={<RequirePerm module="assets"><AssetItemDetail /></RequirePerm>} />
                 <Route path="/assets/dashboard" element={<RequirePerm module="assets"><AssetDashboard /></RequirePerm>} />
                 <Route path="/assets/reports" element={<RequirePerm module="assets"><AssetReports /></RequirePerm>} />
+                <Route path="/assets/scan" element={<RequirePerm module="assets"><AssetScanner /></RequirePerm>} />
                 <Route path="/reports/rate-source" element={<RequireRole roles={["admin","super_admin"]}><RateSourceReport /></RequireRole>} />
                 <Route path="/reports/override-audit" element={<RequireRole roles={["admin","super_admin"]}><OverrideAuditReport /></RequireRole>} />
                 <Route path="/irrigation-reports" element={<IrrigationReports />} />
