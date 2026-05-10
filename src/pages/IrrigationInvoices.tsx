@@ -1014,6 +1014,23 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               <Label>{tx("Due *", "মেয়াদ *")}</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
+            <div>
+              <Label>{tx("Default category (optional)", "ডিফল্ট ক্যাটেগরি (ঐচ্ছিক)")}</Label>
+              <Select value={defaultCategoryId || "none"} onValueChange={(v) => setDefaultCategoryId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{tx("— None (use land-type rate) —", "— নেই (জমির ধরনের রেট) —")}</SelectItem>
+                  {categories.map((c) => {
+                    const r = categoryRates.find((x) => x.irrigation_category_id === c.id);
+                    return (
+                      <SelectItem key={c.id} value={c.id} disabled={!r || !(r.rate > 0)}>
+                        {c.name_bn || c.name_en} {r && r.rate > 0 ? `— ${r.rate}/${r.rate_type}` : ` (${tx("no rate", "রেট নেই")})`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {seasonId && (
             <div className="text-xs text-muted-foreground">
