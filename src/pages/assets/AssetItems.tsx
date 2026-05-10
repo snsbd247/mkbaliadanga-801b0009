@@ -363,7 +363,7 @@ export default function AssetItems() {
               </TableRow>
             ))}
             {!visible.length && (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{tx("No assets yet", "এখনও কোনো এসেট নেই")}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{tx("No assets yet", "এখনও কোনো এসেট নেই")}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
