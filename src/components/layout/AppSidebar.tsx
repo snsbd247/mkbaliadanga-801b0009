@@ -108,6 +108,8 @@ export function AppSidebar() {
       children: [
         { url: "/assets/dashboard", icon: Package, label: t("assetDashboard" as any) || "ড্যাশবোর্ড", permKey: "assets" },
         { url: "/assets/items", icon: Package, label: t("assetRegistry" as any) || "এসেট রেজিস্ট্রি", permKey: "assets" },
+        { url: "/assets/stock", icon: Package, label: t("assetStock" as any) || "এসেট স্টক", permKey: "assets" },
+        { url: "/assets/movements", icon: Package, label: t("assetMovements" as any) || "এসেট স্থানান্তর", permKey: "assets" },
         { url: "/assets/reports", icon: Package, label: t("assetReports" as any) || "এসেট রিপোর্ট", permKey: "assets" },
         { url: "/assets/scan", icon: Package, label: t("assetScan" as any) || "QR স্ক্যান", permKey: "assets" },
         { url: "/assets/scan/history", icon: Package, label: t("assetScanHistory" as any) || "স্ক্যান ইতিহাস", permKey: "assets" },
