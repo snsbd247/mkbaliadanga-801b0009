@@ -1,77 +1,106 @@
-# Loan Penalty Engine v2 — Expansion Plan
 
-This builds on the Phase 2 work already shipped (`loan_delay_fee_settings`, `loanDelayFee.ts`, `LoanDelaySettings.tsx`, strict-validation in `Payments.tsx`, `LoanOverdueReport`, `InstallmentCollectionReport`, `LoanPenaltyReport`, demo seeding). It expands the engine to **daily / combined penalties**, **snapshots**, **strict-mode toggle**, **smart import**, and **status auto-sync**.
+# Full i18n Cleanup & Language Persistence
 
-I'll ship in **6 phases**. Each phase is self-contained and leaves the system green.
+## Goal
 
----
+Make every menu, page, tab, filter, empty state, toast, PDF/Excel export, and dialog respect the EN/BN toggle. No hardcoded Bengali or English strings should remain in the UI layer. Logged-in user's language preference must be remembered across sessions.
 
-## Phase A — Schema additions (additive only, zero risk)
+## Scope (in order of execution)
 
-Migration:
-- `loan_delay_fee_settings`: add `daily_penalty NUMERIC DEFAULT 0`, `max_penalty NUMERIC`, `enforcement_mode TEXT DEFAULT 'block'` (`block|warn|allow`), rename concept of `mode` → keep existing `flat|percent` and add `daily|combined` values.
-- `loan_installments`: add `penalty_amount NUMERIC DEFAULT 0`, `overdue_days INTEGER DEFAULT 0`, `penalty_rule_snapshot JSONB`, `strict_validation_override BOOLEAN DEFAULT FALSE`. (`installment_status` already exists as `status` — keep.)
-- `loan_payments`: add `penalty_collected NUMERIC DEFAULT 0`, `override_reason TEXT`, `override_by UUID`.
-- Indexes: `loan_installments(loan_id, due_date, status)`, `loan_payments(payment_date)`, `loan_payments(loan_id)`.
-- Trigger `loan_payment_after_insert`: recompute `loans.status` (`completed` when all installments paid, `overdue` when any past-due unpaid, else current value).
+### 1. Audit — find every hardcoded string
+Run a project-wide scan to catalog hardcoded text:
+- Bengali characters (`/[\u0980-\u09FF]/`) anywhere in `src/**/*.{ts,tsx}`
+- Hardcoded English JSX strings (titles, button labels, table headers, toast messages, placeholders)
+- `// i18n-ignore-file` markers — review whether they're justified, remove if not
+- `toast.error("...")` / `toast.success("...")` / `confirm("...")` calls with literal strings
 
-## Phase B — Engine v2 (`src/lib/loanDelayFee.ts`)
+Output: `docs/i18n-cleanup-report.md` listing each file, line, and the string to extract.
 
-Extend pure functions:
-- `mode: "flat" | "percent" | "daily" | "combined"`.
-- New formulas with `max_penalty` cap and `grace_days`.
-- `computePenaltyBreakdown()` returns `{ percentPart, dailyPart, fixedPart, capped, overdueDays, total }`.
-- `buildPenaltySnapshot()` returns the JSON stored on the installment at payment-time.
-- Backward-compatible: existing `flat|percent` callers unchanged.
+### 2. Translation registry expansion
+Add all newly-extracted keys to `src/i18n/translations.ts` (both `en` and `bn` blocks). Group by module:
+- `dashboard.*`, `farmers.*`, `loans.*`, `savings.*`, `irrigation.*`, `settings.*`
+- `reports.*` (already partially done — finish the remaining report pages)
+- `common.*` for shared labels (Save, Cancel, Delete, Confirm, etc.)
+- `toast.*` for success/error messages
+- `export.*` for PDF/Excel headers
 
-## Phase C — Settings UI + Strict Mode
+### 3. Page-by-page conversion
+Replace hardcoded strings with `t("key")` calls, file by file. Priority order:
 
-Update `src/pages/admin/LoanDelaySettings.tsx`:
-- Add `daily_penalty`, `max_penalty`, `enforcement_mode` (block/warn/allow).
-- Live preview card: enter installment + days late → see calculated breakdown.
-- Bangla helper text for each field.
+**Reports (finish what's started):**
+- `CollectionReport`, `ExpensesReport`, `FarmerRejectionsReport`, `InvoiceReport`, `IrrigationDueReport`, `PromiseDueReport`, `ReceiptKindReport`, `SavingsLoanReport` — tabs, filters, empty states, table headers, export buttons.
 
-## Phase D — Payment flow upgrade
+**Dashboard:**
+- `Dashboard.tsx`, `FarmerDashboard.tsx`, dashboard cards (`SmsProviderStatusCard`, etc.)
 
-`src/pages/Payments.tsx` (loan branch) + `LoanDetail.tsx`:
-- Show breakdown card: Installment / Penalty / Total payable / Previous due / Remaining.
-- Honor `enforcement_mode`:
-  - `block` → reject under-payment with the Bangla toast.
-  - `warn` → confirm dialog, proceed.
-  - `allow` → require **override reason**, write `override_reason` + `override_by`, log to `system_audit_logs` and `loan_installment_delay_audit`.
-- On insert: write `penalty_collected`, snapshot `penalty_rule_snapshot` to the installment row.
-- After insert: recompute installment `status`, `paid_amount`, `penalty_amount`, `overdue_days`. (Trigger handles loan-level rollup.)
+**Farmer module:**
+- `Farmers.tsx`, `FarmerDetail.tsx`, `FarmerCard.tsx`, `FarmerStatement.tsx`, `FarmerProfileReport.tsx`, `FarmersImport.tsx`, `BulkCards.tsx`, `VoterList.tsx`, `VoterAudit.tsx`, `VoterHistory.tsx`, dialogs in `components/farmers/`
 
-## Phase E — Smart Loan Import
+**Loans:**
+- `Loans.tsx`, `LoanDetail.tsx`, `LoanPlans.tsx`, `LoanReceiptSettings.tsx`, `BulkLoanExport.tsx`
 
-`src/pages/DataImport.tsx` loan flow:
-- Accept CSV columns: `Loan No, Installment No, Due Date, Amount, Status`.
-- If installment rows missing for a loan → **auto-generate** schedule from loan plan + installment count + start date (Option 1) and surface the line in the report.
-- Validations: duplicate installment, missing farmer, invalid loan mapping, invalid date/amount, office mismatch.
-- Result modal: imported / skipped / failed / auto-generated counts + downloadable CSV error report (re-using `csvExport.ts`).
-- Bangla validation message: **ইন্সটলমেন্ট ডাটা অনুপস্থিত। অটো-জেনারেট অথবা ইমপোর্ট সংশোধন করুন।**
+**Savings:**
+- `Savings.tsx`, `SavingsStatement.tsx`, `ShareCollection.tsx`, `ShareCapitalReconciliation.tsx`
 
-## Phase F — Receipt + Tests
+**Irrigation:**
+- `IrrigationInvoices.tsx`, `IrrigationRates.tsx`, `IrrigationReports.tsx`, `irrigation/IrrigationReportCharts.tsx`, `components/farmers/IrrigationInvoicesTab.tsx`, `components/payments/IrrigationPaymentPanel.tsx`
 
-- `paymentReceiptPdf.ts` loan branch: add Installment No, Due Date, Paid Date, Installment Amount, Penalty, Total Received, Remaining (Bangla layout).
-- Unit tests: daily/combined math, cap, grace, snapshot shape, status transitions.
-- Integration test: override flow writes audit + payment columns.
-- Playwright (`e2e/loan-reliability.spec.ts` extension): warn mode dialog, allow mode override prompt, import auto-generation banner.
+**Settings & Admin:**
+- `Settings.tsx`, `SmsSettings.tsx`, `Backup.tsx`, `Offices.tsx`, `Seasons.tsx`, `Users.tsx`, `Profile.tsx`, `ReceiptTemplate.tsx`, `CardDesigner.tsx`, all `pages/admin/*`
 
----
+**Shared components & toasts:**
+- `components/layout/*`, `components/auth/*`, `components/receipts/*`, `components/exports/ExportDialog.tsx`
 
-## Compatibility guarantees
+### 4. Persist user language preference
+Currently `LanguageProvider` uses `localStorage` only. Extend it:
 
-- All schema changes are **additive** (new columns/indexes/trigger). Existing `loans`, `loan_payments`, `loan_installments` columns untouched.
-- Existing flat/percent settings continue to work — `daily=0`, `max_penalty=null`, `enforcement_mode='block'` defaults preserve current behavior.
-- Receipts/SMS/ledger posting/RLS — unchanged interfaces.
-- Demo-reset seed remains valid (new columns nullable / defaulted).
+- Add `language` column to `profiles` table (`text default 'bn' check (language in ('en','bn'))`).
+- On login, `LanguageProvider` reads the user's `profiles.language` and applies it (overrides localStorage).
+- When user toggles language, write to `profiles.language` (debounced upsert) for the logged-in user.
+- Anonymous users (auth screen, farmer portal login) keep using `localStorage`.
+- On logout, fall back to `localStorage` / browser default.
 
----
+### 5. PDF & Excel exports
+Audit every export function in `src/lib/`:
+- `bnReceipts.ts`, `cardPdf.ts`, `paymentReceiptPdf.ts`, `irrigationInvoicePdf.ts`, `csvExport.ts`, `landExport.ts`, `landRelationsExport.ts`, `exports.ts`, `irrigationExports.ts`
 
-## How would you like to proceed?
+For each: accept current `lang` (from `LanguageProvider`) and:
+- Localize PDF titles, column headers, footer.
+- Format numbers with `bnNumber` for BN, regular for EN.
+- Format dates via `format.ts` helpers (`fmtDate`, `fmtMoney`) using locale-aware variants.
+- For CSV/Excel, headers in chosen language; numeric values stay machine-readable (no Bengali digits in CSV — keep ASCII for data integrity, only headers translated).
 
-Reply with one of:
-- **"all phases"** — run A → F sequentially (one migration, then code).
-- **"phase A"** / **"phase B"** … — run a single phase.
-- **"skip import"** / **"skip receipt"** — drop a section.
+Update each call site to pass the active language.
+
+### 6. QA — manual and automated
+- Run `scripts/i18n-scan.mjs` to confirm no new hardcoded strings remain.
+- Update `e2e/i18n-smoke.spec.ts` and `e2e/pdf-localization.spec.ts` to cover the newly-localized pages.
+- Manually toggle EN ⇄ BN on every menu route via the browser tool; screenshot each report and dashboard page to confirm:
+  - Tab labels translated
+  - Filter labels & placeholders translated
+  - Table headers translated
+  - Empty-state messages translated
+  - Toast messages translated
+  - Date/money formatted per locale
+- Open one PDF and one CSV export per module in each language and visually verify.
+
+### 7. Execution batches (delivery plan)
+This work is too large for a single message. I propose splitting into 6 commits, each independently mergeable:
+
+| Batch | Scope | Approx files |
+|-------|-------|--------------|
+| 1 | Audit script + translation key additions + persistence migration | ~5 |
+| 2 | Reports module finish | ~10 |
+| 3 | Dashboard + Farmer module | ~15 |
+| 4 | Loans + Savings + Irrigation | ~15 |
+| 5 | Settings + Admin + shared components | ~20 |
+| 6 | Exports (PDF/CSV) + QA tests + screenshots | ~10 |
+
+After each batch I'll run the i18n scan and show you the remaining count so progress is measurable.
+
+## Open questions
+
+1. **Language column default** — should new users default to `bn` (current app default) or detect from browser?
+2. **CSV exports** — keep numeric values in ASCII digits even in BN mode (recommended for re-importability), or output Bengali digits in the visible cells?
+3. **Should I start now with Batch 1 (audit + persistence + translation keys)** so you can review the foundation before I touch the page files? Or proceed straight through all 6 batches?
+
