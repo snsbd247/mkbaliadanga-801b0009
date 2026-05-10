@@ -914,6 +914,10 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               generated_at: new Date().toISOString(),
             },
           };
+          // Hybrid rate engine snapshot fields (Phase 4)
+          payload.rate_source = "STANDARD";
+          payload.applied_rate = row.rate;
+          payload.original_standard_rate = row.rate;
           const { error } = await supabase.from("irrigation_invoices" as any).insert(payload);
           if (error) { failed++; console.error(error); } else success++;
         } catch (e) { failed++; console.error(e); }
