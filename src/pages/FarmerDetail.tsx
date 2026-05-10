@@ -831,11 +831,11 @@ export default function FarmerDetail() {
                               className={liveErr ? "border-destructive focus-visible:ring-destructive" : undefined}
                             />
                             {liveErr ? (
-                              <p className="text-xs text-destructive mt-1">{liveErr} — দয়া করে কমা দিয়ে আলাদা করুন এবং শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> ব্যবহার করুন।</p>
+                              <p className="text-xs text-destructive mt-1">{liveErr} — {tx("Please separate with commas; only digits/letters/", "দয়া করে কমা দিয়ে আলাদা করুন এবং শুধু সংখ্যা/অক্ষর/")}<code>/</code>/<code>-</code>{tx(" allowed.", " ব্যবহার করুন।")}</p>
                             ) : (
                               <p className="text-xs text-muted-foreground mt-1">
-                                একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ: <code>123, 124/A, 125-B</code>
-                                {preview && preview !== land.dag_no.trim() && <> — সংরক্ষণে রূপান্তরিত হবে: <strong>{preview}</strong></>}
+                                {tx("Separate multiple Dag numbers with comma (,). Example:", "একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ:")} <code>123, 124/A, 125-B</code>
+                                {preview && preview !== land.dag_no.trim() && <> — {tx("will be saved as:", "সংরক্ষণে রূপান্তরিত হবে:")} <strong>{preview}</strong></>}
                               </p>
                             )}
                           </div>
