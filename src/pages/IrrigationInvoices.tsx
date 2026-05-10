@@ -780,15 +780,30 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
                 {tx("Rate override audit", "রেট ওভাররাইড অডিট")} ({overrides.length})
               </summary>
               <div className="space-y-2 mt-2">
-                {overrides.map((o) => (
-                  <div key={o.id} className="text-[11px] border rounded p-2 bg-muted/30">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{fmtDate(o.created_at)}</span>
-                      <span><span className="line-through text-muted-foreground">{money(o.original_rate)}</span> → <span className="font-semibold">{money(o.overridden_rate)}</span></span>
+                {overrides.map((o) => {
+                  const diff = Number(o.overridden_rate || 0) - Number(o.original_rate || 0);
+                  const diffSign = diff > 0 ? "+" : "";
+                  return (
+                    <div key={o.id} className="text-[11px] border-l-2 border-primary/40 pl-2 py-1 bg-muted/30 rounded-r">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground font-mono">{fmtDate(o.created_at)} {new Date(o.created_at).toLocaleTimeString()}</span>
+                        <span>
+                          <span className="line-through text-muted-foreground">{money(o.original_rate)}</span>
+                          {" → "}
+                          <span className="font-semibold">{money(o.overridden_rate)}</span>
+                          <span className={`ml-1 ${diff > 0 ? "text-destructive" : "text-emerald-600"}`}>({diffSign}{money(diff)})</span>
+                        </span>
+                      </div>
+                      <div className="mt-1">
+                        <span className="font-medium">{tx("Reason", "কারণ")}: </span>
+                        <span>{o.override_reason || <em className="text-muted-foreground">{tx("(none)", "(নেই)")}</em>}</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        {tx("By", "দ্বারা")}: <span className="font-mono">{o.created_by ? String(o.created_by).slice(0, 8) : "—"}</span>
+                      </div>
                     </div>
-                    {o.override_reason && <div className="mt-1">{o.override_reason}</div>}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </details>
           )}
