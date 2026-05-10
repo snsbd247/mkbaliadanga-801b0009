@@ -556,7 +556,7 @@ export default function DataImport() {
             const f = farmerMap.get(String(raw.account_number));
             if (!f) throw new Error("Farmer not found for account_number");
             const loanId = loanByFarmer.get(f.id);
-            if (!loanId) throw new Error("ইন্সটলমেন্ট ডাটা অনুপস্থিত। অটো-জেনারেট অথবা ইমপোর্ট সংশোধন করুন।");
+            if (!loanId) throw new Error("Installment data missing. Auto-generate or fix the import. / ইন্সটলমেন্ট ডাটা অনুপস্থিত। অটো-জেনারেট অথবা ইমপোর্ট সংশোধন করুন।");
             const instNo = Number(raw.installment_no);
             if (!Number.isFinite(instNo) || instNo < 1) throw new Error("invalid installment_no");
             if (!raw.due_date) throw new Error("due_date required");
