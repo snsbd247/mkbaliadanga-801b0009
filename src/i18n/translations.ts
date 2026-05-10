@@ -3085,6 +3085,10 @@ export const translations = {
     auditAndMonitoring: "অডিট ও মনিটরিং",
     auditTimeline: "অডিট টাইমলাইন",
     retryJobs: "পুনরায় চেষ্টার কাজ",
+    loanDelaySettings: "ঋণ জরিমানা সেটিংস",
+    loanOverdueReport: "ঋণ মেয়াদোত্তীর্ণ",
+    installmentCollectionReport: "কিস্তি সংগ্রহ",
+    loanPenaltyReport: "ঋণ জরিমানা",
   },
 } as const;
 
