@@ -704,6 +704,16 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
   const [recalcOpen, setRecalcOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [overrides, setOverrides] = useState<any[]>([]);
+  useEffect(() => {
+    if (!invoiceId) { setOverrides([]); return; }
+    (supabase
+      .from("irrigation_rate_overrides" as any)
+      .select("id,original_rate,overridden_rate,override_reason,created_at,created_by")
+      .eq("irrigation_invoice_id", invoiceId)
+      .order("created_at", { ascending: false }) as any)
+      .then(({ data }: any) => setOverrides((data as any[]) ?? []));
+  }, [invoiceId]);
   if (!inv) return null;
 
   async function recalc() {
