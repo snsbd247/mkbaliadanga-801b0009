@@ -21,35 +21,44 @@ function err(status: number, msg: string) {
   });
 }
 
+async function safeCount(table: string): Promise<number> {
+  try {
+    const { count } = await admin.from(table).select("id", { head: true, count: "exact" }).is("farmer_id", null);
+    return count ?? 0;
+  } catch (e) {
+    console.error(`count failed for ${table}`, e);
+    return 0;
+  }
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(fallback), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); }).catch(() => { clearTimeout(t); resolve(fallback); });
+  });
+}
+
 async function runScan() {
-  // Use service role to call the function as superuser bypass via direct queries (function checks auth.uid()).
-  // Replicate the scan inline so we don't need a logged-in user when called by cron.
-  const queries: Array<[string, string]> = [
-    ["sav_null", `SELECT count(*)::int AS n FROM savings_transactions WHERE farmer_id IS NULL`],
-    ["sav_orphan", `SELECT count(*)::int AS n FROM savings_transactions s LEFT JOIN farmers f ON f.id=s.farmer_id WHERE s.farmer_id IS NOT NULL AND f.id IS NULL`],
-    ["loan_null", `SELECT count(*)::int AS n FROM loans WHERE farmer_id IS NULL`],
-    ["loan_orphan", `SELECT count(*)::int AS n FROM loans s LEFT JOIN farmers f ON f.id=s.farmer_id WHERE s.farmer_id IS NOT NULL AND f.id IS NULL`],
-    ["lp_orphan", `SELECT count(*)::int AS n FROM loan_payments lp LEFT JOIN loans l ON l.id=lp.loan_id WHERE l.id IS NULL`],
-    ["irr_null", `SELECT count(*)::int AS n FROM irrigation_charges WHERE farmer_id IS NULL`],
-    ["irr_orphan", `SELECT count(*)::int AS n FROM irrigation_charges s LEFT JOIN farmers f ON f.id=s.farmer_id WHERE s.farmer_id IS NOT NULL AND f.id IS NULL`],
-    ["pay_null", `SELECT count(*)::int AS n FROM payments WHERE farmer_id IS NULL`],
-    ["pay_orphan", `SELECT count(*)::int AS n FROM payments s LEFT JOIN farmers f ON f.id=s.farmer_id WHERE s.farmer_id IS NOT NULL AND f.id IS NULL`],
-  ];
-  // Use individual count queries via PostgREST head/exact to keep this safe and parameter-free.
-  const out: Record<string, number> = {};
-  out.sav_null = (await admin.from("savings_transactions").select("id", { head: true, count: "exact" }).is("farmer_id", null)).count ?? 0;
-  out.loan_null = (await admin.from("loans").select("id", { head: true, count: "exact" }).is("farmer_id", null)).count ?? 0;
-  out.irr_null = (await admin.from("irrigation_charges").select("id", { head: true, count: "exact" }).is("farmer_id", null)).count ?? 0;
-  out.pay_null = (await admin.from("payments").select("id", { head: true, count: "exact" }).is("farmer_id", null)).count ?? 0;
+  // Run all count queries in parallel to stay under CPU/wall-time limits.
+  const [sav_null, loan_null, irr_null, pay_null] = await Promise.all([
+    safeCount("savings_transactions"),
+    safeCount("loans"),
+    safeCount("irrigation_charges"),
+    safeCount("payments"),
+  ]);
 
-  // For orphans (FK-violation edge cases) we rely on the existing FK constraints (so should be 0).
-  // Still expose 0 explicitly for the report shape.
-  out.sav_orphan = 0; out.loan_orphan = 0; out.irr_orphan = 0;
-  out.pay_orphan = 0; out.lp_orphan = 0;
+  const out: Record<string, number> = {
+    sav_null, loan_null, irr_null, pay_null,
+    sav_orphan: 0, loan_orphan: 0, irr_orphan: 0, pay_orphan: 0, lp_orphan: 0,
+  };
 
-  // Ledger orphans
-  const ledgerOrphans = await admin.rpc("ledger_orphan_refs");
-  const orphanList = (ledgerOrphans.data ?? []) as any[];
+  // Ledger orphans — protect with timeout so a slow RPC can't kill the function.
+  const ledgerOrphans = await withTimeout(
+    admin.rpc("ledger_orphan_refs").then((r) => r.data ?? []),
+    5000,
+    [] as any[],
+  );
+  const orphanList = (ledgerOrphans ?? []) as any[];
   const byType: Record<string, number> = {};
   for (const o of orphanList) {
     byType[o.reference_type] = (byType[o.reference_type] || 0) + Number(o.entry_count || 1);
