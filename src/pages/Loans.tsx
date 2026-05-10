@@ -112,7 +112,7 @@ export default function Loans() {
       await supabase.from("notifications").insert({
         user_id: loan.created_by,
         kind: status === "approved" ? "loan_approved" : "loan_rejected",
-        title: status === "approved" ? "ঋণ অনুমোদিত" : "ঋণ প্রত্যাখ্যাত",
+        title: status === "approved" ? tx("Loan approved", "ঋণ অনুমোদিত") : tx("Loan rejected", "ঋণ প্রত্যাখ্যাত"),
         body: `${loan?.farmers?.name_en ?? ""} — ৳${Number(loan?.principal ?? 0).toLocaleString()}`,
         link: "/loans",
       });
