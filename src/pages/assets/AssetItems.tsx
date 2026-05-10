@@ -326,6 +326,7 @@ export default function AssetItems() {
             <TableRow>
               <TableHead>{tx("Code", "কোড")}</TableHead>
               <TableHead>{tx("Name", "নাম")}</TableHead>
+              <TableHead>{tx("Type", "টাইপ")}</TableHead>
               <TableHead>{tx("Category", "ক্যাটাগরি")}</TableHead>
               <TableHead>{tx("Tracking", "ট্র্যাকিং")}</TableHead>
               <TableHead>{tx("Serial", "সিরিয়াল")}</TableHead>
@@ -339,6 +340,9 @@ export default function AssetItems() {
               <TableRow key={r.id}>
                 <TableCell className="font-mono text-xs">{r.asset_code}</TableCell>
                 <TableCell>{r.name_bn || r.name_en}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{assetTypeLabel(r.asset_type ?? "fixed_asset", tx)}</Badge>
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{catName(r.asset_category_id)}</TableCell>
                 <TableCell>
                   <Badge variant={r.tracking_mode === "serial" ? "default" : "secondary"}>
