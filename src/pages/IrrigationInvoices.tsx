@@ -62,7 +62,7 @@ function statusLabel(tx: (en: string, bn: string) => string, st: InvoiceStatus) 
 }
 
 export default function IrrigationInvoices() {
-  const { t, tx } = useLang();
+  const { t, tx, lang } = useLang();
   const { user, isSuper } = useAuth();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -98,7 +98,7 @@ export default function IrrigationInvoices() {
 }
 
 function InvoiceListTab({ seasons, offices, isSuper }: any) {
-  const { tx } = useLang();
+  const { tx, lang } = useLang();
   const { confirm } = useConfirm();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
@@ -363,10 +363,10 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <p className="text-sm text-muted-foreground">{filtered.length} {tx("invoices", "টি ইনভয়েস")} {loading && tx("(loading…)", "(লোড হচ্ছে…)")}</p>
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(filtered)} disabled={!filtered.length}>
+            <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(filtered, "irrigation-invoices.csv", lang)} disabled={!filtered.length}>
               <FileDown className="h-4 w-4 mr-1" /> CSV
             </Button>
-            <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(filtered)} disabled={!filtered.length}>
+            <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(filtered, "irrigation-invoices.xlsx", lang)} disabled={!filtered.length}>
               <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
             </Button>
           </div>
