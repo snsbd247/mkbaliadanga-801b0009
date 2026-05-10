@@ -17,10 +17,15 @@ export interface RlsErrorEntry {
 
 const KEY = "__rls_errors__";
 const MAX = 50;
+const TTL_MS = 60 * 60 * 1000; // 1 hour — stale errors auto-evict
 let installed = false;
 
 function load(): RlsErrorEntry[] {
-  try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
+  try {
+    const rows: RlsErrorEntry[] = JSON.parse(localStorage.getItem(KEY) || "[]");
+    const cutoff = Date.now() - TTL_MS;
+    return rows.filter((r) => r && typeof r.ts === "number" && r.ts >= cutoff);
+  } catch { return []; }
 }
 function save(rows: RlsErrorEntry[]) {
   try { localStorage.setItem(KEY, JSON.stringify(rows.slice(-MAX))); } catch {}
