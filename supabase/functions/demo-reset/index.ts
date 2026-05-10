@@ -187,6 +187,19 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
     existingNids.add(nid);
     existingNames.add(en.toLowerCase());
 
+    // Generate unique mobile (skip duplicates within office)
+    let mobile = custom?.mobile?.trim() || `017${String(10000000 + i).padStart(8, "0")}`;
+    if (mobile && existingMobiles.has(mobile)) {
+      let bump = i + 1;
+      let candidate = `017${String(10000000 + i + bump * 100000).padStart(8, "0")}`;
+      while (existingMobiles.has(candidate)) {
+        bump++;
+        candidate = `017${String(10000000 + i + bump * 100000).padStart(8, "0")}`;
+      }
+      mobile = candidate;
+    }
+    if (mobile) existingMobiles.add(mobile);
+
     farmers.push({
       farmer_code: code,
       member_no: String(seq).padStart(7, "0"),
@@ -194,7 +207,7 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
       name_bn: bn,
       father_name: father,
       mother_name: mother,
-      mobile: custom?.mobile?.trim() || `017${String(10000000 + i).padStart(8, "0")}`,
+      mobile,
       nid,
       village: loc?.mouza_name ?? pick(VILLAGES, i),
       office_id: officeId,
