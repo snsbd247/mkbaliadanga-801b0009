@@ -100,9 +100,10 @@ export default function AssetItems() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AssetStatus>("all");
   const [catFilter, setCatFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | AssetType>("all");
 
   useEffect(() => {
-    document.title = tx("Asset Items", "এসেট আইটেম");
+    document.title = tx("Asset Registry", "এসেট রেজিস্ট্রি");
     load();
   }, []);
 
