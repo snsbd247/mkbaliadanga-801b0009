@@ -128,6 +128,12 @@ export interface IrrigationInvoiceData {
 
   invoice_status?: string | null;
 
+  // Hybrid rate engine snapshot fields
+  rate_source?: "STANDARD" | "CATEGORY" | "MANUAL" | string | null;
+  applied_rate?: number | null;
+  original_standard_rate?: number | null;
+  irrigation_category_name?: string | null;
+
   farmer?: {
     name?: string | null;
     farmer_code?: string | null;
