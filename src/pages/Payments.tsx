@@ -231,14 +231,14 @@ export default function Payments() {
       if (!v.ok || v.needsOverride) {
         const enf = v.enforcement;
         if (enf === "block") {
-          return toast.error(`${v.reason} (নির্ধারিত: ৳${v.required.toFixed(2)}, প্রদত্ত: ৳${Number(a.amount).toFixed(2)})`);
+          return toast.error(`${v.reason} (${tx("Required", "নির্ধারিত")}: ৳${v.required.toFixed(2)}, ${tx("Given", "প্রদত্ত")}: ৳${Number(a.amount).toFixed(2)})`);
         }
         if (enf === "warn") {
-          if (!window.confirm(`⚠ নির্ধারিত: ৳${v.required.toFixed(2)} | প্রদত্ত: ৳${Number(a.amount).toFixed(2)}\nতবুও সংরক্ষণ করবেন?`)) return;
+          if (!window.confirm(`⚠ ${tx("Required", "নির্ধারিত")}: ৳${v.required.toFixed(2)} | ${tx("Given", "প্রদত্ত")}: ৳${Number(a.amount).toFixed(2)}\n${tx("Save anyway?", "তবুও সংরক্ষণ করবেন?")}`)) return;
         }
         if (enf === "allow") {
-          const reason = window.prompt("আংশিক পেমেন্ট override কারণ লিখুন (অডিটে সংরক্ষিত হবে):", "")?.trim();
-          if (!reason) return toast.error("Override কারণ আবশ্যক");
+          const reason = window.prompt(tx("Enter reason for partial payment override (saved in audit):", "আংশিক পেমেন্ট override কারণ লিখুন (অডিটে সংরক্ষিত হবে):"), "")?.trim();
+          if (!reason) return toast.error(tx("Override reason required", "Override কারণ আবশ্যক"));
           overrideReason = reason;
         }
       }
