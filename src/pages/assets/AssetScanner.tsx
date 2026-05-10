@@ -108,6 +108,11 @@ export default function AssetScanner() {
       <PageHeader
         title={tx("Scan asset QR", "এসেট QR স্ক্যান")}
         description={tx("Point camera at an asset QR or enter the asset code", "ক্যামেরা QR-এ ধরুন বা এসেট কোড লিখুন")}
+        actions={
+          <Button variant="outline" asChild>
+            <Link to="/assets/scan/history"><History className="h-4 w-4 mr-1" />{tx("History", "ইতিহাস")}</Link>
+          </Button>
+        }
       />
       <div className="grid md:grid-cols-2 gap-4">
         <Card className="p-4">
