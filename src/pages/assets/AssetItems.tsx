@@ -176,10 +176,11 @@ export default function AssetItems() {
   const visible = useMemo(() => rows.filter((r) => {
     if (statusFilter !== "all" && r.current_status !== statusFilter) return false;
     if (catFilter !== "all" && r.asset_category_id !== catFilter) return false;
+    if (typeFilter !== "all" && (r.asset_type ?? "fixed_asset") !== typeFilter) return false;
     if (!q.trim()) return true;
     const s = q.trim().toLowerCase();
     return (r.asset_code + " " + (r.serial_no ?? "") + " " + r.name_en + " " + (r.name_bn ?? "")).toLowerCase().includes(s);
-  }), [rows, q, statusFilter, catFilter]);
+  }), [rows, q, statusFilter, catFilter, typeFilter]);
 
   const catName = (id: string | null) => {
     const c = cats.find((x) => x.id === id);
