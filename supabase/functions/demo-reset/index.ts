@@ -684,12 +684,12 @@ async function seedAccounts(admin: any) {
 }
 
 async function seedSettings(admin: any, officeId?: string) {
-  await admin.from("company_settings").upsert({
+  const { error: csErr } = await admin.from("company_settings").upsert({
     id: 1, company_name: "Smart Irrigation Cooperative", company_name_bn: "স্মার্ট সেচ সমবায়",
     address: "Baliadanga, Rangpur", mobile: "01700000000", email: "demo@example.com",
     registration_no: "COOP-2018-0451",
     default_loan_interest: 12,
-    penalty_type: "percentage", penalty_value: 2, penalty_grace_days: 30,
+    penalty_type: "percent", penalty_value: 2, penalty_grace_days: 30,
     fiscal_year_start_month: 7,
     loan_receipt_no_format: "LOAN-{YYYYMMDD}-{TAIL}",
     loan_receipt_header_en: "Smart Irrigation Cooperative — Loan Receipt",
@@ -699,6 +699,7 @@ async function seedSettings(admin: any, officeId?: string) {
     pdf_footer_text: "If found, please return to the issuing office.",
     pdf_footer_show_address: true, pdf_footer_show_contact: true,
   });
+  if (csErr) console.warn("[demo-reset] company_settings:", csErr.message);
   await admin.from("card_settings").upsert({ id: 1 });
   // SMS settings — disabled by default for demo, but template fields populated
   await admin.from("sms_settings").upsert({
