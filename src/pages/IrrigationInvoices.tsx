@@ -892,19 +892,26 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       const previewArr: any[] = [];
       let noRate = 0;
+      const categoryInput = getCategoryInput();
       for (const l of eligible) {
         const matched = resolveRateForLand(rateMap, l);
-        const rate = matched && matched.rate_per_shotok > 0 ? matched.rate_per_shotok : rateOverride;
-        if (!(rate > 0)) { noRate++; continue; }
+        const landTypeRate = matched && matched.rate_per_shotok > 0
+          ? { rate_per_shotok: matched.rate_per_shotok, land_type_id: matched.land_type_id, land_type_code: matched.land_type_code }
+          : (rateOverride > 0 ? { rate_per_shotok: rateOverride } : null);
+        const resolved = resolveIrrigationRate({
+          landTypeRate: landTypeRate ?? undefined,
+          categoryRate: categoryInput ?? undefined,
+        });
+        if (!(resolved.rate > 0)) { noRate++; continue; }
         const billed = await resolveBilledFarmer(l.id, dueDate);
         const calc = calcInvoice({
           land_size_shotok: Number(l.land_size),
-          rate_per_shotok: rate,
+          rate_per_shotok: resolved.rate,
           settings,
           due_date: dueDate,
           as_of: new Date().toISOString().slice(0, 10),
         });
-        previewArr.push({ land: l, billed, calc, settings, rate, rateRow: matched });
+        previewArr.push({ land: l, billed, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
       }
       setPreviewRows(previewArr);
       setSkippedNoRate(noRate);
