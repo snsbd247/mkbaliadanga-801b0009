@@ -11,6 +11,7 @@ import { ArrowLeft } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { statusLabel, statusVariant } from "./AssetItems";
 import { toast } from "sonner";
+import { PurchaseDialog, MovementDialog, InstallationDialog, MaintenanceDialog, DamageDialog, DisposalDialog } from "./AssetActionDialogs";
 
 type Asset = any;
 
@@ -27,35 +28,35 @@ export default function AssetItemDetail() {
   const [disposals, setDisposals] = useState<any[]>([]);
   const [audits, setAudits] = useState<any[]>([]);
 
-  useEffect(() => {
+  async function load() {
     if (!id) return;
-    (async () => {
-      const a = await supabase.from("assets" as any).select("*").eq("id", id).maybeSingle();
-      if (a.error) { toast.error(a.error.message); return; }
-      setAsset(a.data);
-      document.title = (a.data as any)?.name_en ? `${(a.data as any).name_en} — ${tx("Asset", "এসেট")}` : tx("Asset", "এসেট");
+    const a = await supabase.from("assets" as any).select("*").eq("id", id).maybeSingle();
+    if (a.error) { toast.error(a.error.message); return; }
+    setAsset(a.data);
+    document.title = (a.data as any)?.name_en ? `${(a.data as any).name_en} — ${tx("Asset", "এসেট")}` : tx("Asset", "এসেট");
 
-      const orderDesc = { ascending: false } as const;
-      const [p, s, m, ins, mn, dm, ds, au] = await Promise.all([
-        supabase.from("asset_purchases" as any).select("*").eq("asset_id", id).order("purchase_date", orderDesc),
-        supabase.from("asset_stocks" as any).select("*").eq("asset_id", id),
-        supabase.from("asset_movements" as any).select("*").eq("asset_id", id).order("created_at", orderDesc),
-        supabase.from("asset_installations" as any).select("*").eq("asset_id", id).order("install_date", orderDesc),
-        supabase.from("asset_maintenance_logs" as any).select("*").eq("asset_id", id).order("maintenance_date", orderDesc),
-        supabase.from("asset_damage_reports" as any).select("*").eq("asset_id", id).order("report_date", orderDesc),
-        supabase.from("asset_disposals" as any).select("*").eq("asset_id", id).order("disposal_date", orderDesc),
-        supabase.from("asset_audit_logs" as any).select("*").eq("asset_id", id).order("created_at", orderDesc).limit(200),
-      ]);
-      setPurchases(p.data ?? []);
-      setStocks(s.data ?? []);
-      setMovements(m.data ?? []);
-      setInstalls(ins.data ?? []);
-      setMaint(mn.data ?? []);
-      setDamages(dm.data ?? []);
-      setDisposals(ds.data ?? []);
-      setAudits(au.data ?? []);
-    })();
-  }, [id]);
+    const orderDesc = { ascending: false } as const;
+    const [p, s, m, ins, mn, dm, ds, au] = await Promise.all([
+      supabase.from("asset_purchases" as any).select("*").eq("asset_id", id).order("purchase_date", orderDesc),
+      supabase.from("asset_stocks" as any).select("*").eq("asset_id", id),
+      supabase.from("asset_movements" as any).select("*").eq("asset_id", id).order("created_at", orderDesc),
+      supabase.from("asset_installations" as any).select("*").eq("asset_id", id).order("install_date", orderDesc),
+      supabase.from("asset_maintenance_logs" as any).select("*").eq("asset_id", id).order("maintenance_date", orderDesc),
+      supabase.from("asset_damage_reports" as any).select("*").eq("asset_id", id).order("report_date", orderDesc),
+      supabase.from("asset_disposals" as any).select("*").eq("asset_id", id).order("disposal_date", orderDesc),
+      supabase.from("asset_audit_logs" as any).select("*").eq("asset_id", id).order("created_at", orderDesc).limit(200),
+    ]);
+    setPurchases(p.data ?? []);
+    setStocks(s.data ?? []);
+    setMovements(m.data ?? []);
+    setInstalls(ins.data ?? []);
+    setMaint(mn.data ?? []);
+    setDamages(dm.data ?? []);
+    setDisposals(ds.data ?? []);
+    setAudits(au.data ?? []);
+  }
+
+  useEffect(() => { load(); }, [id]);
 
   if (!asset) {
     return <div className="p-6 text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</div>;
@@ -109,6 +110,7 @@ export default function AssetItemDetail() {
         </TabsList>
 
         <TabsContent value="purchase">
+          <div className="flex justify-end mb-2"><PurchaseDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No purchase history", "কোনো ক্রয় ইতিহাস নেই")}
             columns={[tx("Date", "তারিখ"), tx("Supplier", "সরবরাহকারী"), tx("Qty", "পরিমাণ"), tx("Unit price", "একক মূল্য"), tx("Total", "মোট")]}
@@ -123,6 +125,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="movement">
+          <div className="flex justify-end mb-2"><MovementDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No movements", "কোনো মুভমেন্ট নেই")}
             columns={[tx("Date", "তারিখ"), tx("From", "থেকে"), tx("To", "এ"), tx("Qty", "পরিমাণ"), tx("Remarks", "মন্তব্য")]}
@@ -130,6 +133,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="install">
+          <div className="flex justify-end mb-2"><InstallationDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No installations", "কোনো ইনস্টলেশন নেই")}
             columns={[tx("Date", "তারিখ"), tx("Location", "অবস্থান"), tx("Condition", "অবস্থা"), tx("Remarks", "মন্তব্য")]}
@@ -137,6 +141,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="maint">
+          <div className="flex justify-end mb-2"><MaintenanceDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No maintenance logs", "কোনো মেরামত নেই")}
             columns={[tx("Date", "তারিখ"), tx("Vendor", "ভেন্ডর"), tx("Cost", "খরচ"), tx("Downtime (days)", "বন্ধ (দিন)"), tx("Status", "অবস্থা")]}
@@ -145,6 +150,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="damage">
+          <div className="flex justify-end mb-2"><DamageDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No damage reports", "কোনো ক্ষতির রিপোর্ট নেই")}
             columns={[tx("Date", "তারিখ"), tx("Severity", "মাত্রা"), tx("Status", "অবস্থা"), tx("Remarks", "মন্তব্য")]}
@@ -152,6 +158,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="disposal">
+          <div className="flex justify-end mb-2"><DisposalDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No disposal records", "কোনো নিষ্পত্তি নেই")}
             columns={[tx("Date", "তারিখ"), tx("Method", "পদ্ধতি"), tx("Sale", "বিক্রয়"), tx("Book value", "হিসাবী মূল্য"), tx("Gain/Loss", "লাভ/ক্ষতি")]}
