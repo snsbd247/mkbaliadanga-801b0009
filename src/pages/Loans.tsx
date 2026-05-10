@@ -26,7 +26,7 @@ import { useBranding } from "@/lib/branding";
 const DEFAULT_INTEREST = 8.0;
 
 export default function Loans() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
   const { confirm, dialog: confirmDialog } = useConfirm();
