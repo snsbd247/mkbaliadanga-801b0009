@@ -62,7 +62,7 @@ function statusLabel(tx: (en: string, bn: string) => string, st: InvoiceStatus) 
 }
 
 export default function IrrigationInvoices() {
-  const { t, tx } = useLang();
+  const { t, tx, lang } = useLang();
   const { user, isSuper } = useAuth();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
