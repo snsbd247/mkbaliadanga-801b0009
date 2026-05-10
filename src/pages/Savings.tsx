@@ -24,7 +24,7 @@ import { useBranding } from "@/lib/branding";
 import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
 
 export default function Savings() {
-  const { t, lang } = useLang();
+  const { t, lang, tx } = useLang();
   const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -190,7 +190,7 @@ export default function Savings() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
     // Voter guard: farmer must be is_voter=true to record savings/share txns
     const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
-    if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? "এই ফার্মার"} এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।`);
+    if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? tx("This farmer", "এই ফার্মার")} ${tx("does not have Voter / Savings A/C enabled — savings/share entry not allowed.", "এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।")}`);
     const isWithdraw = form.type === "withdraw";
     const isShare = form.type === "share_deposit" || form.type === "share_collection";
     const isDepositKind = !isWithdraw;
@@ -214,7 +214,7 @@ export default function Savings() {
         return s + a;
       }, 0);
       if (form.amount > available) {
-        return toast.error(`Insufficient balance. Available: ৳${available.toLocaleString()}`);
+        return toast.error(`${tx("Insufficient balance. Available", "যথেষ্ট ব্যালেন্স নেই। উপলব্ধ")}: ৳${available.toLocaleString()}`);
       }
     }
 
@@ -269,7 +269,7 @@ export default function Savings() {
       await supabase.from("notifications").insert({
         user_id: txn.created_by,
         kind: status === "approved" ? "withdrawal_approved" : "withdrawal_rejected",
-        title: status === "approved" ? "উত্তোলন অনুমোদিত" : "উত্তোলন প্রত্যাখ্যাত",
+        title: status === "approved" ? tx("Withdrawal approved", "উত্তোলন অনুমোদিত") : tx("Withdrawal rejected", "উত্তোলন প্রত্যাখ্যাত"),
         body: `${txn?.farmers?.name_en ?? ""} — ৳${Number(txn?.amount ?? 0).toLocaleString()}${reject_reason ? ` (${reject_reason})` : ""}`,
         link: "/savings",
       });
@@ -346,8 +346,8 @@ export default function Savings() {
                 <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="deposit">Savings Deposit (min ৳10)</SelectItem>
-                    <SelectItem value="share_deposit">Share Deposit (min ৳50)</SelectItem>
+                    <SelectItem value="deposit">{tx("Savings Deposit", "সঞ্চয় জমা")} (min ৳10)</SelectItem>
+                    <SelectItem value="share_deposit">{tx("Share Deposit", "শেয়ার জমা")} (min ৳50)</SelectItem>
                     <SelectItem value="withdraw">{t("withdraw")}</SelectItem>
                   </SelectContent>
                 </Select>
