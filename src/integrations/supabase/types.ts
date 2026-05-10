@@ -983,6 +983,101 @@ export type Database = {
         }
         Relationships: []
       }
+      irrigation_categories: {
+        Row: {
+          allow_manual_negotiation: boolean
+          calculation_basis: string
+          code: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name_bn: string | null
+          name_en: string | null
+          office_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          allow_manual_negotiation?: boolean
+          calculation_basis?: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name_bn?: string | null
+          name_en?: string | null
+          office_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allow_manual_negotiation?: boolean
+          calculation_basis?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name_bn?: string | null
+          name_en?: string | null
+          office_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      irrigation_category_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          irrigation_category_id: string
+          irrigation_season_id: string
+          is_negotiable: boolean
+          office_id: string | null
+          rate: number
+          rate_type: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          irrigation_category_id: string
+          irrigation_season_id: string
+          is_negotiable?: boolean
+          office_id?: string | null
+          rate?: number
+          rate_type?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          irrigation_category_id?: string
+          irrigation_season_id?: string
+          is_negotiable?: boolean
+          office_id?: string | null
+          rate?: number
+          rate_type?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "irrigation_category_rates_irrigation_category_id_fkey"
+            columns: ["irrigation_category_id"]
+            isOneToOne: false
+            referencedRelation: "irrigation_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       irrigation_charge_settings: {
         Row: {
           auto_apply_delay_fee: boolean
@@ -1332,6 +1427,7 @@ export type Database = {
       }
       irrigation_invoices: {
         Row: {
+          applied_rate: number | null
           calculation_snapshot: Json | null
           canal_amount: number
           cancel_reason: string | null
@@ -1349,6 +1445,8 @@ export type Database = {
           invoice_no: string
           invoice_status: Database["public"]["Enums"]["invoice_status"]
           irrigation_amount: number
+          irrigation_category_id: string | null
+          irrigation_category_name: string | null
           is_borga: boolean
           is_manual_rate: boolean
           land_id: string
@@ -1358,10 +1456,13 @@ export type Database = {
           manual_rate_reason: string | null
           note: string | null
           office_id: string | null
+          original_standard_rate: number | null
           other_charge: number
+          override_reason: string | null
           owner_farmer_id: string
           paid_amount: number
           payable_amount: number
+          rate_source: string | null
           recalculated_at: string | null
           recalculated_by: string | null
           season_id: string
@@ -1369,6 +1470,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          applied_rate?: number | null
           calculation_snapshot?: Json | null
           canal_amount?: number
           cancel_reason?: string | null
@@ -1386,6 +1488,8 @@ export type Database = {
           invoice_no: string
           invoice_status?: Database["public"]["Enums"]["invoice_status"]
           irrigation_amount?: number
+          irrigation_category_id?: string | null
+          irrigation_category_name?: string | null
           is_borga?: boolean
           is_manual_rate?: boolean
           land_id: string
@@ -1395,10 +1499,13 @@ export type Database = {
           manual_rate_reason?: string | null
           note?: string | null
           office_id?: string | null
+          original_standard_rate?: number | null
           other_charge?: number
+          override_reason?: string | null
           owner_farmer_id: string
           paid_amount?: number
           payable_amount?: number
+          rate_source?: string | null
           recalculated_at?: string | null
           recalculated_by?: string | null
           season_id: string
@@ -1406,6 +1513,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          applied_rate?: number | null
           calculation_snapshot?: Json | null
           canal_amount?: number
           cancel_reason?: string | null
@@ -1423,6 +1531,8 @@ export type Database = {
           invoice_no?: string
           invoice_status?: Database["public"]["Enums"]["invoice_status"]
           irrigation_amount?: number
+          irrigation_category_id?: string | null
+          irrigation_category_name?: string | null
           is_borga?: boolean
           is_manual_rate?: boolean
           land_id?: string
@@ -1432,10 +1542,13 @@ export type Database = {
           manual_rate_reason?: string | null
           note?: string | null
           office_id?: string | null
+          original_standard_rate?: number | null
           other_charge?: number
+          override_reason?: string | null
           owner_farmer_id?: string
           paid_amount?: number
           payable_amount?: number
+          rate_source?: string | null
           recalculated_at?: string | null
           recalculated_by?: string | null
           season_id?: string
@@ -1540,6 +1653,42 @@ export type Database = {
           new_rate?: number | null
           office_id?: string | null
           old_rate?: number | null
+        }
+        Relationships: []
+      }
+      irrigation_rate_overrides: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          irrigation_invoice_id: string
+          office_id: string | null
+          original_rate: number
+          overridden_rate: number
+          override_reason: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          irrigation_invoice_id: string
+          office_id?: string | null
+          original_rate?: number
+          overridden_rate?: number
+          override_reason?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          irrigation_invoice_id?: string
+          office_id?: string | null
+          original_rate?: number
+          overridden_rate?: number
+          override_reason?: string | null
         }
         Relationships: []
       }
@@ -4060,6 +4209,7 @@ export type Database = {
       recalculate_irrigation_invoice: {
         Args: { _invoice_id: string; _reason: string }
         Returns: {
+          applied_rate: number | null
           calculation_snapshot: Json | null
           canal_amount: number
           cancel_reason: string | null
@@ -4077,6 +4227,8 @@ export type Database = {
           invoice_no: string
           invoice_status: Database["public"]["Enums"]["invoice_status"]
           irrigation_amount: number
+          irrigation_category_id: string | null
+          irrigation_category_name: string | null
           is_borga: boolean
           is_manual_rate: boolean
           land_id: string
@@ -4086,10 +4238,13 @@ export type Database = {
           manual_rate_reason: string | null
           note: string | null
           office_id: string | null
+          original_standard_rate: number | null
           other_charge: number
+          override_reason: string | null
           owner_farmer_id: string
           paid_amount: number
           payable_amount: number
+          rate_source: string | null
           recalculated_at: string | null
           recalculated_by: string | null
           season_id: string
