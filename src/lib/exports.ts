@@ -302,7 +302,7 @@ export async function exportPaymentReceiptPDF(opts: {
 }
 
 // ---------- Cooperative Audit-ready Report ----------
-export function exportAuditReportPDF(opts: {
+export async function exportAuditReportPDF(opts: {
   brand: { company_name: string; address?: string };
   range: string;
   summary: Array<{ label: string; value: number }>;
@@ -310,45 +310,57 @@ export function exportAuditReportPDF(opts: {
   bySeason?: Array<{ season: string; charged: number; collected: number; due: number }>;
 }) {
   const doc = new jsPDF();
-  doc.setFontSize(16); doc.setFont(undefined, "bold");
+  const lang = pdfLang();
+  const bnFamily = lang === "bn" ? await ensureBanglaFont(doc) : null;
+  const useBn = lang === "bn" && !!bnFamily;
+  const setF = (style: "normal" | "bold" = "normal") => {
+    if (useBn && bnFamily) doc.setFont(bnFamily, "normal");
+    else doc.setFont(undefined, style);
+  };
+  const tableFont: any = useBn && bnFamily ? { font: bnFamily, fontStyle: "normal" } : {};
+
+  doc.setFontSize(16); setF("bold");
   doc.text(opts.brand.company_name, 105, 14, { align: "center" });
-  doc.setFontSize(11); doc.setFont(undefined, "normal");
+  doc.setFontSize(11); setF("normal");
   if (opts.brand.address) doc.text(opts.brand.address, 105, 20, { align: "center" });
-  doc.setFontSize(13); doc.setFont(undefined, "bold");
-  doc.text("Cooperative Audit Report", 105, 28, { align: "center" });
-  doc.setFontSize(9); doc.setFont(undefined, "normal");
-  doc.text(`Period: ${opts.range}`, 105, 33, { align: "center" });
+  doc.setFontSize(13); setF("bold");
+  doc.text(tPdf("Cooperative Audit Report", "সমবায় অডিট প্রতিবেদন"), 105, 28, { align: "center" });
+  doc.setFontSize(9); setF("normal");
+  doc.text(`${tPdf("Period", "সময়কাল")}: ${opts.range}`, 105, 33, { align: "center" });
 
   autoTable(doc, {
-    startY: 38, head: [["Summary", "Amount"]],
+    startY: 38, head: [[tPdf("Summary", "সারাংশ"), tPdf("Amount", "পরিমাণ")]],
     body: opts.summary.map(s => [s.label, moneyPdf(s.value)]),
     theme: "striped",
+    styles: tableFont, headStyles: tableFont,
   });
 
   let y = (doc as any).lastAutoTable.finalY + 6;
   if (opts.byOffice && opts.byOffice.length) {
-    doc.setFont(undefined, "bold"); doc.text("By Office", 14, y); doc.setFont(undefined, "normal");
+    setF("bold"); doc.text(tPdf("By Office", "অফিস অনুযায়ী"), 14, y); setF("normal");
     autoTable(doc, {
       startY: y + 2,
-      head: [["Office", "Income", "Expense", "Loan Issued", "Loan Coll.", "Irr Coll.", "Sav. Bal"]],
+      head: [[tPdf("Office", "অফিস"), tPdf("Income", "আয়"), tPdf("Expense", "ব্যয়"), tPdf("Loan Issued", "ঋণ প্রদান"), tPdf("Loan Coll.", "ঋণ আদায়"), tPdf("Irr Coll.", "সেচ আদায়"), tPdf("Sav. Bal", "সঞ্চয় স্থিতি")]],
       body: opts.byOffice.map(o => [o.office, moneyPdf(o.income), moneyPdf(o.expense), moneyPdf(o.loanIssued), moneyPdf(o.loanCollected), moneyPdf(o.irrCollected), moneyPdf(o.savBal)]),
+      styles: tableFont, headStyles: tableFont,
     });
     y = (doc as any).lastAutoTable.finalY + 6;
   }
   if (opts.bySeason && opts.bySeason.length) {
-    doc.setFont(undefined, "bold"); doc.text("Irrigation by Season", 14, y); doc.setFont(undefined, "normal");
+    setF("bold"); doc.text(tPdf("Irrigation by Season", "মৌসুম অনুযায়ী সেচ"), 14, y); setF("normal");
     autoTable(doc, {
       startY: y + 2,
-      head: [["Season", "Charged", "Collected", "Due"]],
+      head: [[tPdf("Season", "মৌসুম"), tPdf("Charged", "ধার্য"), tPdf("Collected", "আদায়"), tPdf("Due", "বকেয়া")]],
       body: opts.bySeason.map(s => [s.season, moneyPdf(s.charged), moneyPdf(s.collected), moneyPdf(s.due)]),
+      styles: tableFont, headStyles: tableFont,
     });
     y = (doc as any).lastAutoTable.finalY + 6;
   }
 
-  doc.setFontSize(9);
+  doc.setFontSize(9); setF("normal");
   y = Math.max(y + 30, 260);
-  doc.line(20, y, 80, y); doc.text("Treasurer", 50, y + 5, { align: "center" });
-  doc.line(130, y, 190, y); doc.text("Chairman", 160, y + 5, { align: "center" });
+  doc.line(20, y, 80, y); doc.text(tPdf("Treasurer", "কোষাধ্যক্ষ"), 50, y + 5, { align: "center" });
+  doc.line(130, y, 190, y); doc.text(tPdf("Chairman", "চেয়ারম্যান"), 160, y + 5, { align: "center" });
 
   doc.save(`audit-report.pdf`);
 }
