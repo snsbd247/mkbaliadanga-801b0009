@@ -19,7 +19,11 @@ import { logAssetAudit } from "@/lib/assetAudit";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 
 type TrackingMode = "quantity" | "serial";
-type AssetStatus = "purchased" | "in_stock" | "transferred" | "installed" | "maintenance" | "damaged" | "disposed";
+export type AssetType = "inventory" | "fixed_asset" | "consumable";
+type AssetStatus =
+  | "purchased" | "in_stock" | "transferred" | "installed"
+  | "maintenance" | "damaged" | "disposed"
+  | "in_use" | "scrapped" | "lost";
 
 type Cat = { id: string; code: string; name_bn: string | null; name_en: string; tracking_mode: TrackingMode };
 type Row = {
@@ -31,6 +35,7 @@ type Row = {
   name_bn: string | null;
   name_en: string;
   tracking_mode: TrackingMode;
+  asset_type: AssetType;
   unit: string | null;
   purchase_price: number;
   current_status: AssetStatus;
@@ -45,9 +50,20 @@ const empty = {
   name_bn: "",
   name_en: "",
   tracking_mode: "quantity" as TrackingMode,
+  asset_type: "fixed_asset" as AssetType,
   unit: "",
   purchase_price: 0,
 };
+
+export function assetTypeLabel(t: AssetType, tx: (en: string, bn: string) => string) {
+  const m: Record<AssetType, [string, string]> = {
+    inventory:    ["Inventory", "ইনভেন্টরি"],
+    fixed_asset:  ["Fixed Asset", "স্থায়ী এসেট"],
+    consumable:   ["Consumable", "ভোগ্য"],
+  };
+  const [en, bn] = m[t];
+  return tx(en, bn);
+}
 
 export function statusLabel(s: AssetStatus, tx: (en: string, bn: string) => string) {
   const m: Record<AssetStatus, [string, string]> = {
@@ -55,16 +71,19 @@ export function statusLabel(s: AssetStatus, tx: (en: string, bn: string) => stri
     in_stock: ["In Stock", "স্টকে"],
     transferred: ["Transferred", "স্থানান্তরিত"],
     installed: ["Installed", "ইনস্টল"],
+    in_use: ["In Use", "ব্যবহৃত"],
     maintenance: ["Maintenance", "মেরামত"],
     damaged: ["Damaged", "ক্ষতিগ্রস্ত"],
     disposed: ["Disposed", "নিষ্পত্তি"],
+    scrapped: ["Scrapped", "স্ক্র্যাপড"],
+    lost: ["Lost", "হারানো"],
   };
-  const [en, bn] = m[s];
-  return tx(en, bn);
+  const pair = m[s] ?? [s, s];
+  return tx(pair[0], pair[1]);
 }
 
 export function statusVariant(s: AssetStatus): "default" | "secondary" | "outline" | "destructive" {
-  if (s === "damaged" || s === "disposed") return "destructive";
+  if (s === "damaged" || s === "disposed" || s === "scrapped" || s === "lost") return "destructive";
   if (s === "in_stock" || s === "purchased") return "secondary";
   if (s === "maintenance" || s === "transferred") return "outline";
   return "default";
