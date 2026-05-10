@@ -1061,11 +1061,11 @@ export default function FarmerDetail() {
                         className={liveErr ? "border-destructive focus-visible:ring-destructive" : undefined}
                       />
                       {liveErr ? (
-                        <p className="text-xs text-destructive mt-1">{liveErr} — কমা দিয়ে আলাদা করুন; শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> অনুমোদিত।</p>
+                        <p className="text-xs text-destructive mt-1">{liveErr} — {tx("Separate with commas; only digits/letters/", "কমা দিয়ে আলাদা করুন; শুধু সংখ্যা/অক্ষর/")}<code>/</code>/<code>-</code>{tx(" allowed.", " অনুমোদিত।")}</p>
                       ) : (
                         <p className="text-xs text-muted-foreground mt-1">
-                          একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ: <code>123, 124/A, 125-B</code>
-                          {preview && preview !== editForm.dag_no.trim() && <> — সংরক্ষণে রূপান্তরিত হবে: <strong>{preview}</strong></>}
+                          {tx("Separate multiple Dag numbers with comma (,). Example:", "একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ:")} <code>123, 124/A, 125-B</code>
+                          {preview && preview !== editForm.dag_no.trim() && <> — {tx("will be saved as:", "সংরক্ষণে রূপান্তরিত হবে:")} <strong>{preview}</strong></>}
                         </p>
                       )}
                     </>
