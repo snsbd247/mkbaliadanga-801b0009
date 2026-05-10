@@ -99,7 +99,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase
         .from("profiles")
         .select("language")
-        .eq("user_id", uid)
+        .eq("id", uid)
         .maybeSingle();
       if (cancelled) return;
       const remote = (data as any)?.language as Lang | undefined;
@@ -132,7 +132,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       supabase
         .from("profiles")
         .update({ language: l })
-        .eq("user_id", uid)
+        .eq("id", uid)
         .then(() => {/* noop */});
     }
   };
