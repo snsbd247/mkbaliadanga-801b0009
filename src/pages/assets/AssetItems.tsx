@@ -289,11 +289,20 @@ export default function AssetItems() {
         }
       />
       <Card className="p-3 mb-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx("Search code, serial, name…", "কোড, সিরিয়াল, নাম খুঁজুন…")} />
           </div>
+          <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{tx("All types", "সব টাইপ")}</SelectItem>
+              <SelectItem value="fixed_asset">{assetTypeLabel("fixed_asset", tx)}</SelectItem>
+              <SelectItem value="inventory">{assetTypeLabel("inventory", tx)}</SelectItem>
+              <SelectItem value="consumable">{assetTypeLabel("consumable", tx)}</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={catFilter} onValueChange={setCatFilter}>
             <SelectTrigger><SelectValue placeholder={tx("All categories", "সব ক্যাটাগরি")} /></SelectTrigger>
             <SelectContent>
@@ -305,7 +314,7 @@ export default function AssetItems() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{tx("All statuses", "সব অবস্থা")}</SelectItem>
-              {(["purchased","in_stock","transferred","installed","maintenance","damaged","disposed"] as AssetStatus[]).map((s) =>
+              {(["purchased","in_stock","transferred","installed","in_use","maintenance","damaged","disposed","scrapped","lost"] as AssetStatus[]).map((s) =>
                 <SelectItem key={s} value={s}>{statusLabel(s, tx)}</SelectItem>)}
             </SelectContent>
           </Select>
