@@ -149,6 +149,7 @@ export default function AssetItems() {
         name_bn: form.name_bn.trim() || null,
         name_en: form.name_en.trim() || form.name_bn.trim(),
         tracking_mode: form.tracking_mode,
+        asset_type: form.asset_type,
         unit: form.unit.trim() || null,
         purchase_price: Number(form.purchase_price) || 0,
       };
