@@ -5,19 +5,35 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, CameraOff, Search } from "lucide-react";
+import { Camera, CameraOff, Search, History } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
 
 const REGION_ID = "asset-qr-region";
 
 export default function AssetScanner() {
   const { tx } = useLang();
+  const { officeId } = useAuth();
   const navigate = useNavigate();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [scanning, setScanning] = useState(false);
   const [manualCode, setManualCode] = useState("");
+
+  async function logScan(opts: {
+    text: string; assetId?: string | null; assetCode?: string | null;
+    success: boolean; error?: string | null; source?: string;
+  }) {
+    try {
+      await supabase.from("asset_scan_logs" as any).insert({
+        scanned_text: opts.text, asset_id: opts.assetId ?? null, asset_code: opts.assetCode ?? null,
+        success: opts.success, error_message: opts.error ?? null, source: opts.source ?? "camera",
+        office_id: officeId ?? null,
+      });
+    } catch { /* swallow */ }
+  }
 
   useEffect(() => {
     document.title = tx("Scan asset", "এসেট স্ক্যান");
@@ -29,31 +45,35 @@ export default function AssetScanner() {
     };
   }, [tx]);
 
-  async function handleResult(text: string) {
+  async function handleResult(text: string, source: string = "camera") {
     try {
-      // Deep-link form: <origin>/assets/items/<uuid>
       const m = text.match(/\/assets\/items\/([0-9a-f-]{36})/i);
       if (m) {
+        await logScan({ text, assetId: m[1], success: true, source });
         await stop();
         navigate(`/assets/items/${m[1]}`);
         return;
       }
-      // Otherwise treat as asset_code
-      await lookupByCode(text.trim());
+      await lookupByCode(text.trim(), source);
     } catch (e: any) {
+      await logScan({ text, success: false, error: e.message ?? "Scan error", source });
       toast.error(e.message ?? "Scan error");
     }
   }
 
-  async function lookupByCode(code: string) {
+  async function lookupByCode(code: string, source: string = "manual") {
     if (!code) return;
     const { data, error } = await supabase
-      .from("assets" as any)
-      .select("id")
-      .eq("asset_code", code)
-      .maybeSingle();
-    if (error) { toast.error(error.message); return; }
-    if (!data) { toast.error(tx("No asset found for this code", "এই কোডের কোনো এসেট নেই")); return; }
+      .from("assets" as any).select("id, asset_code").eq("asset_code", code).maybeSingle();
+    if (error) {
+      await logScan({ text: code, success: false, error: error.message, source });
+      toast.error(error.message); return;
+    }
+    if (!data) {
+      await logScan({ text: code, success: false, error: "no_match", source });
+      toast.error(tx("No asset found for this code", "এই কোডের কোনো এসেট নেই")); return;
+    }
+    await logScan({ text: code, assetId: (data as any).id, assetCode: (data as any).asset_code, success: true, source });
     await stop();
     navigate(`/assets/items/${(data as any).id}`);
   }
@@ -88,6 +108,11 @@ export default function AssetScanner() {
       <PageHeader
         title={tx("Scan asset QR", "এসেট QR স্ক্যান")}
         description={tx("Point camera at an asset QR or enter the asset code", "ক্যামেরা QR-এ ধরুন বা এসেট কোড লিখুন")}
+        actions={
+          <Button variant="outline" asChild>
+            <Link to="/assets/scan/history"><History className="h-4 w-4 mr-1" />{tx("History", "ইতিহাস")}</Link>
+          </Button>
+        }
       />
       <div className="grid md:grid-cols-2 gap-4">
         <Card className="p-4">

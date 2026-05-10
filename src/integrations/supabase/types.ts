@@ -260,6 +260,121 @@ export type Database = {
           },
         ]
       }
+      asset_depreciation_schedule: {
+        Row: {
+          accumulated_depreciation: number
+          asset_id: string
+          closing_book_value: number
+          created_at: string
+          depreciation_amount: number
+          id: string
+          journal_entry_id: string | null
+          office_id: string | null
+          opening_book_value: number
+          period_month: string
+          posted_at: string | null
+          posted_by: string | null
+          status: Database["public"]["Enums"]["asset_depreciation_status"]
+        }
+        Insert: {
+          accumulated_depreciation?: number
+          asset_id: string
+          closing_book_value?: number
+          created_at?: string
+          depreciation_amount?: number
+          id?: string
+          journal_entry_id?: string | null
+          office_id?: string | null
+          opening_book_value?: number
+          period_month: string
+          posted_at?: string | null
+          posted_by?: string | null
+          status?: Database["public"]["Enums"]["asset_depreciation_status"]
+        }
+        Update: {
+          accumulated_depreciation?: number
+          asset_id?: string
+          closing_book_value?: number
+          created_at?: string
+          depreciation_amount?: number
+          id?: string
+          journal_entry_id?: string | null
+          office_id?: string | null
+          opening_book_value?: number
+          period_month?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          status?: Database["public"]["Enums"]["asset_depreciation_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_depreciation_schedule_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_depreciation_settings: {
+        Row: {
+          accum_account_code: string
+          asset_id: string
+          created_at: string
+          created_by: string | null
+          expense_account_code: string
+          id: string
+          is_active: boolean
+          method: Database["public"]["Enums"]["asset_depreciation_method"]
+          office_id: string | null
+          salvage_value: number
+          start_on: string
+          updated_at: string
+          useful_life_months: number
+          wdv_rate_pct: number
+        }
+        Insert: {
+          accum_account_code?: string
+          asset_id: string
+          created_at?: string
+          created_by?: string | null
+          expense_account_code?: string
+          id?: string
+          is_active?: boolean
+          method?: Database["public"]["Enums"]["asset_depreciation_method"]
+          office_id?: string | null
+          salvage_value?: number
+          start_on?: string
+          updated_at?: string
+          useful_life_months?: number
+          wdv_rate_pct?: number
+        }
+        Update: {
+          accum_account_code?: string
+          asset_id?: string
+          created_at?: string
+          created_by?: string | null
+          expense_account_code?: string
+          id?: string
+          is_active?: boolean
+          method?: Database["public"]["Enums"]["asset_depreciation_method"]
+          office_id?: string | null
+          salvage_value?: number
+          start_on?: string
+          updated_at?: string
+          useful_life_months?: number
+          wdv_rate_pct?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_depreciation_settings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: true
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_disposals: {
         Row: {
           asset_id: string
@@ -515,6 +630,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "asset_purchases_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_scan_logs: {
+        Row: {
+          asset_code: string | null
+          asset_id: string | null
+          error_message: string | null
+          id: string
+          office_id: string | null
+          scanned_at: string
+          scanned_by: string | null
+          scanned_text: string
+          source: string
+          success: boolean
+        }
+        Insert: {
+          asset_code?: string | null
+          asset_id?: string | null
+          error_message?: string | null
+          id?: string
+          office_id?: string | null
+          scanned_at?: string
+          scanned_by?: string | null
+          scanned_text: string
+          source?: string
+          success?: boolean
+        }
+        Update: {
+          asset_code?: string | null
+          asset_id?: string | null
+          error_message?: string | null
+          id?: string
+          office_id?: string | null
+          scanned_at?: string
+          scanned_by?: string | null
+          scanned_text?: string
+          source?: string
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_scan_logs_asset_id_fkey"
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
@@ -4709,6 +4871,10 @@ export type Database = {
         Returns: boolean
       }
       next_receipt_no: { Args: { p_kind: string }; Returns: string }
+      post_asset_depreciation_journal: {
+        Args: { _schedule_id: string }
+        Returns: string
+      }
       reactivate_voter_membership: {
         Args: { _farmer_id: string; _reason: string }
         Returns: Json
@@ -4803,6 +4969,8 @@ export type Database = {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
       app_role: "super_admin" | "admin" | "staff" | "committee" | "developer"
       approval_status: "pending" | "approved" | "rejected"
+      asset_depreciation_method: "straight_line" | "wdv"
+      asset_depreciation_status: "pending" | "posted" | "skipped"
       asset_disposal_method: "scrap_sale" | "write_off" | "donation" | "lost"
       asset_status:
         | "purchased"
@@ -4986,6 +5154,8 @@ export const Constants = {
       account_type: ["asset", "liability", "income", "expense", "equity"],
       app_role: ["super_admin", "admin", "staff", "committee", "developer"],
       approval_status: ["pending", "approved", "rejected"],
+      asset_depreciation_method: ["straight_line", "wdv"],
+      asset_depreciation_status: ["pending", "posted", "skipped"],
       asset_disposal_method: ["scrap_sale", "write_off", "donation", "lost"],
       asset_status: [
         "purchased",
