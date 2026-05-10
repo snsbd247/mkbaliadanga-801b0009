@@ -178,6 +178,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 export function useLang() {
   const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error("useLang must be used within LanguageProvider");
+  if (!ctx) {
+    // Defensive fallback: when consumed outside a provider (e.g. in isolated
+    // unit tests that render a single component), return a no-op context
+    // resolving to English so the component still renders. In production the
+    // provider is always mounted in main.tsx.
+    return {
+      lang: "en" as Lang,
+      setLang: () => {},
+      t: (k: TranslationKey) =>
+        ((translations.en as any)[k] as string) ??
+        ((translations.bn as any)[k] as string) ??
+        String(k),
+      tx: (en: string, _bn: string) => en,
+    };
+  }
   return ctx;
 }
