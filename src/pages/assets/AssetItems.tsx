@@ -241,6 +241,23 @@ export default function AssetItems() {
                   </Select>
                 </div>
                 <div>
+                  <Label>{tx("Asset type", "এসেট টাইপ")}</Label>
+                  <Select value={form.asset_type} onValueChange={(v: any) => setForm({ ...form, asset_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed_asset">{assetTypeLabel("fixed_asset", tx)}</SelectItem>
+                      <SelectItem value="inventory">{assetTypeLabel("inventory", tx)}</SelectItem>
+                      <SelectItem value="consumable">{assetTypeLabel("consumable", tx)}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2 text-xs text-muted-foreground">
+                  {form.asset_type === "fixed_asset"
+                    ? tx("Fixed assets are depreciated and tracked individually.", "স্থায়ী এসেট অবচয় হয় এবং পৃথকভাবে ট্র্যাক করা হয়।")
+                    : form.asset_type === "inventory"
+                    ? tx("Inventory items are tracked by quantity only — no depreciation.", "ইনভেন্টরি শুধু পরিমাণে ট্র্যাক হয় — অবচয় হয় না।")
+                    : tx("Consumables can be expensed directly on use.", "ভোগ্য আইটেম ব্যবহারের সাথে সরাসরি খরচ লেখা যায়।")}
+                <div>
                   <Label>{tx("Name (Bengali)", "নাম (বাংলা)")}</Label>
                   <Input value={form.name_bn} onChange={(e) => setForm({ ...form, name_bn: e.target.value })} placeholder="৫ এইচপি মোটর" />
                 </div>
