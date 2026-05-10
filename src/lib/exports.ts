@@ -73,48 +73,60 @@ export function finalizePdf(doc: jsPDF) {
   if (typeof fn === "function") fn();
 }
 
-export function exportFarmerReportPDF(farmer: any, ctx: any) {
+export async function exportFarmerReportPDF(farmer: any, ctx: any) {
   const doc = new jsPDF();
-  doc.setFontSize(16);
-  doc.text("Farmer Full Report", 14, 16);
-  doc.setFontSize(10);
-  doc.text(`Farmer ID: ${farmer.farmer_code}`, 14, 24);
-  doc.text(`Name: ${farmer.name_en}`, 14, 30);
-  doc.text(`Mobile: ${farmer.mobile ?? "-"}    NID: ${farmer.nid ?? "-"}`, 14, 36);
-  doc.text(`Address: ${[farmer.village, farmer.upazila, farmer.district].filter(Boolean).join(", ")}`, 14, 42);
+  const lang = pdfLang();
+  const bnFamily = lang === "bn" ? await ensureBanglaFont(doc) : null;
+  const useBn = lang === "bn" && !!bnFamily;
+  const setF = (style: "normal" | "bold" = "normal") => {
+    if (useBn && bnFamily) doc.setFont(bnFamily, "normal");
+    else doc.setFont(undefined, style);
+  };
+  doc.setFontSize(16); setF("bold");
+  doc.text(tPdf("Farmer Full Report", "কৃষক পূর্ণ প্রতিবেদন"), 14, 16);
+  doc.setFontSize(10); setF("normal");
+  doc.text(`${tPdf("Farmer ID", "কৃষক আইডি")}: ${farmer.farmer_code}`, 14, 24);
+  doc.text(`${tPdf("Name", "নাম")}: ${useBn ? (farmer.name_bn || farmer.name_en) : farmer.name_en}`, 14, 30);
+  doc.text(`${tPdf("Mobile", "মোবাইল")}: ${farmer.mobile ?? "-"}    ${tPdf("NID", "এনআইডি")}: ${farmer.nid ?? "-"}`, 14, 36);
+  doc.text(`${tPdf("Address", "ঠিকানা")}: ${[farmer.village, farmer.upazila, farmer.district].filter(Boolean).join(", ")}`, 14, 42);
 
+  const tableFont = useBn && bnFamily ? { font: bnFamily, fontStyle: "normal" } : {};
   autoTable(doc, {
-    startY: 48, head: [["Summary", "Amount"]],
+    startY: 48, head: [[tPdf("Summary", "সারাংশ"), tPdf("Amount", "পরিমাণ")]],
     body: [
-      ["Savings Balance", moneyPdf(ctx.savingsBal)],
-      ["Share Balance", moneyPdf(ctx.share)],
-      ["Loan Due", moneyPdf(ctx.loanDue)],
-      ["Irrigation Due", moneyPdf(ctx.irrDue)],
+      [tPdf("Savings Balance", "সঞ্চয় স্থিতি"), moneyPdf(ctx.savingsBal)],
+      [tPdf("Share Balance", "শেয়ার স্থিতি"), moneyPdf(ctx.share)],
+      [tPdf("Loan Due", "ঋণ বকেয়া"), moneyPdf(ctx.loanDue)],
+      [tPdf("Irrigation Due", "সেচ বকেয়া"), moneyPdf(ctx.irrDue)],
     ],
+    styles: tableFont, headStyles: tableFont,
   });
 
   let y = (doc as any).lastAutoTable.finalY + 6;
-  doc.text("Lands", 14, y);
+  setF("normal"); doc.text(tPdf("Lands", "জমি"), 14, y);
   autoTable(doc, {
     startY: y + 2,
-    head: [["Mouza", "Dag No", "Size", "Owner", "Field"]],
+    head: [[tPdf("Mouza", "মৌজা"), tPdf("Dag No", "দাগ নং"), tPdf("Size", "পরিমাণ"), tPdf("Owner", "মালিকানা"), tPdf("Field", "ক্ষেত্র")]],
     body: ctx.lands.map((l: any) => [l.mouza, formatDagNumbers(l.dag_no), l.land_size, l.owner_type, l.field_type]),
+    styles: tableFont, headStyles: tableFont,
   });
 
   y = (doc as any).lastAutoTable.finalY + 6;
-  doc.text("Irrigation Charges", 14, y);
+  setF("normal"); doc.text(tPdf("Irrigation Charges", "সেচ চার্জ"), 14, y);
   autoTable(doc, {
     startY: y + 2,
-    head: [["Date", "Season", "Total", "Paid", "Due"]],
+    head: [[tPdf("Date", "তারিখ"), tPdf("Season", "মৌসুম"), tPdf("Total", "মোট"), tPdf("Paid", "পরিশোধিত"), tPdf("Due", "বকেয়া")]],
     body: ctx.irr.map((i: any) => [fmtDate(i.entry_date), i.seasons?.name ?? "-", moneyPdf(i.total), moneyPdf(i.paid_amount), moneyPdf(i.due_amount)]),
+    styles: tableFont, headStyles: tableFont,
   });
 
   y = (doc as any).lastAutoTable.finalY + 6;
-  doc.text("Loans", 14, y);
+  setF("normal"); doc.text(tPdf("Loans", "ঋণ"), 14, y);
   autoTable(doc, {
     startY: y + 2,
-    head: [["Issued", "Principal", "Rate %", "Payable", "Status"]],
+    head: [[tPdf("Issued", "ইস্যু তারিখ"), tPdf("Principal", "মূলধন"), tPdf("Rate %", "হার %"), tPdf("Payable", "প্রদেয়"), tPdf("Status", "অবস্থা")]],
     body: ctx.loans.map((l: any) => [fmtDate(l.issued_on), moneyPdf(l.principal), l.interest_rate, moneyPdf(l.total_payable), l.status]),
+    styles: tableFont, headStyles: tableFont,
   });
 
   doc.save(`farmer-${farmer.farmer_code}.pdf`);
