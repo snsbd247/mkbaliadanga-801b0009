@@ -214,7 +214,7 @@ function pickLocation(form: FormState): LocationValue {
 }
 
 export default function Farmers() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { officeId, isSuper, isAdmin } = useAuth();
   const nav = useNavigate();
   const [list, setList] = useState<any[]>([]);
@@ -638,7 +638,7 @@ export default function Farmers() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder={t("search") + " / দাগ (123, 124/A)…"} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
+            <Input placeholder={t("search") + tx(" / Dag (123, 124/A)…", " / দাগ (123, 124/A)…")} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
           </div>
           {isSuper && (
             <label className="flex items-center gap-2 text-sm">
