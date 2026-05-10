@@ -6,12 +6,13 @@ export type ModuleKey =
   | "dashboard" | "offices" | "farmers" | "seasons"
   | "savings" | "loans" | "irrigation" | "payments"
   | "reports" | "users" | "audit" | "settings"
-  | "accounting" | "cashbook" | "approvals" | "sms" | "locations";
+  | "accounting" | "cashbook" | "approvals" | "sms" | "locations"
+  | "assets";
 
 export const ALL_MODULES: ModuleKey[] = [
   "dashboard","offices","farmers","seasons","savings","loans",
   "irrigation","payments","reports","users","audit","settings",
-  "accounting","cashbook","approvals","sms","locations",
+  "accounting","cashbook","approvals","sms","locations","assets",
 ];
 
 export interface Perm { can_view: boolean; can_add: boolean; can_edit: boolean; can_delete: boolean; }
