@@ -110,6 +110,7 @@ export default function AssetItemDetail() {
         </TabsList>
 
         <TabsContent value="purchase">
+          <div className="flex justify-end mb-2"><PurchaseDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No purchase history", "কোনো ক্রয় ইতিহাস নেই")}
             columns={[tx("Date", "তারিখ"), tx("Supplier", "সরবরাহকারী"), tx("Qty", "পরিমাণ"), tx("Unit price", "একক মূল্য"), tx("Total", "মোট")]}
@@ -124,6 +125,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="movement">
+          <div className="flex justify-end mb-2"><MovementDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No movements", "কোনো মুভমেন্ট নেই")}
             columns={[tx("Date", "তারিখ"), tx("From", "থেকে"), tx("To", "এ"), tx("Qty", "পরিমাণ"), tx("Remarks", "মন্তব্য")]}
@@ -131,6 +133,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="install">
+          <div className="flex justify-end mb-2"><InstallationDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No installations", "কোনো ইনস্টলেশন নেই")}
             columns={[tx("Date", "তারিখ"), tx("Location", "অবস্থান"), tx("Condition", "অবস্থা"), tx("Remarks", "মন্তব্য")]}
@@ -138,6 +141,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="maint">
+          <div className="flex justify-end mb-2"><MaintenanceDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No maintenance logs", "কোনো মেরামত নেই")}
             columns={[tx("Date", "তারিখ"), tx("Vendor", "ভেন্ডর"), tx("Cost", "খরচ"), tx("Downtime (days)", "বন্ধ (দিন)"), tx("Status", "অবস্থা")]}
@@ -146,6 +150,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="damage">
+          <div className="flex justify-end mb-2"><DamageDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No damage reports", "কোনো ক্ষতির রিপোর্ট নেই")}
             columns={[tx("Date", "তারিখ"), tx("Severity", "মাত্রা"), tx("Status", "অবস্থা"), tx("Remarks", "মন্তব্য")]}
@@ -153,6 +158,7 @@ export default function AssetItemDetail() {
           />
         </TabsContent>
         <TabsContent value="disposal">
+          <div className="flex justify-end mb-2"><DisposalDialog asset={asset} onDone={load} /></div>
           <SimpleTable
             empty={tx("No disposal records", "কোনো নিষ্পত্তি নেই")}
             columns={[tx("Date", "তারিখ"), tx("Method", "পদ্ধতি"), tx("Sale", "বিক্রয়"), tx("Book value", "হিসাবী মূল্য"), tx("Gain/Loss", "লাভ/ক্ষতি")]}
