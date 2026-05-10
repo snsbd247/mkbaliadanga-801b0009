@@ -426,7 +426,7 @@ export function DisposalDialog({ asset, onDone }: BaseProps) {
     disposal_date: today(), method: "scrap_sale", sale_amount: 0,
     book_value: Number(asset.purchase_price || 0), remarks: "",
   });
-  const gain_loss = +(Number(f.sale_amount || 0) - Number(f.book_value || 0)).toFixed(2);
+  const gain_loss = calcDisposalGainLoss(f.sale_amount, f.book_value);
 
   async function save() {
     setSaving(true);
