@@ -704,6 +704,16 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
   const [recalcOpen, setRecalcOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [overrides, setOverrides] = useState<any[]>([]);
+  useEffect(() => {
+    if (!invoiceId) { setOverrides([]); return; }
+    (supabase
+      .from("irrigation_rate_overrides" as any)
+      .select("id,original_rate,overridden_rate,override_reason,created_at,created_by")
+      .eq("irrigation_invoice_id", invoiceId)
+      .order("created_at", { ascending: false }) as any)
+      .then(({ data }: any) => setOverrides((data as any[]) ?? []));
+  }, [invoiceId]);
   if (!inv) return null;
 
   async function recalc() {
@@ -762,6 +772,24 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
               <pre className="text-[10px] bg-muted/40 p-2 rounded mt-1 overflow-auto max-h-40">
 {JSON.stringify(inv.calculation_snapshot, null, 2)}
               </pre>
+            </details>
+          )}
+          {overrides.length > 0 && (
+            <details className="mt-2" open>
+              <summary className="cursor-pointer text-xs font-medium">
+                {tx("Rate override audit", "রেট ওভাররাইড অডিট")} ({overrides.length})
+              </summary>
+              <div className="space-y-2 mt-2">
+                {overrides.map((o) => (
+                  <div key={o.id} className="text-[11px] border rounded p-2 bg-muted/30">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{fmtDate(o.created_at)}</span>
+                      <span><span className="line-through text-muted-foreground">{money(o.original_rate)}</span> → <span className="font-semibold">{money(o.overridden_rate)}</span></span>
+                    </div>
+                    {o.override_reason && <div className="mt-1">{o.override_reason}</div>}
+                  </div>
+                ))}
+              </div>
             </details>
           )}
         </div>
