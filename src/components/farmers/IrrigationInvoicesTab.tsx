@@ -206,7 +206,13 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
                         }}
                       />
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{r.invoice_no}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {r.invoice_no}
+                      {r.rate_source === "MANUAL" && <Badge variant="outline" className="ml-1 text-[10px]">কাস্টম রেট</Badge>}
+                      {r.rate_source === "CATEGORY" && r.irrigation_category_name && (
+                        <Badge variant="secondary" className="ml-1 text-[10px]">{r.irrigation_category_name}</Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs">{r.seasons?.name ?? r.seasons?.type} {r.seasons?.year ?? ""}</TableCell>
                     <TableCell className="text-xs">{r.lands?.mouza ?? ""} {r.lands?.dag_no ? `• ${r.lands.dag_no}` : ""}</TableCell>
                     <TableCell className="text-xs whitespace-nowrap">{r.due_date}</TableCell>
