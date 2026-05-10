@@ -44,7 +44,7 @@ const empty = {
 };
 
 export default function IrrigationRates() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { isAdmin, officeId, user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [seasons, setSeasons] = useState<any[]>([]);
