@@ -111,6 +111,8 @@ import AssetScanner from "./pages/assets/AssetScanner";
 import AssetScanHistory from "./pages/assets/AssetScanHistory";
 import AssetBulkQR from "./pages/assets/AssetBulkQR";
 import AssetDepreciation from "./pages/assets/AssetDepreciation";
+import AssetStock from "./pages/assets/AssetStock";
+import AssetMovements from "./pages/assets/AssetMovements";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
