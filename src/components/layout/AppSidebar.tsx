@@ -84,6 +84,8 @@ export function AppSidebar() {
         { url: "/irrigation/invoices", icon: Droplets, label: t("irrigationInvoices" as any), permKey: "irrigation" },
         { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
         { url: "/admin/lookups", icon: Sprout, label: t("seasonTypesAndLandKinds" as any) },
+        { url: "/admin/irrigation-categories", icon: Sprout, label: t("irrigationCategories" as any) || "সেচ ক্যাটাগরি" },
+        { url: "/admin/irrigation-category-rates", icon: Droplets, label: t("categoryRates" as any) || "ক্যাটাগরি রেট" },
         { url: "/admin/rate-audit", icon: ScrollText, label: t("rateChangeHistory" as any) },
         { url: "/admin/irrigation-due-mismatch", icon: ShieldAlert, label: t("irrigationDueMismatch" as any) || "Irrigation Due Mismatch", permKey: "reports" },
       ],
