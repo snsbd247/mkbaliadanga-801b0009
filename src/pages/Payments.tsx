@@ -81,7 +81,7 @@ export default function Payments() {
   async function submitWithdraw() {
     if (!farmerId) return toast.error(t("pickFarmer"));
     if (!(withdrawForm.amount > 0)) return toast.error(t("amountMustBePositiveSavings"));
-    if (withdrawForm.amount > savingsBalance) return toast.error(`Insufficient balance. Available: ৳${savingsBalance.toLocaleString()}`);
+    if (withdrawForm.amount > savingsBalance) return toast.error(`${tx("Insufficient balance. Available", "যথেষ্ট ব্যালেন্স নেই। উপলব্ধ")}: ৳${savingsBalance.toLocaleString()}`);
     const farmer = farmers.find((x: any) => x.id === farmerId);
     const { error } = await supabase.from("savings_transactions").insert({
       farmer_id: farmerId, type: "withdraw" as any, amount: withdrawForm.amount,
