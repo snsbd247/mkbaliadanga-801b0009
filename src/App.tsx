@@ -102,6 +102,9 @@ import AdminLookups from "./pages/admin/Lookups";
 import RateAuditLog from "./pages/admin/RateAuditLog";
 import IrrigationCategories from "./pages/admin/IrrigationCategories";
 import IrrigationCategoryRates from "./pages/admin/IrrigationCategoryRates";
+import AssetCategories from "./pages/admin/AssetCategories";
+import AssetItems from "./pages/assets/AssetItems";
+import AssetItemDetail from "./pages/assets/AssetItemDetail";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
