@@ -28,35 +28,35 @@ export default function AssetItemDetail() {
   const [disposals, setDisposals] = useState<any[]>([]);
   const [audits, setAudits] = useState<any[]>([]);
 
-  useEffect(() => {
+  async function load() {
     if (!id) return;
-    (async () => {
-      const a = await supabase.from("assets" as any).select("*").eq("id", id).maybeSingle();
-      if (a.error) { toast.error(a.error.message); return; }
-      setAsset(a.data);
-      document.title = (a.data as any)?.name_en ? `${(a.data as any).name_en} — ${tx("Asset", "এসেট")}` : tx("Asset", "এসেট");
+    const a = await supabase.from("assets" as any).select("*").eq("id", id).maybeSingle();
+    if (a.error) { toast.error(a.error.message); return; }
+    setAsset(a.data);
+    document.title = (a.data as any)?.name_en ? `${(a.data as any).name_en} — ${tx("Asset", "এসেট")}` : tx("Asset", "এসেট");
 
-      const orderDesc = { ascending: false } as const;
-      const [p, s, m, ins, mn, dm, ds, au] = await Promise.all([
-        supabase.from("asset_purchases" as any).select("*").eq("asset_id", id).order("purchase_date", orderDesc),
-        supabase.from("asset_stocks" as any).select("*").eq("asset_id", id),
-        supabase.from("asset_movements" as any).select("*").eq("asset_id", id).order("created_at", orderDesc),
-        supabase.from("asset_installations" as any).select("*").eq("asset_id", id).order("install_date", orderDesc),
-        supabase.from("asset_maintenance_logs" as any).select("*").eq("asset_id", id).order("maintenance_date", orderDesc),
-        supabase.from("asset_damage_reports" as any).select("*").eq("asset_id", id).order("report_date", orderDesc),
-        supabase.from("asset_disposals" as any).select("*").eq("asset_id", id).order("disposal_date", orderDesc),
-        supabase.from("asset_audit_logs" as any).select("*").eq("asset_id", id).order("created_at", orderDesc).limit(200),
-      ]);
-      setPurchases(p.data ?? []);
-      setStocks(s.data ?? []);
-      setMovements(m.data ?? []);
-      setInstalls(ins.data ?? []);
-      setMaint(mn.data ?? []);
-      setDamages(dm.data ?? []);
-      setDisposals(ds.data ?? []);
-      setAudits(au.data ?? []);
-    })();
-  }, [id]);
+    const orderDesc = { ascending: false } as const;
+    const [p, s, m, ins, mn, dm, ds, au] = await Promise.all([
+      supabase.from("asset_purchases" as any).select("*").eq("asset_id", id).order("purchase_date", orderDesc),
+      supabase.from("asset_stocks" as any).select("*").eq("asset_id", id),
+      supabase.from("asset_movements" as any).select("*").eq("asset_id", id).order("created_at", orderDesc),
+      supabase.from("asset_installations" as any).select("*").eq("asset_id", id).order("install_date", orderDesc),
+      supabase.from("asset_maintenance_logs" as any).select("*").eq("asset_id", id).order("maintenance_date", orderDesc),
+      supabase.from("asset_damage_reports" as any).select("*").eq("asset_id", id).order("report_date", orderDesc),
+      supabase.from("asset_disposals" as any).select("*").eq("asset_id", id).order("disposal_date", orderDesc),
+      supabase.from("asset_audit_logs" as any).select("*").eq("asset_id", id).order("created_at", orderDesc).limit(200),
+    ]);
+    setPurchases(p.data ?? []);
+    setStocks(s.data ?? []);
+    setMovements(m.data ?? []);
+    setInstalls(ins.data ?? []);
+    setMaint(mn.data ?? []);
+    setDamages(dm.data ?? []);
+    setDisposals(ds.data ?? []);
+    setAudits(au.data ?? []);
+  }
+
+  useEffect(() => { load(); }, [id]);
 
   if (!asset) {
     return <div className="p-6 text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</div>;
