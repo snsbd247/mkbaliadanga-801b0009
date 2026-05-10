@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { translations, type Lang, type TranslationKey } from "./translations";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Ctx {
   lang: Lang;
