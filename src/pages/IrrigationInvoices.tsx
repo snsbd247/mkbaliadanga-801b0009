@@ -1136,7 +1136,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
           is_manual_rate: isManualRate,
           manual_rate_reason: isManualRate ? manualReason.trim() : null,
         },
-      } as any).select("id").maybeSingle();
+      } as any).select("id").maybeSingle() as any;
       if (error) throw error;
       // Audit row for any MANUAL override
       if (rateSource === "MANUAL" && insertedRows?.id) {
