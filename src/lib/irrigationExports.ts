@@ -34,6 +34,11 @@ export const IRR_BN = {
   manualReason: "ম্যানুয়াল কারণ",
   recalculated: "পুনঃগণনা",
   borga: "বর্গা",
+  rateSource: "রেট উৎস",
+  category: "ক্যাটেগরি",
+  appliedRate: "প্রযোজ্য রেট",
+  standardRate: "মানক রেট",
+  overrideReason: "ওভাররাইড কারণ",
 };
 
 export const IRR_EN: typeof IRR_BN = {
