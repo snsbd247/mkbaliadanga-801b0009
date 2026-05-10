@@ -913,7 +913,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         });
         previewArr.push({ land: l, billed, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
       }
-      setPreviewRows(previewArr);
+      setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
       setSkippedNoRate(noRate);
       toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
