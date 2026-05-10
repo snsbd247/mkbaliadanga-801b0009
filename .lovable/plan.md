@@ -1,106 +1,119 @@
+# Hybrid Irrigation Rate Engine Refactor
 
-# Full i18n Cleanup & Language Persistence
+A large, multi-phase change. I will deliver it in **safe, independently shippable phases** so existing invoices, receipts, ledgers, reports, QR verification, and exports keep working at every step.
 
-## Goal
+---
 
-Make every menu, page, tab, filter, empty state, toast, PDF/Excel export, and dialog respect the EN/BN toggle. No hardcoded Bengali or English strings should remain in the UI layer. Logged-in user's language preference must be remembered across sessions.
+## Guiding Principles
 
-## Scope (in order of execution)
+- **Additive only**: new tables + new nullable columns. No destructive migration on existing data.
+- **Old invoices frozen**: historical `irrigation_invoices` rows keep their `calculation_snapshot` and never get re-priced.
+- **Layered resolver**: `Manual Override → Category Rate → Land-Type Rate → Warning`.
+- **Single source of truth**: a new `resolveIrrigationRate()` pure function used by UI + invoice generation + tests.
+- **Bengali-first UI**, RLS preserved (office-scoped), audit trail on every override.
 
-### 1. Audit — find every hardcoded string
-Run a project-wide scan to catalog hardcoded text:
-- Bengali characters (`/[\u0980-\u09FF]/`) anywhere in `src/**/*.{ts,tsx}`
-- Hardcoded English JSX strings (titles, button labels, table headers, toast messages, placeholders)
-- `// i18n-ignore-file` markers — review whether they're justified, remove if not
-- `toast.error("...")` / `toast.success("...")` / `confirm("...")` calls with literal strings
+---
 
-Output: `docs/i18n-cleanup-report.md` listing each file, line, and the string to extract.
+## Phase 1 — Schema Foundation (migration only, no UI break)
 
-### 2. Translation registry expansion
-Add all newly-extracted keys to `src/i18n/translations.ts` (both `en` and `bn` blocks). Group by module:
-- `dashboard.*`, `farmers.*`, `loans.*`, `savings.*`, `irrigation.*`, `settings.*`
-- `reports.*` (already partially done — finish the remaining report pages)
-- `common.*` for shared labels (Save, Cancel, Delete, Confirm, etc.)
-- `toast.*` for success/error messages
-- `export.*` for PDF/Excel headers
+New tables:
 
-### 3. Page-by-page conversion
-Replace hardcoded strings with `t("key")` calls, file by file. Priority order:
+```text
+irrigation_categories
+  id, office_id, code, name_bn, name_en,
+  calculation_basis (per_shotok|per_bigha|flat|custom),
+  allow_manual_negotiation bool,
+  is_active bool, deleted_at, created_at, updated_at
 
-**Reports (finish what's started):**
-- `CollectionReport`, `ExpensesReport`, `FarmerRejectionsReport`, `InvoiceReport`, `IrrigationDueReport`, `PromiseDueReport`, `ReceiptKindReport`, `SavingsLoanReport` — tabs, filters, empty states, table headers, export buttons.
+irrigation_category_rates
+  id, office_id, irrigation_season_id, irrigation_category_id,
+  rate_type (per_shotok|per_bigha|flat|custom),
+  rate numeric, unit text,
+  is_negotiable bool,
+  created_at, updated_at
+  UNIQUE (office_id, season_id, category_id)
 
-**Dashboard:**
-- `Dashboard.tsx`, `FarmerDashboard.tsx`, dashboard cards (`SmsProviderStatusCard`, etc.)
+irrigation_rate_overrides
+  id, irrigation_invoice_id, original_rate, overridden_rate,
+  override_reason, approved_by, created_by, created_at
+```
 
-**Farmer module:**
-- `Farmers.tsx`, `FarmerDetail.tsx`, `FarmerCard.tsx`, `FarmerStatement.tsx`, `FarmerProfileReport.tsx`, `FarmersImport.tsx`, `BulkCards.tsx`, `VoterList.tsx`, `VoterAudit.tsx`, `VoterHistory.tsx`, dialogs in `components/farmers/`
+Add **nullable** columns to `irrigation_invoices`:
 
-**Loans:**
-- `Loans.tsx`, `LoanDetail.tsx`, `LoanPlans.tsx`, `LoanReceiptSettings.tsx`, `BulkLoanExport.tsx`
+```text
+irrigation_category_id     uuid null
+irrigation_category_name   text null   -- snapshot
+rate_source                text null   -- 'STANDARD' | 'CATEGORY' | 'MANUAL'
+original_standard_rate     numeric null
+applied_rate               numeric null
+override_reason            text null
+```
 
-**Savings:**
-- `Savings.tsx`, `SavingsStatement.tsx`, `ShareCollection.tsx`, `ShareCapitalReconciliation.tsx`
+RLS: office-scoped read, admin/super manage — mirrors `irrigation_season_rates`.
+Backfill: leave NULL for legacy rows; resolver treats NULL `rate_source` as `STANDARD`.
 
-**Irrigation:**
-- `IrrigationInvoices.tsx`, `IrrigationRates.tsx`, `IrrigationReports.tsx`, `irrigation/IrrigationReportCharts.tsx`, `components/farmers/IrrigationInvoicesTab.tsx`, `components/payments/IrrigationPaymentPanel.tsx`
+## Phase 2 — Rate Resolver Core (pure logic + tests)
 
-**Settings & Admin:**
-- `Settings.tsx`, `SmsSettings.tsx`, `Backup.tsx`, `Offices.tsx`, `Seasons.tsx`, `Users.tsx`, `Profile.tsx`, `ReceiptTemplate.tsx`, `CardDesigner.tsx`, all `pages/admin/*`
+- New `src/lib/irrigationRateResolver.ts` exporting `resolveIrrigationRate({ land, season, office, manualOverride? })` returning `{ source, rate, basis, categoryName?, warning? }`.
+- Unit tests covering: manual wins, category wins over standard, fallback to land-type, "no rate" warning, negotiable flag.
+- No UI/DB write changes yet — purely additive module.
 
-**Shared components & toasts:**
-- `components/layout/*`, `components/auth/*`, `components/receipts/*`, `components/exports/ExportDialog.tsx`
+## Phase 3 — Admin Master Data UI
 
-### 4. Persist user language preference
-Currently `LanguageProvider` uses `localStorage` only. Extend it:
+- `src/pages/admin/IrrigationCategories.tsx` — CRUD list (Bengali-first), soft-delete.
+- Extend `src/pages/IrrigationRates.tsx` with a **Categories** tab for per-season category rates next to the existing land-type rates tab. Existing land-type tab untouched.
+- Audit entries via existing `logAudit()` (`module: "irrigation_rate"`).
 
-- Add `language` column to `profiles` table (`text default 'bn' check (language in ('en','bn'))`).
-- On login, `LanguageProvider` reads the user's `profiles.language` and applies it (overrides localStorage).
-- When user toggles language, write to `profiles.language` (debounced upsert) for the logged-in user.
-- Anonymous users (auth screen, farmer portal login) keep using `localStorage`.
-- On logout, fall back to `localStorage` / browser default.
+## Phase 4 — Invoice Generation Integration
 
-### 5. PDF & Excel exports
-Audit every export function in `src/lib/`:
-- `bnReceipts.ts`, `cardPdf.ts`, `paymentReceiptPdf.ts`, `irrigationInvoicePdf.ts`, `csvExport.ts`, `landExport.ts`, `landRelationsExport.ts`, `exports.ts`, `irrigationExports.ts`
+- Update `IrrigationInvoices.tsx` generation flow to call the resolver:
+  - Per land: pick category if assigned for the season, else land-type rate.
+  - "Manual rate" toggle on the generate dialog → opens reason + amount inputs.
+  - On "no rate found": block with the required Bengali warning + 3 actions.
+- Persist `rate_source`, `applied_rate`, `original_standard_rate`, `irrigation_category_name`, `calculation_snapshot` (extended).
+- For MANUAL: also insert `irrigation_rate_overrides` row in the same transaction.
 
-For each: accept current `lang` (from `LanguageProvider`) and:
-- Localize PDF titles, column headers, footer.
-- Format numbers with `bnNumber` for BN, regular for EN.
-- Format dates via `format.ts` helpers (`fmtDate`, `fmtMoney`) using locale-aware variants.
-- For CSV/Excel, headers in chosen language; numeric values stay machine-readable (no Bengali digits in CSV — keep ASCII for data integrity, only headers translated).
+## Phase 5 — Receipt, Statement, QR, Dashboard
 
-Update each call site to pass the active language.
+- Receipt PDF (`paymentReceiptPdf.ts`, `bnReceipts.ts`): show category name + a small "কাস্টম রেট" badge when `rate_source = MANUAL`. Layout unchanged for legacy invoices (fields are NULL → hidden).
+- Farmer statement / IrrigationInvoicesTab: add small badges; same conditional rendering.
+- QR verification + dashboard: read-only consumers — verify they tolerate the new optional fields (no schema-breaking joins).
 
-### 6. QA — manual and automated
-- Run `scripts/i18n-scan.mjs` to confirm no new hardcoded strings remain.
-- Update `e2e/i18n-smoke.spec.ts` and `e2e/pdf-localization.spec.ts` to cover the newly-localized pages.
-- Manually toggle EN ⇄ BN on every menu route via the browser tool; screenshot each report and dashboard page to confirm:
-  - Tab labels translated
-  - Filter labels & placeholders translated
-  - Table headers translated
-  - Empty-state messages translated
-  - Toast messages translated
-  - Date/money formatted per locale
-- Open one PDF and one CSV export per module in each language and visually verify.
+## Phase 6 — Reports & Exports
 
-### 7. Execution batches (delivery plan)
-This work is too large for a single message. I propose splitting into 6 commits, each independently mergeable:
+- New report: `src/pages/reports/RateSourceReport.tsx` — splits collection by STANDARD / CATEGORY / MANUAL with PDF + CSV export.
+- New report: `src/pages/reports/OverrideAuditReport.tsx` — who, original vs final, reason, season, farmer.
+- Extend existing irrigation exports with `rate_source`, `category_name`, `override_reason` columns (appended at the end so existing column orders stay stable).
 
-| Batch | Scope | Approx files |
-|-------|-------|--------------|
-| 1 | Audit script + translation key additions + persistence migration | ~5 |
-| 2 | Reports module finish | ~10 |
-| 3 | Dashboard + Farmer module | ~15 |
-| 4 | Loans + Savings + Irrigation | ~15 |
-| 5 | Settings + Admin + shared components | ~20 |
-| 6 | Exports (PDF/CSV) + QA tests + screenshots | ~10 |
+## Phase 7 — Demo / Import-Export
 
-After each batch I'll run the i18n scan and show you the remaining count so progress is measurable.
+- Extend `demoPresets` and `demo-reset` edge function to seed:
+  - 3 sample categories (ধানের চারা, সবজি, পুকুর)
+  - season rates for them
+  - 1 manual-override example invoice
+- CSV templates updated for categories + category rates.
 
-## Open questions
+## Phase 8 — Tests
 
-1. **Language column default** — should new users default to `bn` (current app default) or detect from browser?
-2. **CSV exports** — keep numeric values in ASCII digits even in BN mode (recommended for re-importability), or output Bengali digits in the visible cells?
-3. **Should I start now with Batch 1 (audit + persistence + translation keys)** so you can review the foundation before I touch the page files? Or proceed straight through all 6 batches?
+- Unit: resolver matrix, override audit insert, snapshot immutability.
+- Integration: invoice generation across all 3 sources; legacy invoice still renders.
+- E2E (Playwright): create category → set rate → generate invoice → pay → receipt shows badge → report totals match.
+- Regression: existing irrigation tests must still pass untouched.
 
+---
+
+## Backward-Compatibility Checklist (verified each phase)
+
+- Legacy invoices: `rate_source` NULL → UI treats as STANDARD, no badge, identical receipt.
+- No NOT NULL added to existing columns.
+- No rename / drop of existing columns.
+- No RPC signature changes — new RPCs added with new names.
+- Ledger posting unchanged (still posted from `payable_amount`).
+
+---
+
+## Delivery Order I Propose
+
+I'll start with **Phase 1 + Phase 2** in this batch (schema migration + pure resolver + tests). After you approve the migration, I'll move phase-by-phase, pausing only if a phase needs a product decision.
+
+Reply **"ok start"** (or "শুরু করেন") to begin Phase 1.
