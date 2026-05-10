@@ -190,10 +190,10 @@ export default function AssetItems() {
   return (
     <>
       <PageHeader
-        title={tx("Asset Items", "এসেট আইটেম")}
+        title={tx("Asset Registry", "এসেট রেজিস্ট্রি")}
         description={tx(
-          "Central registry of all assets and inventory items. Each item belongs to a category and tracks its lifecycle.",
-          "সমস্ত এসেট ও ইনভেন্টরি আইটেমের কেন্দ্রীয় রেজিস্ট্রি। প্রতিটি আইটেম একটি ক্যাটাগরির অধীনে এবং তার লাইফসাইকেল ট্র্যাক করে।",
+          "Central registry of every physical asset, inventory item, and consumable. Each item belongs to a category and tracks its lifecycle.",
+          "প্রতিটি ভৌত এসেট, ইনভেন্টরি ও ভোগ্য আইটেমের কেন্দ্রীয় রেজিস্ট্রি। প্রতিটি আইটেম একটি ক্যাটাগরির অধীনে এবং তার লাইফসাইকেল ট্র্যাক করে।",
         )}
         actions={
           <div className="flex gap-2">
