@@ -220,6 +220,7 @@ export type Database = {
         Row: {
           asset_id: string
           created_at: string
+          deleted_at: string | null
           id: string
           office_id: string | null
           remarks: string | null
@@ -231,6 +232,7 @@ export type Database = {
         Insert: {
           asset_id: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           office_id?: string | null
           remarks?: string | null
@@ -242,6 +244,7 @@ export type Database = {
         Update: {
           asset_id?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           office_id?: string | null
           remarks?: string | null
@@ -381,6 +384,7 @@ export type Database = {
           book_value: number
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           disposal_date: string
           gain_loss: number
           id: string
@@ -395,6 +399,7 @@ export type Database = {
           book_value?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           disposal_date?: string
           gain_loss?: number
           id?: string
@@ -409,6 +414,7 @@ export type Database = {
           book_value?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           disposal_date?: string
           gain_loss?: number
           id?: string
@@ -433,6 +439,7 @@ export type Database = {
           asset_id: string
           condition_status: string | null
           created_at: string
+          deleted_at: string | null
           id: string
           install_date: string
           installed_by: string | null
@@ -445,6 +452,7 @@ export type Database = {
           asset_id: string
           condition_status?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           install_date?: string
           installed_by?: string | null
@@ -457,6 +465,7 @@ export type Database = {
           asset_id?: string
           condition_status?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           install_date?: string
           installed_by?: string | null
@@ -481,6 +490,7 @@ export type Database = {
           cost: number
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           downtime_days: number
           id: string
           maintenance_date: string
@@ -494,6 +504,7 @@ export type Database = {
           cost?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           downtime_days?: number
           id?: string
           maintenance_date?: string
@@ -507,6 +518,7 @@ export type Database = {
           cost?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           downtime_days?: number
           id?: string
           maintenance_date?: string
@@ -529,6 +541,7 @@ export type Database = {
         Row: {
           asset_id: string
           created_at: string
+          deleted_at: string | null
           from_location_id: string | null
           id: string
           moved_by: string | null
@@ -541,6 +554,7 @@ export type Database = {
         Insert: {
           asset_id: string
           created_at?: string
+          deleted_at?: string | null
           from_location_id?: string | null
           id?: string
           moved_by?: string | null
@@ -553,6 +567,7 @@ export type Database = {
         Update: {
           asset_id?: string
           created_at?: string
+          deleted_at?: string | null
           from_location_id?: string | null
           id?: string
           moved_by?: string | null
@@ -723,6 +738,7 @@ export type Database = {
         Row: {
           asset_category_id: string | null
           asset_code: string
+          asset_type: Database["public"]["Enums"]["asset_type"]
           created_at: string
           created_by: string | null
           current_location_id: string | null
@@ -730,6 +746,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           installed_at: string | null
+          lifecycle_status: string | null
           name_bn: string | null
           name_en: string
           notes: string | null
@@ -744,6 +761,7 @@ export type Database = {
         Insert: {
           asset_category_id?: string | null
           asset_code: string
+          asset_type?: Database["public"]["Enums"]["asset_type"]
           created_at?: string
           created_by?: string | null
           current_location_id?: string | null
@@ -751,6 +769,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           installed_at?: string | null
+          lifecycle_status?: string | null
           name_bn?: string | null
           name_en: string
           notes?: string | null
@@ -765,6 +784,7 @@ export type Database = {
         Update: {
           asset_category_id?: string | null
           asset_code?: string
+          asset_type?: Database["public"]["Enums"]["asset_type"]
           created_at?: string
           created_by?: string | null
           current_location_id?: string | null
@@ -772,6 +792,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           installed_at?: string | null
+          lifecycle_status?: string | null
           name_bn?: string | null
           name_en?: string
           notes?: string | null
@@ -4980,7 +5001,11 @@ export type Database = {
         | "maintenance"
         | "damaged"
         | "disposed"
+        | "in_use"
+        | "scrapped"
+        | "lost"
       asset_tracking_mode: "quantity" | "serial"
+      asset_type: "inventory" | "fixed_asset" | "consumable"
       field_type: "high_land" | "medium_land" | "low_land" | "other"
       installment_status: "due" | "paid" | "missed" | "partial"
       invoice_status:
@@ -5165,8 +5190,12 @@ export const Constants = {
         "maintenance",
         "damaged",
         "disposed",
+        "in_use",
+        "scrapped",
+        "lost",
       ],
       asset_tracking_mode: ["quantity", "serial"],
+      asset_type: ["inventory", "fixed_asset", "consumable"],
       field_type: ["high_land", "medium_land", "low_land", "other"],
       installment_status: ["due", "paid", "missed", "partial"],
       invoice_status: [

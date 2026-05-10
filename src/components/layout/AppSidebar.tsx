@@ -107,11 +107,11 @@ export function AppSidebar() {
       key: "assets", icon: Package, label: t("assetsGroup" as any) || "এসেট",
       children: [
         { url: "/assets/dashboard", icon: Package, label: t("assetDashboard" as any) || "ড্যাশবোর্ড", permKey: "assets" },
-        { url: "/assets/items", icon: Package, label: t("assetItems" as any) || "এসেট আইটেম", permKey: "assets" },
+        { url: "/assets/items", icon: Package, label: t("assetRegistry" as any) || "এসেট রেজিস্ট্রি", permKey: "assets" },
         { url: "/assets/reports", icon: Package, label: t("assetReports" as any) || "এসেট রিপোর্ট", permKey: "assets" },
         { url: "/assets/scan", icon: Package, label: t("assetScan" as any) || "QR স্ক্যান", permKey: "assets" },
         { url: "/assets/scan/history", icon: Package, label: t("assetScanHistory" as any) || "স্ক্যান ইতিহাস", permKey: "assets" },
-        { url: "/assets/qr-bulk", icon: Package, label: t("assetBulkQr" as any) || "বাল্ক QR প্রিন্ট", permKey: "assets" },
+        { url: "/assets/qr-bulk", icon: Package, label: t("assetBulkOps" as any) || "বাল্ক কার্যক্রম", permKey: "assets" },
         { url: "/assets/depreciation", icon: Package, label: t("assetDepreciation" as any) || "ডিপ্রেসিয়েশন", permKey: "assets" },
         { url: "/admin/asset-categories", icon: Briefcase, label: t("assetCategories" as any) || "এসেট ক্যাটাগরি", permKey: "assets" },
       ],

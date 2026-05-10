@@ -19,7 +19,11 @@ import { logAssetAudit } from "@/lib/assetAudit";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 
 type TrackingMode = "quantity" | "serial";
-type AssetStatus = "purchased" | "in_stock" | "transferred" | "installed" | "maintenance" | "damaged" | "disposed";
+export type AssetType = "inventory" | "fixed_asset" | "consumable";
+type AssetStatus =
+  | "purchased" | "in_stock" | "transferred" | "installed"
+  | "maintenance" | "damaged" | "disposed"
+  | "in_use" | "scrapped" | "lost";
 
 type Cat = { id: string; code: string; name_bn: string | null; name_en: string; tracking_mode: TrackingMode };
 type Row = {
@@ -31,6 +35,7 @@ type Row = {
   name_bn: string | null;
   name_en: string;
   tracking_mode: TrackingMode;
+  asset_type: AssetType;
   unit: string | null;
   purchase_price: number;
   current_status: AssetStatus;
@@ -45,9 +50,20 @@ const empty = {
   name_bn: "",
   name_en: "",
   tracking_mode: "quantity" as TrackingMode,
+  asset_type: "fixed_asset" as AssetType,
   unit: "",
   purchase_price: 0,
 };
+
+export function assetTypeLabel(t: AssetType, tx: (en: string, bn: string) => string) {
+  const m: Record<AssetType, [string, string]> = {
+    inventory:    ["Inventory", "ইনভেন্টরি"],
+    fixed_asset:  ["Fixed Asset", "স্থায়ী এসেট"],
+    consumable:   ["Consumable", "ভোগ্য"],
+  };
+  const [en, bn] = m[t];
+  return tx(en, bn);
+}
 
 export function statusLabel(s: AssetStatus, tx: (en: string, bn: string) => string) {
   const m: Record<AssetStatus, [string, string]> = {
@@ -55,16 +71,19 @@ export function statusLabel(s: AssetStatus, tx: (en: string, bn: string) => stri
     in_stock: ["In Stock", "স্টকে"],
     transferred: ["Transferred", "স্থানান্তরিত"],
     installed: ["Installed", "ইনস্টল"],
+    in_use: ["In Use", "ব্যবহৃত"],
     maintenance: ["Maintenance", "মেরামত"],
     damaged: ["Damaged", "ক্ষতিগ্রস্ত"],
     disposed: ["Disposed", "নিষ্পত্তি"],
+    scrapped: ["Scrapped", "স্ক্র্যাপড"],
+    lost: ["Lost", "হারানো"],
   };
-  const [en, bn] = m[s];
-  return tx(en, bn);
+  const pair = m[s] ?? [s, s];
+  return tx(pair[0], pair[1]);
 }
 
 export function statusVariant(s: AssetStatus): "default" | "secondary" | "outline" | "destructive" {
-  if (s === "damaged" || s === "disposed") return "destructive";
+  if (s === "damaged" || s === "disposed" || s === "scrapped" || s === "lost") return "destructive";
   if (s === "in_stock" || s === "purchased") return "secondary";
   if (s === "maintenance" || s === "transferred") return "outline";
   return "default";
@@ -81,9 +100,10 @@ export default function AssetItems() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AssetStatus>("all");
   const [catFilter, setCatFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | AssetType>("all");
 
   useEffect(() => {
-    document.title = tx("Asset Items", "এসেট আইটেম");
+    document.title = tx("Asset Registry", "এসেট রেজিস্ট্রি");
     load();
   }, []);
 
@@ -103,6 +123,7 @@ export default function AssetItems() {
       asset_code: r.asset_code, serial_no: r.serial_no ?? "",
       name_bn: r.name_bn ?? "", name_en: r.name_en,
       tracking_mode: r.tracking_mode, unit: r.unit ?? "",
+      asset_type: r.asset_type ?? "fixed_asset",
       purchase_price: Number(r.purchase_price ?? 0),
     });
     setOpen(true);
@@ -129,6 +150,7 @@ export default function AssetItems() {
         name_bn: form.name_bn.trim() || null,
         name_en: form.name_en.trim() || form.name_bn.trim(),
         tracking_mode: form.tracking_mode,
+        asset_type: form.asset_type,
         unit: form.unit.trim() || null,
         purchase_price: Number(form.purchase_price) || 0,
       };
@@ -154,10 +176,11 @@ export default function AssetItems() {
   const visible = useMemo(() => rows.filter((r) => {
     if (statusFilter !== "all" && r.current_status !== statusFilter) return false;
     if (catFilter !== "all" && r.asset_category_id !== catFilter) return false;
+    if (typeFilter !== "all" && (r.asset_type ?? "fixed_asset") !== typeFilter) return false;
     if (!q.trim()) return true;
     const s = q.trim().toLowerCase();
     return (r.asset_code + " " + (r.serial_no ?? "") + " " + r.name_en + " " + (r.name_bn ?? "")).toLowerCase().includes(s);
-  }), [rows, q, statusFilter, catFilter]);
+  }), [rows, q, statusFilter, catFilter, typeFilter]);
 
   const catName = (id: string | null) => {
     const c = cats.find((x) => x.id === id);
@@ -167,10 +190,10 @@ export default function AssetItems() {
   return (
     <>
       <PageHeader
-        title={tx("Asset Items", "এসেট আইটেম")}
+        title={tx("Asset Registry", "এসেট রেজিস্ট্রি")}
         description={tx(
-          "Central registry of all assets and inventory items. Each item belongs to a category and tracks its lifecycle.",
-          "সমস্ত এসেট ও ইনভেন্টরি আইটেমের কেন্দ্রীয় রেজিস্ট্রি। প্রতিটি আইটেম একটি ক্যাটাগরির অধীনে এবং তার লাইফসাইকেল ট্র্যাক করে।",
+          "Central registry of every physical asset, inventory item, and consumable. Each item belongs to a category and tracks its lifecycle.",
+          "প্রতিটি ভৌত এসেট, ইনভেন্টরি ও ভোগ্য আইটেমের কেন্দ্রীয় রেজিস্ট্রি। প্রতিটি আইটেম একটি ক্যাটাগরির অধীনে এবং তার লাইফসাইকেল ট্র্যাক করে।",
         )}
         actions={
           <div className="flex gap-2">
@@ -218,6 +241,24 @@ export default function AssetItems() {
                   </Select>
                 </div>
                 <div>
+                  <Label>{tx("Asset type", "এসেট টাইপ")}</Label>
+                  <Select value={form.asset_type} onValueChange={(v: any) => setForm({ ...form, asset_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed_asset">{assetTypeLabel("fixed_asset", tx)}</SelectItem>
+                      <SelectItem value="inventory">{assetTypeLabel("inventory", tx)}</SelectItem>
+                      <SelectItem value="consumable">{assetTypeLabel("consumable", tx)}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2 text-xs text-muted-foreground">
+                  {form.asset_type === "fixed_asset"
+                    ? tx("Fixed assets are depreciated and tracked individually.", "স্থায়ী এসেট অবচয় হয় এবং পৃথকভাবে ট্র্যাক করা হয়।")
+                    : form.asset_type === "inventory"
+                    ? tx("Inventory items are tracked by quantity only — no depreciation.", "ইনভেন্টরি শুধু পরিমাণে ট্র্যাক হয় — অবচয় হয় না।")
+                    : tx("Consumables can be expensed directly on use.", "ভোগ্য আইটেম ব্যবহারের সাথে সরাসরি খরচ লেখা যায়।")}
+                </div>
+                <div>
                   <Label>{tx("Name (Bengali)", "নাম (বাংলা)")}</Label>
                   <Input value={form.name_bn} onChange={(e) => setForm({ ...form, name_bn: e.target.value })} placeholder="৫ এইচপি মোটর" />
                 </div>
@@ -248,11 +289,20 @@ export default function AssetItems() {
         }
       />
       <Card className="p-3 mb-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx("Search code, serial, name…", "কোড, সিরিয়াল, নাম খুঁজুন…")} />
           </div>
+          <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{tx("All types", "সব টাইপ")}</SelectItem>
+              <SelectItem value="fixed_asset">{assetTypeLabel("fixed_asset", tx)}</SelectItem>
+              <SelectItem value="inventory">{assetTypeLabel("inventory", tx)}</SelectItem>
+              <SelectItem value="consumable">{assetTypeLabel("consumable", tx)}</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={catFilter} onValueChange={setCatFilter}>
             <SelectTrigger><SelectValue placeholder={tx("All categories", "সব ক্যাটাগরি")} /></SelectTrigger>
             <SelectContent>
@@ -264,7 +314,7 @@ export default function AssetItems() {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{tx("All statuses", "সব অবস্থা")}</SelectItem>
-              {(["purchased","in_stock","transferred","installed","maintenance","damaged","disposed"] as AssetStatus[]).map((s) =>
+              {(["purchased","in_stock","transferred","installed","in_use","maintenance","damaged","disposed","scrapped","lost"] as AssetStatus[]).map((s) =>
                 <SelectItem key={s} value={s}>{statusLabel(s, tx)}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -276,6 +326,7 @@ export default function AssetItems() {
             <TableRow>
               <TableHead>{tx("Code", "কোড")}</TableHead>
               <TableHead>{tx("Name", "নাম")}</TableHead>
+              <TableHead>{tx("Type", "টাইপ")}</TableHead>
               <TableHead>{tx("Category", "ক্যাটাগরি")}</TableHead>
               <TableHead>{tx("Tracking", "ট্র্যাকিং")}</TableHead>
               <TableHead>{tx("Serial", "সিরিয়াল")}</TableHead>
@@ -289,6 +340,9 @@ export default function AssetItems() {
               <TableRow key={r.id}>
                 <TableCell className="font-mono text-xs">{r.asset_code}</TableCell>
                 <TableCell>{r.name_bn || r.name_en}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{assetTypeLabel(r.asset_type ?? "fixed_asset", tx)}</Badge>
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{catName(r.asset_category_id)}</TableCell>
                 <TableCell>
                   <Badge variant={r.tracking_mode === "serial" ? "default" : "secondary"}>
@@ -309,7 +363,7 @@ export default function AssetItems() {
               </TableRow>
             ))}
             {!visible.length && (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{tx("No assets yet", "এখনও কোনো এসেট নেই")}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{tx("No assets yet", "এখনও কোনো এসেট নেই")}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>

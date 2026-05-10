@@ -1,78 +1,111 @@
-## Enterprise Asset Lifecycle & Inventory Management System
+# Enterprise Asset Lifecycle Refactor — Phased Plan
 
-A complete, bilingual (BN/EN), backward-compatible Asset module integrated with the existing accounting, audit, and permission systems. Implementation will be phased to keep each step shippable and verifiable.
+This is a large multi-phase refactor. To keep the system stable and avoid breaking existing accounting/irrigation/payments/reports, we will ship in **6 small phases**, each independently safe and reviewable. After each phase you can say "next" to continue.
 
----
+## Guiding rules (apply to every phase)
 
-### Phase 1 — Foundation (DB + Permissions + i18n)
-
-**Database (single safe migration, all new tables, no changes to existing tables):**
-- `asset_categories` (office_id, name_bn, name_en, code, tracking_mode, is_active, soft delete)
-- `assets` (registry — office_id, category_id, asset_code, serial_no, name_bn/en, tracking_mode, purchase_price, current_status, current_location_id, installed_at, soft delete)
-- `asset_stocks` (office_id, asset_id, location_id, quantity)
-- `asset_purchases` (links to accounting journal entry id)
-- `asset_movements` (from/to location, qty, moved_by, remarks)
-- `asset_installations` (location, install_date, condition, installed_by)
-- `asset_maintenance_logs` (vendor, cost, downtime, status)
-- `asset_damage_reports` (severity, reported_by, status)
-- `asset_disposals` (method: scrap_sale/write_off, sale_amount, journal_entry_id)
-- `asset_audit_logs` (action_type, old_data, new_data jsonb)
-
-**Status enum:** `purchased | in_stock | transferred | installed | maintenance | damaged | disposed`
-**Tracking mode enum:** `quantity | serial`
-
-**RLS:** office-scoped SELECT/INSERT/UPDATE for staff via `has_role` + `office_id`; super_admin full access. Soft delete via `deleted_at`. All FKs nullable where they touch existing tables to preserve isolation.
-
-**Permissions:** add `assets` module to permission matrix with `can_view / can_add / can_edit / can_delete` — without altering existing module rows.
-
-**i18n:** add `assets.*` namespace to `src/i18n/translations.ts` with Bengali-first labels for every page title, button, form field, validation, status, and report header.
+- **Backward compatible**: only additive DB changes (new tables / nullable columns / new RPCs). No renames, no destructive drops.
+- **Transaction-safe accounting**: all journal posting via existing RPC pattern (like `post_asset_depreciation_journal`) — never inline SQL.
+- **Bilingual**: every new label goes through `tx("EN","বাংলা")` / `src/i18n/translations.ts`.
+- **Audit**: every mutation calls `logAssetAudit(...)`.
+- **Soft delete only** for operational records (add `deleted_at`, filter in queries).
+- **Permissions**: reuse `assets` ModuleKey + `RequirePerm`; no new perm modules.
+- **No touching** irrigation / payments / receipts / SMS / existing reports / existing QR rotation.
 
 ---
 
-### Phase 2 — Master Data UI
-- `/assets/categories` — CRUD with search, filter, activate/deactivate, soft delete
-- `/assets/items` — Asset registry with full Details Page (`/assets/items/:id`) showing tabs: Purchase, Stock, Movement, Installation, Maintenance, Disposal, Accounting Impact, Audit
+## Phase 1 — Foundation: classification, statuses, soft-delete, registry rename
 
-### Phase 3 — Operations
-- `/assets/purchase` — purchase entry → creates `asset_purchases` + journal entry (Dr Asset / Cr Cash|AP) via existing accounting helpers, idempotent
-- `/assets/stock` — live stock view with stock-in/out/transfer/adjustment
-- `/assets/movement` — movement form + Details Page
-- `/assets/installation` — install entry + Details Page
-- `/assets/maintenance` — maintenance log + Details Page
-- `/assets/damage` — damage report
-- `/assets/disposal` — disposal flow → journal entry (Dr Cash / Cr Disposal Income, P/L calc) + receipt
+DB (single migration, additive):
+- `assets.asset_type` enum-like text: `inventory | fixed_asset | consumable` (default `fixed_asset`, nullable→backfill).
+- `assets.lifecycle_status` text expanded set: `purchased, in_stock, installed, in_use, maintenance, damaged, disposed, scrapped, lost` (keep existing `current_status` working; new column mirrors via trigger; old code keeps reading old col).
+- `deleted_at timestamptz` on: `asset_movements`, `asset_installations`, `asset_maintenance_logs`, `asset_damage_reports`, `asset_disposals`.
+- Indexes: `assets(asset_type)`, `asset_stocks(location_id, asset_id)`, `asset_movements(asset_id, movement_date desc)`.
+- Guard trigger: prevent depreciation rows where `asset_type <> 'fixed_asset'`.
 
-All write operations: transactional, write to `asset_audit_logs`, update `assets.current_status` via DB trigger.
+UI:
+- Sidebar: rename label "Assets" → "Asset Registry / এসেট রেজিস্ট্রি" (route `/assets/items` unchanged).
+- "Asset Bulk Op" → "Bulk Operations / বাল্ক কার্যক্রম".
+- Add `asset_type` selector + badge to AssetItems list & create/edit dialog.
+- Filter chips on registry: type, status, category, location.
 
-### Phase 4 — Dashboard, Reports & Audit
-- `/assets/dashboard` — counts by status, low-stock alerts, recent movements (cached query)
-- `/assets/reports/*` — Register, Stock, Movement, Installation, Maintenance, Damage, Disposal, Valuation, Audit — all with filters (office, category, status, location, date range) and CSV/Excel/PDF export
-- `/assets/audit` — full audit log viewer
+Tests: extend `assetMath.test.ts` with status-flow + type-guard cases.
 
-### Phase 5 — Sidebar, Demo, Tests
-- Add "Assets / এসেট" group to `AppSidebar` (gated by `assets` permission)
-- Demo seed for categories, assets, stock, movements, installations, maintenance, disposals; demo-reset edge function extension
-- Unit tests (stock math, disposal P/L, audit shape), integration tests (purchase→journal, disposal→journal), Playwright E2E (movement flow, maintenance, disposal, bilingual smoke)
-- Regression check: run existing irrigation, accounting, receipt, QR, export tests unchanged
+## Phase 2 — Dedicated Stock & Movement pages
+
+New pages (operational, not popup-only):
+- `src/pages/assets/AssetStock.tsx` — stock-in / stock-out / transfer / adjustment / reconcile, by location. Timeline view per asset.
+- `src/pages/assets/AssetMovements.tsx` — full movement ledger (from/to/qty/user/date/remarks), filters + CSV export via `csvExport.ts`.
+- Sidebar entries: "এসেট স্টক", "এসেট স্থানান্তর".
+- Reuse existing `asset_stocks` & `asset_movements` tables (already populated by current dialogs); pages are read+write surfaces, no schema break.
+- All mutations go through existing `applyStockDelta` helper + audit log.
+
+## Phase 3 — Installations, Maintenance, Disposal full pages + details routes
+
+- `src/pages/assets/AssetInstallations.tsx`, `AssetMaintenance.tsx`, `AssetDisposal.tsx` (list + filter + create + soft-delete).
+- Detail routes:
+  - `/assets/movements/:id`
+  - `/assets/installations/:id`
+  - `/assets/maintenance/:id`
+  - `/assets/disposals/:id`
+- Existing `AssetItemDetail` already shows full lifecycle tabs — keep, add deep-links to detail pages.
+- Disposal accounting: extend RPC family with `post_asset_disposal_journal(asset_id, sale_amount, book_value)` → Dr Cash `1010`, Cr Asset cost / Accum Depreciation, Dr/Cr Gain or Loss on Disposal `4910/5910`. Idempotent (uses unique `source_ref`).
+- Maintenance optional posting: settings flag `assets.post_maintenance_to_books` (default off).
+
+## Phase 4 — Reports suite + bilingual exports
+
+Add to `AssetReports.tsx` (or split into tabs):
+- Asset Register, Stock, Movement, Installation, Maintenance, Damage, Disposal, Depreciation, Valuation, Audit.
+- Filters: office, category, asset_type, status, location, date range.
+- Exports: CSV (existing), Excel (xlsx skill), PDF (reuse `pdfFonts.ts`).
+- All headers/labels bilingual.
+
+## Phase 5 — Demo seed + tests + i18n sweep
+
+- Extend `assetDemoSeed.ts`: seed categories → items → registry (mix of inventory / fixed_asset / consumable) → stock balances → movements → installations → maintenance → disposals → depreciation schedules.
+- `demo-reset` edge function: include asset tables in cleanup (idempotent).
+- Tests:
+  - Unit: stock delta, disposal gain/loss, status flow, type-guard, RPC idempotency (mocked).
+  - E2E (`e2e/assets-lifecycle.spec.ts`): create item → purchase → transfer → install → maintenance → dispose → verify ledger + audit + reports.
+- i18n: run `scripts/i18n-check.mjs`, add missing keys.
+
+## Phase 6 — Hardening & guardrails
+
+- RLS audit on all new/changed tables (office isolation), via `scripts/rls-audit.sql`.
+- Pagination on movement & audit lists (server-side `range()`).
+- Dashboard cards: counts by `asset_type`, low-stock alerts (cached via React Query staleTime).
+- Permission matrix doc update.
+- Run `supabase--linter`, fix any new warnings.
+- Final regression smoke: irrigation invoices, payments, cashbook, ledger integrity unaffected.
 
 ---
 
-### Backward-Compatibility Guarantees
-- **No edits** to existing tables, RLS policies, journal posting helpers, or dashboard queries — only additive
-- New journal entries reuse existing `journal_entries` API with a distinct `source_module='assets'` tag so existing reports filter naturally
-- New sidebar items only appear with the new `assets` permission (default off)
-- All migrations additive, nullable, reversible
+## Technical notes
 
-### Technical Details
-- Tables in `public` schema; FK to `offices`, `locations`, `auth.users` (no FK to `auth.users` from data tables — store uuid only per project rule)
-- Triggers: `assets_set_status_trg` (auto-update current_status on movement/install/maintenance/disposal), `assets_audit_trg` (write to `asset_audit_logs` on any change)
-- Stock indexes: `(office_id, asset_id, location_id)`, `(asset_id, created_at desc)` on movements
-- Accounting: extend existing `postJournalEntry()` call sites only — no new posting engine
-- Bilingual: every new string flows through `t()`; no hard-coded labels; status/action enums mapped via `assets.status.*` / `assets.action.*` keys
+```text
+DB additions only (no drops, no renames of existing columns):
 
-### Phasing Strategy
-Phase 1 ships first (DB + permissions + i18n scaffolding) so you can review schema and RLS before any UI. Each subsequent phase is a separate user-approved batch to keep diffs reviewable and the app green.
+assets
+ + asset_type           text   default 'fixed_asset'
+ + lifecycle_status     text   nullable (mirror trigger from current_status)
+
+asset_movements / installations / maintenance / damages / disposals
+ + deleted_at           timestamptz nullable
+
+new RPCs (SECURITY DEFINER, idempotent via source_ref):
+ - post_asset_purchase_journal(...)
+ - post_asset_disposal_journal(...)
+ - post_asset_maintenance_journal(...)   -- gated by settings flag
+
+triggers:
+ - assets_status_mirror      (current_status <-> lifecycle_status)
+ - depreciation_type_guard   (block non-fixed_asset rows)
+```
+
+UI conventions stay identical: shadcn `Card / Table / Tabs / Dialog`, semantic tokens, `PageHeader`, `RequirePerm module="assets"`.
 
 ---
 
-**Confirm to proceed with Phase 1 (migration + permissions + i18n keys), or tell me to adjust scope/order.**
+## What I'll do first if you approve
+
+Ship **Phase 1** end-to-end (migration + sidebar rename + asset_type field & filters + tests). After that, say "next" to continue with Phase 2.
