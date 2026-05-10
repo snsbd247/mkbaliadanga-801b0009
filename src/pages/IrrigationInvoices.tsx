@@ -822,10 +822,47 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
   const [manualOpen, setManualOpen] = useState(false);
 
+  // Hybrid rate engine — optional default category for the bulk batch
+  const [categories, setCategories] = useState<Array<{ id: string; name_bn: string | null; name_en: string | null; allow_manual_negotiation: boolean }>>([]);
+  const [categoryRates, setCategoryRates] = useState<Array<{ irrigation_category_id: string; rate: number; rate_type: string; is_negotiable: boolean }>>([]);
+  const [defaultCategoryId, setDefaultCategoryId] = useState<string>("");
+
   useEffect(() => {
     if (!seasonId) { setRateMap([]); return; }
     loadSeasonRateMap(seasonId, officeId || null).then(setRateMap);
   }, [seasonId, officeId]);
+
+  // Load active categories + their season rates for the current season/office
+  useEffect(() => {
+    let q = supabase.from("irrigation_categories" as any)
+      .select("id,name_bn,name_en,allow_manual_negotiation")
+      .eq("is_active", true).is("deleted_at", null);
+    if (officeId) q = q.eq("office_id", officeId);
+    (q as any).order("name_bn").then(({ data }: any) => setCategories((data as any) ?? []));
+  }, [officeId]);
+
+  useEffect(() => {
+    if (!seasonId) { setCategoryRates([]); return; }
+    let q = supabase.from("irrigation_category_rates" as any)
+      .select("irrigation_category_id,rate,rate_type,is_negotiable")
+      .eq("irrigation_season_id", seasonId);
+    if (officeId) q = q.eq("office_id", officeId);
+    (q as any).then(({ data }: any) => setCategoryRates((data as any) ?? []));
+  }, [seasonId, officeId]);
+
+  function getCategoryInput(): CategoryRateInput | null {
+    if (!defaultCategoryId) return null;
+    const cat = categories.find((c) => c.id === defaultCategoryId);
+    const rate = categoryRates.find((r) => r.irrigation_category_id === defaultCategoryId);
+    if (!cat || !rate || !(rate.rate > 0)) return null;
+    return {
+      irrigation_category_id: cat.id,
+      category_name: cat.name_bn || cat.name_en || "",
+      rate: Number(rate.rate),
+      rate_type: (rate.rate_type as any) || "per_shotok",
+      is_negotiable: !!rate.is_negotiable,
+    };
+  }
 
   async function preview() {
     if (!seasonId) return toast.error(tx("Select a season", "সিজন বাছাই করুন"));
