@@ -26,7 +26,7 @@ import { useBranding } from "@/lib/branding";
 const DEFAULT_INTEREST = 8.0;
 
 export default function Loans() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -67,7 +67,13 @@ export default function Loans() {
     if (!form.farmer_id || form.principal <= 0) return toast.error(t("pickFarmerAndAmount"));
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
     const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
-    if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? "এই ফার্মার"} এর Voter / Savings A/C এনাবল নেই — ঋণ এন্ট্রি করা যাবে না।`);
+    if (!vchk?.is_voter) {
+      const who = vchk?.name_en ?? tx("this farmer", "এই ফার্মার");
+      return toast.error(tx(
+        `${who} does not have Voter / Savings A/C enabled — loan entry not allowed.`,
+        `${who} এর Voter / Savings A/C এনাবল নেই — ঋণ এন্ট্রি করা যাবে না।`,
+      ));
+    }
     const plan = plans.find((p: any) => p.id === form.plan_id);
     const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
     const total_payable = form.principal * (1 + interest_rate / 100);
@@ -106,7 +112,7 @@ export default function Loans() {
       await supabase.from("notifications").insert({
         user_id: loan.created_by,
         kind: status === "approved" ? "loan_approved" : "loan_rejected",
-        title: status === "approved" ? "ঋণ অনুমোদিত" : "ঋণ প্রত্যাখ্যাত",
+        title: status === "approved" ? tx("Loan approved", "ঋণ অনুমোদিত") : tx("Loan rejected", "ঋণ প্রত্যাখ্যাত"),
         body: `${loan?.farmers?.name_en ?? ""} — ৳${Number(loan?.principal ?? 0).toLocaleString()}`,
         link: "/loans",
       });
