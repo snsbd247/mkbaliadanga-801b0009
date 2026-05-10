@@ -1,119 +1,78 @@
-# Hybrid Irrigation Rate Engine Refactor
+## Enterprise Asset Lifecycle & Inventory Management System
 
-A large, multi-phase change. I will deliver it in **safe, independently shippable phases** so existing invoices, receipts, ledgers, reports, QR verification, and exports keep working at every step.
-
----
-
-## Guiding Principles
-
-- **Additive only**: new tables + new nullable columns. No destructive migration on existing data.
-- **Old invoices frozen**: historical `irrigation_invoices` rows keep their `calculation_snapshot` and never get re-priced.
-- **Layered resolver**: `Manual Override → Category Rate → Land-Type Rate → Warning`.
-- **Single source of truth**: a new `resolveIrrigationRate()` pure function used by UI + invoice generation + tests.
-- **Bengali-first UI**, RLS preserved (office-scoped), audit trail on every override.
+A complete, bilingual (BN/EN), backward-compatible Asset module integrated with the existing accounting, audit, and permission systems. Implementation will be phased to keep each step shippable and verifiable.
 
 ---
 
-## Phase 1 — Schema Foundation (migration only, no UI break)
+### Phase 1 — Foundation (DB + Permissions + i18n)
 
-New tables:
+**Database (single safe migration, all new tables, no changes to existing tables):**
+- `asset_categories` (office_id, name_bn, name_en, code, tracking_mode, is_active, soft delete)
+- `assets` (registry — office_id, category_id, asset_code, serial_no, name_bn/en, tracking_mode, purchase_price, current_status, current_location_id, installed_at, soft delete)
+- `asset_stocks` (office_id, asset_id, location_id, quantity)
+- `asset_purchases` (links to accounting journal entry id)
+- `asset_movements` (from/to location, qty, moved_by, remarks)
+- `asset_installations` (location, install_date, condition, installed_by)
+- `asset_maintenance_logs` (vendor, cost, downtime, status)
+- `asset_damage_reports` (severity, reported_by, status)
+- `asset_disposals` (method: scrap_sale/write_off, sale_amount, journal_entry_id)
+- `asset_audit_logs` (action_type, old_data, new_data jsonb)
 
-```text
-irrigation_categories
-  id, office_id, code, name_bn, name_en,
-  calculation_basis (per_shotok|per_bigha|flat|custom),
-  allow_manual_negotiation bool,
-  is_active bool, deleted_at, created_at, updated_at
+**Status enum:** `purchased | in_stock | transferred | installed | maintenance | damaged | disposed`
+**Tracking mode enum:** `quantity | serial`
 
-irrigation_category_rates
-  id, office_id, irrigation_season_id, irrigation_category_id,
-  rate_type (per_shotok|per_bigha|flat|custom),
-  rate numeric, unit text,
-  is_negotiable bool,
-  created_at, updated_at
-  UNIQUE (office_id, season_id, category_id)
+**RLS:** office-scoped SELECT/INSERT/UPDATE for staff via `has_role` + `office_id`; super_admin full access. Soft delete via `deleted_at`. All FKs nullable where they touch existing tables to preserve isolation.
 
-irrigation_rate_overrides
-  id, irrigation_invoice_id, original_rate, overridden_rate,
-  override_reason, approved_by, created_by, created_at
-```
+**Permissions:** add `assets` module to permission matrix with `can_view / can_add / can_edit / can_delete` — without altering existing module rows.
 
-Add **nullable** columns to `irrigation_invoices`:
-
-```text
-irrigation_category_id     uuid null
-irrigation_category_name   text null   -- snapshot
-rate_source                text null   -- 'STANDARD' | 'CATEGORY' | 'MANUAL'
-original_standard_rate     numeric null
-applied_rate               numeric null
-override_reason            text null
-```
-
-RLS: office-scoped read, admin/super manage — mirrors `irrigation_season_rates`.
-Backfill: leave NULL for legacy rows; resolver treats NULL `rate_source` as `STANDARD`.
-
-## Phase 2 — Rate Resolver Core (pure logic + tests)
-
-- New `src/lib/irrigationRateResolver.ts` exporting `resolveIrrigationRate({ land, season, office, manualOverride? })` returning `{ source, rate, basis, categoryName?, warning? }`.
-- Unit tests covering: manual wins, category wins over standard, fallback to land-type, "no rate" warning, negotiable flag.
-- No UI/DB write changes yet — purely additive module.
-
-## Phase 3 — Admin Master Data UI
-
-- `src/pages/admin/IrrigationCategories.tsx` — CRUD list (Bengali-first), soft-delete.
-- Extend `src/pages/IrrigationRates.tsx` with a **Categories** tab for per-season category rates next to the existing land-type rates tab. Existing land-type tab untouched.
-- Audit entries via existing `logAudit()` (`module: "irrigation_rate"`).
-
-## Phase 4 — Invoice Generation Integration
-
-- Update `IrrigationInvoices.tsx` generation flow to call the resolver:
-  - Per land: pick category if assigned for the season, else land-type rate.
-  - "Manual rate" toggle on the generate dialog → opens reason + amount inputs.
-  - On "no rate found": block with the required Bengali warning + 3 actions.
-- Persist `rate_source`, `applied_rate`, `original_standard_rate`, `irrigation_category_name`, `calculation_snapshot` (extended).
-- For MANUAL: also insert `irrigation_rate_overrides` row in the same transaction.
-
-## Phase 5 — Receipt, Statement, QR, Dashboard
-
-- Receipt PDF (`paymentReceiptPdf.ts`, `bnReceipts.ts`): show category name + a small "কাস্টম রেট" badge when `rate_source = MANUAL`. Layout unchanged for legacy invoices (fields are NULL → hidden).
-- Farmer statement / IrrigationInvoicesTab: add small badges; same conditional rendering.
-- QR verification + dashboard: read-only consumers — verify they tolerate the new optional fields (no schema-breaking joins).
-
-## Phase 6 — Reports & Exports
-
-- New report: `src/pages/reports/RateSourceReport.tsx` — splits collection by STANDARD / CATEGORY / MANUAL with PDF + CSV export.
-- New report: `src/pages/reports/OverrideAuditReport.tsx` — who, original vs final, reason, season, farmer.
-- Extend existing irrigation exports with `rate_source`, `category_name`, `override_reason` columns (appended at the end so existing column orders stay stable).
-
-## Phase 7 — Demo / Import-Export
-
-- Extend `demoPresets` and `demo-reset` edge function to seed:
-  - 3 sample categories (ধানের চারা, সবজি, পুকুর)
-  - season rates for them
-  - 1 manual-override example invoice
-- CSV templates updated for categories + category rates.
-
-## Phase 8 — Tests
-
-- Unit: resolver matrix, override audit insert, snapshot immutability.
-- Integration: invoice generation across all 3 sources; legacy invoice still renders.
-- E2E (Playwright): create category → set rate → generate invoice → pay → receipt shows badge → report totals match.
-- Regression: existing irrigation tests must still pass untouched.
+**i18n:** add `assets.*` namespace to `src/i18n/translations.ts` with Bengali-first labels for every page title, button, form field, validation, status, and report header.
 
 ---
 
-## Backward-Compatibility Checklist (verified each phase)
+### Phase 2 — Master Data UI
+- `/assets/categories` — CRUD with search, filter, activate/deactivate, soft delete
+- `/assets/items` — Asset registry with full Details Page (`/assets/items/:id`) showing tabs: Purchase, Stock, Movement, Installation, Maintenance, Disposal, Accounting Impact, Audit
 
-- Legacy invoices: `rate_source` NULL → UI treats as STANDARD, no badge, identical receipt.
-- No NOT NULL added to existing columns.
-- No rename / drop of existing columns.
-- No RPC signature changes — new RPCs added with new names.
-- Ledger posting unchanged (still posted from `payable_amount`).
+### Phase 3 — Operations
+- `/assets/purchase` — purchase entry → creates `asset_purchases` + journal entry (Dr Asset / Cr Cash|AP) via existing accounting helpers, idempotent
+- `/assets/stock` — live stock view with stock-in/out/transfer/adjustment
+- `/assets/movement` — movement form + Details Page
+- `/assets/installation` — install entry + Details Page
+- `/assets/maintenance` — maintenance log + Details Page
+- `/assets/damage` — damage report
+- `/assets/disposal` — disposal flow → journal entry (Dr Cash / Cr Disposal Income, P/L calc) + receipt
+
+All write operations: transactional, write to `asset_audit_logs`, update `assets.current_status` via DB trigger.
+
+### Phase 4 — Dashboard, Reports & Audit
+- `/assets/dashboard` — counts by status, low-stock alerts, recent movements (cached query)
+- `/assets/reports/*` — Register, Stock, Movement, Installation, Maintenance, Damage, Disposal, Valuation, Audit — all with filters (office, category, status, location, date range) and CSV/Excel/PDF export
+- `/assets/audit` — full audit log viewer
+
+### Phase 5 — Sidebar, Demo, Tests
+- Add "Assets / এসেট" group to `AppSidebar` (gated by `assets` permission)
+- Demo seed for categories, assets, stock, movements, installations, maintenance, disposals; demo-reset edge function extension
+- Unit tests (stock math, disposal P/L, audit shape), integration tests (purchase→journal, disposal→journal), Playwright E2E (movement flow, maintenance, disposal, bilingual smoke)
+- Regression check: run existing irrigation, accounting, receipt, QR, export tests unchanged
 
 ---
 
-## Delivery Order I Propose
+### Backward-Compatibility Guarantees
+- **No edits** to existing tables, RLS policies, journal posting helpers, or dashboard queries — only additive
+- New journal entries reuse existing `journal_entries` API with a distinct `source_module='assets'` tag so existing reports filter naturally
+- New sidebar items only appear with the new `assets` permission (default off)
+- All migrations additive, nullable, reversible
 
-I'll start with **Phase 1 + Phase 2** in this batch (schema migration + pure resolver + tests). After you approve the migration, I'll move phase-by-phase, pausing only if a phase needs a product decision.
+### Technical Details
+- Tables in `public` schema; FK to `offices`, `locations`, `auth.users` (no FK to `auth.users` from data tables — store uuid only per project rule)
+- Triggers: `assets_set_status_trg` (auto-update current_status on movement/install/maintenance/disposal), `assets_audit_trg` (write to `asset_audit_logs` on any change)
+- Stock indexes: `(office_id, asset_id, location_id)`, `(asset_id, created_at desc)` on movements
+- Accounting: extend existing `postJournalEntry()` call sites only — no new posting engine
+- Bilingual: every new string flows through `t()`; no hard-coded labels; status/action enums mapped via `assets.status.*` / `assets.action.*` keys
 
-Reply **"ok start"** (or "শুরু করেন") to begin Phase 1.
+### Phasing Strategy
+Phase 1 ships first (DB + permissions + i18n scaffolding) so you can review schema and RLS before any UI. Each subsequent phase is a separate user-approved batch to keep diffs reviewable and the app green.
+
+---
+
+**Confirm to proceed with Phase 1 (migration + permissions + i18n keys), or tell me to adjust scope/order.**
