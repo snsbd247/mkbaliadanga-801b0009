@@ -150,12 +150,13 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
   const officeShort = officeId.slice(0, 4).toUpperCase();
   let voterSeq = 0;
 
-  // De-dup: load existing farmer_codes/nids for this office to skip duplicates
+  // De-dup: load existing farmer_codes/nids/mobiles for this office to skip duplicates
   const { data: existing } = await admin.from("farmers")
-    .select("farmer_code, nid, name_en").eq("office_id", officeId);
+    .select("farmer_code, nid, name_en, mobile").eq("office_id", officeId);
   const existingCodes = new Set((existing ?? []).map((x: any) => x.farmer_code));
   const existingNids = new Set((existing ?? []).map((x: any) => x.nid).filter(Boolean));
   const existingNames = new Set((existing ?? []).map((x: any) => x.name_en?.toLowerCase()));
+  const existingMobiles = new Set((existing ?? []).map((x: any) => x.mobile).filter(Boolean));
 
   const desired = customNames?.length ? customNames.slice(0, count) : null;
   const total = desired ? desired.length : count;
