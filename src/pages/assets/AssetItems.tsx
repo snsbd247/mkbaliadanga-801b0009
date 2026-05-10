@@ -244,6 +244,7 @@ export default function AssetItems() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
       <Card className="p-3 mb-3">
