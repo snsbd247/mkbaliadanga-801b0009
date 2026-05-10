@@ -199,7 +199,7 @@ export function exportCSV(
 }
 
 // ---------- Payment Receipt PDF ----------
-export function exportPaymentReceiptPDF(opts: {
+export async function exportPaymentReceiptPDF(opts: {
   brand: { company_name: string; address?: string; mobile?: string };
   receipt_no: string;
   date: string;
@@ -217,73 +217,82 @@ export function exportPaymentReceiptPDF(opts: {
 }) {
   const doc = new jsPDF({ unit: "mm", format: [148, 210] }); // A5
   const w = 148;
-  doc.setFontSize(14); doc.setFont(undefined, "bold");
-  doc.text(opts.brand.company_name, w / 2, 14, { align: "center" });
-  doc.setFontSize(9); doc.setFont(undefined, "normal");
-  if (opts.brand.address) doc.text(opts.brand.address, w / 2, 19, { align: "center" });
-  if (opts.brand.mobile) doc.text(`Mobile: ${opts.brand.mobile}`, w / 2, 23, { align: "center" });
+  const lang = pdfLang();
+  const bnFamily = lang === "bn" ? await ensureBanglaFont(doc) : null;
+  const useBn = lang === "bn" && !!bnFamily;
+  const setF = (style: "normal" | "bold" = "normal") => {
+    if (useBn && bnFamily) doc.setFont(bnFamily, "normal");
+    else doc.setFont(undefined, style);
+  };
+  const tableFont: any = useBn && bnFamily ? { font: bnFamily, fontStyle: "normal" } : {};
 
-  doc.setFontSize(11); doc.setFont(undefined, "bold");
-  doc.text("PAYMENT RECEIPT", w / 2, 32, { align: "center" });
+  doc.setFontSize(14); setF("bold");
+  doc.text(opts.brand.company_name, w / 2, 14, { align: "center" });
+  doc.setFontSize(9); setF("normal");
+  if (opts.brand.address) doc.text(opts.brand.address, w / 2, 19, { align: "center" });
+  if (opts.brand.mobile) doc.text(`${tPdf("Mobile", "মোবাইল")}: ${opts.brand.mobile}`, w / 2, 23, { align: "center" });
+
+  doc.setFontSize(11); setF("bold");
+  doc.text(tPdf("PAYMENT RECEIPT", "পেমেন্ট রসিদ"), w / 2, 32, { align: "center" });
   doc.setLineWidth(0.3); doc.line(10, 35, w - 10, 35);
 
-  doc.setFontSize(9); doc.setFont(undefined, "normal");
-  doc.text(`Receipt #: ${opts.receipt_no}`, 12, 41);
-  doc.text(`Date: ${fmtDate(opts.date)}`, w - 12, 41, { align: "right" });
+  doc.setFontSize(9); setF("normal");
+  doc.text(`${tPdf("Receipt #", "রসিদ নং")}: ${opts.receipt_no}`, 12, 41);
+  doc.text(`${tPdf("Date", "তারিখ")}: ${fmtDate(opts.date)}`, w - 12, 41, { align: "right" });
 
-  doc.text(`Farmer ID: ${opts.farmer.member_no ?? opts.farmer.farmer_code ?? "-"}`, 12, 47);
-  doc.text(`Name: ${opts.farmer.name_en}`, 12, 52);
-  if (opts.farmer.village) doc.text(`Village: ${opts.farmer.village}`, 12, 57);
-  if (opts.farmer.mobile) doc.text(`Mobile: ${opts.farmer.mobile}`, w - 12, 57, { align: "right" });
+  doc.text(`${tPdf("Farmer ID", "কৃষক আইডি")}: ${opts.farmer.member_no ?? opts.farmer.farmer_code ?? "-"}`, 12, 47);
+  doc.text(`${tPdf("Name", "নাম")}: ${opts.farmer.name_en}`, 12, 52);
+  if (opts.farmer.village) doc.text(`${tPdf("Village", "গ্রাম")}: ${opts.farmer.village}`, 12, 57);
+  if (opts.farmer.mobile) doc.text(`${tPdf("Mobile", "মোবাইল")}: ${opts.farmer.mobile}`, w - 12, 57, { align: "right" });
 
   autoTable(doc, {
     startY: 62,
-    head: [["Allocation", "Amount (BDT)"]],
+    head: [[tPdf("Allocation", "বরাদ্দ"), tPdf("Amount (BDT)", "পরিমাণ (টাকা)")]],
     body: opts.allocations.map(a => [a.kind.toUpperCase(), moneyPdf(a.amount)]),
-    foot: [["TOTAL", moneyPdf(opts.amount)]],
+    foot: [[tPdf("TOTAL", "মোট"), moneyPdf(opts.amount)]],
     theme: "grid",
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [30, 110, 70] },
-    footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: "bold" },
+    styles: { fontSize: 9, ...tableFont },
+    headStyles: { fillColor: [30, 110, 70], ...tableFont },
+    footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: "bold", ...tableFont },
     margin: { left: 12, right: 12 },
   });
 
   let y = (doc as any).lastAutoTable.finalY + 6;
-  doc.setFontSize(9);
-  doc.text(`Method: ${opts.method ?? "cash"}`, 12, y);
-  if (opts.note) { y += 5; doc.text(`Note: ${opts.note}`, 12, y); }
+  doc.setFontSize(9); setF("normal");
+  doc.text(`${tPdf("Method", "মাধ্যম")}: ${opts.method ?? "cash"}`, 12, y);
+  if (opts.note) { y += 5; doc.text(`${tPdf("Note", "মন্তব্য")}: ${opts.note}`, 12, y); }
 
   // Signature lines
   y = Math.max(y + 18, 170);
-  doc.line(15, y, 60, y); doc.text("Collector", 37, y + 4, { align: "center" });
-  doc.line(w - 60, y, w - 15, y); doc.text("Authorized Sig.", w - 37, y + 4, { align: "center" });
+  doc.line(15, y, 60, y); doc.text(tPdf("Collector", "কালেক্টর"), 37, y + 4, { align: "center" });
+  doc.line(w - 60, y, w - 15, y); doc.text(tPdf("Authorized Sig.", "অনুমোদিত স্বাক্ষর"), w - 37, y + 4, { align: "center" });
 
   // Optional loan context (installments + history) on additional pages
   if (opts.loanContext && opts.loanContext.length) {
     for (const ctx of opts.loanContext) {
       doc.addPage("a4", "p");
       const aw = doc.internal.pageSize.getWidth();
-      doc.setFontSize(12); doc.setFont(undefined, "bold");
-      doc.text(`Loan: ${ctx.label}`, aw / 2, 14, { align: "center" });
-      doc.setFontSize(9); doc.setFont(undefined, "normal");
-      doc.text(`Total Payable: ${moneyPdf(ctx.totalPayable)}    Paid: ${moneyPdf(ctx.paidToDate)}    Due: ${moneyPdf(ctx.due)}`, 14, 22);
+      doc.setFontSize(12); setF("bold");
+      doc.text(`${tPdf("Loan", "ঋণ")}: ${ctx.label}`, aw / 2, 14, { align: "center" });
+      doc.setFontSize(9); setF("normal");
+      doc.text(`${tPdf("Total Payable", "মোট প্রদেয়")}: ${moneyPdf(ctx.totalPayable)}    ${tPdf("Paid", "পরিশোধিত")}: ${moneyPdf(ctx.paidToDate)}    ${tPdf("Due", "বকেয়া")}: ${moneyPdf(ctx.due)}`, 14, 22);
       let yy = 28;
       if (ctx.installments && ctx.installments.length) {
         autoTable(doc, {
           startY: yy,
-          head: [["#", "Due Date", "Amount", "Paid", "Status"]],
+          head: [["#", tPdf("Due Date", "নির্ধারিত তারিখ"), tPdf("Amount", "পরিমাণ"), tPdf("Paid", "পরিশোধিত"), tPdf("Status", "অবস্থা")]],
           body: ctx.installments.map(i => [i.no, fmtDate(i.due_date), moneyPdf(i.amount), moneyPdf(i.paid_amount), i.status]),
-          styles: { fontSize: 8 }, headStyles: { fillColor: [30, 110, 70] },
+          styles: { fontSize: 8, ...tableFont }, headStyles: { fillColor: [30, 110, 70], ...tableFont },
         });
         yy = (doc as any).lastAutoTable.finalY + 6;
       }
       if (ctx.paymentHistory && ctx.paymentHistory.length) {
-        doc.setFont(undefined, "bold"); doc.text("Payment History", 14, yy); yy += 2;
+        setF("bold"); doc.text(tPdf("Payment History", "পেমেন্ট ইতিহাস"), 14, yy); yy += 2;
         autoTable(doc, {
           startY: yy,
-          head: [["Date", "Amount", "Note"]],
+          head: [[tPdf("Date", "তারিখ"), tPdf("Amount", "পরিমাণ"), tPdf("Note", "মন্তব্য")]],
           body: ctx.paymentHistory.map(p => [fmtDate(p.date), moneyPdf(p.amount), p.note ?? ""]),
-          styles: { fontSize: 8 }, headStyles: { fillColor: [30, 110, 70] },
+          styles: { fontSize: 8, ...tableFont }, headStyles: { fillColor: [30, 110, 70], ...tableFont },
         });
       }
     }
