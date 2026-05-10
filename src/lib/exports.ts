@@ -90,7 +90,7 @@ export async function exportFarmerReportPDF(farmer: any, ctx: any) {
   doc.text(`${tPdf("Mobile", "মোবাইল")}: ${farmer.mobile ?? "-"}    ${tPdf("NID", "এনআইডি")}: ${farmer.nid ?? "-"}`, 14, 36);
   doc.text(`${tPdf("Address", "ঠিকানা")}: ${[farmer.village, farmer.upazila, farmer.district].filter(Boolean).join(", ")}`, 14, 42);
 
-  const tableFont = useBn && bnFamily ? { font: bnFamily, fontStyle: "normal" } : {};
+  const tableFont: any = useBn && bnFamily ? { font: bnFamily, fontStyle: "normal" } : {};
   autoTable(doc, {
     startY: 48, head: [[tPdf("Summary", "সারাংশ"), tPdf("Amount", "পরিমাণ")]],
     body: [
