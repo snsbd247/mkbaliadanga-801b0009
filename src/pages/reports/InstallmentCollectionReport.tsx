@@ -7,11 +7,13 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
 import { downloadCsv } from "@/lib/csvExport";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const fmt = (d: any) => (d ? format(new Date(d), "dd/MM/yyyy") : "-");
 const money = (n: any) => `৳ ${Number(n || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 })}`;
 
 export default function InstallmentCollectionReport() {
+  const { t } = useLang();
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(monthAgo);
@@ -38,39 +40,43 @@ export default function InstallmentCollectionReport() {
 
   function exportCsv() {
     downloadCsv("installment_collection.csv", rows, [
-      { header: "তারিখ", accessor: r => fmt(r.paid_on) },
-      { header: "কৃষক", accessor: r => r.loans?.farmers?.name_bn || r.loans?.farmers?.name_en || "" },
-      { header: "হিসাব", accessor: r => r.loans?.farmers?.farmer_code || "" },
-      { header: "প্ল্যান", accessor: r => r.loans?.loan_plans?.name_bn || r.loans?.loan_plans?.name || "" },
-      { header: "পরিমাণ", accessor: r => Number(r.amount || 0) },
-      { header: "মন্তব্য", accessor: r => r.note || "" },
+      { header: t("date"), accessor: r => fmt(r.paid_on) },
+      { header: t("farmer"), accessor: r => r.loans?.farmers?.name_bn || r.loans?.farmers?.name_en || "" },
+      { header: t("account"), accessor: r => r.loans?.farmers?.farmer_code || "" },
+      { header: t("plan" as any), accessor: r => r.loans?.loan_plans?.name_bn || r.loans?.loan_plans?.name || "" },
+      { header: t("amount"), accessor: r => Number(r.amount || 0) },
+      { header: t("note"), accessor: r => r.note || "" },
     ]);
   }
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl md:text-2xl font-bold">কিস্তি সংগ্রহ রিপোর্ট</h1>
+        <h1 className="text-xl md:text-2xl font-bold">{t("installmentCollectionReportTitle" as any)}</h1>
         <div className="flex gap-2 items-center">
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
-          <Button variant="outline" onClick={load}>রিফ্রেশ</Button>
+          <Button variant="outline" onClick={load}>{t("refresh")}</Button>
           <Button variant="outline" onClick={exportCsv}><FileSpreadsheet className="h-4 w-4 mr-1" />Export</Button>
         </div>
       </div>
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">{loading ? "লোড হচ্ছে…" : `মোট ${rows.length} টি · ${money(total)}`}</CardTitle>
+          <CardTitle className="text-base">
+            {loading
+              ? t("loading")
+              : t("totalCountAmount" as any).replace("{count}", String(rows.length)).replace("{amount}", money(total))}
+          </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>তারিখ</TableHead>
-                <TableHead>কৃষক</TableHead>
-                <TableHead>হিসাব</TableHead>
-                <TableHead>প্ল্যান</TableHead>
-                <TableHead className="text-right">পরিমাণ</TableHead>
+                <TableHead>{t("date")}</TableHead>
+                <TableHead>{t("farmer")}</TableHead>
+                <TableHead>{t("account")}</TableHead>
+                <TableHead>{t("plan" as any)}</TableHead>
+                <TableHead className="text-right">{t("amount")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

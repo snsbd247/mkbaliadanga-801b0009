@@ -12,8 +12,10 @@ import {
   computePenaltyBreakdown,
   type LoanDelayFeeSettings,
 } from "@/lib/loanDelayFee";
+import { useLang } from "@/i18n/LanguageProvider";
 
 export default function LoanDelaySettings() {
+  const { t } = useLang();
   const [row, setRow] = useState<any>({ ...DEFAULT_DELAY_SETTINGS, office_id: null });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -92,7 +94,7 @@ export default function LoanDelaySettings() {
         new_data: payload,
         office_id: payload.office_id,
       });
-      toast.success("সংরক্ষণ হয়েছে");
+      toast.success(t("saved"));
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -100,31 +102,31 @@ export default function LoanDelaySettings() {
     }
   }
 
-  if (loading) return <div className="p-6 text-sm">লোড হচ্ছে…</div>;
+  if (loading) return <div className="p-6 text-sm">{t("loading")}</div>;
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>ঋণ কিস্তি জরিমানা সেটিংস</CardTitle>
+          <CardTitle>{t("loanInstallmentPenaltySettings" as any)}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>জরিমানার ধরন</Label>
+              <Label>{t("penaltyType")}</Label>
               <select
                 className="w-full h-10 border rounded-md px-3 bg-background"
                 value={row.mode}
                 onChange={(e) => setRow({ ...row, mode: e.target.value })}
               >
-                <option value="flat">নির্দিষ্ট পরিমাণ (৳)</option>
-                <option value="percent">শতাংশ (%)</option>
-                <option value="daily">দৈনিক (৳/দিন)</option>
-                <option value="combined">মিলিত (% + দৈনিক)</option>
+                <option value="flat">{t("penaltyTypeFlat" as any)}</option>
+                <option value="percent">{t("penaltyTypePercent" as any)}</option>
+                <option value="daily">{t("penaltyTypeDaily" as any)}</option>
+                <option value="combined">{t("penaltyTypeCombined" as any)}</option>
               </select>
             </div>
             <div>
-              <Label>মান (% অথবা ৳)</Label>
+              <Label>{t("valuePercentOrTaka" as any)}</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -133,7 +135,7 @@ export default function LoanDelaySettings() {
               />
             </div>
             <div>
-              <Label>দৈনিক জরিমানা (৳/দিন)</Label>
+              <Label>{t("dailyPenalty" as any)}</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -142,17 +144,17 @@ export default function LoanDelaySettings() {
               />
             </div>
             <div>
-              <Label>সর্বোচ্চ জরিমানা সীমা (৳)</Label>
+              <Label>{t("maxPenaltyCap" as any)}</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={row.max_penalty ?? ""}
-                placeholder="সীমাহীন"
+                placeholder={t("unlimited" as any)}
                 onChange={(e) => setRow({ ...row, max_penalty: e.target.value })}
               />
             </div>
             <div>
-              <Label>রেয়াত দিন</Label>
+              <Label>{t("graceDays")}</Label>
               <Input
                 type="number"
                 value={row.grace_days ?? 0}
@@ -160,55 +162,52 @@ export default function LoanDelaySettings() {
               />
             </div>
             <div>
-              <Label>প্রয়োগ পদ্ধতি</Label>
+              <Label>{t("enforcementMode" as any)}</Label>
               <select
                 className="w-full h-10 border rounded-md px-3 bg-background"
                 value={row.enforcement_mode ?? "block"}
                 onChange={(e) => setRow({ ...row, enforcement_mode: e.target.value })}
               >
-                <option value="block">আংশিক পেমেন্ট ব্লক</option>
-                <option value="warn">শুধু সতর্ক করুন</option>
-                <option value="allow">আংশিক অনুমতি (override প্রয়োজন)</option>
+                <option value="block">{t("enforcementBlock" as any)}</option>
+                <option value="warn">{t("enforcementWarn" as any)}</option>
+                <option value="allow">{t("enforcementAllow" as any)}</option>
               </select>
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <Label>স্বয়ংক্রিয় জরিমানা প্রয়োগ</Label>
+            <Label>{t("autoApplyPenalty" as any)}</Label>
             <Switch
               checked={!!row.auto_apply}
               onCheckedChange={(v) => setRow({ ...row, auto_apply: v })}
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            ⚠️ প্রয়োগ পদ্ধতি "block" থাকলে নির্ধারিত কিস্তির চেয়ে কম টাকা গ্রহণ করা যাবে না।
-            "warn" → সতর্কবার্তা দেখাবে। "allow" → override কারণ ও অডিট লগ প্রয়োজন।
-          </p>
-          <Button onClick={save} disabled={saving}>সংরক্ষণ</Button>
+          <p className="text-xs text-muted-foreground">{t("enforcementHint" as any)}</p>
+          <Button onClick={save} disabled={saving}>{t("save")}</Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>প্রিভিউ — জরিমানা হিসাব</CardTitle>
+          <CardTitle>{t("previewPenaltyCalc" as any)}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>কিস্তির পরিমাণ (৳)</Label>
+              <Label>{t("installmentAmount" as any)}</Label>
               <Input type="number" value={previewAmount} onChange={(e) => setPreviewAmount(Number(e.target.value || 0))} />
             </div>
             <div>
-              <Label>বিলম্বিত দিন</Label>
+              <Label>{t("overdueDaysLabel" as any)}</Label>
               <Input type="number" value={previewDays} onChange={(e) => setPreviewDays(Number(e.target.value || 0))} />
             </div>
           </div>
           <div className="text-sm space-y-1 rounded-md border p-3 bg-muted/30">
-            <div>বিলম্বিত দিন: <b>{breakdown.overdueDays}</b> (রেয়াত বাদে)</div>
-            <div>নির্দিষ্ট অংশ: ৳ {breakdown.fixedPart}</div>
-            <div>শতাংশ অংশ: ৳ {breakdown.percentPart}</div>
-            <div>দৈনিক অংশ: ৳ {breakdown.dailyPart}</div>
-            {breakdown.capped && <div className="text-warning">⚠ সর্বোচ্চ সীমায় কাটা হয়েছে</div>}
-            <div className="font-bold pt-1 border-t">মোট জরিমানা: ৳ {breakdown.total}</div>
+            <div>{t("overdueDaysAfterGrace" as any).replace("{n}", String(breakdown.overdueDays))}</div>
+            <div>{t("fixedPart" as any).replace("{n}", String(breakdown.fixedPart))}</div>
+            <div>{t("percentPart" as any).replace("{n}", String(breakdown.percentPart))}</div>
+            <div>{t("dailyPart" as any).replace("{n}", String(breakdown.dailyPart))}</div>
+            {breakdown.capped && <div className="text-warning">{t("cappedAtMax" as any)}</div>}
+            <div className="font-bold pt-1 border-t">{t("totalPenalty" as any).replace("{n}", String(breakdown.total))}</div>
           </div>
         </CardContent>
       </Card>

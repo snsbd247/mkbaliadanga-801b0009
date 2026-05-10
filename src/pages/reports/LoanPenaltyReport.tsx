@@ -7,11 +7,13 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
 import { downloadCsv } from "@/lib/csvExport";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const fmt = (d: any) => (d ? format(new Date(d), "dd/MM/yyyy") : "-");
 const money = (n: any) => `৳ ${Number(n || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 })}`;
 
 export default function LoanPenaltyReport() {
+  const { t } = useLang();
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(monthAgo);
@@ -41,42 +43,47 @@ export default function LoanPenaltyReport() {
 
   function exportCsv() {
     downloadCsv("loan_penalty.csv", rows, [
-      { header: "তারিখ", accessor: r => fmt(r.created_at) },
-      { header: "ঋণ", accessor: r => r.loan_id },
-      { header: "কিস্তি", accessor: r => r.installment_id },
-      { header: "মূল জরিমানা", accessor: r => Number(r.original_amount || 0) },
-      { header: "পরিবর্তিত", accessor: r => Number(r.modified_amount || 0) },
-      { header: "কারণ", accessor: r => r.reason || "" },
+      { header: t("date"), accessor: r => fmt(r.created_at) },
+      { header: t("loan" as any), accessor: r => r.loan_id },
+      { header: t("installment" as any), accessor: r => r.installment_id },
+      { header: t("originalPenalty" as any), accessor: r => Number(r.original_amount || 0) },
+      { header: t("modifiedPenalty" as any), accessor: r => Number(r.modified_amount || 0) },
+      { header: t("reason"), accessor: r => r.reason || "" },
     ]);
   }
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl md:text-2xl font-bold">ঋণ জরিমানা রিপোর্ট</h1>
+        <h1 className="text-xl md:text-2xl font-bold">{t("loanPenaltyReportTitle" as any)}</h1>
         <div className="flex gap-2 items-center">
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
-          <Button variant="outline" onClick={load}>রিফ্রেশ</Button>
+          <Button variant="outline" onClick={load}>{t("refresh")}</Button>
           <Button variant="outline" onClick={exportCsv}><FileSpreadsheet className="h-4 w-4 mr-1" />Export</Button>
         </div>
       </div>
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
-            {loading ? "লোড হচ্ছে…" : `${rows.length} টি · মূল ${money(totals.original)} → পরিবর্তিত ${money(totals.modified)}`}
+            {loading
+              ? t("loading")
+              : t("countOriginalToModified" as any)
+                  .replace("{count}", String(rows.length))
+                  .replace("{original}", money(totals.original))
+                  .replace("{modified}", money(totals.modified))}
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>তারিখ</TableHead>
-                <TableHead>ঋণ</TableHead>
-                <TableHead>কিস্তি</TableHead>
-                <TableHead className="text-right">মূল</TableHead>
-                <TableHead className="text-right">পরিবর্তিত</TableHead>
-                <TableHead>কারণ</TableHead>
+                <TableHead>{t("date")}</TableHead>
+                <TableHead>{t("loan" as any)}</TableHead>
+                <TableHead>{t("installment" as any)}</TableHead>
+                <TableHead className="text-right">{t("originalPenalty" as any)}</TableHead>
+                <TableHead className="text-right">{t("modifiedPenalty" as any)}</TableHead>
+                <TableHead>{t("reason")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
