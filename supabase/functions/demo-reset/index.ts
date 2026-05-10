@@ -471,9 +471,10 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   const planDefs = [
     { name: "Short Term 6mo", name_bn: "৬ মাসের স্বল্প-মেয়াদী", duration_months: 6,  interest_rate: 10, installment_type: "monthly", penalty_type: "percentage", penalty_value: 2, grace_period_days: 5,  is_active: true, office_id: officeId },
     { name: "Standard 12mo",  name_bn: "১২ মাসের সাধারণ",       duration_months: 12, interest_rate: 12, installment_type: "monthly", penalty_type: "percentage", penalty_value: 2, grace_period_days: 7,  is_active: true, office_id: officeId },
-    { name: "Long Term 24mo", name_bn: "২৪ মাসের দীর্ঘ-মেয়াদী", duration_months: 24, interest_rate: 14, installment_type: "monthly", penalty_type: "flat",       penalty_value: 100, grace_period_days: 10, is_active: true, office_id: officeId },
+    { name: "Long Term 24mo", name_bn: "২৪ মাসের দীর্ঘ-মেয়াদী", duration_months: 24, interest_rate: 14, installment_type: "monthly", penalty_type: "fixed",      penalty_value: 100, grace_period_days: 10, is_active: true, office_id: officeId },
   ];
-  const { data: plans } = await admin.from("loan_plans").insert(planDefs).select("id, duration_months, interest_rate");
+  const { data: plans, error: plansErr } = await admin.from("loan_plans").insert(planDefs).select("id, duration_months, interest_rate");
+  if (plansErr) throw new Error(`loan_plans: ${plansErr.message}`);
   const planList = plans ?? [];
   const planId = planList[1]?.id ?? planList[0]?.id ?? null;
   const targets = voters.slice(0, Math.ceil(voters.length * 0.4));
