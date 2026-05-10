@@ -80,13 +80,62 @@ function fuzzyResolve(key: string, lang: Lang): string | null {
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem("lang") as Lang) || "en");
+  const userIdRef = useRef<string | null>(null);
+  const remoteLoadedRef = useRef(false);
 
   useEffect(() => {
     localStorage.setItem("lang", lang);
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const setLang = (l: Lang) => setLangState(l);
+  // --- Persist preference to profiles.language for logged-in users ---------
+  // On auth change, load the user's saved language (overrides localStorage on
+  // first read so multi-device users see the same UI). Anonymous users keep
+  // using localStorage only.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadForUser(uid: string) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("language")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (cancelled) return;
+      const remote = (data as any)?.language as Lang | undefined;
+      if (remote === "en" || remote === "bn") {
+        remoteLoadedRef.current = true;
+        setLangState(remote);
+      }
+    }
+
+    supabase.auth.getSession().then(({ data }) => {
+      const uid = data.session?.user?.id ?? null;
+      userIdRef.current = uid;
+      if (uid) loadForUser(uid);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      const uid = session?.user?.id ?? null;
+      userIdRef.current = uid;
+      remoteLoadedRef.current = false;
+      if (uid) loadForUser(uid);
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+  }, []);
+
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    const uid = userIdRef.current;
+    if (uid) {
+      // Fire-and-forget; failures are non-fatal (localStorage still works).
+      supabase
+        .from("profiles")
+        .update({ language: l })
+        .eq("user_id", uid)
+        .then(() => {/* noop */});
+    }
+  };
 
   const warned = (typeof window !== "undefined") ? ((window as any).__i18nWarned ??= new Set<string>()) : new Set<string>();
   const missing: Map<string, { lang: string; route: string }> =
