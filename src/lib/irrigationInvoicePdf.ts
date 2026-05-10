@@ -235,6 +235,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
       ${regLine ? `<div style="font-size:10px;color:#333;">${regLine}</div>` : ""}
       <div style="font-size:15px;font-weight:700;margin-top:3px;">সেচ ইনভয়েস</div>
       <div style="display:inline-block;border:1px solid #111;padding:1px 12px;margin-top:3px;font-size:11px;">${copyLabel}</div>
+      <div style="display:inline-block;border:1px solid ${srcColor};color:${srcColor};padding:1px 8px;margin-top:3px;margin-left:4px;font-size:10px;font-weight:600;border-radius:3px;">${srcBn}</div>
     </div>
 
     <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;">
