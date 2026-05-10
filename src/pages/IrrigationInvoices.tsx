@@ -958,12 +958,19 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               settings: row.settings,
               calc: row.calc,
               generated_at: new Date().toISOString(),
+              rate_source: row.resolved?.source ?? "STANDARD",
+              applied_rate: row.resolved?.rate ?? row.rate,
+              original_standard_rate: row.resolved?.originalStandardRate ?? row.rate,
+              irrigation_category_id: row.resolved?.categoryId ?? null,
+              irrigation_category_name: row.resolved?.categoryName ?? null,
             },
           };
           // Hybrid rate engine snapshot fields (Phase 4)
-          payload.rate_source = "STANDARD";
-          payload.applied_rate = row.rate;
-          payload.original_standard_rate = row.rate;
+          payload.rate_source = row.resolved?.source ?? "STANDARD";
+          payload.applied_rate = row.resolved?.rate ?? row.rate;
+          payload.original_standard_rate = row.resolved?.originalStandardRate ?? row.rate;
+          payload.irrigation_category_id = row.resolved?.categoryId ?? null;
+          payload.irrigation_category_name = row.resolved?.categoryName ?? null;
           const { error } = await supabase.from("irrigation_invoices" as any).insert(payload);
           if (error) { failed++; console.error(error); } else success++;
         } catch (e) { failed++; console.error(e); }
