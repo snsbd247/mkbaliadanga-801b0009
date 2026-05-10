@@ -111,6 +111,8 @@ import AssetScanner from "./pages/assets/AssetScanner";
 import AssetScanHistory from "./pages/assets/AssetScanHistory";
 import AssetBulkQR from "./pages/assets/AssetBulkQR";
 import AssetDepreciation from "./pages/assets/AssetDepreciation";
+import AssetStock from "./pages/assets/AssetStock";
+import AssetMovements from "./pages/assets/AssetMovements";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
@@ -228,6 +230,8 @@ const App = () => (
                 <Route path="/assets/scan/history" element={<RequirePerm module="assets"><AssetScanHistory /></RequirePerm>} />
                 <Route path="/assets/qr-bulk" element={<RequirePerm module="assets"><AssetBulkQR /></RequirePerm>} />
                 <Route path="/assets/depreciation" element={<RequirePerm module="assets"><AssetDepreciation /></RequirePerm>} />
+                <Route path="/assets/stock" element={<RequirePerm module="assets"><AssetStock /></RequirePerm>} />
+                <Route path="/assets/movements" element={<RequirePerm module="assets"><AssetMovements /></RequirePerm>} />
                 <Route path="/reports/rate-source" element={<RequireRole roles={["admin","super_admin"]}><RateSourceReport /></RequireRole>} />
                 <Route path="/reports/override-audit" element={<RequireRole roles={["admin","super_admin"]}><OverrideAuditReport /></RequireRole>} />
                 <Route path="/irrigation-reports" element={<IrrigationReports />} />
