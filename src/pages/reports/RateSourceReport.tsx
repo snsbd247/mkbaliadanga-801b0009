@@ -35,6 +35,10 @@ export default function RateSourceReport() {
   const [rows, setRows] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!isSuper && myOfficeId && officeId === "all") setOfficeId(myOfficeId);
+  }, [isSuper, myOfficeId]);
+
+  useEffect(() => {
     Promise.all([
       supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
       supabase.from("offices").select("id,name").order("name"),
