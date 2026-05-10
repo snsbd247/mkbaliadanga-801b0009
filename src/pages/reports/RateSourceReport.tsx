@@ -19,13 +19,14 @@ type SourceFilter = "ALL" | "STANDARD" | "CATEGORY" | "MANUAL";
 
 export default function RateSourceReport() {
   const { tx } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, officeId: myOfficeId } = useAuth();
   const [seasons, setSeasons] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
 
   const [seasonId, setSeasonId] = useState("all");
-  const [officeId, setOfficeId] = useState("all");
+  // Non-super staff default to their assigned office; super sees all.
+  const [officeId, setOfficeId] = useState<string>(isSuper ? "all" : (myOfficeId ?? "all"));
   const [categoryId, setCategoryId] = useState("all");
   const [source, setSource] = useState<SourceFilter>("ALL");
   const [farmerSearch, setFarmerSearch] = useState("");
