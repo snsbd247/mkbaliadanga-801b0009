@@ -19,19 +19,24 @@ type SourceFilter = "ALL" | "STANDARD" | "CATEGORY" | "MANUAL";
 
 export default function RateSourceReport() {
   const { tx } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, officeId: myOfficeId } = useAuth();
   const [seasons, setSeasons] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
 
   const [seasonId, setSeasonId] = useState("all");
-  const [officeId, setOfficeId] = useState("all");
+  // Non-super staff default to their assigned office; super sees all.
+  const [officeId, setOfficeId] = useState<string>(isSuper ? "all" : (myOfficeId ?? "all"));
   const [categoryId, setCategoryId] = useState("all");
   const [source, setSource] = useState<SourceFilter>("ALL");
   const [farmerSearch, setFarmerSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isSuper && myOfficeId && officeId === "all") setOfficeId(myOfficeId);
+  }, [isSuper, myOfficeId]);
 
   useEffect(() => {
     Promise.all([
@@ -119,13 +124,28 @@ export default function RateSourceReport() {
     tx("Reason", "কারণ"), tx("Payable", "প্রদেয়"), tx("Paid", "পরিশোধিত"),
   ];
 
+  function buildRowsWithTotals() {
+    const body = buildRows();
+    // Totals: applied vs standard sums + payable/paid
+    let appliedSum = 0, standardSum = 0;
+    for (const r of rows) {
+      appliedSum += Number(r.applied_rate ?? r.season_rate ?? 0);
+      standardSum += Number(r.original_standard_rate ?? r.season_rate ?? 0);
+    }
+    body.push([
+      tx("TOTAL", "মোট"), "", "", "", "", "", "",
+      appliedSum, standardSum, "",
+      totals.payable, totals.paid,
+    ] as any);
+    return body;
+  }
   async function onPdf() {
     setPdfBusy(true);
-    try { await exportTablePDF(tx("Rate Source Report", "রেট উৎস রিপোর্ট"), head, buildRows()); }
+    try { await exportTablePDF(tx("Rate Source Report", "রেট উৎস রিপোর্ট"), head, buildRowsWithTotals()); }
     catch (e: any) { toast.error(e.message); } finally { setPdfBusy(false); }
   }
   function onCsv() {
-    exportCSV("rate-source-report", head, buildRows());
+    exportCSV("rate-source-report", head, buildRowsWithTotals());
   }
 
   return (
