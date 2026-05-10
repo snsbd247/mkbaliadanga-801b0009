@@ -173,12 +173,22 @@ export default function AssetItems() {
           "সমস্ত এসেট ও ইনভেন্টরি আইটেমের কেন্দ্রীয় রেজিস্ট্রি। প্রতিটি আইটেম একটি ক্যাটাগরির অধীনে এবং তার লাইফসাইকেল ট্র্যাক করে।",
         )}
         actions={
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
-            <DialogTrigger asChild>
-              <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />{tx("New asset", "নতুন এসেট")}</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
+          <div className="flex gap-2">
+            {isAdmin && officeId && (
+              <Button variant="outline" size="sm" onClick={async () => {
+                try {
+                  const r = await seedDemoAssets(officeId, null);
+                  toast.success(r.skipped ? tx("Demo already seeded", "ডেমো আগেই যোগ করা") : tx("Demo seeded", "ডেমো যোগ হয়েছে"));
+                  load();
+                } catch (e: any) { toast.error(e.message); }
+              }}><Sparkles className="h-4 w-4 mr-1" />{tx("Seed demo", "ডেমো সিড")}</Button>
+            )}
+            <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
+              <DialogTrigger asChild>
+                <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />{tx("New asset", "নতুন এসেট")}</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
                 <DialogTitle>{form.id ? tx("Edit asset", "এসেট সম্পাদনা") : tx("New asset", "নতুন এসেট")}</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-3">
