@@ -34,6 +34,11 @@ export const IRR_BN = {
   manualReason: "ম্যানুয়াল কারণ",
   recalculated: "পুনঃগণনা",
   borga: "বর্গা",
+  rateSource: "রেট উৎস",
+  category: "ক্যাটেগরি",
+  appliedRate: "প্রযোজ্য রেট",
+  standardRate: "মানক রেট",
+  overrideReason: "ওভাররাইড কারণ",
 };
 
 export const IRR_EN: typeof IRR_BN = {
@@ -61,6 +66,11 @@ export const IRR_EN: typeof IRR_BN = {
   manualReason: "Manual Reason",
   recalculated: "Recalculated",
   borga: "Borga",
+  rateSource: "Rate Source",
+  category: "Category",
+  appliedRate: "Applied Rate",
+  standardRate: "Standard Rate",
+  overrideReason: "Override Reason",
 };
 
 const STATUS_BN: Record<string, string> = {
@@ -104,6 +114,11 @@ export function flattenInvoiceForExport(inv: any, lang: Lang = "bn") {
     [L.manualReason]: inv.manual_rate_reason ?? "",
     [L.recalculated]: inv.recalculated_at ? new Date(inv.recalculated_at).toLocaleString(locale) : "",
     [L.borga]: inv.is_borga ? yes : no,
+    [L.rateSource]: inv.rate_source ?? (inv.is_manual_rate ? "MANUAL" : "STANDARD"),
+    [L.category]: inv.irrigation_category_name ?? snap.irrigation_category_name ?? "",
+    [L.appliedRate]: r(inv.applied_rate ?? inv.season_rate ?? snap.applied_rate ?? ""),
+    [L.standardRate]: r(inv.original_standard_rate ?? snap.original_standard_rate ?? ""),
+    [L.overrideReason]: inv.override_reason ?? inv.manual_rate_reason ?? "",
   };
 }
 
