@@ -122,6 +122,7 @@ export default function AssetItems() {
       asset_code: r.asset_code, serial_no: r.serial_no ?? "",
       name_bn: r.name_bn ?? "", name_en: r.name_en,
       tracking_mode: r.tracking_mode, unit: r.unit ?? "",
+      asset_type: r.asset_type ?? "fixed_asset",
       purchase_price: Number(r.purchase_price ?? 0),
     });
     setOpen(true);
