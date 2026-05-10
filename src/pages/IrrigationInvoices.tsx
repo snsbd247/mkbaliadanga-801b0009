@@ -98,7 +98,7 @@ export default function IrrigationInvoices() {
 }
 
 function InvoiceListTab({ seasons, offices, isSuper }: any) {
-  const { tx } = useLang();
+  const { tx, lang } = useLang();
   const { confirm } = useConfirm();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
