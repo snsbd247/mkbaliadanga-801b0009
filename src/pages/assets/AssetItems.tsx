@@ -257,6 +257,7 @@ export default function AssetItems() {
                     : form.asset_type === "inventory"
                     ? tx("Inventory items are tracked by quantity only — no depreciation.", "ইনভেন্টরি শুধু পরিমাণে ট্র্যাক হয় — অবচয় হয় না।")
                     : tx("Consumables can be expensed directly on use.", "ভোগ্য আইটেম ব্যবহারের সাথে সরাসরি খরচ লেখা যায়।")}
+                </div>
                 <div>
                   <Label>{tx("Name (Bengali)", "নাম (বাংলা)")}</Label>
                   <Input value={form.name_bn} onChange={(e) => setForm({ ...form, name_bn: e.target.value })} placeholder="৫ এইচপি মোটর" />
