@@ -23,6 +23,7 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
+import { resolveIrrigationRate, type CategoryRateInput } from "@/lib/irrigationRateResolver";
 import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
 import {
