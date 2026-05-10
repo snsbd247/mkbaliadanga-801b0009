@@ -113,6 +113,9 @@ import AssetBulkQR from "./pages/assets/AssetBulkQR";
 import AssetDepreciation from "./pages/assets/AssetDepreciation";
 import AssetStock from "./pages/assets/AssetStock";
 import AssetMovements from "./pages/assets/AssetMovements";
+import AssetInstallations from "./pages/assets/AssetInstallations";
+import AssetMaintenance from "./pages/assets/AssetMaintenance";
+import AssetDisposal from "./pages/assets/AssetDisposal";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
