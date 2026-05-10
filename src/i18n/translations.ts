@@ -1766,6 +1766,8 @@ export const translations = {
     assetDepreciation: "ডিপ্রেসিয়েশন",
     assetReports: "এসেট রিপোর্ট",
     assetCategories: "এসেট ক্যাটাগরি",
+    irrigationCategories: "সেচ ক্যাটাগরি",
+    categoryRates: "ক্যাটাগরি রেট",
     receiptNo: "রসিদ নং", head: "খাত", payee: "প্রাপক",
     bighaRent: "বিঘা ভাড়া", pond: "পুকুর আয়", cropSale: "ফসল বিক্রি",
     scrap: "ভাংড়ি", loanTaken: "হাওলাত", donation: "অনুদান",
