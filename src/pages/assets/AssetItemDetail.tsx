@@ -11,6 +11,7 @@ import { ArrowLeft } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { statusLabel, statusVariant } from "./AssetItems";
 import { toast } from "sonner";
+import { PurchaseDialog, MovementDialog, InstallationDialog, MaintenanceDialog, DamageDialog, DisposalDialog } from "./AssetActionDialogs";
 
 type Asset = any;
 
