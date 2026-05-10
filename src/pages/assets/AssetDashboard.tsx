@@ -53,7 +53,7 @@ export default function AssetDashboard() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={tx("Asset Dashboard", "এসেট ড্যাশবোর্ড")} icon={Package}
+      <PageHeader title={tx("Asset Dashboard", "এসেট ড্যাশবোর্ড")}
         actions={
           <Button asChild variant="outline" size="sm">
             <Link to="/assets/reports"><FileBarChart2 className="h-4 w-4 mr-1" />{tx("Reports", "রিপোর্ট")}</Link>
