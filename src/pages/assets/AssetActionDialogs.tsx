@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { logAssetAudit } from "@/lib/assetAudit";
+import { calcDisposalGainLoss } from "@/lib/assetMath";
 import { Plus } from "lucide-react";
 
 type Office = { id: string; name: string };
