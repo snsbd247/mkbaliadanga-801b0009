@@ -2845,7 +2845,6 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
-          language: string
           language_pref: string
           office_id: string | null
           receipt_options: Json | null
@@ -2857,7 +2856,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
-          language?: string
           language_pref?: string
           office_id?: string | null
           receipt_options?: Json | null
@@ -2869,7 +2867,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
-          language?: string
           language_pref?: string
           office_id?: string | null
           receipt_options?: Json | null
