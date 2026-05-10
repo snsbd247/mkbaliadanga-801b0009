@@ -471,9 +471,10 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   const planDefs = [
     { name: "Short Term 6mo", name_bn: "৬ মাসের স্বল্প-মেয়াদী", duration_months: 6,  interest_rate: 10, installment_type: "monthly", penalty_type: "percentage", penalty_value: 2, grace_period_days: 5,  is_active: true, office_id: officeId },
     { name: "Standard 12mo",  name_bn: "১২ মাসের সাধারণ",       duration_months: 12, interest_rate: 12, installment_type: "monthly", penalty_type: "percentage", penalty_value: 2, grace_period_days: 7,  is_active: true, office_id: officeId },
-    { name: "Long Term 24mo", name_bn: "২৪ মাসের দীর্ঘ-মেয়াদী", duration_months: 24, interest_rate: 14, installment_type: "monthly", penalty_type: "flat",       penalty_value: 100, grace_period_days: 10, is_active: true, office_id: officeId },
+    { name: "Long Term 24mo", name_bn: "২৪ মাসের দীর্ঘ-মেয়াদী", duration_months: 24, interest_rate: 14, installment_type: "monthly", penalty_type: "fixed",      penalty_value: 100, grace_period_days: 10, is_active: true, office_id: officeId },
   ];
-  const { data: plans } = await admin.from("loan_plans").insert(planDefs).select("id, duration_months, interest_rate");
+  const { data: plans, error: plansErr } = await admin.from("loan_plans").insert(planDefs).select("id, duration_months, interest_rate");
+  if (plansErr) throw new Error(`loan_plans: ${plansErr.message}`);
   const planList = plans ?? [];
   const planId = planList[1]?.id ?? planList[0]?.id ?? null;
   const targets = voters.slice(0, Math.ceil(voters.length * 0.4));
@@ -683,12 +684,12 @@ async function seedAccounts(admin: any) {
 }
 
 async function seedSettings(admin: any, officeId?: string) {
-  await admin.from("company_settings").upsert({
+  const { error: csErr } = await admin.from("company_settings").upsert({
     id: 1, company_name: "Smart Irrigation Cooperative", company_name_bn: "স্মার্ট সেচ সমবায়",
     address: "Baliadanga, Rangpur", mobile: "01700000000", email: "demo@example.com",
     registration_no: "COOP-2018-0451",
     default_loan_interest: 12,
-    penalty_type: "percentage", penalty_value: 2, penalty_grace_days: 30,
+    penalty_type: "percent", penalty_value: 2, penalty_grace_days: 30,
     fiscal_year_start_month: 7,
     loan_receipt_no_format: "LOAN-{YYYYMMDD}-{TAIL}",
     loan_receipt_header_en: "Smart Irrigation Cooperative — Loan Receipt",
@@ -698,6 +699,7 @@ async function seedSettings(admin: any, officeId?: string) {
     pdf_footer_text: "If found, please return to the issuing office.",
     pdf_footer_show_address: true, pdf_footer_show_contact: true,
   });
+  if (csErr) console.warn("[demo-reset] company_settings:", csErr.message);
   await admin.from("card_settings").upsert({ id: 1 });
   // SMS settings — disabled by default for demo, but template fields populated
   await admin.from("sms_settings").upsert({
