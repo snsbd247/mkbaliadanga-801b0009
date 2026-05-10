@@ -8,12 +8,12 @@ import { FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
 import { downloadCsv } from "@/lib/csvExport";
 import { useLang } from "@/i18n/LanguageProvider";
-
-const fmt = (d: any) => (d ? format(new Date(d), "dd/MM/yyyy") : "-");
-const money = (n: any) => `৳ ${Number(n || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 })}`;
+import { moneyL, fmtDateL } from "@/lib/format";
 
 export default function LoanPenaltyReport() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const fmt = (d: any) => fmtDateL(d, lang);
+  const money = (n: any) => moneyL(Number(n || 0), lang);
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(monthAgo);
