@@ -23,6 +23,7 @@ import {
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
+import { resolveIrrigationRate, type CategoryRateInput } from "@/lib/irrigationRateResolver";
 import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
 import {
@@ -821,10 +822,47 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
   const [manualOpen, setManualOpen] = useState(false);
 
+  // Hybrid rate engine — optional default category for the bulk batch
+  const [categories, setCategories] = useState<Array<{ id: string; name_bn: string | null; name_en: string | null; allow_manual_negotiation: boolean }>>([]);
+  const [categoryRates, setCategoryRates] = useState<Array<{ irrigation_category_id: string; rate: number; rate_type: string; is_negotiable: boolean }>>([]);
+  const [defaultCategoryId, setDefaultCategoryId] = useState<string>("");
+
   useEffect(() => {
     if (!seasonId) { setRateMap([]); return; }
     loadSeasonRateMap(seasonId, officeId || null).then(setRateMap);
   }, [seasonId, officeId]);
+
+  // Load active categories + their season rates for the current season/office
+  useEffect(() => {
+    let q = supabase.from("irrigation_categories" as any)
+      .select("id,name_bn,name_en,allow_manual_negotiation")
+      .eq("is_active", true).is("deleted_at", null);
+    if (officeId) q = q.eq("office_id", officeId);
+    (q as any).order("name_bn").then(({ data }: any) => setCategories((data as any) ?? []));
+  }, [officeId]);
+
+  useEffect(() => {
+    if (!seasonId) { setCategoryRates([]); return; }
+    let q = supabase.from("irrigation_category_rates" as any)
+      .select("irrigation_category_id,rate,rate_type,is_negotiable")
+      .eq("irrigation_season_id", seasonId);
+    if (officeId) q = q.eq("office_id", officeId);
+    (q as any).then(({ data }: any) => setCategoryRates((data as any) ?? []));
+  }, [seasonId, officeId]);
+
+  function getCategoryInput(): CategoryRateInput | null {
+    if (!defaultCategoryId) return null;
+    const cat = categories.find((c) => c.id === defaultCategoryId);
+    const rate = categoryRates.find((r) => r.irrigation_category_id === defaultCategoryId);
+    if (!cat || !rate || !(rate.rate > 0)) return null;
+    return {
+      irrigation_category_id: cat.id,
+      category_name: cat.name_bn || cat.name_en || "",
+      rate: Number(rate.rate),
+      rate_type: (rate.rate_type as any) || "per_shotok",
+      is_negotiable: !!rate.is_negotiable,
+    };
+  }
 
   async function preview() {
     if (!seasonId) return toast.error(tx("Select a season", "সিজন বাছাই করুন"));
@@ -854,19 +892,26 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       const previewArr: any[] = [];
       let noRate = 0;
+      const categoryInput = getCategoryInput();
       for (const l of eligible) {
         const matched = resolveRateForLand(rateMap, l);
-        const rate = matched && matched.rate_per_shotok > 0 ? matched.rate_per_shotok : rateOverride;
-        if (!(rate > 0)) { noRate++; continue; }
+        const landTypeRate = matched && matched.rate_per_shotok > 0
+          ? { rate_per_shotok: matched.rate_per_shotok, land_type_id: matched.land_type_id, land_type_code: matched.land_type_code }
+          : (rateOverride > 0 ? { rate_per_shotok: rateOverride } : null);
+        const resolved = resolveIrrigationRate({
+          landTypeRate: landTypeRate ?? undefined,
+          categoryRate: categoryInput ?? undefined,
+        });
+        if (!(resolved.rate > 0)) { noRate++; continue; }
         const billed = await resolveBilledFarmer(l.id, dueDate);
         const calc = calcInvoice({
           land_size_shotok: Number(l.land_size),
-          rate_per_shotok: rate,
+          rate_per_shotok: resolved.rate,
           settings,
           due_date: dueDate,
           as_of: new Date().toISOString().slice(0, 10),
         });
-        previewArr.push({ land: l, billed, calc, settings, rate, rateRow: matched });
+        previewArr.push({ land: l, billed, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
       }
       setPreviewRows(previewArr);
       setSkippedNoRate(noRate);
@@ -913,12 +958,19 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               settings: row.settings,
               calc: row.calc,
               generated_at: new Date().toISOString(),
+              rate_source: row.resolved?.source ?? "STANDARD",
+              applied_rate: row.resolved?.rate ?? row.rate,
+              original_standard_rate: row.resolved?.originalStandardRate ?? row.rate,
+              irrigation_category_id: row.resolved?.categoryId ?? null,
+              irrigation_category_name: row.resolved?.categoryName ?? null,
             },
           };
           // Hybrid rate engine snapshot fields (Phase 4)
-          payload.rate_source = "STANDARD";
-          payload.applied_rate = row.rate;
-          payload.original_standard_rate = row.rate;
+          payload.rate_source = row.resolved?.source ?? "STANDARD";
+          payload.applied_rate = row.resolved?.rate ?? row.rate;
+          payload.original_standard_rate = row.resolved?.originalStandardRate ?? row.rate;
+          payload.irrigation_category_id = row.resolved?.categoryId ?? null;
+          payload.irrigation_category_name = row.resolved?.categoryName ?? null;
           const { error } = await supabase.from("irrigation_invoices" as any).insert(payload);
           if (error) { failed++; console.error(error); } else success++;
         } catch (e) { failed++; console.error(e); }
@@ -961,6 +1013,23 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             <div>
               <Label>{tx("Due *", "মেয়াদ *")}</Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>{tx("Default category (optional)", "ডিফল্ট ক্যাটেগরি (ঐচ্ছিক)")}</Label>
+              <Select value={defaultCategoryId || "none"} onValueChange={(v) => setDefaultCategoryId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{tx("— None (use land-type rate) —", "— নেই (জমির ধরনের রেট) —")}</SelectItem>
+                  {categories.map((c) => {
+                    const r = categoryRates.find((x) => x.irrigation_category_id === c.id);
+                    return (
+                      <SelectItem key={c.id} value={c.id} disabled={!r || !(r.rate > 0)}>
+                        {c.name_bn || c.name_en} {r && r.rate > 0 ? `— ${r.rate}/${r.rate_type}` : ` (${tx("no rate", "রেট নেই")})`}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {seasonId && (
