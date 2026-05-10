@@ -109,6 +109,7 @@ export function AppSidebar() {
         { url: "/assets/dashboard", icon: Package, label: t("assetDashboard" as any) || "ড্যাশবোর্ড", permKey: "assets" },
         { url: "/assets/items", icon: Package, label: t("assetItems" as any) || "এসেট আইটেম", permKey: "assets" },
         { url: "/assets/reports", icon: Package, label: t("assetReports" as any) || "এসেট রিপোর্ট", permKey: "assets" },
+        { url: "/assets/scan", icon: Package, label: t("assetScan" as any) || "QR স্ক্যান", permKey: "assets" },
         { url: "/admin/asset-categories", icon: Briefcase, label: t("assetCategories" as any) || "এসেট ক্যাটাগরি", permKey: "assets" },
       ],
     },
