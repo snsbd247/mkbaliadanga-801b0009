@@ -1590,6 +1590,10 @@ export const translations = {
     auditAndMonitoring: "Audit & Monitoring",
     auditTimeline: "Audit Timeline",
     retryJobs: "Retry Jobs",
+    loanDelaySettings: "Loan Penalty Settings",
+    loanOverdueReport: "Loan Overdue",
+    installmentCollectionReport: "Installment Collection",
+    loanPenaltyReport: "Loan Penalty",
   },
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
