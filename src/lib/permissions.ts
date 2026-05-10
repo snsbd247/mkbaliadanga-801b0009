@@ -35,6 +35,7 @@ const HARDCODED_STAFF: Record<string, Perm> = {
   approvals: VIEW_ONLY,
   offices: NONE, users: NONE, audit: NONE, settings: NONE,
   accounting: NONE, sms: NONE, locations: NONE,
+  assets: { can_view: true, can_add: true, can_edit: false, can_delete: false },
 };
 
 export function usePermissions() {
