@@ -105,6 +105,8 @@ import IrrigationCategoryRates from "./pages/admin/IrrigationCategoryRates";
 import AssetCategories from "./pages/admin/AssetCategories";
 import AssetItems from "./pages/assets/AssetItems";
 import AssetItemDetail from "./pages/assets/AssetItemDetail";
+import AssetDashboard from "./pages/assets/AssetDashboard";
+import AssetReports from "./pages/assets/AssetReports";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
