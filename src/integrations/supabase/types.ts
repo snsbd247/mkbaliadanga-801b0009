@@ -1690,7 +1690,15 @@ export type Database = {
           overridden_rate?: number
           override_reason?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "irrigation_rate_overrides_invoice_fkey"
+            columns: ["irrigation_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "irrigation_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       irrigation_rates: {
         Row: {
