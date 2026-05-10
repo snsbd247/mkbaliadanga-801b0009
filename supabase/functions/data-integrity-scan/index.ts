@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       if (uErr || !userData?.user?.id) return err(401, "Unauthorized");
       const userId = userData.user.id;
       const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
-      isAllowed = (roles ?? []).some((r: any) => r.role === "super_admin");
+      isAllowed = (roles ?? []).some((r: any) => r.role === "super_admin" || r.role === "developer" || r.role === "admin");
       if (!isAllowed) return err(403, "Forbidden");
     } else {
       return err(401, "Unauthorized");
