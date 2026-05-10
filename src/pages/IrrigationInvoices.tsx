@@ -727,7 +727,8 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {tx("Invoice", "ইনভয়েস")} {inv.invoice_no}
-            {inv.is_manual_rate && <Badge variant="outline" className="text-xs">{tx("Manual rate", "ম্যানুয়াল রেট")}</Badge>}
+            {(inv.is_manual_rate || inv.rate_source === "MANUAL") && <Badge variant="outline" className="text-xs">{tx("Custom rate", "কাস্টম রেট")}</Badge>}
+            {inv.rate_source === "CATEGORY" && inv.irrigation_category_name && <Badge variant="secondary" className="text-xs">{inv.irrigation_category_name}</Badge>}
             <Badge variant="secondary" className="text-xs gap-1"><ShieldCheck className="h-3 w-3" />{tx("Snapshot protected", "স্ন্যাপশট সুরক্ষিত")}</Badge>
           </DialogTitle>
         </DialogHeader>
