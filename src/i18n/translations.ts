@@ -182,6 +182,8 @@ export const translations = {
     assetDepreciation: "Asset Depreciation",
     assetReports: "Asset Reports",
     assetCategories: "Asset Categories",
+    irrigationCategories: "Irrigation Categories",
+    categoryRates: "Category Rates",
     receiptNo: "Receipt #",
     head: "Head",
     payee: "Payee",
