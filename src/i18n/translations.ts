@@ -1644,8 +1644,6 @@ export const translations = {
     totalPenalty: "Total Penalty: ৳ {n}",
   },
   bn: {
-    installmentDetail: "কিস্তির বিস্তারিত",
-    view: "দেখুন",
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
     appNameShort: "এসআইসিএমএস",
     dashboard: "ড্যাশবোর্ড",
