@@ -98,6 +98,8 @@ import { RequireDeveloper } from "./components/auth/RequireDeveloper";
 import DeveloperUpdates from "./pages/admin/DeveloperUpdates";
 import AdminLookups from "./pages/admin/Lookups";
 import RateAuditLog from "./pages/admin/RateAuditLog";
+import IrrigationCategories from "./pages/admin/IrrigationCategories";
+import IrrigationCategoryRates from "./pages/admin/IrrigationCategoryRates";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
