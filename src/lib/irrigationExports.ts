@@ -66,6 +66,11 @@ export const IRR_EN: typeof IRR_BN = {
   manualReason: "Manual Reason",
   recalculated: "Recalculated",
   borga: "Borga",
+  rateSource: "Rate Source",
+  category: "Category",
+  appliedRate: "Applied Rate",
+  standardRate: "Standard Rate",
+  overrideReason: "Override Reason",
 };
 
 const STATUS_BN: Record<string, string> = {
