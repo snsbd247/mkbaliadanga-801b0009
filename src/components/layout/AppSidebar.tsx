@@ -129,6 +129,8 @@ export function AppSidebar() {
         { url: "/reports/installment-collection", icon: FileBarChart, label: t("installmentCollectionReport" as any), permKey: "reports" },
         { url: "/reports/loan-penalty", icon: FileBarChart, label: t("loanPenaltyReport" as any), permKey: "reports" },
         { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
+        { url: "/reports/rate-source", icon: FileBarChart, label: "রেট উৎস রিপোর্ট", permKey: "reports" },
+        { url: "/reports/override-audit", icon: FileBarChart, label: "ওভাররাইড অডিট", permKey: "reports" },
         { url: "/reports/farmer-statement", icon: FileBarChart, label: t("farmerStatement"), permKey: "reports" },
         { url: "/reports/expenses", icon: FileBarChart, label: t("expensesReport"), permKey: "reports" },
         { url: "/reports/invoices", icon: FileBarChart, label: t("invoicesReport" as any), permKey: "reports" },
