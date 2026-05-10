@@ -132,6 +132,505 @@ export type Database = {
           },
         ]
       }
+      asset_audit_logs: {
+        Row: {
+          action_type: string
+          asset_id: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          new_data: Json | null
+          office_id: string | null
+          old_data: Json | null
+          remarks: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          asset_id?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          new_data?: Json | null
+          office_id?: string | null
+          old_data?: Json | null
+          remarks?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          asset_id?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          new_data?: Json | null
+          office_id?: string | null
+          old_data?: Json | null
+          remarks?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      asset_categories: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name_bn: string | null
+          name_en: string
+          office_id: string | null
+          tracking_mode: Database["public"]["Enums"]["asset_tracking_mode"]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name_bn?: string | null
+          name_en: string
+          office_id?: string | null
+          tracking_mode?: Database["public"]["Enums"]["asset_tracking_mode"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name_bn?: string | null
+          name_en?: string
+          office_id?: string | null
+          tracking_mode?: Database["public"]["Enums"]["asset_tracking_mode"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      asset_damage_reports: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          office_id: string | null
+          remarks: string | null
+          report_date: string
+          reported_by: string | null
+          severity: string | null
+          status: string | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          office_id?: string | null
+          remarks?: string | null
+          report_date?: string
+          reported_by?: string | null
+          severity?: string | null
+          status?: string | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          office_id?: string | null
+          remarks?: string | null
+          report_date?: string
+          reported_by?: string | null
+          severity?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_damage_reports_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_disposals: {
+        Row: {
+          asset_id: string
+          book_value: number
+          created_at: string
+          created_by: string | null
+          disposal_date: string
+          gain_loss: number
+          id: string
+          journal_entry_id: string | null
+          method: Database["public"]["Enums"]["asset_disposal_method"]
+          office_id: string | null
+          remarks: string | null
+          sale_amount: number
+        }
+        Insert: {
+          asset_id: string
+          book_value?: number
+          created_at?: string
+          created_by?: string | null
+          disposal_date?: string
+          gain_loss?: number
+          id?: string
+          journal_entry_id?: string | null
+          method?: Database["public"]["Enums"]["asset_disposal_method"]
+          office_id?: string | null
+          remarks?: string | null
+          sale_amount?: number
+        }
+        Update: {
+          asset_id?: string
+          book_value?: number
+          created_at?: string
+          created_by?: string | null
+          disposal_date?: string
+          gain_loss?: number
+          id?: string
+          journal_entry_id?: string | null
+          method?: Database["public"]["Enums"]["asset_disposal_method"]
+          office_id?: string | null
+          remarks?: string | null
+          sale_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_disposals_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_installations: {
+        Row: {
+          asset_id: string
+          condition_status: string | null
+          created_at: string
+          id: string
+          install_date: string
+          installed_by: string | null
+          location_id: string | null
+          location_name: string | null
+          office_id: string | null
+          remarks: string | null
+        }
+        Insert: {
+          asset_id: string
+          condition_status?: string | null
+          created_at?: string
+          id?: string
+          install_date?: string
+          installed_by?: string | null
+          location_id?: string | null
+          location_name?: string | null
+          office_id?: string | null
+          remarks?: string | null
+        }
+        Update: {
+          asset_id?: string
+          condition_status?: string | null
+          created_at?: string
+          id?: string
+          install_date?: string
+          installed_by?: string | null
+          location_id?: string | null
+          location_name?: string | null
+          office_id?: string | null
+          remarks?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_installations_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_maintenance_logs: {
+        Row: {
+          asset_id: string
+          cost: number
+          created_at: string
+          created_by: string | null
+          downtime_days: number
+          id: string
+          maintenance_date: string
+          office_id: string | null
+          remarks: string | null
+          status: string | null
+          vendor: string | null
+        }
+        Insert: {
+          asset_id: string
+          cost?: number
+          created_at?: string
+          created_by?: string | null
+          downtime_days?: number
+          id?: string
+          maintenance_date?: string
+          office_id?: string | null
+          remarks?: string | null
+          status?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          asset_id?: string
+          cost?: number
+          created_at?: string
+          created_by?: string | null
+          downtime_days?: number
+          id?: string
+          maintenance_date?: string
+          office_id?: string | null
+          remarks?: string | null
+          status?: string | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_maintenance_logs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_movements: {
+        Row: {
+          asset_id: string
+          created_at: string
+          from_location_id: string | null
+          id: string
+          moved_by: string | null
+          movement_date: string
+          office_id: string | null
+          quantity: number
+          remarks: string | null
+          to_location_id: string | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          from_location_id?: string | null
+          id?: string
+          moved_by?: string | null
+          movement_date?: string
+          office_id?: string | null
+          quantity?: number
+          remarks?: string | null
+          to_location_id?: string | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          from_location_id?: string | null
+          id?: string
+          moved_by?: string | null
+          movement_date?: string
+          office_id?: string | null
+          quantity?: number
+          remarks?: string | null
+          to_location_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_movements_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_purchases: {
+        Row: {
+          asset_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          invoice_no: string | null
+          journal_entry_id: string | null
+          notes: string | null
+          office_id: string | null
+          payment_method: string | null
+          purchase_date: string
+          quantity: number
+          supplier: string | null
+          total_amount: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          invoice_no?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          office_id?: string | null
+          payment_method?: string | null
+          purchase_date?: string
+          quantity?: number
+          supplier?: string | null
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          invoice_no?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          office_id?: string | null
+          payment_method?: string | null
+          purchase_date?: string
+          quantity?: number
+          supplier?: string | null
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_purchases_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_stocks: {
+        Row: {
+          asset_id: string
+          id: string
+          location_id: string | null
+          office_id: string | null
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          id?: string
+          location_id?: string | null
+          office_id?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          id?: string
+          location_id?: string | null
+          office_id?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_stocks_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assets: {
+        Row: {
+          asset_category_id: string | null
+          asset_code: string
+          created_at: string
+          created_by: string | null
+          current_location_id: string | null
+          current_status: Database["public"]["Enums"]["asset_status"]
+          deleted_at: string | null
+          id: string
+          installed_at: string | null
+          name_bn: string | null
+          name_en: string
+          notes: string | null
+          office_id: string | null
+          purchase_price: number
+          serial_no: string | null
+          tracking_mode: Database["public"]["Enums"]["asset_tracking_mode"]
+          unit: string | null
+          updated_at: string
+          warranty_until: string | null
+        }
+        Insert: {
+          asset_category_id?: string | null
+          asset_code: string
+          created_at?: string
+          created_by?: string | null
+          current_location_id?: string | null
+          current_status?: Database["public"]["Enums"]["asset_status"]
+          deleted_at?: string | null
+          id?: string
+          installed_at?: string | null
+          name_bn?: string | null
+          name_en: string
+          notes?: string | null
+          office_id?: string | null
+          purchase_price?: number
+          serial_no?: string | null
+          tracking_mode?: Database["public"]["Enums"]["asset_tracking_mode"]
+          unit?: string | null
+          updated_at?: string
+          warranty_until?: string | null
+        }
+        Update: {
+          asset_category_id?: string | null
+          asset_code?: string
+          created_at?: string
+          created_by?: string | null
+          current_location_id?: string | null
+          current_status?: Database["public"]["Enums"]["asset_status"]
+          deleted_at?: string | null
+          id?: string
+          installed_at?: string | null
+          name_bn?: string | null
+          name_en?: string
+          notes?: string | null
+          office_id?: string | null
+          purchase_price?: number
+          serial_no?: string | null
+          tracking_mode?: Database["public"]["Enums"]["asset_tracking_mode"]
+          unit?: string | null
+          updated_at?: string
+          warranty_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_asset_category_id_fkey"
+            columns: ["asset_category_id"]
+            isOneToOne: false
+            referencedRelation: "asset_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -4304,6 +4803,16 @@ export type Database = {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
       app_role: "super_admin" | "admin" | "staff" | "committee" | "developer"
       approval_status: "pending" | "approved" | "rejected"
+      asset_disposal_method: "scrap_sale" | "write_off" | "donation" | "lost"
+      asset_status:
+        | "purchased"
+        | "in_stock"
+        | "transferred"
+        | "installed"
+        | "maintenance"
+        | "damaged"
+        | "disposed"
+      asset_tracking_mode: "quantity" | "serial"
       field_type: "high_land" | "medium_land" | "low_land" | "other"
       installment_status: "due" | "paid" | "missed" | "partial"
       invoice_status:
@@ -4477,6 +4986,17 @@ export const Constants = {
       account_type: ["asset", "liability", "income", "expense", "equity"],
       app_role: ["super_admin", "admin", "staff", "committee", "developer"],
       approval_status: ["pending", "approved", "rejected"],
+      asset_disposal_method: ["scrap_sale", "write_off", "donation", "lost"],
+      asset_status: [
+        "purchased",
+        "in_stock",
+        "transferred",
+        "installed",
+        "maintenance",
+        "damaged",
+        "disposed",
+      ],
+      asset_tracking_mode: ["quantity", "serial"],
       field_type: ["high_land", "medium_land", "low_land", "other"],
       installment_status: ["due", "paid", "missed", "partial"],
       invoice_status: [
