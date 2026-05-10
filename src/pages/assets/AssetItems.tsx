@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EditButton } from "@/components/ui/action-icon-button";
-import { Plus, Search, Eye } from "lucide-react";
+import { Plus, Search, Eye, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { logAssetAudit } from "@/lib/assetAudit";
+import { seedDemoAssets } from "@/lib/assetDemoSeed";
 
 type TrackingMode = "quantity" | "serial";
 type AssetStatus = "purchased" | "in_stock" | "transferred" | "installed" | "maintenance" | "damaged" | "disposed";
