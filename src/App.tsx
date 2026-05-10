@@ -98,6 +98,8 @@ import { RequireDeveloper } from "./components/auth/RequireDeveloper";
 import DeveloperUpdates from "./pages/admin/DeveloperUpdates";
 import AdminLookups from "./pages/admin/Lookups";
 import RateAuditLog from "./pages/admin/RateAuditLog";
+import IrrigationCategories from "./pages/admin/IrrigationCategories";
+import IrrigationCategoryRates from "./pages/admin/IrrigationCategoryRates";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 const queryClient = new QueryClient();
@@ -204,6 +206,8 @@ const App = () => (
                 <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />
                 <Route path="/admin/lookups" element={<RequireRole roles={["admin","super_admin"]}><AdminLookups /></RequireRole>} />
                 <Route path="/admin/rate-audit" element={<RequireRole roles={["admin","super_admin"]}><RateAuditLog /></RequireRole>} />
+                <Route path="/admin/irrigation-categories" element={<RequireRole roles={["admin","super_admin"]}><IrrigationCategories /></RequireRole>} />
+                <Route path="/admin/irrigation-category-rates" element={<RequireRole roles={["admin","super_admin"]}><IrrigationCategoryRates /></RequireRole>} />
                 <Route path="/irrigation-reports" element={<IrrigationReports />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
