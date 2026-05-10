@@ -98,11 +98,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     async function loadForUser(uid: string) {
       const { data } = await supabase
         .from("profiles")
-        .select("language")
+        .select("language_pref")
         .eq("id", uid)
         .maybeSingle();
       if (cancelled) return;
-      const remote = (data as any)?.language as Lang | undefined;
+      const remote = (data as any)?.language_pref as Lang | undefined;
       if (remote === "en" || remote === "bn") {
         remoteLoadedRef.current = true;
         setLangState(remote);
@@ -131,7 +131,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       // Fire-and-forget; failures are non-fatal (localStorage still works).
       supabase
         .from("profiles")
-        .update({ language: l })
+        .update({ language_pref: l })
         .eq("id", uid)
         .then(() => {/* noop */});
     }
