@@ -201,6 +201,10 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       paid_amount: inv.paid_amount,
       due_amount: inv.due_amount,
       invoice_status: inv.invoice_status,
+      rate_source: inv.rate_source ?? (inv.is_manual_rate ? "MANUAL" : "STANDARD"),
+      applied_rate: inv.applied_rate ?? inv.season_rate ?? null,
+      original_standard_rate: inv.original_standard_rate ?? null,
+      irrigation_category_name: inv.irrigation_category_name ?? null,
       farmer: {
         name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
         farmer_code: inv.farmers?.farmer_code,
