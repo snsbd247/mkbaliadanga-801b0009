@@ -186,6 +186,12 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   const layout = getReceiptLayoutSettings();
   const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels("bn");
   const dagJoined = parseDagNumbers(land.dag_no).join(dagSeparatorString(layout.dagSeparator));
+  const srcRaw = (d.rate_source ?? "STANDARD").toString().toUpperCase();
+  const srcBn = srcRaw === "MANUAL" ? "ম্যানুয়াল" : srcRaw === "CATEGORY" ? "ক্যাটেগরি" : "মানক";
+  const srcColor = srcRaw === "MANUAL" ? "#b45309" : srcRaw === "CATEGORY" ? "#1d4ed8" : "#15803d";
+  const appliedRateText = d.applied_rate != null ? `${fmt2(d.applied_rate)}` : "—";
+  const stdRateText = d.original_standard_rate != null ? ` (মানক: ${fmt2(d.original_standard_rate)})` : "";
+
   const rows: Array<[string, string]> = [
     ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
     ["গ্রাম / মোবাইল", `${farmer.village ?? "—"}${farmer.mobile ? " / " + farmer.mobile : ""}`],
@@ -193,6 +199,8 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     [mouzaLabel, `${land.mouza ?? "—"} / ${formatLandSize(land.land_size) ?? "—"}`],
     [dagLabel, dagJoined || "—"],
     ["সিজন", seasonLabel || "—"],
+    ["রেট উৎস", `${srcBn}${d.irrigation_category_name ? " — " + d.irrigation_category_name : ""}`],
+    ["প্রযোজ্য রেট/শতক", `${appliedRateText}${stdRateText}`],
     ["ইস্যু তারিখ", fmtDate(d.generated_at)],
     ["মেয়াদ তারিখ", fmtDate(d.due_date)],
     ["অবস্থা", statusBn(d.invoice_status)],
