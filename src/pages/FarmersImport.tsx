@@ -303,16 +303,16 @@ export default function FarmersImport() {
             <TableHeader>
               <TableRow>
                 <TableHead>#</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Farmer ID</TableHead>
-                <TableHead>Voter No</TableHead>
-                <TableHead>Name (EN)</TableHead>
-                <TableHead>Name (BN)</TableHead>
-                <TableHead>Father</TableHead>
-                <TableHead>Mobile</TableHead>
-                <TableHead>Village</TableHead>
-                <TableHead>Issue</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("action")}</TableHead>
+                <TableHead>{t("farmerIdCol")}</TableHead>
+                <TableHead>{t("voterNo")}</TableHead>
+                <TableHead>{t("name")} (EN)</TableHead>
+                <TableHead>{t("name")} (BN)</TableHead>
+                <TableHead>{t("fatherName")}</TableHead>
+                <TableHead>{t("mobile")}</TableHead>
+                <TableHead>{t("village")}</TableHead>
+                <TableHead>{t("issueCol")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -320,14 +320,14 @@ export default function FarmersImport() {
                 <TableRow key={r.idx} className={r.status === "invalid" || r.status === "error" ? "bg-destructive/10" : ""}>
                   <TableCell>{r.idx + 1}</TableCell>
                   <TableCell>
-                    {r.status === "saved" && <Badge variant="default">Saved</Badge>}
-                    {r.status === "saving" && <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />Saving</Badge>}
-                    {r.status === "valid" && <Badge variant="secondary">Ready</Badge>}
-                    {r.status === "invalid" && <Badge variant="destructive">Invalid</Badge>}
-                    {r.status === "error" && <Badge variant="destructive">Error</Badge>}
-                    {r.status === "pending" && <Badge variant="outline">Pending</Badge>}
+                    {r.status === "saved" && <Badge variant="default">{t("saved")}</Badge>}
+                    {r.status === "saving" && <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />{t("loading")}</Badge>}
+                    {r.status === "valid" && <Badge variant="secondary">{t("readyBadge")}</Badge>}
+                    {r.status === "invalid" && <Badge variant="destructive">{t("invalidBadge")}</Badge>}
+                    {r.status === "error" && <Badge variant="destructive">{t("errorBadge")}</Badge>}
+                    {r.status === "pending" && <Badge variant="outline">{t("pending")}</Badge>}
                   </TableCell>
-                  <TableCell>{r.action === "update" ? <Badge variant="outline">Update</Badge> : <Badge variant="outline">Insert</Badge>}</TableCell>
+                  <TableCell>{r.action === "update" ? <Badge variant="outline">{t("update")}</Badge> : <Badge variant="outline">{t("insertAction")}</Badge>}</TableCell>
                   <TableCell className="font-mono text-xs">{String(r.raw.farmer_id ?? r.raw.member_no ?? "")}</TableCell>
                   <TableCell className="font-mono text-xs">{String(r.raw.voter_number ?? "")}</TableCell>
                   <TableCell>{String(r.raw.name_en ?? "")}</TableCell>

@@ -282,7 +282,7 @@ export default function AuditLogs() {
             <Select value={officeFilter} onValueChange={setOfficeFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All offices</SelectItem>
+                <SelectItem value="all">{t("allOffices")}</SelectItem>
                 {Object.values(offices).map((o: any) => (
                   <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                 ))}
@@ -302,32 +302,32 @@ export default function AuditLogs() {
             <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All actions</SelectItem>
-                <SelectItem value="insert">Insert</SelectItem>
-                <SelectItem value="update">Update</SelectItem>
-                <SelectItem value="delete">Delete</SelectItem>
-                <SelectItem value="scan">Scan</SelectItem>
-                <SelectItem value="issue">Issue</SelectItem>
-                <SelectItem value="revoke">Revoke</SelectItem>
+                <SelectItem value="all">{t("allActions")}</SelectItem>
+                <SelectItem value="insert">{t("insertAction")}</SelectItem>
+                <SelectItem value="update">{t("update")}</SelectItem>
+                <SelectItem value="delete">{t("delete")}</SelectItem>
+                <SelectItem value="scan">{t("scanAction")}</SelectItem>
+                <SelectItem value="issue">{t("issueAction")}</SelectItem>
+                <SelectItem value="revoke">{t("revokeAction")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Entity</Label>
+            <Label className="text-xs">{t("entity")}</Label>
             <Select value={entityFilter} onValueChange={setEntityFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All entities</SelectItem>
+                <SelectItem value="all">{t("allEntities")}</SelectItem>
                 {ENTITY_OPTIONS.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label className="text-xs">User</Label>
+            <Label className="text-xs">{t("user")}</Label>
             <Select value={userFilter} onValueChange={setUserFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All users</SelectItem>
+                <SelectItem value="all">{t("allUsers")}</SelectItem>
                 {Object.values(profiles).map((p: any) => (
                   <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.username ?? p.id.slice(0, 8)}</SelectItem>
                 ))}
@@ -335,13 +335,13 @@ export default function AuditLogs() {
             </Select>
           </div>
           <div className="md:col-span-2">
-            <Label className="text-xs">Quick search (in current results)</Label>
-            <Input placeholder="Filter loaded rows…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Label className="text-xs">{t("quickSearchInResults")}</Label>
+            <Input placeholder={t("filterLoadedRows")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
         <div className="mt-3 text-xs text-muted-foreground">
-          Showing {filtered.length} of {list.length} loaded entries
-          {list.length === PAGE_LIMIT && ` (capped at ${PAGE_LIMIT}; narrow filters for more)`}
+          {t("showingLoadedEntries").replace("{n}", String(filtered.length)).replace("{m}", String(list.length))}
+          {list.length === PAGE_LIMIT && t("cappedNarrowFilters").replace("{n}", String(PAGE_LIMIT))}
         </div>
       </Card>
 
@@ -350,12 +350,12 @@ export default function AuditLogs() {
           <TableHeader>
             <TableRow>
               <TableHead>{t("date")}</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Entity</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Office</TableHead>
-              <TableHead>Diff</TableHead>
-              <TableHead>Ledger</TableHead>
+              <TableHead>{t("action")}</TableHead>
+              <TableHead>{t("entity")}</TableHead>
+              <TableHead>{t("user")}</TableHead>
+              <TableHead>{t("office")}</TableHead>
+              <TableHead>{t("diff")}</TableHead>
+              <TableHead>{t("ledger")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
