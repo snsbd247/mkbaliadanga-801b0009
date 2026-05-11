@@ -843,7 +843,7 @@ export default function SmsSettings() {
                         <tr key={t.id} className="border-t">
                           <td className="px-2 py-1.5">
                             {t.status === "active" && <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>}
-                            {t.status === "staged" && <Badge variant="secondary">{t("stagedBadge")}</Badge>}
+                            {t.status === "staged" && <Badge variant="secondary">Staged</Badge>}{/* i18n-ignore */}
                             {t.status === "retired" && <Badge variant="outline" className="text-muted-foreground">Retired</Badge>}
                             {expired && t.status === "active" && <Badge variant="destructive" className="ml-1">Expired</Badge>}
                           </td>
