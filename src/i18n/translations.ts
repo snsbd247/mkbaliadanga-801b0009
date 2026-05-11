@@ -3131,6 +3131,8 @@ export const translations = {
     p5c_pageDesc: "কৃষকদের ভোটার স্ট্যাটাস পরিবর্তনের অডিট ট্রেইল।",
     share_collection: "শেয়ার সংগ্রহ",
     savingsLoanReport: "সঞ্চয় ও ঋণ রিপোর্ট",
+    rateSourceReport: "রেট উৎস রিপোর্ট",
+    overrideAudit: "ওভাররাইড অডিট",
     missingFarmerId: "অনুপস্থিত কৃষক আইডি",
     missingAccountNo: "অনুপস্থিত অ্যাকাউন্ট নং",
     duplicateFarmerIdIssue: "ডুপ্লিকেট কৃষক আইডি",
