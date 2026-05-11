@@ -49,7 +49,7 @@ export default function BulkCards() {
   const [bulkCards, setBulkCards] = useState<{ farmer_id: string; data: CardData }[]>([]);
 
   useEffect(() => {
-    document.title = "Bulk Membership Cards";
+    document.title = t("pgBulkCardsDocTitle" as any) as string;
     supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data ?? []) as any[]));
   }, []);
 
