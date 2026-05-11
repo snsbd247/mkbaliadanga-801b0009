@@ -3,6 +3,9 @@ export type Lang = "en" | "bn";
 export const translations = {
   en: {
     appName: "Smart Irrigation & Cooperative",
+    accessDenied: "Access denied",
+    pgVoterListDocTitle: "Voter List",
+    pgBulkCardsDocTitle: "Bulk Membership Cards",
     appNameShort: "SICMS",
     dashboard: "Dashboard",
     offices: "Offices",
