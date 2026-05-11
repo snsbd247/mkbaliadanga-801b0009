@@ -94,6 +94,8 @@ import LoanPenaltyReport from "./pages/reports/LoanPenaltyReport";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
+import Help from "./pages/Help";
+import HelpFarmerCard from "./pages/HelpFarmerCard";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
 import { RequireRole } from "./components/auth/RequireRole";
@@ -244,6 +246,8 @@ const App = () => (
                 <Route path="/reports/override-audit" element={<RequireRole roles={["admin","super_admin"]}><OverrideAuditReport /></RequireRole>} />
                 <Route path="/irrigation-reports" element={<IrrigationReports />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/help" element={<Help />} />
+                <Route path="/help/farmer-card" element={<HelpFarmerCard />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
