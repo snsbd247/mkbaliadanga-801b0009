@@ -555,9 +555,12 @@ export default function Farmers() {
         <VoterSavingsField f={f} setF={setF} disabled={disabled} isSuper={isSuper} />
         <div>
           <Label>{t("office")}</Label>
-          <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>
+          <Select value={f.office_id ? f.office_id : "__none__"} onValueChange={v => setF({ ...f, office_id: v === "__none__" ? "" : v })} disabled={disabled}>
             <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-            <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              <SelectItem value="__none__">—</SelectItem>
+              {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
         <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} disabled={disabled} maxLength={250} onChange={e => setF({ ...f, address: e.target.value })} /></div>
