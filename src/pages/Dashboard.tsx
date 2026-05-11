@@ -16,7 +16,7 @@ import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusC
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
 
 export default function Dashboard() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { isSuper, isAdmin, officeId } = useAuth();
   const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   const [votersOnly, setVotersOnly] = useState(false);
 
-  useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, [votersOnly]);
+  useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, [votersOnly, lang]);
 
   useEffect(() => {
     if (!officeId) { setOfficeName(""); return; }
@@ -80,7 +80,7 @@ export default function Dashboard() {
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
     setStats([
-      { label: t("totalFarmers") + (votersOnly ? " (Voter)" : ""), value: String(farmersList.length), icon: Users },
+      { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users },
       { label: t("activeFarmers"), value: String(farmersList.filter((f: any) => f.status === "active").length), icon: UserCheck, tone: "success" },
       { label: t("totalSavings"), value: money(totalSavings), icon: Wallet },
       { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins },
@@ -104,7 +104,7 @@ export default function Dashboard() {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push({
         key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-        label: d.toLocaleString("en", { month: "short" }),
+        label: d.toLocaleString(lang === "bn" ? "bn-BD" : "en", { month: "short" }),
         income: 0, expense: 0, savings: 0,
       });
     }
@@ -162,7 +162,7 @@ export default function Dashboard() {
         <span className="text-muted-foreground flex-1">{t("officeAccessNote")}</span>
         <div className="flex items-center gap-2">
           <Switch id="voters-only" checked={votersOnly} onCheckedChange={setVotersOnly} />
-          <Label htmlFor="voters-only" className="cursor-pointer">Voter farmers only</Label>
+          <Label htmlFor="voters-only" className="cursor-pointer">{t("voterFarmersOnly")}</Label>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
