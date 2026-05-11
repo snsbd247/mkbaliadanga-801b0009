@@ -154,7 +154,7 @@ export default function IrrigationRates() {
   return (
     <>
       <PageHeader
-        title="Irrigation Rates"
+        title={t("irrigationRatesLabel")}
         actions={
           isAdmin && (
             <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
