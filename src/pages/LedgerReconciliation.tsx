@@ -60,9 +60,9 @@ export default function LedgerReconciliation() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "Monthly Ledger Reconciliation";
+    document.title = t("p5_monthlyReconciliationTitle");
     supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data ?? []) as any[]));
-  }, []);
+  }, [t]);
 
   const officeName = useMemo(() =>
     officeId === "all" ? t("p5_allOffices") : (offices.find((o) => o.id === officeId)?.name ?? officeId),
