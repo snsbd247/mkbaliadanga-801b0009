@@ -1674,6 +1674,9 @@ export const translations = {
   },
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
+    accessDenied: "প্রবেশাধিকার নেই",
+    pgVoterListDocTitle: "ভোটার তালিকা",
+    pgBulkCardsDocTitle: "বাল্ক সদস্য কার্ড",
     appNameShort: "এসআইসিএমএস",
     dashboard: "ড্যাশবোর্ড",
     offices: "অফিস",
