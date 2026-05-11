@@ -1541,6 +1541,8 @@ export const translations = {
     p5c_pageDesc: "Audit trail of voter status changes across farmers.",
     share_collection: "Share Collection",
     savingsLoanReport: "Savings & Loan Report",
+    rateSourceReport: "Rate Source Report",
+    overrideAudit: "Override Audit",
     missingFarmerId: "Missing Farmer ID",
     missingAccountNo: "Missing Account No",
     duplicateFarmerIdIssue: "Duplicate Farmer ID",
