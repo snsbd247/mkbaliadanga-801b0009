@@ -1,7 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`FarmerPortalLogin > Responsive layout snapshots (no overlap, consistent spacing) > renders a stable structural snapshot at 360px without overlap > farmer-login-skeleton-360px 1`] = `"main.flex-1.flex.items-center|div.w-full.max-w-md.space-y-4|header.text-center|form.space-y-3|footer.mt-auto.w-full.border-t"`;
-
-exports[`FarmerPortalLogin > Responsive layout snapshots (no overlap, consistent spacing) > renders a stable structural snapshot at 768px without overlap > farmer-login-skeleton-768px 1`] = `"main.flex-1.flex.items-center|div.w-full.max-w-md.space-y-4|header.text-center|form.space-y-3|footer.mt-auto.w-full.border-t"`;
-
-exports[`FarmerPortalLogin > Responsive layout snapshots (no overlap, consistent spacing) > renders a stable structural snapshot at 1024px without overlap > farmer-login-skeleton-1024px 1`] = `"main.flex-1.flex.items-center|div.w-full.max-w-md.space-y-4|header.text-center|form.space-y-3|footer.mt-auto.w-full.border-t"`;
