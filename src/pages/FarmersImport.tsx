@@ -303,16 +303,16 @@ export default function FarmersImport() {
             <TableHeader>
               <TableRow>
                 <TableHead>#</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Farmer ID</TableHead>
-                <TableHead>Voter No</TableHead>
-                <TableHead>Name (EN)</TableHead>
-                <TableHead>Name (BN)</TableHead>
-                <TableHead>Father</TableHead>
-                <TableHead>Mobile</TableHead>
-                <TableHead>Village</TableHead>
-                <TableHead>Issue</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("action")}</TableHead>
+                <TableHead>{t("farmerIdCol")}</TableHead>
+                <TableHead>{t("voterNo")}</TableHead>
+                <TableHead>{t("name")} (EN)</TableHead>
+                <TableHead>{t("name")} (BN)</TableHead>
+                <TableHead>{t("fatherName")}</TableHead>
+                <TableHead>{t("mobile")}</TableHead>
+                <TableHead>{t("village")}</TableHead>
+                <TableHead>{t("issueCol")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
