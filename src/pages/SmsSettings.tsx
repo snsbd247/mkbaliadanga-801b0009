@@ -741,7 +741,7 @@ export default function SmsSettings() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bn">Bangla (বাংলা)</SelectItem>{/* i18n-ignore */}
-                    <SelectItem value="en">{t("englishLang")}</SelectItem>
+                    <SelectItem value="en">English</SelectItem>{/* i18n-ignore */}
                   </SelectContent>
                 </Select>
                 <p className="text-[11px] text-muted-foreground mt-1">{L.defaultLanguageHint}</p>
