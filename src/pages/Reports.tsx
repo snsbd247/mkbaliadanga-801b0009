@@ -625,17 +625,17 @@ export default function Reports() {
           </div>
 
           <Card className="overflow-x-auto mt-4">
-            <div className="p-3 font-semibold text-sm uppercase text-muted-foreground border-b">By Office</div>
+            <div className="p-3 font-semibold text-sm uppercase text-muted-foreground border-b">{t("byOfficeLbl" as any)}</div>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Office</TableHead>
-                <TableHead className="text-right">Income</TableHead>
-                <TableHead className="text-right">Loan Issued</TableHead>
-                <TableHead className="text-right">Loan Collected</TableHead>
-                <TableHead className="text-right">Irr Charged</TableHead>
-                <TableHead className="text-right">Irr Collected</TableHead>
-                <TableHead className="text-right">Irr Due</TableHead>
-                <TableHead className="text-right">Savings Balance</TableHead>
+                <TableHead>{t("office")}</TableHead>
+                <TableHead className="text-right">{t("income")}</TableHead>
+                <TableHead className="text-right">{t("loanIssued")}</TableHead>
+                <TableHead className="text-right">{t("loanCollected")}</TableHead>
+                <TableHead className="text-right">{t("irrigationCharged")}</TableHead>
+                <TableHead className="text-right">{t("irrigationCollected")}</TableHead>
+                <TableHead className="text-right">{t("irrigationOutstandingDue")}</TableHead>
+                <TableHead className="text-right">{t("savingsBalance")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {byOffice.map((o, i) => (
@@ -650,7 +650,7 @@ export default function Reports() {
                     <TableCell className="text-right font-semibold text-primary">{money(o.savBal)}</TableCell>
                   </TableRow>
                 ))}
-                {byOffice.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-4">No data</TableCell></TableRow>}
+                {byOffice.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-4">{t("noData")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
