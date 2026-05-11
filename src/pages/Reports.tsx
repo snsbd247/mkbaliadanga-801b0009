@@ -606,9 +606,9 @@ export default function Reports() {
             </Card>
 
             <Card className="p-4">
-              <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">By Season — Irrigation</h3>
+              <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">{t("bySeasonIrrigation" as any)}</h3>
               <Table>
-                <TableHeader><TableRow><TableHead>Season</TableHead><TableHead className="text-right">Charged</TableHead><TableHead className="text-right">Collected</TableHead><TableHead className="text-right">Due</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>{t("season")}</TableHead><TableHead className="text-right">{t("chargedLbl" as any)}</TableHead><TableHead className="text-right">{t("collectedLbl" as any)}</TableHead><TableHead className="text-right">{t("dueLbl" as any)}</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {bySeason.map((s, i) => (
                     <TableRow key={i}>
@@ -618,7 +618,7 @@ export default function Reports() {
                       <TableCell className={`text-right ${s.due > 0 ? "due-text font-semibold" : ""}`}>{money(s.due)}</TableCell>
                     </TableRow>
                   ))}
-                  {bySeason.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">No data</TableCell></TableRow>}
+                  {bySeason.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">{t("noData")}</TableCell></TableRow>}
                 </TableBody>
               </Table>
             </Card>
