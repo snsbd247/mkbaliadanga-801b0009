@@ -555,9 +555,12 @@ export default function Farmers() {
         <VoterSavingsField f={f} setF={setF} disabled={disabled} isSuper={isSuper} />
         <div>
           <Label>{t("office")}</Label>
-          <Select value={f.office_id || undefined} onValueChange={v => setF({ ...f, office_id: v })} disabled={disabled}>
+          <Select value={f.office_id ? f.office_id : "__none__"} onValueChange={v => setF({ ...f, office_id: v === "__none__" ? "" : v })} disabled={disabled}>
             <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-            <SelectContent>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              <SelectItem value="__none__">—</SelectItem>
+              {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
         <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} disabled={disabled} maxLength={250} onChange={e => setF({ ...f, address: e.target.value })} /></div>
@@ -613,7 +616,7 @@ export default function Farmers() {
             }}
           >
             <DialogHeader><DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle></DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); if (!saving) save(); }}>
+            <div>
               {renderFormFields({
                 f: form,
                 setF: (next) => { setForm(next); if (createErr) setCreateErr(null); if (Object.keys(createFieldErrors).length) setCreateFieldErrors({}); },
@@ -626,9 +629,9 @@ export default function Farmers() {
               })}
               <DialogFooter className="mt-6">
                 <Button type="button" variant="outline" onClick={resetCreateForm} disabled={saving}>{t("cancel")}</Button>
-                <Button type="submit" disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
+                <Button type="button" onClick={() => { if (!saving) save(); }} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
               </DialogFooter>
-            </form>
+            </div>
           </DialogContent>
         </Dialog>
         </div>
@@ -731,7 +734,7 @@ export default function Farmers() {
         >
           <DialogHeader><DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle></DialogHeader>
           {editForm && (
-            <form onSubmit={(e) => { e.preventDefault(); if (!saving) saveEdit(); }}>
+            <div>
               {renderFormFields({
                 f: editForm,
                 setF: (next) => { setEditForm(next); if (editErr) setEditErr(null); if (Object.keys(editFieldErrors).length) setEditFieldErrors({}); },
@@ -744,9 +747,9 @@ export default function Farmers() {
               })}
               <DialogFooter className="mt-6">
                 <Button type="button" variant="outline" onClick={resetEditForm} disabled={saving}>{t("cancel")}</Button>
-                <Button type="submit" disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
+                <Button type="button" onClick={() => { if (!saving) saveEdit(); }} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
               </DialogFooter>
-            </form>
+            </div>
           )}
         </DialogContent>
       </Dialog>
