@@ -368,7 +368,7 @@ export default function Savings() {
       <Card className="p-3 mb-3 flex items-center gap-3">
         <Label className="text-sm flex items-center gap-2 cursor-pointer">
           <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
-          Show archived
+          {t("showArchived")}
         </Label>
         {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted transactions only.</span>}
       </Card>
@@ -378,7 +378,7 @@ export default function Savings() {
           <TabsTrigger value="all">{t("all")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
           <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
-          <TabsTrigger value="plans">Plans {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="plans">{t("plansTab")} {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
         </TabsList>
         <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
         <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>

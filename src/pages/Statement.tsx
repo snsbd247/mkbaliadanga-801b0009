@@ -30,7 +30,7 @@ export default function Statement() {
   const [farmer, setFarmer] = useState<any>(null);
 
   useEffect(() => {
-    document.title = `${t("statement") || "Member Statement"} — ${t("appName")}`;
+    document.title = `${t("statement") || t("memberStatement")} — ${t("appName")}`;
     supabase.from("farmers").select("id,farmer_code,member_no,name_en,name_bn,mobile,village")
       .order("name_en").limit(1000).then(r => setFarmers(r.data ?? []));
   }, []);
@@ -162,7 +162,7 @@ export default function Statement() {
 
   return (
     <>
-      <PageHeader title={t("statement") || "Member Statement"} />
+      <PageHeader title={t("statement") || t("memberStatement")} />
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-5">
           <div className="md:col-span-2">

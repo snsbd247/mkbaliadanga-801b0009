@@ -255,14 +255,14 @@ export default function Loans() {
       <Card className="p-3 mb-3 flex items-center gap-3">
         <Label className="text-sm flex items-center gap-2 cursor-pointer">
           <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
-          Show archived
+          {t("showArchived")}
         </Label>
         {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted loans only.</span>}
       </Card>
 
       <Tabs defaultValue="approved">
         <TabsList>
-          <TabsTrigger value="approved">Active / Paid</TabsTrigger>
+          <TabsTrigger value="approved">{t("activePaid")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
           <TabsTrigger value="rejected">{t("rejected")}</TabsTrigger>
           <TabsTrigger value="all">{t("all")}</TabsTrigger>

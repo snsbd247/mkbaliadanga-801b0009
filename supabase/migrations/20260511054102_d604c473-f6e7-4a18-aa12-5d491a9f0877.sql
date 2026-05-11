@@ -1,0 +1,2 @@
+UPDATE public.savings_transactions SET note='TEST_QA_SAVINGS_EDITED', amount=1234 WHERE id='e7988a1d-9945-4f3e-a3a5-5e759226e3db';
+DELETE FROM public.savings_transactions WHERE id='e7988a1d-9945-4f3e-a3a5-5e759226e3db';

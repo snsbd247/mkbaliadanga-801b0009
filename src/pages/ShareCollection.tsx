@@ -59,7 +59,7 @@ export default function ShareCollection() {
   const [editRow, setEditRow] = useState<Row | null>(null);
   const [editForm, setEditForm] = useState({ amount: "", txn_date: "", note: "" });
 
-  useEffect(() => { document.title = "Share Collection"; load(); }, []);
+  useEffect(() => { document.title = t("shareCollection"); load(); }, [t]);
 
   async function load() {
     setLoading(true);
@@ -262,7 +262,7 @@ export default function ShareCollection() {
 
   return (
     <>
-      <PageHeader title="Share Collection" description="" actions={
+      <PageHeader title={t("shareCollection")} description="" actions={
         <div className="flex gap-2">
           <Dialog open={batchOpen} onOpenChange={(v) => { setBatchOpen(v); if (!v) setBatchReport(null); }}>
             <DialogTrigger asChild><Button variant="outline"><Upload className="h-4 w-4 mr-1" />{t("p5c_batchCsv")}</Button></DialogTrigger>
@@ -297,7 +297,7 @@ export default function ShareCollection() {
                     </div>
                     {batchReport.errors.length > 0 && (
                       <Table>
-                        <TableHeader><TableRow><TableHead className="w-12">Line</TableHead><TableHead>Row</TableHead><TableHead>Reason</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead className="w-12">{t("lineLbl")}</TableHead><TableHead>{t("rowLbl")}</TableHead><TableHead>{t("reasonLbl")}</TableHead></TableRow></TableHeader>
                         <TableBody>
                           {batchReport.errors.map((e, i) => (
                             <TableRow key={i}>
@@ -386,10 +386,10 @@ export default function ShareCollection() {
 
       <Tabs defaultValue="pending">
         <TabsList>
-          <TabsTrigger value="pending">Pending {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
-          <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
-          <TabsTrigger value="summary">Summary ({grouped.length})</TabsTrigger>
+          <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="approved">{t("approved")} ({approved.length})</TabsTrigger>
+          <TabsTrigger value="rejected">{t("rejected")} ({rejected.length})</TabsTrigger>
+          <TabsTrigger value="summary">{t("summaryTab" as any) || "Summary"} ({grouped.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="pending"><RowsTable rows={pending} canDecide={isCommittee} onDecide={decide} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
         <TabsContent value="approved"><RowsTable rows={approved} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
