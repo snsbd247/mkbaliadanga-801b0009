@@ -195,11 +195,12 @@ function Stat({ label, value }: { label: string; value: number }) {
 }
 
 function FixLink({ refType }: { refType: string }) {
+  const { t } = useLang();
   const path = REF_TO_PATH[refType];
   if (!path) return <span className="text-muted-foreground text-xs">—</span>;
   return (
     <Link to={path}>
-      <Button size="sm" variant="ghost" className="h-7"><ExternalLink className="h-3 w-3 mr-1" />Open</Button>
+      <Button size="sm" variant="ghost" className="h-7"><ExternalLink className="h-3 w-3 mr-1" />{t("open")}</Button>
     </Link>
   );
 }
