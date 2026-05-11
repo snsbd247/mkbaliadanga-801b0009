@@ -122,6 +122,7 @@ export const translations = {
     loanReport: "Loan Report",
     savingsReport: "Savings Report",
     exportPdf: "Export PDF",
+    export: "Export",
     exportExcel: "Export Excel",
     print: "Print",
     from: "From",
