@@ -57,7 +57,7 @@ export default function InstallmentCollectionReport() {
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
           <Button variant="outline" onClick={load}>{t("refresh")}</Button>
-          <Button variant="outline" onClick={exportCsv}><FileSpreadsheet className="h-4 w-4 mr-1" />Export</Button>
+          <Button variant="outline" onClick={exportCsv}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("export")}</Button>
         </div>
       </div>
       <Card>
