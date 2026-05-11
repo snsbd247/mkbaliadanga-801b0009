@@ -62,7 +62,7 @@ export default function VoterList() {
   const [dues, setDues] = useState<{ savings_balance: number; loan_due: number; irrigation_due: number; share_balance: number } | null>(null);
   const [duesLoading, setDuesLoading] = useState(false);
 
-  useEffect(() => { document.title = `Voter List — ${t("appName")}`; }, [t]);
+  useEffect(() => { document.title = `${t("pgVoterListDocTitle" as any)} — ${t("appName")}`; }, [t]);
 
   useEffect(() => {
     const handle = setTimeout(load, 200);
