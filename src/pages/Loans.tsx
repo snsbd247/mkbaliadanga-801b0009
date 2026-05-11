@@ -262,7 +262,7 @@ export default function Loans() {
 
       <Tabs defaultValue="approved">
         <TabsList>
-          <TabsTrigger value="approved">Active / Paid</TabsTrigger>
+          <TabsTrigger value="approved">{t("activePaid")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
           <TabsTrigger value="rejected">{t("rejected")}</TabsTrigger>
           <TabsTrigger value="all">{t("all")}</TabsTrigger>
