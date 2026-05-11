@@ -386,10 +386,10 @@ export default function ShareCollection() {
 
       <Tabs defaultValue="pending">
         <TabsList>
-          <TabsTrigger value="pending">Pending {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
-          <TabsTrigger value="approved">Approved ({approved.length})</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected ({rejected.length})</TabsTrigger>
-          <TabsTrigger value="summary">Summary ({grouped.length})</TabsTrigger>
+          <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
+          <TabsTrigger value="approved">{t("approved")} ({approved.length})</TabsTrigger>
+          <TabsTrigger value="rejected">{t("rejected")} ({rejected.length})</TabsTrigger>
+          <TabsTrigger value="summary">{t("summaryTab" as any) || "Summary"} ({grouped.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="pending"><RowsTable rows={pending} canDecide={isCommittee} onDecide={decide} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
         <TabsContent value="approved"><RowsTable rows={approved} canManage={isSuper} onEdit={startEdit} onDelete={deleteRow} /></TabsContent>
