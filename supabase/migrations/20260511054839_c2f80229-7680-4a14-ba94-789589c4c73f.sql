@@ -1,0 +1,2 @@
+UPDATE public.loan_plans SET name='TEST_QA_PLAN_EDITED', interest_rate=11 WHERE id='52549fac-1166-4bee-bf05-cf8d5b6cddff';
+DELETE FROM public.loan_plans WHERE id='52549fac-1166-4bee-bf05-cf8d5b6cddff';
