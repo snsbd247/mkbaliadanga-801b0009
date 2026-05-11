@@ -162,7 +162,7 @@ export default function Dashboard() {
         <span className="text-muted-foreground flex-1">{t("officeAccessNote")}</span>
         <div className="flex items-center gap-2">
           <Switch id="voters-only" checked={votersOnly} onCheckedChange={setVotersOnly} />
-          <Label htmlFor="voters-only" className="cursor-pointer">Voter farmers only</Label>
+          <Label htmlFor="voters-only" className="cursor-pointer">{t("voterFarmersOnly")}</Label>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
