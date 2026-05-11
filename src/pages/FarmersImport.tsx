@@ -321,7 +321,7 @@ export default function FarmersImport() {
                   <TableCell>{r.idx + 1}</TableCell>
                   <TableCell>
                     {r.status === "saved" && <Badge variant="default">{t("saved")}</Badge>}
-                    {r.status === "saving" && <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />{t("saving")}</Badge>}
+                    {r.status === "saving" && <Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />{t("loading")}</Badge>}
                     {r.status === "valid" && <Badge variant="secondary">{t("readyBadge")}</Badge>}
                     {r.status === "invalid" && <Badge variant="destructive">{t("invalidBadge")}</Badge>}
                     {r.status === "error" && <Badge variant="destructive">{t("errorBadge")}</Badge>}
