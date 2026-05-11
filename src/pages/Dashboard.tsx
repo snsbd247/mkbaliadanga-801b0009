@@ -104,7 +104,7 @@ export default function Dashboard() {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push({
         key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-        label: d.toLocaleString("en", { month: "short" }),
+        label: d.toLocaleString(lang === "bn" ? "bn-BD" : "en", { month: "short" }),
         income: 0, expense: 0, savings: 0,
       });
     }
