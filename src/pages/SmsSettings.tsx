@@ -1399,8 +1399,8 @@ export default function SmsSettings() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setConfirmTestOpen(false); runTestConnection(); }}>{t("sendTest")}</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>{/* i18n-ignore */}
+            <AlertDialogAction onClick={() => { setConfirmTestOpen(false); runTestConnection(); }}>Send Test</AlertDialogAction>{/* i18n-ignore */}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
