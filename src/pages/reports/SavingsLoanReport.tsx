@@ -12,6 +12,7 @@ import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Source = "savings" | "loans";
 type Bucket = "daily" | "monthly";
@@ -30,7 +31,7 @@ function bucketKey(d: string, b: Bucket): string {
 }
 
 export default function SavingsLoanReport() {
-  // i18n labels not localised yet — see roadmap.
+  const { t } = useLang();
   const [source, setSource] = useState<Source>("savings");
   const [bucket, setBucket] = useState<Bucket>("daily");
   const [from, setFrom] = useState(monthAgo());
@@ -126,36 +127,36 @@ export default function SavingsLoanReport() {
   return (
     <>
       <PageHeader
-        title="Savings & Loan Report"
-        description="Daily / Monthly aggregation with PDF and Excel export."
+        title={t("savingsLoanReport")}
+        description={`${t("p5_daily" as any)} / ${t("p5_monthly" as any)} — PDF / Excel`}
       />
 
       <Card className="p-4 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
           <div>
-            <Label>Source</Label>
+            <Label>{t("dues_source" as any)}</Label>
             <Tabs value={source} onValueChange={(v) => setSource(v as Source)}>
               <TabsList className="w-full">
-                <TabsTrigger value="savings" className="flex-1">Savings</TabsTrigger>
-                <TabsTrigger value="loans" className="flex-1">Loans</TabsTrigger>
+                <TabsTrigger value="savings" className="flex-1">{t("savings")}</TabsTrigger>
+                <TabsTrigger value="loans" className="flex-1">{t("loans")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <div>
-            <Label>Bucket</Label>
+            <Label>{t("dues_bucket" as any)}</Label>
             <Tabs value={bucket} onValueChange={(v) => setBucket(v as Bucket)}>
               <TabsList className="w-full">
-                <TabsTrigger value="daily" className="flex-1">Daily</TabsTrigger>
-                <TabsTrigger value="monthly" className="flex-1">Monthly</TabsTrigger>
+                <TabsTrigger value="daily" className="flex-1">{t("p5_daily" as any)}</TabsTrigger>
+                <TabsTrigger value="monthly" className="flex-1">{t("p5_monthly" as any)}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <div>
-            <Label>From</Label>
+            <Label>{t("from")}</Label>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div>
-            <Label>To</Label>
+            <Label>{t("to")}</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <div className="flex gap-2">
@@ -179,9 +180,9 @@ export default function SavingsLoanReport() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">{t("loading")}</TableCell></TableRow>
             ) : rows.length === 0 ? (
-              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">No data</TableCell></TableRow>
+              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">{t("noData")}</TableCell></TableRow>
             ) : (
               <>
                 {rows.map((r) => (
@@ -192,7 +193,7 @@ export default function SavingsLoanReport() {
                   </TableRow>
                 ))}
                 <TableRow className="font-semibold bg-muted/40">
-                  <TableCell>Total</TableCell>
+                  <TableCell>{t("total")}</TableCell>
                   <TableCell>{totalCount}</TableCell>
                   <TableCell>{money(total)}</TableCell>
                 </TableRow>

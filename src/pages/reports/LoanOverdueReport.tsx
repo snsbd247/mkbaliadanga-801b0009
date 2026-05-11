@@ -63,7 +63,7 @@ export default function LoanOverdueReport() {
         <h1 className="text-xl md:text-2xl font-bold">{t("loanOverdueReportTitle" as any)}</h1>
         <div className="flex gap-2">
           <Input className="w-64" placeholder={t("searchPlaceholderFarmer" as any)} value={search} onChange={(e) => setSearch(e.target.value)} />
-          <Button variant="outline" onClick={exportCsv}><FileSpreadsheet className="h-4 w-4 mr-1" />Export</Button>
+          <Button variant="outline" onClick={exportCsv}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("export")}</Button>
         </div>
       </div>
       <Card>
