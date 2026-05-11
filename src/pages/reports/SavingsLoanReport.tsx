@@ -12,6 +12,7 @@ import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
 
 type Source = "savings" | "loans";
 type Bucket = "daily" | "monthly";
