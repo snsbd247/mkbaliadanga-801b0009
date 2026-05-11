@@ -7,7 +7,7 @@ import {
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
   BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, MessageSquare, MessagesSquare, MapPin,
-  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload, Package,
+  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload, Package, HelpCircle,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -47,6 +47,7 @@ export function AppSidebar() {
 
   const menu: ParentItem[] = [
     { key: "dashboard", icon: LayoutDashboard, label: t("dashboard"), url: "/admin", permKey: "dashboard" },
+    { key: "help", icon: HelpCircle, label: lang === "bn" ? "সাহায্য / ম্যানুয়াল" : "Help / Manual", url: "/help" },
 
     // ── Members & Voters ──
     {
