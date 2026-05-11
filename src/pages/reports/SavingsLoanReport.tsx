@@ -31,7 +31,7 @@ function bucketKey(d: string, b: Bucket): string {
 }
 
 export default function SavingsLoanReport() {
-  // i18n labels not localised yet — see roadmap.
+  const { t } = useLang();
   const [source, setSource] = useState<Source>("savings");
   const [bucket, setBucket] = useState<Bucket>("daily");
   const [from, setFrom] = useState(monthAgo());
