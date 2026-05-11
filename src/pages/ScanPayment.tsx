@@ -266,14 +266,14 @@ export default function ScanPayment() {
 
               <form onSubmit={submit} className="space-y-3">
                 <div>
-                  <Label>Payment type</Label>
+                  <Label>{t("paymentType")}</Label>
                   <Select value={kind} onValueChange={(v) => setKind(v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="loan">Loan</SelectItem>
-                      <SelectItem value="savings">Savings deposit</SelectItem>
-                      <SelectItem value="irrigation">Irrigation</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="loan">{t("loan")}</SelectItem>
+                      <SelectItem value="savings">{t("savingsDeposit")}</SelectItem>
+                      <SelectItem value="irrigation">{t("irrigation")}</SelectItem>
+                      <SelectItem value="other">{t("other")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -324,7 +324,7 @@ export default function ScanPayment() {
                     if (payload) await downloadBnReceiptPdf(payload, copy, receiptArgs.options);
                   }}
                 />
-                <Button onClick={reset}>Scan another</Button>
+                <Button onClick={reset}>{t("scanAnother")}</Button>
               </div>
             </div>
           )}
@@ -333,7 +333,7 @@ export default function ScanPayment() {
 
       <Dialog open={!!previewUrl} onOpenChange={(o) => !o && setPreviewUrl(null)}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>Receipt preview</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("receiptPreview")}</DialogTitle></DialogHeader>
           {previewUrl && (
             <iframe src={previewUrl} title="Receipt preview" className="w-full h-[70vh] border rounded-md bg-white" />
           )}

@@ -282,7 +282,7 @@ export default function AuditLogs() {
             <Select value={officeFilter} onValueChange={setOfficeFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All offices</SelectItem>
+                <SelectItem value="all">{t("allOffices")}</SelectItem>
                 {Object.values(offices).map((o: any) => (
                   <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                 ))}
@@ -302,13 +302,13 @@ export default function AuditLogs() {
             <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All actions</SelectItem>
-                <SelectItem value="insert">Insert</SelectItem>
-                <SelectItem value="update">Update</SelectItem>
-                <SelectItem value="delete">Delete</SelectItem>
-                <SelectItem value="scan">Scan</SelectItem>
-                <SelectItem value="issue">Issue</SelectItem>
-                <SelectItem value="revoke">Revoke</SelectItem>
+                <SelectItem value="all">{t("allActions")}</SelectItem>
+                <SelectItem value="insert">{t("insertAction")}</SelectItem>
+                <SelectItem value="update">{t("update")}</SelectItem>
+                <SelectItem value="delete">{t("delete")}</SelectItem>
+                <SelectItem value="scan">{t("scanAction")}</SelectItem>
+                <SelectItem value="issue">{t("issueAction")}</SelectItem>
+                <SelectItem value="revoke">{t("revokeAction")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -741,7 +741,7 @@ export default function SmsSettings() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bn">Bangla (বাংলা)</SelectItem>{/* i18n-ignore */}
-                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="en">{t("englishLang")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-[11px] text-muted-foreground mt-1">{L.defaultLanguageHint}</p>
@@ -843,7 +843,7 @@ export default function SmsSettings() {
                         <tr key={t.id} className="border-t">
                           <td className="px-2 py-1.5">
                             {t.status === "active" && <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>}
-                            {t.status === "staged" && <Badge variant="secondary">Staged</Badge>}
+                            {t.status === "staged" && <Badge variant="secondary">{t("stagedBadge")}</Badge>}
                             {t.status === "retired" && <Badge variant="outline" className="text-muted-foreground">Retired</Badge>}
                             {expired && t.status === "active" && <Badge variant="destructive" className="ml-1">Expired</Badge>}
                           </td>
@@ -1399,8 +1399,8 @@ export default function SmsSettings() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setConfirmTestOpen(false); runTestConnection(); }}>Send Test</AlertDialogAction>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmTestOpen(false); runTestConnection(); }}>{t("sendTest")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

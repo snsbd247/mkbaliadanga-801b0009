@@ -151,8 +151,8 @@ export default function BulkLoanExport() {
       <Card className="p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Input placeholder={t("search")} value={filter} onChange={e => setFilter(e.target.value)} className="max-w-sm" />
-          <Button variant="outline" onClick={selectAllVisible}>Select all visible</Button>
-          <Button variant="outline" onClick={() => setSelected(new Set())}>Clear</Button>
+          <Button variant="outline" onClick={selectAllVisible}>{t("selectAllVisible")}</Button>
+          <Button variant="outline" onClick={() => setSelected(new Set())}>{t("clear")}</Button>
           <div className="ml-auto text-sm text-muted-foreground">{selected.size} {t("selectFarmers")}</div>
           <Button onClick={exportExcel} disabled={status === "processing" || !selected.size}>
             {status === "processing" ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileSpreadsheet className="h-4 w-4 mr-1" />}{t("exportExcel")}

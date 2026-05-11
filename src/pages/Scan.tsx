@@ -196,7 +196,7 @@ export default function Scan() {
                 )}
               </>
             ) : (
-              <Button variant="outline" size="lg" onClick={stop}>Stop</Button>
+              <Button variant="outline" size="lg" onClick={stop}>{t("stop")}</Button>
             )}
           </div>
         </Card>
