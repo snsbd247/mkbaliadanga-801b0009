@@ -16,7 +16,7 @@ import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusC
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
 
 export default function Dashboard() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { isSuper, isAdmin, officeId } = useAuth();
   const [officeName, setOfficeName] = useState<string>("");
   const [stats, setStats] = useState<Stat[]>([]);
@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   const [votersOnly, setVotersOnly] = useState(false);
 
-  useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, [votersOnly]);
+  useEffect(() => { document.title = `${t("dashboard")} — ${t("appName")}`; load(); }, [votersOnly, lang]);
 
   useEffect(() => {
     if (!officeId) { setOfficeName(""); return; }
