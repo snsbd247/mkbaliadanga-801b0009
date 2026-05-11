@@ -80,7 +80,7 @@ export default function Dashboard() {
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
     setStats([
-      { label: t("totalFarmers") + (votersOnly ? " (Voter)" : ""), value: String(farmersList.length), icon: Users },
+      { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users },
       { label: t("activeFarmers"), value: String(farmersList.filter((f: any) => f.status === "active").length), icon: UserCheck, tone: "success" },
       { label: t("totalSavings"), value: money(totalSavings), icon: Wallet },
       { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins },
