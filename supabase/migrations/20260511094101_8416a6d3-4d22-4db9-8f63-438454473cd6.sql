@@ -1,0 +1,1 @@
+DELETE FROM seasons WHERE name='TEST_QA_SEASON' AND year=2099;
