@@ -80,6 +80,7 @@ import IdReview from "./pages/admin/IdReview";
 import DuplicateReceiptAudit from "./pages/admin/DuplicateReceiptAudit";
 import FarmerLoginAudit from "./pages/admin/FarmerLoginAudit";
 import DemoManager from "./pages/admin/DemoManager";
+import QuickSeed from "./pages/admin/QuickSeed";
 import Patwaris from "./pages/admin/Patwaris";
 import PatwariDetail from "./pages/admin/PatwariDetail";
 import FarmerStatement from "./pages/FarmerStatement";
@@ -217,6 +218,7 @@ const App = () => (
                 <Route path="/admin/duplicate-receipts" element={<RequireDeveloper><DuplicateReceiptAudit /></RequireDeveloper>} />
                 <Route path="/admin/farmer-login-audit" element={<RequireDeveloper><FarmerLoginAudit /></RequireDeveloper>} />
                 <Route path="/admin/demo-manager" element={<RequireDeveloper><DemoManager /></RequireDeveloper>} />
+                <Route path="/admin/quick-seed" element={<RequireDeveloper><QuickSeed /></RequireDeveloper>} />
                 <Route path="/admin/patwaris" element={<RequireRole roles={["admin","super_admin"]}><Patwaris /></RequireRole>} />
                 <Route path="/admin/patwaris/:id" element={<RequireRole roles={["admin","super_admin"]}><PatwariDetail /></RequireRole>} />
                 <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />
