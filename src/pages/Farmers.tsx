@@ -734,7 +734,7 @@ export default function Farmers() {
         >
           <DialogHeader><DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle></DialogHeader>
           {editForm && (
-            <form onSubmit={(e) => { e.preventDefault(); if (!saving) saveEdit(); }}>
+            <div>
               {renderFormFields({
                 f: editForm,
                 setF: (next) => { setEditForm(next); if (editErr) setEditErr(null); if (Object.keys(editFieldErrors).length) setEditFieldErrors({}); },
@@ -747,9 +747,9 @@ export default function Farmers() {
               })}
               <DialogFooter className="mt-6">
                 <Button type="button" variant="outline" onClick={resetEditForm} disabled={saving}>{t("cancel")}</Button>
-                <Button type="submit" disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
+                <Button type="button" onClick={() => { if (!saving) saveEdit(); }} disabled={saving}>{saving ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />{t("save")}</> : t("save")}</Button>
               </DialogFooter>
-            </form>
+            </div>
           )}
         </DialogContent>
       </Dialog>
