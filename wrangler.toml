@@ -1,0 +1,14 @@
+name = "mk-baliadanga"
+compatibility_date = "2024-12-01"
+main = "worker/index.ts"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+# Optional D1 (database লাগলে uncomment করো)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "my-db"
+# database_id = "YOUR_D1_DATABASE_ID"
