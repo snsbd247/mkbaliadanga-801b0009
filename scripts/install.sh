@@ -5,7 +5,7 @@
 #  Target: Fresh Ubuntu 22.04 / 24.04 LTS VPS (run as root)
 #
 #  Usage (one liner):
-#    curl -fsSL https://raw.githubusercontent.com/snsbd247/mkbaliadanga-2fdd2e7e/main/scripts/install.sh | sudo bash
+#    curl -fsSL https://raw.githubusercontent.com/snsbd247/mkbaliadanga-2fdd2e7e/refs/heads/main/scripts/install.sh | sudo bash
 #
 #  Or with custom domain/email:
 #    DOMAIN=mohammadkhani.com EMAIL=you@example.com bash install.sh
