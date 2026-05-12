@@ -236,22 +236,37 @@ EOF
 fi
 
 log "Supabase containers start..."
-# Analytics (Logflare) প্রায়ই fresh install-এ unhealthy হয়। ওইটার উপর kong/studio/functions
-# depend করে — তাই আগে docker-compose.yml থেকে analytics dependency strip করে দিচ্ছি,
-# এবং analytics কে scale=0 দিয়ে disable রাখছি। বাকি stack পুরোপুরি কাজ করবে।
+# Analytics (Logflare) প্রায়ই fresh install-এ unhealthy হয়। তাই docker-compose.yml এ
+# proper YAML parser দিয়ে depends_on থেকে analytics key remove করছি, এবং analytics কে
+# scale=0 দিয়ে disable রাখছি।
 COMPOSE_FILE="${SUPABASE_DIR}/docker-compose.yml"
-if [ -f "$COMPOSE_FILE" ] && grep -q 'analytics:' "$COMPOSE_FILE"; then
-  log "docker-compose.yml থেকে analytics dependency সরানো হচ্ছে..."
-  # Python দিয়ে safely yaml এর depends_on থেকে analytics key remove
-  python3 - <<PYEOF || warn "compose patch failed (continuing)"
-import re, sys
-p = "${COMPOSE_FILE}"
-s = open(p).read()
-# Remove "      analytics:\n        condition: service_healthy\n" blocks
-s2 = re.sub(r'\n\s+analytics:\s*\n\s+condition:\s*service_healthy\s*\n', '\n', s)
-open(p, 'w').write(s2)
-PYEOF
+# Always re-copy fresh compose from supabase-src in case previous run corrupted it
+if [ -f "/home/${APP_USER}/supabase-src/docker/docker-compose.yml" ]; then
+  cp -f "/home/${APP_USER}/supabase-src/docker/docker-compose.yml" "$COMPOSE_FILE"
+  chown ${APP_USER}:${APP_USER} "$COMPOSE_FILE"
 fi
+
+log "docker-compose.yml থেকে analytics dependency proper YAML parser দিয়ে সরানো হচ্ছে..."
+apt-get install -y -qq python3-yaml >/dev/null 2>&1 || true
+python3 - <<PYEOF || warn "compose patch failed (continuing)"
+import yaml
+p = "${COMPOSE_FILE}"
+with open(p) as f:
+    data = yaml.safe_load(f)
+for svc_name, svc in (data.get('services') or {}).items():
+    dep = svc.get('depends_on')
+    if isinstance(dep, dict) and 'analytics' in dep:
+        del dep['analytics']
+        if not dep:
+            del svc['depends_on']
+    elif isinstance(dep, list) and 'analytics' in dep:
+        dep.remove('analytics')
+        if not dep:
+            del svc['depends_on']
+with open(p, 'w') as f:
+    yaml.safe_dump(data, f, sort_keys=False)
+print("compose patched OK")
+PYEOF
 
 sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose pull -q" || warn "pull issues, continuing"
 # analytics disable করে সব service start
