@@ -232,12 +232,29 @@ EOF
 fi
 
 log "Supabase containers start..."
-# Start Supabase. Analytics container is optional — if it fails (common on fresh installs),
-# bring up the rest of the stack so frontend/Nginx/SSL can still complete.
+# Analytics (Logflare) প্রায়ই fresh install-এ unhealthy হয়। ওইটার উপর kong/studio/functions
+# depend করে — তাই আগে docker-compose.yml থেকে analytics dependency strip করে দিচ্ছি,
+# এবং analytics কে scale=0 দিয়ে disable রাখছি। বাকি stack পুরোপুরি কাজ করবে।
+COMPOSE_FILE="${SUPABASE_DIR}/docker-compose.yml"
+if [ -f "$COMPOSE_FILE" ] && grep -q 'analytics:' "$COMPOSE_FILE"; then
+  log "docker-compose.yml থেকে analytics dependency সরানো হচ্ছে..."
+  # Python দিয়ে safely yaml এর depends_on থেকে analytics key remove
+  python3 - <<PYEOF || warn "compose patch failed (continuing)"
+import re, sys
+p = "${COMPOSE_FILE}"
+s = open(p).read()
+# Remove "      analytics:\n        condition: service_healthy\n" blocks
+s2 = re.sub(r'\n\s+analytics:\s*\n\s+condition:\s*service_healthy\s*\n', '\n', s)
+open(p, 'w').write(s2)
+PYEOF
+fi
+
 sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose pull -q" || warn "pull issues, continuing"
-if ! sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d"; then
-  warn "Supabase up reported a failure (likely analytics). Retrying without analytics..."
-  sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d --scale analytics=0 db rest auth storage realtime meta kong studio imgproxy edge-functions vector pooler" || warn "Some services may still be down — check 'docker compose ps'"
+# analytics disable করে সব service start
+if ! sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d --scale analytics=0"; then
+  warn "প্রথম try fail — দ্বিতীয়বার চেষ্টা..."
+  sleep 5
+  sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d --scale analytics=0" || warn "Some services down — 'docker compose ps' check করুন"
 fi
 sleep 20
 
