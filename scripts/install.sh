@@ -12,6 +12,10 @@
 # =============================================================================
 set -euo pipefail
 
+# Safety: যদি current working directory delete হয়ে গিয়ে থাকে (পুরাতন rm -rf এর পর),
+# তাহলে getcwd fail করে শত শত warning দেয়। তাই শুরুতেই /root এ চলে যাচ্ছি।
+cd /root 2>/dev/null || cd /
+
 # -------- Defaults (override via env vars) ----------
 DOMAIN="${DOMAIN:-mohammadkhani.com}"
 API_SUBDOMAIN="${API_SUBDOMAIN:-api.${DOMAIN}}"
