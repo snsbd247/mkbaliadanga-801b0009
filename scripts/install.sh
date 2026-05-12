@@ -160,6 +160,8 @@ if [ ! -f "${SUPABASE_DIR}/.secrets.generated" ]; then
   VAULT_ENC_KEY=$(openssl rand -hex 16)
   SECRET_KEY_BASE=$(openssl rand -hex 32)
   LOGFLARE_API_KEY=$(openssl rand -hex 16)
+  LOGFLARE_PUBLIC_TOKEN=$(openssl rand -hex 32)
+  LOGFLARE_PRIVATE_TOKEN=$(openssl rand -hex 32)
   POOLER_TENANT_ID=$(openssl rand -hex 8)
 
   # Generate JWT tokens (anon + service_role) using docker
@@ -194,6 +196,17 @@ if [ ! -f "${SUPABASE_DIR}/.secrets.generated" ]; then
   sed -i "s|^SECRET_KEY_BASE=.*|SECRET_KEY_BASE=${SECRET_KEY_BASE}|" "$ENV_FILE" || true
   sed -i "s|^VAULT_ENC_KEY=.*|VAULT_ENC_KEY=${VAULT_ENC_KEY}|" "$ENV_FILE" || true
   sed -i "s|^LOGFLARE_API_KEY=.*|LOGFLARE_API_KEY=${LOGFLARE_API_KEY}|" "$ENV_FILE" || true
+  # New variable names used by recent Supabase analytics image
+  if grep -q '^LOGFLARE_PUBLIC_ACCESS_TOKEN=' "$ENV_FILE"; then
+    sed -i "s|^LOGFLARE_PUBLIC_ACCESS_TOKEN=.*|LOGFLARE_PUBLIC_ACCESS_TOKEN=${LOGFLARE_PUBLIC_TOKEN}|" "$ENV_FILE"
+  else
+    echo "LOGFLARE_PUBLIC_ACCESS_TOKEN=${LOGFLARE_PUBLIC_TOKEN}" >> "$ENV_FILE"
+  fi
+  if grep -q '^LOGFLARE_PRIVATE_ACCESS_TOKEN=' "$ENV_FILE"; then
+    sed -i "s|^LOGFLARE_PRIVATE_ACCESS_TOKEN=.*|LOGFLARE_PRIVATE_ACCESS_TOKEN=${LOGFLARE_PRIVATE_TOKEN}|" "$ENV_FILE"
+  else
+    echo "LOGFLARE_PRIVATE_ACCESS_TOKEN=${LOGFLARE_PRIVATE_TOKEN}" >> "$ENV_FILE"
+  fi
   sed -i "s|^POOLER_TENANT_ID=.*|POOLER_TENANT_ID=${POOLER_TENANT_ID}|" "$ENV_FILE" || true
   sed -i "s|^SITE_URL=.*|SITE_URL=https://${DOMAIN}|" "$ENV_FILE"
   sed -i "s|^API_EXTERNAL_URL=.*|API_EXTERNAL_URL=https://${API_SUBDOMAIN}|" "$ENV_FILE"
@@ -219,7 +232,13 @@ EOF
 fi
 
 log "Supabase containers start..."
-sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose pull -q && docker compose up -d"
+# Start Supabase. Analytics container is optional — if it fails (common on fresh installs),
+# bring up the rest of the stack so frontend/Nginx/SSL can still complete.
+sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose pull -q" || warn "pull issues, continuing"
+if ! sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d"; then
+  warn "Supabase up reported a failure (likely analytics). Retrying without analytics..."
+  sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d --scale analytics=0 db rest auth storage realtime meta kong studio imgproxy edge-functions vector pooler" || warn "Some services may still be down — check 'docker compose ps'"
+fi
 sleep 20
 
 # =============================================================================
