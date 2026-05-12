@@ -232,7 +232,13 @@ EOF
 fi
 
 log "Supabase containers start..."
-sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose pull -q && docker compose up -d"
+# Start Supabase. Analytics container is optional — if it fails (common on fresh installs),
+# bring up the rest of the stack so frontend/Nginx/SSL can still complete.
+sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose pull -q" || warn "pull issues, continuing"
+if ! sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d"; then
+  warn "Supabase up reported a failure (likely analytics). Retrying without analytics..."
+  sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d --scale analytics=0 db rest auth storage realtime meta kong studio imgproxy edge-functions vector pooler" || warn "Some services may still be down — check 'docker compose ps'"
+fi
 sleep 20
 
 # =============================================================================
