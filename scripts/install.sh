@@ -300,7 +300,8 @@ VITE_SUPABASE_PROJECT_ID=mkapp
 EOF
 
 npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-npm run build
+# Big TS project — Node default heap (~1.5GB) এ Vite OOM হয়। 3GB দিচ্ছি।
+NODE_OPTIONS="--max-old-space-size=3072" npm run build
 EOSU
 
 mkdir -p "${WEB_ROOT}"
