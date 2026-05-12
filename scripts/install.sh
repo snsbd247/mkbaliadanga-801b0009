@@ -160,6 +160,8 @@ if [ ! -f "${SUPABASE_DIR}/.secrets.generated" ]; then
   VAULT_ENC_KEY=$(openssl rand -hex 16)
   SECRET_KEY_BASE=$(openssl rand -hex 32)
   LOGFLARE_API_KEY=$(openssl rand -hex 16)
+  LOGFLARE_PUBLIC_TOKEN=$(openssl rand -hex 32)
+  LOGFLARE_PRIVATE_TOKEN=$(openssl rand -hex 32)
   POOLER_TENANT_ID=$(openssl rand -hex 8)
 
   # Generate JWT tokens (anon + service_role) using docker
