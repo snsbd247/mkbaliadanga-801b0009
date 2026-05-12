@@ -196,6 +196,17 @@ if [ ! -f "${SUPABASE_DIR}/.secrets.generated" ]; then
   sed -i "s|^SECRET_KEY_BASE=.*|SECRET_KEY_BASE=${SECRET_KEY_BASE}|" "$ENV_FILE" || true
   sed -i "s|^VAULT_ENC_KEY=.*|VAULT_ENC_KEY=${VAULT_ENC_KEY}|" "$ENV_FILE" || true
   sed -i "s|^LOGFLARE_API_KEY=.*|LOGFLARE_API_KEY=${LOGFLARE_API_KEY}|" "$ENV_FILE" || true
+  # New variable names used by recent Supabase analytics image
+  if grep -q '^LOGFLARE_PUBLIC_ACCESS_TOKEN=' "$ENV_FILE"; then
+    sed -i "s|^LOGFLARE_PUBLIC_ACCESS_TOKEN=.*|LOGFLARE_PUBLIC_ACCESS_TOKEN=${LOGFLARE_PUBLIC_TOKEN}|" "$ENV_FILE"
+  else
+    echo "LOGFLARE_PUBLIC_ACCESS_TOKEN=${LOGFLARE_PUBLIC_TOKEN}" >> "$ENV_FILE"
+  fi
+  if grep -q '^LOGFLARE_PRIVATE_ACCESS_TOKEN=' "$ENV_FILE"; then
+    sed -i "s|^LOGFLARE_PRIVATE_ACCESS_TOKEN=.*|LOGFLARE_PRIVATE_ACCESS_TOKEN=${LOGFLARE_PRIVATE_TOKEN}|" "$ENV_FILE"
+  else
+    echo "LOGFLARE_PRIVATE_ACCESS_TOKEN=${LOGFLARE_PRIVATE_TOKEN}" >> "$ENV_FILE"
+  fi
   sed -i "s|^POOLER_TENANT_ID=.*|POOLER_TENANT_ID=${POOLER_TENANT_ID}|" "$ENV_FILE" || true
   sed -i "s|^SITE_URL=.*|SITE_URL=https://${DOMAIN}|" "$ENV_FILE"
   sed -i "s|^API_EXTERNAL_URL=.*|API_EXTERNAL_URL=https://${API_SUBDOMAIN}|" "$ENV_FILE"
