@@ -5,6 +5,7 @@ APP_DIR="${APP_DIR:-/home/mkadmin/mkbaliadanga}"
 cd "$APP_DIR"
 
 echo "[mk] Pulling latest code..."
+git config --global --add safe.directory "$APP_DIR" || true
 git fetch --all
 git reset --hard origin/main
 
