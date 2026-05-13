@@ -11,6 +11,12 @@ const NAV = [
   { to: "/api/accounts", label: "Accounts" },
   { to: "/api/journals", label: "Journals" },
   { to: "/api/reports", label: "Reports" },
+  { to: "/api/users", label: "Users" },
+  { to: "/api/roles", label: "Roles" },
+  { to: "/api/offices", label: "Offices" },
+  { to: "/api/sms", label: "SMS" },
+  { to: "/api/qr", label: "QR" },
+  { to: "/api/audit", label: "Audit" },
 ];
 
 function Inner({ children }: { children: ReactNode }) {
