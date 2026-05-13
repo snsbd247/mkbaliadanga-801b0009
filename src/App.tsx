@@ -139,6 +139,8 @@ import ApiSeasons from "./pages/ApiSeasons";
 import ApiLoanPlans from "./pages/ApiLoanPlans";
 import ApiIrrigationRates from "./pages/ApiIrrigationRates";
 import ApiAssets from "./pages/ApiAssets";
+import ApiDashboard from "./pages/ApiDashboard";
+import { USE_API_BACKEND } from "./lib/api/featureFlag";
 
 const queryClient = new QueryClient();
 
@@ -151,13 +153,15 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<FarmerPortalLogin />} />
+              <Route path="/" element={USE_API_BACKEND ? <Navigate to="/api/dashboard" replace /> : <FarmerPortalLogin />} />
               <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:token" element={<VerifyReceipt />} />
               <Route path="/r/:token" element={<VerifyReceipt />} />
               <Route path="/api/auth" element={<ApiAuth />} />
+              <Route path="/api" element={<Navigate to="/api/dashboard" replace />} />
+              <Route path="/api/dashboard" element={<ApiDashboard />} />
               <Route path="/api/farmers" element={<ApiFarmers />} />
               <Route path="/api/loans" element={<ApiLoans />} />
               <Route path="/api/savings" element={<ApiSavings />} />
