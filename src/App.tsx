@@ -120,6 +120,8 @@ import AssetInstallations from "./pages/assets/AssetInstallations";
 import AssetMaintenance from "./pages/assets/AssetMaintenance";
 import AssetDisposal from "./pages/assets/AssetDisposal";
 import VerifyReceipt from "./pages/VerifyReceipt";
+import ApiAuth from "./pages/ApiAuth";
+import ApiFarmers from "./pages/ApiFarmers";
 
 const queryClient = new QueryClient();
 
@@ -138,6 +140,8 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:token" element={<VerifyReceipt />} />
               <Route path="/r/:token" element={<VerifyReceipt />} />
+              <Route path="/api/auth" element={<ApiAuth />} />
+              <Route path="/api/farmers" element={<ApiFarmers />} />
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
