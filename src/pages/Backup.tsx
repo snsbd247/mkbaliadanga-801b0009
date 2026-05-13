@@ -12,7 +12,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLang } from "@/i18n/LanguageProvider";
-import { Download, Database, FileSpreadsheet, Upload, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Download, Database, FileSpreadsheet, Upload, AlertTriangle, ShieldCheck, FileCode2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
