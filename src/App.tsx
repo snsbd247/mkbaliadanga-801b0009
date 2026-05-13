@@ -134,6 +134,11 @@ import ApiOffices from "./pages/ApiOffices";
 import ApiAudit from "./pages/ApiAudit";
 import ApiSms from "./pages/ApiSms";
 import ApiQr from "./pages/ApiQr";
+import ApiLands from "./pages/ApiLands";
+import ApiSeasons from "./pages/ApiSeasons";
+import ApiLoanPlans from "./pages/ApiLoanPlans";
+import ApiIrrigationRates from "./pages/ApiIrrigationRates";
+import ApiAssets from "./pages/ApiAssets";
 
 const queryClient = new QueryClient();
 
@@ -166,6 +171,11 @@ const App = () => (
               <Route path="/api/audit" element={<ApiAudit />} />
               <Route path="/api/sms" element={<ApiSms />} />
               <Route path="/api/qr" element={<ApiQr />} />
+              <Route path="/api/lands" element={<ApiLands />} />
+              <Route path="/api/seasons" element={<ApiSeasons />} />
+              <Route path="/api/loan-plans" element={<ApiLoanPlans />} />
+              <Route path="/api/irrigation-rates" element={<ApiIrrigationRates />} />
+              <Route path="/api/assets" element={<ApiAssets />} />
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
