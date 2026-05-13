@@ -80,9 +80,11 @@ systemctl enable --now fail2ban
 # ---------- 5. Clone repository ----------
 log "Cloning repository → $APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
-  git -C "$APP_DIR" fetch --all
-  git -C "$APP_DIR" checkout "$BRANCH"
-  git -C "$APP_DIR" pull --ff-only
+  chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
+  sudo -u "$APP_USER" git -C "$APP_DIR" config --global --add safe.directory "$APP_DIR" || true
+  sudo -u "$APP_USER" git -C "$APP_DIR" fetch --all
+  sudo -u "$APP_USER" git -C "$APP_DIR" checkout "$BRANCH"
+  sudo -u "$APP_USER" git -C "$APP_DIR" pull --ff-only
 else
   sudo -u "$APP_USER" git clone -b "$BRANCH" "$REPO_URL" "$APP_DIR"
 fi
