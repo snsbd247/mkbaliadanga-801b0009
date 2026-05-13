@@ -125,6 +125,9 @@ import ApiFarmers from "./pages/ApiFarmers";
 import ApiLoans from "./pages/ApiLoans";
 import ApiSavings from "./pages/ApiSavings";
 import ApiPayments from "./pages/ApiPayments";
+import ApiAccounts from "./pages/ApiAccounts";
+import ApiJournals from "./pages/ApiJournals";
+import ApiReports from "./pages/ApiReports";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +151,9 @@ const App = () => (
               <Route path="/api/loans" element={<ApiLoans />} />
               <Route path="/api/savings" element={<ApiSavings />} />
               <Route path="/api/payments" element={<ApiPayments />} />
+              <Route path="/api/accounts" element={<ApiAccounts />} />
+              <Route path="/api/journals" element={<ApiJournals />} />
+              <Route path="/api/reports" element={<ApiReports />} />
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
