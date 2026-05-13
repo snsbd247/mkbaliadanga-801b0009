@@ -179,10 +179,18 @@ for i in $(seq 1 60); do
   sleep 3
 done
 
-# ---------- 10. Run migrations + seed ----------
-log "Running Prisma migrations + seed..."
-sudo -u "$APP_USER" docker compose exec -T api pnpm prisma migrate deploy || warn "migrate deploy failed — re-run manually"
-sudo -u "$APP_USER" docker compose exec -T api pnpm prisma db seed       || warn "seed failed — re-run manually"
+# ---------- 10. Run migrations + seed (creates ALL tables, users, demo data) ----------
+log "Running Prisma migrations..."
+sudo -u "$APP_USER" docker compose exec -T api npx prisma migrate deploy \
+  || sudo -u "$APP_USER" docker compose exec -T api npx prisma db push --accept-data-loss \
+  || warn "migration failed — re-run: docker compose exec api npx prisma migrate deploy"
+
+log "Seeding database (office, users, farmers, lands, seasons, savings, loans, irrigation, assets)..."
+sudo -u "$APP_USER" docker compose exec -T \
+  -e SEED_SUPER_EMAIL="${ADMIN_EMAIL:-admin@${DOMAIN}}" \
+  -e SEED_SUPER_PASSWORD="${ADMIN_PASSWORD:-$(openssl rand -base64 12)}" \
+  api npm run prisma:seed | tee -a "$CRED_FILE" \
+  || warn "seed failed — re-run: docker compose exec api npm run prisma:seed"
 
 # ---------- 11. Backup cron ----------
 log "Installing nightly backup cron..."
@@ -198,11 +206,8 @@ cat >/etc/cron.d/mkbaliadanga-certbot <<EOF
 0 3 * * * root certbot renew --quiet --deploy-hook "docker exec mk_nginx nginx -s reload"
 EOF
 
-# ---------- 13. Create initial admin ----------
-log "Creating initial super-admin (interactive)..."
-sudo -u "$APP_USER" docker compose exec -T api node dist/scripts/create-admin.js \
-  "${ADMIN_EMAIL:-admin@${DOMAIN}}" "${ADMIN_PASSWORD:-$(openssl rand -base64 12)}" \
-  | tee -a "$CRED_FILE" || warn "Admin creation skipped (run later: docker compose exec api node dist/scripts/create-admin.js)"
+# ---------- 13. Super-admin already created by seed (step 10) ----------
+log "Super-admin user created during seed — see $CRED_FILE for credentials."
 
 # ---------- 14. Done ----------
 ok "Installation complete"
