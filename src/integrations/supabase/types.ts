@@ -4892,6 +4892,12 @@ export type Database = {
         Returns: boolean
       }
       next_receipt_no: { Args: { p_kind: string }; Returns: string }
+      pg_tables_public_list: {
+        Args: never
+        Returns: {
+          tablename: string
+        }[]
+      }
       post_asset_depreciation_journal: {
         Args: { _schedule_id: string }
         Returns: string
