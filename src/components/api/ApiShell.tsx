@@ -8,6 +8,9 @@ const NAV = [
   { to: "/api/loans", label: "Loans" },
   { to: "/api/savings", label: "Savings" },
   { to: "/api/payments", label: "Payments" },
+  { to: "/api/accounts", label: "Accounts" },
+  { to: "/api/journals", label: "Journals" },
+  { to: "/api/reports", label: "Reports" },
 ];
 
 function Inner({ children }: { children: ReactNode }) {
