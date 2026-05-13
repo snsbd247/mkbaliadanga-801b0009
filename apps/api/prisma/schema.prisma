@@ -1,0 +1,437 @@
+// MK Baliadanga — Prisma schema (self-hosted PostgreSQL)
+// Mirrors the existing Supabase domain. Business logic lives in the API,
+// not in the database — so triggers/RLS are intentionally omitted here.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============== ENUMS ===============
+enum AppRole {
+  super_admin
+  admin
+  manager
+  operator
+  viewer
+  developer
+  farmer
+}
+
+enum AssetTrackingMode {
+  serial
+  quantity
+}
+
+enum AssetStatus {
+  in_stock
+  installed
+  in_repair
+  disposed
+}
+
+enum LoanStatus {
+  pending
+  approved
+  active
+  closed
+  defaulted
+}
+
+enum InstallmentStatus {
+  due
+  paid
+  partial
+  overdue
+}
+
+enum InvoiceStatus {
+  draft
+  issued
+  paid
+  partial
+  cancelled
+}
+
+// =============== CORE / AUTH ===============
+model Office {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique
+  name_en     String
+  name_bn     String
+  address     String?
+  phone       String?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  profiles            Profile[]
+  user_roles          UserRole[]
+  farmers             Farmer[]
+  lands               Land[]
+  seasons             Season[]
+  savings_accounts    SavingsAccount[]
+  loans               Loan[]
+  irrigation_invoices IrrigationInvoice[]
+  asset_categories    AssetCategory[]
+  assets              Asset[]
+  accounts            Account[]
+  settings            Setting?
+}
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @unique
+  password_hash   String
+  is_active       Boolean    @default(true)
+  email_verified  Boolean    @default(false)
+  last_login_at   DateTime?
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  profile  Profile?
+  roles    UserRole[]
+  sessions Session[]
+}
+
+model Profile {
+  id           String  @id @default(uuid()) @db.Uuid
+  user_id      String  @unique @db.Uuid
+  office_id    String? @db.Uuid
+  full_name    String
+  phone        String?
+  language     String  @default("bn")
+  avatar_url   String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  user   User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  office Office? @relation(fields: [office_id], references: [id])
+}
+
+model UserRole {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  office_id  String?  @db.Uuid
+  role       AppRole
+  created_at DateTime @default(now())
+
+  user   User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  office Office? @relation(fields: [office_id], references: [id])
+
+  @@unique([user_id, office_id, role])
+}
+
+model Session {
+  id            String   @id @default(uuid()) @db.Uuid
+  user_id       String   @db.Uuid
+  refresh_token String   @unique
+  user_agent    String?
+  ip            String?
+  expires_at    DateTime
+  created_at    DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  id                String   @id @default(uuid()) @db.Uuid
+  office_id         String   @unique @db.Uuid
+  cooperative_name  String
+  cooperative_bn    String
+  logo_url          String?
+  default_language  String   @default("bn")
+  fiscal_year_start Int      @default(7) // July
+  data              Json     @default("{}")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  office Office @relation(fields: [office_id], references: [id], onDelete: Cascade)
+}
+
+// =============== LOCATIONS ===============
+model Division {
+  id        String   @id @default(uuid()) @db.Uuid
+  name_en   String
+  name_bn   String
+  districts District[]
+}
+
+model District {
+  id          String   @id @default(uuid()) @db.Uuid
+  division_id String   @db.Uuid
+  name_en     String
+  name_bn     String
+  division    Division @relation(fields: [division_id], references: [id], onDelete: Cascade)
+  upazilas    Upazila[]
+}
+
+model Upazila {
+  id          String   @id @default(uuid()) @db.Uuid
+  district_id String   @db.Uuid
+  name_en     String
+  name_bn     String
+  district    District @relation(fields: [district_id], references: [id], onDelete: Cascade)
+  mouzas      Mouza[]
+}
+
+model Mouza {
+  id         String   @id @default(uuid()) @db.Uuid
+  upazila_id String   @db.Uuid
+  name_en    String
+  name_bn    String
+  jl_no      String?
+  upazila    Upazila  @relation(fields: [upazila_id], references: [id], onDelete: Cascade)
+  farmers    Farmer[]
+  lands      Land[]
+}
+
+// =============== FARMERS / LANDS ===============
+model Farmer {
+  id              String   @id @default(uuid()) @db.Uuid
+  office_id       String   @db.Uuid
+  farmer_code     String
+  voter_no        String?
+  name_bn         String
+  name_en         String?
+  father_name     String?
+  mother_name     String?
+  spouse_name     String?
+  phone           String?
+  nid             String?
+  dob             DateTime?
+  address         String?
+  mouza_id        String?  @db.Uuid
+  is_active       Boolean  @default(true)
+  is_voter        Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  office  Office  @relation(fields: [office_id], references: [id], onDelete: Cascade)
+  mouza   Mouza?  @relation(fields: [mouza_id], references: [id])
+
+  lands               Land[]
+  savings_accounts    SavingsAccount[]
+  loans               Loan[]
+  irrigation_invoices IrrigationInvoice[]
+
+  @@unique([office_id, farmer_code])
+}
+
+model Land {
+  id          String   @id @default(uuid()) @db.Uuid
+  office_id   String   @db.Uuid
+  farmer_id   String   @db.Uuid
+  mouza_id    String?  @db.Uuid
+  dag_no      String
+  khatian_no  String?
+  area_decimal Decimal @db.Decimal(12, 2)
+  land_type   String?  // own / borga / lease
+  remarks     String?
+  created_at  DateTime @default(now())
+
+  office  Office  @relation(fields: [office_id], references: [id], onDelete: Cascade)
+  farmer  Farmer  @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
+  mouza   Mouza?  @relation(fields: [mouza_id], references: [id])
+}
+
+// =============== SEASONS / IRRIGATION ===============
+model Season {
+  id          String   @id @default(uuid()) @db.Uuid
+  office_id   String   @db.Uuid
+  name        String
+  type        String   // boro / aman / aus
+  start_date  DateTime
+  end_date    DateTime
+  is_active   Boolean  @default(true)
+  rates       SeasonRate[]
+  invoices    IrrigationInvoice[]
+  office      Office   @relation(fields: [office_id], references: [id], onDelete: Cascade)
+}
+
+model SeasonRate {
+  id           String   @id @default(uuid()) @db.Uuid
+  season_id    String   @db.Uuid
+  category     String   // a / b / c
+  rate_per_dec Decimal  @db.Decimal(12, 2)
+  season       Season   @relation(fields: [season_id], references: [id], onDelete: Cascade)
+}
+
+model IrrigationInvoice {
+  id            String   @id @default(uuid()) @db.Uuid
+  office_id     String   @db.Uuid
+  farmer_id     String   @db.Uuid
+  season_id     String   @db.Uuid
+  invoice_no    String
+  invoice_date  DateTime
+  area_decimal  Decimal  @db.Decimal(12, 2)
+  rate          Decimal  @db.Decimal(12, 2)
+  amount        Decimal  @db.Decimal(14, 2)
+  paid_amount   Decimal  @default(0) @db.Decimal(14, 2)
+  status        InvoiceStatus @default(issued)
+  created_at    DateTime @default(now())
+
+  office   Office   @relation(fields: [office_id], references: [id], onDelete: Cascade)
+  farmer   Farmer   @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
+  season   Season   @relation(fields: [season_id], references: [id])
+  payments IrrigationPayment[]
+
+  @@unique([office_id, invoice_no])
+}
+
+model IrrigationPayment {
+  id           String   @id @default(uuid()) @db.Uuid
+  invoice_id   String   @db.Uuid
+  payment_date DateTime
+  amount       Decimal  @db.Decimal(14, 2)
+  method       String   @default("cash")
+  remarks      String?
+  invoice      IrrigationInvoice @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+}
+
+// =============== SAVINGS ===============
+model SavingsAccount {
+  id            String   @id @default(uuid()) @db.Uuid
+  office_id     String   @db.Uuid
+  farmer_id     String   @db.Uuid
+  account_no    String
+  opened_date   DateTime @default(now())
+  balance       Decimal  @default(0) @db.Decimal(14, 2)
+  is_active     Boolean  @default(true)
+
+  office       Office   @relation(fields: [office_id], references: [id], onDelete: Cascade)
+  farmer       Farmer   @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
+  transactions SavingsTransaction[]
+
+  @@unique([office_id, account_no])
+}
+
+model SavingsTransaction {
+  id          String   @id @default(uuid()) @db.Uuid
+  account_id  String   @db.Uuid
+  txn_date    DateTime
+  type        String   // deposit / withdraw
+  amount      Decimal  @db.Decimal(14, 2)
+  remarks     String?
+  account     SavingsAccount @relation(fields: [account_id], references: [id], onDelete: Cascade)
+}
+
+// =============== LOANS ===============
+model Loan {
+  id              String   @id @default(uuid()) @db.Uuid
+  office_id       String   @db.Uuid
+  farmer_id       String   @db.Uuid
+  loan_no         String
+  principal       Decimal  @db.Decimal(14, 2)
+  interest_rate   Decimal  @db.Decimal(6, 3)
+  term_months     Int
+  disbursed_date  DateTime?
+  status          LoanStatus @default(pending)
+  created_at      DateTime @default(now())
+
+  office       Office @relation(fields: [office_id], references: [id], onDelete: Cascade)
+  farmer       Farmer @relation(fields: [farmer_id], references: [id], onDelete: Cascade)
+  installments LoanInstallment[]
+
+  @@unique([office_id, loan_no])
+}
+
+model LoanInstallment {
+  id           String   @id @default(uuid()) @db.Uuid
+  loan_id      String   @db.Uuid
+  due_date     DateTime
+  amount_due   Decimal  @db.Decimal(14, 2)
+  amount_paid  Decimal  @default(0) @db.Decimal(14, 2)
+  paid_at      DateTime?
+  status       InstallmentStatus @default(due)
+  loan         Loan @relation(fields: [loan_id], references: [id], onDelete: Cascade)
+}
+
+// =============== ASSETS ===============
+model AssetCategory {
+  id            String   @id @default(uuid()) @db.Uuid
+  office_id     String   @db.Uuid
+  code          String
+  name_en       String
+  name_bn       String
+  tracking_mode AssetTrackingMode @default(quantity)
+  is_active     Boolean  @default(true)
+
+  office Office @relation(fields: [office_id], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@unique([office_id, code])
+}
+
+model Asset {
+  id                String   @id @default(uuid()) @db.Uuid
+  office_id         String   @db.Uuid
+  asset_category_id String   @db.Uuid
+  asset_code        String
+  serial_no         String?
+  name_en           String
+  name_bn           String
+  tracking_mode     AssetTrackingMode @default(quantity)
+  purchase_price    Decimal  @default(0) @db.Decimal(14, 2)
+  current_status    AssetStatus @default(in_stock)
+  unit              String   @default("pcs")
+  created_at        DateTime @default(now())
+
+  office   Office        @relation(fields: [office_id], references: [id], onDelete: Cascade)
+  category AssetCategory @relation(fields: [asset_category_id], references: [id])
+  stocks   AssetStock[]
+
+  @@unique([office_id, asset_code])
+}
+
+model AssetStock {
+  id          String  @id @default(uuid()) @db.Uuid
+  office_id   String  @db.Uuid
+  asset_id    String  @db.Uuid
+  location_id String? @db.Uuid
+  quantity    Decimal @db.Decimal(14, 2)
+  asset       Asset   @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+}
+
+// =============== ACCOUNTING (chart of accounts) ===============
+model Account {
+  id         String  @id @default(uuid()) @db.Uuid
+  office_id  String  @db.Uuid
+  code       String
+  name_en    String
+  name_bn    String
+  type       String  // asset/liability/equity/income/expense
+  parent_id  String? @db.Uuid
+  is_active  Boolean @default(true)
+
+  office Office @relation(fields: [office_id], references: [id], onDelete: Cascade)
+
+  @@unique([office_id, code])
+}
+
+// =============== SMS / AUDIT ===============
+model SmsLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  office_id  String?  @db.Uuid
+  to_phone   String
+  body       String
+  provider   String
+  status     String   // queued/sent/failed
+  error      String?
+  created_at DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  office_id  String?  @db.Uuid
+  user_id    String?  @db.Uuid
+  entity     String
+  action     String
+  entity_id  String?
+  data       Json?
+  created_at DateTime @default(now())
+}
