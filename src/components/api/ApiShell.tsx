@@ -5,12 +5,17 @@ import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/api/farmers", label: "Farmers" },
+  { to: "/api/lands", label: "Lands" },
+  { to: "/api/seasons", label: "Seasons" },
   { to: "/api/loans", label: "Loans" },
+  { to: "/api/loan-plans", label: "Loan Plans" },
   { to: "/api/savings", label: "Savings" },
   { to: "/api/payments", label: "Payments" },
+  { to: "/api/irrigation-rates", label: "Irrig. Rates" },
   { to: "/api/accounts", label: "Accounts" },
   { to: "/api/journals", label: "Journals" },
   { to: "/api/reports", label: "Reports" },
+  { to: "/api/assets", label: "Assets" },
   { to: "/api/users", label: "Users" },
   { to: "/api/roles", label: "Roles" },
   { to: "/api/offices", label: "Offices" },
