@@ -39,3 +39,6 @@ verify_jwt = false
 [functions.receipt-verify]
 verify_jwt = false
 
+
+[functions.db-export]
+verify_jwt = false
