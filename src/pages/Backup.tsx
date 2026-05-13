@@ -432,6 +432,87 @@ export default function Backup() {
         </Card>
       )}
 
+      {isDeveloper && (
+        <Card className="p-5 mt-5 border-purple-500/40 bg-gradient-to-br from-purple-500/5 to-fuchsia-500/5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-600 text-white">
+              <FileCode2 className="h-6 w-6" />
+            </div>
+            <div className="flex-1 space-y-4">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  Full SQL Backup &amp; Restore
+                  <span className="text-[10px] font-bold uppercase rounded bg-purple-600 text-white px-1.5 py-0.5">Developer</span>
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  পুরো ডাটাবেজ <code className="text-xs bg-muted px-1 rounded">.sql</code> ফাইলে ডাউনলোড করুন এবং
+                  সেই ফাইল দিয়ে সম্পূর্ণ database রিস্টোর করুন। শুধু developer role-এর জন্য।
+                </p>
+              </div>
+
+              <div className="rounded-md border p-3 bg-background/60">
+                <div className="text-sm font-medium mb-2">১. SQL Backup ডাউনলোড</div>
+                <Button onClick={downloadFullSql} disabled={!!busy} variant="default">
+                  {busy === "__sql_export__" ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />SQL Generate হচ্ছে…</>
+                  ) : (
+                    <><Download className="h-4 w-4 mr-2" />Download Full SQL Backup</>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  সব public table-এর data INSERT statement আকারে — TRUNCATE + INSERT সহ। File extension: <strong>.sql</strong>
+                </p>
+              </div>
+
+              <div className="rounded-md border border-destructive/40 p-3 bg-destructive/5">
+                <div className="text-sm font-medium mb-2 flex items-center gap-2">
+                  ২. SQL Backup থেকে Restore
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                </div>
+                <div className="text-xs text-destructive mb-3">
+                  ⚠️ সাবধান: Restore চালালে existing data মুছে গিয়ে backup-এর data বসবে। আগে একটা backup ডাউনলোড করে রাখুন।
+                </div>
+                <input
+                  ref={sqlFileRef}
+                  type="file"
+                  accept=".sql,application/sql,text/plain"
+                  className="hidden"
+                  onChange={(e) => { setSqlRestoreFile(e.target.files?.[0] ?? null); setSqlResult(null); }}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" onClick={() => sqlFileRef.current?.click()} disabled={!!busy}>
+                    <Upload className="h-4 w-4 mr-1" />Choose .sql File
+                  </Button>
+                  {sqlRestoreFile && (
+                    <span className="text-xs text-muted-foreground">
+                      {sqlRestoreFile.name} ({(sqlRestoreFile.size / 1024).toFixed(1)} KB)
+                    </span>
+                  )}
+                  <Button
+                    variant="destructive"
+                    onClick={() => setSqlConfirmOpen(true)}
+                    disabled={!sqlRestoreFile || !!busy}
+                    className="ml-auto"
+                  >
+                    {busy === "__sql_restore__" ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Restoring…</>
+                    ) : (
+                      "Restore SQL Backup"
+                    )}
+                  </Button>
+                </div>
+                {sqlResult && (
+                  <div className={`mt-3 rounded p-2 text-xs ${sqlResult.ok ? "bg-emerald-50 text-emerald-800 border border-emerald-300" : "bg-destructive/10 text-destructive border border-destructive/30"}`}>
+                    {sqlResult.ok ? "✓ " : "✗ "}{sqlResult.message}
+                    {sqlResult.durationMs !== undefined && ` (${(sqlResult.durationMs / 1000).toFixed(1)}s)`}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -441,6 +522,24 @@ export default function Backup() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("p5e_no")}</AlertDialogCancel>
             <AlertDialogAction onClick={() => startRestore()}>{t("p5e_yesRestore")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={sqlConfirmOpen} onOpenChange={setSqlConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>SQL Restore নিশ্চিত করুন</AlertDialogTitle>
+            <AlertDialogDescription>
+              এই action পুরো database-এর existing data মুছে backup file-এর data বসাবে।
+              এটা <strong>undo করা যাবে না</strong>। আপনি কি নিশ্চিত?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>না, বাতিল</AlertDialogCancel>
+            <AlertDialogAction onClick={() => restoreFullSql()} className="bg-destructive hover:bg-destructive/90">
+              হ্যাঁ, Restore করুন
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
