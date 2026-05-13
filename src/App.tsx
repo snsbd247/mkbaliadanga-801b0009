@@ -128,6 +128,12 @@ import ApiPayments from "./pages/ApiPayments";
 import ApiAccounts from "./pages/ApiAccounts";
 import ApiJournals from "./pages/ApiJournals";
 import ApiReports from "./pages/ApiReports";
+import ApiUsers from "./pages/ApiUsers";
+import ApiRoles from "./pages/ApiRoles";
+import ApiOffices from "./pages/ApiOffices";
+import ApiAudit from "./pages/ApiAudit";
+import ApiSms from "./pages/ApiSms";
+import ApiQr from "./pages/ApiQr";
 
 const queryClient = new QueryClient();
 
@@ -154,6 +160,12 @@ const App = () => (
               <Route path="/api/accounts" element={<ApiAccounts />} />
               <Route path="/api/journals" element={<ApiJournals />} />
               <Route path="/api/reports" element={<ApiReports />} />
+              <Route path="/api/users" element={<ApiUsers />} />
+              <Route path="/api/roles" element={<ApiRoles />} />
+              <Route path="/api/offices" element={<ApiOffices />} />
+              <Route path="/api/audit" element={<ApiAudit />} />
+              <Route path="/api/sms" element={<ApiSms />} />
+              <Route path="/api/qr" element={<ApiQr />} />
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
