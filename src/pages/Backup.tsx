@@ -52,7 +52,7 @@ async function fetchAll(table: string) {
 
 export default function Backup() {
   const { t } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, isDeveloper, session } = useAuth();
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
@@ -61,6 +61,75 @@ export default function Backup() {
   const [snapshotBlob, setSnapshotBlob] = useState<{ url: string; name: string } | null>(null);
   const [restoreReport, setRestoreReport] = useState<{ table: string; inserted: number; updated: number; failed: number; skipped: number; errors: string[] }[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Full SQL backup (developer-only)
+  const sqlFileRef = useRef<HTMLInputElement>(null);
+  const [sqlRestoreFile, setSqlRestoreFile] = useState<File | null>(null);
+  const [sqlConfirmOpen, setSqlConfirmOpen] = useState(false);
+  const [sqlResult, setSqlResult] = useState<{ ok: boolean; message: string; durationMs?: number } | null>(null);
+
+  // ---- Full SQL backup / restore (developer only) ----
+  async function downloadFullSql() {
+    if (!session?.access_token) return toast.error("Not authenticated");
+    setBusy("__sql_export__");
+    try {
+      const url = `https://jcdonpeftfrnzblhtsqo.supabase.co/functions/v1/db-export?mode=data`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errBody.slice(0, 200)}`);
+      }
+      const blob = await res.blob();
+      const sqlBlob = new Blob([blob], { type: "application/sql" });
+      const a = document.createElement("a");
+      const objUrl = URL.createObjectURL(sqlBlob);
+      a.href = objUrl;
+      a.download = `lovable-full-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql`;
+      a.click();
+      URL.revokeObjectURL(objUrl);
+      toast.success("SQL backup downloaded");
+    } catch (e: any) {
+      toast.error(`SQL backup failed: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function restoreFullSql() {
+    if (!sqlRestoreFile) return toast.error("Choose a .sql file first");
+    if (!session?.access_token) return toast.error("Not authenticated");
+    setSqlConfirmOpen(false);
+    setBusy("__sql_restore__");
+    setSqlResult(null);
+    try {
+      const sqlText = await sqlRestoreFile.text();
+      const url = `https://jcdonpeftfrnzblhtsqo.supabase.co/functions/v1/db-restore`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/sql",
+        },
+        body: sqlText,
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        const msg = json.errors?.join("; ") ?? json.error ?? `HTTP ${res.status}`;
+        setSqlResult({ ok: false, message: msg });
+        toast.error(`Restore failed: ${msg.slice(0, 120)}`);
+      } else {
+        setSqlResult({ ok: true, message: "Restore completed", durationMs: json.duration_ms });
+        toast.success(`Restore completed in ${(json.duration_ms / 1000).toFixed(1)}s`);
+      }
+    } catch (e: any) {
+      setSqlResult({ ok: false, message: e.message });
+      toast.error(`Restore failed: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
 
   // ---- restore ----
   const TABLE_NAMES = new Set(TABLES.map(t => t.name));
