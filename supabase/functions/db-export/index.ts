@@ -56,6 +56,24 @@ function sqlLiteral(v: unknown, column?: ColumnMeta): string {
   return sqlString(v);
 }
 
+async function fetchAllRows(supabase: any, table: string): Promise<any[]> {
+  const pageSize = 1000;
+  let from = 0;
+  const all: any[] = [];
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select("*")
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -157,9 +175,12 @@ Deno.serve(async (req) => {
 
     let totalRows = 0;
     for (const table of tables) {
-      const { data: rows, error } = await supabase.from(table).select("*");
-      if (error) {
-        sql += `-- Skipped ${table}: ${error.message}\n\n`;
+      let rows: any[];
+      try {
+        rows = await fetchAllRows(supabase, table);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        sql += `-- Skipped ${table}: ${message}\n\n`;
         continue;
       }
       if (!rows || rows.length === 0) {
