@@ -4742,6 +4742,7 @@ export type Database = {
       current_user_office: { Args: never; Returns: string }
       data_integrity_scan: { Args: never; Returns: Json }
       email_for_username: { Args: { _username: string }; Returns: string }
+      exec_sql_admin: { Args: { sql: string }; Returns: undefined }
       farmer_dues_breakdown: {
         Args: { _farmer_id: string }
         Returns: {

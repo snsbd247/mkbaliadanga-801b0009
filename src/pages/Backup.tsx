@@ -12,7 +12,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLang } from "@/i18n/LanguageProvider";
-import { Download, Database, FileSpreadsheet, Upload, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Download, Database, FileSpreadsheet, Upload, AlertTriangle, ShieldCheck, FileCode2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -52,7 +52,7 @@ async function fetchAll(table: string) {
 
 export default function Backup() {
   const { t } = useLang();
-  const { isSuper } = useAuth();
+  const { isSuper, isDeveloper, session } = useAuth();
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
@@ -61,6 +61,75 @@ export default function Backup() {
   const [snapshotBlob, setSnapshotBlob] = useState<{ url: string; name: string } | null>(null);
   const [restoreReport, setRestoreReport] = useState<{ table: string; inserted: number; updated: number; failed: number; skipped: number; errors: string[] }[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Full SQL backup (developer-only)
+  const sqlFileRef = useRef<HTMLInputElement>(null);
+  const [sqlRestoreFile, setSqlRestoreFile] = useState<File | null>(null);
+  const [sqlConfirmOpen, setSqlConfirmOpen] = useState(false);
+  const [sqlResult, setSqlResult] = useState<{ ok: boolean; message: string; durationMs?: number } | null>(null);
+
+  // ---- Full SQL backup / restore (developer only) ----
+  async function downloadFullSql() {
+    if (!session?.access_token) return toast.error("Not authenticated");
+    setBusy("__sql_export__");
+    try {
+      const url = `https://jcdonpeftfrnzblhtsqo.supabase.co/functions/v1/db-export?mode=data`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errBody.slice(0, 200)}`);
+      }
+      const blob = await res.blob();
+      const sqlBlob = new Blob([blob], { type: "application/sql" });
+      const a = document.createElement("a");
+      const objUrl = URL.createObjectURL(sqlBlob);
+      a.href = objUrl;
+      a.download = `lovable-full-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.sql`;
+      a.click();
+      URL.revokeObjectURL(objUrl);
+      toast.success("SQL backup downloaded");
+    } catch (e: any) {
+      toast.error(`SQL backup failed: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function restoreFullSql() {
+    if (!sqlRestoreFile) return toast.error("Choose a .sql file first");
+    if (!session?.access_token) return toast.error("Not authenticated");
+    setSqlConfirmOpen(false);
+    setBusy("__sql_restore__");
+    setSqlResult(null);
+    try {
+      const sqlText = await sqlRestoreFile.text();
+      const url = `https://jcdonpeftfrnzblhtsqo.supabase.co/functions/v1/db-restore`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/sql",
+        },
+        body: sqlText,
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        const msg = json.errors?.join("; ") ?? json.error ?? `HTTP ${res.status}`;
+        setSqlResult({ ok: false, message: msg });
+        toast.error(`Restore failed: ${msg.slice(0, 120)}`);
+      } else {
+        setSqlResult({ ok: true, message: "Restore completed", durationMs: json.duration_ms });
+        toast.success(`Restore completed in ${(json.duration_ms / 1000).toFixed(1)}s`);
+      }
+    } catch (e: any) {
+      setSqlResult({ ok: false, message: e.message });
+      toast.error(`Restore failed: ${e.message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
 
   // ---- restore ----
   const TABLE_NAMES = new Set(TABLES.map(t => t.name));
@@ -363,6 +432,87 @@ export default function Backup() {
         </Card>
       )}
 
+      {isDeveloper && (
+        <Card className="p-5 mt-5 border-purple-500/40 bg-gradient-to-br from-purple-500/5 to-fuchsia-500/5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-600 text-white">
+              <FileCode2 className="h-6 w-6" />
+            </div>
+            <div className="flex-1 space-y-4">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  Full SQL Backup &amp; Restore
+                  <span className="text-[10px] font-bold uppercase rounded bg-purple-600 text-white px-1.5 py-0.5">Developer</span>
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  পুরো ডাটাবেজ <code className="text-xs bg-muted px-1 rounded">.sql</code> ফাইলে ডাউনলোড করুন এবং
+                  সেই ফাইল দিয়ে সম্পূর্ণ database রিস্টোর করুন। শুধু developer role-এর জন্য।
+                </p>
+              </div>
+
+              <div className="rounded-md border p-3 bg-background/60">
+                <div className="text-sm font-medium mb-2">১. SQL Backup ডাউনলোড</div>
+                <Button onClick={downloadFullSql} disabled={!!busy} variant="default">
+                  {busy === "__sql_export__" ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />SQL Generate হচ্ছে…</>
+                  ) : (
+                    <><Download className="h-4 w-4 mr-2" />Download Full SQL Backup</>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  সব public table-এর data INSERT statement আকারে — TRUNCATE + INSERT সহ। File extension: <strong>.sql</strong>
+                </p>
+              </div>
+
+              <div className="rounded-md border border-destructive/40 p-3 bg-destructive/5">
+                <div className="text-sm font-medium mb-2 flex items-center gap-2">
+                  ২. SQL Backup থেকে Restore
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                </div>
+                <div className="text-xs text-destructive mb-3">
+                  ⚠️ সাবধান: Restore চালালে existing data মুছে গিয়ে backup-এর data বসবে। আগে একটা backup ডাউনলোড করে রাখুন।
+                </div>
+                <input
+                  ref={sqlFileRef}
+                  type="file"
+                  accept=".sql,application/sql,text/plain"
+                  className="hidden"
+                  onChange={(e) => { setSqlRestoreFile(e.target.files?.[0] ?? null); setSqlResult(null); }}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" onClick={() => sqlFileRef.current?.click()} disabled={!!busy}>
+                    <Upload className="h-4 w-4 mr-1" />Choose .sql File
+                  </Button>
+                  {sqlRestoreFile && (
+                    <span className="text-xs text-muted-foreground">
+                      {sqlRestoreFile.name} ({(sqlRestoreFile.size / 1024).toFixed(1)} KB)
+                    </span>
+                  )}
+                  <Button
+                    variant="destructive"
+                    onClick={() => setSqlConfirmOpen(true)}
+                    disabled={!sqlRestoreFile || !!busy}
+                    className="ml-auto"
+                  >
+                    {busy === "__sql_restore__" ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Restoring…</>
+                    ) : (
+                      "Restore SQL Backup"
+                    )}
+                  </Button>
+                </div>
+                {sqlResult && (
+                  <div className={`mt-3 rounded p-2 text-xs ${sqlResult.ok ? "bg-emerald-50 text-emerald-800 border border-emerald-300" : "bg-destructive/10 text-destructive border border-destructive/30"}`}>
+                    {sqlResult.ok ? "✓ " : "✗ "}{sqlResult.message}
+                    {sqlResult.durationMs !== undefined && ` (${(sqlResult.durationMs / 1000).toFixed(1)}s)`}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -372,6 +522,24 @@ export default function Backup() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("p5e_no")}</AlertDialogCancel>
             <AlertDialogAction onClick={() => startRestore()}>{t("p5e_yesRestore")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={sqlConfirmOpen} onOpenChange={setSqlConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>SQL Restore নিশ্চিত করুন</AlertDialogTitle>
+            <AlertDialogDescription>
+              এই action পুরো database-এর existing data মুছে backup file-এর data বসাবে।
+              এটা <strong>undo করা যাবে না</strong>। আপনি কি নিশ্চিত?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>না, বাতিল</AlertDialogCancel>
+            <AlertDialogAction onClick={() => restoreFullSql()} className="bg-destructive hover:bg-destructive/90">
+              হ্যাঁ, Restore করুন
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

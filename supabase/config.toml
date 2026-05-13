@@ -42,3 +42,6 @@ verify_jwt = false
 
 [functions.db-export]
 verify_jwt = false
+
+[functions.db-restore]
+verify_jwt = false
