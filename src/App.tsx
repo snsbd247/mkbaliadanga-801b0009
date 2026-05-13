@@ -122,6 +122,9 @@ import AssetDisposal from "./pages/assets/AssetDisposal";
 import VerifyReceipt from "./pages/VerifyReceipt";
 import ApiAuth from "./pages/ApiAuth";
 import ApiFarmers from "./pages/ApiFarmers";
+import ApiLoans from "./pages/ApiLoans";
+import ApiSavings from "./pages/ApiSavings";
+import ApiPayments from "./pages/ApiPayments";
 
 const queryClient = new QueryClient();
 
@@ -142,6 +145,9 @@ const App = () => (
               <Route path="/r/:token" element={<VerifyReceipt />} />
               <Route path="/api/auth" element={<ApiAuth />} />
               <Route path="/api/farmers" element={<ApiFarmers />} />
+              <Route path="/api/loans" element={<ApiLoans />} />
+              <Route path="/api/savings" element={<ApiSavings />} />
+              <Route path="/api/payments" element={<ApiPayments />} />
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
