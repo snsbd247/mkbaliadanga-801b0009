@@ -30,15 +30,13 @@ function Inner() {
 
   return (
     <div className="container mx-auto p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Loans</h1>
-      </div>
+      <h1 className="text-2xl font-semibold">Loans</h1>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>List</CardTitle>
           <div className="flex gap-2">
-            <Select value={status} onValueChange={(v) => { setStatus(v === "all" ? "" : v); setPage(1); }}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+            <Select value={status || "all"} onValueChange={(v) => { setStatus(v === "all" ? "" : v); setPage(1); }}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
@@ -76,26 +74,38 @@ function Inner() {
                     <Select value={form.farmer_id} onValueChange={(v) => setForm({ ...form, farmer_id: v })}>
                       <SelectTrigger><SelectValue placeholder="Select farmer" /></SelectTrigger>
                       <SelectContent>
-                        {farmers.data?.data.map(f => <SelectItem key={f.id} value={f.id}>{f.code} — {f.name}</SelectItem>)}
+                        {farmers.data?.data.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>{f.code} — {f.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">
                     <Label>Plan (optional)</Label>
-                    <Select value={form.loan_plan_id} onValueChange={(v) => {
-                      const p = plans.data?.find(x => x.id === v);
-                      setForm({ ...form, loan_plan_id: v, interest_rate: p ? String(p.interest_rate) : form.interest_rate, tenure_months: p ? String(p.tenure_months) : form.tenure_months });
-                    }}>
+                    <Select
+                      value={form.loan_plan_id}
+                      onValueChange={(v) => {
+                        const p = plans.data?.find((x) => x.id === v);
+                        setForm({
+                          ...form,
+                          loan_plan_id: v,
+                          interest_rate: p ? String(p.interest_rate) : form.interest_rate,
+                          tenure_months: p ? String(p.tenure_months) : form.tenure_months,
+                        });
+                      }}
+                    >
                       <SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger>
                       <SelectContent>
-                        {plans.data?.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.interest_rate}%, {p.tenure_months}m)</SelectItem>)}
+                        {plans.data?.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name} ({p.interest_rate}%, {p.tenure_months}m)</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1"><Label>Principal</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: e.target.value })} required /></div>
-                    <div className="space-y-1"><Label>Interest %</Label><Input type="number" step="0.01" value={form.interest_rate} onChange={e => setForm({ ...form, interest_rate: e.target.value })} required /></div>
-                    <div className="space-y-1"><Label>Tenure (mo)</Label><Input type="number" value={form.tenure_months} onChange={e => setForm({ ...form, tenure_months: e.target.value })} required /></div>
+                    <div className="space-y-1"><Label>Principal</Label><Input type="number" value={form.principal} onChange={(e) => setForm({ ...form, principal: e.target.value })} required /></div>
+                    <div className="space-y-1"><Label>Interest %</Label><Input type="number" step="0.01" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} required /></div>
+                    <div className="space-y-1"><Label>Tenure (mo)</Label><Input type="number" value={form.tenure_months} onChange={(e) => setForm({ ...form, tenure_months: e.target.value })} required /></div>
                   </div>
                   <DialogFooter><Button type="submit" disabled={create.isPending}>{create.isPending ? "Saving…" : "Create"}</Button></DialogFooter>
                 </form>
@@ -104,16 +114,26 @@ function Inner() {
           </div>
         </CardHeader>
         <CardContent>
-          {list.isLoading ? <div>Loading…</div> : list.error ? <div className="text-destructive">{(list.error as Error).message}</div> : (
+          {list.isLoading ? (
+            <div>Loading…</div>
+          ) : list.error ? (
+            <div className="text-destructive">{(list.error as Error).message}</div>
+          ) : (
             <>
               <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Farmer</TableHead><TableHead>Principal</TableHead><TableHead>Rate</TableHead>
-                  <TableHead>Tenure</TableHead><TableHead>Status</TableHead><TableHead>Outstanding</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Farmer</TableHead>
+                    <TableHead>Principal</TableHead>
+                    <TableHead>Rate</TableHead>
+                    <TableHead>Tenure</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Outstanding</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
-                  {list.data?.data.map(l => (
+                  {list.data?.data.map((l) => (
                     <TableRow key={l.id}>
                       <TableCell>{l.farmer_id.slice(0, 8)}…</TableCell>
                       <TableCell>{l.principal}</TableCell>
@@ -123,16 +143,29 @@ function Inner() {
                       <TableCell>{l.outstanding ?? "—"}</TableCell>
                       <TableCell className="text-right space-x-1">
                         {l.status === "pending" && (
-                          <Button size="icon" variant="ghost" title="Approve" onClick={async () => {
-                            try { await approve.mutateAsync(l.id); toast({ title: "Approved" }); }
-                            catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-                          }}><CheckCircle2 className="h-4 w-4" /></Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Approve"
+                            onClick={async () => {
+                              try { await approve.mutateAsync(l.id); toast({ title: "Approved" }); }
+                              catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                            }}
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                          </Button>
                         )}
-                        <Button size="icon" variant="ghost" onClick={async () => {
-                          if (!confirm("Delete loan?")) return;
-                          try { await del.mutateAsync(l.id); toast({ title: "Deleted" }); }
-                          catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-                        }}><Trash2 className="h-4 w-4" /></Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={async () => {
+                            if (!confirm("Delete loan?")) return;
+                            try { await del.mutateAsync(l.id); toast({ title: "Deleted" }); }
+                            catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -140,4 +173,21 @@ function Inner() {
               </Table>
               {list.data?.meta && (
                 <div className="flex justify-between items-center mt-4 text-sm">
-                  <span>Page {list.data.meta.current_page} / {list.data.meta.
+                  <span>Page {list.data.meta.current_page} / {list.data.meta.last_page} · {list.data.meta.total} total</span>
+                  <div className="space-x-2">
+                    <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
+                    <Button size="sm" variant="outline" disabled={page >= list.data.meta.last_page} onClick={() => setPage((p) => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function ApiLoans() {
+  return <ApiShell><Inner /></ApiShell>;
+}
