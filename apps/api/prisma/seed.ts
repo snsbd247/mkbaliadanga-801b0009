@@ -117,7 +117,8 @@ async function main() {
   await ensureUser("manager@mkb.local",  "Manager@123",  "ম্যানেজার", office.id, AppRole.manager);
   await ensureUser("operator@mkb.local", "Operator@123", "অপারেটর",   office.id, AppRole.operator);
   await ensureUser("viewer@mkb.local",   "Viewer@123",   "ভিউয়ার",   office.id, AppRole.viewer);
-  console.log("  ✓ users (5)");
+  await ensureUser("developer@mkb.local", "Developer@123", "ডেভেলপার", office.id, AppRole.developer);
+  console.log("  ✓ users (6)");
 
   // ---- Chart of Accounts ----
   const coa = [
