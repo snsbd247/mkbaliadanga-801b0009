@@ -270,11 +270,15 @@ PYEOF
 
 sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose pull -q" || warn "pull issues, continuing"
 # analytics disable করে সব service start
-if ! sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d --scale analytics=0"; then
-  warn "প্রথম try fail — দ্বিতীয়বার চেষ্টা..."
+# সব service start (analytics এর depends_on আগেই compose থেকে সরিয়েছি, তাই
+# --scale analytics=0 দিলে kong/storage/functions ও skip হয় — সেটা আর করব না)
+if ! sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d"; then
+  warn "প্রথম try fail — analytics scale=0 দিয়ে retry..."
   sleep 5
   sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d --scale analytics=0" || warn "Some services down — 'docker compose ps' check করুন"
 fi
+# নিশ্চিত করি kong/storage/functions চলছে
+sudo -u "$APP_USER" -H bash -c "cd ${SUPABASE_DIR} && docker compose up -d kong storage functions" || true
 sleep 20
 
 # =============================================================================
