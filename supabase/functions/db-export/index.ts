@@ -12,15 +12,48 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-function sqlLiteral(v: unknown): string {
+type ColumnMeta = { data_type?: string; udt_name?: string };
+
+function sqlString(v: unknown): string {
+  return `'${String(v).replace(/'/g, "''")}'`;
+}
+
+function pgArrayType(udtName?: string): string {
+  if (!udtName?.startsWith("_")) return "text[]";
+  const element = udtName.slice(1);
+  const aliases: Record<string, string> = {
+    int2: "smallint",
+    int4: "integer",
+    int8: "bigint",
+    float4: "real",
+    float8: "double precision",
+    bool: "boolean",
+    timestamptz: "timestamptz",
+  };
+  return `${aliases[element] ?? element}[]`;
+}
+
+function sqlLiteral(v: unknown, column?: ColumnMeta): string {
   if (v === null || v === undefined) return "NULL";
+  if (column?.data_type === "ARRAY") {
+    const arrayType = pgArrayType(column.udt_name);
+    if (!Array.isArray(v) || v.length === 0) return `'{}'::${arrayType}`;
+    const items = v.map((item) => sqlLiteral(item)).join(", ");
+    return `ARRAY[${items}]::${arrayType}`;
+  }
   if (typeof v === "number") return Number.isFinite(v) ? String(v) : "NULL";
   if (typeof v === "boolean") return v ? "TRUE" : "FALSE";
   if (v instanceof Date) return `'${v.toISOString()}'`;
+  if (column?.data_type === "jsonb" || column?.udt_name === "jsonb") {
+    return `${sqlString(JSON.stringify(v))}::jsonb`;
+  }
+  if (column?.data_type === "json" || column?.udt_name === "json") {
+    return `${sqlString(JSON.stringify(v))}::json`;
+  }
   if (typeof v === "object") {
     return `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb`;
   }
-  return `'${String(v).replace(/'/g, "''")}'`;
+  return sqlString(v);
 }
 
 Deno.serve(async (req) => {
@@ -88,6 +121,20 @@ Deno.serve(async (req) => {
     if (lErr) throw lErr;
     const tables: string[] = (tList ?? []).map((r: any) => r.tablename);
 
+    const { data: cList, error: cErr } = await supabase
+      .rpc("pg_public_table_columns");
+    if (cErr) throw cErr;
+    const columnTypes = new Map<string, Map<string, ColumnMeta>>();
+    for (const col of cList ?? []) {
+      const tableName = (col as any).table_name;
+      const columnName = (col as any).column_name;
+      if (!columnTypes.has(tableName)) columnTypes.set(tableName, new Map());
+      columnTypes.get(tableName)!.set(columnName, {
+        data_type: (col as any).data_type,
+        udt_name: (col as any).udt_name,
+      });
+    }
+
     if (tables.length === 0) {
       return new Response(JSON.stringify({ error: "No tables found" }), {
         status: 500,
@@ -122,8 +169,11 @@ Deno.serve(async (req) => {
       const cols = Object.keys(rows[0]);
       sql += `-- ${table}: ${rows.length} rows\n`;
       const colList = cols.map((c) => `"${c}"`).join(", ");
+      const tableColumnTypes = columnTypes.get(table);
       for (const row of rows) {
-        const vals = cols.map((c) => sqlLiteral((row as any)[c])).join(", ");
+        const vals = cols
+          .map((c) => sqlLiteral((row as any)[c], tableColumnTypes?.get(c)))
+          .join(", ");
         sql += `INSERT INTO public."${table}" (${colList}) VALUES (${vals});\n`;
       }
       sql += `\n`;
