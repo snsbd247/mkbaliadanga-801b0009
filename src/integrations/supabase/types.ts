@@ -4893,6 +4893,15 @@ export type Database = {
         Returns: boolean
       }
       next_receipt_no: { Args: { p_kind: string }; Returns: string }
+      pg_public_table_columns: {
+        Args: never
+        Returns: {
+          column_name: string
+          data_type: string
+          table_name: string
+          udt_name: string
+        }[]
+      }
       pg_tables_public_list: {
         Args: never
         Returns: {
