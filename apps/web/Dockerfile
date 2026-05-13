@@ -6,7 +6,8 @@ ARG VITE_WS_URL
 ARG VITE_PUBLIC_FILES
 ENV VITE_API_URL=$VITE_API_URL \
     VITE_WS_URL=$VITE_WS_URL \
-    VITE_PUBLIC_FILES=$VITE_PUBLIC_FILES
+    VITE_PUBLIC_FILES=$VITE_PUBLIC_FILES \
+    NODE_OPTIONS=--max-old-space-size=4096
 # Copy the entire repo (the Vite app lives at the repo root).
 COPY . .
 RUN npm install --no-audit --no-fund --legacy-peer-deps
