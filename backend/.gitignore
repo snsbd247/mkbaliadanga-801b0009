@@ -1,0 +1,14 @@
+/vendor
+/node_modules
+.env
+.env.backup
+.phpunit.result.cache
+storage/*.key
+storage/logs/*.log
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+public/storage
+.idea
+.vscode
+*.log
