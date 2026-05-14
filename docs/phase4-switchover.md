@@ -1,72 +1,66 @@
 # Phase 4 — Production Switchover (Supabase → Laravel API)
 
 This phase flips the application's primary data plane from the legacy Supabase
-backend to the new Laravel API in `backend/`. Legacy routes remain available
-for fallback; nothing is deleted yet.
+backend to the new Laravel API in `backend/`.
 
-## What's added in 4.1
+## 4.1 — API stack scaffolding (done)
 
-| File | Purpose |
-|---|---|
-| `src/pages/ApiDashboard.tsx` | Tile-based landing page for the API stack |
-| `src/lib/api/featureFlag.ts` | `VITE_USE_API` env flag → flips root `/` |
-| `src/App.tsx` | New routes `/api`, `/api/dashboard`; conditional root redirect |
+- `src/pages/ApiDashboard.tsx` — tile landing page
+- `src/lib/api/featureFlag.ts` — `VITE_USE_API` flag + legacy→API redirect map
+- `src/App.tsx` — routes `/api`, `/api/dashboard`; conditional root redirect
 
-## How to switch a deployment to the API stack
+## 4.2 — Hard cutover, keep code (done)
 
-1. **Deploy the Laravel backend** (`backend/`)
-   ```bash
-   cd backend
-   docker compose up -d --build
-   docker compose exec app php artisan migrate --seed --force
-   docker compose exec app php artisan db:seed --class=AdminUserSeeder
-   ```
+**Default behaviour:** `USE_API_BACKEND = true` unless `VITE_USE_API=0`.
 
-2. **Set frontend env**
+When the flag is on:
+- `/` → `/api/dashboard`
+- Legacy top-level paths (`/auth`, `/dashboard`, `/farmers`, `/loans`, …) → `/api/*`
+- All other legacy routes still mount (covered by `AppLayout`) — emergency only
+
+When the flag is off (`VITE_USE_API=0`):
+- App behaves exactly like before — full Supabase stack, no redirects.
+
+### Legacy → API redirect map
+
+See `LEGACY_TO_API` in `src/lib/api/featureFlag.ts`. Currently covers:
+`/auth`, `/dashboard`, `/admin`, `/farmers`, `/loans`, `/loans/plans`,
+`/savings`, `/payments`, `/reports`, `/accounts`, `/journal-entry`,
+`/seasons`, `/irrigation/rates`, `/users`, `/offices`, `/sms-logs`, `/audit`.
+
+Add more entries to the map as you finish migrating individual screens.
+
+## Deployment
+
+1. Deploy Laravel backend (`backend/docker compose up -d --build`); run
+   `php artisan migrate --seed --force` and `db:seed --class=AdminUserSeeder`.
+2. Frontend env:
    ```env
    VITE_API_URL=https://api.mohammadkhani.com/api
-   VITE_USE_API=1
+   # VITE_USE_API=1  # default; omit unless you need to disable
    ```
+3. `bun run build` → upload `dist/`.
+4. Smoke test: `/` → `/api/dashboard` → login → tiles load → create one journal.
 
-3. **Build & deploy the SPA** — `bun run build` → upload `dist/`.
+## Emergency rollback
 
-4. **Smoke test** in this order:
-   - `/api/auth` → login as admin
-   - `/api/dashboard` loads tiles
-   - `/api/farmers` list returns rows
-   - `/api/journals` create a balanced entry
-   - `/api/reports` → Trial Balance loads
+Set `VITE_USE_API=0`, rebuild, redeploy. Root and all legacy paths return to
+the Supabase stack instantly. No data is touched.
 
-## Rollback
+## Data migration (one-time, before first cutover)
 
-Set `VITE_USE_API=0` (or remove it) and rebuild. Root `/` will return to the
-legacy Supabase Farmer Portal login. No data migration is reversed.
+| Step | Command |
+|---|---|
+| Export Supabase | `supabase db dump -f supabase.sql` |
+| Restore to Laravel DB | `psql $LARAVEL_DB < migrate/transformed.sql` |
+| Reset sequences | `php artisan db:seed --class=SequenceFixSeeder` |
+| Verify counts | `php artisan integrity:scan` |
 
-## Data migration (one-time, before switchover)
+Archive parity report at `docs/migration-report-YYYY-MM-DD.md`.
 
-Use these scripts on the production Supabase DB → Laravel Postgres:
+## Phase 4.3 (future, after ≥7 days stable in production)
 
-| Step | Command | Notes |
-|---|---|---|
-| Export Supabase | `supabase db dump -f supabase.sql` | Schema + data |
-| Restore to Laravel DB | `psql $LARAVEL_DB < migrate/transformed.sql` | After running the table-by-table mapper |
-| Reset sequences | `php artisan db:seed --class=SequenceFixSeeder` | Aligns auto-increment / UUID gen |
-| Verify counts | `php artisan integrity:scan` | From `IntegrityScanCommand` |
-
-A row-count parity report should be archived in `docs/migration-report-YYYY-MM-DD.md`.
-
-## What is NOT removed yet
-
-- `src/integrations/supabase/*` — still imported by ~150 legacy pages
-- `supabase/functions/*` — edge functions stay deployed for fallback
-- Legacy `AuthProvider` — wraps the legacy AppLayout
-
-These stay until **Phase 4.2** (legacy decommission) once the API stack runs
-clean for ≥7 days in production.
-
-## Phase 4.2 (next, on user approval)
-
-- Remove `AuthProvider` (legacy) and `src/integrations/supabase/*`
-- Delete unused legacy pages no longer linked from any nav
-- Drop the Supabase project from `package.json`
-- Decommission edge functions
+- Delete `src/integrations/supabase/*` and remove `@supabase/supabase-js`
+- Remove legacy `AuthProvider`, `AppLayout`, all legacy pages
+- Decommission edge functions via `supabase--delete_edge_functions`
+- Drop `supabase/config.toml`
