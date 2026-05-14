@@ -11,6 +11,8 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
+import { isLaravelBackend } from "@/lib/backend";
+import { api, setApiToken } from "@/lib/api/client";
 
 const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -55,6 +57,24 @@ export default function FarmerPortalLogin() {
     if (!mob || mob.replace(/\D/g, "").length < 6) { setError(t("enterMobileError") || "Enter your mobile number"); return; }
     setBusy(true);
     try {
+      // ── Laravel backend (VPS): same fields, hits /farmer/auth/login ──
+      if (isLaravelBackend) {
+        try {
+          const { data } = await api.post("/farmer/auth/login", { code: id, mobile: mob });
+          const token = data.token ?? data.access_token;
+          if (!token) throw new Error("No token returned");
+          setApiToken(token);
+          localStorage.setItem("farmer_portal_token", token);
+          localStorage.setItem("farmer_portal_expires", data.expires_at ?? "");
+          localStorage.setItem("farmer_portal_name", data.farmer?.name ?? "");
+          toast.success(t("verified") || "Logged in");
+          nav("/farmer/dashboard", { replace: true });
+        } catch (err: any) {
+          setError(err?.message || t("invalidCredentials") || "Invalid farmer ID or mobile number");
+          idInputRef.current?.focus();
+        }
+        return;
+      }
       const res = await fetch(`${FN_BASE}/farmer-password-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: ANON, Authorization: `Bearer ${ANON}` },

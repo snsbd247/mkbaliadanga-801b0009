@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { isLaravelBackend } from "@/lib/backend";
+import { api, setApiToken } from "@/lib/api/client";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -32,7 +34,7 @@ const initialDebug: DebugInfo = { lookup: "idle", password: "idle", redirect: "i
 
 export default function AuthPage() {
   const nav = useNavigate();
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const { t, lang, setLang } = useLang();
   const brand = useBranding();
   const [username, setUsername] = useState("");
@@ -69,6 +71,31 @@ export default function AuthPage() {
     setBusy(true);
     const d: DebugInfo = { lookup: "running", password: "idle", redirect: "idle" };
     setDebug(d);
+
+    // ── Laravel backend (VPS): username/email + password → /auth/login ──
+    if (isLaravelBackend) {
+      try {
+        const { data } = await api.post("/auth/login", { identifier: u, password });
+        const token = data.token ?? data.access_token;
+        if (!token) throw new Error("No token returned");
+        setApiToken(token);
+        setDebug({ ...d, lookup: "ok", password: "ok", redirect: "running", resolvedEmail: data.user?.email });
+        toast.success(t("welcomeBack"));
+        await refresh();
+        nav("/admin", { replace: true });
+        setTimeout(() => {
+          if (window.location.pathname === "/auth") window.location.replace("/admin");
+        }, 1200);
+      } catch (err: any) {
+        const msg = err?.message || "Login failed";
+        setPasswordError(lang === "bn" ? "পাসওয়ার্ড সঠিক নয়" : "Incorrect password");
+        setDebug({ ...d, password: "fail", errorMessage: msg, hint: "Laravel /auth/login rejected the credentials." });
+        toast.error(msg);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
 
     // Step 1: resolve username -> email (or accept email directly)
     let email = u;
