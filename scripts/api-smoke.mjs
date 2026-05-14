@@ -76,6 +76,23 @@ const READ_ENDPOINTS = [
     console.log(r.ok ? `${r.status} OK` : `${r.status} FAIL`);
   }
 
+  // Write smoke: create + delete a tiny journal entry (zero-amount, balanced).
+  if (process.env.SMOKE_WRITE === "1") {
+    process.stdout.write(`→ POST /journals (write smoke) … `);
+    const created = await call("POST", "/journals", {
+      entry_date: new Date().toISOString().slice(0, 10),
+      memo: "smoke-test",
+      lines: [
+        { account_code: "1000", debit: 0, credit: 0 },
+        { account_code: "2000", debit: 0, credit: 0 },
+      ],
+    });
+    console.log(created.ok ? `${created.status} OK` : `${created.status} (write skipped)`);
+    if (created.ok && created.data?.id) {
+      await call("DELETE", `/journals/${created.data.id}`);
+    }
+  }
+
   await call("POST", "/auth/logout");
 
   const failed = results.filter(r => !r.ok);

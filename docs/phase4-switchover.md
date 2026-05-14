@@ -83,12 +83,15 @@ the Supabase stack instantly. No data is touched.
 
 | Step | Command |
 |---|---|
-| Export Supabase | `supabase db dump -f supabase.sql` |
-| Restore to Laravel DB | `psql $LARAVEL_DB < migrate/transformed.sql` |
-| Reset sequences | `php artisan db:seed --class=SequenceFixSeeder` |
+| Export prep | `npm i pg` (one-time, dev only) |
+| Dry-run | `SUPABASE_DB_URL=… LARAVEL_DB_URL=… node scripts/migrate-supabase-to-laravel.mjs --dry-run` |
+| Run import | same command without `--dry-run` |
+| Reset sequences | `cd backend && php artisan db:seed --class=SequenceFixSeeder` |
 | Verify counts | `php artisan integrity:scan` |
+| Archive parity | `docs/migration-report-YYYY-MM-DD.md` |
 
-Archive parity report at `docs/migration-report-YYYY-MM-DD.md`.
+The migration script TRUNCATEs target tables, then re-inserts in FK-safe order.
+Use `--only=farmers,lands` to scope to specific tables during testing.
 
 ## Phase 4.3 (future, after ≥7 days stable in production)
 
