@@ -140,7 +140,7 @@ import ApiLoanPlans from "./pages/ApiLoanPlans";
 import ApiIrrigationRates from "./pages/ApiIrrigationRates";
 import ApiAssets from "./pages/ApiAssets";
 import ApiDashboard from "./pages/ApiDashboard";
-import { USE_API_BACKEND } from "./lib/api/featureFlag";
+import { USE_API_BACKEND, LEGACY_TO_API } from "./lib/api/featureFlag";
 
 const queryClient = new QueryClient();
 
@@ -180,6 +180,10 @@ const App = () => (
               <Route path="/api/loan-plans" element={<ApiLoanPlans />} />
               <Route path="/api/irrigation-rates" element={<ApiIrrigationRates />} />
               <Route path="/api/assets" element={<ApiAssets />} />
+              {USE_API_BACKEND &&
+                Object.entries(LEGACY_TO_API).map(([from, to]) => (
+                  <Route key={from} path={from} element={<Navigate to={to} replace />} />
+                ))}
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
