@@ -1,37 +1,36 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  MK Baliadanga — Self-Hosted VPS One-Command Installer
-#  Target: Fresh Ubuntu 22.04 / 24.04 LTS, run as root
+#  MK Baliadanga — One-Command VPS Installer (Laravel backend + Vite frontend)
+#  Target  : Fresh Ubuntu 22.04 / 24.04 LTS, run as root
+#  Domain  : mohammadkhani.com   (set DOMAIN= to override)
+#  Repo    : https://github.com/snsbd247/mkbaliadanga-801b0009.git
 #
 #  Usage:
-#    curl -fsSL https://mohammadkhani.com/install.sh | sudo bash
-#  or:
-#    DOMAIN=mohammadkhani.com EMAIL=admin@mohammadkhani.com bash scripts/install.sh
+#    curl -fsSL https://raw.githubusercontent.com/snsbd247/mkbaliadanga-801b0009/main/scripts/install.sh \
+#      | sudo DOMAIN=mohammadkhani.com EMAIL=admin@mohammadkhani.com bash
 #
-#  Stack provisioned (all in Docker):
-#    - PostgreSQL 16          (data store)
-#    - Redis 7                (cache + BullMQ queues)
-#    - MinIO                  (S3-compatible object storage)
-#    - NestJS API             (backend, business logic)
-#    - React + Vite frontend  (Nginx-served)
-#    - Nginx reverse proxy    (TLS termination, websocket)
-#    - Backup sidecar         (nightly pg_dump + MinIO mirror)
+#  Provisions (Docker):
+#    - PostgreSQL 16, Redis 7, MinIO (S3 compatible)
+#    - Laravel API (php-fpm) + nginx-fpm + queue worker + scheduler
+#  On host:
+#    - Node 20 (frontend build) → /var/www/${DOMAIN}
+#    - Nginx reverse proxy + Certbot SSL for ${DOMAIN}, www, api.${DOMAIN}
+#    - UFW firewall, fail2ban, nightly backup cron
 # =============================================================================
 set -euo pipefail
-cd /root 2>/dev/null || cd /
 
 # ---------- Configurable ----------
 DOMAIN="${DOMAIN:-mohammadkhani.com}"
 API_SUB="${API_SUB:-api.${DOMAIN}}"
-FILES_SUB="${FILES_SUB:-files.${DOMAIN}}"
 EMAIL="${EMAIL:-admin@${DOMAIN}}"
-REPO_URL="${REPO_URL:-https://github.com/snsbd247/mkbaliadanga-2fdd2e7e.git}"
+REPO_URL="${REPO_URL:-https://github.com/snsbd247/mkbaliadanga-801b0009.git}"
 BRANCH="${BRANCH:-main}"
 APP_USER="${APP_USER:-mkadmin}"
 APP_DIR="/home/${APP_USER}/mkbaliadanga"
+WEB_ROOT="/var/www/${DOMAIN}"
 CRED_FILE="/root/mkbaliadanga-credentials.txt"
 
-# ---------- Colors ----------
+# ---------- Pretty ----------
 C_R="\033[0;31m"; C_G="\033[0;32m"; C_Y="\033[1;33m"; C_C="\033[1;36m"; C_N="\033[0m"
 log()  { echo -e "${C_C}[mk]${C_N} $*"; }
 ok()   { echo -e "${C_G}[ok]${C_N} $*"; }
@@ -45,7 +44,8 @@ log "Updating apt + installing base packages..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y curl ca-certificates gnupg lsb-release ufw fail2ban git \
-  unattended-upgrades openssl jq cron certbot
+  unattended-upgrades openssl jq cron certbot python3-certbot-nginx nginx \
+  build-essential
 
 # ---------- 2. App user ----------
 if ! id "$APP_USER" >/dev/null 2>&1; then
@@ -54,20 +54,26 @@ if ! id "$APP_USER" >/dev/null 2>&1; then
   usermod -aG sudo "$APP_USER"
 fi
 
-# ---------- 3. Docker + compose ----------
+# ---------- 3. Docker ----------
 if ! command -v docker >/dev/null 2>&1; then
   log "Installing Docker Engine..."
   curl -fsSL https://get.docker.com | sh
   systemctl enable --now docker
-  usermod -aG docker "$APP_USER"
 fi
-if ! docker compose version >/dev/null 2>&1; then
-  apt-get install -y docker-compose-plugin
-fi
+usermod -aG docker "$APP_USER" || true
+docker compose version >/dev/null 2>&1 || apt-get install -y docker-compose-plugin
 ok "Docker $(docker --version | awk '{print $3}' | tr -d ,)"
 
-# ---------- 4. Firewall ----------
-log "Configuring UFW firewall..."
+# ---------- 4. Node 20 (for frontend build) ----------
+if ! command -v node >/dev/null 2>&1 || [[ "$(node -v)" != v20* ]]; then
+  log "Installing Node.js 20..."
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  apt-get install -y nodejs
+fi
+ok "Node $(node -v)"
+
+# ---------- 5. Firewall ----------
+log "Configuring UFW + fail2ban..."
 ufw --force reset >/dev/null
 ufw default deny incoming
 ufw default allow outgoing
@@ -77,11 +83,11 @@ ufw allow 443/tcp
 ufw --force enable
 systemctl enable --now fail2ban
 
-# ---------- 5. Clone repository ----------
+# ---------- 6. Clone repository ----------
 log "Cloning repository → $APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
   chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
-  sudo -u "$APP_USER" git -C "$APP_DIR" config --global --add safe.directory "$APP_DIR" || true
+  sudo -u "$APP_USER" git config --global --add safe.directory "$APP_DIR" || true
   sudo -u "$APP_USER" git -C "$APP_DIR" fetch --all
   sudo -u "$APP_USER" git -C "$APP_DIR" checkout "$BRANCH"
   sudo -u "$APP_USER" git -C "$APP_DIR" pull --ff-only
@@ -90,137 +96,197 @@ else
 fi
 chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
 
-# ---------- 6. Generate .env with secrets ----------
-ENV_FILE="$APP_DIR/.env"
+# ---------- 7. Generate backend/.env ----------
+ENV_FILE="$APP_DIR/backend/.env"
 if [ ! -f "$ENV_FILE" ]; then
-  log "Generating .env with random secrets..."
-  rand() { openssl rand -hex 32; }
+  log "Generating backend/.env with random secrets..."
+  rand() { openssl rand -hex 24; }
   PG_PASSWORD="$(rand)"
   REDIS_PASSWORD="$(rand)"
   MINIO_PASSWORD="$(rand)"
-  JWT_SECRET="$(rand)"
-  SESSION_SECRET="$(rand)"
+  DEV_PASSWORD="${DEV_PASSWORD:-123456}"
+  SUPERADMIN_PASSWORD="${SUPERADMIN_PASSWORD:-Admin@123456}"
+
   cat > "$ENV_FILE" <<EOF
-# ---- domains ----
-DOMAIN=${DOMAIN}
-API_URL=https://${API_SUB}
-WEB_URL=https://${DOMAIN}
-FILES_URL=https://${FILES_SUB}
+APP_NAME="MK Baliadanga"
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_URL=https://${API_SUB}
+APP_TIMEZONE=Asia/Dhaka
+APP_LOCALE=bn
 
-# ---- postgres ----
-PG_USER=mkapp
-PG_PASSWORD=${PG_PASSWORD}
-PG_DB=mkapp
-DATABASE_URL=postgresql://mkapp:${PG_PASSWORD}@postgres:5432/mkapp?schema=public
+LOG_CHANNEL=stack
+LOG_LEVEL=warning
 
-# ---- redis ----
+DB_CONNECTION=pgsql
+DB_HOST=postgres
+DB_PORT=5432
+DB_DATABASE=mkbaliadanga
+DB_USERNAME=mkb_user
+DB_PASSWORD=${PG_PASSWORD}
+
+BROADCAST_CONNECTION=log
+CACHE_STORE=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+SESSION_LIFETIME=120
+
+REDIS_HOST=redis
 REDIS_PASSWORD=${REDIS_PASSWORD}
-REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+REDIS_PORT=6379
 
-# ---- minio ----
-MINIO_ROOT_USER=mkadmin
-MINIO_ROOT_PASSWORD=${MINIO_PASSWORD}
-MINIO_ENDPOINT=minio
-MINIO_PORT=9000
-MINIO_USE_SSL=false
+FILESYSTEM_DISK=s3
+AWS_ACCESS_KEY_ID=mkb_minio
+AWS_SECRET_ACCESS_KEY=${MINIO_PASSWORD}
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=mkb-assets
+AWS_ENDPOINT=http://minio:9000
+AWS_USE_PATH_STYLE_ENDPOINT=true
+AWS_URL=https://${API_SUB}/files
 
-# ---- auth ----
-JWT_SECRET=${JWT_SECRET}
-JWT_ACCESS_TTL=15m
-JWT_REFRESH_TTL=30d
-SESSION_SECRET=${SESSION_SECRET}
+SANCTUM_STATEFUL_DOMAINS=${DOMAIN},www.${DOMAIN},${API_SUB}
+SESSION_DOMAIN=.${DOMAIN}
+CORS_ALLOWED_ORIGINS=https://${DOMAIN},https://www.${DOMAIN}
 
-# ---- sms (fill in after install) ----
-SMS_PROVIDER=greenweb
-GREENWEB_TOKEN=
+ADMIN_EMAIL=admin@${DOMAIN}
+ADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+ADMIN_NAME="System Admin"
 
-# ---- runtime ----
-NODE_ENV=production
-PORT=3000
+DEV_EMAIL=ismail162@${DOMAIN}
+DEV_PASSWORD=${DEV_PASSWORD}
+SUPERADMIN_EMAIL=superadmin@${DOMAIN}
+SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD}
+
+GREENWEB_SMS_TOKEN=
+SMS_SENDER_ID=
+
+MAIL_MAILER=log
+MAIL_FROM_ADDRESS="no-reply@${DOMAIN}"
+MAIL_FROM_NAME="\${APP_NAME}"
 EOF
   chown "$APP_USER":"$APP_USER" "$ENV_FILE"
   chmod 600 "$ENV_FILE"
 
   cat > "$CRED_FILE" <<EOF
 ==== MK Baliadanga credentials (generated $(date -Iseconds)) ====
-Postgres password : ${PG_PASSWORD}
-Redis password    : ${REDIS_PASSWORD}
-MinIO password    : ${MINIO_PASSWORD}
-JWT secret        : ${JWT_SECRET}
-Env file          : ${ENV_FILE}
+Domain               : https://${DOMAIN}
+API                  : https://${API_SUB}/api
+Postgres password    : ${PG_PASSWORD}
+Redis password       : ${REDIS_PASSWORD}
+MinIO root password  : ${MINIO_PASSWORD}
+
+Login accounts (created by seeder):
+  Developer  : ismail162   / ${DEV_PASSWORD}
+  Superadmin : superadmin  / ${SUPERADMIN_PASSWORD}
+
+Backend env file     : ${ENV_FILE}
 ==================================================================
 EOF
   chmod 600 "$CRED_FILE"
   ok "Secrets written → $CRED_FILE"
 else
-  warn ".env already exists — keeping existing secrets"
+  warn "backend/.env already exists — keeping existing secrets"
 fi
 
-# ---------- 7. SSL certificates ----------
-log "Issuing Let's Encrypt certificates (standalone)..."
-systemctl stop nginx 2>/dev/null || true
-docker stop mk_nginx 2>/dev/null || true
-certbot certonly --standalone --non-interactive --agree-tos -m "$EMAIL" \
-  -d "$DOMAIN" -d "www.${DOMAIN}" -d "$API_SUB" -d "$FILES_SUB" || \
-  warn "Certbot failed — you can re-run later: certbot certonly --standalone -d $DOMAIN ..."
+# ---------- 8. Build & start backend stack ----------
+cd "$APP_DIR/backend"
+log "Building Docker images..."
+sudo -u "$APP_USER" docker compose pull || true
+sudo -u "$APP_USER" docker compose build
+log "Starting containers..."
+sudo -u "$APP_USER" docker compose up -d
 
-# ---------- 8. Bring up the stack ----------
-cd "$APP_DIR/infra"
-log "Pulling images..."
-sudo -u "$APP_USER" docker compose --env-file "$ENV_FILE" pull || true
-log "Building and starting containers..."
-sudo -u "$APP_USER" docker compose --env-file "$ENV_FILE" up -d --build
-
-# ---------- 9. Wait for API health ----------
-log "Waiting for API to become healthy..."
-for i in $(seq 1 60); do
-  if curl -fsS "http://localhost:3000/health" >/dev/null 2>&1; then
-    ok "API is up"
-    break
-  fi
-  sleep 3
+# ---------- 9. Laravel bootstrap ----------
+log "Waiting for app container..."
+for i in $(seq 1 30); do
+  if docker exec mkb_app php -v >/dev/null 2>&1; then break; fi
+  sleep 2
 done
 
-# ---------- 10. Run migrations + seed (creates ALL tables, users, demo data) ----------
-log "Running Prisma migrations..."
-sudo -u "$APP_USER" docker compose exec -T api npx prisma migrate deploy \
-  || sudo -u "$APP_USER" docker compose exec -T api npx prisma db push --accept-data-loss \
-  || warn "migration failed — re-run: docker compose exec api npx prisma migrate deploy"
+log "Installing composer deps + key/migrate/seed..."
+docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || true
+docker exec mkb_app php artisan key:generate --force
+docker exec mkb_app php artisan migrate --force
+docker exec mkb_app php artisan db:seed --force
+docker exec mkb_app php artisan storage:link || true
+docker exec mkb_app php artisan config:cache
+docker exec mkb_app php artisan route:cache
 
-log "Seeding database (office, users, farmers, lands, seasons, savings, loans, irrigation, assets)..."
-sudo -u "$APP_USER" docker compose exec -T \
-  -e SEED_SUPER_EMAIL="${ADMIN_EMAIL:-admin@${DOMAIN}}" \
-  -e SEED_SUPER_PASSWORD="${ADMIN_PASSWORD:-$(openssl rand -base64 12)}" \
-  api npm run prisma:seed | tee -a "$CRED_FILE" \
-  || warn "seed failed — re-run: docker compose exec api npm run prisma:seed"
+# ---------- 10. Frontend build ----------
+log "Building frontend (Vite) → ${WEB_ROOT}"
+mkdir -p "$WEB_ROOT"
+cd "$APP_DIR"
+sudo -u "$APP_USER" VITE_API_URL="https://${API_SUB}/api" VITE_BACKEND="laravel" VITE_USE_API="1" \
+  bash -lc "npm ci && npm run build"
+rsync -a --delete "$APP_DIR/dist/" "$WEB_ROOT/"
+chown -R www-data:www-data "$WEB_ROOT"
 
-# ---------- 11. Backup cron ----------
-log "Installing nightly backup cron..."
+# ---------- 11. Host nginx vhosts ----------
+log "Writing nginx vhosts for ${DOMAIN} and ${API_SUB}..."
+cat > /etc/nginx/sites-available/${DOMAIN}.conf <<NGINX
+server {
+    listen 80;
+    server_name ${DOMAIN} www.${DOMAIN};
+    root ${WEB_ROOT};
+    index index.html;
+    client_max_body_size 50M;
+    location / { try_files \$uri \$uri/ /index.html; }
+    location ~* \\.(js|css|png|jpg|jpeg|svg|woff2?)\$ {
+        expires 30d; add_header Cache-Control "public, immutable";
+    }
+}
+
+server {
+    listen 80;
+    server_name ${API_SUB};
+    client_max_body_size 60M;
+    location / {
+        proxy_pass         http://127.0.0.1:8080;
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 300;
+    }
+}
+NGINX
+ln -sf /etc/nginx/sites-available/${DOMAIN}.conf /etc/nginx/sites-enabled/${DOMAIN}.conf
+rm -f /etc/nginx/sites-enabled/default
+nginx -t && systemctl reload nginx
+
+# ---------- 12. SSL ----------
+log "Issuing Let's Encrypt SSL..."
+certbot --nginx --non-interactive --agree-tos --redirect -m "$EMAIL" \
+  -d "$DOMAIN" -d "www.${DOMAIN}" -d "$API_SUB" || \
+  warn "Certbot failed — DNS may not be propagated. Re-run later: certbot --nginx -d ${DOMAIN} -d www.${DOMAIN} -d ${API_SUB}"
+
+# ---------- 13. Cron: backup + cert renew ----------
+log "Installing cron jobs..."
 cat >/etc/cron.d/mkbaliadanga-backup <<EOF
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 0 2 * * * root ${APP_DIR}/scripts/backup.sh >> /var/log/mkbaliadanga-backup.log 2>&1
 EOF
-chmod 644 /etc/cron.d/mkbaliadanga-backup
-
-# ---------- 12. Cert auto-renew ----------
 cat >/etc/cron.d/mkbaliadanga-certbot <<EOF
-0 3 * * * root certbot renew --quiet --deploy-hook "docker exec mk_nginx nginx -s reload"
+0 3 * * * root certbot renew --quiet --deploy-hook "systemctl reload nginx"
 EOF
-
-# ---------- 13. Super-admin already created by seed (step 10) ----------
-log "Super-admin user created during seed — see $CRED_FILE for credentials."
+chmod 644 /etc/cron.d/mkbaliadanga-*
 
 # ---------- 14. Done ----------
 ok "Installation complete"
 echo
-echo -e "${C_G}Frontend  :${C_N} https://${DOMAIN}"
-echo -e "${C_G}API       :${C_N} https://${API_SUB}"
-echo -e "${C_G}Files     :${C_N} https://${FILES_SUB}"
-echo -e "${C_G}Credentials saved to:${C_N} $CRED_FILE"
+echo -e "${C_G}Frontend     :${C_N} https://${DOMAIN}"
+echo -e "${C_G}API          :${C_N} https://${API_SUB}/api"
+echo -e "${C_G}Health probe :${C_N} https://${API_SUB}/api/health"
+echo -e "${C_G}Credentials  :${C_N} ${CRED_FILE}"
 echo
-echo -e "${C_Y}Next steps:${C_N}"
-echo "  • Verify health   : bash ${APP_DIR}/scripts/healthcheck.sh"
-echo "  • Update later    : bash ${APP_DIR}/scripts/update.sh"
-echo "  • Manual backup   : bash ${APP_DIR}/scripts/backup.sh"
-echo "  • Restore archive : bash ${APP_DIR}/scripts/restore.sh /path/to/archive.tgz"
+echo -e "${C_Y}Login accounts:${C_N}"
+echo "  Developer  → ismail162  / 123456"
+echo "  Superadmin → superadmin / Admin@123456"
+echo
+echo -e "${C_Y}Useful commands:${C_N}"
+echo "  Update     : sudo bash ${APP_DIR}/scripts/update.sh"
+echo "  Health     : sudo bash ${APP_DIR}/scripts/healthcheck.sh"
+echo "  Backup now : sudo bash ${APP_DIR}/scripts/backup.sh"
+echo "  Logs       : cd ${APP_DIR}/backend && docker compose logs -f app"
