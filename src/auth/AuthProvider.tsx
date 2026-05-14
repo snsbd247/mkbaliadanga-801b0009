@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { hydrateReceiptOptionsFromProfile } from "@/lib/receiptOptions";
+import { isLaravelBackend } from "@/lib/backend";
+import { api, getApiToken, setApiToken } from "@/lib/api/client";
 
 export type AppRole = "developer" | "super_admin" | "admin" | "committee" | "staff";
 
@@ -13,17 +15,24 @@ interface AuthCtx {
   roles: AppRole[];
   officeId: string | null;
   isDeveloper: boolean;
-  isSuper: boolean; // developer or super_admin
-  /** Alias for isSuper to standardize naming across pages. */
+  isSuper: boolean;
   isSuperAdmin: boolean;
-  isAdmin: boolean; // developer, admin or super
-  isCommittee: boolean; // developer, committee or super
+  isAdmin: boolean;
+  isCommittee: boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
 
+/**
+ * Unified AuthProvider:
+ * - Lovable preview / Supabase mode  → uses Supabase auth (same as before).
+ * - VPS / Laravel mode (VITE_API_URL) → uses Laravel /auth/me + bearer token.
+ *
+ * The exposed shape stays identical so every existing page keeps working
+ * without changes — only the backend swaps based on build env.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -32,7 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [officeId, setOfficeId] = useState<string | null>(null);
   const [rolesLoaded, setRolesLoaded] = useState(false);
 
-  const loadProfile = async (uid: string) => {
+  // ── Supabase path ──────────────────────────────────────────────────
+  const loadSupabaseProfile = async (uid: string) => {
     const [{ data: rolesData }, { data: prof }] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", uid),
       supabase.from("profiles").select("office_id").eq("id", uid).maybeSingle(),
@@ -43,13 +53,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void hydrateReceiptOptionsFromProfile();
   };
 
+  // ── Laravel path ───────────────────────────────────────────────────
+  const loadLaravelMe = useCallback(async () => {
+    if (!getApiToken()) {
+      setUser(null);
+      setSession(null);
+      setRoles([]);
+      setOfficeId(null);
+      setRolesLoaded(true);
+      return;
+    }
+    try {
+      const { data } = await api.get("/auth/me");
+      const u = data.user ?? data;
+      // Map Laravel user to a minimal Supabase-like User shape so existing pages work.
+      setUser({ id: u.id, email: u.email, user_metadata: { name: u.name } } as unknown as User);
+      setSession({ access_token: getApiToken() } as unknown as Session);
+      setRoles((u.roles ?? []) as AppRole[]);
+      setOfficeId(u.office_id ?? null);
+      setRolesLoaded(true);
+    } catch {
+      setApiToken(null);
+      setUser(null);
+      setSession(null);
+      setRoles([]);
+      setOfficeId(null);
+      setRolesLoaded(true);
+    }
+  }, []);
+
   useEffect(() => {
+    if (isLaravelBackend) {
+      loadLaravelMe().finally(() => setLoading(false));
+      const onUnauth = () => {
+        setUser(null);
+        setSession(null);
+        setRoles([]);
+        setOfficeId(null);
+        setRolesLoaded(true);
+      };
+      window.addEventListener("api:unauthorized", onUnauth);
+      return () => window.removeEventListener("api:unauthorized", onUnauth);
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
         setRolesLoaded(false);
-        setTimeout(() => loadProfile(s.user.id), 0);
+        setTimeout(() => loadSupabaseProfile(s.user.id), 0);
       } else {
         setRoles([]);
         setOfficeId(null);
@@ -60,16 +112,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) loadProfile(s.user.id);
+      if (s?.user) loadSupabaseProfile(s.user.id);
       else setRolesLoaded(true);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [loadLaravelMe]);
 
-  const signOut = async () => { await supabase.auth.signOut(); };
-  const refresh = async () => { if (user) await loadProfile(user.id); };
+  const signOut = async () => {
+    if (isLaravelBackend) {
+      try { await api.post("/auth/logout"); } catch {}
+      setApiToken(null);
+      setUser(null); setSession(null); setRoles([]); setOfficeId(null);
+    } else {
+      await supabase.auth.signOut();
+    }
+  };
+
+  const refresh = async () => {
+    if (isLaravelBackend) await loadLaravelMe();
+    else if (user) await loadSupabaseProfile(user.id);
+  };
 
   const isDeveloper = roles.includes("developer");
   const isSuper = isDeveloper || roles.includes("super_admin");
