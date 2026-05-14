@@ -7,7 +7,7 @@
 #
 #  Usage:
 #    curl -fsSL https://raw.githubusercontent.com/snsbd247/mkbaliadanga-801b0009/main/scripts/install.sh \
-#      | sudo DOMAIN=mohammadkhani.com EMAIL=admin@mohammadkhani.com bash
+#      | sudo DOMAIN=mohammadkhani.com EMAIL=ismailsagor162@gmail.com bash
 #
 #  Provisions (Docker):
 #    - PostgreSQL 16, Redis 7, MinIO (S3 compatible)
