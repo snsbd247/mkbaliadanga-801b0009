@@ -33,17 +33,43 @@ paths plus extended mappings (Phase 4.2.1): `/lands`, `/assets`,
 
 Add more entries to the map as you finish migrating individual screens.
 
+## 4.2.2 — Pre-deployment readiness (current)
+
+### Backend checklist
+
+- [ ] `backend/.env` populated (APP_KEY, DB, SANCTUM_STATEFUL_DOMAINS, CORS_ALLOWED_ORIGINS, MAIL/SMS, QUEUE)
+- [ ] `docker compose up -d --build` green (php-fpm, nginx, postgres, redis, queue, scheduler)
+- [ ] `php artisan migrate --force` clean
+- [ ] `php artisan db:seed --class=RolesPermissionsSeeder`
+- [ ] `php artisan db:seed --class=ChartOfAccountsSeeder`
+- [ ] `php artisan db:seed --class=AdminUserSeeder` (creates first super_admin)
+- [ ] `php artisan integrity:scan` returns 0 issues
+- [ ] HTTPS in front of nginx; `/api/auth/login` returns 200 from outside
+
+### Smoke test
+
+```bash
+API_URL=https://api.mohammadkhani.com/api \
+API_EMAIL=admin@mohammadkhani.com \
+ADMIN_PASSWORD=… \
+node scripts/api-smoke.mjs
+```
+
+Exits non-zero on any 4xx/5xx. Run before pointing the frontend at the new API.
+
+### Frontend checklist
+
+- [ ] `VITE_API_URL` set to the live API base (`…/api`)
+- [ ] `VITE_USE_API=1` (or unset — default on)
+- [ ] `bun run build` succeeds
+- [ ] Manual flow: `/` → `/api/dashboard` → login → 18 tiles load → create one journal
+
 ## Deployment
 
-1. Deploy Laravel backend (`backend/docker compose up -d --build`); run
-   `php artisan migrate --seed --force` and `db:seed --class=AdminUserSeeder`.
-2. Frontend env:
-   ```env
-   VITE_API_URL=https://api.mohammadkhani.com/api
-   # VITE_USE_API=1  # default; omit unless you need to disable
-   ```
-3. `bun run build` → upload `dist/`.
-4. Smoke test: `/` → `/api/dashboard` → login → tiles load → create one journal.
+1. Deploy Laravel backend (see checklist above).
+2. Run `scripts/api-smoke.mjs` against the public URL.
+3. Build & deploy frontend.
+4. Watch `backend/storage/logs/laravel.log` and browser console for the first hour.
 
 ## Emergency rollback
 
