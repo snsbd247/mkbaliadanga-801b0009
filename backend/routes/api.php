@@ -30,6 +30,7 @@ Route::post('auth/login',                [AuthController::class, 'login'])->midd
 Route::post('auth/password/forgot',      [PasswordResetController::class, 'request'])->middleware('throttle:5,5');
 Route::post('auth/password/reset',       [PasswordResetController::class, 'reset'])->middleware('throttle:5,5');
 
+Route::post('farmer/auth/login',         [FarmerAuthController::class, 'loginByCode'])->middleware('throttle:10,5');
 Route::post('farmer/auth/request-otp',   [FarmerAuthController::class, 'requestOtp'])->middleware('throttle:5,5');
 Route::post('farmer/auth/verify-otp',    [FarmerAuthController::class, 'verifyOtp'])->middleware('throttle:10,5');
 

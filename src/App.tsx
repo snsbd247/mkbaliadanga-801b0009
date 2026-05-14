@@ -122,6 +122,7 @@ import AssetDisposal from "./pages/assets/AssetDisposal";
 import VerifyReceipt from "./pages/VerifyReceipt";
 import ApiAuth from "./pages/ApiAuth";
 import ApiFarmerPortal from "./pages/ApiFarmerPortal";
+import ApiFarmerAuth from "./pages/ApiFarmerAuth";
 import ApiFarmers from "./pages/ApiFarmers";
 import ApiLoans from "./pages/ApiLoans";
 import ApiSavings from "./pages/ApiSavings";
@@ -161,6 +162,7 @@ const App = () => (
               <Route path="/verify/:token" element={<VerifyReceipt />} />
               <Route path="/r/:token" element={<VerifyReceipt />} />
               <Route path="/api/auth" element={<ApiAuth />} />
+              <Route path="/api/farmer-login" element={<ApiFarmerAuth />} />
               <Route path="/api/farmer-portal" element={<ApiFarmerPortal />} />
               <Route path="/api" element={<Navigate to="/api/dashboard" replace />} />
               <Route path="/api/dashboard" element={<ApiDashboard />} />
