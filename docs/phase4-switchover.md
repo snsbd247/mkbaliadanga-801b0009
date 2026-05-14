@@ -23,10 +23,13 @@ When the flag is off (`VITE_USE_API=0`):
 
 ### Legacy → API redirect map
 
-See `LEGACY_TO_API` in `src/lib/api/featureFlag.ts`. Currently covers:
-`/auth`, `/dashboard`, `/admin`, `/farmers`, `/loans`, `/loans/plans`,
-`/savings`, `/payments`, `/reports`, `/accounts`, `/journal-entry`,
-`/seasons`, `/irrigation/rates`, `/users`, `/offices`, `/sms-logs`, `/audit`.
+See `LEGACY_TO_API` in `src/lib/api/featureFlag.ts`. Now covers core auth/admin
+paths plus extended mappings (Phase 4.2.1): `/lands`, `/assets`,
+`/irrigation`, `/irrigation/invoices`, `/irrigation/collect`, `/scan`,
+`/scan-payment`, `/cashbook`, `/statement`, `/dues`, `/financial-reports`,
+`/ledger`, `/ledger-integrity`, `/approvals`, `/period-close`,
+`/finance-summary`, `/share-collection`, `/sms-settings`, `/voters`,
+`/import`, `/farmers/import`.
 
 Add more entries to the map as you finish migrating individual screens.
 
