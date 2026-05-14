@@ -1,31 +1,27 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { LaravelAuthProvider, useLaravelAuth } from "@/auth/LaravelAuthProvider";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Sprout } from "lucide-react";
+import { farmerLoginByCode } from "@/lib/api/auth";
+import { ShieldCheck } from "lucide-react";
 
-function StaffLoginInner() {
-  const { signIn, user, loading } = useLaravelAuth();
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
+export default function ApiFarmerAuth() {
+  const [code, setCode] = useState("");
+  const [mobile, setMobile] = useState("");
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  if (loading) return <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>;
-  if (user) return <Navigate to="/api/dashboard" replace />;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      await signIn(identifier.trim(), password);
+      await farmerLoginByCode(code.trim(), mobile.trim());
       toast({ title: "Welcome", description: "Signed in successfully" });
-      setTimeout(() => navigate("/api/dashboard"), 50);
+      navigate("/api/farmer-portal");
     } catch (err: any) {
       toast({
         title: "Login failed",
@@ -41,30 +37,31 @@ function StaffLoginInner() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Staff sign in</CardTitle>
-          <CardDescription>For Developer, Super Admin and Staff accounts</CardDescription>
+          <CardTitle>Farmer sign in</CardTitle>
+          <CardDescription>Enter your Farmer ID and registered mobile number</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="identifier">User ID</Label>
+              <Label htmlFor="code">Farmer ID</Label>
               <Input
-                id="identifier"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="e.g. ismail162"
-                autoComplete="username"
+                id="code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="e.g. FRM-0001"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="mobile">Mobile number</Label>
               <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                id="mobile"
+                type="tel"
+                inputMode="numeric"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="01XXXXXXXXX"
+                autoComplete="tel"
                 required
               />
             </div>
@@ -75,22 +72,14 @@ function StaffLoginInner() {
         </CardContent>
         <CardFooter className="justify-center border-t pt-4">
           <Link
-            to="/api/farmer-login"
+            to="/api/auth"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
-            <Sprout className="h-4 w-4" />
-            Are you a farmer? Sign in here
+            <ShieldCheck className="h-4 w-4" />
+            Staff / Admin sign in
           </Link>
         </CardFooter>
       </Card>
     </div>
-  );
-}
-
-export default function ApiAuth() {
-  return (
-    <LaravelAuthProvider>
-      <StaffLoginInner />
-    </LaravelAuthProvider>
   );
 }
