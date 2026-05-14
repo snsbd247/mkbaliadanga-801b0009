@@ -9,13 +9,18 @@ return new class extends Migration {
         // Geographic locations (BD divisions / districts / upazilas / unions / villages)
         Schema::create('locations', function (Blueprint $t) {
             $t->uuid('id')->primary();
-            $t->foreignUuid('parent_id')->nullable()->constrained('locations')->nullOnDelete();
+            $t->uuid('parent_id')->nullable();
             $t->string('kind', 32);      // division, district, upazila, union, village
             $t->string('name');
             $t->string('name_bn')->nullable();
             $t->string('code', 32)->nullable();
             $t->timestamps();
             $t->index(['kind', 'parent_id']);
+        });
+
+        // Self-referencing FK added after table creation to avoid PG unique-constraint resolution issue
+        Schema::table('locations', function (Blueprint $t) {
+            $t->foreign('parent_id')->references('id')->on('locations')->nullOnDelete();
         });
 
         Schema::create('seasons', function (Blueprint $t) {
