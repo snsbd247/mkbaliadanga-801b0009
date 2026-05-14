@@ -10,6 +10,7 @@ return new class extends Migration {
             $t->uuid('id')->primary();
             $t->string('name');
             $t->string('email')->unique();
+            $t->string('username', 64)->nullable()->unique();
             $t->timestamp('email_verified_at')->nullable();
             $t->string('password');
             $t->foreignUuid('office_id')->nullable()->constrained('offices')->nullOnDelete();
