@@ -7,20 +7,18 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         // Geographic locations (BD divisions / districts / upazilas / unions / villages)
+        // NOTE: parent_id is a uuid reference to locations.id but we do NOT add a DB-level
+        // foreign key — Postgres self-referencing FKs on uuid PKs can fail in some setups
+        // ("no unique constraint matching given keys"). Integrity is enforced in app code.
         Schema::create('locations', function (Blueprint $t) {
             $t->uuid('id')->primary();
-            $t->uuid('parent_id')->nullable();
+            $t->uuid('parent_id')->nullable()->index();
             $t->string('kind', 32);      // division, district, upazila, union, village
             $t->string('name');
             $t->string('name_bn')->nullable();
             $t->string('code', 32)->nullable();
             $t->timestamps();
             $t->index(['kind', 'parent_id']);
-        });
-
-        // Self-referencing FK added after table creation to avoid PG unique-constraint resolution issue
-        Schema::table('locations', function (Blueprint $t) {
-            $t->foreign('parent_id')->references('id')->on('locations')->nullOnDelete();
         });
 
         Schema::create('seasons', function (Blueprint $t) {
