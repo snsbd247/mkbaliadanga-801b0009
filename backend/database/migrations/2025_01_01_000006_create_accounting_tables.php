@@ -14,7 +14,9 @@ return new class extends Migration {
             $t->string('name');
             $t->string('name_bn')->nullable();
             $t->string('type', 16);   // asset, liability, equity, income, expense
-            $t->foreignUuid('parent_id')->nullable()->constrained('accounts')->nullOnDelete();
+            // Self-referencing parent_id without DB-level FK (Postgres uuid self-FK quirk).
+            // Integrity is enforced at application level.
+            $t->uuid('parent_id')->nullable()->index();
             $t->boolean('is_active')->default(true);
             $t->timestamps();
             $t->unique(['office_id', 'code']);
