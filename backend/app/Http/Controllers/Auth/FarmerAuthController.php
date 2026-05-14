@@ -13,6 +13,24 @@ use Illuminate\Validation\ValidationException;
 
 class FarmerAuthController extends Controller
 {
+    public function loginByCode(Request $r) {
+        $data = $r->validate([
+            'code'   => 'required|string|max:64',
+            'mobile' => 'required|string|min:10|max:32',
+        ]);
+        $farmer = Farmer::where('code', $data['code'])
+            ->where('mobile', $data['mobile'])
+            ->where('is_active', true)
+            ->first();
+        if (!$farmer) {
+            throw ValidationException::withMessages(['code' => 'Invalid farmer code or mobile.']);
+        }
+        $cred = FarmerCredential::firstOrNew(['farmer_id' => $farmer->id]);
+        $cred->forceFill(['last_login_at' => now()])->save();
+        $token = $farmer->createToken('farmer-portal', ['farmer:self'], now()->addDays(7))->plainTextToken;
+        return response()->json(['token' => $token, 'farmer' => $farmer]);
+    }
+
     public function requestOtp(Request $r) {
         $data = $r->validate(['mobile' => 'required|string|min:10']);
         $farmer = Farmer::where('mobile', $data['mobile'])->where('is_active', true)->first();
