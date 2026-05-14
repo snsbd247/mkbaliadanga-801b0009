@@ -1,8 +1,14 @@
 // Production switchover flag.
-// Default: API stack is primary. Set VITE_USE_API=0 to fall back to the
-// legacy Supabase-powered routes (emergency rollback only).
-const raw = String((import.meta as any).env?.VITE_USE_API ?? "1").trim();
-export const USE_API_BACKEND = raw !== "0" && raw.toLowerCase() !== "false";
+// - On a VPS build with VITE_API_URL set (or VITE_BACKEND=laravel), API stack is primary.
+// - In Lovable preview (no VITE_API_URL), the legacy Supabase routes are primary.
+// You can override explicitly with VITE_USE_API=1 (force API) or VITE_USE_API=0 (force legacy).
+import { isLaravelBackend } from "@/lib/backend";
+
+const raw = (import.meta as any).env?.VITE_USE_API;
+const explicit = raw === undefined || raw === null || String(raw).trim() === "";
+export const USE_API_BACKEND = explicit
+  ? isLaravelBackend
+  : String(raw).trim() !== "0" && String(raw).trim().toLowerCase() !== "false";
 
 // Map of legacy top-level paths → API equivalents (used when USE_API_BACKEND).
 export const LEGACY_TO_API: Record<string, string> = {

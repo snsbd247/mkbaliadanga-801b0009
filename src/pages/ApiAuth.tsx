@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Sprout } from "lucide-react";
+import { isSupabaseBackend } from "@/lib/backend";
 
 function StaffLoginInner() {
   const { signIn, user, loading } = useLaravelAuth();
@@ -88,6 +89,8 @@ function StaffLoginInner() {
 }
 
 export default function ApiAuth() {
+  // In Lovable preview (no Laravel backend), fall back to the Supabase auth page.
+  if (isSupabaseBackend) return <Navigate to="/auth" replace />;
   return (
     <LaravelAuthProvider>
       <StaffLoginInner />
