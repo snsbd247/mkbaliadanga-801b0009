@@ -155,7 +155,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={USE_API_BACKEND ? <Navigate to="/api/dashboard" replace /> : <FarmerPortalLogin />} />
+              <Route path="/" element={<FarmerPortalLogin />} />
               <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
@@ -184,10 +184,7 @@ const App = () => (
               <Route path="/api/loan-plans" element={<ApiLoanPlans />} />
               <Route path="/api/irrigation-rates" element={<ApiIrrigationRates />} />
               <Route path="/api/assets" element={<ApiAssets />} />
-              {USE_API_BACKEND &&
-                Object.entries(LEGACY_TO_API).map(([from, to]) => (
-                  <Route key={from} path={from} element={<Navigate to={to} replace />} />
-                ))}
+              {/* Legacy → API redirects disabled: same login/UI on preview and VPS. */}
               <Route element={<AppLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
