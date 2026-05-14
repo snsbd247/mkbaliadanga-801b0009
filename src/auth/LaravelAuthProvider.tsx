@@ -15,7 +15,7 @@ interface LaravelAuthCtx {
   isSuperAdmin: boolean;
   isAdmin: boolean;
   isCommittee: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (identifier: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -47,8 +47,8 @@ export function LaravelAuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("api:unauthorized", onUnauth);
   }, [refresh]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const { user } = await apiLogin(email, password);
+  const signIn = useCallback(async (identifier: string, password: string) => {
+    const { user } = await apiLogin(identifier, password);
     setUser(user);
     setRolesLoaded(true);
   }, []);

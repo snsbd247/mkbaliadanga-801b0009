@@ -17,12 +17,20 @@ export type ApiFarmer = {
   code?: string | null;
 };
 
-export async function login(email: string, password: string): Promise<{ user: ApiUser; token: string }> {
-  const { data } = await api.post("/auth/login", { email, password });
+export async function login(identifier: string, password: string): Promise<{ user: ApiUser; token: string }> {
+  const { data } = await api.post("/auth/login", { identifier, password });
   const token = data.token ?? data.access_token;
   if (!token) throw new Error("No token returned");
   setApiToken(token);
   return { user: data.user, token };
+}
+
+export async function farmerLoginByCode(code: string, mobile: string): Promise<{ farmer: ApiFarmer; token: string }> {
+  const { data } = await api.post("/farmer/auth/login", { code, mobile });
+  const token = data.token ?? data.access_token;
+  if (!token) throw new Error("No token returned");
+  setApiToken(token);
+  return { farmer: data.farmer, token };
 }
 
 export async function me(): Promise<ApiUser> {
