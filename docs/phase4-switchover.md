@@ -57,6 +57,9 @@ node scripts/api-smoke.mjs
 
 Exits non-zero on any 4xx/5xx. Run before pointing the frontend at the new API.
 
+CI runs this automatically when these GitHub secrets are set:
+`API_SMOKE_URL`, `API_SMOKE_EMAIL`, `API_SMOKE_PASSWORD` (job: `api-smoke`).
+
 ### Frontend checklist
 
 - [ ] `VITE_API_URL` set to the live API base (`…/api`)
