@@ -24,30 +24,36 @@ const TILES = [
   { to: "/api/audit", title: "Audit", desc: "Activity logs" },
 ];
 
-export default function ApiDashboard() {
+function DashboardInner() {
   const { user, roles } = useLaravelAuth();
   return (
-    <ApiShell>
-      <div className="container mx-auto p-4 space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome, {user?.name || user?.email}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Roles: {roles.join(", ") || "—"}
-          </CardContent>
-        </Card>
-        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-          {TILES.map(t => (
-            <Link key={t.to} to={t.to}>
-              <Card className="hover:bg-muted/40 transition-colors h-full">
-                <CardHeader className="pb-2"><CardTitle className="text-base">{t.title}</CardTitle></CardHeader>
-                <CardContent className="text-sm text-muted-foreground">{t.desc}</CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+    <div className="container mx-auto p-4 space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome, {user?.name || user?.email}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          Roles: {roles.join(", ") || "—"}
+        </CardContent>
+      </Card>
+      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+        {TILES.map(t => (
+          <Link key={t.to} to={t.to}>
+            <Card className="hover:bg-muted/40 transition-colors h-full">
+              <CardHeader className="pb-2"><CardTitle className="text-base">{t.title}</CardTitle></CardHeader>
+              <CardContent className="text-sm text-muted-foreground">{t.desc}</CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
+    </div>
+  );
+}
+
+export default function ApiDashboard() {
+  return (
+    <ApiShell>
+      <DashboardInner />
     </ApiShell>
   );
 }
