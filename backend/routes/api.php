@@ -25,6 +25,14 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// ─── Health (for load balancer / installer) ──────────────────────────────
+Route::get('health', fn () => response()->json([
+    'ok'   => true,
+    'app'  => config('app.name'),
+    'env'  => config('app.env'),
+    'time' => now()->toIso8601String(),
+]));
+
 // ─── Public ───────────────────────────────────────────────────────────────
 Route::post('auth/login',                [AuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('auth/password/forgot',      [PasswordResetController::class, 'request'])->middleware('throttle:5,5');
