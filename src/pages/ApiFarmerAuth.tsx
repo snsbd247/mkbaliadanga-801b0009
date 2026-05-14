@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,8 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { useToast } from "@/hooks/use-toast";
 import { farmerLoginByCode } from "@/lib/api/auth";
 import { ShieldCheck } from "lucide-react";
+import { isSupabaseBackend } from "@/lib/backend";
 
 export default function ApiFarmerAuth() {
+  // In Lovable preview, fall back to the legacy farmer portal login at "/".
+  if (isSupabaseBackend) return <Navigate to="/" replace />;
+  return <ApiFarmerAuthInner />;
+}
+
+function ApiFarmerAuthInner() {
   const [code, setCode] = useState("");
   const [mobile, setMobile] = useState("");
   const [busy, setBusy] = useState(false);
