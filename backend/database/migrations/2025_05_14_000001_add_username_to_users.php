@@ -6,9 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
-        Schema::table('users', function (Blueprint $t) {
-            $t->string('username', 64)->nullable()->unique()->after('email');
-        });
+        if (!Schema::hasColumn('users', 'username')) {
+            Schema::table('users', function (Blueprint $t) {
+                $t->string('username', 64)->nullable()->unique()->after('email');
+            });
+        }
     }
     public function down(): void {
         Schema::table('users', function (Blueprint $t) {
