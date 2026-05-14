@@ -155,7 +155,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={USE_API_BACKEND ? <Navigate to="/api/dashboard" replace /> : <FarmerPortalLogin />} />
+              <Route path="/" element={<FarmerPortalLogin />} />
               <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
