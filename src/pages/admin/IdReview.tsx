@@ -89,6 +89,17 @@ export default function IdReview() {
 
   async function save() {
     if (!editing) return;
+    // Validate: both member_no and account_number must be exactly 5 digits if set
+    const memberNo = (draft.member_no ?? "").trim();
+    const accountNo = (draft.account_number ?? "").trim();
+    if (memberNo && !/^\d{5}$/.test(memberNo)) {
+      toast.error("Farmer ID must be exactly 5 digits");
+      return;
+    }
+    if (accountNo && !/^\d{5}$/.test(accountNo)) {
+      toast.error("Voter / Savings A/C No must be exactly 5 digits");
+      return;
+    }
     setSaving(true);
     const patch: any = {};
     const old: any = {};
