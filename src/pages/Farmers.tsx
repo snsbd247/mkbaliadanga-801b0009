@@ -82,11 +82,11 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
         <Input
           value={f.voter_number || ""}
           disabled={inputDisabled}
-          maxLength={20}
+          maxLength={5}
           inputMode="numeric"
           placeholder={tx("Leave blank and press Generate", "খালি রাখলে Generate চাপুন")}
           onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, "");
+            const v = e.target.value.replace(/\D/g, "").slice(0, 5);
             setF({ ...f, voter_number: v, account_number: v, is_voter: !!v });
           }}
           data-testid="voter-number-input"
