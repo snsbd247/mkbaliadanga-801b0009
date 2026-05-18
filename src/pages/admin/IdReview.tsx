@@ -222,19 +222,23 @@ export default function IdReview() {
                 {editing.name_bn || editing.name_en}
               </div>
               <div>
-                <Label>{t("farmerIdLabel")}</Label>
+                <Label>{t("farmerIdLabel")} <span className="text-xs text-muted-foreground">(5 digits)</span></Label>
                 <Input
                   value={(draft.member_no ?? "") as string}
-                  onChange={(e) => setDraft(d => ({ ...d, member_no: e.target.value }))}
-                  maxLength={30}
+                  onChange={(e) => setDraft(d => ({ ...d, member_no: e.target.value.replace(/\D/g, "").slice(0, 5) }))}
+                  maxLength={5}
+                  inputMode="numeric"
+                  placeholder="00001"
                 />
               </div>
               <div>
-                <Label>{t("savingsAcNo")}</Label>
+                <Label>{t("savingsAcNo")} <span className="text-xs text-muted-foreground">(5 digits)</span></Label>
                 <Input
                   value={(draft.account_number ?? "") as string}
-                  onChange={(e) => setDraft(d => ({ ...d, account_number: e.target.value.replace(/\D/g, "") }))}
-                  maxLength={20}
+                  onChange={(e) => setDraft(d => ({ ...d, account_number: e.target.value.replace(/\D/g, "").slice(0, 5) }))}
+                  maxLength={5}
+                  inputMode="numeric"
+                  placeholder="00001"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
