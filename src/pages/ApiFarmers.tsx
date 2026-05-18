@@ -90,7 +90,8 @@ function FarmersInner() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Code</TableHead><TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead><TableHead>Village</TableHead>
+                    <TableHead>Father</TableHead><TableHead>Phone</TableHead>
+                    <TableHead>Village</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -99,6 +100,7 @@ function FarmersInner() {
                     <TableRow key={f.id}>
                       <TableCell>{f.code}</TableCell>
                       <TableCell>{f.name}</TableCell>
+                      <TableCell>{f.father_name ?? "—"}</TableCell>
                       <TableCell>{f.phone ?? "—"}</TableCell>
                       <TableCell>{f.village ?? "—"}</TableCell>
                       <TableCell className="text-right space-x-1">

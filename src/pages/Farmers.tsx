@@ -656,6 +656,7 @@ export default function Farmers() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>{t("farmerIdLabel")}</TableHead><TableHead>{t("voterNumber")}</TableHead><TableHead>{t("farmerName")}</TableHead>
+            <TableHead>{t("fatherName")}</TableHead>
             <TableHead>{t("mobile")}</TableHead><TableHead>{t("village")}</TableHead>
             <TableHead>{t("office")}</TableHead><TableHead>{t("status")}</TableHead>
             <TableHead className="text-right">{t("dueAmount")}</TableHead>
@@ -670,6 +671,7 @@ export default function Farmers() {
                   <TruncateText className="font-medium block">{f.name_en}</TruncateText>
                   {f.name_bn && <TruncateText className="text-xs text-muted-foreground block">{f.name_bn}</TruncateText>}
                 </TableCell>
+                <TableCell className="max-w-[160px]"><TruncateText>{f.father_name || "—"}</TruncateText></TableCell>
                 <TableCell className="max-w-[140px]"><TruncateText>{f.mobile}</TruncateText></TableCell>
                 <TableCell className="max-w-[160px]"><TruncateText>{f.village || f.villages?.name_bn || f.villages?.name || "—"}</TruncateText></TableCell>
                 <TableCell className="text-xs max-w-[160px]"><TruncateText>{f.offices?.name}</TruncateText></TableCell>
@@ -711,7 +713,7 @@ export default function Farmers() {
                 </TableCell>
               </TableRow>
             ))}
-            {list.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            {list.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
         <div className="flex items-center justify-between p-3 border-t">
