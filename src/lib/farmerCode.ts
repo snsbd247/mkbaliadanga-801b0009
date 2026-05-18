@@ -13,8 +13,8 @@
 
 const PAD = 5;
 
-/** Strict regex for the canonical farmer code stored in DB. */
-export const FARMER_CODE_RE = /^\d{5,}$/;
+/** Strict regex for the canonical farmer code stored in DB — exactly 5 digits. */
+export const FARMER_CODE_RE = /^\d{5}$/;
 
 /** Returns true when `code` is already in canonical zero-padded form. */
 export function isCanonicalFarmerCode(code: string | null | undefined): boolean {
@@ -41,14 +41,19 @@ export function normalizeFarmerCode(
   // Anything left must be digits; otherwise the input is malformed.
   const digits = raw.replace(/^[A-Za-z]+-?/, "").replace(/^\d{4}-/, "");
   if (!/^\d+$/.test(digits)) {
-    return { ok: false, error: `"${raw}" is not a valid Farmer ID (expected digits, e.g. 00001)` };
+    return { ok: false, error: `"${raw}" is not a valid Farmer ID (expected 5 digits, e.g. 00001)` };
   }
   if (digits.length > 12) {
     return { ok: false, error: `"${raw}" is too long for a Farmer ID` };
   }
   // Drop leading zeros so "00000001" and "1" both canonicalize to "00001".
   const stripped = digits.replace(/^0+/, "") || "0";
-  return { ok: true, value: stripped.padStart(PAD, "0") };
+  const result = stripped.padStart(PAD, "0");
+  // Enforce exactly 5 digits max
+  if (result.length > PAD) {
+    return { ok: false, error: `Farmer ID must be exactly ${PAD} digits (max 99999)` };
+  }
+  return { ok: true, value: result };
 }
 
 /**

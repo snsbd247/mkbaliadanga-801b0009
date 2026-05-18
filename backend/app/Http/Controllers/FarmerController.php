@@ -25,7 +25,7 @@ class FarmerController extends Controller
     public function store(Request $r) {
         $this->authorize('create', Farmer::class);
         $data = $r->validate([
-            'code'      => 'required|string|max:32',
+            'code'      => 'required|string|size:5|regex:/^\d{5}$/',
             'name'      => 'required|string|max:191',
             'name_bn'   => 'nullable|string',
             'mobile'    => 'nullable|string|max:32',

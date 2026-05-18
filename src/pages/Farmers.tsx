@@ -82,11 +82,11 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
         <Input
           value={f.voter_number || ""}
           disabled={inputDisabled}
-          maxLength={20}
+          maxLength={5}
           inputMode="numeric"
           placeholder={tx("Leave blank and press Generate", "খালি রাখলে Generate চাপুন")}
           onChange={(e) => {
-            const v = e.target.value.replace(/\D/g, "");
+            const v = e.target.value.replace(/\D/g, "").slice(0, 5);
             setF({ ...f, voter_number: v, account_number: v, is_voter: !!v });
           }}
           data-testid="voter-number-input"
@@ -159,9 +159,10 @@ function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF
       <Input
         value={f.member_no || ""}
         disabled={disabled || !isSuper}
-        maxLength={30}
+        maxLength={5}
+        inputMode="numeric"
         placeholder="00001"
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
         onBlur={onBlur}
         className={dupErr || fmtErr ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
         data-testid="member-no-input"
@@ -199,9 +200,9 @@ const farmerFormSchema = z.object({
   mother_name: z.string().trim().min(1, "Mother's name is required").max(100),
   nid: z.string().trim().refine((v) => !v || /^\d{10,17}$/.test(v.replace(/\D/g, "")), "Invalid NID (10–17 digits)").optional().or(z.literal("")),
   mobile: z.string().trim().refine((v) => !v || /^\+?\d[\d\s-]{6,20}$/.test(v), "Invalid mobile number").optional().or(z.literal("")),
-  member_no: z.string().trim().max(50).optional().or(z.literal("")),
+  member_no: z.string().trim().refine((v) => !v || /^\d{5}$/.test(v), "Farmer ID must be exactly 5 digits (e.g. 00001)").optional().or(z.literal("")),
   address: z.string().trim().max(250).optional().or(z.literal("")),
-  voter_number: z.string().trim().refine((v) => !v || /^[\w-]{1,20}$/.test(v), "Invalid voter number").optional().or(z.literal("")),
+  voter_number: z.string().trim().refine((v) => !v || /^\d{5}$/.test(v), "Voter / Savings A/C No must be exactly 5 digits (e.g. 00001)").optional().or(z.literal("")),
   office_id: z.string().optional().or(z.literal("")),
 });
 

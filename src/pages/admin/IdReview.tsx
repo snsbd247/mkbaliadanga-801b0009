@@ -89,6 +89,17 @@ export default function IdReview() {
 
   async function save() {
     if (!editing) return;
+    // Validate: both member_no and account_number must be exactly 5 digits if set
+    const memberNo = (draft.member_no ?? "").trim();
+    const accountNo = (draft.account_number ?? "").trim();
+    if (memberNo && !/^\d{5}$/.test(memberNo)) {
+      toast.error("Farmer ID must be exactly 5 digits");
+      return;
+    }
+    if (accountNo && !/^\d{5}$/.test(accountNo)) {
+      toast.error("Voter / Savings A/C No must be exactly 5 digits");
+      return;
+    }
     setSaving(true);
     const patch: any = {};
     const old: any = {};
@@ -222,19 +233,23 @@ export default function IdReview() {
                 {editing.name_bn || editing.name_en}
               </div>
               <div>
-                <Label>{t("farmerIdLabel")}</Label>
+                <Label>{t("farmerIdLabel")} <span className="text-xs text-muted-foreground">(5 digits)</span></Label>
                 <Input
                   value={(draft.member_no ?? "") as string}
-                  onChange={(e) => setDraft(d => ({ ...d, member_no: e.target.value }))}
-                  maxLength={30}
+                  onChange={(e) => setDraft(d => ({ ...d, member_no: e.target.value.replace(/\D/g, "").slice(0, 5) }))}
+                  maxLength={5}
+                  inputMode="numeric"
+                  placeholder="00001"
                 />
               </div>
               <div>
-                <Label>{t("savingsAcNo")}</Label>
+                <Label>{t("savingsAcNo")} <span className="text-xs text-muted-foreground">(5 digits)</span></Label>
                 <Input
                   value={(draft.account_number ?? "") as string}
-                  onChange={(e) => setDraft(d => ({ ...d, account_number: e.target.value.replace(/\D/g, "") }))}
-                  maxLength={20}
+                  onChange={(e) => setDraft(d => ({ ...d, account_number: e.target.value.replace(/\D/g, "").slice(0, 5) }))}
+                  maxLength={5}
+                  inputMode="numeric"
+                  placeholder="00001"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
