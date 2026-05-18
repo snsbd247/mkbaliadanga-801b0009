@@ -199,9 +199,9 @@ const farmerFormSchema = z.object({
   mother_name: z.string().trim().min(1, "Mother's name is required").max(100),
   nid: z.string().trim().refine((v) => !v || /^\d{10,17}$/.test(v.replace(/\D/g, "")), "Invalid NID (10–17 digits)").optional().or(z.literal("")),
   mobile: z.string().trim().refine((v) => !v || /^\+?\d[\d\s-]{6,20}$/.test(v), "Invalid mobile number").optional().or(z.literal("")),
-  member_no: z.string().trim().max(50).optional().or(z.literal("")),
+  member_no: z.string().trim().refine((v) => !v || /^\d{5}$/.test(v), "Farmer ID must be exactly 5 digits (e.g. 00001)").optional().or(z.literal("")),
   address: z.string().trim().max(250).optional().or(z.literal("")),
-  voter_number: z.string().trim().refine((v) => !v || /^[\w-]{1,20}$/.test(v), "Invalid voter number").optional().or(z.literal("")),
+  voter_number: z.string().trim().refine((v) => !v || /^\d{5}$/.test(v), "Voter / Savings A/C No must be exactly 5 digits (e.g. 00001)").optional().or(z.literal("")),
   office_id: z.string().optional().or(z.literal("")),
 });
 
