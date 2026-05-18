@@ -159,9 +159,10 @@ function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF
       <Input
         value={f.member_no || ""}
         disabled={disabled || !isSuper}
-        maxLength={30}
+        maxLength={5}
+        inputMode="numeric"
         placeholder="00001"
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 5))}
         onBlur={onBlur}
         className={dupErr || fmtErr ? "border-destructive ring-2 ring-destructive/40 focus-visible:ring-destructive" : ""}
         data-testid="member-no-input"
