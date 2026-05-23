@@ -189,7 +189,7 @@ export default function FarmerStatement() {
     const year = new Date().getFullYear();
     const f1 = from || `${year}-01-01`;
     const t1 = to || `${year}-12-31`;
-    const tid = toast.loading(t("buildingStatement") || "Building combined statement…");
+    const tid = toast.loading("Building combined statement…");
     try {
       // Opening savings = approved deposits-withdrawals before f1
       const { data: prior } = await supabase
