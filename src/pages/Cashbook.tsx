@@ -361,7 +361,7 @@ export default function Cashbook() {
                   <TableCell>{x.method}</TableCell>
                 </TableRow>
               ))}
-              {receipts.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+              {filteredReceipts.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>
