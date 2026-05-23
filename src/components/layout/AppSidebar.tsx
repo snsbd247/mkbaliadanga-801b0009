@@ -97,6 +97,7 @@ export function AppSidebar() {
       key: "cash", icon: Banknote, label: t("cashAndPayments"),
       children: [
         { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
+        { url: "/payments/combined", icon: Receipt, label: (t("combinedPayment" as any) as string) || "Combined Payment", permKey: "payments" },
         { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
         { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
         { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
