@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 
-interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null }
+interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null; href?: string }
 
 export default function Dashboard() {
   const { t, lang } = useLang();
@@ -109,21 +110,21 @@ export default function Dashboard() {
 
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
     setStats([
-      { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users },
-      { label: t("activeFarmers"), value: String(farmersList.filter((f: any) => f.status === "active").length), icon: UserCheck, tone: "success" },
-      { label: lang === "bn" ? "এই মাসের নতুন সদস্য" : "New Members (This Month)", value: String(newMembersCount ?? 0), icon: UserPlus, tone: "success" },
-      { label: lang === "bn" ? "চলমান ঋণ" : "Active Loans", value: String(activeLoanCount), icon: HandCoins },
-      { label: t("totalSavings"), value: money(totalSavings), icon: Wallet },
-      { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins },
-      { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins },
-      { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets },
-      { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success" },
-      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta },
-      { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger" },
-      { label: lang === "bn" ? "ঋণের বাকি" : "Loan Due", value: money(loanDue), icon: HandCoins, tone: "danger" },
-      { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success" },
-      { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success" },
-      { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
+      { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users, href: "/farmers" },
+      { label: t("activeFarmers"), value: String(farmersList.filter((f: any) => f.status === "active").length), icon: UserCheck, tone: "success", href: "/farmers?status=active" },
+      { label: lang === "bn" ? "এই মাসের নতুন সদস্য" : "New Members (This Month)", value: String(newMembersCount ?? 0), icon: UserPlus, tone: "success", href: "/farmers?period=this_month" },
+      { label: lang === "bn" ? "চলমান ঋণ" : "Active Loans", value: String(activeLoanCount), icon: HandCoins, href: "/loans?status=approved" },
+      { label: t("totalSavings"), value: money(totalSavings), icon: Wallet, href: "/savings" },
+      { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins, href: "/share-collection" },
+      { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins, href: "/loans" },
+      { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets, href: "/reports/collections" },
+      { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success", href: "/payments?period=today" },
+      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta, href: "/payments?period=this_month" },
+      { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
+      { label: lang === "bn" ? "ঋণের বাকি" : "Loan Due", value: money(loanDue), icon: HandCoins, tone: "danger", href: "/reports/loan-overdue" },
+      { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
+      { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
+      { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
     // 30-day daily collection sparkline
@@ -241,8 +242,8 @@ export default function Dashboard() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="stat-card">
+        {stats.map((s) => {
+          const inner = (
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</div>
@@ -258,8 +259,15 @@ export default function Dashboard() {
                 <s.icon className="h-5 w-5" />
               </div>
             </div>
-          </div>
-        ))}
+          );
+          return s.href ? (
+            <Link key={s.label} to={s.href} className="stat-card block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40">
+              {inner}
+            </Link>
+          ) : (
+            <div key={s.label} className="stat-card">{inner}</div>
+          );
+        })}
       </div>
 
       {/* 30-day collection sparkline */}
