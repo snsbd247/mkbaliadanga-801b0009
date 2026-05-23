@@ -1085,6 +1085,9 @@ export default function FarmerDetail() {
             </Table>
           </Card>
         </TabsContent>
+        <TabsContent value="notes">
+          <FarmerNotesTab farmerId={id!} />
+        </TabsContent>
       </Tabs>
 
       {/* Edit land dialog */}
