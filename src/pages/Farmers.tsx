@@ -765,7 +765,20 @@ export default function Farmers() {
                 <TableCell className="max-w-[140px]"><TruncateText>{f.mobile}</TruncateText></TableCell>
                 <TableCell className="max-w-[160px]"><TruncateText>{f.village || f.villages?.name_bn || f.villages?.name || "—"}</TruncateText></TableCell>
                 <TableCell className="text-xs max-w-[160px]"><TruncateText>{f.offices?.name}</TruncateText></TableCell>
-                <TableCell><Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status}</Badge></TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  {isAdmin && !f.deleted_at ? (
+                    <Badge
+                      variant={f.status === "active" ? "default" : "secondary"}
+                      className="cursor-pointer select-none"
+                      title={tx("Click to toggle active/inactive", "ক্লিক করে সক্রিয়/নিষ্ক্রিয় করুন")}
+                      onClick={() => toggleStatus(f.id, f.status)}
+                    >
+                      {f.status === "active" ? tx("Active", "সক্রিয়") : tx("Inactive", "নিষ্ক্রিয়")}
+                    </Badge>
+                  ) : (
+                    <Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status === "active" ? tx("Active", "সক্রিয়") : tx("Inactive", "নিষ্ক্রিয়")}</Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   {(() => {
                     const d = duesMap[f.id];
