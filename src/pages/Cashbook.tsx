@@ -341,8 +341,8 @@ export default function Cashbook() {
 
         <TabsContent value="receipts">
           <ExportBar
-            onPdf={() => exportTablePDF(t("cbReceipts" as any), [t("receiptNo"), t("date"), t("type"), t("farmerName"), t("amount"), t("method")], receipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), getKindLabel(t, x.kind as Kind), x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
-            onXlsx={() => exportExcel("receipts", t("cbReceipts" as any), receipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: getKindLabel(t, x.kind as Kind), Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
+            onPdf={() => exportTablePDF(t("cbReceipts" as any), [t("receiptNo"), t("date"), t("type"), t("farmerName"), t("amount"), t("method")], filteredReceipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), getKindLabel(t, x.kind as Kind), x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
+            onXlsx={() => exportExcel("receipts", t("cbReceipts" as any), filteredReceipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: getKindLabel(t, x.kind as Kind), Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
           />
           <Card><Table>
             <TableHeader><TableRow>
@@ -351,7 +351,7 @@ export default function Cashbook() {
               <TableHead className="text-right">{t("amount")}</TableHead><TableHead>{t("method")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {receipts.map(x => (
+              {filteredReceipts.map(x => (
                 <TableRow key={x.id}>
                   <TableCell className="font-mono text-xs">{x.receipt_no}</TableCell>
                   <TableCell>{fmtDate(x.receipt_date)}</TableCell>
