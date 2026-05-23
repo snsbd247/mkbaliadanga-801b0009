@@ -568,6 +568,42 @@ export default function Farmers() {
         </div>
         <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} disabled={disabled} maxLength={250} onChange={e => setF({ ...f, address: e.target.value })} /></div>
 
+        {/* Nominee section */}
+        <div className="col-span-2 border-t pt-3 mt-1">
+          <div className="text-xs font-semibold text-muted-foreground mb-2">
+            {tx("Nominee Information", "নমিনির তথ্য")}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{tx("Nominee Name", "নমিনির নাম")}</Label>
+              <Input value={f.nominee_name ?? ""} disabled={disabled} maxLength={100}
+                onChange={e => setF({ ...f, nominee_name: e.target.value })} />
+            </div>
+            <div>
+              <Label>{tx("Nominee Mobile", "নমিনির মোবাইল")}</Label>
+              <Input value={f.nominee_mobile ?? ""} disabled={disabled} inputMode="tel" maxLength={20}
+                onChange={e => setF({ ...f, nominee_mobile: e.target.value })} />
+            </div>
+            <div>
+              <Label>{tx("Relation", "সম্পর্ক")}</Label>
+              <Input value={f.nominee_relation ?? ""} disabled={disabled} maxLength={50}
+                placeholder={tx("e.g. Son, Wife, Father", "যেমন: ছেলে, স্ত্রী, পিতা")}
+                onChange={e => setF({ ...f, nominee_relation: e.target.value })} />
+            </div>
+            <div>
+              <Label>{tx("Nominee NID", "নমিনির এনআইডি")}</Label>
+              <Input value={f.nominee_nid ?? ""} disabled={disabled} inputMode="numeric" maxLength={17}
+                onChange={e => setF({ ...f, nominee_nid: e.target.value })} />
+            </div>
+            <div className="col-span-2">
+              <Label>{tx("Nominee Address", "নমিনির ঠিকানা")}</Label>
+              <Input value={f.nominee_address ?? ""} disabled={disabled} maxLength={250}
+                onChange={e => setF({ ...f, nominee_address: e.target.value })} />
+            </div>
+          </div>
+        </div>
+
+
         <div className="col-span-2 border-t pt-3 mt-1">
           <div className="text-xs font-medium text-muted-foreground mb-2">
             {t("locationStrictHint")}
