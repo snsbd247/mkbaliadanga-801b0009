@@ -31,6 +31,7 @@ import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
 import IrrigationInvoicesTab from "@/components/farmers/IrrigationInvoicesTab";
 import FarmerLandHistoryTab from "@/components/farmers/FarmerLandHistoryTab";
+import FarmerNotesTab from "@/components/farmers/FarmerNotesTab";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
@@ -39,7 +40,7 @@ import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { formatId5 } from "@/lib/idFormat";
 
-type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null };
+type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
 const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "" };
 
@@ -50,6 +51,7 @@ export default function FarmerDetail() {
   const nav = useNavigate();
   const [farmer, setFarmer] = useState<any>(null);
   const [lands, setLands] = useState<LandRow[]>([]);
+  const [ownerNames, setOwnerNames] = useState<Record<string, string>>({});
   const [savings, setSavings] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [viewLoan, setViewLoan] = useState<any | null>(null);
@@ -126,6 +128,15 @@ export default function FarmerDetail() {
     setFarmer(f.data); setLands((l.data as any) ?? []); setSavings(s.data ?? []);
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
     setPayments(pm.data ?? []);
+
+    // Fetch owner farmer names for borga lands
+    const ownerIds = Array.from(new Set(((l.data as any) ?? []).map((x: any) => x.owner_farmer_id).filter(Boolean)));
+    if (ownerIds.length) {
+      const { data: owners } = await supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", ownerIds as string[]);
+      const map: Record<string, string> = {};
+      (owners ?? []).forEach((o: any) => { map[o.id] = o.name_bn || o.name_en || o.farmer_code || "—"; });
+      setOwnerNames(map);
+    } else setOwnerNames({});
 
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
@@ -735,6 +746,7 @@ export default function FarmerDetail() {
           <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
+          <TabsTrigger value="notes">নোট</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lands">
@@ -898,6 +910,7 @@ export default function FarmerDetail() {
                 <TableHead>{t("dagNo")}</TableHead>
                 <TableHead>{t("landSize")}</TableHead>
                 <TableHead>{t("ownerType")}</TableHead>
+                <TableHead>মালিক (Owner)</TableHead>
                 <TableHead>{t("fieldType")}</TableHead>
                 <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
@@ -908,6 +921,11 @@ export default function FarmerDetail() {
                     <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
                     <TableCell>{l.land_size}</TableCell>
                     <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                    <TableCell className="text-xs">
+                      {l.owner_type === "owner"
+                        ? <span className="text-muted-foreground">নিজ মালিক</span>
+                        : (l.owner_farmer_id ? (ownerNames[l.owner_farmer_id] ?? "—") : "—")}
+                    </TableCell>
                     <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                     <TableCell className="text-right">
                       <EditButton onClick={() => openEdit(l)} title={t("edit")} />
@@ -915,7 +933,14 @@ export default function FarmerDetail() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {lands.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+                {lands.length > 0 && (
+                  <TableRow className="bg-muted/60 font-bold">
+                    <TableCell colSpan={2} className="text-right">মোট (Total)</TableCell>
+                    <TableCell>{lands.reduce((s, l) => s + Number(l.land_size || 0), 0).toFixed(2)}</TableCell>
+                    <TableCell colSpan={4} />
+                  </TableRow>
+                )}
+                {lands.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
@@ -1059,6 +1084,9 @@ export default function FarmerDetail() {
               </TableBody>
             </Table>
           </Card>
+        </TabsContent>
+        <TabsContent value="notes">
+          <FarmerNotesTab farmerId={id!} />
         </TabsContent>
       </Tabs>
 

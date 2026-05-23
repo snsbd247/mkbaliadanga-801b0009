@@ -1543,6 +1543,51 @@ export type Database = {
         }
         Relationships: []
       }
+      farmer_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          farmer_id: string
+          id: string
+          note: string
+          pinned: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          farmer_id: string
+          id?: string
+          note: string
+          pinned?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          farmer_id?: string
+          id?: string
+          note?: string
+          pinned?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_notes_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "farmer_notes_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       farmer_otps: {
         Row: {
           attempts: number
@@ -4518,6 +4563,7 @@ export type Database = {
         Row: {
           amount: number
           approved_by: string | null
+          category: string | null
           created_at: string
           created_by: string | null
           decided_at: string | null
@@ -4535,6 +4581,7 @@ export type Database = {
         Insert: {
           amount: number
           approved_by?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           decided_at?: string | null
@@ -4552,6 +4599,7 @@ export type Database = {
         Update: {
           amount?: number
           approved_by?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           decided_at?: string | null
