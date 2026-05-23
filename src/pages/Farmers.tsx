@@ -246,6 +246,24 @@ export default function Farmers() {
   const editNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
+  // Unsaved-draft guard for the create form (survives accidental refresh/tab close)
+  const createDirty = open && JSON.stringify({ ...form, office_id: "" }) !== JSON.stringify({ ...EMPTY_FORM, office_id: "" });
+  const createGuard = useUnsavedFormGuard("farmer-create", form, createDirty);
+  const editDirty = editOpen && editForm !== null;
+  const editGuard = useUnsavedFormGuard("farmer-edit", editForm, editDirty);
+
+  // Restore create-form draft once on mount (open dialog with prefilled data)
+  const draftRestoredRef = useRef(false);
+  useEffect(() => {
+    if (draftRestoredRef.current) return;
+    draftRestoredRef.current = true;
+    const draft = createGuard.restore();
+    if (draft && JSON.stringify({ ...draft, office_id: "" }) !== JSON.stringify({ ...EMPTY_FORM, office_id: "" })) {
+      setForm(draft as FormState);
+      setOpen(true);
+    }
+  }, []);
+
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
