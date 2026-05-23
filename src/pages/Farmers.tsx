@@ -787,8 +787,8 @@ export default function Farmers() {
           <TableBody>
             {list.map(f => (
               <TableRow key={f.id} className="cursor-pointer" onClick={() => nav(`/farmers/${f.id}`)}>
-                <TableCell className="font-mono text-xs">{f.member_no || "—"}</TableCell>
-                <TableCell className="font-mono text-xs">{f.voter_number || "—"}</TableCell>
+                <TableCell className="font-mono text-xs">{f.member_no ? formatId5(f.member_no) : "—"}</TableCell>
+                <TableCell className="font-mono text-xs">{f.voter_number ? formatId5(f.voter_number) : "—"}</TableCell>
                 <TableCell className="max-w-[220px]">
                   <TruncateText className="font-medium block">{f.name_en}</TruncateText>
                   {f.name_bn && <TruncateText className="text-xs text-muted-foreground block">{f.name_bn}</TruncateText>}
