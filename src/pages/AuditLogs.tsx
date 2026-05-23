@@ -320,6 +320,12 @@ export default function AuditLogs() {
             <Button onClick={exportCsv} size="sm" variant="outline" disabled={loading || filtered.length === 0}>
               <Download className="h-4 w-4" />CSV
             </Button>
+            <Button onClick={exportXlsx} size="sm" variant="outline" disabled={loading || filtered.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" />Excel
+            </Button>
+            <Button onClick={exportDocx} size="sm" variant="outline" disabled={loading || filtered.length === 0}>
+              <FileType2 className="h-4 w-4" />Word
+            </Button>
             <Button onClick={exportPdf} size="sm" disabled={loading || filtered.length === 0}>
               <FileText className="h-4 w-4" />PDF
             </Button>
