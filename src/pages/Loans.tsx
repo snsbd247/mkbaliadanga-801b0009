@@ -164,11 +164,13 @@ export default function Loans() {
     toast.success(t("updated")); setEditLoan(null); load();
   }
 
-  function printLoanReceipt(loan: any, payment?: any) {
+  async function printLoanReceipt(loan: any, payment?: any) {
     const isIssue = !payment;
+    const seed = isIssue ? loan.id : payment.id;
+    const receiptNo = await nextMonthlyReceiptNo("LOAN", officeId, seed);
     exportPaymentReceiptPDF({
       brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
-      receipt_no: isIssue ? `LOAN-${loan.id.slice(0, 8).toUpperCase()}` : `LP-${payment.id.slice(0, 8).toUpperCase()}`,
+      receipt_no: receiptNo,
       date: isIssue ? loan.issued_on : payment.paid_on,
       farmer: {
         name_en: loan.farmers?.name_en ?? "—",
