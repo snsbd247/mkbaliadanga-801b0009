@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText } from "lucide-react";
+import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -25,6 +25,8 @@ export default function Dashboard() {
   const [trend, setTrend] = useState<any[]>([]);
   const [topDues, setTopDues] = useState<any[]>([]);
   const [composition, setComposition] = useState<any[]>([]);
+  const [topDepositor, setTopDepositor] = useState<{ name: string; code: string; total: number } | null>(null);
+  const [topTransactor, setTopTransactor] = useState<{ name: string; code: string; count: number } | null>(null);
 
   const [votersOnly, setVotersOnly] = useState(false);
 
@@ -70,7 +72,8 @@ export default function Dashboard() {
                          sum(savingsData.filter(s => s.status === "approved" && s.type === "withdraw"), "amount");
     const totalLoan = sum(loansData.filter(l => l.status === "approved"), "total_payable");
     const irrCollection = sum(irrData, "paid_amount");
-    const totalDue = sum(irrData, "due_amount") + sum(loansData.filter(l => l.status === "approved"), "total_payable");
+    const irrigationDue = sum(irrData, "due_amount");
+    const loanDue = sum(loansData.filter(l => l.status === "approved"), "total_payable");
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
     const { data: monthPayAll } = await supabase
@@ -88,7 +91,8 @@ export default function Dashboard() {
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success" },
       { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock },
-      { label: t("totalDue"), value: money(totalDue), icon: AlertTriangle, tone: "danger" },
+      { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger" },
+      { label: lang === "bn" ? "ঋণের বাকি" : "Loan Due", value: money(loanDue), icon: HandCoins, tone: "danger" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
     ]);
     setRecent(paymentsData);
@@ -147,6 +151,35 @@ export default function Dashboard() {
       cur.due += Number(r.due_amount); dueMap.set(key, cur);
     });
     setTopDues(Array.from(dueMap.values()).sort((a, b) => b.due - a.due).slice(0, 5));
+
+    // Monthly Most Active Member — top depositor (sum) + top transactor (count)
+    const monthIso = monthStart;
+    const [{ data: mDeposits }, { data: mPays }] = await Promise.all([
+      supabase.from("savings_transactions")
+        .select("amount,farmer_id,farmers(name_en,farmer_code)")
+        .is("deleted_at", null).eq("status", "approved").eq("type", "deposit")
+        .gte("txn_date", monthIso),
+      supabase.from("payments")
+        .select("farmer_id,farmers(name_en,farmer_code)")
+        .is("deleted_at", null).gte("created_at", monthIso),
+    ]);
+    const depMap = new Map<string, { name: string; code: string; total: number }>();
+    (mDeposits ?? []).forEach((r: any) => {
+      if (!r.farmer_id) return;
+      const cur = depMap.get(r.farmer_id) ?? { name: r.farmers?.name_en ?? "—", code: r.farmers?.farmer_code ?? "—", total: 0 };
+      cur.total += Number(r.amount || 0); depMap.set(r.farmer_id, cur);
+    });
+    const topDep = Array.from(depMap.values()).sort((a, b) => b.total - a.total)[0] ?? null;
+    setTopDepositor(topDep);
+
+    const txCountMap = new Map<string, { name: string; code: string; count: number }>();
+    (mPays ?? []).forEach((r: any) => {
+      if (!r.farmer_id) return;
+      const cur = txCountMap.get(r.farmer_id) ?? { name: r.farmers?.name_en ?? "—", code: r.farmers?.farmer_code ?? "—", count: 0 };
+      cur.count += 1; txCountMap.set(r.farmer_id, cur);
+    });
+    const topTx = Array.from(txCountMap.values()).sort((a, b) => b.count - a.count)[0] ?? null;
+    setTopTransactor(topTx);
   }
 
   const pieColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--destructive))"];
@@ -181,11 +214,48 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Monthly Most Active Member */}
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Trophy className="h-4 w-4 text-success" />
+            <h2 className="font-semibold">{lang === "bn" ? "এই মাসের সর্বোচ্চ সঞ্চয়দাতা" : "Top Depositor (This Month)"}</h2>
+          </div>
+          {topDepositor ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">{topDepositor.name}</div>
+                <div className="text-xs text-muted-foreground font-mono">{topDepositor.code}</div>
+              </div>
+              <div className="text-xl font-bold text-success">{money(topDepositor.total)}</div>
+            </div>
+          ) : <p className="text-sm text-muted-foreground">{t("noData")}</p>}
+        </Card>
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="h-4 w-4 text-primary" />
+            <h2 className="font-semibold">{lang === "bn" ? "এই মাসের সর্বোচ্চ লেনদেনকারী" : "Most Transactions (This Month)"}</h2>
+          </div>
+          {topTransactor ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">{topTransactor.name}</div>
+                <div className="text-xs text-muted-foreground font-mono">{topTransactor.code}</div>
+              </div>
+              <div className="text-xl font-bold text-primary">
+                {topTransactor.count} {lang === "bn" ? "টি" : "txn"}
+              </div>
+            </div>
+          ) : <p className="text-sm text-muted-foreground">{t("noData")}</p>}
+        </Card>
+      </div>
+
       {(isSuper || isAdmin) && (
         <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <SmsProviderStatusCard />
         </div>
       )}
+
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">

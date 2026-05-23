@@ -181,6 +181,8 @@ const EMPTY_FORM = {
   office_id: "", status: "active",
   division_id: null, district_id: null, upazila_id: null, union_id: null,
   ward_id: null, village_id: null, mouza_id: null,
+  nominee_name: "", nominee_mobile: "", nominee_relation: "",
+  nominee_nid: "", nominee_address: "",
 };
 
 type FormState = typeof EMPTY_FORM & Record<string, any>;
@@ -427,6 +429,11 @@ export default function Farmers() {
       if (lvl) {
         setCreateErr({ level: lvl, key: "locationInvalidMismatch" });
         setCreateFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMismatch", lvl) }));
+      } else if ((error as any).code === "23505" || /duplicate key|unique constraint/i.test(error.message)) {
+        const m = error.message.toLowerCase();
+        if (m.includes("member_no") || m.includes("farmer_code")) toast.error(tx("Duplicate Farmer ID — this ID is already in use.", "Farmer ID আগেই ব্যবহৃত হয়েছে।"));
+        else if (m.includes("voter_number") || m.includes("account_number")) toast.error(tx("Duplicate Voter / Savings A/C No — already in use.", "Voter / Savings A/C নম্বর আগেই ব্যবহৃত হয়েছে।"));
+        else toast.error(tx("Duplicate value — this entry already exists.", "ডুপ্লিকেট মান — এই তথ্য আগেই আছে।"));
       } else toast.error(error.message);
       return;
     }
@@ -479,6 +486,11 @@ export default function Farmers() {
       if (lvl) {
         setEditErr({ level: lvl, key: "locationInvalidMismatch" });
         setEditFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMismatch", lvl) }));
+      } else if ((error as any).code === "23505" || /duplicate key|unique constraint/i.test(error.message)) {
+        const m = error.message.toLowerCase();
+        if (m.includes("member_no") || m.includes("farmer_code")) toast.error(tx("Duplicate Farmer ID — this ID is already in use.", "Farmer ID আগেই ব্যবহৃত হয়েছে।"));
+        else if (m.includes("voter_number") || m.includes("account_number")) toast.error(tx("Duplicate Voter / Savings A/C No — already in use.", "Voter / Savings A/C নম্বর আগেই ব্যবহৃত হয়েছে।"));
+        else toast.error(tx("Duplicate value — this entry already exists.", "ডুপ্লিকেট মান — এই তথ্য আগেই আছে।"));
       } else toast.error(error.message);
       return;
     }
@@ -565,6 +577,42 @@ export default function Farmers() {
           </Select>
         </div>
         <div className="col-span-2"><Label>{t("address")}</Label><Input value={f.address} disabled={disabled} maxLength={250} onChange={e => setF({ ...f, address: e.target.value })} /></div>
+
+        {/* Nominee section */}
+        <div className="col-span-2 border-t pt-3 mt-1">
+          <div className="text-xs font-semibold text-muted-foreground mb-2">
+            {tx("Nominee Information", "নমিনির তথ্য")}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{tx("Nominee Name", "নমিনির নাম")}</Label>
+              <Input value={f.nominee_name ?? ""} disabled={disabled} maxLength={100}
+                onChange={e => setF({ ...f, nominee_name: e.target.value })} />
+            </div>
+            <div>
+              <Label>{tx("Nominee Mobile", "নমিনির মোবাইল")}</Label>
+              <Input value={f.nominee_mobile ?? ""} disabled={disabled} inputMode="tel" maxLength={20}
+                onChange={e => setF({ ...f, nominee_mobile: e.target.value })} />
+            </div>
+            <div>
+              <Label>{tx("Relation", "সম্পর্ক")}</Label>
+              <Input value={f.nominee_relation ?? ""} disabled={disabled} maxLength={50}
+                placeholder={tx("e.g. Son, Wife, Father", "যেমন: ছেলে, স্ত্রী, পিতা")}
+                onChange={e => setF({ ...f, nominee_relation: e.target.value })} />
+            </div>
+            <div>
+              <Label>{tx("Nominee NID", "নমিনির এনআইডি")}</Label>
+              <Input value={f.nominee_nid ?? ""} disabled={disabled} inputMode="numeric" maxLength={17}
+                onChange={e => setF({ ...f, nominee_nid: e.target.value })} />
+            </div>
+            <div className="col-span-2">
+              <Label>{tx("Nominee Address", "নমিনির ঠিকানা")}</Label>
+              <Input value={f.nominee_address ?? ""} disabled={disabled} maxLength={250}
+                onChange={e => setF({ ...f, nominee_address: e.target.value })} />
+            </div>
+          </div>
+        </div>
+
 
         <div className="col-span-2 border-t pt-3 mt-1">
           <div className="text-xs font-medium text-muted-foreground mb-2">

@@ -16,6 +16,8 @@ export const FARMER_WRITABLE_COLUMNS = [
   "union_id", "ward_id", "village_id", "mouza_id",
   "village", "upazila", "district", "division", // legacy text fields
   "account_number", "member_no",
+  "nominee_name", "nominee_mobile", "nominee_relation",
+  "nominee_nid", "nominee_address",
 ] as const;
 
 export type FarmerWritableColumn = typeof FARMER_WRITABLE_COLUMNS[number];

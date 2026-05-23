@@ -1490,6 +1490,11 @@ export type Database = {
           name_bn: string | null
           name_en: string
           nid: string | null
+          nominee_address: string | null
+          nominee_mobile: string | null
+          nominee_name: string | null
+          nominee_nid: string | null
+          nominee_relation: string | null
           office_id: string | null
           photo_url: string | null
           post_office: string | null
@@ -1530,6 +1535,11 @@ export type Database = {
           name_bn?: string | null
           name_en: string
           nid?: string | null
+          nominee_address?: string | null
+          nominee_mobile?: string | null
+          nominee_name?: string | null
+          nominee_nid?: string | null
+          nominee_relation?: string | null
           office_id?: string | null
           photo_url?: string | null
           post_office?: string | null
@@ -1570,6 +1580,11 @@ export type Database = {
           name_bn?: string | null
           name_en?: string
           nid?: string | null
+          nominee_address?: string | null
+          nominee_mobile?: string | null
+          nominee_name?: string | null
+          nominee_nid?: string | null
+          nominee_relation?: string | null
           office_id?: string | null
           photo_url?: string | null
           post_office?: string | null

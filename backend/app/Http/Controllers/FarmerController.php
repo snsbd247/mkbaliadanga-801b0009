@@ -33,6 +33,11 @@ class FarmerController extends Controller
             'village_id'=> 'nullable|uuid',
             'address'   => 'nullable|string',
             'is_voter'  => 'boolean',
+            'nominee_name'     => 'nullable|string|max:191',
+            'nominee_mobile'   => 'nullable|string|max:32',
+            'nominee_relation' => 'nullable|string|max:50',
+            'nominee_nid'      => 'nullable|string|max:32',
+            'nominee_address'  => 'nullable|string|max:255',
         ]);
         $data['office_id'] = app('current_office_id');
         return response()->json($this->repo->create($data), 201);
@@ -48,6 +53,11 @@ class FarmerController extends Controller
             'mobile'  => 'nullable|string|max:32',
             'address' => 'nullable|string',
             'is_active'=> 'boolean',
+            'nominee_name'     => 'nullable|string|max:191',
+            'nominee_mobile'   => 'nullable|string|max:32',
+            'nominee_relation' => 'nullable|string|max:50',
+            'nominee_nid'      => 'nullable|string|max:32',
+            'nominee_address'  => 'nullable|string|max:255',
         ]);
         return $this->repo->update($f, $data);
     }

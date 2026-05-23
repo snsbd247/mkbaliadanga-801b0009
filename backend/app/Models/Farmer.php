@@ -12,6 +12,7 @@ class Farmer extends Model {
     protected $fillable = [
         'office_id','code','name','name_bn','father_name','mother_name','mobile','nid','dob',
         'gender','village_id','address','photo_path','is_voter','joined_on','extra','is_active',
+        'nominee_name','nominee_mobile','nominee_relation','nominee_nid','nominee_address',
     ];
     protected $casts = [
         'dob'        => 'date',
