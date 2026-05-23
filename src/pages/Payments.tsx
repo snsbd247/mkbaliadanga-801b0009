@@ -396,6 +396,30 @@ export default function Payments() {
     load();
   }
 
+  async function voidPayment(p: any) {
+    const reason = window.prompt("কেন এই রসিদ বাতিল করছেন? (Reason for voiding receipt)");
+    if (!reason || !reason.trim()) return;
+    const { error } = await supabase.from("payments").update({
+      voided_at: new Date().toISOString(),
+      voided_by: user?.id,
+      void_reason: reason.trim(),
+      status: "voided" as any,
+    } as any).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    // Reverse irrigation allocations (mark invoices unpaid by subtracting)
+    const irrAllocs = (p.payment_allocations ?? []).filter((a: any) => a.kind === "irrigation");
+    for (const a of irrAllocs) {
+      const { data: inv } = await supabase.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", a.reference_id).maybeSingle();
+      if (inv) {
+        const newPaid = Math.max(0, Number(inv.paid_amount || 0) - Number(a.amount || 0));
+        const newStatus = newPaid <= 0 ? "unpaid" : newPaid >= Number(inv.payable_amount || 0) ? "paid" : "partial";
+        await supabase.from("irrigation_invoices").update({ paid_amount: newPaid, invoice_status: newStatus } as any).eq("id", a.reference_id);
+      }
+    }
+    toast.success("রসিদ বাতিল করা হয়েছে");
+    load();
+  }
+
   function updateAlloc(i: number, patch: Partial<Allocation>) {
     setAllocs(prev => prev.map((a, idx) => idx === i ? { ...a, ...patch } : a));
   }
