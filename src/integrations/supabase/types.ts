@@ -1052,6 +1052,123 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_accounts: {
+        Row: {
+          account_no: string
+          account_title: string | null
+          account_type: string | null
+          bank_name: string
+          branch: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          office_id: string | null
+          opening_balance: number
+          updated_at: string
+        }
+        Insert: {
+          account_no: string
+          account_title?: string | null
+          account_type?: string | null
+          bank_name: string
+          branch?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          office_id?: string | null
+          opening_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          account_no?: string
+          account_title?: string | null
+          account_type?: string | null
+          bank_name?: string
+          branch?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          office_id?: string | null
+          opening_balance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_transactions: {
+        Row: {
+          amount: number
+          bank_account_id: string
+          counterparty_account_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          office_id: string | null
+          reference_no: string | null
+          transfer_group: string | null
+          txn_date: string
+          txn_type: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id: string
+          counterparty_account_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          office_id?: string | null
+          reference_no?: string | null
+          transfer_group?: string | null
+          txn_date?: string
+          txn_type: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string
+          counterparty_account_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          office_id?: string | null
+          reference_no?: string | null
+          transfer_group?: string | null
+          txn_date?: string
+          txn_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_counterparty_account_id_fkey"
+            columns: ["counterparty_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_settings: {
         Row: {
           accent_color: string
@@ -2871,6 +2988,110 @@ export type Database = {
           },
         ]
       }
+      land_history: {
+        Row: {
+          created_at: string
+          cultivator_farmer_id: string | null
+          dag_no: string | null
+          farmer_id: string
+          field_type: string | null
+          fiscal_year: number
+          id: string
+          land_id: string | null
+          land_size: number
+          mouza: string | null
+          office_id: string | null
+          owner_type: string | null
+          recorded_by: string | null
+          remarks: string | null
+          season: string | null
+        }
+        Insert: {
+          created_at?: string
+          cultivator_farmer_id?: string | null
+          dag_no?: string | null
+          farmer_id: string
+          field_type?: string | null
+          fiscal_year: number
+          id?: string
+          land_id?: string | null
+          land_size: number
+          mouza?: string | null
+          office_id?: string | null
+          owner_type?: string | null
+          recorded_by?: string | null
+          remarks?: string | null
+          season?: string | null
+        }
+        Update: {
+          created_at?: string
+          cultivator_farmer_id?: string | null
+          dag_no?: string | null
+          farmer_id?: string
+          field_type?: string | null
+          fiscal_year?: number
+          id?: string
+          land_id?: string | null
+          land_size?: number
+          mouza?: string | null
+          office_id?: string | null
+          owner_type?: string | null
+          recorded_by?: string | null
+          remarks?: string | null
+          season?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_history_cultivator_farmer_id_fkey"
+            columns: ["cultivator_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "land_history_cultivator_farmer_id_fkey"
+            columns: ["cultivator_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_history_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "land_history_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_history_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_history_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands_with_location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_history_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       land_relations: {
         Row: {
           created_at: string
@@ -3427,6 +3648,7 @@ export type Database = {
           installment_amount: number | null
           interest_enabled: boolean
           interest_rate: number
+          is_temporary: boolean
           issued_on: string
           next_due_on: string | null
           note: string | null
@@ -3434,6 +3656,7 @@ export type Database = {
           plan_id: string | null
           principal: number
           status: Database["public"]["Enums"]["loan_status"]
+          temp_purpose: string | null
           total_due: number | null
           total_payable: number
           updated_at: string
@@ -3449,6 +3672,7 @@ export type Database = {
           installment_amount?: number | null
           interest_enabled?: boolean
           interest_rate?: number
+          is_temporary?: boolean
           issued_on?: string
           next_due_on?: string | null
           note?: string | null
@@ -3456,6 +3680,7 @@ export type Database = {
           plan_id?: string | null
           principal: number
           status?: Database["public"]["Enums"]["loan_status"]
+          temp_purpose?: string | null
           total_due?: number | null
           total_payable?: number
           updated_at?: string
@@ -3471,6 +3696,7 @@ export type Database = {
           installment_amount?: number | null
           interest_enabled?: boolean
           interest_rate?: number
+          is_temporary?: boolean
           issued_on?: string
           next_due_on?: string | null
           note?: string | null
@@ -3478,6 +3704,7 @@ export type Database = {
           plan_id?: string | null
           principal?: number
           status?: Database["public"]["Enums"]["loan_status"]
+          temp_purpose?: string | null
           total_due?: number | null
           total_payable?: number
           updated_at?: string
@@ -4837,6 +5064,89 @@ export type Database = {
         }
         Relationships: []
       }
+      voucher_sequences: {
+        Row: {
+          fiscal_year: number
+          last_no: number
+          office_id: string
+          voucher_type: string
+        }
+        Insert: {
+          fiscal_year: number
+          last_no?: number
+          office_id: string
+          voucher_type: string
+        }
+        Update: {
+          fiscal_year?: number
+          last_no?: number
+          office_id?: string
+          voucher_type?: string
+        }
+        Relationships: []
+      }
+      vouchers: {
+        Row: {
+          amount: number
+          attachment_mime: string | null
+          attachment_path: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          narration: string | null
+          office_id: string | null
+          payee: string | null
+          reference_id: string | null
+          reference_type: string | null
+          updated_at: string
+          voucher_date: string
+          voucher_no: string
+          voucher_type: string
+        }
+        Insert: {
+          amount?: number
+          attachment_mime?: string | null
+          attachment_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          narration?: string | null
+          office_id?: string | null
+          payee?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          updated_at?: string
+          voucher_date?: string
+          voucher_no: string
+          voucher_type: string
+        }
+        Update: {
+          amount?: number
+          attachment_mime?: string | null
+          attachment_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          narration?: string | null
+          office_id?: string | null
+          payee?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          updated_at?: string
+          voucher_date?: string
+          voucher_no?: string
+          voucher_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       farmer_savings_balance: {
@@ -5141,6 +5451,10 @@ export type Database = {
         Returns: string
       }
       next_receipt_no: { Args: { p_kind: string }; Returns: string }
+      next_voucher_no: {
+        Args: { _office: string; _type: string }
+        Returns: string
+      }
       pg_public_table_columns: {
         Args: never
         Returns: {
