@@ -251,8 +251,7 @@ export default function Payments() {
       if (!finalReceiptNo) {
         const allIrr = allocs.every(a => a.kind === "irrigation");
         const rpcKind = allIrr ? "IRR" : "PAY";
-        const { data: rn, error: rnErr } = await supabase.rpc("next_receipt_no", { p_kind: rpcKind });
-        if (!rnErr && typeof rn === "string") finalReceiptNo = rn;
+        finalReceiptNo = await nextMonthlyReceiptNo(rpcKind, officeId, idemKey);
       }
 
       const payload: any = {
