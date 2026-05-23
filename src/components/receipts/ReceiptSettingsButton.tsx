@@ -108,6 +108,27 @@ export function ReceiptSettingsButton() {
         </div>
 
         <div className="border-t pt-2 space-y-1">
+          <Label className="text-xs">Receipt PDF paper (Payment / Loan / Irrigation / Combined)</Label>
+          <Select
+            value={pdfPaper}
+            onValueChange={(v) => {
+              const next = (v === "a4" ? "a4" : "a5") as PaperSize;
+              setPdfPaper(next);
+              setReceiptLayoutSettings({ defaultPaperSize: next });
+            }}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="a5">A5 (compact)</SelectItem>
+              <SelectItem value="a4">A4 (full page)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            সব receipt PDF এই paper size-এ generate হবে।
+          </p>
+        </div>
+
+        <div className="border-t pt-2 space-y-1">
           <label className="flex items-center gap-2 text-xs cursor-pointer">
             <input
               type="checkbox"
