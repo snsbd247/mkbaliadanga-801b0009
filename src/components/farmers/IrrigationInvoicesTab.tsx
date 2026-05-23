@@ -165,15 +165,18 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
     const totalPayable = sorted.reduce((s, r) => s + Number(r.payable_amount || 0), 0);
     const totalPaid = sorted.reduce((s, r) => s + Number(r.paid_amount || 0), 0);
     const totalDue = sorted.reduce((s, r) => s + Number(r.due_amount || 0), 0);
-    const rows: any[][] = sorted.map((r) => [
-      r.invoice_no ?? "—",
-      `${r.seasons?.name ?? r.seasons?.type ?? ""} ${r.seasons?.year ?? ""}`.trim(),
-      `${r.lands?.mouza ?? ""}${r.lands?.dag_no ? " · " + r.lands.dag_no : ""}`,
-      fmtDate(r.due_date),
-      money(r.payable_amount),
-      money(r.paid_amount),
-      money(r.due_amount),
-    ]);
+    const rows: any[][] = sorted.map((r) => {
+      const ll = landLabel(r);
+      return [
+        r.invoice_no ?? "—",
+        `${r.seasons?.name ?? r.seasons?.type ?? ""} ${r.seasons?.year ?? ""}`.trim(),
+        ll.main + (ll.sub ? ` (${ll.sub})` : ""),
+        fmtDate(r.due_date),
+        money(r.payable_amount),
+        money(r.paid_amount),
+        money(r.due_amount),
+      ];
+    });
     rows.push(["", "", "", "মোট (Total)", money(totalPayable), money(totalPaid), money(totalDue)]);
     await exportTablePDF(
       `Combined Irrigation Receipt — ${sel.length} invoice(s)`,
