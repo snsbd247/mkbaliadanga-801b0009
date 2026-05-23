@@ -247,6 +247,12 @@ export default function Dashboard() {
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</div>
                 <div className={`mt-2 text-2xl font-bold ${s.tone === "danger" ? "text-destructive" : s.tone === "success" ? "text-success" : "text-foreground"}`}>{s.value}</div>
+                {typeof s.delta === "number" && (
+                  <div className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${s.delta >= 0 ? "text-success" : "text-destructive"}`}>
+                    {s.delta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {s.delta >= 0 ? "+" : ""}{s.delta.toFixed(1)}% {lang === "bn" ? "গত মাস থেকে" : "vs last month"}
+                  </div>
+                )}
               </div>
               <div className={`flex h-10 w-10 items-center justify-center rounded-md ${s.tone === "danger" ? "bg-destructive/10 text-destructive" : s.tone === "success" ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
                 <s.icon className="h-5 w-5" />
@@ -255,6 +261,25 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* 30-day collection sparkline */}
+      <Card className="mt-4 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">{lang === "bn" ? "গত ৩০ দিনের দৈনিক সংগ্রহ" : "Daily Collection — Last 30 Days"}</h2>
+          <span className="text-xs text-muted-foreground">{lang === "bn" ? "মোট: " : "Total: "}{money(daily30.reduce((a, d) => a + d.value, 0))}</span>
+        </div>
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={daily30}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={10} interval={4} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
+              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} formatter={(v: any) => money(Number(v))} />
+              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       {/* Monthly Most Active Member */}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
