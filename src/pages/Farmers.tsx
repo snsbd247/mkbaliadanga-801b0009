@@ -359,6 +359,7 @@ export default function Farmers() {
     setCreateFieldErrors({});
     setForm({ ...EMPTY_FORM, office_id: officeId ?? "" });
     setSaving(false);
+    createGuard.clear();
   }
 
   function resetEditForm() {
@@ -368,6 +369,7 @@ export default function Farmers() {
     setEditErr(null);
     setEditFieldErrors({});
     setSaving(false);
+    editGuard.clear();
   }
 
   function commonValidate(f: FormState, setErrors: (errors: FormErrors) => void): boolean {
