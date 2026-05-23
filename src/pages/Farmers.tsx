@@ -181,6 +181,8 @@ const EMPTY_FORM = {
   office_id: "", status: "active",
   division_id: null, district_id: null, upazila_id: null, union_id: null,
   ward_id: null, village_id: null, mouza_id: null,
+  nominee_name: "", nominee_mobile: "", nominee_relation: "",
+  nominee_nid: "", nominee_address: "",
 };
 
 type FormState = typeof EMPTY_FORM & Record<string, any>;
