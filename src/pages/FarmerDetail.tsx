@@ -690,6 +690,23 @@ export default function FarmerDetail() {
         </div>
       </Card>
 
+      {(farmer.nominee_name || farmer.nominee_mobile || farmer.nominee_relation || farmer.nominee_nid || farmer.nominee_address) && (
+        <Card className="p-4 mb-4">
+          <div className="text-xs font-semibold text-muted-foreground mb-2">
+            {tx("Nominee Information", "নমিনির তথ্য")}
+          </div>
+          <div className="grid gap-x-4 gap-y-2 text-sm grid-cols-2 md:grid-cols-4">
+            <div className="min-w-0"><div className="text-xs text-muted-foreground">{tx("Nominee Name", "নমিনির নাম")}</div><div className="break-words font-medium">{farmer.nominee_name ?? "—"}</div></div>
+            <div className="min-w-0"><div className="text-xs text-muted-foreground">{tx("Relation", "সম্পর্ক")}</div><div className="break-words">{farmer.nominee_relation ?? "—"}</div></div>
+            <div className="min-w-0"><div className="text-xs text-muted-foreground">{tx("Mobile", "মোবাইল")}</div><div className="break-all">{farmer.nominee_mobile ?? "—"}</div></div>
+            <div className="min-w-0"><div className="text-xs text-muted-foreground">{tx("NID", "এনআইডি")}</div><div className="font-mono break-all">{farmer.nominee_nid ?? "—"}</div></div>
+            {farmer.nominee_address && (
+              <div className="col-span-2 md:col-span-4 min-w-0"><div className="text-xs text-muted-foreground">{tx("Address", "ঠিকানা")}</div><div className="text-sm break-words">{farmer.nominee_address}</div></div>
+            )}
+          </div>
+        </Card>
+      )}
+
       {!farmer.is_voter && (
         <Card className="p-3 mb-4 border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 text-sm">
           ⚠️ {tx("This farmer is not enabled as Voter / Savings A/C. No savings, loan or share data will exist. Toggle Voter from Edit above to enable.", "এই ফার্মার Voter / Savings A/C হিসেবে এনাবল নেই। সঞ্চয়, ঋণ এবং শেয়ার সংক্রান্ত কোন তথ্য বা ট্রাঞ্জেকশন থাকবে না। এনাবল করতে উপরে Edit থেকে Voter টগল চালু করুন।")}
