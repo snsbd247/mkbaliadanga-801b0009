@@ -61,7 +61,7 @@ export default function LoanDetail() {
       if (!l) { setLoading(false); return; }
       setLoan(l);
       const [{ data: f }, { data: p }, { data: ins }, { data: pays }] = await Promise.all([
-        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,mobile,village").eq("id", l.farmer_id).maybeSingle(),
+        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,father_name,nominee_name,nominee_mobile,nominee_relation").eq("id", l.farmer_id).maybeSingle(),
         l.plan_id ? supabase.from("loan_plans").select("*").eq("id", l.plan_id).maybeSingle() : Promise.resolve({ data: null } as any),
         supabase.from("loan_installments").select("*").eq("loan_id", loanId).order("installment_no"),
         supabase.from("loan_payments").select("*").eq("loan_id", loanId).order("paid_on", { ascending: false }),
@@ -177,7 +177,9 @@ export default function LoanDetail() {
                 {(lang === "bn" ? (farmer?.name_bn || farmer?.name_en) : (farmer?.name_en || farmer?.name_bn)) || "-"}
               </Link> as any
             } />
-            <Field label={tx("Account #", "হিসাব নং")} value={farmer?.farmer_code || "-"} />
+            <Field label={tx("Account #", "হিসাব নং")} value={farmer?.member_no || farmer?.farmer_code || "-"} />
+            <Field label={tx("Father's Name", "পিতার নাম")} value={farmer?.father_name || "—"} />
+            <Field label={tx("Mobile", "মোবাইল")} value={farmer?.mobile || "—"} />
             <Field label={tx("Loan Plan", "ঋণ প্ল্যান")} value={(lang === "bn" ? (plan?.name_bn || plan?.name) : (plan?.name || plan?.name_bn)) || "—"} />
             <Field label={tx("Principal", "মূল টাকা")} value={money(loan.principal)} />
             <Field label={tx("Interest", "সুদ")} value={loan.interest_enabled ? `${loan.interest_rate}%` : tx("None", "নেই")} />
@@ -187,6 +189,18 @@ export default function LoanDetail() {
             <Field label={tx("Status", "স্ট্যাটাস")} value={<Badge>{loan.status}</Badge> as any} />
             <Field label={tx("Issued On", "ঋণ প্রদান তারিখ")} value={fmtDate(loan.issued_on)} />
             <Field label={tx("Last Paid On", "শেষ পরিশোধ তারিখ")} value={fmtDate(summary.lastPay)} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Nominee */}
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">{tx("Nominee Information", "নমিনির তথ্য")}</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <Field label={tx("Nominee Name", "নমিনির নাম")} value={farmer?.nominee_name || "—"} />
+            <Field label={tx("Nominee Mobile", "নমিনির মোবাইল")} value={farmer?.nominee_mobile || "—"} />
+            <Field label={tx("Relation", "সম্পর্ক")} value={farmer?.nominee_relation || "—"} />
           </div>
         </CardContent>
       </Card>

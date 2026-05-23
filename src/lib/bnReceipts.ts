@@ -260,10 +260,14 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
     const sl = getSavingsLabels(lang);
+    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
     if (d.description) rows.push([sl.desc, d.description]);
     if (d.outstanding != null) rows.push([sl.balance, fmt2(Number(d.outstanding))]);
   } else {
     const ll = getLoanLabels(lang);
+    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
     if (d.description) rows.push([ll.desc, d.description]);
     if (d.outstanding != null) rows.push([ll.outstanding, fmt2(Number(d.outstanding))]);
   }
@@ -288,9 +292,20 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     ? `'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif`
     : `'Inter','Helvetica','Arial',sans-serif`;
 
+  const layoutSettings = getReceiptLayoutSettings();
+  const wmText = layoutSettings.watermarkEnabled
+    ? (layoutSettings.watermarkText || d.company_name_bn || d.company_name || "").trim()
+    : "";
+  const watermark = wmText
+    ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
+         <div style="transform:rotate(-30deg);font-size:64px;font-weight:800;color:rgba(0,0,0,0.07);white-space:nowrap;letter-spacing:6px;font-family:${fontFamily};">${wmText}</div>
+       </div>` : "";
+
   return `
-  <div style="font-family:${fontFamily};color:#111;padding:18px 22px;" data-receipt-copy="${copyLabel}">
-    <div style="text-align:center;">
+  <div style="position:relative;font-family:${fontFamily};color:#111;padding:18px 22px;" data-receipt-copy="${copyLabel}">
+    ${watermark}
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
       ${logo}
       <div style="font-size:18px;font-weight:700;margin-top:2px;">${titleFor(d.kind, lang)}</div>
       ${orgBlock(d.org, lang, orgLayout, orgSize)}

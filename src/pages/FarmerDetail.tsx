@@ -149,12 +149,15 @@ export default function FarmerDetail() {
 
 
   function farmerForReceipt(extra: Partial<BnReceiptData["farmer"]> = {}): BnReceiptData["farmer"] {
+    // Use first land's mouza as a default (savings/loan receipts also need মৌজা)
+    const primaryMouza = (lands?.[0] as any)?.mouza_name ?? (lands?.[0] as any)?.mouza ?? null;
     return {
       name: farmer?.name_bn || farmer?.name_en || "—",
       member_no: farmer?.member_no ?? farmer?.account_number ?? null,
       father_or_husband: farmer?.father_name ?? null,
       village: farmer?.village ?? null,
       mobile: farmer?.mobile ?? null,
+      mouza: primaryMouza,
       ...extra,
     };
   }

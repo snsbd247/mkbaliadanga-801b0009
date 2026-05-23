@@ -49,6 +49,7 @@ export default function Cashbook() {
 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [stream, setStream] = useState<"all" | "irrigation" | "savings_loan_share">("all");
   const [openingCash, setOpeningCash] = useState<number>(() => Number(localStorage.getItem("cb_open") ?? 0));
   useEffect(() => { localStorage.setItem("cb_open", String(openingCash || 0)); }, [openingCash]);
   const [farmers, setFarmers] = useState<any[]>([]);
@@ -124,11 +125,21 @@ export default function Cashbook() {
     load();
   }
 
+  // Stream filter — Irrigation vs Savings/Loan/Share (PDF requirement: আলাদা cashbook)
+  const irrKinds = new Set(["irrigation"]);
+  const slsKinds = new Set(["savings_deposit", "loan_taken", "share", "donation", "hawlat", "bank", "miscellaneous"]);
+  const filteredReceipts = useMemo(() => {
+    if (stream === "all") return receipts;
+    if (stream === "irrigation") return receipts.filter(r => irrKinds.has(r.kind));
+    return receipts.filter(r => slsKinds.has(r.kind));
+  }, [receipts, stream]);
+  const filteredExpenses = useMemo(() => stream === "all" ? expenses : [], [expenses, stream]);
+
   // Cash book entries (combined, sorted asc for running balance)
   const cashbookEntries = useMemo(() => {
     const rows: any[] = [
-      ...receipts.map(x => ({ date: x.receipt_date, kind: "income", label: getKindLabel(t, x.kind as Kind), ref: x.receipt_no, amount: Number(x.amount), note: x.note })),
-      ...expenses.map(x => ({ date: x.expense_date, kind: "expense", label: x.head, ref: x.payee ?? "", amount: Number(x.amount), note: x.note })),
+      ...filteredReceipts.map(x => ({ date: x.receipt_date, kind: "income", label: getKindLabel(t, x.kind as Kind), ref: x.receipt_no, amount: Number(x.amount), note: x.note })),
+      ...filteredExpenses.map(x => ({ date: x.expense_date, kind: "expense", label: x.head, ref: x.payee ?? "", amount: Number(x.amount), note: x.note })),
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(openingCash || 0);
     const out = rows.map(row => {
@@ -136,7 +147,7 @@ export default function Cashbook() {
       return { ...row, balance: bal };
     });
     return out;
-  }, [receipts, expenses, openingCash]);
+  }, [filteredReceipts, filteredExpenses, openingCash, t]);
 
   const totals = useMemo(() => {
     const income = receipts.reduce((s, x) => s + Number(x.amount), 0);
@@ -227,13 +238,23 @@ export default function Cashbook() {
       />
 
       <Card className="p-4 mb-4">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-5">
           <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
           <div><Label>{t("to")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <div>
+            <Label>Stream</Label>
+            <Select value={stream} onValueChange={(v: any) => setStream(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All (combined)</SelectItem>
+                <SelectItem value="irrigation">Irrigation only</SelectItem>
+                <SelectItem value="savings_loan_share">Savings / Loan / Share</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label>{t("openingCash")}</Label><Input type="number" value={openingCash || ""} onChange={e => setOpeningCash(+e.target.value)} /></div>
           <div className="self-end text-sm text-muted-foreground">
             <div>{t("openingBalance")}: <span className="font-semibold">{money(openingCash)}</span></div>
-            <div>{t("income")}: <span className="font-semibold text-success">{money(totals.income)}</span> · {t("expense")}: <span className="font-semibold text-destructive">{money(totals.expense)}</span></div>
             <div>{t("closing")}: <span className={`font-bold ${totals.cashBalance < 0 ? "due-text" : "text-success"}`}>{money(totals.cashBalance)}</span></div>
           </div>
         </div>
@@ -320,8 +341,8 @@ export default function Cashbook() {
 
         <TabsContent value="receipts">
           <ExportBar
-            onPdf={() => exportTablePDF(t("cbReceipts" as any), [t("receiptNo"), t("date"), t("type"), t("farmerName"), t("amount"), t("method")], receipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), getKindLabel(t, x.kind as Kind), x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
-            onXlsx={() => exportExcel("receipts", t("cbReceipts" as any), receipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: getKindLabel(t, x.kind as Kind), Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
+            onPdf={() => exportTablePDF(t("cbReceipts" as any), [t("receiptNo"), t("date"), t("type"), t("farmerName"), t("amount"), t("method")], filteredReceipts.map(x => [x.receipt_no, fmtDate(x.receipt_date), getKindLabel(t, x.kind as Kind), x.farmers?.name_en ?? "—", x.amount, x.method]), { from, to })}
+            onXlsx={() => exportExcel("receipts", t("cbReceipts" as any), filteredReceipts.map(x => ({ "Receipt #": x.receipt_no, Date: x.receipt_date, Kind: getKindLabel(t, x.kind as Kind), Farmer: x.farmers?.name_en ?? "", Amount: x.amount, Method: x.method, Note: x.note })), { from, to })}
           />
           <Card><Table>
             <TableHeader><TableRow>
@@ -330,7 +351,7 @@ export default function Cashbook() {
               <TableHead className="text-right">{t("amount")}</TableHead><TableHead>{t("method")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {receipts.map(x => (
+              {filteredReceipts.map(x => (
                 <TableRow key={x.id}>
                   <TableCell className="font-mono text-xs">{x.receipt_no}</TableCell>
                   <TableCell>{fmtDate(x.receipt_date)}</TableCell>
@@ -340,7 +361,7 @@ export default function Cashbook() {
                   <TableCell>{x.method}</TableCell>
                 </TableRow>
               ))}
-              {receipts.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+              {filteredReceipts.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>

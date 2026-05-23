@@ -30,6 +30,10 @@ export interface ReceiptLayoutSettings {
   loanOutstandingLabelEn: string;
   /** Global default paper size for receipt PDFs (payment / loan / irrigation / combined). */
   defaultPaperSize: PaperSize;
+  /** Diagonal watermark text printed behind receipt content (e.g. "MK BALIADANGA"). Empty = none. */
+  watermarkText: string;
+  /** Master on/off — overrides watermarkText. */
+  watermarkEnabled: boolean;
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
@@ -50,6 +54,8 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   loanOutstandingLabelBn: "",
   loanOutstandingLabelEn: "",
   defaultPaperSize: "a5",
+  watermarkText: "",
+  watermarkEnabled: false,
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
