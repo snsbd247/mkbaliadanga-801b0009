@@ -278,6 +278,22 @@ export default function Cashbook() {
               { label: t("irrigationOutstandingDue"), value: totals.irrDue },
             ],
           })}><FileDown className="h-4 w-4 mr-1" />{t("auditReportPdf")}</Button>
+          <Button size="sm" variant="outline" onClick={() => exportTableDoc(t("auditReport"),
+            [t("description"), t("amount")],
+            [
+              [t("openingCash"), Number(openingCash || 0)],
+              [t("totalIncomeReceipts"), totals.income],
+              [t("totalExpenseAll"), totals.expense],
+              [t("closingCash"), totals.cashBalance],
+              [t("savingsBalance"), totals.savBal],
+              [t("loanIssued"), totals.loanIssued],
+              [t("loanCollected"), totals.loanCollected],
+              [t("loanOutstandingDue"), totals.loanDue],
+              [t("irrigationCharged"), totals.irrCharged],
+              [t("irrigationCollected"), totals.irrCollected],
+              [t("irrigationOutstandingDue"), totals.irrDue],
+            ],
+            { range: { from, to } })}><FileDown className="h-4 w-4 mr-1" />Word</Button>
         </div>
       </Card>
 
