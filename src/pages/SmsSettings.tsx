@@ -829,6 +829,7 @@ export default function SmsSettings() {
                     <tr>
                       <th className="px-2 py-1.5">Status</th>
                       <th className="px-2 py-1.5">Label</th>
+                      <th className="px-2 py-1.5">Priority</th>
                       <th className="px-2 py-1.5">Expires</th>
                       <th className="px-2 py-1.5">Updated</th>
                       <th className="px-2 py-1.5 text-right">Actions</th>
@@ -836,7 +837,7 @@ export default function SmsSettings() {
                   </thead>
                   <tbody>
                     {tokens.length === 0 && (
-                      <tr><td colSpan={5} className="px-2 py-3 text-center text-muted-foreground">No tokens saved yet.</td></tr>
+                      <tr><td colSpan={6} className="px-2 py-3 text-center text-muted-foreground">No tokens saved yet.</td></tr>
                     )}
                     {tokens.map((t) => {
                       const expired = !!t.expires_at && new Date(t.expires_at) < new Date();
@@ -850,6 +851,22 @@ export default function SmsSettings() {
                             {expired && t.status === "active" && <Badge variant="destructive" className="ml-1">Expired</Badge>}
                           </td>
                           <td className="px-2 py-1.5 max-w-[180px] truncate">{t.label || <span className="text-muted-foreground">—</span>}</td>
+                          <td className="px-2 py-1.5">
+                            <Input
+                              type="number"
+                              min={1}
+                              max={999}
+                              defaultValue={t.priority ?? 100}
+                              disabled={tokenBusy || t.status === "retired"}
+                              className="h-7 w-16 text-xs"
+                              onBlur={async (e) => {
+                                const v = Math.max(1, Math.min(999, Number(e.currentTarget.value) || 100));
+                                if (v === (t.priority ?? 100)) return;
+                                const { error } = await supabase.from("sms_provider_secrets" as any).update({ priority: v }).eq("id", t.id);
+                                if (error) toast.error(error.message); else { toast.success("Priority updated"); load(); }
+                              }}
+                            />
+                          </td>
                           <td className="px-2 py-1.5">
                             {t.expires_at
                               ? <span className={expired ? "text-destructive" : (daysToExp !== null && daysToExp < 14 ? "text-amber-600" : "")}>
@@ -878,6 +895,7 @@ export default function SmsSettings() {
                       );
                     })}
                   </tbody>
+
                   </table>
                 </div>
               </div>
