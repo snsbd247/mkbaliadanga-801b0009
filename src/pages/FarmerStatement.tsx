@@ -250,7 +250,7 @@ export default function FarmerStatement() {
         irrigation,
         loans: loansList,
       });
-      toast.success(t("statementReady") || "Statement generated", { id: tid });
+      toast.success("Statement generated", { id: tid });
     } catch (e: any) {
       toast.error(e?.message || t("failedLoadStatement"), { id: tid });
     }
