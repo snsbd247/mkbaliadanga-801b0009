@@ -77,10 +77,24 @@ export default function Dashboard() {
     const loanDue = sum(loansData.filter(l => l.status === "approved"), "total_payable");
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
-    const { data: monthPayAll } = await supabase
-      .from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart);
+    const now = new Date();
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+    const day30Start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29).toISOString().slice(0, 10);
+    const [{ data: monthPayAll }, { data: prevMonthPay }, { data: pay30 }] = await Promise.all([
+      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart),
+      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", prevMonthStart).lt("created_at", monthStart),
+      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", day30Start),
+    ]);
     const monthCollect = sum(monthPayAll ?? [], "amount");
+    const prevMonthCollect = sum(prevMonthPay ?? [], "amount");
+    const momDelta = prevMonthCollect > 0 ? ((monthCollect - prevMonthCollect) / prevMonthCollect) * 100 : null;
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
+
+    // New members this month
+    const { count: newMembersCount } = await supabase
+      .from("farmers").select("id", { count: "exact", head: true })
+      .is("deleted_at", null).gte("created_at", monthStart);
+    const activeLoanCount = loansData.filter((l: any) => l.status === "approved").length;
 
     // Hand Cash — Irrigation (1011) & Savings (1012) running balance from ledger
     const { data: cashAccts } = await supabase.from("accounts").select("id,code").in("code", ["1011", "1012"]);
@@ -97,18 +111,33 @@ export default function Dashboard() {
     setStats([
       { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users },
       { label: t("activeFarmers"), value: String(farmersList.filter((f: any) => f.status === "active").length), icon: UserCheck, tone: "success" },
+      { label: lang === "bn" ? "এই মাসের নতুন সদস্য" : "New Members (This Month)", value: String(newMembersCount ?? 0), icon: UserPlus, tone: "success" },
+      { label: lang === "bn" ? "চলমান ঋণ" : "Active Loans", value: String(activeLoanCount), icon: HandCoins },
       { label: t("totalSavings"), value: money(totalSavings), icon: Wallet },
       { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins },
       { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins },
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success" },
-      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock },
+      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta },
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger" },
       { label: lang === "bn" ? "ঋণের বাকি" : "Loan Due", value: money(loanDue), icon: HandCoins, tone: "danger" },
       { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success" },
       { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
     ]);
+
+    // 30-day daily collection sparkline
+    const days: { label: string; key: string; value: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      days.push({ key, label: `${d.getDate()}/${d.getMonth() + 1}`, value: 0 });
+    }
+    (pay30 ?? []).forEach((p: any) => {
+      const k = (p.created_at as string).slice(0, 10);
+      const d = days.find(x => x.key === k); if (d) d.value += Number(p.amount || 0);
+    });
+    setDaily30(days);
     setRecent(paymentsData);
     setPending([
       ...((pendingW.data ?? []).map((x: any) => ({ ...x, kind: "withdraw" }))),
