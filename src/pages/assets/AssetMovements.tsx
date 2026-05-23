@@ -76,11 +76,14 @@ export default function AssetMovements() {
   const officeById = useMemo(() => new Map(offices.map((o) => [o.id, o.name])), [offices]);
 
   const visible = useMemo(() => rows.filter((r) => {
+    if (status !== "all" && r.approval_status !== status) return false;
     if (!q.trim()) return true;
     const a = assetById.get(r.asset_id);
     const k = q.trim().toLowerCase();
     return ((a?.asset_code ?? "") + " " + (a?.name_en ?? "") + " " + (a?.name_bn ?? "") + " " + (r.remarks ?? "")).toLowerCase().includes(k);
-  }), [rows, q, assetById]);
+  }), [rows, q, status, assetById]);
+
+  const pendingCount = useMemo(() => rows.filter((r) => r.approval_status === "pending").length, [rows]);
 
   async function save() {
     if (!form.asset_id) return toast.error(tx("Asset required", "এসেট দরকার"));
@@ -89,24 +92,49 @@ export default function AssetMovements() {
     setSaving(true);
     try {
       const a = assetById.get(form.asset_id);
+      const requiresApproval = !isAdmin;
       const id = await recordAssetMovement({
         asset_id: form.asset_id, office_id: a?.office_id ?? officeId,
         from_location_id: form.from_location_id || null,
         to_location_id: form.to_location_id,
         quantity: Number(form.quantity), movement_date: form.movement_date,
         remarks: form.remarks || null, moved_by: user?.id ?? null,
+        requiresApproval,
       });
       await logAssetAudit({
         office_id: a?.office_id ?? officeId, asset_id: form.asset_id,
         entity: "asset_movement", entity_id: id ?? null,
-        action_type: "transfer", new_data: form,
+        action_type: "transfer", new_data: { ...form, approval_status: requiresApproval ? "pending" : "approved" },
       });
-      toast.success(tx("Movement recorded", "মুভমেন্ট রেকর্ড হয়েছে"));
+      toast.success(requiresApproval
+        ? tx("Transfer request submitted for approval", "অনুমোদনের জন্য ট্রান্সফার অনুরোধ পাঠানো হয়েছে")
+        : tx("Movement recorded", "মুভমেন্ট রেকর্ড হয়েছে"));
       setOpen(false);
       setForm({ asset_id: "", from_location_id: "", to_location_id: "", quantity: 1, movement_date: today(), remarks: "" });
       load();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   }
+
+  async function approve(id: string) {
+    try {
+      await approveAssetMovement(id, user?.id ?? null);
+      await logAssetAudit({ entity: "asset_movement", entity_id: id, action_type: "transfer", remarks: "approved" });
+      toast.success(tx("Approved", "অনুমোদিত"));
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  }
+  async function reject() {
+    if (!rejectId) return;
+    if (!rejectReason.trim()) return toast.error(tx("Reason required", "কারণ দরকার"));
+    try {
+      await rejectAssetMovement(rejectId, user?.id ?? null, rejectReason.trim());
+      await logAssetAudit({ entity: "asset_movement", entity_id: rejectId, action_type: "transfer", remarks: `rejected: ${rejectReason.trim()}` });
+      toast.success(tx("Rejected", "প্রত্যাখ্যাত"));
+      setRejectId(null); setRejectReason("");
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  }
+
 
   function exportCsv() {
     downloadCsv(`asset-movements-${from}_to_${to}`, visible, [
