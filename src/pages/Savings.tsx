@@ -22,10 +22,11 @@ import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/expo
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
 import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
+import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 
 export default function Savings() {
   const { t, lang, tx } = useLang();
-  const { isCommittee, isSuper, user } = useAuth();
+  const { isCommittee, isSuper, user, officeId } = useAuth();
   const brand = useBranding();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [farmers, setFarmers] = useState<any[]>([]);
@@ -220,16 +221,20 @@ export default function Savings() {
 
     const status = isWithdraw ? "pending" : "approved";
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
+    // Auto-generate SAV monthly receipt no when user did not enter one.
+    let finalReceiptNo = form.receipt_no?.trim() || "";
+    if (!finalReceiptNo) {
+      finalReceiptNo = await nextMonthlyReceiptNo("SAV", officeId, form.farmer_id);
+    }
     const payload: any = {
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
+      receipt_no: finalReceiptNo,
     };
-    if (form.receipt_no?.trim()) payload.receipt_no = form.receipt_no.trim();
     const { error } = await supabase.from("savings_transactions").insert(payload);
     if (error) return toast.error(error.message);
     if (isDepositKind) {
-      const payPayload: any = { farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id };
-      if (form.receipt_no?.trim()) payPayload.receipt_no = form.receipt_no.trim();
+      const payPayload: any = { farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id, receipt_no: finalReceiptNo };
       await supabase.from("payments").insert(payPayload);
     }
     if (status === "pending") {

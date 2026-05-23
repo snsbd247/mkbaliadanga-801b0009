@@ -25,3 +25,28 @@ export async function nextMonthlyReceiptNo(
   // Offline / no-office fallback keeps existing PREFIX-YYYYMMDD-XXXXXX shape.
   return autoReceiptNo(kind === "COMBO" ? "PAY" : kind, fallbackSeed);
 }
+
+/** Non-consuming preview of the next monthly receipt no. Returns null if unknown. */
+export async function peekMonthlyReceiptNo(
+  kind: MonthlyKind,
+  officeId: string | null | undefined,
+): Promise<string | null> {
+  if (!officeId) return null;
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  try {
+    const { data } = await (supabase as any)
+      .from("receipt_sequences")
+      .select("last_no")
+      .eq("office_id", officeId)
+      .eq("kind", kind)
+      .eq("year", y)
+      .eq("month", m)
+      .maybeSingle();
+    const next = ((data?.last_no as number | undefined) ?? 0) + 1;
+    return `${kind}-${y}-${String(m).padStart(2, "0")}-${String(next).padStart(4, "0")}`;
+  } catch {
+    return null;
+  }
+}

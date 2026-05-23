@@ -22,6 +22,7 @@ import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { downloadBnReceiptPdf, type ReceiptCopy } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
+import { nextMonthlyReceiptNo, peekMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
 import { DuplicateReceiptWarning } from "@/components/receipts/DuplicateReceiptWarning";
@@ -37,7 +38,7 @@ const newKey = () =>
 
 export default function Payments() {
   const { t, tx } = useLang();
-  const { user } = useAuth();
+  const { user, officeId } = useAuth();
   const [params] = useSearchParams();
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
@@ -112,25 +113,18 @@ export default function Payments() {
     }
   }, [params, farmerId, openLoans.length]);
 
-  // Live preview of the auto-generated receipt serial. Reads (does not consume) the counter.
+  // Live preview of the auto-generated monthly receipt no. Reads (does not consume) the counter.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (receiptNo.trim()) { setPreviewSerial(""); return; }
       const allIrr = allocs.length > 0 && allocs.every(a => a.kind === "irrigation");
       const k = allIrr ? "IRR" : "PAY";
-      const year = new Date().getFullYear();
-      const { data } = await supabase
-        .from("receipt_counters")
-        .select("last_no")
-        .eq("kind", k)
-        .eq("year", year)
-        .maybeSingle();
-      const next = ((data?.last_no as number | undefined) ?? 0) + 1;
-      if (!cancelled) setPreviewSerial(`${k}-${year}-${String(next).padStart(5, "0")}`);
+      const preview = await peekMonthlyReceiptNo(k, officeId);
+      if (!cancelled) setPreviewSerial(preview ?? "");
     })();
     return () => { cancelled = true; };
-  }, [allocs, receiptNo]);
+  }, [allocs, receiptNo, officeId]);
 
   async function loadPriority() {
     if (!user) return;
@@ -257,8 +251,7 @@ export default function Payments() {
       if (!finalReceiptNo) {
         const allIrr = allocs.every(a => a.kind === "irrigation");
         const rpcKind = allIrr ? "IRR" : "PAY";
-        const { data: rn, error: rnErr } = await supabase.rpc("next_receipt_no", { p_kind: rpcKind });
-        if (!rnErr && typeof rn === "string") finalReceiptNo = rn;
+        finalReceiptNo = await nextMonthlyReceiptNo(rpcKind, officeId, idemKey);
       }
 
       const payload: any = {
