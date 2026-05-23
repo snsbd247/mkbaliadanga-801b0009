@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
 
 export interface PaymentReceiptData {
   receipt_no: string;
