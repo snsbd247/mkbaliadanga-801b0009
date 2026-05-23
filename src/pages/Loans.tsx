@@ -275,7 +275,7 @@ export default function Loans() {
         {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted loans only.</span>}
       </Card>
 
-      <Tabs defaultValue="approved">
+      <Tabs value={tab} onValueChange={(v) => { setTab(v); const n = new URLSearchParams(sp); n.set("status", v); setSp(n, { replace: true }); }}>
         <TabsList>
           <TabsTrigger value="approved">{t("activePaid")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
