@@ -19,6 +19,7 @@ import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
+import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 
 type Invoice = {
   id: string;
@@ -338,7 +339,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         console.warn("[irrigation-pay] journal posting failed", jErr);
       }
 
-      const receiptNo = autoReceiptNo("IRR", paymentId);
+      const receiptNo = await nextMonthlyReceiptNo("IRR", officeId, paymentId).catch(() => autoReceiptNo("IRR", paymentId));
       const [{ data: farmer }, { data: company }] = await Promise.all([
         supabase.from("farmers").select("name_bn,name_en,member_no,village,mobile,office_id").eq("id", farmerId).maybeSingle(),
         supabase.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
