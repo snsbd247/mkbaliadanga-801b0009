@@ -90,6 +90,7 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     merged.loanRowSpacingPx = clampSpacing(
       parsed?.loanRowSpacingPx ?? DEFAULT_RECEIPT_LAYOUT.loanRowSpacingPx,
     );
+    merged.defaultPaperSize = (parsed?.defaultPaperSize === "a4" ? "a4" : "a5");
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
