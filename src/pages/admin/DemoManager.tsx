@@ -325,11 +325,11 @@ export default function DemoManager() {
             </div>
             <div>
               <Label>Voter Number Format</Label>
-              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:12}" />
+              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:5}" />
             </div>
             <div>
               <Label>Account Number Format</Label>
-              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{seq:12}" />
+              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{seq:5}" />
             </div>
           </CardContent>
         </Card>
