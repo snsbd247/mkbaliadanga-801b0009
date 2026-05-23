@@ -18,6 +18,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { Search, ShieldAlert, History as HistoryIcon, Pencil } from "lucide-react";
 import { EditButton } from "@/components/ui/action-icon-button";
+import { formatId5 } from "@/lib/idFormat";
 
 type Row = {
   id: string;
