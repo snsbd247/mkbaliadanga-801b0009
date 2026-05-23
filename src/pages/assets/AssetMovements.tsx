@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { downloadCsv } from "@/lib/csvExport";
-import { recordAssetMovement } from "@/lib/assetStock";
+import { recordAssetMovement, approveAssetMovement, rejectAssetMovement } from "@/lib/assetStock";
 import { logAssetAudit } from "@/lib/assetAudit";
 
 type Office = { id: string; name: string };
@@ -26,6 +26,10 @@ type Movement = {
   from_location_id: string | null; to_location_id: string | null;
   quantity: number; movement_date: string; remarks: string | null;
   created_at: string; deleted_at: string | null; moved_by: string | null;
+  approval_status: "pending" | "approved" | "rejected";
+  applied: boolean;
+  requested_by: string | null; approved_by: string | null;
+  approved_at: string | null; rejection_reason: string | null;
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
