@@ -47,6 +47,7 @@ import FinanceSummary from "./pages/FinanceSummary";
 
 import SmsSettings from "./pages/SmsSettings";
 import SmsLogs from "./pages/SmsLogs";
+import SmsTemplates from "./pages/SmsTemplates";
 import Locations from "./pages/Locations";
 import LedgerReconciliation from "./pages/LedgerReconciliation";
 import ShareCapitalReconciliation from "./pages/ShareCapitalReconciliation";
