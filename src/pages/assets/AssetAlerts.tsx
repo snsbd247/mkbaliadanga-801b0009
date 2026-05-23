@@ -199,6 +199,7 @@ export default function AssetAlerts() {
                 <SelectItem value="low_stock">{typeLabel("low_stock")}</SelectItem>
                 <SelectItem value="warranty_expiring">{typeLabel("warranty_expiring")}</SelectItem>
                 <SelectItem value="warranty_expired">{typeLabel("warranty_expired")}</SelectItem>
+                <SelectItem value="maintenance_due">{typeLabel("maintenance_due")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
