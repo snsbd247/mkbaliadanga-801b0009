@@ -278,7 +278,14 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
                       )}
                     </TableCell>
                     <TableCell className="text-xs">{r.seasons?.name ?? r.seasons?.type} {r.seasons?.year ?? ""}</TableCell>
-                    <TableCell className="text-xs">{r.lands?.mouza ?? ""} {r.lands?.dag_no ? `• ${r.lands.dag_no}` : ""}</TableCell>
+                    <TableCell className="text-xs">
+                      {(() => { const ll = landLabel(r); return (
+                        <div className="flex flex-col">
+                          <span>{ll.main || "—"}</span>
+                          {ll.sub && <span className="text-[10px] text-muted-foreground">{ll.sub}</span>}
+                        </div>
+                      ); })()}
+                    </TableCell>
                     <TableCell className="text-xs whitespace-nowrap">{r.due_date}</TableCell>
                     <TableCell className="text-right font-mono">{money(r.payable_amount)}</TableCell>
                     <TableCell className="text-right font-mono">{money(r.paid_amount)}</TableCell>
