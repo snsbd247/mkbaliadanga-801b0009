@@ -725,6 +725,7 @@ export default function FarmerDetail() {
       <Tabs defaultValue="lands">
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
+          <TabsTrigger value="land_history">Land History</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="loans">{t("loans")}</TabsTrigger>}
