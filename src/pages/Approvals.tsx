@@ -194,7 +194,7 @@ export default function Approvals() {
   const SelBar = ({ count, onApprove, onReject }: { count: number; onApprove: () => void; onReject: () => void }) =>
     count > 0 ? (
       <div className="flex items-center justify-between rounded border bg-muted/30 p-2 mb-2">
-        <div className="text-sm">{count} {t("selected") || "selected"}</div>
+        <div className="text-sm">{count} {(t as any)("selected") || "selected"}</div>
         <div className="flex gap-2">
           <Button size="sm" onClick={onApprove}><CheckCheck className="h-4 w-4 mr-1" />{t("approve")} ({count})</Button>
           <Button size="sm" variant="outline" onClick={onReject}>{t("reject")} ({count})</Button>
