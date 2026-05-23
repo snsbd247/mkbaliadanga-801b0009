@@ -594,12 +594,13 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   }
 
   const targets = voters.slice(0, Math.ceil(voters.length * 0.6));
+  const CATS = ["general", "hawlat", "bank", "donation", "misc"];
   const txns = targets.flatMap((f, i) => {
     savingsSeeded.push(f.id);
     return [
-      { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId },
-      ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId }] : []),
-      ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection" }] : []),
+      { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId, category: CATS[i % CATS.length] },
+      ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId, category: "general" }] : []),
+      ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection", category: "general" }] : []),
     ];
   });
   if (txns.length) {
