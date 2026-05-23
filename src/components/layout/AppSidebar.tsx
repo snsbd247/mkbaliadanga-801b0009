@@ -137,6 +137,8 @@ export function AppSidebar() {
         { url: "/admin/reconciliation", icon: ClipboardCheck, label: t("monthlyReconciliation"), permKey: "accounting" },
         { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: t("shareCapitalReconciliation"), permKey: "accounting" },
         { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
+        { url: "/bank-accounts", icon: Banknote, label: "ব্যাংক অ্যাকাউন্ট", permKey: "accounting" },
+        { url: "/vouchers", icon: BookText, label: "ভাউচার", permKey: "accounting" },
       ],
     },
 
