@@ -94,6 +94,24 @@ export default function Loans() {
         `${who} এর Voter / Savings A/C এনাবল নেই — ঋণ এন্ট্রি করা যাবে না।`,
       ));
     }
+    // Block if farmer has any unpaid existing loan (pending or approved & not fully paid)
+    const { data: existing } = await supabase
+      .from("loans")
+      .select("id,total_payable,status,loan_payments(amount)")
+      .eq("farmer_id", form.farmer_id)
+      .is("deleted_at", null)
+      .in("status", ["pending", "approved"]);
+    const unpaid = (existing ?? []).find((l: any) => {
+      if (l.status === "pending") return true;
+      const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+      return paid < Number(l.total_payable || 0);
+    });
+    if (unpaid) {
+      return toast.error(tx(
+        "Previous loan is not fully repaid yet. Settle the current loan before issuing a new one.",
+        "আগের লোন এখনও পরিশোধ হয়নি। নতুন লোন ইস্যুর আগে বর্তমান লোন পরিশোধ করুন।",
+      ));
+    }
     const plan = plans.find((p: any) => p.id === form.plan_id);
     const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
     const total_payable = form.principal * (1 + interest_rate / 100);
