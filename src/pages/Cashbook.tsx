@@ -337,6 +337,43 @@ export default function Cashbook() {
         </div>
       </Card>
 
+      {isCommittee && (
+        <Card className="p-4 mb-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <Label className="text-xs">মাসিক ক্যাশবুক সাবমিট</Label>
+              <div className="flex gap-2 mt-1">
+                <Input type="number" className="h-9 w-24" value={submitYear} onChange={e => setSubmitYear(+e.target.value)} />
+                <Select value={String(submitMonth)} onValueChange={(v) => setSubmitMonth(+v)}>
+                  <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }).map((_, i) => <SelectItem key={i + 1} value={String(i + 1)}>{String(i + 1).padStart(2, "0")}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={submitMonthlyCashbook} disabled={monthLocked}>
+                  {monthLocked ? "Locked" : "Submit & Lock"}
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label className="text-xs">সাম্প্রতিক সাবমিশনসমূহ</Label>
+              <div className="mt-1 flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                {submissions.length === 0 && <span className="text-xs text-muted-foreground">কোনো সাবমিশন নেই</span>}
+                {submissions.map(s => (
+                  <Badge key={s.id} variant={s.locked ? "default" : "outline"} className="gap-2">
+                    {s.year}-{String(s.month).padStart(2, "0")} · ক্লোজিং {money(s.closing_cash)}
+                    {isSuper && s.locked && (
+                      <button className="ml-1 underline text-[10px]" onClick={() => unlockSubmission(s.id)}>unlock</button>
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+
       <Tabs defaultValue="cashbook">
         <TabsList>
           <TabsTrigger value="cashbook">{t("cashbook")}</TabsTrigger>
