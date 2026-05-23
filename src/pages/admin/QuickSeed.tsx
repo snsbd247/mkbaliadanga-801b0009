@@ -23,6 +23,7 @@ const MODULES: { key: ModuleKey; title: string; desc: string; icon: any; modules
   { key: "savings",    title: "সঞ্চয়",                desc: "ফার্মারভিত্তিক সঞ্চয় আমানত ও কিছু উত্তোলন এন্ট্রি",                                       icon: PiggyBank,    modules: ["locations", "settings", "accounting", "farmers", "savings"] },
   { key: "loans",      title: "ঋণ",                    desc: "অনুমোদিত ঋণ + কিস্তি শিডিউল + কিছু পরিশোধ",                                                icon: Landmark,     modules: ["locations", "settings", "accounting", "farmers", "loans"] },
   { key: "irrigation", title: "সেচ",                  desc: "সিজন + রেট + ইনভয়েস + কিছু পেমেন্ট",                                                       icon: Droplets,     modules: ["locations", "settings", "accounting", "farmers", "irrigation"] },
+  { key: "bank",       title: "ব্যাংক",               desc: "৩টি ব্যাংক একাউন্ট + ডিপোজিট/উইথড্র লেনদেন",                                                 icon: Banknote,     modules: ["settings", "accounting", "bank"] },
 ];
 
 export default function QuickSeed() {
