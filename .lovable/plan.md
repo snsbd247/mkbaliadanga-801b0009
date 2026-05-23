@@ -40,3 +40,18 @@
 
 ### Order
 F1 → F2 → F3 → F4 (one per turn). User can also reorder.
+
+## Batch P-C1 — Original Phase C tail ✅ COMPLETE
+
+- Multi-rate per season: `seasonRates.ts` confirmed (office-override path); added test for office-scoped rate precedence.
+- কাঠা conversion: org standard **1 কাঠা = 0.15 বিঘা (≈ 4.95 শতক)** added to `irrigationCalc.ts` with helpers `shatakToKatha`, `kathaToShatak`, `bighaToKatha`, `kathaToBigha`, and new `formatLandSize(..., "with_katha")` variant. Tests added.
+- A5 irrigation receipt: added `"a5"` to `PaperFormat`, two A5 presets (single & tight) in `PRINTER_PRESETS`, A5 option in IrrigationInvoices paper-size selector, default cut-line 105mm.
+
+### Next remaining original-plan batches
+- P-C2 historical land tracking (5–7 yr `land_history` table + UI)
+- P-D1 cashbook split + temporary loan report
+- P-D2 bank accounts (4 banks + transfer ledger) + voucher upload
+- P-D3 audit reports (PDF/Excel/Word)
+- P-E1 land owner separation finishing + cultivation history + change remarks
+- P-E2 better payment UI + receipt void
+- P-E3 online public payment portal
