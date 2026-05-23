@@ -113,25 +113,18 @@ export default function Payments() {
     }
   }, [params, farmerId, openLoans.length]);
 
-  // Live preview of the auto-generated receipt serial. Reads (does not consume) the counter.
+  // Live preview of the auto-generated monthly receipt no. Reads (does not consume) the counter.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (receiptNo.trim()) { setPreviewSerial(""); return; }
       const allIrr = allocs.length > 0 && allocs.every(a => a.kind === "irrigation");
       const k = allIrr ? "IRR" : "PAY";
-      const year = new Date().getFullYear();
-      const { data } = await supabase
-        .from("receipt_counters")
-        .select("last_no")
-        .eq("kind", k)
-        .eq("year", year)
-        .maybeSingle();
-      const next = ((data?.last_no as number | undefined) ?? 0) + 1;
-      if (!cancelled) setPreviewSerial(`${k}-${year}-${String(next).padStart(5, "0")}`);
+      const preview = await peekMonthlyReceiptNo(k, officeId);
+      if (!cancelled) setPreviewSerial(preview ?? "");
     })();
     return () => { cancelled = true; };
-  }, [allocs, receiptNo]);
+  }, [allocs, receiptNo, officeId]);
 
   async function loadPriority() {
     if (!user) return;
