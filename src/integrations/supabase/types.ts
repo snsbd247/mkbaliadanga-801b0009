@@ -539,6 +539,10 @@ export type Database = {
       }
       asset_movements: {
         Row: {
+          applied: boolean
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           asset_id: string
           created_at: string
           deleted_at: string | null
@@ -548,10 +552,16 @@ export type Database = {
           movement_date: string
           office_id: string | null
           quantity: number
+          rejection_reason: string | null
           remarks: string | null
+          requested_by: string | null
           to_location_id: string | null
         }
         Insert: {
+          applied?: boolean
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           asset_id: string
           created_at?: string
           deleted_at?: string | null
@@ -561,10 +571,16 @@ export type Database = {
           movement_date?: string
           office_id?: string | null
           quantity?: number
+          rejection_reason?: string | null
           remarks?: string | null
+          requested_by?: string | null
           to_location_id?: string | null
         }
         Update: {
+          applied?: boolean
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           asset_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -574,7 +590,9 @@ export type Database = {
           movement_date?: string
           office_id?: string | null
           quantity?: number
+          rejection_reason?: string | null
           remarks?: string | null
+          requested_by?: string | null
           to_location_id?: string | null
         }
         Relationships: [
