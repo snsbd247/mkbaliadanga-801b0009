@@ -239,6 +239,19 @@ export default function SmsTemplates() {
                 placeholder="name, amount, date"
               />
             </div>
+            <div>
+              <Label>{isBn ? "পছন্দের প্রোভাইডার (ঐচ্ছিক)" : "Preferred provider (optional)"}</Label>
+              <Input
+                value={form.preferred_provider ?? ""}
+                onChange={(e) => setForm({ ...form, preferred_provider: e.target.value.trim() || null })}
+                placeholder="greenweb"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {isBn
+                  ? "নির্দিষ্ট করলে এই টেমপ্লেটের SMS অগ্রাধিকার ক্রম উপেক্ষা করে এই প্রোভাইডার দিয়ে পাঠানো হবে।"
+                  : "If set, this template's SMS will use this provider first, overriding the priority order."}
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <Switch
                 checked={form.is_active}
@@ -248,6 +261,7 @@ export default function SmsTemplates() {
             </div>
           </div>
           <DialogFooter>
+
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               {isBn ? "বাতিল" : "Cancel"}
             </Button>
