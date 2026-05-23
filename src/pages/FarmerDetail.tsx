@@ -30,6 +30,7 @@ import { autoReceiptNo } from "@/lib/receiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
 import IrrigationInvoicesTab from "@/components/farmers/IrrigationInvoicesTab";
+import FarmerLandHistoryTab from "@/components/farmers/FarmerLandHistoryTab";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
