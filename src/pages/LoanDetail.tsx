@@ -177,7 +177,9 @@ export default function LoanDetail() {
                 {(lang === "bn" ? (farmer?.name_bn || farmer?.name_en) : (farmer?.name_en || farmer?.name_bn)) || "-"}
               </Link> as any
             } />
-            <Field label={tx("Account #", "হিসাব নং")} value={farmer?.farmer_code || "-"} />
+            <Field label={tx("Account #", "হিসাব নং")} value={farmer?.member_no || farmer?.farmer_code || "-"} />
+            <Field label={tx("Father's Name", "পিতার নাম")} value={farmer?.father_name || "—"} />
+            <Field label={tx("Mobile", "মোবাইল")} value={farmer?.mobile || "—"} />
             <Field label={tx("Loan Plan", "ঋণ প্ল্যান")} value={(lang === "bn" ? (plan?.name_bn || plan?.name) : (plan?.name || plan?.name_bn)) || "—"} />
             <Field label={tx("Principal", "মূল টাকা")} value={money(loan.principal)} />
             <Field label={tx("Interest", "সুদ")} value={loan.interest_enabled ? `${loan.interest_rate}%` : tx("None", "নেই")} />
