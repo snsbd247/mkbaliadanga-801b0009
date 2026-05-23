@@ -369,7 +369,7 @@ function copySuffix(copy: ReceiptCopy): string {
 function resolveOpts(o?: ReceiptOptions) {
   return {
     lang: (o?.lang ?? "bn") as ReceiptLang,
-    paper: o?.paper ?? "a4",
+    paper: o?.paper ?? getDefaultPaperSize(),
     orientation: o?.orientation ?? "p",
     margins: { t: o?.margins?.t ?? 10, r: o?.margins?.r ?? 10, b: o?.margins?.b ?? 10, l: o?.margins?.l ?? 10 },
     orgLayout: (o?.orgLayout ?? "two-line") as "one-line" | "two-line",
