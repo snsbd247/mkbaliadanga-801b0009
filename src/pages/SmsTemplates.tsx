@@ -114,9 +114,8 @@ export default function SmsTemplates() {
       <PageHeader
         title={isBn ? "SMS টেমপ্লেট লাইব্রেরি" : "SMS Template Library"}
         description={isBn
-          ? "Reusable Bangla SMS টেমপ্লেট তৈরি ও পরিচালনা করুন। Manual send বা bulk announcement-এ ব্যবহারযোগ্য।"
-          : "Create and manage reusable Bangla SMS templates for manual sends and bulk announcements."}
-        icon={MessageSquareText}
+          ? "Reusable Bangla SMS টেমপ্লেট তৈরি ও পরিচালনা করুন।"
+          : "Create and manage reusable Bangla SMS templates."}
       />
 
       <Card>
