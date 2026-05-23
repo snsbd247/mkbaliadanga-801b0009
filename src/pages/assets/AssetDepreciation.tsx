@@ -226,11 +226,34 @@ export default function AssetDepreciation() {
                 <Input type="month" value={period.slice(0,7)} onChange={e => setPeriod(`${e.target.value}-01`)} />
               </div>
               <Button onClick={runForPeriod} disabled={busy || !isAdmin || !setting.id}>
-                <Play className="h-4 w-4 mr-1" />{tx("Calculate & post", "হিসাব করুন ও পোস্ট")}
+                <Play className="h-4 w-4 mr-1" />{tx("Calculate & post (this asset)", "হিসাব ও পোস্ট (এই এসেট)")}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  if (!isAdmin) return;
+                  setBusy(true);
+                  try {
+                    const { data, error } = await supabase.rpc("run_monthly_depreciation_batch" as any, { _period_month: period });
+                    if (error) throw error;
+                    const rows = (data as any[]) || [];
+                    const summary = rows.reduce<Record<string, number>>((a, r) => { a[r.status] = (a[r.status] || 0) + 1; return a; }, {});
+                    toast.success(tx(`Batch run: ${rows.length} assets`, `ব্যাচ চালান: ${rows.length} এসেট`) + " — " + JSON.stringify(summary));
+                    if (assetId) {
+                      const s = await supabase.from("asset_depreciation_schedule" as any).select("*").eq("asset_id", assetId).order("period_month");
+                      setSchedule((s.data as any) || []);
+                    }
+                  } catch (e: any) { toast.error(e.message); }
+                  finally { setBusy(false); }
+                }}
+                disabled={busy || !isAdmin}
+              >
+                <Play className="h-4 w-4 mr-1" />{tx("Run batch for all active assets", "সকল সক্রিয় এসেটের জন্য ব্যাচ চালান")}
               </Button>
               {!setting.id && <span className="text-xs text-muted-foreground">{tx("Save settings first", "প্রথমে সেটিংস সংরক্ষণ করুন")}</span>}
             </Card>
           </TabsContent>
+
 
           <TabsContent value="schedule">
             <Card>

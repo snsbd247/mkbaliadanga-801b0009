@@ -5201,6 +5201,17 @@ export type Database = {
       }
       reopen_accounting_period: { Args: { _id: string }; Returns: undefined }
       retire_sms_token: { Args: { _id: string }; Returns: undefined }
+      run_monthly_depreciation_batch: {
+        Args: { _period_month: string }
+        Returns: {
+          asset_id: string
+          depreciation: number
+          journal_entry_id: string
+          message: string
+          schedule_id: string
+          status: string
+        }[]
+      }
       seed_rajshahi_locations: { Args: never; Returns: Json }
       sms_enqueue: {
         Args: {
