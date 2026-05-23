@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.db-restore]
 verify_jwt = false
+
+[functions.asset-alerts-scan]
+verify_jwt = false
