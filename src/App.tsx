@@ -270,6 +270,7 @@ const App = () => (
                 <Route path="/loans/temporary" element={<RequirePerm module="loans"><TemporaryLoans /></RequirePerm>} />
                 <Route path="/bank-accounts" element={<RequirePerm module="accounting"><BankAccounts /></RequirePerm>} />
                 <Route path="/vouchers" element={<RequirePerm module="accounting"><Vouchers /></RequirePerm>} />
+                <Route path="/public-payments" element={<RequireRole roles={["admin","super_admin","staff"]}><PublicPaymentIntents /></RequireRole>} />
 
                 <Route path="/sms-settings" element={<RequireRole roles={["admin","super_admin"]}><SmsSettings /></RequireRole>} />
                 <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />
