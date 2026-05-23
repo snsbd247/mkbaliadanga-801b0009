@@ -214,11 +214,48 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Monthly Most Active Member */}
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Trophy className="h-4 w-4 text-success" />
+            <h2 className="font-semibold">{lang === "bn" ? "এই মাসের সর্বোচ্চ সঞ্চয়দাতা" : "Top Depositor (This Month)"}</h2>
+          </div>
+          {topDepositor ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">{topDepositor.name}</div>
+                <div className="text-xs text-muted-foreground font-mono">{topDepositor.code}</div>
+              </div>
+              <div className="text-xl font-bold text-success">{money(topDepositor.total)}</div>
+            </div>
+          ) : <p className="text-sm text-muted-foreground">{t("noData")}</p>}
+        </Card>
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="h-4 w-4 text-primary" />
+            <h2 className="font-semibold">{lang === "bn" ? "এই মাসের সর্বোচ্চ লেনদেনকারী" : "Most Transactions (This Month)"}</h2>
+          </div>
+          {topTransactor ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">{topTransactor.name}</div>
+                <div className="text-xs text-muted-foreground font-mono">{topTransactor.code}</div>
+              </div>
+              <div className="text-xl font-bold text-primary">
+                {topTransactor.count} {lang === "bn" ? "টি" : "txn"}
+              </div>
+            </div>
+          ) : <p className="text-sm text-muted-foreground">{t("noData")}</p>}
+        </Card>
+      </div>
+
       {(isSuper || isAdmin) && (
         <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <SmsProviderStatusCard />
         </div>
       )}
+
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
