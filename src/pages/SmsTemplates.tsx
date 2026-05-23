@@ -72,7 +72,9 @@ export default function SmsTemplates() {
     setForm({
       key: r.key, name: r.name, body: r.body,
       variables: r.variables ?? [], is_active: r.is_active,
+      preferred_provider: r.preferred_provider ?? null,
     });
+
     setVarsText((r.variables ?? []).join(", "));
     setEditOpen(true);
   }
