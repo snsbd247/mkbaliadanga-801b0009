@@ -72,6 +72,13 @@ export default function Loans() {
     (pr.data ?? []).forEach((p: any) => { map[p.id] = p.full_name || p.username || p.id.slice(0, 6); });
     setProfiles(map);
   }
+
+  function clearFilters() {
+    setShowDeleted(false);
+    setTab("approved");
+    setSp(new URLSearchParams(), { replace: true });
+  }
+
   async function loadInstallments(loanId: string) {
     const { data } = await supabase.from("loan_installments").select("*").eq("loan_id", loanId).order("installment_no");
     setInstallments(prev => ({ ...prev, [loanId]: data ?? [] }));
@@ -273,6 +280,8 @@ export default function Loans() {
           {t("showArchived")}
         </Label>
         {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted loans only.</span>}
+        <div className="flex-1" />
+        <Button variant="ghost" size="sm" onClick={clearFilters}>{tx("Clear filters", "ফিল্টার মুছুন")}</Button>
       </Card>
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v); const n = new URLSearchParams(sp); n.set("status", v); setSp(n, { replace: true }); }}>

@@ -346,6 +346,15 @@ export default function Farmers() {
     }
   }
 
+  function clearFilters() {
+    setQ("");
+    setPage(0);
+    setShowDeleted(false);
+    setStatusFilter("active");
+    setPeriodFilter("all");
+    setSearchParams(new URLSearchParams(), { replace: true });
+  }
+
   function levelLabel(level: LocationLevel) {
     const map: Record<LocationLevel, string> = {
       division: t("division"), district: t("district"), upazila: t("upazila"),
@@ -737,7 +746,7 @@ export default function Farmers() {
             <Input placeholder={t("search") + tx(" / Dag (123, 124/A)…", " / দাগ (123, 124/A)…")} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <Select value={statusFilter} onValueChange={(v: any) => { setStatusFilter(v); setPage(0); }}>
+            <Select value={statusFilter} onValueChange={(v: any) => { setStatusFilter(v); setPage(0); const n = new URLSearchParams(searchParams); if (v === "all") n.delete("status"); else n.set("status", v); setSearchParams(n, { replace: true }); }}>
               <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">{tx("Active only", "শুধু সক্রিয়")}</SelectItem>
@@ -745,7 +754,7 @@ export default function Farmers() {
                 <SelectItem value="all">{tx("All statuses", "সব স্ট্যাটাস")}</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={periodFilter} onValueChange={(v: any) => { setPeriodFilter(v); setPage(0); }}>
+            <Select value={periodFilter} onValueChange={(v: any) => { setPeriodFilter(v); setPage(0); const n = new URLSearchParams(searchParams); if (v === "all") n.delete("period"); else n.set("period", v); setSearchParams(n, { replace: true }); }}>
               <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{tx("Any period", "যেকোনো সময়")}</SelectItem>
@@ -759,6 +768,7 @@ export default function Farmers() {
                 <span>{t("showArchived")}</span>
               </label>
             )}
+            <Button variant="ghost" size="sm" onClick={clearFilters}>{tx("Clear filters", "ফিল্টার মুছুন")}</Button>
           </div>
         </div>
       </Card>
