@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, RotateCcw } from "lucide-react";
 import { setReceiptOptions, useReceiptOptions, resetReceiptOptionsToDemo } from "@/lib/receiptOptions";
+import { getReceiptLayoutSettings, setReceiptLayoutSettings, type PaperSize } from "@/lib/receiptLayoutSettings";
 import { useLang } from "@/i18n/LanguageProvider";
 
 export function ReceiptSettingsButton() {
