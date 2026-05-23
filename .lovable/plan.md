@@ -21,9 +21,11 @@
 - New table `asset_maintenance_schedules` (asset_id, frequency, next_due_at)
 - Daily edge function to convert due schedules into `asset_maintenance_logs` reminders + SMS
 
-### E3 — Asset depreciation auto-post
-- Monthly job posts depreciation journal entries via `AccountingService`
-- Already have `asset_depreciation_schedule` table — wire to ledger
+### E3 — Asset depreciation auto-post ✅
+- `run_monthly_depreciation_batch(period)` RPC iterates active settings, computes + posts journal pair
+- Edge function `asset-depreciation-run` for cron / manual trigger
+- UI: "Run batch for all active assets" button in AssetDepreciation page
+
 
 ### E4 — GreenWeb SMS provider admin UI deepening
 - Provider failover priority, per-template provider override, delivery report ingestion
