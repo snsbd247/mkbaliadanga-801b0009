@@ -48,6 +48,8 @@ import LandHistory from "./pages/LandHistory";
 import TemporaryLoans from "./pages/TemporaryLoans";
 import BankAccounts from "./pages/BankAccounts";
 import Vouchers from "./pages/Vouchers";
+import PublicPay from "./pages/PublicPay";
+import PublicPaymentIntents from "./pages/admin/PublicPaymentIntents";
 
 import SmsSettings from "./pages/SmsSettings";
 import SmsLogs from "./pages/SmsLogs";
@@ -167,6 +169,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<FarmerPortalLogin />} />
               <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
+              <Route path="/pay" element={<PublicPay />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:token" element={<VerifyReceipt />} />
@@ -267,6 +270,7 @@ const App = () => (
                 <Route path="/loans/temporary" element={<RequirePerm module="loans"><TemporaryLoans /></RequirePerm>} />
                 <Route path="/bank-accounts" element={<RequirePerm module="accounting"><BankAccounts /></RequirePerm>} />
                 <Route path="/vouchers" element={<RequirePerm module="accounting"><Vouchers /></RequirePerm>} />
+                <Route path="/public-payments" element={<RequireRole roles={["admin","super_admin","staff"]}><PublicPaymentIntents /></RequireRole>} />
 
                 <Route path="/sms-settings" element={<RequireRole roles={["admin","super_admin"]}><SmsSettings /></RequireRole>} />
                 <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />

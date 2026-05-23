@@ -141,6 +141,7 @@ export function AppSidebar() {
         { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
         { url: "/bank-accounts", icon: Banknote, label: "ব্যাংক অ্যাকাউন্ট", permKey: "accounting" },
         { url: "/vouchers", icon: BookText, label: "ভাউচার", permKey: "accounting" },
+        { url: "/public-payments", icon: Banknote, label: "পাবলিক পেমেন্ট অনুরোধ", permKey: "payments" },
       ],
     },
 

@@ -51,7 +51,9 @@ F1 → F2 → F3 → F4 (one per turn). User can also reorder.
 - ~~P-C2 historical land tracking~~ ✅ `land_history` table + `/land-history` page (Add/Filter, admin-only delete)
 - ~~P-D1 cashbook split + temporary loan report~~ ✅ `loans.is_temporary` flag + `/loans/temporary` report page with PDF/Excel
 - ~~P-D2 bank accounts + voucher upload~~ ✅ `bank_accounts`, `bank_transactions` (deposit/withdraw/charge/interest + bank-to-bank transfer via `transfer_group`), `/bank-accounts` page with running balance per account; `vouchers` table with auto `voucher_no` via `next_voucher_no()` RPC, private `vouchers` storage bucket, `/vouchers` page with file upload + signed-URL download.
-- P-D3 audit reports (PDF/Excel/Word)
-- P-E1 land owner separation finishing + cultivation history + change remarks
-- P-E2 better payment UI + receipt void
-- P-E3 online public payment portal
+- ~~P-D3 audit reports (PDF/Excel/Word)~~ ✅ AuditLogs page now has CSV + Excel (`xlsx`) + Word (`.doc` HTML) + PDF export buttons.
+- ~~P-E1 land owner separation finishing + cultivation history + change remarks~~ ✅ `land_history` extended with `crop` / `yield_amount` / `yield_unit`; new `land_change_log` table tracks owner/cultivator change + remarks (admin/staff read).
+- ~~P-E2 better payment UI + receipt void~~ ✅ `payments` got `voided_at` / `voided_by` / `void_reason` + admin **Void** button on approved rows (auto-reverses irrigation allocations, shows ⊘ reason chip under status).
+- ~~P-E3 online public payment portal~~ ✅ Public route `/pay` (no auth, Bangla form, farmer-code lookup) writes to `public_payment_intents`; admin `/public-payments` page (sidebar: "পাবলিক পেমেন্ট অনুরোধ") to mark processed/rejected.
+
+## All original-plan batches complete ✅
