@@ -125,6 +125,45 @@ export default function LoanDetail() {
         </div>
       </div>
 
+      {/* Loan Breakdown — Principal / Profit / Total */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">{tx("Loan Breakdown", "ঋণ ভাঙ্গা")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">{tx("Principal", "মূল টাকা")}</div>
+              <div className="text-xl font-bold">{money(loan.principal)}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">{tx("Profit / Interest", "মুনাফা / সুদ")} {loan.interest_enabled && loan.interest_rate ? `(${loan.interest_rate}%)` : ""}</div>
+              <div className="text-xl font-bold text-warning">{money(Math.max(0, Number(loan.total_payable || 0) - Number(loan.principal || 0)))}</div>
+            </div>
+            <div className="rounded-md border p-3 bg-primary/5">
+              <div className="text-xs text-muted-foreground">{tx("Total Payable", "মোট পরিশোধ্য")}</div>
+              <div className="text-xl font-bold text-primary">{money(summary.totalPayable)}</div>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">{tx("Paid", "পরিশোধিত")}</div>
+              <div className="text-lg font-semibold text-success">{money(summary.totalPaid)}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">{tx("Remaining", "বাকি")}</div>
+              <div className="text-lg font-semibold text-destructive">{money(summary.remaining)}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">{tx("Recovery %", "আদায় %")}</div>
+              <div className="text-lg font-semibold">
+                {summary.totalPayable > 0 ? ((summary.totalPaid / summary.totalPayable) * 100).toFixed(1) : "0.0"}%
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Summary */}
       <Card>
         <CardHeader className="pb-2">

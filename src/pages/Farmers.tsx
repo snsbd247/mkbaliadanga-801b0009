@@ -227,6 +227,7 @@ export default function Farmers() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
   const PAGE = 15;
 
   // Create
@@ -264,7 +265,7 @@ export default function Farmers() {
     }
   }, []);
 
-  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted]);
+  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted, statusFilter]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
   // Open the edit dialog when navigated with ?edit=<farmerId>
@@ -312,6 +313,7 @@ export default function Farmers() {
 
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     qy = showDeleted ? qy.not("deleted_at", "is", null) : qy.is("deleted_at", null);
+    if (statusFilter !== "all") qy = qy.eq("status", statusFilter);
     if (q) {
       const base = `name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`;
       const idClause = dagFarmerIds.length ? `,id.in.(${dagFarmerIds.join(",")})` : "";
@@ -544,6 +546,14 @@ export default function Farmers() {
     load();
   }
 
+  async function toggleStatus(id: string, current: string) {
+    const next = current === "active" ? "inactive" : "active";
+    setList((prev) => prev.map((r) => (r.id === id ? { ...r, status: next } : r)));
+    const { error } = await supabase.from("farmers").update({ status: next } as any).eq("id", id);
+    if (error) { toast.error(error.message); load(); return; }
+    toast.success(next === "active" ? tx("Member activated", "সদস্য সক্রিয় করা হয়েছে") : tx("Member marked inactive", "সদস্য নিষ্ক্রিয় করা হয়েছে"));
+  }
+
   // ---------- Reusable form fields ----------
   const renderFormFields = ({
     f, setF, photoFile, setPhotoFile, err, fieldErrors, disabled, nameInputRef,
@@ -713,12 +723,22 @@ export default function Farmers() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder={t("search") + tx(" / Dag (123, 124/A)…", " / দাগ (123, 124/A)…")} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
           </div>
-          {isSuper && (
-            <label className="flex items-center gap-2 text-sm">
-              <Switch checked={showDeleted} onCheckedChange={(v) => { setShowDeleted(v); setPage(0); }} />
-              <span>{t("showArchived")}</span>
-            </label>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Select value={statusFilter} onValueChange={(v: any) => { setStatusFilter(v); setPage(0); }}>
+              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">{tx("Active only", "শুধু সক্রিয়")}</SelectItem>
+                <SelectItem value="inactive">{tx("Inactive only", "শুধু নিষ্ক্রিয়")}</SelectItem>
+                <SelectItem value="all">{tx("All statuses", "সব স্ট্যাটাস")}</SelectItem>
+              </SelectContent>
+            </Select>
+            {isSuper && (
+              <label className="flex items-center gap-2 text-sm">
+                <Switch checked={showDeleted} onCheckedChange={(v) => { setShowDeleted(v); setPage(0); }} />
+                <span>{t("showArchived")}</span>
+              </label>
+            )}
+          </div>
         </div>
       </Card>
 
@@ -745,7 +765,20 @@ export default function Farmers() {
                 <TableCell className="max-w-[140px]"><TruncateText>{f.mobile}</TruncateText></TableCell>
                 <TableCell className="max-w-[160px]"><TruncateText>{f.village || f.villages?.name_bn || f.villages?.name || "—"}</TruncateText></TableCell>
                 <TableCell className="text-xs max-w-[160px]"><TruncateText>{f.offices?.name}</TruncateText></TableCell>
-                <TableCell><Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status}</Badge></TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  {isAdmin && !f.deleted_at ? (
+                    <Badge
+                      variant={f.status === "active" ? "default" : "secondary"}
+                      className="cursor-pointer select-none"
+                      title={tx("Click to toggle active/inactive", "ক্লিক করে সক্রিয়/নিষ্ক্রিয় করুন")}
+                      onClick={() => toggleStatus(f.id, f.status)}
+                    >
+                      {f.status === "active" ? tx("Active", "সক্রিয়") : tx("Inactive", "নিষ্ক্রিয়")}
+                    </Badge>
+                  ) : (
+                    <Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status === "active" ? tx("Active", "সক্রিয়") : tx("Inactive", "নিষ্ক্রিয়")}</Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   {(() => {
                     const d = duesMap[f.id];
