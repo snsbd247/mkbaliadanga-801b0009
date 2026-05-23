@@ -34,7 +34,8 @@ export default function CombinedPayment() {
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string } | null>(null);
-  const guard = useUnsavedFormGuard("combined-payment-draft", form, () => JSON.stringify(form) !== JSON.stringify(EMPTY));
+  const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
+  const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
