@@ -475,12 +475,13 @@ export default function Cashbook() {
   );
 }
 
-function ExportBar({ onPdf, onXlsx }: { onPdf: () => void; onXlsx: () => void }) {
+function ExportBar({ onPdf, onXlsx, onDoc }: { onPdf: () => void; onXlsx: () => void; onDoc?: () => void }) {
   const { t } = useLang();
   return (
     <div className="flex justify-end gap-2 mb-3">
       <Button size="sm" variant="outline" onClick={onPdf}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
       <Button size="sm" variant="outline" onClick={onXlsx}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("exportExcel")}</Button>
+      {onDoc && <Button size="sm" variant="outline" onClick={onDoc}><FileDown className="h-4 w-4 mr-1" />Word</Button>}
     </div>
   );
 }
