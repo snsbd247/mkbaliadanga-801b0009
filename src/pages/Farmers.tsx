@@ -552,6 +552,9 @@ export default function Farmers() {
     const { error } = await supabase.from("farmers").update({ status: next } as any).eq("id", id);
     if (error) { toast.error(error.message); load(); return; }
     toast.success(next === "active" ? tx("Member activated", "সদস্য সক্রিয় করা হয়েছে") : tx("Member marked inactive", "সদস্য নিষ্ক্রিয় করা হয়েছে"));
+  }
+
+  // ---------- Reusable form fields ----------
   const renderFormFields = ({
     f, setF, photoFile, setPhotoFile, err, fieldErrors, disabled, nameInputRef,
   }: {
