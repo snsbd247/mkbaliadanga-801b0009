@@ -238,13 +238,23 @@ export default function Cashbook() {
       />
 
       <Card className="p-4 mb-4">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-5">
           <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
           <div><Label>{t("to")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+          <div>
+            <Label>Stream</Label>
+            <Select value={stream} onValueChange={(v: any) => setStream(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All (combined)</SelectItem>
+                <SelectItem value="irrigation">Irrigation only</SelectItem>
+                <SelectItem value="savings_loan_share">Savings / Loan / Share</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label>{t("openingCash")}</Label><Input type="number" value={openingCash || ""} onChange={e => setOpeningCash(+e.target.value)} /></div>
           <div className="self-end text-sm text-muted-foreground">
             <div>{t("openingBalance")}: <span className="font-semibold">{money(openingCash)}</span></div>
-            <div>{t("income")}: <span className="font-semibold text-success">{money(totals.income)}</span> · {t("expense")}: <span className="font-semibold text-destructive">{money(totals.expense)}</span></div>
             <div>{t("closing")}: <span className={`font-bold ${totals.cashBalance < 0 ? "due-text" : "text-success"}`}>{money(totals.cashBalance)}</span></div>
           </div>
         </div>
