@@ -146,7 +146,6 @@ export default function Dashboard() {
 
     // Trend: last 6 months
     const months: { key: string; label: string; income: number; expense: number; savings: number }[] = [];
-    const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push({
