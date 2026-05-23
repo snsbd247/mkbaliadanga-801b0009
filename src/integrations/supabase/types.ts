@@ -1232,6 +1232,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cashbook_submissions: {
+        Row: {
+          closing_cash: number
+          created_at: string
+          id: string
+          locked: boolean
+          month: number
+          note: string | null
+          opening_cash: number
+          submitted_at: string
+          submitted_by: string | null
+          total_expense: number
+          total_income: number
+          year: number
+        }
+        Insert: {
+          closing_cash?: number
+          created_at?: string
+          id?: string
+          locked?: boolean
+          month: number
+          note?: string | null
+          opening_cash?: number
+          submitted_at?: string
+          submitted_by?: string | null
+          total_expense?: number
+          total_income?: number
+          year: number
+        }
+        Update: {
+          closing_cash?: number
+          created_at?: string
+          id?: string
+          locked?: boolean
+          month?: number
+          note?: string | null
+          opening_cash?: number
+          submitted_at?: string
+          submitted_by?: string | null
+          total_expense?: number
+          total_income?: number
+          year?: number
+        }
+        Relationships: []
+      }
       company_settings: {
         Row: {
           address: string | null
