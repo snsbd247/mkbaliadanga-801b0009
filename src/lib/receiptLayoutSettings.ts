@@ -181,3 +181,8 @@ export function getLoanLabels(lang: "bn" | "en"): { desc: string; outstanding: s
     outstanding: (s.loanOutstandingLabelBn || "").trim() || DEFAULT_LABELS.bn.loanOutstanding,
   };
 }
+
+/** Global default paper size for receipt PDFs (A4 or A5). */
+export function getDefaultPaperSize(): PaperSize {
+  return getReceiptLayoutSettings().defaultPaperSize;
+}
