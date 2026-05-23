@@ -16,6 +16,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
+import { exportTableDoc } from "@/lib/wordExports";
 import { useBranding } from "@/lib/branding";
 
 const RECEIPT_KINDS = [
