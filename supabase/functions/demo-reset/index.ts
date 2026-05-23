@@ -925,9 +925,9 @@ async function verifyRowCounts(admin: any, modules: string[]) {
 
 // ---- Preset definitions (mirrors src/lib/demoPresets.ts) ----
 const PRESETS: Record<string, { size: number; modules: string[] }> = {
-  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
-  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
-  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
+  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
+  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
+  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
   loans_only:      { size: 50,  modules: ["locations","settings","accounting","farmers","loans"] },
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
