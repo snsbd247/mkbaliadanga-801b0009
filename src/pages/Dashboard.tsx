@@ -13,7 +13,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 
-interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
+interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null }
 
 export default function Dashboard() {
   const { t, lang } = useLang();
@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [trend, setTrend] = useState<any[]>([]);
+  const [daily30, setDaily30] = useState<{ label: string; value: number }[]>([]);
   const [topDues, setTopDues] = useState<any[]>([]);
   const [composition, setComposition] = useState<any[]>([]);
   const [topDepositor, setTopDepositor] = useState<{ name: string; code: string; total: number } | null>(null);
