@@ -64,6 +64,7 @@ import CollectionReport from "./pages/reports/CollectionReport";
 import SavingsLoanReport from "./pages/reports/SavingsLoanReport";
 import ReceiptKindReport from "./pages/reports/ReceiptKindReport";
 import MonthlyReceiptRegister from "./pages/reports/MonthlyReceiptRegister";
+import OfficerSummaryReport from "./pages/reports/OfficerSummaryReport";
 import RateSourceReport from "./pages/reports/RateSourceReport";
 import OverrideAuditReport from "./pages/reports/OverrideAuditReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
@@ -223,6 +224,7 @@ const App = () => (
                 <Route path="/reports/savings-loan" element={<RequirePerm module="reports"><SavingsLoanReport /></RequirePerm>} />
                 <Route path="/reports/receipts" element={<RequirePerm module="reports"><ReceiptKindReport /></RequirePerm>} />
                 <Route path="/reports/receipt-register" element={<RequirePerm module="reports"><MonthlyReceiptRegister /></RequirePerm>} />
+                <Route path="/reports/officer-summary" element={<RequirePerm module="reports"><OfficerSummaryReport /></RequirePerm>} />
                 <Route path="/reports/farmer-rejections" element={<RequirePerm module="farmers" action="can_edit"><FarmerRejectionsReport /></RequirePerm>} />
                 <Route path="/reports/voter-audit" element={<RequirePerm module="farmers" action="can_edit"><VoterAudit /></RequirePerm>} />
                 <Route path="/voters/history" element={<RequirePerm module="farmers" action="can_edit"><VoterHistory /></RequirePerm>} />

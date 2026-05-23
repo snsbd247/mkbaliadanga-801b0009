@@ -150,6 +150,7 @@ export function AppSidebar() {
         { url: "/reports/loan-penalty", icon: FileBarChart, label: t("loanPenaltyReport" as any), permKey: "reports" },
        { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
        { url: "/reports/receipt-register", icon: FileBarChart, label: t("monthlyReceiptRegister" as any) || "Monthly Receipt Register", permKey: "reports" },
+       { url: "/reports/officer-summary", icon: FileBarChart, label: t("officerSummary" as any) || "Officer Summary", permKey: "reports" },
         { url: "/reports/rate-source", icon: FileBarChart, label: t("rateSourceReport" as any), permKey: "reports" },
         { url: "/reports/override-audit", icon: FileBarChart, label: t("overrideAudit" as any), permKey: "reports" },
         { url: "/reports/farmer-statement", icon: FileBarChart, label: t("farmerStatement"), permKey: "reports" },
