@@ -151,6 +151,35 @@ export default function Dashboard() {
       cur.due += Number(r.due_amount); dueMap.set(key, cur);
     });
     setTopDues(Array.from(dueMap.values()).sort((a, b) => b.due - a.due).slice(0, 5));
+
+    // Monthly Most Active Member — top depositor (sum) + top transactor (count)
+    const monthIso = monthStart;
+    const [{ data: mDeposits }, { data: mPays }] = await Promise.all([
+      supabase.from("savings_transactions")
+        .select("amount,farmer_id,farmers(name_en,farmer_code)")
+        .is("deleted_at", null).eq("status", "approved").eq("type", "deposit")
+        .gte("txn_date", monthIso),
+      supabase.from("payments")
+        .select("farmer_id,farmers(name_en,farmer_code)")
+        .is("deleted_at", null).gte("created_at", monthIso),
+    ]);
+    const depMap = new Map<string, { name: string; code: string; total: number }>();
+    (mDeposits ?? []).forEach((r: any) => {
+      if (!r.farmer_id) return;
+      const cur = depMap.get(r.farmer_id) ?? { name: r.farmers?.name_en ?? "—", code: r.farmers?.farmer_code ?? "—", total: 0 };
+      cur.total += Number(r.amount || 0); depMap.set(r.farmer_id, cur);
+    });
+    const topDep = Array.from(depMap.values()).sort((a, b) => b.total - a.total)[0] ?? null;
+    setTopDepositor(topDep);
+
+    const txCountMap = new Map<string, { name: string; code: string; count: number }>();
+    (mPays ?? []).forEach((r: any) => {
+      if (!r.farmer_id) return;
+      const cur = txCountMap.get(r.farmer_id) ?? { name: r.farmers?.name_en ?? "—", code: r.farmers?.farmer_code ?? "—", count: 0 };
+      cur.count += 1; txCountMap.set(r.farmer_id, cur);
+    });
+    const topTx = Array.from(txCountMap.values()).sort((a, b) => b.count - a.count)[0] ?? null;
+    setTopTransactor(topTx);
   }
 
   const pieColors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--warning))", "hsl(var(--destructive))"];
