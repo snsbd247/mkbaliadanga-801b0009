@@ -28,6 +28,8 @@ export interface ReceiptLayoutSettings {
   loanDescLabelEn: string;
   loanOutstandingLabelBn: string;
   loanOutstandingLabelEn: string;
+  /** Global default paper size for receipt PDFs (payment / loan / irrigation / combined). */
+  defaultPaperSize: PaperSize;
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
