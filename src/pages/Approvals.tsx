@@ -241,7 +241,7 @@ export default function Approvals() {
       <Tabs defaultValue="payments">
         <TabsList>
           <TabsTrigger value="payments">
-            {t("paymentsLabel") || "Payments"} <Badge variant="secondary" className="ml-1">{fPayments.length}</Badge>
+            {(t as any)("paymentsLabel") || "Payments"} <Badge variant="secondary" className="ml-1">{fPayments.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="savings">
             {t("savingsWithdrawals")} <Badge variant="secondary" className="ml-1">{fSavings.length}</Badge>
