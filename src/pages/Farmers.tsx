@@ -723,12 +723,22 @@ export default function Farmers() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder={t("search") + tx(" / Dag (123, 124/A)…", " / দাগ (123, 124/A)…")} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
           </div>
-          {isSuper && (
-            <label className="flex items-center gap-2 text-sm">
-              <Switch checked={showDeleted} onCheckedChange={(v) => { setShowDeleted(v); setPage(0); }} />
-              <span>{t("showArchived")}</span>
-            </label>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Select value={statusFilter} onValueChange={(v: any) => { setStatusFilter(v); setPage(0); }}>
+              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">{tx("Active only", "শুধু সক্রিয়")}</SelectItem>
+                <SelectItem value="inactive">{tx("Inactive only", "শুধু নিষ্ক্রিয়")}</SelectItem>
+                <SelectItem value="all">{tx("All statuses", "সব স্ট্যাটাস")}</SelectItem>
+              </SelectContent>
+            </Select>
+            {isSuper && (
+              <label className="flex items-center gap-2 text-sm">
+                <Switch checked={showDeleted} onCheckedChange={(v) => { setShowDeleted(v); setPage(0); }} />
+                <span>{t("showArchived")}</span>
+              </label>
+            )}
+          </div>
         </div>
       </Card>
 
