@@ -205,6 +205,7 @@ export default function BankAccounts() {
         <TabsList>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
+          <TabsTrigger value="deposits">Deposits Report</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
           <Card className="overflow-x-auto"><Table>
