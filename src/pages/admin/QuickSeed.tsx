@@ -73,7 +73,7 @@ export default function QuickSeed() {
   const runAll = async () => {
     setStatus((s) => ({ ...s, all: "running" }));
     try {
-      await runEdge("all", ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses"]);
+      await runEdge("all", ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank"]);
       await runAsset("all_asset");
       setStatus((s) => ({ ...s, all: "ok" }));
       toast.success("সব মডিউলে ডামি ডাটা তৈরি হয়েছে");
