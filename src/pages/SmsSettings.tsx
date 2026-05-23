@@ -432,7 +432,7 @@ export default function SmsSettings() {
       // Lifecycle metadata only — never select api_token to avoid leaking secrets to the browser.
       supabase
         .from("sms_provider_secrets" as any)
-        .select("id,provider,status,expires_at,activated_at,updated_at,updated_by,label")
+        .select("id,provider,status,expires_at,activated_at,updated_at,updated_by,label,priority")
         .eq("provider", "greenweb")
         .order("status", { ascending: true })
         .order("updated_at", { ascending: false }),
