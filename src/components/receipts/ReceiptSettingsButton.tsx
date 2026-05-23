@@ -143,6 +143,32 @@ export function ReceiptSettingsButton() {
             Useful when the QR cannot be scanned — recipients can type the URL.
           </p>
         </div>
+
+        <div className="border-t pt-2 space-y-2">
+          <label className="flex items-center gap-2 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={wmEnabled}
+              onChange={(e) => {
+                setWmEnabled(e.target.checked);
+                setReceiptLayoutSettings({ watermarkEnabled: e.target.checked });
+              }}
+            />
+            <span className="font-semibold">Watermark (receipt background)</span>
+          </label>
+          <Input
+            placeholder="e.g. MK BALIADANGA — empty = use company name"
+            value={wmText}
+            onChange={(e) => {
+              setWmText(e.target.value);
+              setReceiptLayoutSettings({ watermarkText: e.target.value });
+            }}
+            disabled={!wmEnabled}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Watermark on/off — on করলে receipt-এর পিছনে diagonal text বসবে।
+          </p>
+        </div>
       </PopoverContent>
     </Popover>
   );
