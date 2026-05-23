@@ -93,22 +93,41 @@ export const bighaToShatak = (bigha: number | string | null | undefined): number
   round2(n(bigha) * SHATAK_PER_BIGHA);
 
 /**
- * Format a land size (stored in শতক) for human display showing both বিঘা & শতক.
+ * Katha conversion — local org standard: 1 কাঠা = 0.15 বিঘা (≈ 4.95 শতক).
+ * Hence 1 বিঘা ≈ 6.6667 কাঠা.
+ */
+export const BIGHA_PER_KATHA = 0.15;
+export const SHATAK_PER_KATHA = round2(SHATAK_PER_BIGHA * BIGHA_PER_KATHA); // 4.95
+export const shatakToKatha = (shatak: number | string | null | undefined): number =>
+  round2(n(shatak) / SHATAK_PER_KATHA);
+export const kathaToShatak = (katha: number | string | null | undefined): number =>
+  round2(n(katha) * SHATAK_PER_KATHA);
+export const bighaToKatha = (bigha: number | string | null | undefined): number =>
+  round2(n(bigha) / BIGHA_PER_KATHA);
+export const kathaToBigha = (katha: number | string | null | undefined): number =>
+  round2(n(katha) * BIGHA_PER_KATHA);
+
+/**
+ * Format a land size (stored in শতক) for human display.
  * - "long" (default): "1.50 বিঘা (49.50 শতক)"
  * - "short": "1.50 বিঘা / 49.50 শতক"
  * - "ascii": "1.50 bigha (49.50 shatak)" — for PDFs/Excels without Bangla fonts
+ * - "with_katha": "1.50 বিঘা · 10.00 কাঠা · 49.50 শতক"
  */
 export function formatLandSize(
   shatak: number | string | null | undefined,
-  variant: "long" | "short" | "ascii" = "long",
+  variant: "long" | "short" | "ascii" | "with_katha" = "long",
 ): string {
   if (shatak == null || shatak === "") return "—";
   const s = n(shatak);
   if (s <= 0) return variant === "ascii" ? "0 bigha (0 shatak)" : "০ বিঘা (০ শতক)";
   const b = shatakToBigha(s);
+  const k = shatakToKatha(s);
   const sf = s.toFixed(2);
   const bf = b.toFixed(2);
+  const kf = k.toFixed(2);
   if (variant === "ascii") return `${bf} bigha (${sf} shatak)`;
   if (variant === "short") return `${bf} বিঘা / ${sf} শতক`;
+  if (variant === "with_katha") return `${bf} বিঘা · ${kf} কাঠা · ${sf} শতক`;
   return `${bf} বিঘা (${sf} শতক)`;
 }

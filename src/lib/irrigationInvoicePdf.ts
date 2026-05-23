@@ -10,7 +10,7 @@ import { parseDagNumbers } from "@/lib/dagNumbers";
 import { getReceiptLayoutSettings, dagSeparatorString, getIrrigationLabels } from "@/lib/receiptLayoutSettings";
 
 export type InvoiceCopy = "both" | "office" | "farmer";
-export type PaperFormat = "a4" | "letter";
+export type PaperFormat = "a4" | "letter" | "a5";
 
 export interface InvoicePdfSettings {
   /** Paper size. */
@@ -80,6 +80,18 @@ export const PRINTER_PRESETS: PrinterPreset[] = [
     labelEn: "Letter — Tight margins",
     labelBn: "Letter — ছোট মার্জিন",
     settings: { paperFormat: "letter", marginTopMm: 6, marginBottomMm: 6, marginLeftMm: 6, marginRightMm: 6, cutLineMm: 139.7 },
+  },
+  {
+    id: "a5-single",
+    labelEn: "A5 — Single copy per page (148 × 210 mm)",
+    labelBn: "A5 — প্রতি পৃষ্ঠায় একটি কপি (১৪৮ × ২১০ mm)",
+    settings: { paperFormat: "a5", marginTopMm: 6, marginBottomMm: 6, marginLeftMm: 6, marginRightMm: 6, cutLineMm: 105 },
+  },
+  {
+    id: "a5-tight",
+    labelEn: "A5 — Tight margins",
+    labelBn: "A5 — ছোট মার্জিন",
+    settings: { paperFormat: "a5", marginTopMm: 4, marginBottomMm: 4, marginLeftMm: 4, marginRightMm: 4, cutLineMm: 105 },
   },
 ];
 
@@ -303,7 +315,8 @@ async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBrandi
 }
 
 function makePdf(settings: InvoicePdfSettings): jsPDF {
-  return new jsPDF({ unit: "mm", format: settings.paperFormat === "letter" ? "letter" : "a4", orientation: "p" });
+  const fmt = settings.paperFormat === "letter" ? "letter" : settings.paperFormat === "a5" ? "a5" : "a4";
+  return new jsPDF({ unit: "mm", format: fmt, orientation: "p" });
 }
 
 async function paintInvoiceOnPage(pdf: jsPDF, d: IrrigationInvoiceData, brand: CompanyBranding, copy: InvoiceCopy, settings: InvoicePdfSettings) {
