@@ -103,9 +103,13 @@ export default function Payments() {
   }
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
-  useEffect(() => { load(); /* refresh on toggle */ }, [showDeleted]);
+  useEffect(() => { load(); /* refresh on filters */ }, [showDeleted, period]);
   useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenLoans([]); setOpenIrr([]); setSavingsBalance(0); } }, [farmerId]);
-  useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
+  useEffect(() => {
+    const f = params.get("farmer"); if (f) setFarmerId(f);
+    const pr = params.get("period");
+    if (pr === "today" || pr === "this_month" || pr === "all") setPeriod(pr);
+  }, [params]);
   useEffect(() => {
     const loan = params.get("loan");
     const amt = params.get("amount");
