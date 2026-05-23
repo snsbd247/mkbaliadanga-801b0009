@@ -320,6 +320,13 @@ export default function Farmers() {
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     qy = showDeleted ? qy.not("deleted_at", "is", null) : qy.is("deleted_at", null);
     if (statusFilter !== "all") qy = qy.eq("status", statusFilter);
+    if (periodFilter !== "all") {
+      const now = new Date();
+      const from = periodFilter === "today"
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        : new Date(now.getFullYear(), now.getMonth(), 1);
+      qy = qy.gte("created_at", from.toISOString());
+    }
     if (q) {
       const base = `name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`;
       const idClause = dagFarmerIds.length ? `,id.in.(${dagFarmerIds.join(",")})` : "";
