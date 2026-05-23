@@ -227,6 +227,7 @@ export default function Farmers() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
   const PAGE = 15;
 
   // Create
