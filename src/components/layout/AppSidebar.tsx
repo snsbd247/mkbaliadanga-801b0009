@@ -215,6 +215,7 @@ export function AppSidebar() {
         { url: "/admin/loan-receipt-settings", icon: Receipt, label: t("loanReceiptSettings"), superOnly: true },
         { url: "/sms-settings", icon: MessageSquare, label: t("smsSettings"), superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: t("smsLogs"), permKey: "sms" },
+        { url: "/sms-templates", icon: MessageSquare, label: "SMS Templates", superOnly: true },
       ],
     },
   ];
