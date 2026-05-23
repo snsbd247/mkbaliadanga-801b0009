@@ -13,6 +13,7 @@ export function ReceiptSettingsButton() {
   const opts = useReceiptOptions();
   const { t } = useLang();
   const [open, setOpen] = useState(false);
+  const [pdfPaper, setPdfPaper] = useState<PaperSize>(() => getReceiptLayoutSettings().defaultPaperSize);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
