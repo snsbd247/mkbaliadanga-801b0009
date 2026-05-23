@@ -50,6 +50,7 @@ import BankAccounts from "./pages/BankAccounts";
 import Vouchers from "./pages/Vouchers";
 import PublicPay from "./pages/PublicPay";
 import PublicPaymentIntents from "./pages/admin/PublicPaymentIntents";
+import PaymentReconciliation from "./pages/admin/PaymentReconciliation";
 
 import SmsSettings from "./pages/SmsSettings";
 import SmsLogs from "./pages/SmsLogs";
@@ -271,6 +272,7 @@ const App = () => (
                 <Route path="/bank-accounts" element={<RequirePerm module="accounting"><BankAccounts /></RequirePerm>} />
                 <Route path="/vouchers" element={<RequirePerm module="accounting"><Vouchers /></RequirePerm>} />
                 <Route path="/public-payments" element={<RequireRole roles={["admin","super_admin","staff"]}><PublicPaymentIntents /></RequireRole>} />
+                <Route path="/payment-reconciliation" element={<RequireRole roles={["admin","super_admin","committee"]}><PaymentReconciliation /></RequireRole>} />
 
                 <Route path="/sms-settings" element={<RequireRole roles={["admin","super_admin"]}><SmsSettings /></RequireRole>} />
                 <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />

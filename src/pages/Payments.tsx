@@ -397,6 +397,7 @@ export default function Payments() {
   }
 
   async function voidPayment(p: any) {
+    if (p.voided_at || p.status === "voided") return toast.error("এই রসিদ ইতোমধ্যে বাতিল করা হয়েছে");
     const reason = window.prompt("কেন এই রসিদ বাতিল করছেন? (Reason for voiding receipt)");
     if (!reason || !reason.trim()) return;
     const { error } = await supabase.from("payments").update({
@@ -406,17 +407,49 @@ export default function Payments() {
       status: "voided" as any,
     } as any).eq("id", p.id);
     if (error) return toast.error(error.message);
-    // Reverse irrigation allocations (mark invoices unpaid by subtracting)
-    const irrAllocs = (p.payment_allocations ?? []).filter((a: any) => a.kind === "irrigation");
-    for (const a of irrAllocs) {
-      const { data: inv } = await supabase.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", a.reference_id).maybeSingle();
-      if (inv) {
-        const newPaid = Math.max(0, Number(inv.paid_amount || 0) - Number(a.amount || 0));
-        const newStatus = newPaid <= 0 ? "unpaid" : newPaid >= Number(inv.payable_amount || 0) ? "paid" : "partial";
-        await supabase.from("irrigation_invoices").update({ paid_amount: newPaid, invoice_status: newStatus } as any).eq("id", a.reference_id);
+
+    const allocs: any[] = (p.payment_allocations ?? []).length
+      ? p.payment_allocations
+      : [{ kind: p.kind, reference_id: p.reference_id, amount: p.amount }];
+
+    for (const a of allocs) {
+      const amt = Number(a.amount || 0);
+      if (!(amt > 0)) continue;
+      if (a.kind === "irrigation" && a.reference_id) {
+        const { data: inv } = await supabase.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", a.reference_id).maybeSingle();
+        if (inv) {
+          const newPaid = Math.max(0, Number(inv.paid_amount || 0) - amt);
+          const newStatus = newPaid <= 0 ? "unpaid" : newPaid >= Number(inv.payable_amount || 0) ? "paid" : "partial";
+          await supabase.from("irrigation_invoices").update({ paid_amount: newPaid, invoice_status: newStatus } as any).eq("id", a.reference_id);
+        }
+        await supabase.from("irrigation_invoice_payments").delete().eq("invoice_id", a.reference_id).eq("payment_id", p.id);
+      } else if (a.kind === "loan" && a.reference_id) {
+        // Reversal loan_payment entry (negative)
+        await supabase.from("loan_payments").insert({
+          loan_id: a.reference_id, amount: -amt, collected_by: user?.id,
+          note: `Void reversal of payment ${p.receipt_no ?? p.id} — ${reason.trim()}`,
+        } as any);
+      } else if (a.kind === "savings") {
+        await supabase.from("savings_transactions").insert({
+          farmer_id: p.farmer_id, type: "withdraw" as any, amount: amt,
+          status: "approved" as any, created_by: user?.id,
+          note: `Void reversal of payment ${p.receipt_no ?? p.id} — ${reason.trim()}`,
+        } as any);
       }
     }
-    toast.success("রসিদ বাতিল করা হয়েছে");
+
+    await supabase.from("audit_logs").insert({
+      user_id: user?.id,
+      action: "void",
+      entity: "payments",
+      entity_id: p.id,
+      office_id: p.office_id ?? null,
+      old_values: { status: p.status, amount: p.amount, allocations: allocs },
+      new_values: { status: "voided", void_reason: reason.trim() },
+      meta: { receipt_no: p.receipt_no, farmer_id: p.farmer_id },
+    } as any);
+
+    toast.success("রসিদ বাতিল এবং বরাদ্দ পুনঃস্থাপন করা হয়েছে");
     load();
   }
 
