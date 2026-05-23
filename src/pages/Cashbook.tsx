@@ -45,8 +45,12 @@ const ALL = "__all__";
 
 export default function Cashbook() {
   const { t } = useLang();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isCommittee, isSuper } = useAuth();
   const brand = useBranding();
+  const today = new Date();
+  const [submitYear, setSubmitYear] = useState<number>(today.getFullYear());
+  const [submitMonth, setSubmitMonth] = useState<number>(today.getMonth() + 1);
+  const [submissions, setSubmissions] = useState<any[]>([]);
 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -96,6 +100,42 @@ export default function Cashbook() {
     ]);
     setReceipts(rec.data ?? []); setExpenses(exp.data ?? []);
     setSavings(sv.data ?? []); setLoans(ln.data ?? []); setLoanPayments(lp.data ?? []); setIrrigation(ir.data ?? []);
+    const { data: subs } = await supabase.from("cashbook_submissions").select("*").order("year", { ascending: false }).order("month", { ascending: false }).limit(24);
+    setSubmissions(subs ?? []);
+  }
+
+  const monthLocked = submissions.some(s => s.year === submitYear && s.month === submitMonth && s.locked);
+
+  async function submitMonthlyCashbook() {
+    if (monthLocked) return toast.error(`${submitYear}-${String(submitMonth).padStart(2, "0")} ${t("alreadySubmittedLocked" as any) || "ইতিমধ্যে সাবমিট/লক করা আছে"}`);
+    if (!confirm(`${submitYear}-${String(submitMonth).padStart(2, "0")} মাসের ক্যাশবুক চূড়ান্তভাবে সাবমিট করবেন? এরপর শুধু সুপার-অ্যাডমিন আনলক করতে পারবেন।`)) return;
+    const mFrom = `${submitYear}-${String(submitMonth).padStart(2, "0")}-01`;
+    const lastDay = new Date(submitYear, submitMonth, 0).getDate();
+    const mTo = `${submitYear}-${String(submitMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    const [recM, expM] = await Promise.all([
+      supabase.from("receipts").select("amount").gte("receipt_date", mFrom).lte("receipt_date", mTo),
+      supabase.from("expenses").select("amount").is("deleted_at", null).gte("expense_date", mFrom).lte("expense_date", mTo),
+    ]);
+    const inc = (recM.data ?? []).reduce((s: number, x: any) => s + Number(x.amount), 0);
+    const exp = (expM.data ?? []).reduce((s: number, x: any) => s + Number(x.amount), 0);
+    const { error } = await supabase.from("cashbook_submissions").insert({
+      year: submitYear, month: submitMonth,
+      opening_cash: Number(openingCash || 0),
+      total_income: inc, total_expense: exp,
+      closing_cash: Number(openingCash || 0) + inc - exp,
+      submitted_by: user?.id, locked: true,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(t("submitted" as any) || "সাবমিট করা হয়েছে");
+    load();
+  }
+
+  async function unlockSubmission(id: string) {
+    if (!isSuper) return;
+    if (!confirm("আনলক করবেন?")) return;
+    const { error } = await supabase.from("cashbook_submissions").update({ locked: false }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Unlocked"); load();
   }
 
   async function saveReceipt() {
