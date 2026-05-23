@@ -49,6 +49,7 @@ export default function Cashbook() {
 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [stream, setStream] = useState<"all" | "irrigation" | "savings_loan_share">("all");
   const [openingCash, setOpeningCash] = useState<number>(() => Number(localStorage.getItem("cb_open") ?? 0));
   useEffect(() => { localStorage.setItem("cb_open", String(openingCash || 0)); }, [openingCash]);
   const [farmers, setFarmers] = useState<any[]>([]);
