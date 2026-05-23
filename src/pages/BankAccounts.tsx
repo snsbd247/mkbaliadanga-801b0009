@@ -31,6 +31,10 @@ export default function BankAccounts() {
   const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
   const [xf, setXf] = useState<any>({ from_id: "", to_id: "", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
 
+  const [dFrom, setDFrom] = useState("");
+  const [dTo, setDTo] = useState("");
+  const [dAccount, setDAccount] = useState<string>("__all__");
+
   useEffect(() => { document.title = "Bank Accounts — MK Baliadanga"; load(); }, []);
 
   async function load() {
