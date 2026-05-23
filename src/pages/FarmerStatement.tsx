@@ -313,6 +313,9 @@ export default function FarmerStatement() {
           <Button variant="outline" onClick={xlsx} disabled={!rows.length}>
             <FileSpreadsheet className="h-4 w-4 mr-2" /> {t("exportExcel")}
           </Button>
+          <Button onClick={combinedPdf} disabled={!farmerId}>
+            <FileDown className="h-4 w-4 mr-2" /> {t("fullStatementPdfLabel" as any) || "Full Statement PDF (Savings + Loans + Irrigation)"}
+          </Button>
         </div>
       </Card>
 
