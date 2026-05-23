@@ -3824,6 +3824,33 @@ export type Database = {
         }
         Relationships: []
       }
+      receipt_sequences: {
+        Row: {
+          kind: string
+          last_no: number
+          month: number
+          office_id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          kind: string
+          last_no?: number
+          month: number
+          office_id: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          kind?: string
+          last_no?: number
+          month?: number
+          office_id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       receipt_settings: {
         Row: {
           accent_color: string
@@ -4906,6 +4933,10 @@ export type Database = {
       member_no_exists: {
         Args: { _exclude_id?: string; _member_no: string }
         Returns: boolean
+      }
+      next_monthly_receipt_no: {
+        Args: { p_kind: string; p_office_id: string }
+        Returns: string
       }
       next_receipt_no: { Args: { p_kind: string }; Returns: string }
       pg_public_table_columns: {

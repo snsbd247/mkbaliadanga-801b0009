@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, RotateCcw } from "lucide-react";
 import { setReceiptOptions, useReceiptOptions, resetReceiptOptionsToDemo } from "@/lib/receiptOptions";
+import { getReceiptLayoutSettings, setReceiptLayoutSettings, type PaperSize } from "@/lib/receiptLayoutSettings";
 import { useLang } from "@/i18n/LanguageProvider";
 
 export function ReceiptSettingsButton() {
   const opts = useReceiptOptions();
   const { t } = useLang();
   const [open, setOpen] = useState(false);
+  const [pdfPaper, setPdfPaper] = useState<PaperSize>(() => getReceiptLayoutSettings().defaultPaperSize);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -102,6 +104,27 @@ export function ReceiptSettingsButton() {
           </div>
           <p className="text-[11px] text-muted-foreground">
             Same layout is used on both Farmer and Office copies for consistency.
+          </p>
+        </div>
+
+        <div className="border-t pt-2 space-y-1">
+          <Label className="text-xs">Receipt PDF paper (Payment / Loan / Irrigation / Combined)</Label>
+          <Select
+            value={pdfPaper}
+            onValueChange={(v) => {
+              const next = (v === "a4" ? "a4" : "a5") as PaperSize;
+              setPdfPaper(next);
+              setReceiptLayoutSettings({ defaultPaperSize: next });
+            }}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="a5">A5 (compact)</SelectItem>
+              <SelectItem value="a4">A4 (full page)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            সব receipt PDF এই paper size-এ generate হবে।
           </p>
         </div>
 

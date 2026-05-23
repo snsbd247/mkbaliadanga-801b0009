@@ -4,6 +4,7 @@
 // other modules (savings/loan receipts, lands/voter exports, etc.).
 
 export type DagSeparator = "comma" | "newline" | "semicolon";
+export type PaperSize = "a4" | "a5";
 
 export interface ReceiptLayoutSettings {
   dagSeparator: DagSeparator;
@@ -27,6 +28,8 @@ export interface ReceiptLayoutSettings {
   loanDescLabelEn: string;
   loanOutstandingLabelBn: string;
   loanOutstandingLabelEn: string;
+  /** Global default paper size for receipt PDFs (payment / loan / irrigation / combined). */
+  defaultPaperSize: PaperSize;
 }
 
 export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
@@ -46,6 +49,7 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   loanDescLabelEn: "",
   loanOutstandingLabelBn: "",
   loanOutstandingLabelEn: "",
+  defaultPaperSize: "a5",
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
@@ -86,6 +90,7 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
     merged.loanRowSpacingPx = clampSpacing(
       parsed?.loanRowSpacingPx ?? DEFAULT_RECEIPT_LAYOUT.loanRowSpacingPx,
     );
+    merged.defaultPaperSize = (parsed?.defaultPaperSize === "a4" ? "a4" : "a5");
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
@@ -175,4 +180,9 @@ export function getLoanLabels(lang: "bn" | "en"): { desc: string; outstanding: s
     desc: (s.loanDescLabelBn || "").trim() || DEFAULT_LABELS.bn.loanDesc,
     outstanding: (s.loanOutstandingLabelBn || "").trim() || DEFAULT_LABELS.bn.loanOutstanding,
   };
+}
+
+/** Global default paper size for receipt PDFs (A4 or A5). */
+export function getDefaultPaperSize(): PaperSize {
+  return getReceiptLayoutSettings().defaultPaperSize;
 }

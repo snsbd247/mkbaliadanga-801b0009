@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
 
 export interface PaymentReceiptData {
   receipt_no: string;
@@ -100,7 +101,8 @@ function paperFormat(size: ReceiptTemplate["paper_size"]) {
 }
 
 function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<ReceiptTemplate>): jsPDF {
-  const tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE, ...(tplIn ?? {}) };
+  // Honour the global A4/A5 toggle unless the caller explicitly overrides paper_size.
+  const tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE, paper_size: getDefaultPaperSize(), ...(tplIn ?? {}) };
   const doc = new jsPDF({ unit: "mm", format: paperFormat(tpl.paper_size) });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
