@@ -10,7 +10,7 @@ import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, Calenda
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 
-type ModuleKey = "office" | "asset" | "farmers" | "lands" | "seasons" | "savings" | "loans" | "irrigation" | "all";
+type ModuleKey = "office" | "asset" | "farmers" | "lands" | "seasons" | "savings" | "loans" | "irrigation" | "bank" | "all";
 
 type Status = "idle" | "running" | "ok" | "err";
 
