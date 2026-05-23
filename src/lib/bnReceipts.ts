@@ -260,10 +260,14 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
     const sl = getSavingsLabels(lang);
+    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
     if (d.description) rows.push([sl.desc, d.description]);
     if (d.outstanding != null) rows.push([sl.balance, fmt2(Number(d.outstanding))]);
   } else {
     const ll = getLoanLabels(lang);
+    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
     if (d.description) rows.push([ll.desc, d.description]);
     if (d.outstanding != null) rows.push([ll.outstanding, fmt2(Number(d.outstanding))]);
   }
