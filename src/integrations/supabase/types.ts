@@ -4392,6 +4392,8 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          delivered_at: string | null
+          dlr_payload: Json | null
           event_type: string | null
           farmer_id: string | null
           id: string
@@ -4399,15 +4401,19 @@ export type Database = {
           mobile: string
           office_id: string | null
           provider_response: string | null
+          provider_used: string | null
           reference_id: string | null
           reference_type: string | null
           retry_count: number
           sent_at: string | null
           status: string
+          template_key: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          delivered_at?: string | null
+          dlr_payload?: Json | null
           event_type?: string | null
           farmer_id?: string | null
           id?: string
@@ -4415,15 +4421,19 @@ export type Database = {
           mobile: string
           office_id?: string | null
           provider_response?: string | null
+          provider_used?: string | null
           reference_id?: string | null
           reference_type?: string | null
           retry_count?: number
           sent_at?: string | null
           status?: string
+          template_key?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          delivered_at?: string | null
+          dlr_payload?: Json | null
           event_type?: string | null
           farmer_id?: string | null
           id?: string
@@ -4431,11 +4441,13 @@ export type Database = {
           mobile?: string
           office_id?: string | null
           provider_response?: string | null
+          provider_used?: string | null
           reference_id?: string | null
           reference_type?: string | null
           retry_count?: number
           sent_at?: string | null
           status?: string
+          template_key?: string | null
         }
         Relationships: []
       }
@@ -4470,9 +4482,11 @@ export type Database = {
         Row: {
           activated_at: string | null
           api_token: string
+          dlr_url: string | null
           expires_at: string | null
           id: string
           label: string | null
+          priority: number
           provider: string
           status: string
           updated_at: string
@@ -4481,9 +4495,11 @@ export type Database = {
         Insert: {
           activated_at?: string | null
           api_token: string
+          dlr_url?: string | null
           expires_at?: string | null
           id?: string
           label?: string | null
+          priority?: number
           provider: string
           status?: string
           updated_at?: string
@@ -4492,9 +4508,11 @@ export type Database = {
         Update: {
           activated_at?: string | null
           api_token?: string
+          dlr_url?: string | null
           expires_at?: string | null
           id?: string
           label?: string | null
+          priority?: number
           provider?: string
           status?: string
           updated_at?: string
@@ -4615,6 +4633,7 @@ export type Database = {
           is_active: boolean
           key: string
           name: string
+          preferred_provider: string | null
           updated_at: string
           variables: string[] | null
         }
@@ -4625,6 +4644,7 @@ export type Database = {
           is_active?: boolean
           key: string
           name: string
+          preferred_provider?: string | null
           updated_at?: string
           variables?: string[] | null
         }
@@ -4635,6 +4655,7 @@ export type Database = {
           is_active?: boolean
           key?: string
           name?: string
+          preferred_provider?: string | null
           updated_at?: string
           variables?: string[] | null
         }
