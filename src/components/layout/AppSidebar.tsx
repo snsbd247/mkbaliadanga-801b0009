@@ -114,6 +114,7 @@ export function AppSidebar() {
        { url: "/assets/movements", icon: Package, label: t("assetMovements" as any) || "এসেট স্থানান্তর", permKey: "assets" },
        { url: "/assets/installations", icon: Package, label: t("assetInstallations" as any) || "ইনস্টলেশন", permKey: "assets" },
        { url: "/assets/maintenance", icon: Package, label: t("assetMaintenance" as any) || "মেরামত", permKey: "assets" },
+       { url: "/assets/maintenance-schedules", icon: Package, label: t("maintenanceSchedules" as any) || "মেরামত সময়সূচি", permKey: "assets" },
        { url: "/assets/disposal", icon: Package, label: t("assetDisposal" as any) || "অপসারণ", permKey: "assets" },
        { url: "/assets/alerts", icon: Package, label: t("assetAlerts" as any) || "এসেট সতর্কতা", permKey: "assets" },
         { url: "/assets/reports", icon: Package, label: t("assetReports" as any) || "এসেট রিপোর্ট", permKey: "assets" },
