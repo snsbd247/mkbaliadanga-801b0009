@@ -61,7 +61,7 @@ export default function LoanDetail() {
       if (!l) { setLoading(false); return; }
       setLoan(l);
       const [{ data: f }, { data: p }, { data: ins }, { data: pays }] = await Promise.all([
-        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,mobile,village").eq("id", l.farmer_id).maybeSingle(),
+        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,father_name,nominee_name,nominee_mobile,nominee_relation").eq("id", l.farmer_id).maybeSingle(),
         l.plan_id ? supabase.from("loan_plans").select("*").eq("id", l.plan_id).maybeSingle() : Promise.resolve({ data: null } as any),
         supabase.from("loan_installments").select("*").eq("loan_id", loanId).order("installment_no"),
         supabase.from("loan_payments").select("*").eq("loan_id", loanId).order("paid_on", { ascending: false }),
