@@ -48,9 +48,9 @@ F1 → F2 → F3 → F4 (one per turn). User can also reorder.
 - A5 irrigation receipt: added `"a5"` to `PaperFormat`, two A5 presets (single & tight) in `PRINTER_PRESETS`, A5 option in IrrigationInvoices paper-size selector, default cut-line 105mm.
 
 ### Next remaining original-plan batches
-- P-C2 historical land tracking (5–7 yr `land_history` table + UI)
-- P-D1 cashbook split + temporary loan report
-- P-D2 bank accounts (4 banks + transfer ledger) + voucher upload
+- ~~P-C2 historical land tracking~~ ✅ `land_history` table + `/land-history` page (Add/Filter, admin-only delete)
+- ~~P-D1 cashbook split + temporary loan report~~ ✅ `loans.is_temporary` flag + `/loans/temporary` report page with PDF/Excel
+- ~~P-D2 bank accounts + voucher upload~~ ✅ `bank_accounts`, `bank_transactions` (deposit/withdraw/charge/interest + bank-to-bank transfer via `transfer_group`), `/bank-accounts` page with running balance per account; `vouchers` table with auto `voucher_no` via `next_voucher_no()` RPC, private `vouchers` storage bucket, `/vouchers` page with file upload + signed-URL download.
 - P-D3 audit reports (PDF/Excel/Word)
 - P-E1 land owner separation finishing + cultivation history + change remarks
 - P-E2 better payment UI + receipt void
