@@ -125,11 +125,21 @@ export default function Cashbook() {
     load();
   }
 
+  // Stream filter — Irrigation vs Savings/Loan/Share (PDF requirement: আলাদা cashbook)
+  const irrKinds = new Set(["irrigation"]);
+  const slsKinds = new Set(["savings_deposit", "loan_taken", "share", "donation", "hawlat", "bank", "miscellaneous"]);
+  const filteredReceipts = useMemo(() => {
+    if (stream === "all") return receipts;
+    if (stream === "irrigation") return receipts.filter(r => irrKinds.has(r.kind));
+    return receipts.filter(r => slsKinds.has(r.kind));
+  }, [receipts, stream]);
+  const filteredExpenses = useMemo(() => stream === "all" ? expenses : [], [expenses, stream]);
+
   // Cash book entries (combined, sorted asc for running balance)
   const cashbookEntries = useMemo(() => {
     const rows: any[] = [
-      ...receipts.map(x => ({ date: x.receipt_date, kind: "income", label: getKindLabel(t, x.kind as Kind), ref: x.receipt_no, amount: Number(x.amount), note: x.note })),
-      ...expenses.map(x => ({ date: x.expense_date, kind: "expense", label: x.head, ref: x.payee ?? "", amount: Number(x.amount), note: x.note })),
+      ...filteredReceipts.map(x => ({ date: x.receipt_date, kind: "income", label: getKindLabel(t, x.kind as Kind), ref: x.receipt_no, amount: Number(x.amount), note: x.note })),
+      ...filteredExpenses.map(x => ({ date: x.expense_date, kind: "expense", label: x.head, ref: x.payee ?? "", amount: Number(x.amount), note: x.note })),
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(openingCash || 0);
     const out = rows.map(row => {
@@ -137,7 +147,7 @@ export default function Cashbook() {
       return { ...row, balance: bal };
     });
     return out;
-  }, [receipts, expenses, openingCash]);
+  }, [filteredReceipts, filteredExpenses, openingCash, t]);
 
   const totals = useMemo(() => {
     const income = receipts.reduce((s, x) => s + Number(x.amount), 0);
