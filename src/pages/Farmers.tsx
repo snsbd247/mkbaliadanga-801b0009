@@ -745,6 +745,14 @@ export default function Farmers() {
                 <SelectItem value="all">{tx("All statuses", "সব স্ট্যাটাস")}</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={periodFilter} onValueChange={(v: any) => { setPeriodFilter(v); setPage(0); }}>
+              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tx("Any period", "যেকোনো সময়")}</SelectItem>
+                <SelectItem value="this_month">{tx("This month", "এই মাস")}</SelectItem>
+                <SelectItem value="today">{tx("Today", "আজ")}</SelectItem>
+              </SelectContent>
+            </Select>
             {isSuper && (
               <label className="flex items-center gap-2 text-sm">
                 <Switch checked={showDeleted} onCheckedChange={(v) => { setShowDeleted(v); setPage(0); }} />
