@@ -908,6 +908,7 @@ export default function FarmerDetail() {
                 <TableHead>{t("dagNo")}</TableHead>
                 <TableHead>{t("landSize")}</TableHead>
                 <TableHead>{t("ownerType")}</TableHead>
+                <TableHead>মালিক (Owner)</TableHead>
                 <TableHead>{t("fieldType")}</TableHead>
                 <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
@@ -918,6 +919,11 @@ export default function FarmerDetail() {
                     <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
                     <TableCell>{l.land_size}</TableCell>
                     <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                    <TableCell className="text-xs">
+                      {l.owner_type === "owner"
+                        ? <span className="text-muted-foreground">নিজ মালিক</span>
+                        : (l.owner_farmer_id ? (ownerNames[l.owner_farmer_id] ?? "—") : "—")}
+                    </TableCell>
                     <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                     <TableCell className="text-right">
                       <EditButton onClick={() => openEdit(l)} title={t("edit")} />
@@ -925,7 +931,14 @@ export default function FarmerDetail() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {lands.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+                {lands.length > 0 && (
+                  <TableRow className="bg-muted/60 font-bold">
+                    <TableCell colSpan={2} className="text-right">মোট (Total)</TableCell>
+                    <TableCell>{lands.reduce((s, l) => s + Number(l.land_size || 0), 0).toFixed(2)}</TableCell>
+                    <TableCell colSpan={4} />
+                  </TableRow>
+                )}
+                {lands.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
