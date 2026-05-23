@@ -42,9 +42,12 @@ export default function AssetMovements() {
   const [assets, setAssets] = useState<AssetLite[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [from, setFrom] = useState(monthAgo());
   const [to, setTo] = useState(today());
   const [open, setOpen] = useState(false);
+  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     asset_id: "", from_location_id: "", to_location_id: "",
