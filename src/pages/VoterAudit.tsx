@@ -12,6 +12,7 @@ import { FileSpreadsheet, FileText, RefreshCw } from "lucide-react";
 import { exportExcel, exportTablePDF } from "@/lib/exports";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
+import { formatId5 } from "@/lib/idFormat";
 
 const PAGE_SIZE = 50;
 
@@ -161,8 +162,8 @@ export default function VoterAudit() {
                 <TableRow key={r.id}>
                   <TableCell className="text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</TableCell>
                   <TableCell className="text-sm">{f.name_en ?? "—"}{f.name_bn ? ` (${f.name_bn})` : ""}</TableCell>
-                  <TableCell className="font-mono text-xs">{r.account_number ?? f.account_number ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-xs">{r.voter_number_old || "—"} → {r.voter_number_new || "—"}</TableCell>
+                  <TableCell className="font-mono text-xs">{(r.account_number ?? f.account_number) ? formatId5(r.account_number ?? f.account_number) : "—"}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.voter_number_old ? formatId5(r.voter_number_old) : "—"} → {r.voter_number_new ? formatId5(r.voter_number_new) : "—"}</TableCell>
                   <TableCell className="text-xs">{String(r.is_voter_old ?? "—")} → {String(r.is_voter_new ?? "—")}</TableCell>
                   <TableCell className="text-xs">{p.full_name || p.email || (r.changed_by ? r.changed_by.slice(0, 8) : "system")}</TableCell>
                   <TableCell className="text-xs">{o.name ?? "—"}</TableCell>

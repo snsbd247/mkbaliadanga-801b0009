@@ -20,6 +20,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { toast } from "sonner";
 import { getFarmerDues } from "@/lib/farmerDues";
+import { formatId5 } from "@/lib/idFormat";
 
 type Row = {
   id: string;
@@ -246,12 +247,12 @@ export default function VoterList() {
           <TableBody>
             {rows.map(r => (
               <TableRow key={r.id}>
-                <TableCell className="font-mono cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>{r.voter_number}</TableCell>
+                <TableCell className="font-mono cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>{formatId5(r.voter_number)}</TableCell>
                 <TableCell className="cursor-pointer" onClick={() => nav(`/farmers/${r.id}`)}>
                   <div className="font-medium">{r.name_en}</div>
                   {r.name_bn && <div className="text-xs text-muted-foreground">{r.name_bn}</div>}
                 </TableCell>
-                <TableCell className="font-mono text-xs">{r.account_number ?? "—"}</TableCell>
+                <TableCell className="font-mono text-xs">{r.account_number ? formatId5(r.account_number) : "—"}</TableCell>
                 <TableCell>{r.mobile ?? "—"}</TableCell>
                 <TableCell className="text-xs">{locationOf(r)}</TableCell>
                 <TableCell className="text-xs">{r.offices?.name ?? "—"}</TableCell>

@@ -21,6 +21,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import * as XLSX from "xlsx";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import { DEMO_PRESETS, type DemoModule } from "@/lib/demoPresets";
+import { formatId5 } from "@/lib/idFormat";
 
 const MODULE_KEYS = [
   { id: "locations", tk: "dmModLocations" },
@@ -48,8 +49,8 @@ export default function DemoManager() {
 
   // voter config
   const [voterRatio, setVoterRatio] = useState(3);
-  const [voterNumberFormat, setVoterNumberFormat] = useState("{seq:12}");
-  const [accountNumberFormat, setAccountNumberFormat] = useState("{seq:12}");
+  const [voterNumberFormat, setVoterNumberFormat] = useState("{seq:5}");
+  const [accountNumberFormat, setAccountNumberFormat] = useState("{seq:5}");
 
   // progress
   const [progress, setProgress] = useState(0);
@@ -325,11 +326,11 @@ export default function DemoManager() {
             </div>
             <div>
               <Label>Voter Number Format</Label>
-              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:12}" />
+              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:5}" />
             </div>
             <div>
               <Label>Account Number Format</Label>
-              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{seq:12}" />
+              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{seq:5}" />
             </div>
           </CardContent>
         </Card>
@@ -675,10 +676,10 @@ export default function DemoManager() {
                 <tbody>
                   {seedLog.map((r, i) => (
                     <tr key={i} className="border-t">
-                      <td className="p-2 font-mono">{r.farmer_code}</td>
+                      <td className="p-2 font-mono">{formatId5(r.farmer_code)}</td>
                       <td className="p-2">{r.is_voter ? "✓" : "—"}</td>
-                      <td className="p-2 font-mono">{r.voter_number ?? "—"}</td>
-                      <td className="p-2 font-mono">{r.account_number ?? "—"}</td>
+                      <td className="p-2 font-mono">{r.voter_number ? formatId5(r.voter_number) : "—"}</td>
+                      <td className="p-2 font-mono">{r.account_number ? formatId5(r.account_number) : "—"}</td>
                       <td className="p-2 text-center">{r.savings_seeded ? "✓" : "—"}</td>
                       <td className="p-2 text-center">{r.loans_seeded ? "✓" : "—"}</td>
                       <td className="p-2 text-center">{r.shares_seeded ? "✓" : "—"}</td>

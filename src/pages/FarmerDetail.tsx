@@ -36,6 +36,7 @@ import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/land
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
+import { formatId5 } from "@/lib/idFormat";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null };
 
@@ -672,20 +673,20 @@ export default function FarmerDetail() {
             <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{farmer.name_en[0]}</AvatarFallback>
           </Avatar>
           <div className="grid flex-1 min-w-0 grid-cols-2 gap-x-4 gap-y-3 text-sm md:grid-cols-4">
-            <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("pgFarmerId")}</div><div className="font-mono font-semibold break-all">{farmer.member_no ?? farmer.farmer_code}</div></div>
+            <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("pgFarmerId")}</div><div className="font-mono font-semibold break-all">{formatId5(farmer.member_no ?? farmer.farmer_code)}</div></div>
             <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("nameEn")}</div><div className="font-medium break-words">{farmer.name_en}</div></div>
             <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("nameBn")}</div><div className="font-medium break-words">{farmer.name_bn ?? "-"}</div></div>
             <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("fatherName")}</div><div className="break-words">{farmer.father_name ?? "-"}</div></div>
             <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("motherName")}</div><div className="break-words">{farmer.mother_name ?? "-"}</div></div>
             <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("nid")}</div><div className="font-mono break-all">{farmer.nid ?? "-"}</div></div>
             <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("mobile")}</div><div className="break-all">{farmer.mobile ?? "-"}</div></div>
-            <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("pgVoterNumber")}</div><div className="font-mono break-all">{farmer.voter_number ?? "—"}</div></div>
+            <div className="min-w-0"><div className="text-xs text-muted-foreground">{t("pgVoterNumber")}</div><div className="font-mono break-all">{farmer.voter_number ? formatId5(farmer.voter_number) : "—"}</div></div>
             <div className="col-span-2 md:col-span-4 min-w-0"><div className="text-xs text-muted-foreground">{t("village")} / {t("pgLocation")}</div><div className="text-sm break-words">{farmerLocationLine(farmer)}</div></div>
           </div>
           <div className="flex flex-col items-center gap-1 rounded-md border bg-card p-2">
-            <QRCodeSVG value={`${window.location.origin}/scan?acc=${farmer.member_no ?? farmer.farmer_code}`} size={96} />
+            <QRCodeSVG value={`${window.location.origin}/scan?acc=${formatId5(farmer.member_no ?? farmer.farmer_code)}`} size={96} />
             <div className="text-[10px] text-muted-foreground">{t("qrCode")}</div>
-            <div className="font-mono text-[10px]">{farmer.member_no ?? farmer.farmer_code}</div>
+            <div className="font-mono text-[10px]">{formatId5(farmer.member_no ?? farmer.farmer_code)}</div>
           </div>
         </div>
       </Card>
