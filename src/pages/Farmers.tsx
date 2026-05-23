@@ -19,6 +19,7 @@ import { TruncateText } from "@/components/ui/truncate-text";
 import { EditButton, DeleteButton, ViewButton } from "@/components/ui/action-icon-button";
 import * as XLSX from "xlsx";
 import { normalizeFarmerCode } from "@/lib/farmerCode";
+import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 
 const FARMER_TEMPLATE_HEADERS = [
   "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
@@ -245,6 +246,24 @@ export default function Farmers() {
   const editNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
+  // Unsaved-draft guard for the create form (survives accidental refresh/tab close)
+  const createDirty = open && JSON.stringify({ ...form, office_id: "" }) !== JSON.stringify({ ...EMPTY_FORM, office_id: "" });
+  const createGuard = useUnsavedFormGuard("farmer-create", form, createDirty);
+  const editDirty = editOpen && editForm !== null;
+  const editGuard = useUnsavedFormGuard("farmer-edit", editForm, editDirty);
+
+  // Restore create-form draft once on mount (open dialog with prefilled data)
+  const draftRestoredRef = useRef(false);
+  useEffect(() => {
+    if (draftRestoredRef.current) return;
+    draftRestoredRef.current = true;
+    const draft = createGuard.restore();
+    if (draft && JSON.stringify({ ...draft, office_id: "" }) !== JSON.stringify({ ...EMPTY_FORM, office_id: "" })) {
+      setForm(draft as FormState);
+      setOpen(true);
+    }
+  }, []);
+
   useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
@@ -340,6 +359,7 @@ export default function Farmers() {
     setCreateFieldErrors({});
     setForm({ ...EMPTY_FORM, office_id: officeId ?? "" });
     setSaving(false);
+    createGuard.clear();
   }
 
   function resetEditForm() {
@@ -349,6 +369,7 @@ export default function Farmers() {
     setEditErr(null);
     setEditFieldErrors({});
     setSaving(false);
+    editGuard.clear();
   }
 
   function commonValidate(f: FormState, setErrors: (errors: FormErrors) => void): boolean {

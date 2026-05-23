@@ -81,6 +81,17 @@ export default function Dashboard() {
     const monthCollect = sum(monthPayAll ?? [], "amount");
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
+    // Hand Cash — Irrigation (1011) & Savings (1012) running balance from ledger
+    const { data: cashAccts } = await supabase.from("accounts").select("id,code").in("code", ["1011", "1012"]);
+    const irrAcctId = cashAccts?.find((a: any) => a.code === "1011")?.id;
+    const savAcctId = cashAccts?.find((a: any) => a.code === "1012")?.id;
+    const [irrLedger, savLedger] = await Promise.all([
+      irrAcctId ? supabase.from("ledger_entries").select("debit,credit").eq("account_id", irrAcctId) : Promise.resolve({ data: [] as any[] }),
+      savAcctId ? supabase.from("ledger_entries").select("debit,credit").eq("account_id", savAcctId) : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const irrCashBal = (irrLedger.data ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
+    const savCashBal = (savLedger.data ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
+
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
     setStats([
       { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users },
@@ -93,6 +104,8 @@ export default function Dashboard() {
       { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock },
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger" },
       { label: lang === "bn" ? "ঋণের বাকি" : "Loan Due", value: money(loanDue), icon: HandCoins, tone: "danger" },
+      { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success" },
+      { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
     ]);
     setRecent(paymentsData);
