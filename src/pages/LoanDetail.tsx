@@ -193,6 +193,18 @@ export default function LoanDetail() {
         </CardContent>
       </Card>
 
+      {/* Nominee */}
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">{tx("Nominee Information", "নমিনির তথ্য")}</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <Field label={tx("Nominee Name", "নমিনির নাম")} value={farmer?.nominee_name || "—"} />
+            <Field label={tx("Nominee Mobile", "নমিনির মোবাইল")} value={farmer?.nominee_mobile || "—"} />
+            <Field label={tx("Relation", "সম্পর্ক")} value={farmer?.nominee_relation || "—"} />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Counters */}
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">{tx("Installment Summary", "কিস্তি সারাংশ")}</CardTitle></CardHeader>
