@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity } from "lucide-react";
+import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -13,7 +13,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 
-interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success" }
+interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null }
 
 export default function Dashboard() {
   const { t, lang } = useLang();
@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [recent, setRecent] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [trend, setTrend] = useState<any[]>([]);
+  const [daily30, setDaily30] = useState<{ label: string; value: number }[]>([]);
   const [topDues, setTopDues] = useState<any[]>([]);
   const [composition, setComposition] = useState<any[]>([]);
   const [topDepositor, setTopDepositor] = useState<{ name: string; code: string; total: number } | null>(null);
@@ -76,10 +77,24 @@ export default function Dashboard() {
     const loanDue = sum(loansData.filter(l => l.status === "approved"), "total_payable");
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
-    const { data: monthPayAll } = await supabase
-      .from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart);
+    const now = new Date();
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+    const day30Start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29).toISOString().slice(0, 10);
+    const [{ data: monthPayAll }, { data: prevMonthPay }, { data: pay30 }] = await Promise.all([
+      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart),
+      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", prevMonthStart).lt("created_at", monthStart),
+      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", day30Start),
+    ]);
     const monthCollect = sum(monthPayAll ?? [], "amount");
+    const prevMonthCollect = sum(prevMonthPay ?? [], "amount");
+    const momDelta = prevMonthCollect > 0 ? ((monthCollect - prevMonthCollect) / prevMonthCollect) * 100 : null;
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
+
+    // New members this month
+    const { count: newMembersCount } = await supabase
+      .from("farmers").select("id", { count: "exact", head: true })
+      .is("deleted_at", null).gte("created_at", monthStart);
+    const activeLoanCount = loansData.filter((l: any) => l.status === "approved").length;
 
     // Hand Cash — Irrigation (1011) & Savings (1012) running balance from ledger
     const { data: cashAccts } = await supabase.from("accounts").select("id,code").in("code", ["1011", "1012"]);
@@ -96,18 +111,33 @@ export default function Dashboard() {
     setStats([
       { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users },
       { label: t("activeFarmers"), value: String(farmersList.filter((f: any) => f.status === "active").length), icon: UserCheck, tone: "success" },
+      { label: lang === "bn" ? "এই মাসের নতুন সদস্য" : "New Members (This Month)", value: String(newMembersCount ?? 0), icon: UserPlus, tone: "success" },
+      { label: lang === "bn" ? "চলমান ঋণ" : "Active Loans", value: String(activeLoanCount), icon: HandCoins },
       { label: t("totalSavings"), value: money(totalSavings), icon: Wallet },
       { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins },
       { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins },
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success" },
-      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock },
+      { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta },
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger" },
       { label: lang === "bn" ? "ঋণের বাকি" : "Loan Due", value: money(loanDue), icon: HandCoins, tone: "danger" },
       { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success" },
       { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
     ]);
+
+    // 30-day daily collection sparkline
+    const days: { label: string; key: string; value: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      days.push({ key, label: `${d.getDate()}/${d.getMonth() + 1}`, value: 0 });
+    }
+    (pay30 ?? []).forEach((p: any) => {
+      const k = (p.created_at as string).slice(0, 10);
+      const d = days.find(x => x.key === k); if (d) d.value += Number(p.amount || 0);
+    });
+    setDaily30(days);
     setRecent(paymentsData);
     setPending([
       ...((pendingW.data ?? []).map((x: any) => ({ ...x, kind: "withdraw" }))),
@@ -116,7 +146,6 @@ export default function Dashboard() {
 
     // Trend: last 6 months
     const months: { key: string; label: string; income: number; expense: number; savings: number }[] = [];
-    const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push({
@@ -218,6 +247,12 @@ export default function Dashboard() {
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</div>
                 <div className={`mt-2 text-2xl font-bold ${s.tone === "danger" ? "text-destructive" : s.tone === "success" ? "text-success" : "text-foreground"}`}>{s.value}</div>
+                {typeof s.delta === "number" && (
+                  <div className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${s.delta >= 0 ? "text-success" : "text-destructive"}`}>
+                    {s.delta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {s.delta >= 0 ? "+" : ""}{s.delta.toFixed(1)}% {lang === "bn" ? "গত মাস থেকে" : "vs last month"}
+                  </div>
+                )}
               </div>
               <div className={`flex h-10 w-10 items-center justify-center rounded-md ${s.tone === "danger" ? "bg-destructive/10 text-destructive" : s.tone === "success" ? "bg-success/10 text-success" : "bg-primary/10 text-primary"}`}>
                 <s.icon className="h-5 w-5" />
@@ -226,6 +261,25 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* 30-day collection sparkline */}
+      <Card className="mt-4 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">{lang === "bn" ? "গত ৩০ দিনের দৈনিক সংগ্রহ" : "Daily Collection — Last 30 Days"}</h2>
+          <span className="text-xs text-muted-foreground">{lang === "bn" ? "মোট: " : "Total: "}{money(daily30.reduce((a, d) => a + d.value, 0))}</span>
+        </div>
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={daily30}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={10} interval={4} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
+              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} formatter={(v: any) => money(Number(v))} />
+              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       {/* Monthly Most Active Member */}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
