@@ -189,6 +189,7 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>{t("irr_reset" as any)}</Button>
+              <Button size="sm" variant="outline" onClick={combinedReceipt}><FileDown className="h-4 w-4 mr-1" /> মিলিত রসিদ</Button>
               <Button size="sm" onClick={payNow}><Wallet className="h-4 w-4 mr-1" /> {t("irr_payNow" as any)}</Button>
             </div>
           </div>
