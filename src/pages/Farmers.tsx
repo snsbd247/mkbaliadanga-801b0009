@@ -228,6 +228,7 @@ export default function Farmers() {
   const [page, setPage] = useState(0);
   const [showDeleted, setShowDeleted] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
+  const [periodFilter, setPeriodFilter] = useState<"all" | "this_month" | "today">("all");
   const PAGE = 15;
 
   // Create
