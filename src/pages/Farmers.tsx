@@ -429,6 +429,11 @@ export default function Farmers() {
       if (lvl) {
         setCreateErr({ level: lvl, key: "locationInvalidMismatch" });
         setCreateFieldErrors((prev) => ({ ...prev, location: buildErrMessage("locationInvalidMismatch", lvl) }));
+      } else if ((error as any).code === "23505" || /duplicate key|unique constraint/i.test(error.message)) {
+        const m = error.message.toLowerCase();
+        if (m.includes("member_no") || m.includes("farmer_code")) toast.error(tx("Duplicate Farmer ID — this ID is already in use.", "Farmer ID আগেই ব্যবহৃত হয়েছে।"));
+        else if (m.includes("voter_number") || m.includes("account_number")) toast.error(tx("Duplicate Voter / Savings A/C No — already in use.", "Voter / Savings A/C নম্বর আগেই ব্যবহৃত হয়েছে।"));
+        else toast.error(tx("Duplicate value — this entry already exists.", "ডুপ্লিকেট মান — এই তথ্য আগেই আছে।"));
       } else toast.error(error.message);
       return;
     }
