@@ -147,7 +147,49 @@ Deno.serve(async (req) => {
     }
   }
 
+  // -------- 3) Maintenance schedules due --------
+  let schedQ = admin.from("asset_maintenance_schedules").select(
+    "id,office_id,asset_id,title,frequency_days,next_due_at,active,assets!inner(asset_code,name_en,name_bn,deleted_at)"
+  ).eq("active", true).lte("next_due_at", today);
+  if (officeFilter) schedQ = schedQ.eq("office_id", officeFilter);
+  const { data: scheds } = await schedQ;
+
+  for (const s of (scheds ?? []) as any[]) {
+    const a = s.assets; if (!a || a.deleted_at) continue;
+    const dueD = new Date(s.next_due_at + "T00:00:00Z");
+    const todayD = new Date(today + "T00:00:00Z");
+    const overdueDays = Math.round((todayD.getTime() - dueD.getTime()) / 86400000);
+    const msg_en = overdueDays > 0
+      ? `Maintenance overdue ${overdueDays} day(s): ${a.asset_code} — ${s.title} (due ${s.next_due_at}).`
+      : `Maintenance due today: ${a.asset_code} — ${s.title}.`;
+    const msg_bn = overdueDays > 0
+      ? `মেরামত বকেয়া ${overdueDays} দিন: ${a.asset_code} — ${s.title} (নির্ধারিত ${s.next_due_at})।`
+      : `আজ মেরামতের দিন: ${a.asset_code} — ${s.title}।`;
+
+    const { data: ins } = await admin.from("asset_alerts").insert({
+      office_id: s.office_id, asset_id: s.asset_id, location_id: null,
+      alert_type: "maintenance_due",
+      severity: overdueDays > 7 ? "critical" : (overdueDays > 0 ? "warning" : "info"),
+      message_en: msg_en, message_bn: msg_bn,
+      details: { schedule_id: s.id, next_due_at: s.next_due_at, overdue_days: overdueDays, title: s.title },
+    }).select("id").maybeSingle();
+    if (ins?.id) {
+      created++;
+      await admin.from("asset_maintenance_schedules")
+        .update({ last_generated_alert_at: new Date().toISOString() }).eq("id", s.id);
+      if (smsEnabled && recipients.length) {
+        const n = await enqueueSms({
+          mobiles: recipients, message: msg_bn, office_id: s.office_id,
+          alert_id: ins.id, event_type: "asset_maintenance_due",
+        });
+        smsSent += n;
+        if (n > 0) await admin.from("asset_alerts").update({ sms_sent_count: n, last_sms_at: new Date().toISOString() }).eq("id", ins.id);
+      }
+    }
+  }
+
   return new Response(JSON.stringify({ created, smsSent }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
+
