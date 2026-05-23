@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,17 @@ export default function Loans() {
   const [editForm, setEditForm] = useState({ principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
 
   useEffect(() => { document.title = `${t("loans")} — ${t("appName")}`; load(); }, [showDeleted]);
+  const [sp, setSp] = useSearchParams();
+  const initialTab = useMemo(() => {
+    const s = sp.get("status");
+    return s === "pending" || s === "rejected" || s === "all" || s === "approved" ? s : "approved";
+  }, []);
+  const [tab, setTab] = useState<string>(initialTab);
+  useEffect(() => {
+    const s = sp.get("status");
+    if (s && s !== tab && (s === "pending" || s === "rejected" || s === "all" || s === "approved")) setTab(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sp]);
   async function load() {
     let lq = supabase.from("loans").select("*, farmers(name_en,farmer_code,member_no,mobile,village), loan_payments(id,amount,paid_on,collected_by), loan_plans(name,name_bn,installment_type,duration_months)").order("created_at", { ascending: false }).limit(200);
     lq = showDeleted ? lq.not("deleted_at", "is", null) : lq.is("deleted_at", null);
@@ -263,7 +275,7 @@ export default function Loans() {
         {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted loans only.</span>}
       </Card>
 
-      <Tabs defaultValue="approved">
+      <Tabs value={tab} onValueChange={(v) => { setTab(v); const n = new URLSearchParams(sp); n.set("status", v); setSp(n, { replace: true }); }}>
         <TabsList>
           <TabsTrigger value="approved">{t("activePaid")}</TabsTrigger>
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>

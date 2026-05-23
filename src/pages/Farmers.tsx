@@ -228,6 +228,7 @@ export default function Farmers() {
   const [page, setPage] = useState(0);
   const [showDeleted, setShowDeleted] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
+  const [periodFilter, setPeriodFilter] = useState<"all" | "this_month" | "today">("all");
   const PAGE = 15;
 
   // Create
@@ -265,21 +266,26 @@ export default function Farmers() {
     }
   }, []);
 
-  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted, statusFilter]);
+  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted, statusFilter, periodFilter]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
   // Open the edit dialog when navigated with ?edit=<farmerId>
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     const editId = searchParams.get("edit");
-    if (!editId || editOpen) return;
-    (async () => {
-      const { data } = await supabase.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
-      if (data) openEdit(data);
-      const next = new URLSearchParams(searchParams);
-      next.delete("edit");
-      setSearchParams(next, { replace: true });
-    })();
+    if (editId && !editOpen) {
+      (async () => {
+        const { data } = await supabase.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
+        if (data) openEdit(data);
+        const next = new URLSearchParams(searchParams);
+        next.delete("edit");
+        setSearchParams(next, { replace: true });
+      })();
+    }
+    const s = searchParams.get("status");
+    if (s === "active" || s === "inactive" || s === "all") setStatusFilter(s as any);
+    const p = searchParams.get("period");
+    if (p === "this_month" || p === "today" || p === "all") setPeriodFilter(p as any);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -314,6 +320,13 @@ export default function Farmers() {
     let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     qy = showDeleted ? qy.not("deleted_at", "is", null) : qy.is("deleted_at", null);
     if (statusFilter !== "all") qy = qy.eq("status", statusFilter);
+    if (periodFilter !== "all") {
+      const now = new Date();
+      const from = periodFilter === "today"
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        : new Date(now.getFullYear(), now.getMonth(), 1);
+      qy = qy.gte("created_at", from.toISOString());
+    }
     if (q) {
       const base = `name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`;
       const idClause = dagFarmerIds.length ? `,id.in.(${dagFarmerIds.join(",")})` : "";
@@ -730,6 +743,14 @@ export default function Farmers() {
                 <SelectItem value="active">{tx("Active only", "শুধু সক্রিয়")}</SelectItem>
                 <SelectItem value="inactive">{tx("Inactive only", "শুধু নিষ্ক্রিয়")}</SelectItem>
                 <SelectItem value="all">{tx("All statuses", "সব স্ট্যাটাস")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={periodFilter} onValueChange={(v: any) => { setPeriodFilter(v); setPage(0); }}>
+              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tx("Any period", "যেকোনো সময়")}</SelectItem>
+                <SelectItem value="this_month">{tx("This month", "এই মাস")}</SelectItem>
+                <SelectItem value="today">{tx("Today", "আজ")}</SelectItem>
               </SelectContent>
             </Select>
             {isSuper && (

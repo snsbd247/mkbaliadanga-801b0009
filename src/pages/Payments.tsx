@@ -59,6 +59,7 @@ export default function Payments() {
   const [previewSerial, setPreviewSerial] = useState<string>("");
   const [autoAmount, setAutoAmount] = useState<number>(0);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [period, setPeriod] = useState<"all" | "today" | "this_month">((params.get("period") as any) === "today" || (params.get("period") as any) === "this_month" ? params.get("period") as any : "all");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
   const [savingsBalance, setSavingsBalance] = useState<number>(0);
@@ -102,9 +103,13 @@ export default function Payments() {
   }
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
-  useEffect(() => { load(); /* refresh on toggle */ }, [showDeleted]);
+  useEffect(() => { load(); /* refresh on filters */ }, [showDeleted, period]);
   useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenLoans([]); setOpenIrr([]); setSavingsBalance(0); } }, [farmerId]);
-  useEffect(() => { const f = params.get("farmer"); if (f) setFarmerId(f); }, [params]);
+  useEffect(() => {
+    const f = params.get("farmer"); if (f) setFarmerId(f);
+    const pr = params.get("period");
+    if (pr === "today" || pr === "this_month" || pr === "all") setPeriod(pr);
+  }, [params]);
   useEffect(() => {
     const loan = params.get("loan");
     const amt = params.get("amount");
@@ -143,6 +148,13 @@ export default function Payments() {
   async function load() {
     let pq = supabase.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
     pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
+    if (period !== "all") {
+      const now = new Date();
+      const from = period === "today"
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        : new Date(now.getFullYear(), now.getMonth(), 1);
+      pq = pq.gte("created_at", from.toISOString());
+    }
     const [f, p] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
       pq,
@@ -646,12 +658,22 @@ export default function Payments() {
         </Card>
 
         <Card className="p-5 lg:col-span-2">
-          <div className="flex items-center justify-between mb-3 gap-3">
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <h2 className="font-semibold">{t("recentTransactions")}</h2>
-            <Label className="text-sm flex items-center gap-2 cursor-pointer">
-              <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
-              <span className="text-xs">{t("showArchived")}</span>
-            </Label>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
+                <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{tx("All time", "সবসময়")}</SelectItem>
+                  <SelectItem value="today">{tx("Today", "আজ")}</SelectItem>
+                  <SelectItem value="this_month">{tx("This month", "এই মাস")}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Label className="text-sm flex items-center gap-2 cursor-pointer">
+                <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+                <span className="text-xs">{t("showArchived")}</span>
+              </Label>
+            </div>
           </div>
           <Table>
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>Receipt #</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
