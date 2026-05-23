@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
       if (sender && sender.trim()) params.set("sender", sender.trim());
       const safeRequestUrl = "https://api.greenweb.com.bd/api.php?" + params.toString();
 
-      const r = await sendViaGreenWeb(mobile, message, sender);
+      const r = await sendViaGreenWeb(token, mobile, message, sender);
       const tested_at = new Date().toISOString();
 
       // Persist last test result to sms_settings.config.last_test (no token bytes)
