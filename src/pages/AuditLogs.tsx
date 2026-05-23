@@ -248,6 +248,65 @@ export default function AuditLogs() {
     toast.success(`Exported ${rows.length} entries`);
   }
 
+  function exportXlsx() {
+    const rows = filtered;
+    if (rows.length === 0) { toast.error("Nothing to export"); return; }
+    const data = rows.map((l) => {
+      const u = profiles[l.user_id];
+      const o = offices[l.office_id];
+      return {
+        "Date/Time": new Date(l.created_at).toLocaleString(),
+        Action: l.action ?? "",
+        Entity: l.entity ?? "",
+        Office: o?.name ?? "",
+        User: u?.full_name ?? u?.username ?? (l.user_id ? l.user_id.slice(0, 8) : "system"),
+        "Entity ID": l.entity_id ?? "",
+        "Old Values": JSON.stringify(l.old_values ?? null),
+        "New Values": JSON.stringify(l.new_values ?? null),
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Audit Logs");
+    XLSX.writeFile(wb, `audit-logs-${dateFrom}-to-${dateTo}.xlsx`);
+    toast.success(`Exported ${rows.length} entries`);
+  }
+
+  function exportDocx() {
+    const rows = filtered;
+    if (rows.length === 0) { toast.error("Nothing to export"); return; }
+    const tableRows = rows.map((l) => {
+      const u = profiles[l.user_id];
+      const o = offices[l.office_id];
+      const userName = u?.full_name ?? u?.username ?? (l.user_id ? l.user_id.slice(0, 8) : "system");
+      return `<tr>
+        <td>${new Date(l.created_at).toLocaleString()}</td>
+        <td>${l.action ?? ""}</td>
+        <td>${l.entity ?? ""}</td>
+        <td>${o?.name ?? ""}</td>
+        <td>${userName}</td>
+        <td>${l.entity_id ?? ""}</td>
+      </tr>`;
+    }).join("");
+    const html = `<!DOCTYPE html><html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>Audit Logs</title>
+      <style>body{font-family:Arial,sans-serif;font-size:10pt}table{border-collapse:collapse;width:100%}th,td{border:1px solid #999;padding:4px;vertical-align:top}th{background:#333;color:#fff}</style>
+      </head><body>
+      <h2>Audit Logs (${dateFrom} → ${dateTo})</h2>
+      <p>${rows.length} entries</p>
+      <table><thead><tr><th>Date/Time</th><th>Action</th><th>Entity</th><th>Office</th><th>User</th><th>Entity ID</th></tr></thead>
+      <tbody>${tableRows}</tbody></table>
+      </body></html>`;
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `audit-logs-${dateFrom}-to-${dateTo}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} entries`);
+  }
+
   return (
     <>
       <PageHeader
