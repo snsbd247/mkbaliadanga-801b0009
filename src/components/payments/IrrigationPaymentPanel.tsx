@@ -19,6 +19,7 @@ import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
+import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 
 type Invoice = {
   id: string;
