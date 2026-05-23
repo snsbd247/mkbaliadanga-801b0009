@@ -40,7 +40,7 @@ type Invoice = {
 
 export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFarmerId?: string; onPaid?: () => void }) {
   const { t, tx, lang } = useLang();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [farmerId, setFarmerId] = useState(initialFarmerId ?? "");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -470,6 +470,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                         <Input
                           type="number" className="h-7 text-xs text-right w-24 ml-auto font-mono"
                           value={fee}
+                          disabled={!isAdmin}
+                          title={!isAdmin ? tx("Only admin can edit delay fee", "শুধু অ্যাডমিন বিলম্ব ফি সম্পাদনা করতে পারেন") : undefined}
                           onChange={(e) => setDelayFee(p => ({ ...p, [inv.id]: Number(e.target.value || 0) }))}
                         />
                       </TableCell>

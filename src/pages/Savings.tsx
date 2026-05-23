@@ -33,7 +33,15 @@ export default function Savings() {
   const [txns, setTxns] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "" });
+  const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", category: "general" });
+  const [categoryFilter, setCategoryFilter] = useState<string>("__all__");
+  const SAV_CATEGORIES = [
+    { v: "general", l: tx("General", "সাধারণ") },
+    { v: "hawlat", l: tx("Hawlat", "হাওলাত") },
+    { v: "bank", l: tx("Bank", "ব্যাংক") },
+    { v: "donation", l: tx("Donation", "দান") },
+    { v: "misc", l: tx("Misc", "বিবিধ") },
+  ];
   const [plans, setPlans] = useState<any[]>([]);
   const [farmerPlans, setFarmerPlans] = useState<any[]>([]);
   const [planOpen, setPlanOpen] = useState(false);
@@ -230,6 +238,7 @@ export default function Savings() {
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
       receipt_no: finalReceiptNo,
+      category: form.category || "general",
     };
     const { error } = await supabase.from("savings_transactions").insert(payload);
     if (error) return toast.error(error.message);
@@ -247,7 +256,7 @@ export default function Savings() {
     }
     toast.success(isWithdraw ? t("pgSavWithdrawSubmitted" as any) : t("pgSavSaved" as any));
     setOpen(false);
-    setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "" });
+    setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", category: "general" });
     load();
   }
   async function decide(id: string, status: "approved" | "rejected") {
@@ -331,9 +340,10 @@ export default function Savings() {
     });
   }
 
-  const pending = txns.filter(x => x.status === "pending");
-  const approved = txns.filter(x => x.status === "approved");
-  const all = txns;
+  const filteredTxns = categoryFilter === "__all__" ? txns : txns.filter((x: any) => (x.category ?? "general") === categoryFilter);
+  const pending = filteredTxns.filter(x => x.status === "pending");
+  const approved = filteredTxns.filter(x => x.status === "approved");
+  const all = filteredTxns;
 
   return (
     <>
@@ -358,6 +368,14 @@ export default function Savings() {
                 </Select>
               </div>
               <div><Label>{t("amount")}</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: +e.target.value })} /></div>
+              <div><Label>{tx("Category", "ক্যাটাগরি")}</Label>
+                <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SAV_CATEGORIES.map(c => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — leave blank to auto-generate)</span></Label>
                 <Input value={form.receipt_no} placeholder="e.g. 12345" onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
@@ -370,11 +388,21 @@ export default function Savings() {
         </Dialog>
       } />
 
-      <Card className="p-3 mb-3 flex items-center gap-3">
+      <Card className="p-3 mb-3 flex flex-wrap items-center gap-3">
         <Label className="text-sm flex items-center gap-2 cursor-pointer">
           <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
           {t("showArchived")}
         </Label>
+        <div className="flex items-center gap-2">
+          <Label className="text-sm">{tx("Category", "ক্যাটাগরি")}</Label>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{tx("All", "সব")}</SelectItem>
+              {SAV_CATEGORIES.map(c => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         {showDeleted && <span className="text-xs text-muted-foreground">Showing soft-deleted transactions only.</span>}
       </Card>
 
