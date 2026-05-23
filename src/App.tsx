@@ -48,6 +48,8 @@ import LandHistory from "./pages/LandHistory";
 import TemporaryLoans from "./pages/TemporaryLoans";
 import BankAccounts from "./pages/BankAccounts";
 import Vouchers from "./pages/Vouchers";
+import PublicPay from "./pages/PublicPay";
+import PublicPaymentIntents from "./pages/admin/PublicPaymentIntents";
 
 import SmsSettings from "./pages/SmsSettings";
 import SmsLogs from "./pages/SmsLogs";
