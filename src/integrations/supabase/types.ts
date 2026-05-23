@@ -2988,9 +2988,49 @@ export type Database = {
           },
         ]
       }
+      land_change_log: {
+        Row: {
+          change_type: string
+          changed_by: string | null
+          created_at: string
+          farmer_id: string | null
+          id: string
+          land_id: string | null
+          new_values: Json | null
+          office_id: string | null
+          old_values: Json | null
+          remarks: string | null
+        }
+        Insert: {
+          change_type: string
+          changed_by?: string | null
+          created_at?: string
+          farmer_id?: string | null
+          id?: string
+          land_id?: string | null
+          new_values?: Json | null
+          office_id?: string | null
+          old_values?: Json | null
+          remarks?: string | null
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          farmer_id?: string | null
+          id?: string
+          land_id?: string | null
+          new_values?: Json | null
+          office_id?: string | null
+          old_values?: Json | null
+          remarks?: string | null
+        }
+        Relationships: []
+      }
       land_history: {
         Row: {
           created_at: string
+          crop: string | null
           cultivator_farmer_id: string | null
           dag_no: string | null
           farmer_id: string
@@ -3005,9 +3045,12 @@ export type Database = {
           recorded_by: string | null
           remarks: string | null
           season: string | null
+          yield_amount: number | null
+          yield_unit: string | null
         }
         Insert: {
           created_at?: string
+          crop?: string | null
           cultivator_farmer_id?: string | null
           dag_no?: string | null
           farmer_id: string
@@ -3022,9 +3065,12 @@ export type Database = {
           recorded_by?: string | null
           remarks?: string | null
           season?: string | null
+          yield_amount?: number | null
+          yield_unit?: string | null
         }
         Update: {
           created_at?: string
+          crop?: string | null
           cultivator_farmer_id?: string | null
           dag_no?: string | null
           farmer_id?: string
@@ -3039,6 +3085,8 @@ export type Database = {
           recorded_by?: string | null
           remarks?: string | null
           season?: string | null
+          yield_amount?: number | null
+          yield_unit?: string | null
         }
         Relationships: [
           {
@@ -3964,6 +4012,9 @@ export type Database = {
           reference_id: string | null
           status: Database["public"]["Enums"]["payment_status"]
           verify_token: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount: number
@@ -3984,6 +4035,9 @@ export type Database = {
           reference_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           verify_token?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount?: number
@@ -4004,6 +4058,9 @@ export type Database = {
           reference_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           verify_token?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -4111,6 +4168,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      public_payment_intents: {
+        Row: {
+          allocation_hint: string | null
+          amount: number
+          created_at: string
+          farmer_code: string
+          id: string
+          note: string | null
+          payment_id: string | null
+          phone: string | null
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+        }
+        Insert: {
+          allocation_hint?: string | null
+          amount: number
+          created_at?: string
+          farmer_code: string
+          id?: string
+          note?: string | null
+          payment_id?: string | null
+          phone?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+        }
+        Update: {
+          allocation_hint?: string | null
+          amount?: number
+          created_at?: string
+          farmer_code?: string
+          id?: string
+          note?: string | null
+          payment_id?: string | null
+          phone?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       qr_rotation_settings: {
         Row: {
