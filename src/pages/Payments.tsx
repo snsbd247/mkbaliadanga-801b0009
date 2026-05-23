@@ -148,6 +148,13 @@ export default function Payments() {
   async function load() {
     let pq = supabase.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
     pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
+    if (period !== "all") {
+      const now = new Date();
+      const from = period === "today"
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        : new Date(now.getFullYear(), now.getMonth(), 1);
+      pq = pq.gte("created_at", from.toISOString());
+    }
     const [f, p] = await Promise.all([
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
       pq,
