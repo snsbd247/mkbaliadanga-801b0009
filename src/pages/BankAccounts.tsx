@@ -161,6 +161,12 @@ export default function BankAccounts() {
                   <div><Label>Date</Label><Input type="date" value={tx.txn_date} onChange={e => setTx({ ...tx, txn_date: e.target.value })} /></div>
                   <div><Label>Reference</Label><Input value={tx.reference_no} onChange={e => setTx({ ...tx, reference_no: e.target.value })} /></div>
                   <div className="col-span-2"><Label>Note</Label><Input value={tx.note} onChange={e => setTx({ ...tx, note: e.target.value })} /></div>
+                  {(tx.txn_type === "deposit" || tx.txn_type === "withdraw") && (
+                    <label className="col-span-2 flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={!!tx.post_cashbook} onChange={e => setTx({ ...tx, post_cashbook: e.target.checked })} />
+                      <span>Cashbook এ {tx.txn_type === "deposit" ? "expense (Bank Deposit)" : "receipt (Bank Withdraw)"} হিসেবে যোগ করুন</span>
+                    </label>
+                  )}
                 </div>
                 <DialogFooter><Button variant="outline" onClick={() => setOpenT(false)}>Cancel</Button><Button onClick={saveTxn}>Save</Button></DialogFooter>
               </DialogContent>
