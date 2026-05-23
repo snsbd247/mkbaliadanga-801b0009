@@ -132,6 +132,74 @@ export type Database = {
           },
         ]
       }
+      asset_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          asset_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          last_sms_at: string | null
+          location_id: string | null
+          message_bn: string | null
+          message_en: string
+          office_id: string | null
+          resolved_at: string | null
+          severity: string
+          sms_sent_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          asset_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          last_sms_at?: string | null
+          location_id?: string | null
+          message_bn?: string | null
+          message_en: string
+          office_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          sms_sent_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          asset_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          last_sms_at?: string | null
+          location_id?: string | null
+          message_bn?: string | null
+          message_en?: string
+          office_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          sms_sent_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_alerts_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_audit_logs: {
         Row: {
           action_type: string
@@ -765,6 +833,7 @@ export type Database = {
           id: string
           installed_at: string | null
           lifecycle_status: string | null
+          min_stock_level: number
           name_bn: string | null
           name_en: string
           notes: string | null
@@ -774,6 +843,7 @@ export type Database = {
           tracking_mode: Database["public"]["Enums"]["asset_tracking_mode"]
           unit: string | null
           updated_at: string
+          warranty_alert_days: number
           warranty_until: string | null
         }
         Insert: {
@@ -788,6 +858,7 @@ export type Database = {
           id?: string
           installed_at?: string | null
           lifecycle_status?: string | null
+          min_stock_level?: number
           name_bn?: string | null
           name_en: string
           notes?: string | null
@@ -797,6 +868,7 @@ export type Database = {
           tracking_mode?: Database["public"]["Enums"]["asset_tracking_mode"]
           unit?: string | null
           updated_at?: string
+          warranty_alert_days?: number
           warranty_until?: string | null
         }
         Update: {
@@ -811,6 +883,7 @@ export type Database = {
           id?: string
           installed_at?: string | null
           lifecycle_status?: string | null
+          min_stock_level?: number
           name_bn?: string | null
           name_en?: string
           notes?: string | null
@@ -820,6 +893,7 @@ export type Database = {
           tracking_mode?: Database["public"]["Enums"]["asset_tracking_mode"]
           unit?: string | null
           updated_at?: string
+          warranty_alert_days?: number
           warranty_until?: string | null
         }
         Relationships: [
