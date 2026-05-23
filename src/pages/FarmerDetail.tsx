@@ -30,6 +30,7 @@ import { autoReceiptNo } from "@/lib/receiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
 import IrrigationInvoicesTab from "@/components/farmers/IrrigationInvoicesTab";
+import FarmerLandHistoryTab from "@/components/farmers/FarmerLandHistoryTab";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
@@ -724,6 +725,7 @@ export default function FarmerDetail() {
       <Tabs defaultValue="lands">
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
+          <TabsTrigger value="land_history">Land History</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="loans">{t("loans")}</TabsTrigger>}
@@ -916,6 +918,12 @@ export default function FarmerDetail() {
           </Card>
 
         </TabsContent>
+
+        <TabsContent value="land_history">
+          <FarmerLandHistoryTab farmerId={id!} />
+        </TabsContent>
+
+
 
         <TabsContent value="savings">
           <Card><Table>
