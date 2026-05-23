@@ -635,9 +635,10 @@ export default function Payments() {
                   </TableCell>
                   <TableCell className="font-semibold text-success">{money(p.amount)}</TableCell>
                   <TableCell>
-                    <Badge variant={p.status === "approved" ? "default" : p.status === "rejected" ? "destructive" : "secondary"}>
+                    <Badge variant={p.status === "voided" ? "destructive" : p.status === "approved" ? "default" : p.status === "rejected" ? "destructive" : "secondary"}>
                       {p.status ?? "approved"}
                     </Badge>
+                    {p.void_reason && <div className="text-[10px] text-muted-foreground mt-1 max-w-[160px] truncate" title={p.void_reason}>⊘ {p.void_reason}</div>}
                   </TableCell>
                   <TableCell>
                     {p.receipt_url ? (
@@ -655,6 +656,9 @@ export default function Payments() {
                         <Button size="icon" variant="ghost" onClick={() => approvePayment(p)} title={t("approve")}><Check className="h-4 w-4 text-success" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title={t("reject")}><X className="h-4 w-4 text-destructive" /></Button>
                       </>)}
+                      {!showDeleted && isAdmin && p.status === "approved" && !p.voided_at && (
+                        <Button size="sm" variant="outline" onClick={() => voidPayment(p)} title="Void receipt" className="text-destructive">Void</Button>
+                      )}
                       {!showDeleted && (() => {
                         const k = (p.kind as string) || "savings";
                         const kind = (k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings") as "loan" | "irrigation" | "savings";
