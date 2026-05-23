@@ -16,6 +16,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
+import { exportTableDoc } from "@/lib/wordExports";
 import { useBranding } from "@/lib/branding";
 
 const RECEIPT_KINDS = [
@@ -277,6 +278,22 @@ export default function Cashbook() {
               { label: t("irrigationOutstandingDue"), value: totals.irrDue },
             ],
           })}><FileDown className="h-4 w-4 mr-1" />{t("auditReportPdf")}</Button>
+          <Button size="sm" variant="outline" onClick={() => exportTableDoc(t("auditReport"),
+            [t("description"), t("amount")],
+            [
+              [t("openingCash"), Number(openingCash || 0)],
+              [t("totalIncomeReceipts"), totals.income],
+              [t("totalExpenseAll"), totals.expense],
+              [t("closingCash"), totals.cashBalance],
+              [t("savingsBalance"), totals.savBal],
+              [t("loanIssued"), totals.loanIssued],
+              [t("loanCollected"), totals.loanCollected],
+              [t("loanOutstandingDue"), totals.loanDue],
+              [t("irrigationCharged"), totals.irrCharged],
+              [t("irrigationCollected"), totals.irrCollected],
+              [t("irrigationOutstandingDue"), totals.irrDue],
+            ],
+            { range: { from, to } })}><FileDown className="h-4 w-4 mr-1" />Word</Button>
         </div>
       </Card>
 
@@ -297,6 +314,10 @@ export default function Cashbook() {
             onXlsx={() => exportExcel("cash-book", t("cbCashBook" as any),
               cashbookEntries.map(r => ({ Date: r.date, Kind: r.kind, Description: r.label, Ref: r.ref, Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })),
               { from, to })}
+            onDoc={() => exportTableDoc(t("cbCashBook" as any),
+              [t("date"), t("type"), t("cbDescription" as any), t("cbRef" as any), t("income"), t("expense"), t("balance")],
+              cashbookEntries.map(r => [fmtDate(r.date), r.kind, r.label, r.ref, r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
+              { range: { from, to } })}
           />
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
@@ -410,6 +431,21 @@ export default function Cashbook() {
                 [t("irrigationOutstandingDue"), totals.irrDue],
               ],
               { from, to })}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
+            <Button size="sm" variant="outline" onClick={() => exportTableDoc(t("auditReport"),
+              [t("description"), t("amount")],
+              [
+                [t("totalIncomeReceipts"), totals.income],
+                [t("totalExpenseAll"), totals.expense],
+                [t("closingCash"), totals.cashBalance],
+                [t("savingsBalance"), totals.savBal],
+                [t("loanIssued"), totals.loanIssued],
+                [t("loanCollected"), totals.loanCollected],
+                [t("loanOutstandingDue"), totals.loanDue],
+                [t("irrigationCharged"), totals.irrCharged],
+                [t("irrigationCollected"), totals.irrCollected],
+                [t("irrigationOutstandingDue"), totals.irrDue],
+              ],
+              { range: { from, to } })}><FileDown className="h-4 w-4 mr-1" />Word</Button>
           </div>
           <Card className="p-6 print:shadow-none print:border-0">
             <div className="text-center mb-6">
@@ -458,12 +494,13 @@ export default function Cashbook() {
   );
 }
 
-function ExportBar({ onPdf, onXlsx }: { onPdf: () => void; onXlsx: () => void }) {
+function ExportBar({ onPdf, onXlsx, onDoc }: { onPdf: () => void; onXlsx: () => void; onDoc?: () => void }) {
   const { t } = useLang();
   return (
     <div className="flex justify-end gap-2 mb-3">
       <Button size="sm" variant="outline" onClick={onPdf}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
       <Button size="sm" variant="outline" onClick={onXlsx}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("exportExcel")}</Button>
+      {onDoc && <Button size="sm" variant="outline" onClick={onDoc}><FileDown className="h-4 w-4 mr-1" />Word</Button>}
     </div>
   );
 }

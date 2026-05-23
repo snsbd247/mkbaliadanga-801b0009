@@ -208,7 +208,7 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
     ["কৃষকের নাম", `${farmer.name ?? "—"}${farmer.farmer_code ? " (" + farmer.farmer_code + ")" : ""}`],
     ["গ্রাম / মোবাইল", `${farmer.village ?? "—"}${farmer.mobile ? " / " + farmer.mobile : ""}`],
     ["জমির ধরন", d.is_borga ? "বর্গাদার" : "নিজ মালিক"],
-    [mouzaLabel, `${land.mouza ?? "—"} / ${formatLandSize(land.land_size) ?? "—"}`],
+    [mouzaLabel, `${land.mouza ?? "—"} / ${formatLandSize(land.land_size, "with_katha") ?? "—"}`],
     [dagLabel, dagJoined || "—"],
     ["সিজন", seasonLabel || "—"],
     ["রেট উৎস", `${srcBn}${d.irrigation_category_name ? " — " + d.irrigation_category_name : ""}`],
