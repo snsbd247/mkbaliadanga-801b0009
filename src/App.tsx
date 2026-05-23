@@ -169,6 +169,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<FarmerPortalLogin />} />
               <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
+              <Route path="/pay" element={<PublicPay />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:token" element={<VerifyReceipt />} />
