@@ -51,3 +51,6 @@ verify_jwt = false
 
 [functions.asset-depreciation-run]
 verify_jwt = false
+
+[functions.sms-delivery-report]
+verify_jwt = false

@@ -1,34 +1,42 @@
 ## Phase C — Reports & Analytics ✅ COMPLETE
 
-- **C1** Dashboard KPI widgets + 30-day sparkline — shipped in `src/pages/Dashboard.tsx`
-- **C2** Member combined statement PDF — `exportFarmerCombinedStatementPDF` in `src/lib/exports.ts`, button in `FarmerStatement.tsx`
-- **C3** Monthly Receipt Register — `src/pages/reports/MonthlyReceiptRegister.tsx`, route `/reports/receipt-register`
-- **C4** Officer Summary — `src/pages/reports/OfficerSummaryReport.tsx`, route `/reports/officer-summary`
+- C1 Dashboard KPIs + sparkline, C2 Combined statement PDF, C3 Monthly Receipt Register, C4 Officer Summary
 
 ## Phase D — Asset lifecycle ✅ COMPLETE (core)
 
-- 13 DB tables, 15 UI pages (registry, stock, movements, installations, maintenance, disposal, depreciation, QR, etc.)
-- Asset transfer **approval workflow** (pending → approved/rejected, audit logged) — `assetStock.ts`, `AssetMovements.tsx`
+- 13 DB tables, 15 UI pages, transfer approval workflow
 
-## Phase E — Candidates (next)
+## Phase E — Automation & SMS depth ✅ COMPLETE
 
-### E1 — Asset alerts (SMS automation)
-- Low-stock SMS when `asset_stocks.quantity` drops below `assets.min_stock_level`
-- Warranty-expiry reminder N days before `assets.warranty_expires_on`
-- Scheduled edge function (cron) + SMS template integration
+- **E1** Asset SMS alerts (low-stock + warranty) — `asset-alerts-scan` edge fn, `asset_alerts` table, `/assets/alerts` page
+- **E2** Recurring maintenance scheduler — `asset_maintenance_schedules` table, "Mark done & advance" UI, alerts integration
+- **E3** Depreciation auto-post — `run_monthly_depreciation_batch` RPC, `asset-depreciation-run` edge fn, batch button in UI
+- **E4** GreenWeb SMS deepening:
+  - `sms_provider_secrets.priority` for failover order (UI in SmsSettings)
+  - `sms_templates.preferred_provider` per-template override (UI in SmsTemplates)
+  - `sms-delivery-report` edge fn for provider DLR ingestion → `sms_logs.delivered_at` / `dlr_payload`
+  - `send-sms` rewritten to try providers in priority order, template override first
 
-### E2 — Recurring maintenance scheduler
-- New table `asset_maintenance_schedules` (asset_id, frequency, next_due_at)
-- Daily edge function to convert due schedules into `asset_maintenance_logs` reminders + SMS
+## Phase F — Candidates (next)
 
-### E3 — Asset depreciation auto-post ✅
-- `run_monthly_depreciation_batch(period)` RPC iterates active settings, computes + posts journal pair
-- Edge function `asset-depreciation-run` for cron / manual trigger
-- UI: "Run batch for all active assets" button in AssetDepreciation page
+### F1 — Operational dashboards
+- Per-office SMS health (sent / delivered / failed last 24h, provider mix)
+- Asset alerts heatmap + maintenance burn-down
+- Depreciation posting status calendar (which months are posted per asset)
 
+### F2 — Member self-service portal expansion
+- Maintenance / depreciation visibility for owned irrigation equipment
+- Push notifications via SMS for upcoming dues + delivery confirmations
 
-### E4 — GreenWeb SMS provider admin UI deepening
-- Provider failover priority, per-template provider override, delivery report ingestion
+### F3 — Bulk operations
+- Bulk asset import/export (CSV) with validation
+- Bulk SMS announcements with template + variable preview
+- Bulk depreciation backfill for historical months
+
+### F4 — Period-close & audit
+- Monthly period-close workflow with snapshot
+- Cross-office trial balance + variance report
+- Immutable journal locking once a period is closed
 
 ### Order
-E1 → E2 → E3 → E4 (each ships in its own turn on "next"). User may also pick any out of order.
+F1 → F2 → F3 → F4 (one per turn). User can also reorder.

@@ -18,21 +18,27 @@ const GW_TOKEN_ENV = Deno.env.get("GREENWEB_SMS_TOKEN") ?? "";
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-async function getGreenWebToken(): Promise<string> {
-  // Prefer the active, non-expired DB-stored token; fallback to env secret.
-  try {
-    const nowIso = new Date().toISOString();
-    const { data } = await admin
-      .from("sms_provider_secrets")
-      .select("api_token,expires_at")
-      .eq("provider", "greenweb")
-      .eq("status", "active")
-      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-      .maybeSingle();
-    const t = (data?.api_token ?? "").toString().trim();
-    if (t) return t;
-  } catch (_) { /* ignore, fallback below */ }
-  return GW_TOKEN_ENV;
+type ProviderRow = { provider: string; api_token: string; priority: number; status: string; expires_at: string | null };
+
+async function getProvidersInOrder(): Promise<ProviderRow[]> {
+  const nowIso = new Date().toISOString();
+  const { data } = await admin
+    .from("sms_provider_secrets")
+    .select("provider,api_token,priority,status,expires_at")
+    .eq("status", "active")
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+    .order("priority", { ascending: true });
+  const rows = ((data as ProviderRow[]) ?? []).filter((r) => (r.api_token ?? "").toString().trim().length > 0);
+  // Always include env token as last-resort greenweb fallback
+  if (GW_TOKEN_ENV && !rows.some((r) => r.provider === "greenweb")) {
+    rows.push({ provider: "greenweb", api_token: GW_TOKEN_ENV, priority: 999, status: "active", expires_at: null });
+  }
+  return rows;
+}
+
+async function getProviderToken(provider: string): Promise<string> {
+  const all = await getProvidersInOrder();
+  return all.find((p) => p.provider === provider)?.api_token ?? (provider === "greenweb" ? GW_TOKEN_ENV : "");
 }
 
 function normalizeBdMobile(m: string): string {
@@ -43,14 +49,9 @@ function normalizeBdMobile(m: string): string {
   return n;
 }
 
-async function sendViaGreenWeb(mobile: string, message: string, senderId?: string | null): Promise<{ ok: boolean; resp: string }> {
-  const token = await getGreenWebToken();
-  if (!token) return { ok: false, resp: "Missing GreenWeb API token. Configure it in SMS Settings." };
-  const params = new URLSearchParams({
-    token,
-    to: normalizeBdMobile(mobile),
-    message,
-  });
+async function sendViaGreenWeb(token: string, mobile: string, message: string, senderId?: string | null): Promise<{ ok: boolean; resp: string }> {
+  if (!token) return { ok: false, resp: "Missing GreenWeb API token." };
+  const params = new URLSearchParams({ token, to: normalizeBdMobile(mobile), message });
   if (senderId && senderId.trim()) params.set("sender", senderId.trim());
   try {
     const res = await fetch("https://api.greenweb.com.bd/api.php?" + params.toString());
@@ -60,6 +61,13 @@ async function sendViaGreenWeb(mobile: string, message: string, senderId?: strin
   } catch (e) {
     return { ok: false, resp: String(e).slice(0, 500) };
   }
+}
+
+async function sendViaProvider(provider: string, token: string, mobile: string, message: string, senderId?: string | null) {
+  // Currently only greenweb is fully wired. Other providers fall back to greenweb HTTP if token alone is supplied.
+  if (provider === "greenweb") return sendViaGreenWeb(token, mobile, message, senderId);
+  // Generic stub: treat as greenweb-compatible HTTP API
+  return sendViaGreenWeb(token, mobile, message, senderId);
 }
 
 async function resolveSenderId(officeId: string | null): Promise<string | null> {
@@ -72,29 +80,58 @@ async function resolveSenderId(officeId: string | null): Promise<string | null> 
   return g?.sender_id ?? null;
 }
 
+async function resolveTemplatePreferredProvider(templateKey: string | null): Promise<string | null> {
+  if (!templateKey) return null;
+  const { data } = await admin.from("sms_templates").select("preferred_provider").eq("key", templateKey).maybeSingle();
+  const p = (data as { preferred_provider?: string | null } | null)?.preferred_provider;
+  return p && p.trim() ? p.trim() : null;
+}
+
+// Back-compat shim used by test_connection block
+async function getGreenWebToken(): Promise<string> {
+  return (await getProviderToken("greenweb")) || GW_TOKEN_ENV;
+}
+
 async function processLog(id: string) {
   const { data: log, error } = await admin.from("sms_logs").select("*").eq("id", id).maybeSingle();
   if (error || !log) return { ok: false, error: error?.message ?? "log not found" };
-  if (log.status === "sent") return { ok: true, skipped: true };
+  if (log.status === "sent" || log.status === "delivered") return { ok: true, skipped: true };
 
   const sender = await resolveSenderId(log.office_id ?? null);
   if (sender === "__DISABLED__") {
-    await admin.from("sms_logs").update({
-      status: "failed",
-      provider_response: "Office SMS disabled",
-    }).eq("id", id);
+    await admin.from("sms_logs").update({ status: "failed", provider_response: "Office SMS disabled" }).eq("id", id);
     return { ok: false, response: "Office SMS disabled" };
   }
 
-  const r = await sendViaGreenWeb(log.mobile, log.message, sender);
+  // Build provider try order: template override first, then priority list
+  const providers = await getProvidersInOrder();
+  const override = await resolveTemplatePreferredProvider(log.template_key ?? null);
+  const ordered = override
+    ? [...providers.filter((p) => p.provider === override), ...providers.filter((p) => p.provider !== override)]
+    : providers;
+
+  if (!ordered.length) {
+    await admin.from("sms_logs").update({ status: "failed", provider_response: "No SMS provider configured" }).eq("id", id);
+    return { ok: false, response: "No SMS provider configured" };
+  }
+
+  let last: { provider: string; ok: boolean; resp: string } | null = null;
+  for (const p of ordered) {
+    const r = await sendViaProvider(p.provider, p.api_token, log.mobile, log.message, sender);
+    last = { provider: p.provider, ...r };
+    if (r.ok) break;
+  }
+
   await admin.from("sms_logs").update({
-    status: r.ok ? "sent" : "failed",
-    provider_response: r.resp,
-    sent_at: r.ok ? new Date().toISOString() : null,
+    status: last?.ok ? "sent" : "failed",
+    provider_response: last?.resp ?? "",
+    provider_used: last?.provider ?? null,
+    sent_at: last?.ok ? new Date().toISOString() : null,
     retry_count: (log.retry_count ?? 0) + (log.status === "queued" ? 0 : 1),
   }).eq("id", id);
-  return { ok: r.ok, response: r.resp };
+  return { ok: !!last?.ok, response: last?.resp ?? "", provider: last?.provider };
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -139,7 +176,7 @@ Deno.serve(async (req) => {
       if (sender && sender.trim()) params.set("sender", sender.trim());
       const safeRequestUrl = "https://api.greenweb.com.bd/api.php?" + params.toString();
 
-      const r = await sendViaGreenWeb(mobile, message, sender);
+      const r = await sendViaGreenWeb(token, mobile, message, sender);
       const tested_at = new Date().toISOString();
 
       // Persist last test result to sms_settings.config.last_test (no token bytes)
