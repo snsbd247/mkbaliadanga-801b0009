@@ -72,7 +72,8 @@ export default function Dashboard() {
                          sum(savingsData.filter(s => s.status === "approved" && s.type === "withdraw"), "amount");
     const totalLoan = sum(loansData.filter(l => l.status === "approved"), "total_payable");
     const irrCollection = sum(irrData, "paid_amount");
-    const totalDue = sum(irrData, "due_amount") + sum(loansData.filter(l => l.status === "approved"), "total_payable");
+    const irrigationDue = sum(irrData, "due_amount");
+    const loanDue = sum(loansData.filter(l => l.status === "approved"), "total_payable");
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
     const { data: monthPayAll } = await supabase
@@ -90,7 +91,8 @@ export default function Dashboard() {
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success" },
       { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock },
-      { label: t("totalDue"), value: money(totalDue), icon: AlertTriangle, tone: "danger" },
+      { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger" },
+      { label: lang === "bn" ? "ঋণের বাকি" : "Loan Due", value: money(loanDue), icon: HandCoins, tone: "danger" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default" },
     ]);
     setRecent(paymentsData);
