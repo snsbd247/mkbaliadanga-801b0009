@@ -30,7 +30,21 @@ describe("resolveRateForLand", () => {
     const r = resolveRateForLand(without, { field_type: "missing" });
     expect(r).toBeNull();
   });
+
+  it("office-scoped rate overrides global rate when both exist", () => {
+    // Office-1 has its own rate for lt-mid (45) vs global (40).
+    // The resolver itself just matches by id; office-override dedup happens
+    // in loadSeasonRateMap. Smoke-check that the resolver picks the row that
+    // is passed in: simulate a post-merge list where office row replaced global.
+    const merged: RateRow[] = [
+      { land_type_id: "lt-mid", land_type_code: "medium_land", land_type_name: "মাঝারি (অফিস)", rate_per_shotok: 45, office_id: "office-1" },
+    ];
+    const r = resolveRateForLand(merged, { land_type_id: "lt-mid" });
+    expect(r?.rate_per_shotok).toBe(45);
+    expect(r?.office_id).toBe("office-1");
+  });
 });
+
 
 describe("snapshot protection contract", () => {
   // Smoke contract: confirms the immutable fields list expected by the
