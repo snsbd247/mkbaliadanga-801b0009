@@ -10,10 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, ArrowRightLeft, Banknote } from "lucide-react";
+import { Plus, ArrowRightLeft, Banknote, FileDown, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 
 const sb = supabase as any;
 const TXN_TYPES = ["deposit", "withdraw", "charge", "interest"] as const;
