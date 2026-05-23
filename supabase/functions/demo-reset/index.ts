@@ -1048,6 +1048,8 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
           if (modules.includes("accounting")) steps.push({ key: "accounting_period", label: "চলতি অর্থবছরের পিরিয়ড open", fn: async () => { await seedAccountingPeriod(admin, officeId); }});
+          if (modules.includes("bank")) steps.push({ key: "bank", label: "ব্যাংক একাউন্ট ও লেনদেন seed", fn: async () => { const b = await seedBankAccounts(admin, officeId); summary.bank = b; }});
+          if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
