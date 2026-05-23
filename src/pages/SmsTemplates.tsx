@@ -27,12 +27,14 @@ type Template = {
   body: string;
   variables: string[] | null;
   is_active: boolean;
+  preferred_provider: string | null;
   updated_at: string;
 };
 
 const EMPTY: Omit<Template, "id" | "updated_at"> = {
-  key: "", name: "", body: "", variables: [], is_active: true,
+  key: "", name: "", body: "", variables: [], is_active: true, preferred_provider: null,
 };
+
 
 export default function SmsTemplates() {
   const { lang } = useLang();
