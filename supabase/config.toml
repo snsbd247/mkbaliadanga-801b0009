@@ -48,3 +48,6 @@ verify_jwt = false
 
 [functions.asset-alerts-scan]
 verify_jwt = false
+
+[functions.asset-depreciation-run]
+verify_jwt = false
