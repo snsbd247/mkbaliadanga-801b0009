@@ -841,6 +841,8 @@ function estimateImport(modules: string[], size: number) {
   if (modules.includes("accounting")) c["accounting_periods"] = 1;
   if (modules.includes("irrigation") && modules.includes("farmers")) c["irrigation_due_promises"] = 5;
   if (modules.includes("expenses")) c["expenses"] = 3;
+  if (modules.includes("bank")) { c["bank_accounts"] = 3; c["bank_transactions"] = 6; }
+  if (modules.includes("farmers")) c["farmer_notes"] = 10;
   return c;
 }
 
