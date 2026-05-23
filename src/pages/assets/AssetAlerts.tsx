@@ -115,7 +115,8 @@ export default function AssetAlerts() {
   const typeLabel = (t: string) =>
     t === "low_stock" ? tx("Low stock", "স্টক কম")
     : t === "warranty_expiring" ? tx("Warranty expiring", "ওয়ারেন্টি শেষের পথে")
-    : t === "warranty_expired" ? tx("Warranty expired", "ওয়ারেন্টি শেষ") : t;
+    : t === "warranty_expired" ? tx("Warranty expired", "ওয়ারেন্টি শেষ")
+    : t === "maintenance_due" ? tx("Maintenance due", "মেরামত বকেয়া") : t;
 
   const sevColor = (s: string) =>
     s === "critical" ? "destructive" : s === "warning" ? "default" : "secondary";
@@ -198,6 +199,7 @@ export default function AssetAlerts() {
                 <SelectItem value="low_stock">{typeLabel("low_stock")}</SelectItem>
                 <SelectItem value="warranty_expiring">{typeLabel("warranty_expiring")}</SelectItem>
                 <SelectItem value="warranty_expired">{typeLabel("warranty_expired")}</SelectItem>
+                <SelectItem value="maintenance_due">{typeLabel("maintenance_due")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

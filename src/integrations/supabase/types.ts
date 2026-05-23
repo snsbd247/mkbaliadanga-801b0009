@@ -605,6 +605,62 @@ export type Database = {
           },
         ]
       }
+      asset_maintenance_schedules: {
+        Row: {
+          active: boolean
+          asset_id: string
+          created_at: string
+          created_by: string | null
+          frequency_days: number
+          id: string
+          last_generated_alert_at: string | null
+          next_due_at: string
+          notes: string | null
+          office_id: string | null
+          title: string
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          active?: boolean
+          asset_id: string
+          created_at?: string
+          created_by?: string | null
+          frequency_days: number
+          id?: string
+          last_generated_alert_at?: string | null
+          next_due_at: string
+          notes?: string | null
+          office_id?: string | null
+          title: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          active?: boolean
+          asset_id?: string
+          created_at?: string
+          created_by?: string | null
+          frequency_days?: number
+          id?: string
+          last_generated_alert_at?: string | null
+          next_due_at?: string
+          notes?: string | null
+          office_id?: string | null
+          title?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_maintenance_schedules_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_movements: {
         Row: {
           applied: boolean
