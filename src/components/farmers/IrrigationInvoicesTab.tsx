@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { money } from "@/lib/format";
+import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
-import { Wallet, ArrowUpDown } from "lucide-react";
+import { Wallet, ArrowUpDown, FileDown } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
+import { exportTablePDF } from "@/lib/exports";
 
 type Inv = any;
 type SortKey = "due_date" | "payable_amount" | "due_amount" | "paid_amount" | "invoice_status" | "generated_at";
@@ -122,6 +123,35 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
     nav(`/payments?farmer=${farmerId}&irr=${ids.join(",")}`);
   }
 
+  async function combinedReceipt() {
+    if (selected.size === 0) return toast.error(t("irr_selectAtLeastOne" as any));
+    const sel = filtered.filter((r) => selected.has(r.id));
+    // Group by season label for visual grouping
+    const sorted = [...sel].sort((a, b) => {
+      const sa = `${a.seasons?.year ?? ""} ${a.seasons?.name ?? a.seasons?.type ?? ""}`;
+      const sb = `${b.seasons?.year ?? ""} ${b.seasons?.name ?? b.seasons?.type ?? ""}`;
+      return sa.localeCompare(sb);
+    });
+    const totalPayable = sorted.reduce((s, r) => s + Number(r.payable_amount || 0), 0);
+    const totalPaid = sorted.reduce((s, r) => s + Number(r.paid_amount || 0), 0);
+    const totalDue = sorted.reduce((s, r) => s + Number(r.due_amount || 0), 0);
+    const rows: any[][] = sorted.map((r) => [
+      r.invoice_no ?? "—",
+      `${r.seasons?.name ?? r.seasons?.type ?? ""} ${r.seasons?.year ?? ""}`.trim(),
+      `${r.lands?.mouza ?? ""}${r.lands?.dag_no ? " · " + r.lands.dag_no : ""}`,
+      fmtDate(r.due_date),
+      money(r.payable_amount),
+      money(r.paid_amount),
+      money(r.due_amount),
+    ]);
+    rows.push(["", "", "", "মোট (Total)", money(totalPayable), money(totalPaid), money(totalDue)]);
+    await exportTablePDF(
+      `Combined Irrigation Receipt — ${sel.length} invoice(s)`,
+      ["Invoice", "Season", "Land", "Due Date", "Payable", "Paid", "Due"],
+      rows,
+    );
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-3">
@@ -159,6 +189,7 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>{t("irr_reset" as any)}</Button>
+              <Button size="sm" variant="outline" onClick={combinedReceipt}><FileDown className="h-4 w-4 mr-1" /> মিলিত রসিদ</Button>
               <Button size="sm" onClick={payNow}><Wallet className="h-4 w-4 mr-1" /> {t("irr_payNow" as any)}</Button>
             </div>
           </div>

@@ -10,10 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, ArrowRightLeft, Banknote } from "lucide-react";
+import { Plus, ArrowRightLeft, Banknote, FileDown, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 
 const sb = supabase as any;
 const TXN_TYPES = ["deposit", "withdraw", "charge", "interest"] as const;
@@ -29,6 +30,10 @@ export default function BankAccounts() {
   const [a, setA] = useState<any>({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", opening_balance: 0, is_active: true });
   const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
   const [xf, setXf] = useState<any>({ from_id: "", to_id: "", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
+
+  const [dFrom, setDFrom] = useState("");
+  const [dTo, setDTo] = useState("");
+  const [dAccount, setDAccount] = useState<string>("__all__");
 
   useEffect(() => { document.title = "Bank Accounts — MK Baliadanga"; load(); }, []);
 
@@ -204,6 +209,7 @@ export default function BankAccounts() {
         <TabsList>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
+          <TabsTrigger value="deposits">Deposits Report</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
           <Card className="overflow-x-auto"><Table>
@@ -248,6 +254,71 @@ export default function BankAccounts() {
               ))}
             </TableBody>
           </Table></Card>
+        </TabsContent>
+        <TabsContent value="deposits">
+          {(() => {
+            const deposits = txns.filter((t: any) => t.txn_type === "deposit"
+              && (!dFrom || t.txn_date >= dFrom)
+              && (!dTo || t.txn_date <= dTo)
+              && (dAccount === "__all__" || t.bank_account_id === dAccount));
+            const total = deposits.reduce((s, t) => s + Number(t.amount || 0), 0);
+            const headers = ["Date", "Bank", "Account No", "Amount", "Reference", "Note"];
+            const rows = deposits.map((t: any) => [
+              fmtDate(t.txn_date), t.account?.bank_name ?? "", t.account?.account_no ?? "",
+              Number(t.amount || 0), t.reference_no ?? "", t.note ?? "",
+            ]);
+            return (
+              <>
+                <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
+                  <div><Label>Bank</Label>
+                    <Select value={dAccount} onValueChange={setDAccount}>
+                      <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">All Accounts</SelectItem>
+                        {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.bank_name} — {a.account_no}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>From</Label><Input type="date" value={dFrom} onChange={e => setDFrom(e.target.value)} /></div>
+                  <div><Label>To</Label><Input type="date" value={dTo} onChange={e => setDTo(e.target.value)} /></div>
+                  <div className="ml-auto flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => exportTablePDF("Bank Deposits Report", headers, rows, { from: dFrom, to: dTo })}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
+                    <Button size="sm" variant="outline" onClick={() => exportExcel("bank-deposits", "Deposits", deposits.map((t: any) => ({ Date: t.txn_date, Bank: t.account?.bank_name, Account: t.account?.account_no, Amount: t.amount, Reference: t.reference_no, Note: t.note })), { from: dFrom, to: dTo })}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+                  </div>
+                </Card>
+                <Card className="p-3 mb-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div><div className="text-xs text-muted-foreground">Deposits</div><div className="text-lg font-bold">{deposits.length}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Total Amount</div><div className="text-lg font-bold text-success">{money(total)}</div></div>
+                </Card>
+                <Card className="overflow-x-auto"><Table>
+                  <TableHeader><TableRow>
+                    <TableHead>Date</TableHead><TableHead>Bank</TableHead><TableHead>Account No</TableHead>
+                    <TableHead className="text-right">Amount</TableHead><TableHead>Reference</TableHead><TableHead>Note</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {deposits.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No deposits in selected range</TableCell></TableRow>}
+                    {deposits.map((t: any) => (
+                      <TableRow key={t.id}>
+                        <TableCell>{fmtDate(t.txn_date)}</TableCell>
+                        <TableCell>{t.account?.bank_name}</TableCell>
+                        <TableCell className="font-mono text-xs">{t.account?.account_no}</TableCell>
+                        <TableCell className="text-right font-semibold text-success">{money(t.amount)}</TableCell>
+                        <TableCell className="font-mono text-xs">{t.reference_no}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{t.note}</TableCell>
+                      </TableRow>
+                    ))}
+                    {deposits.length > 0 && (
+                      <TableRow className="bg-muted/60 font-bold">
+                        <TableCell colSpan={3} className="text-right">Total</TableCell>
+                        <TableCell className="text-right">{money(total)}</TableCell>
+                        <TableCell colSpan={2} />
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table></Card>
+              </>
+            );
+          })()}
         </TabsContent>
       </Tabs>
     </>
