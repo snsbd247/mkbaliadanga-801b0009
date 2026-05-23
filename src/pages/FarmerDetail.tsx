@@ -919,6 +919,12 @@ export default function FarmerDetail() {
 
         </TabsContent>
 
+        <TabsContent value="land_history">
+          <FarmerLandHistoryTab farmerId={id!} />
+        </TabsContent>
+
+
+
         <TabsContent value="savings">
           <Card><Table>
             <TableHeader><TableRow>
