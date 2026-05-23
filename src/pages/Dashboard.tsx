@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
 
-interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null }
+interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null; href?: string }
 
 export default function Dashboard() {
   const { t, lang } = useLang();
