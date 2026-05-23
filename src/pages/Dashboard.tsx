@@ -25,6 +25,8 @@ export default function Dashboard() {
   const [trend, setTrend] = useState<any[]>([]);
   const [topDues, setTopDues] = useState<any[]>([]);
   const [composition, setComposition] = useState<any[]>([]);
+  const [topDepositor, setTopDepositor] = useState<{ name: string; code: string; total: number } | null>(null);
+  const [topTransactor, setTopTransactor] = useState<{ name: string; code: string; count: number } | null>(null);
 
   const [votersOnly, setVotersOnly] = useState(false);
 
