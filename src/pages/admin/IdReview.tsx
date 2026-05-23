@@ -196,8 +196,8 @@ export default function IdReview() {
                     {r.name_bn || r.name_en}
                   </Link>
                 </TableCell>
-                <TableCell className="font-mono text-xs">{r.member_no || "—"}</TableCell>
-                <TableCell className="font-mono text-xs">{r.account_number || "—"}</TableCell>
+                <TableCell className="font-mono text-xs">{r.member_no ? formatId5(r.member_no) : "—"}</TableCell>
+                <TableCell className="font-mono text-xs">{r.account_number ? formatId5(r.account_number) : "—"}</TableCell>
                 <TableCell>
                   {r.is_voter
                     ? <Badge variant="default">{t("yes")}</Badge>
