@@ -123,6 +123,7 @@ import AssetMovements from "./pages/assets/AssetMovements";
 import AssetInstallations from "./pages/assets/AssetInstallations";
 import AssetMaintenance from "./pages/assets/AssetMaintenance";
 import AssetDisposal from "./pages/assets/AssetDisposal";
+import AssetAlerts from "./pages/assets/AssetAlerts";
 import VerifyReceipt from "./pages/VerifyReceipt";
 import ApiAuth from "./pages/ApiAuth";
 import ApiFarmerPortal from "./pages/ApiFarmerPortal";
