@@ -12,11 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
-import { Eye, Download, RefreshCw, Loader2, FileText } from "lucide-react";
+import { Eye, Download, RefreshCw, Loader2, FileText, FileSpreadsheet, FileType2 } from "lucide-react";
 import { ViewButton } from "@/components/ui/action-icon-button";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const ENTITY_OPTIONS = [
   "qr_tokens",
