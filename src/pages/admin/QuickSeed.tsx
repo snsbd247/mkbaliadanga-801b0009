@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote } from "lucide-react";
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 
-type ModuleKey = "office" | "asset" | "farmers" | "lands" | "seasons" | "savings" | "loans" | "irrigation" | "all";
+type ModuleKey = "office" | "asset" | "farmers" | "lands" | "seasons" | "savings" | "loans" | "irrigation" | "bank" | "all";
 
 type Status = "idle" | "running" | "ok" | "err";
 
@@ -23,6 +23,7 @@ const MODULES: { key: ModuleKey; title: string; desc: string; icon: any; modules
   { key: "savings",    title: "সঞ্চয়",                desc: "ফার্মারভিত্তিক সঞ্চয় আমানত ও কিছু উত্তোলন এন্ট্রি",                                       icon: PiggyBank,    modules: ["locations", "settings", "accounting", "farmers", "savings"] },
   { key: "loans",      title: "ঋণ",                    desc: "অনুমোদিত ঋণ + কিস্তি শিডিউল + কিছু পরিশোধ",                                                icon: Landmark,     modules: ["locations", "settings", "accounting", "farmers", "loans"] },
   { key: "irrigation", title: "সেচ",                  desc: "সিজন + রেট + ইনভয়েস + কিছু পেমেন্ট",                                                       icon: Droplets,     modules: ["locations", "settings", "accounting", "farmers", "irrigation"] },
+  { key: "bank",       title: "ব্যাংক",               desc: "৩টি ব্যাংক একাউন্ট + ডিপোজিট/উইথড্র লেনদেন",                                                 icon: Banknote,     modules: ["settings", "accounting", "bank"] },
 ];
 
 export default function QuickSeed() {
@@ -73,7 +74,7 @@ export default function QuickSeed() {
   const runAll = async () => {
     setStatus((s) => ({ ...s, all: "running" }));
     try {
-      await runEdge("all", ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses"]);
+      await runEdge("all", ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank"]);
       await runAsset("all_asset");
       setStatus((s) => ({ ...s, all: "ok" }));
       toast.success("সব মডিউলে ডামি ডাটা তৈরি হয়েছে");

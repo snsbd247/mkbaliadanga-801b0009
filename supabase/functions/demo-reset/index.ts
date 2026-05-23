@@ -19,6 +19,10 @@ const FULL_WIPE_ORDER = [
   "irrigation_charges", "irrigation_rates", "irrigation_season_rates", "irrigation_charge_settings",
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
+  "bank_transactions", "bank_accounts",
+  "cashbook_submissions",
+  "farmer_notes",
+  "land_change_log",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
   "receipts", "receipt_counters", "receipt_settings",
   "sms_logs", "sms_office_settings", "sms_provider_secrets", "sms_settings",
@@ -594,12 +598,13 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   }
 
   const targets = voters.slice(0, Math.ceil(voters.length * 0.6));
+  const CATS = ["general", "hawlat", "bank", "donation", "misc"];
   const txns = targets.flatMap((f, i) => {
     savingsSeeded.push(f.id);
     return [
-      { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId },
-      ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId }] : []),
-      ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection" }] : []),
+      { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId, category: CATS[i % CATS.length] },
+      ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId, category: "general" }] : []),
+      ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection", category: "general" }] : []),
     ];
   });
   if (txns.length) {
@@ -652,7 +657,45 @@ async function verifyVoterIntegrity(admin: any): Promise<{ ok: boolean; issues: 
   return { ok: issues.length === 0, issues };
 }
 
+async function seedBankAccounts(admin: any, officeId: string) {
+  const existing = await admin.from("bank_accounts").select("id").eq("office_id", officeId).limit(1);
+  if (existing.data && existing.data.length) return { accounts: 0, txns: 0 };
+  const accountsSpec = [
+    { office_id: officeId, bank_name: "Sonali Bank", branch: "Rangpur", account_no: "1011000001", account_title: "Baliadanga Branch — Main", account_type: "savings", opening_balance: 50000 },
+    { office_id: officeId, bank_name: "Janata Bank", branch: "Rangpur", account_no: "2022000002", account_title: "Baliadanga Branch — Operating", account_type: "current", opening_balance: 25000 },
+    { office_id: officeId, bank_name: "Agrani Bank", branch: "Rangpur", account_no: "3033000003", account_title: "Baliadanga Branch — Reserve", account_type: "savings", opening_balance: 100000 },
+  ];
+  const { data: accts, error } = await admin.from("bank_accounts").insert(accountsSpec).select("id");
+  if (error) throw new Error(`bank_accounts: ${error.message}`);
+  const txns: any[] = [];
+  (accts ?? []).forEach((a: any, i: number) => {
+    txns.push(
+      { office_id: officeId, bank_account_id: a.id, txn_type: "deposit", amount: 10000 + i * 2000, reference_no: `DEP-${1000 + i}`, note: "Demo deposit" },
+      { office_id: officeId, bank_account_id: a.id, txn_type: "withdraw", amount: 3000 + i * 500, reference_no: `WD-${2000 + i}`, note: "Demo withdraw" },
+    );
+  });
+  if (txns.length) {
+    const { error: e2 } = await admin.from("bank_transactions").insert(txns);
+    if (e2) throw new Error(`bank_transactions: ${e2.message}`);
+  }
+  return { accounts: (accts ?? []).length, txns: txns.length };
+}
+
+async function seedFarmerNotes(admin: any, farmers: any[]) {
+  const targets = farmers.slice(0, Math.min(10, farmers.length));
+  if (!targets.length) return 0;
+  const rows = targets.map((f: any, i: number) => ({
+    farmer_id: f.id,
+    note: i % 3 === 0 ? "নিয়মিত সেচ ব্যবহার করেন।" : i % 3 === 1 ? "গত মৌসুমে বকেয়া পরিশোধ করেছেন।" : "সক্রিয় সদস্য — যোগাযোগ মোবাইলে।",
+    pinned: i === 0,
+  }));
+  const { error } = await admin.from("farmer_notes").insert(rows);
+  if (error) return 0;
+  return rows.length;
+}
+
 async function seedExpenses(admin: any, officeId: string) {
+
   await admin.from("expenses").insert([
     { head: "Office Rent", amount: 5000, office_id: officeId, payee: "Landlord", note: "Demo" },
     { head: "Electricity", amount: 1200, office_id: officeId, payee: "PDB", note: "Demo" },
@@ -802,6 +845,8 @@ function estimateImport(modules: string[], size: number) {
   if (modules.includes("accounting")) c["accounting_periods"] = 1;
   if (modules.includes("irrigation") && modules.includes("farmers")) c["irrigation_due_promises"] = 5;
   if (modules.includes("expenses")) c["expenses"] = 3;
+  if (modules.includes("bank")) { c["bank_accounts"] = 3; c["bank_transactions"] = 6; }
+  if (modules.includes("farmers")) c["farmer_notes"] = 10;
   return c;
 }
 
@@ -884,9 +929,9 @@ async function verifyRowCounts(admin: any, modules: string[]) {
 
 // ---- Preset definitions (mirrors src/lib/demoPresets.ts) ----
 const PRESETS: Record<string, { size: number; modules: string[] }> = {
-  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
-  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
-  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses"] },
+  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
+  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
+  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
   loans_only:      { size: 50,  modules: ["locations","settings","accounting","farmers","loans"] },
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
@@ -1009,6 +1054,8 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           }});
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
           if (modules.includes("accounting")) steps.push({ key: "accounting_period", label: "চলতি অর্থবছরের পিরিয়ড open", fn: async () => { await seedAccountingPeriod(admin, officeId); }});
+          if (modules.includes("bank")) steps.push({ key: "bank", label: "ব্যাংক একাউন্ট ও লেনদেন seed", fn: async () => { const b = await seedBankAccounts(admin, officeId); summary.bank = b; }});
+          if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
