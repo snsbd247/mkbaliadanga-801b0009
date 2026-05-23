@@ -273,14 +273,19 @@ export default function Farmers() {
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     const editId = searchParams.get("edit");
-    if (!editId || editOpen) return;
-    (async () => {
-      const { data } = await supabase.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
-      if (data) openEdit(data);
-      const next = new URLSearchParams(searchParams);
-      next.delete("edit");
-      setSearchParams(next, { replace: true });
-    })();
+    if (editId && !editOpen) {
+      (async () => {
+        const { data } = await supabase.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
+        if (data) openEdit(data);
+        const next = new URLSearchParams(searchParams);
+        next.delete("edit");
+        setSearchParams(next, { replace: true });
+      })();
+    }
+    const s = searchParams.get("status");
+    if (s === "active" || s === "inactive" || s === "all") setStatusFilter(s as any);
+    const p = searchParams.get("period");
+    if (p === "this_month" || p === "today" || p === "all") setPeriodFilter(p as any);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
