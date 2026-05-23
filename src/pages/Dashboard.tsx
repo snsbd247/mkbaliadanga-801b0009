@@ -242,8 +242,8 @@ export default function Dashboard() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="stat-card">
+        {stats.map((s) => {
+          const inner = (
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</div>
@@ -259,8 +259,15 @@ export default function Dashboard() {
                 <s.icon className="h-5 w-5" />
               </div>
             </div>
-          </div>
-        ))}
+          );
+          return s.href ? (
+            <Link key={s.label} to={s.href} className="stat-card block transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/40">
+              {inner}
+            </Link>
+          ) : (
+            <div key={s.label} className="stat-card">{inner}</div>
+          );
+        })}
       </div>
 
       {/* 30-day collection sparkline */}
