@@ -39,7 +39,7 @@ const newKey = () =>
 export default function Payments() {
   const { t, tx } = useLang();
   const { user, officeId } = useAuth();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const brand = useBranding();
   const receiptArgs = useReceiptRenderArgs();
   const [farmers, setFarmers] = useState<any[]>([]);
@@ -161,6 +161,14 @@ export default function Payments() {
     ]);
     setFarmers(f.data ?? []); setList(p.data ?? []);
   }
+
+  function clearFilters() {
+    setShowDeleted(false);
+    setPeriod("all");
+    setFarmerId("");
+    setParams(new URLSearchParams(), { replace: true });
+  }
+
   async function restorePayment(id: string) {
     const { error } = await supabase.from("payments").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
@@ -661,7 +669,7 @@ export default function Payments() {
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <h2 className="font-semibold">{t("recentTransactions")}</h2>
             <div className="flex items-center gap-3 flex-wrap">
-              <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
+              <Select value={period} onValueChange={(v: any) => { setPeriod(v); const n = new URLSearchParams(params); if (v === "all") n.delete("period"); else n.set("period", v); setParams(n, { replace: true }); }}>
                 <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{tx("All time", "সবসময়")}</SelectItem>
@@ -673,6 +681,7 @@ export default function Payments() {
                 <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
                 <span className="text-xs">{t("showArchived")}</span>
               </Label>
+              <Button variant="ghost" size="sm" onClick={clearFilters}>{tx("Clear filters", "ফিল্টার মুছুন")}</Button>
             </div>
           </div>
           <Table>
