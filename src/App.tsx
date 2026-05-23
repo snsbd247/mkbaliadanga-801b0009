@@ -64,6 +64,7 @@ import CollectionReport from "./pages/reports/CollectionReport";
 import SavingsLoanReport from "./pages/reports/SavingsLoanReport";
 import ReceiptKindReport from "./pages/reports/ReceiptKindReport";
 import MonthlyReceiptRegister from "./pages/reports/MonthlyReceiptRegister";
+import OfficerSummaryReport from "./pages/reports/OfficerSummaryReport";
 import RateSourceReport from "./pages/reports/RateSourceReport";
 import OverrideAuditReport from "./pages/reports/OverrideAuditReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
