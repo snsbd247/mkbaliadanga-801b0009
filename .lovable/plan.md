@@ -1,33 +1,32 @@
-## Phase C — Reports & Analytics
+## Phase C — Reports & Analytics ✅ COMPLETE
 
-বর্তমান অবস্থা: Reports.tsx-এ ইতিমধ্যে অনেক tab আছে (Monthly Financial, Reconciliation, Irrigation, Arrears, Loan, Savings, Balances, Payments, Audit) এবং `src/pages/reports/` directory-তে 13+ specialized report রয়েছে। তাই Phase C কে নতুন core report বানানোর বদলে **gap-filling + analytics**-এ ফোকাস করব।
+- **C1** Dashboard KPI widgets + 30-day sparkline — shipped in `src/pages/Dashboard.tsx`
+- **C2** Member combined statement PDF — `exportFarmerCombinedStatementPDF` in `src/lib/exports.ts`, button in `FarmerStatement.tsx`
+- **C3** Monthly Receipt Register — `src/pages/reports/MonthlyReceiptRegister.tsx`, route `/reports/receipt-register`
+- **C4** Officer Summary — `src/pages/reports/OfficerSummaryReport.tsx`, route `/reports/officer-summary`
 
-### C1 — Dashboard KPI widgets (1st step)
-`src/pages/Dashboard.tsx`-এ নতুন KPI cards:
-- আজকের সংগ্রহ (Irrigation + Savings + Loan repayment)
-- চলতি মাসের মোট সংগ্রহ + গত মাসের তুলনা (%)
-- মোট বকেয়া (Irrigation due + Loan outstanding)
-- সক্রিয় সদস্য / নতুন সদস্য (এই মাস)
-- চলমান ঋণ সংখ্যা + total disbursed
-- ছোট sparkline chart (recharts) — last 30 days daily collection
+## Phase D — Asset lifecycle ✅ COMPLETE (core)
 
-### C2 — Member Statement PDF
-`src/pages/FarmerStatement.tsx` থেকে A4 PDF export — Savings + Loans + Irrigation এক পেজে summary + transaction list, monthly receipt no সহ। Bilingual labels।
+- 13 DB tables, 15 UI pages (registry, stock, movements, installations, maintenance, disposal, depreciation, QR, etc.)
+- Asset transfer **approval workflow** (pending → approved/rejected, audit logged) — `assetStock.ts`, `AssetMovements.tsx`
 
-### C3 — Monthly Receipt Register report
-নতুন report tab: type অনুযায়ী মাসিক receipt list (SAV/LOAN/IRR/COMBO) — receipt no, date, farmer, amount, collector — duplicate/gap detection সহ। CSV + PDF export।
+## Phase E — Candidates (next)
 
-### C4 — Collection Officer summary
-কোন collector কত আদায় করেছে — date range filter, type-wise breakdown, top performer ranking।
+### E1 — Asset alerts (SMS automation)
+- Low-stock SMS when `asset_stocks.quantity` drops below `assets.min_stock_level`
+- Warranty-expiry reminder N days before `assets.warranty_expires_on`
+- Scheduled edge function (cron) + SMS template integration
 
-### Technical notes
-- নতুন DB migration লাগবে না — সব existing tables (`payments`, `savings_transactions`, `loan_payments`, `irrigation_invoices`, `receipt_sequences`) থেকে aggregate।
-- Charts: existing `recharts` package use করব।
-- Export: existing `exportTablePDF`, `exportExcel` (src/lib/exports.ts) reuse।
-- Bilingual: `src/i18n/translations.ts`-এ key যোগ।
-- Permission: existing `reports` ModuleKey।
+### E2 — Recurring maintenance scheduler
+- New table `asset_maintenance_schedules` (asset_id, frequency, next_due_at)
+- Daily edge function to convert due schedules into `asset_maintenance_logs` reminders + SMS
 
-### Order of execution
-C1 → C2 → C3 → C4 — প্রতি step alada turn-এ ship হবে, "next" বললে পরেরটা।
+### E3 — Asset depreciation auto-post
+- Monthly job posts depreciation journal entries via `AccountingService`
+- Already have `asset_depreciation_schedule` table — wire to ledger
 
-প্রথমে **C1 (Dashboard KPI widgets)** শুরু করব। অনুমোদন দিলে এগোই।
+### E4 — GreenWeb SMS provider admin UI deepening
+- Provider failover priority, per-template provider override, delivery report ingestion
+
+### Order
+E1 → E2 → E3 → E4 (each ships in its own turn on "next"). User may also pick any out of order.
