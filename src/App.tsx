@@ -44,6 +44,10 @@ import LedgerIntegrity from "./pages/LedgerIntegrity";
 import Approvals from "./pages/Approvals";
 import PeriodClose from "./pages/PeriodClose";
 import FinanceSummary from "./pages/FinanceSummary";
+import LandHistory from "./pages/LandHistory";
+import TemporaryLoans from "./pages/TemporaryLoans";
+import BankAccounts from "./pages/BankAccounts";
+import Vouchers from "./pages/Vouchers";
 
 import SmsSettings from "./pages/SmsSettings";
 import SmsLogs from "./pages/SmsLogs";
@@ -259,6 +263,10 @@ const App = () => (
                 <Route path="/approvals" element={<RequirePerm module="approvals"><Approvals /></RequirePerm>} />
                 <Route path="/period-close" element={<RequirePerm module="accounting" action="can_edit"><PeriodClose /></RequirePerm>} />
                 <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
+                <Route path="/land-history" element={<RequirePerm module="farmers"><LandHistory /></RequirePerm>} />
+                <Route path="/loans/temporary" element={<RequirePerm module="loans"><TemporaryLoans /></RequirePerm>} />
+                <Route path="/bank-accounts" element={<RequirePerm module="accounting"><BankAccounts /></RequirePerm>} />
+                <Route path="/vouchers" element={<RequirePerm module="accounting"><Vouchers /></RequirePerm>} />
 
                 <Route path="/sms-settings" element={<RequireRole roles={["admin","super_admin"]}><SmsSettings /></RequireRole>} />
                 <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />

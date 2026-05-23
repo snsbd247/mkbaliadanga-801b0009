@@ -61,6 +61,7 @@ export function AppSidebar() {
         { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
         { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
         { url: "/reports/voter-audit", icon: FileBarChart, label: t("voterAudit"), permKey: "farmers" },
+        { url: "/land-history", icon: FileBarChart, label: "ভূমির ইতিহাস", permKey: "farmers" },
       ],
     },
 
@@ -73,6 +74,7 @@ export function AppSidebar() {
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
         { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
         { url: "/admin/loan-delay-settings", icon: HandCoins, label: t("loanDelaySettings" as any), permKey: "loans" },
+        { url: "/loans/temporary", icon: HandCoins, label: "অস্থায়ী ঋণ", permKey: "loans" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
@@ -137,6 +139,8 @@ export function AppSidebar() {
         { url: "/admin/reconciliation", icon: ClipboardCheck, label: t("monthlyReconciliation"), permKey: "accounting" },
         { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: t("shareCapitalReconciliation"), permKey: "accounting" },
         { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
+        { url: "/bank-accounts", icon: Banknote, label: "ব্যাংক অ্যাকাউন্ট", permKey: "accounting" },
+        { url: "/vouchers", icon: BookText, label: "ভাউচার", permKey: "accounting" },
       ],
     },
 
