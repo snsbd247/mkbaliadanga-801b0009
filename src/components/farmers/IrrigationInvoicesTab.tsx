@@ -30,22 +30,52 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
   const [sortKey, setSortKey] = useState<SortKey>("due_date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [ownerNames, setOwnerNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setLoading(true);
     supabase
       .from("irrigation_invoices" as any)
-      .select("*, seasons(name,year,type), lands(dag_no,mouza,land_size)")
+      .select("*, seasons(name,year,type), lands(dag_no,mouza,land_size,owner_type,owner_farmer_id)")
       .eq("farmer_id", farmerId)
       .is("deleted_at", null)
       .order("generated_at", { ascending: false })
       .limit(500)
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (error) toast.error(error.message);
-        setRows((data as any) ?? []);
+        const list = (data as any[]) ?? [];
+        setRows(list);
+        const ownerIds = Array.from(new Set(
+          list.map((r: any) => r.lands?.owner_type === "borgadar" ? r.lands?.owner_farmer_id : null).filter(Boolean)
+        )) as string[];
+        if (ownerIds.length) {
+          const { data: owners } = await supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", ownerIds);
+          const map: Record<string, string> = {};
+          (owners ?? []).forEach((o: any) => { map[o.id] = o.name_bn || o.name_en || o.farmer_code || "—"; });
+          setOwnerNames(map);
+        } else {
+          setOwnerNames({});
+        }
         setLoading(false);
       });
   }, [farmerId]);
+
+  function landLabel(r: Inv): { main: string; sub: string } {
+    const l = r.lands || {};
+    const parts: string[] = [];
+    if (l.mouza) parts.push(String(l.mouza));
+    if (l.dag_no) parts.push(`দাগ ${l.dag_no}`);
+    if (l.land_size != null) parts.push(`${l.land_size} শতক`);
+    const main = parts.join(" • ");
+    let sub = "";
+    if (l.owner_type === "borgadar") {
+      const oname = l.owner_farmer_id ? ownerNames[l.owner_farmer_id] : "";
+      sub = `বর্গা${oname ? ` — মালিক: ${oname}` : ""}`;
+    } else if (l.owner_type === "owner") {
+      sub = "নিজ মালিক";
+    }
+    return { main, sub };
+  }
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   function effectiveStatus(r: Inv): string {
