@@ -49,6 +49,7 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   loanDescLabelEn: "",
   loanOutstandingLabelBn: "",
   loanOutstandingLabelEn: "",
+  defaultPaperSize: "a5",
 };
 
 /** Default labels — single source of truth shared by HTML/PDF/Excel. */
