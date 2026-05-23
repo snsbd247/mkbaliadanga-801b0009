@@ -658,12 +658,22 @@ export default function Payments() {
         </Card>
 
         <Card className="p-5 lg:col-span-2">
-          <div className="flex items-center justify-between mb-3 gap-3">
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <h2 className="font-semibold">{t("recentTransactions")}</h2>
-            <Label className="text-sm flex items-center gap-2 cursor-pointer">
-              <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
-              <span className="text-xs">{t("showArchived")}</span>
-            </Label>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
+                <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{tx("All time", "সবসময়")}</SelectItem>
+                  <SelectItem value="today">{tx("Today", "আজ")}</SelectItem>
+                  <SelectItem value="this_month">{tx("This month", "এই মাস")}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Label className="text-sm flex items-center gap-2 cursor-pointer">
+                <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
+                <span className="text-xs">{t("showArchived")}</span>
+              </Label>
+            </div>
           </div>
           <Table>
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>Receipt #</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
