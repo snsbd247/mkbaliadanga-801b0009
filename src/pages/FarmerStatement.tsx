@@ -184,6 +184,79 @@ export default function FarmerStatement() {
     );
   }
 
+  async function combinedPdf() {
+    if (!farmer || !farmerId) { toast.error(t("selectFarmerFirst")); return; }
+    const year = new Date().getFullYear();
+    const f1 = from || `${year}-01-01`;
+    const t1 = to || `${year}-12-31`;
+    const tid = toast.loading(t("buildingStatement") || "Building combined statement…");
+    try {
+      // Opening savings = approved deposits-withdrawals before f1
+      const { data: prior } = await supabase
+        .from("savings_transactions")
+        .select("type,amount")
+        .eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null).lt("txn_date", f1);
+      const opening = (prior ?? []).reduce((a: number, r: any) =>
+        a + (r.type === "deposit" ? Number(r.amount) : -Number(r.amount)), 0);
+
+      const [savRes, irrRes, loansRes] = await Promise.all([
+        supabase.from("savings_transactions")
+          .select("txn_date,type,amount,note")
+          .eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null)
+          .gte("txn_date", f1).lte("txn_date", t1)
+          .order("txn_date", { ascending: true }),
+        supabase.from("irrigation_invoices")
+          .select("generated_at,payable_amount,paid_amount,due_amount,seasons(name,year),lands(dag_no)")
+          .eq("farmer_id", farmerId).is("deleted_at", null)
+          .gte("generated_at", f1).lte("generated_at", t1)
+          .order("generated_at", { ascending: true }),
+        supabase.from("loans")
+          .select("issued_on,principal,interest_rate,total_payable,status,loan_payments(amount)")
+          .eq("farmer_id", farmerId).is("deleted_at", null)
+          .gte("issued_on", f1).lte("issued_on", t1)
+          .order("issued_on", { ascending: true }),
+      ]);
+
+      const irrigation = (irrRes.data ?? []).map((r: any) => ({
+        entry_date: (r.generated_at || "").slice(0, 10),
+        season: r.seasons ? `${r.seasons.name} ${r.seasons.year}` : "—",
+        dag: r.lands?.dag_no ?? "—",
+        total: Number(r.payable_amount || 0),
+        paid_amount: Number(r.paid_amount || 0),
+        due_amount: Number(r.due_amount || 0),
+      }));
+      const loansList = (loansRes.data ?? []).map((l: any) => {
+        const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+        return {
+          issued_on: l.issued_on, principal: Number(l.principal || 0),
+          interest_rate: Number(l.interest_rate || 0),
+          total_payable: Number(l.total_payable || 0), status: l.status, paid,
+          due: Math.max(0, Number(l.total_payable || 0) - paid),
+        };
+      });
+
+      await exportFarmerCombinedStatementPDF({
+        brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
+        farmer: {
+          name_en: farmer.name_en, name_bn: farmer.name_bn,
+          farmer_code: farmer.farmer_code,
+          mobile: farmer.mobile, village: farmer.village,
+        },
+        range: { from: f1, to: t1 },
+        opening_savings: opening,
+        savings: (savRes.data ?? []).map((s: any) => ({
+          txn_date: s.txn_date, type: s.type, amount: Number(s.amount), note: s.note,
+        })),
+        irrigation,
+        loans: loansList,
+      });
+      toast.success(t("statementReady") || "Statement generated", { id: tid });
+    } catch (e: any) {
+      toast.error(e?.message || t("failedLoadStatement"), { id: tid });
+    }
+  }
+
+
   const titleLabel = kind === "savings" ? t("savingsStatement") : t("loanStatement");
   const farmerName = farmer ? (lang === "bn" && farmer.name_bn ? farmer.name_bn : farmer.name_en) : "";
 
