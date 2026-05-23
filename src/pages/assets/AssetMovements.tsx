@@ -157,58 +157,76 @@ export default function AssetMovements() {
           "অবস্থানগুলোর মধ্যে প্রতিটি এসেট স্থানান্তরের অপারেশনাল লেজার।",
         )}
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={exportCsv}><Download className="h-4 w-4 mr-1" />{tx("CSV", "CSV")}</Button>
-            {isAdmin && (
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />{tx("New movement", "নতুন মুভমেন্ট")}</Button></DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>{tx("Record movement", "মুভমেন্ট রেকর্ড")}</DialogTitle></DialogHeader>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <Label>{tx("Asset", "এসেট")}</Label>
-                      <Select value={form.asset_id} onValueChange={(v) => setForm({ ...form, asset_id: v })}>
-                        <SelectTrigger><SelectValue placeholder={tx("Choose asset", "এসেট বাছুন")} /></SelectTrigger>
-                        <SelectContent>{assets.map((a) => <SelectItem key={a.id} value={a.id}>{a.asset_code} — {a.name_bn || a.name_en}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div><Label>{tx("Date", "তারিখ")}</Label><Input type="date" value={form.movement_date} onChange={(e) => setForm({ ...form, movement_date: e.target.value })} /></div>
-                    <div><Label>{tx("Quantity", "পরিমাণ")}</Label><Input type="number" min={1} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} /></div>
-                    <div>
-                      <Label>{tx("From", "থেকে")}</Label>
-                      <Select value={form.from_location_id} onValueChange={(v) => setForm({ ...form, from_location_id: v })}>
-                        <SelectTrigger><SelectValue placeholder={tx("Source (optional)", "উৎস (ঐচ্ছিক)")} /></SelectTrigger>
-                        <SelectContent>{offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>{tx("To", "এ")}</Label>
-                      <Select value={form.to_location_id} onValueChange={(v) => setForm({ ...form, to_location_id: v })}>
-                        <SelectTrigger><SelectValue placeholder={tx("Destination", "গন্তব্য")} /></SelectTrigger>
-                        <SelectContent>{offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-2">
-                      <Label>{tx("Remarks", "মন্তব্য")}</Label>
-                      <Textarea rows={2} value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{tx("Cancel", "বাতিল")}</Button>
-                    <Button onClick={save} disabled={saving}>{saving ? "…" : tx("Save", "সংরক্ষণ")}</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+          <div className="flex gap-2 items-center">
+            {isAdmin && pendingCount > 0 && (
+              <Badge variant="destructive">{pendingCount} {tx("pending", "অনুমোদনের অপেক্ষায়")}</Badge>
             )}
+            <Button variant="outline" size="sm" onClick={exportCsv}><Download className="h-4 w-4 mr-1" />{tx("CSV", "CSV")}</Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus className="h-4 w-4 mr-1" />{isAdmin ? tx("New movement", "নতুন মুভমেন্ট") : tx("Request transfer", "ট্রান্সফার অনুরোধ")}</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>{isAdmin ? tx("Record movement", "মুভমেন্ট রেকর্ড") : tx("Request transfer", "ট্রান্সফার অনুরোধ")}</DialogTitle></DialogHeader>
+                {!isAdmin && (
+                  <p className="text-xs text-muted-foreground">{tx("Your request will be sent to an admin for approval.", "আপনার অনুরোধ অনুমোদনের জন্য অ্যাডমিনের কাছে পাঠানো হবে।")}</p>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <Label>{tx("Asset", "এসেট")}</Label>
+                    <Select value={form.asset_id} onValueChange={(v) => setForm({ ...form, asset_id: v })}>
+                      <SelectTrigger><SelectValue placeholder={tx("Choose asset", "এসেট বাছুন")} /></SelectTrigger>
+                      <SelectContent>{assets.map((a) => <SelectItem key={a.id} value={a.id}>{a.asset_code} — {a.name_bn || a.name_en}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>{tx("Date", "তারিখ")}</Label><Input type="date" value={form.movement_date} onChange={(e) => setForm({ ...form, movement_date: e.target.value })} /></div>
+                  <div><Label>{tx("Quantity", "পরিমাণ")}</Label><Input type="number" min={1} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} /></div>
+                  <div>
+                    <Label>{tx("From", "থেকে")}</Label>
+                    <Select value={form.from_location_id} onValueChange={(v) => setForm({ ...form, from_location_id: v })}>
+                      <SelectTrigger><SelectValue placeholder={tx("Source (optional)", "উৎস (ঐচ্ছিক)")} /></SelectTrigger>
+                      <SelectContent>{offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{tx("To", "এ")}</Label>
+                    <Select value={form.to_location_id} onValueChange={(v) => setForm({ ...form, to_location_id: v })}>
+                      <SelectTrigger><SelectValue placeholder={tx("Destination", "গন্তব্য")} /></SelectTrigger>
+                      <SelectContent>{offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label>{tx("Remarks", "মন্তব্য")}</Label>
+                    <Textarea rows={2} value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{tx("Cancel", "বাতিল")}</Button>
+                  <Button onClick={save} disabled={saving}>{saving ? "…" : isAdmin ? tx("Save", "সংরক্ষণ") : tx("Submit request", "অনুরোধ জমা দিন")}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         }
       />
 
       <Card className="p-3 mb-3">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
           <div className="relative sm:col-span-2">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx("Search code, name, remarks…", "কোড, নাম, মন্তব্য খুঁজুন…")} />
+          </div>
+          <div>
+            <Label className="text-xs">{tx("Status", "স্ট্যাটাস")}</Label>
+            <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tx("All", "সব")}</SelectItem>
+                <SelectItem value="pending">{tx("Pending", "অপেক্ষমাণ")}</SelectItem>
+                <SelectItem value="approved">{tx("Approved", "অনুমোদিত")}</SelectItem>
+                <SelectItem value="rejected">{tx("Rejected", "প্রত্যাখ্যাত")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div><Label className="text-xs">{tx("From", "থেকে")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div><Label className="text-xs">{tx("To", "পর্যন্ত")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
@@ -225,6 +243,7 @@ export default function AssetMovements() {
               <TableHead></TableHead>
               <TableHead>{tx("To", "এ")}</TableHead>
               <TableHead className="text-right">{tx("Quantity", "পরিমাণ")}</TableHead>
+              <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
               <TableHead>{tx("Remarks", "মন্তব্য")}</TableHead>
               <TableHead className="text-right">{tx("Actions", "অ্যাকশন")}</TableHead>
             </TableRow>
@@ -232,6 +251,10 @@ export default function AssetMovements() {
           <TableBody>
             {visible.map((m) => {
               const a = assetById.get(m.asset_id);
+              const statusVariant = m.approval_status === "approved" ? "default"
+                : m.approval_status === "rejected" ? "destructive" : "secondary";
+              const statusLabel = m.approval_status === "approved" ? tx("Approved", "অনুমোদিত")
+                : m.approval_status === "rejected" ? tx("Rejected", "প্রত্যাখ্যাত") : tx("Pending", "অপেক্ষমাণ");
               return (
                 <TableRow key={m.id}>
                   <TableCell className="text-xs">{m.movement_date}</TableCell>
@@ -243,21 +266,53 @@ export default function AssetMovements() {
                   <TableCell><ArrowRightLeft className="h-4 w-4 text-muted-foreground" /></TableCell>
                   <TableCell className="text-sm">{officeById.get(m.to_location_id ?? "") ?? "—"}</TableCell>
                   <TableCell className="text-right font-medium">{Number(m.quantity).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant as any}>{statusLabel}</Badge>
+                    {m.approval_status === "rejected" && m.rejection_reason && (
+                      <div className="text-[10px] text-muted-foreground mt-1">{m.rejection_reason}</div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">{m.remarks ?? "—"}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link to={`/assets/items/${m.asset_id}`} aria-label={tx("View", "দেখুন")}><Eye className="h-4 w-4" /></Link>
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      {isAdmin && m.approval_status === "pending" && (
+                        <>
+                          <Button variant="ghost" size="icon" onClick={() => approve(m.id)} aria-label={tx("Approve", "অনুমোদন")} title={tx("Approve", "অনুমোদন")}>
+                            <Check className="h-4 w-4 text-green-600" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => { setRejectId(m.id); setRejectReason(""); }} aria-label={tx("Reject", "প্রত্যাখ্যান")} title={tx("Reject", "প্রত্যাখ্যান")}>
+                            <X className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </>
+                      )}
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link to={`/assets/items/${m.asset_id}`} aria-label={tx("View", "দেখুন")}><Eye className="h-4 w-4" /></Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );
             })}
             {!visible.length && (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{tx("No movements in selected range", "নির্বাচিত সময়ে কোনো মুভমেন্ট নেই")}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{tx("No movements in selected range", "নির্বাচিত সময়ে কোনো মুভমেন্ট নেই")}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </Card>
+
+      <Dialog open={!!rejectId} onOpenChange={(o) => { if (!o) { setRejectId(null); setRejectReason(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{tx("Reject transfer request", "ট্রান্সফার অনুরোধ প্রত্যাখ্যান")}</DialogTitle></DialogHeader>
+          <div>
+            <Label>{tx("Reason", "কারণ")}</Label>
+            <Textarea rows={3} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder={tx("Explain why this transfer is being rejected", "কেন প্রত্যাখ্যান করা হচ্ছে তা ব্যাখ্যা করুন")} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRejectId(null); setRejectReason(""); }}>{tx("Cancel", "বাতিল")}</Button>
+            <Button variant="destructive" onClick={reject}>{tx("Reject", "প্রত্যাখ্যান")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
