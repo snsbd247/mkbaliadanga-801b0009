@@ -63,10 +63,35 @@ export default function BankAccounts() {
 
   async function saveTxn() {
     if (!tx.bank_account_id || tx.amount <= 0) return toast.error("Account and amount required");
-    const { error } = await sb.from("bank_transactions").insert({ ...tx, created_by: user?.id });
+    const { post_cashbook, ...txnRow } = tx;
+    const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id });
     if (error) return toast.error(error.message);
+
+    // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt
+    if (post_cashbook && (tx.txn_type === "deposit" || tx.txn_type === "withdraw")) {
+      const acc = accounts.find(a => a.id === tx.bank_account_id);
+      const bankLabel = acc ? `${acc.bank_name} — ${acc.account_no}` : "Bank";
+      const ref = tx.reference_no ? ` (Ref: ${tx.reference_no})` : "";
+      const noteSuffix = tx.note ? ` · ${tx.note}` : "";
+      if (tx.txn_type === "deposit") {
+        const { error: eErr } = await supabase.from("expenses").insert({
+          head: "Bank Deposit", payee: bankLabel, amount: tx.amount, method: "bank",
+          note: `Cash deposited to ${bankLabel}${ref}${noteSuffix}`,
+          expense_date: tx.txn_date, created_by: user?.id,
+        } as any);
+        if (eErr) toast.error("Saved bank txn but cashbook expense failed: " + eErr.message);
+      } else {
+        const { error: rErr } = await supabase.from("receipts").insert({
+          kind: "other", amount: tx.amount, method: "bank",
+          note: `Cash withdrawn from ${bankLabel}${ref}${noteSuffix}`,
+          receipt_date: tx.txn_date, collected_by: user?.id,
+        } as any);
+        if (rErr) toast.error("Saved bank txn but cashbook receipt failed: " + rErr.message);
+      }
+    }
+
     toast.success("Saved"); setOpenT(false); load();
-    setTx({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "" });
+    setTx({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
   }
 
   async function saveTransfer() {
