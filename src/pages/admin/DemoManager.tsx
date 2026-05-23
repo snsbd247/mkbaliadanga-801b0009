@@ -676,10 +676,10 @@ export default function DemoManager() {
                 <tbody>
                   {seedLog.map((r, i) => (
                     <tr key={i} className="border-t">
-                      <td className="p-2 font-mono">{r.farmer_code}</td>
+                      <td className="p-2 font-mono">{formatId5(r.farmer_code)}</td>
                       <td className="p-2">{r.is_voter ? "✓" : "—"}</td>
-                      <td className="p-2 font-mono">{r.voter_number ?? "—"}</td>
-                      <td className="p-2 font-mono">{r.account_number ?? "—"}</td>
+                      <td className="p-2 font-mono">{r.voter_number ? formatId5(r.voter_number) : "—"}</td>
+                      <td className="p-2 font-mono">{r.account_number ? formatId5(r.account_number) : "—"}</td>
                       <td className="p-2 text-center">{r.savings_seeded ? "✓" : "—"}</td>
                       <td className="p-2 text-center">{r.loans_seeded ? "✓" : "—"}</td>
                       <td className="p-2 text-center">{r.shares_seeded ? "✓" : "—"}</td>
