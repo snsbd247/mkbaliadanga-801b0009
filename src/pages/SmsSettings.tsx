@@ -366,7 +366,9 @@ export default function SmsSettings() {
     updated_at: string;
     updated_by: string | null;
     label: string | null;
+    priority: number;
   };
+
   type SecretAuditRow = { id: string; action: string; created_at: string; user_id: string | null; meta: any };
   const TOKEN_REGEX = /^[A-Za-z0-9]{20,80}$/;
   const [tokenInput, setTokenInput] = useState<string>("");
