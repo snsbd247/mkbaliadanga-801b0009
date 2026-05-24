@@ -603,6 +603,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <Input value={note} onChange={(e) => setNote(e.target.value)} />
             </div>
           </div>
+          <Label className="flex items-center gap-2 cursor-pointer text-sm">
+            <Switch checked={simplifiedReceipt} onCheckedChange={setSimplifiedReceipt} />
+            <span>{tx("Simplified receipt (only farmer + amount + remark)", "সরল রসিদ (শুধু কৃষক + পরিমাণ + মন্তব্য)")}</span>
+          </Label>
+
           <div className="flex items-center justify-between border-t pt-3">
             <div className="text-base">
               <div className="text-xs text-muted-foreground">{tx("Grand total received", "মোট গ্রহণ")}</div>
