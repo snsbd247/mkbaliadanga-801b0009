@@ -1307,6 +1307,44 @@ export default function FarmerDetail() {
         </TabsContent>
       </Tabs>
 
+      <Dialog open={editFarmerOpen} onOpenChange={(o) => { if (!o && !editFarmerSaving) { setEditFarmerOpen(false); setEditFarmerForm(null); setEditFarmerPhoto(null); setEditFarmerLocErr(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{t("edit")} — {lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}</DialogTitle></DialogHeader>
+          {editFarmerForm && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div><Label>{t("nameEn")} *</Label><Input value={editFarmerForm.name_en ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, name_en: e.target.value })} /></div>
+                <div><Label>{t("nameBn")}</Label><Input value={editFarmerForm.name_bn ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, name_bn: e.target.value })} /></div>
+                <div><Label>{t("fatherName")}</Label><Input value={editFarmerForm.father_name ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, father_name: e.target.value })} /></div>
+                <div><Label>{t("motherName")}</Label><Input value={editFarmerForm.mother_name ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, mother_name: e.target.value })} /></div>
+                <div><Label>{t("nid")}</Label><Input value={editFarmerForm.nid ?? ""} disabled={editFarmerSaving} inputMode="numeric" maxLength={17} onChange={e => setEditFarmerForm({ ...editFarmerForm, nid: e.target.value })} /></div>
+                <div><Label>{t("mobile")}</Label><Input value={editFarmerForm.mobile ?? ""} disabled={editFarmerSaving} inputMode="tel" maxLength={20} onChange={e => setEditFarmerForm({ ...editFarmerForm, mobile: e.target.value })} /></div>
+                <div><Label>{t("farmerIdLabel")}</Label><Input value={editFarmerForm.member_no ?? ""} disabled={editFarmerSaving || !isSuper} maxLength={5} inputMode="numeric" onChange={e => setEditFarmerForm({ ...editFarmerForm, member_no: e.target.value.replace(/\D/g, "").slice(0, 5) })} /></div>
+                <div><Label>{t("voterSavingsAccount")}</Label><Input value={editFarmerForm.voter_number ?? ""} disabled={editFarmerSaving || (!!farmer.voter_number && !isSuper)} maxLength={5} inputMode="numeric" onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 5); setEditFarmerForm({ ...editFarmerForm, voter_number: v, account_number: v, is_voter: !!v }); }} /></div>
+                <div><Label>{t("office")}</Label><Select value={editFarmerForm.office_id || "__none__"} disabled={editFarmerSaving} onValueChange={v => setEditFarmerForm({ ...editFarmerForm, office_id: v === "__none__" ? "" : v })}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="__none__">—</SelectItem>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label>{t("photo")}</Label><Input type="file" accept="image/*" disabled={editFarmerSaving} onChange={e => setEditFarmerPhoto(e.target.files?.[0] ?? null)} /></div>
+                <div className="md:col-span-2"><Label>{t("address")}</Label><Input value={editFarmerForm.address ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, address: e.target.value })} /></div>
+              </div>
+              <div className="border-t pt-3">
+                <div className="text-xs font-semibold text-muted-foreground mb-2">{tx("Nominee Information", "নমিনির তথ্য")}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div><Label>{tx("Nominee Name", "নমিনির নাম")}</Label><Input value={editFarmerForm.nominee_name ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_name: e.target.value })} /></div>
+                  <div><Label>{tx("Nominee Mobile", "নমিনির মোবাইল")}</Label><Input value={editFarmerForm.nominee_mobile ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_mobile: e.target.value })} /></div>
+                  <div><Label>{tx("Relation", "সম্পর্ক")}</Label><Input value={editFarmerForm.nominee_relation ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_relation: e.target.value })} /></div>
+                  <div><Label>{tx("Nominee NID", "নমিনির এনআইডি")}</Label><Input value={editFarmerForm.nominee_nid ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_nid: e.target.value })} /></div>
+                  <div className="md:col-span-2"><Label>{tx("Nominee Address", "নমিনির ঠিকানা")}</Label><Input value={editFarmerForm.nominee_address ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_address: e.target.value })} /></div>
+                </div>
+              </div>
+              <div className="border-t pt-3">
+                <div className="text-xs font-medium text-muted-foreground mb-2">{t("locationStrictHint")}</div>
+                <LocationPicker value={editFarmerForm} onChange={(loc) => { setEditFarmerForm({ ...editFarmerForm, ...loc }); setEditFarmerLocErr(null); }} errorLevel={(editFarmerLocErr?.level as any) ?? null} errorMessage={editFarmerLocErr?.message ?? null} labels={{ division: t("division"), district: t("district"), upazila: t("upazila"), village: t("village"), mouza: t("mouza") }} />
+              </div>
+              <DialogFooter><Button variant="outline" disabled={editFarmerSaving} onClick={() => setEditFarmerOpen(false)}>{t("cancel")}</Button><Button disabled={editFarmerSaving} onClick={saveFarmerEdit}>{editFarmerSaving ? "…" : t("save")}</Button></DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Edit land dialog */}
       <Dialog open={!!editLand} onOpenChange={(o) => { if (!o && !editSaving) { setEditLand(null); setEditLoc({}); setEditLocErr(null); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
