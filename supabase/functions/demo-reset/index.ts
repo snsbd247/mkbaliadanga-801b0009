@@ -961,10 +961,11 @@ async function verifyLocations(admin: any) {
 // ---- Streaming runner ----
 async function runStream(admin: any, action: string, modules: string[], size: number, voterCfg: VoterCfg,
   ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null },
-  customNames?: any[], transactional: boolean = true, preset?: string) {
+  customNames?: any[], transactional: boolean = true, preset?: string, monthsBack: number = 1) {
 
   const encoder = new TextEncoder();
-  const summary: any = { action, modules, voterCfg, transactional, preset: preset ?? null };
+  const summary: any = { action, modules, voterCfg, transactional, preset: preset ?? null, monthsBack };
+
 
   const stream = new ReadableStream({
     async start(controller) {
