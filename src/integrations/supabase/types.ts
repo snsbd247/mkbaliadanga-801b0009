@@ -4090,6 +4090,7 @@ export type Database = {
           amount: number
           approved_at: string | null
           approved_by: string | null
+          category: string
           collected_by: string | null
           created_at: string
           deleted_at: string | null
@@ -4113,6 +4114,7 @@ export type Database = {
           amount: number
           approved_at?: string | null
           approved_by?: string | null
+          category?: string
           collected_by?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -4136,6 +4138,7 @@ export type Database = {
           amount?: number
           approved_at?: string | null
           approved_by?: string | null
+          category?: string
           collected_by?: string | null
           created_at?: string
           deleted_at?: string | null

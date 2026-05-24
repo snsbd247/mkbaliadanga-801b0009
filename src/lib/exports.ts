@@ -1,10 +1,12 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import QRCode from "qrcode";
 import { money, moneyPdf, fmtDate } from "./format";
 import { loadBranding } from "./branding";
 import { ensureBanglaFont, BANGLA_FONT } from "./pdfFonts";
 import { formatDagNumbers } from "./dagNumbers";
+
 
 
 // Resolve current PDF language from the app's persisted user choice. Reports
@@ -214,7 +216,10 @@ export async function exportPaymentReceiptPDF(opts: {
     installments?: Array<{ no: number; due_date: string; amount: number; paid_amount: number; status: string }>;
     paymentHistory?: Array<{ date: string; amount: number; note?: string }>;
   }>;
+  /** Optional QR payload — typically a verify URL like `${origin}/r/${verify_token}`. Renders top-right corner. */
+  qrText?: string | null;
 }) {
+
   const doc = new jsPDF({ unit: "mm", format: [148, 210] }); // A5
   const w = 148;
   const lang = pdfLang();
@@ -245,7 +250,19 @@ export async function exportPaymentReceiptPDF(opts: {
   if (opts.farmer.village) doc.text(`${tPdf("Village", "গ্রাম")}: ${opts.farmer.village}`, 12, 57);
   if (opts.farmer.mobile) doc.text(`${tPdf("Mobile", "মোবাইল")}: ${opts.farmer.mobile}`, w - 12, 57, { align: "right" });
 
+  // Optional QR code (top-right corner under date)
+  if (opts.qrText) {
+    try {
+      const qrUrl = await QRCode.toDataURL(opts.qrText, { margin: 0, width: 160 });
+      doc.addImage(qrUrl, "PNG", w - 12 - 18, 8, 18, 18);
+      doc.setFontSize(6); doc.setTextColor(110);
+      doc.text(tPdf("Scan to verify", "যাচাইয়ের জন্য স্ক্যান"), w - 12 - 9, 28, { align: "center" });
+      doc.setFontSize(9); doc.setTextColor(0);
+    } catch { /* ignore */ }
+  }
+
   autoTable(doc, {
+
     startY: 62,
     head: [[tPdf("Allocation", "বরাদ্দ"), tPdf("Amount (BDT)", "পরিমাণ (টাকা)")]],
     body: opts.allocations.map(a => [a.kind.toUpperCase(), moneyPdf(a.amount)]),

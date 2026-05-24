@@ -3,6 +3,8 @@
 // receipt number (COMBO-YYYY-MM-NNNN) generated server-side.
 import { useEffect, useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
+
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -35,7 +37,7 @@ export default function CombinedPayment() {
   const [farmer, setFarmer] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [saving, setSaving] = useState(false);
-  const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string } | null>(null);
+  const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string; verifyUrl?: string | null } | null>(null);
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
@@ -85,6 +87,7 @@ export default function CombinedPayment() {
     try {
       const receiptNo = await nextMonthlyReceiptNo("COMBO", officeId, form.farmer_id);
       const rows: { kind: string; label_bn: string; label_en: string; amount: number }[] = [];
+      let verifyToken: string | null = null;
 
       // 1) Savings deposit
       if (Number(form.savings) > 0) {
@@ -94,10 +97,11 @@ export default function CombinedPayment() {
           receipt_no: receiptNo,
         } as any);
         if (error) throw error;
-        await supabase.from("payments").insert({
+        const { data: sp } = await supabase.from("payments").insert({
           farmer_id: form.farmer_id, kind: "savings", amount: Number(form.savings),
           collected_by: user?.id, receipt_no: receiptNo, status: "approved",
-        } as any);
+        } as any).select("verify_token").single();
+        if (sp?.verify_token && !verifyToken) verifyToken = sp.verify_token;
         rows.push({ kind: "savings", label_bn: "সঞ্চয়", label_en: "Savings", amount: Number(form.savings) });
       }
 
@@ -117,8 +121,9 @@ export default function CombinedPayment() {
         const { data: pay, error: payErr } = await supabase.from("payments").insert({
           farmer_id: form.farmer_id, kind: "loan", amount: Number(form.loan_amt),
           reference_id: form.loan_id, collected_by: user?.id, receipt_no: receiptNo, status: "approved",
-        } as any).select("id").single();
+        } as any).select("id,verify_token").single();
         if (payErr) throw payErr;
+        if (pay?.verify_token && !verifyToken) verifyToken = pay.verify_token;
         await supabase.from("payment_allocations").insert({
           payment_id: pay!.id, kind: "loan", reference_id: form.loan_id, amount: Number(form.loan_amt),
         } as any);
@@ -130,7 +135,9 @@ export default function CombinedPayment() {
       }
 
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
-      setLastReceipt({ no: receiptNo, rows, total, farmerName });
+      const verifyUrl = verifyToken ? `${window.location.origin}/r/${verifyToken}` : `${window.location.origin}/r/${receiptNo}`;
+      setLastReceipt({ no: receiptNo, rows, total, farmerName, verifyUrl });
+
       guard.clear();
       // Refresh related caches so Savings/Loans/Payments/Statement views update immediately
       qc.invalidateQueries({ queryKey: ["api", "payments"] });
@@ -149,7 +156,7 @@ export default function CombinedPayment() {
     }
   }
 
-  function printReceipt() {
+  async function printReceipt() {
     if (!lastReceipt) return;
     const paper = getDefaultPaperSize();
     const doc = new jsPDF({ unit: "mm", format: paper });
@@ -160,6 +167,16 @@ export default function CombinedPayment() {
     doc.setFontSize(11); doc.text("COMBINED PAYMENT RECEIPT", pageW / 2, margin + 12, { align: "center" });
     doc.setDrawColor(31, 78, 121); doc.setLineWidth(0.6);
     doc.line(margin, margin + 15, pageW - margin, margin + 15);
+    // QR code (top-right) for receipt verification
+    if (lastReceipt.verifyUrl) {
+      try {
+        const qrUrl = await QRCode.toDataURL(lastReceipt.verifyUrl, { margin: 0, width: 160 });
+        doc.addImage(qrUrl, "PNG", pageW - margin - 18, margin - 2, 18, 18);
+        doc.setFontSize(6); doc.setTextColor(110);
+        doc.text(lang === "bn" ? "যাচাইয়ের জন্য স্ক্যান" : "Scan to verify", pageW - margin - 9, margin + 18, { align: "center" });
+        doc.setTextColor(0);
+      } catch { /* ignore */ }
+    }
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     let y = margin + 22;
     doc.text(`Receipt No: ${lastReceipt.no}`, margin, y);
@@ -191,6 +208,7 @@ export default function CombinedPayment() {
     doc.text("Authorised signature", pageW - margin - 25, sigY + 4, { align: "center" });
     doc.save(`combined-${lastReceipt.no}.pdf`);
   }
+
 
   return (
     <>

@@ -36,16 +36,25 @@ export default function Reports() {
   const [savings, setSavings] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
 
+  const [landSummary, setLandSummary] = useState<{ totalLands: number; totalSize: number; mouzaCount: number; farmerCount: number } | null>(null);
+
   useEffect(() => {
     document.title = `${t("reports")} — ${t("appName")}`;
     Promise.all([
       supabase.from("seasons").select("*"),
       supabase.from("offices").select("id,name"),
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
-    ]).then(([s, o, f]) => {
+      supabase.from("lands").select("id,land_size,mouza,farmer_id").is("deleted_at", null),
+    ]).then(([s, o, f, l]) => {
       setSeasons(s.data ?? []); setOffices(o.data ?? []); setFarmers(f.data ?? []);
+      const lands = l.data ?? [];
+      const totalSize = lands.reduce((acc: number, x: any) => acc + Number(x.land_size || 0), 0);
+      const mouzaCount = new Set(lands.map((x: any) => (x.mouza || "").trim()).filter(Boolean)).size;
+      const farmerCount = new Set(lands.map((x: any) => x.farmer_id).filter(Boolean)).size;
+      setLandSummary({ totalLands: lands.length, totalSize, mouzaCount, farmerCount });
     });
   }, []);
+
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [from, to, seasonId, officeId, farmerId]);
 
@@ -306,7 +315,22 @@ export default function Reports() {
   return (
     <>
       <PageHeader title={t("reports")} description={t("reportsFilterDesc")} />
+      {landSummary && (
+        <Card className="p-4 mb-4">
+          <div className="text-xs uppercase font-semibold text-muted-foreground mb-2">
+            {t("appName") /* org */}{" — "}{/** org-wide land summary */}
+            {(localStorage.getItem("lang") === "bn" ? "মোট জমির সারাংশ" : "Total Land Summary")}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div><div className="text-xs text-muted-foreground">{localStorage.getItem("lang") === "bn" ? "মোট জমি (প্লট)" : "Total Plots"}</div><div className="text-lg font-bold">{landSummary.totalLands.toLocaleString()}</div></div>
+            <div><div className="text-xs text-muted-foreground">{localStorage.getItem("lang") === "bn" ? "মোট পরিমাণ (শতক)" : "Total Size (Shotok)"}</div><div className="text-lg font-bold">{landSummary.totalSize.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div></div>
+            <div><div className="text-xs text-muted-foreground">{localStorage.getItem("lang") === "bn" ? "মৌজা সংখ্যা" : "Mouza Count"}</div><div className="text-lg font-bold">{landSummary.mouzaCount}</div></div>
+            <div><div className="text-xs text-muted-foreground">{localStorage.getItem("lang") === "bn" ? "জমিদার কৃষক" : "Land-owning Farmers"}</div><div className="text-lg font-bold">{landSummary.farmerCount}</div></div>
+          </div>
+        </Card>
+      )}
       <Card className="p-4 mb-4">
+
         <div className="grid gap-3 md:grid-cols-5">
           <div><Label>{t("from")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
           <div><Label>{t("to")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>

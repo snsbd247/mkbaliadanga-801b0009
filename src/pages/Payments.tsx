@@ -48,8 +48,10 @@ export default function Payments() {
   const [list, setList] = useState<any[]>([]);
   const [farmerId, setFarmerId] = useState(params.get("farmer") ?? "");
   const [method, setMethod] = useState("cash");
+  const [category, setCategory] = useState<string>("general");
   const [note, setNote] = useState("");
   const [receiptNo, setReceiptNo] = useState("");
+
   const [allocs, setAllocs] = useState<Allocation[]>([{ kind: "irrigation", reference_id: "", amount: 0 }]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [openLoans, setOpenLoans] = useState<any[]>([]);
@@ -297,12 +299,14 @@ export default function Payments() {
         kind: primary.kind,
         amount: totalAmount,
         method, note,
+        category,
         reference_id: primary.reference_id || null,
         collected_by: user?.id,
         status,
         idempotency_key: idemKey,
         receipt_no: finalReceiptNo,
       };
+
 
       const { data: inserted, error } = await supabase.from("payments").insert(payload).select("id").single();
       if (error) {
@@ -683,6 +687,20 @@ export default function Payments() {
             </div>
 
             <div><Label>{t("method")}</Label><Input value={method} onChange={e => setMethod(e.target.value)} /></div>
+            <div>
+              <Label>{tx("Category", "ক্যাটাগরি")}</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">{tx("General", "সাধারণ")}</SelectItem>
+                  <SelectItem value="hawlat">{tx("Hawlat", "হাওলাত")}</SelectItem>
+                  <SelectItem value="bank">{tx("Bank", "ব্যাংক")}</SelectItem>
+                  <SelectItem value="donation">{tx("Donation", "দান")}</SelectItem>
+                  <SelectItem value="misc">{tx("Misc", "বিবিধ")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label>
               <Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" />
