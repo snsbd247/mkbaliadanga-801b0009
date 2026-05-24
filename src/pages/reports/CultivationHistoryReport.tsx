@@ -73,7 +73,13 @@ export default function CultivationHistoryReport() {
         const m = resolveRateForLand(rateMap, l);
         return s + (m ? Number(m.rate_per_shotok) * Number(l.land_size || 0) : 0);
       }, 0);
+      const rates = Array.from(new Set(fl.map(l => {
+        const m = resolveRateForLand(rateMap, l);
+        return m ? Number(m.rate_per_shotok) : null;
+      }).filter(v => v !== null))) as number[];
+      const avgRate = totalArea > 0 ? totalAmount / totalArea : 0;
       const mouzas = Array.from(new Set(fl.map((l) => l.mouza_name || l.mouza).filter(Boolean))).join(", ");
+      const particulars = Array.from(new Set(fl.map((l) => l.field_type).filter(Boolean))).join(", ");
       return {
         id: f.id,
         member_no: f.member_no ?? f.farmer_code ?? "—",
@@ -81,6 +87,9 @@ export default function CultivationHistoryReport() {
         father: f.father_name ?? "—",
         mobile: f.mobile ?? "—",
         mouzas: mouzas || "—",
+        particulars: particulars || "—",
+        rateLabel: rates.length === 0 ? "—" : rates.length === 1 ? money(rates[0]) : `${money(Math.min(...rates))}–${money(Math.max(...rates))}`,
+        avgRate,
         landCount: fl.length,
         totalArea,
         totalAmount,
