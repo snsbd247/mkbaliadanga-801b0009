@@ -64,7 +64,7 @@ export default function CombinedPayment() {
   }, []);
 
   useEffect(() => {
-    if (!form.farmer_id) { setFarmer(null); setLoans([]); return; }
+    if (!form.farmer_id) { setFarmer(null); setLoans([]); setDues(null); return; }
     (async () => {
       const [f, lq] = await Promise.all([
         supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").eq("id", form.farmer_id).maybeSingle(),
@@ -81,6 +81,7 @@ export default function CombinedPayment() {
         };
       }).filter(r => r.remaining > 0);
       setLoans(rows);
+      try { setDues(await getFarmerDues(form.farmer_id)); } catch { setDues(null); }
     })();
   }, [form.farmer_id]);
 
