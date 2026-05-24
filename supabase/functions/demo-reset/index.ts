@@ -148,6 +148,13 @@ function formatToken(fmt: string, ctx: { seq: number; office: string; year: numb
     .replace(/\{year\}/g, String(ctx.year));
 }
 
+// account_number must be 12–14 numeric digits (enforced by farmers_validate_identifiers trigger).
+// If a custom format yields non-digits or wrong length, fall back to {year}{seq:9} (13 digits).
+function safeAccountNumber(rendered: string, ctx: { seq: number; year: number }): string {
+  if (/^\d{12,14}$/.test(rendered)) return rendered;
+  return `${ctx.year}${String(ctx.seq).padStart(9, "0")}`;
+}
+
 async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[], customNames?: { en: string; bn?: string; father?: string; mother?: string; mobile?: string; nid?: string }[]) {
   const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
   const year = new Date().getFullYear();
@@ -218,7 +225,7 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
       status: "active",
       is_voter: isVoter,
       voter_number: isVoter ? formatToken(cfg.voterNumberFormat, tokenCtx) : null,
-      account_number: isVoter ? formatToken(cfg.accountNumberFormat, tokenCtx) : null,
+      account_number: isVoter ? safeAccountNumber(formatToken(cfg.accountNumberFormat, tokenCtx), tokenCtx) : null,
       division_id: loc?.division_id ?? null,
       district_id: loc?.district_id ?? null,
       upazila_id: loc?.upazila_id ?? null,
@@ -1301,9 +1308,10 @@ Deno.serve(async (req) => {
     const voterCfg: VoterCfg = {
       voterRatio: Math.max(2, Math.min(20, Number(body?.voterCfg?.voterRatio) || 3)),
       voterNumberFormat: typeof body?.voterCfg?.voterNumberFormat === "string" && body.voterCfg.voterNumberFormat.trim()
-        ? body.voterCfg.voterNumberFormat.trim().slice(0, 80) : "V-{seq:5}",
+        ? body.voterCfg.voterNumberFormat.trim().slice(0, 80) : "{seq:8}",
+      // account_number trigger requires 12–14 digit numeric value
       accountNumberFormat: typeof body?.voterCfg?.accountNumberFormat === "string" && body.voterCfg.accountNumberFormat.trim()
-        ? body.voterCfg.accountNumberFormat.trim().slice(0, 80) : "SAV-{seq:6}",
+        ? body.voterCfg.accountNumberFormat.trim().slice(0, 80) : "{year}{seq:9}",
     };
 
     if (action === "preview") {

@@ -49,8 +49,9 @@ export default function DemoManager() {
 
   // voter config
   const [voterRatio, setVoterRatio] = useState(3);
-  const [voterNumberFormat, setVoterNumberFormat] = useState("{seq:5}");
-  const [accountNumberFormat, setAccountNumberFormat] = useState("{seq:5}");
+  // account_number must be 12–14 numeric digits (DB trigger farmers_validate_identifiers)
+  const [voterNumberFormat, setVoterNumberFormat] = useState("{seq:8}");
+  const [accountNumberFormat, setAccountNumberFormat] = useState("{year}{seq:9}");
 
   // progress
   const [progress, setProgress] = useState(0);
@@ -326,11 +327,11 @@ export default function DemoManager() {
             </div>
             <div>
               <Label>Voter Number Format</Label>
-              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:5}" />
+              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:8}" />
             </div>
             <div>
-              <Label>Account Number Format</Label>
-              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{seq:5}" />
+              <Label>Account Number Format (must yield 12–14 digits)</Label>
+              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{year}{seq:9}" />
             </div>
           </CardContent>
         </Card>
