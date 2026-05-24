@@ -20,6 +20,7 @@ import { money } from "@/lib/format";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
+import { useQueryClient } from "@tanstack/react-query";
 
 type LoanRow = { id: string; principal: number; total_payable: number; issued_on: string; remaining: number };
 
@@ -29,6 +30,7 @@ export default function CombinedPayment() {
   const { user, officeId } = useAuth();
   const { t, lang } = useLang();
   const brand = useBranding();
+  const qc = useQueryClient();
   const [form, setForm] = useState({ ...EMPTY });
   const [farmer, setFarmer] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
@@ -36,6 +38,8 @@ export default function CombinedPayment() {
   const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string } | null>(null);
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
+  const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
+  const loanExceeds = !!selectedLoan && Number(form.loan_amt || 0) > selectedLoan.remaining;
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
@@ -75,6 +79,8 @@ export default function CombinedPayment() {
     if (!form.farmer_id) return toast.error(lang === "bn" ? "কৃষক নির্বাচন করুন" : "Select a farmer");
     if (total <= 0) return toast.error(lang === "bn" ? "অন্তত একটি amount দিন" : "Enter at least one amount");
     if (form.loan_amt > 0 && !form.loan_id) return toast.error(lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan");
+    if (loanExceeds) return toast.error(lang === "bn" ? "ঋণের বাকির চেয়ে বেশি দেওয়া যাবে না" : "Loan repayment cannot exceed remaining balance");
+    if (Number(form.savings) < 0 || Number(form.share) < 0 || Number(form.loan_amt) < 0) return toast.error(lang === "bn" ? "ঋণাত্মক পরিমাণ অনুমোদিত নয়" : "Negative amounts are not allowed");
     setSaving(true);
     try {
       const receiptNo = await nextMonthlyReceiptNo("COMBO", officeId, form.farmer_id);
@@ -126,7 +132,16 @@ export default function CombinedPayment() {
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
       setLastReceipt({ no: receiptNo, rows, total, farmerName });
       guard.clear();
+      // Refresh related caches so Savings/Loans/Payments/Statement views update immediately
+      qc.invalidateQueries({ queryKey: ["api", "payments"] });
+      qc.invalidateQueries({ queryKey: ["api", "savings"] });
+      qc.invalidateQueries({ queryKey: ["api", "loans"] });
+      qc.invalidateQueries({ queryKey: ["farmer-statement"] });
+      qc.invalidateQueries({ queryKey: ["farmer-dues", form.farmer_id] });
+      qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && q.queryKey.some((k) => typeof k === "string" && /savings|loan|payment|statement|due/i.test(k)) });
       toast.success(`${lang === "bn" ? "সংরক্ষিত" : "Saved"} — ${receiptNo}`);
+      // Reset form, but keep farmer for fast next-entry
+      setForm({ ...EMPTY, farmer_id: form.farmer_id });
     } catch (e: any) {
       toast.error(e.message || "Save failed");
     } finally {
@@ -223,7 +238,14 @@ export default function CombinedPayment() {
             <div>
               <Label>{lang === "bn" ? "ঋণ পরিশোধ (৳)" : "Loan Repayment (৳)"}</Label>
               <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_amt}
+                     aria-invalid={loanExceeds || undefined}
                      onChange={(e) => setForm({ ...form, loan_amt: Number(e.target.value) || 0 })} />
+              {selectedLoan && (
+                <div className={`text-xs mt-1 ${loanExceeds ? "text-destructive" : "text-muted-foreground"}`}>
+                  {lang === "bn" ? "বাকি" : "Remaining"}: {money(selectedLoan.remaining)}
+                  {loanExceeds && (lang === "bn" ? " — বাকির চেয়ে বেশি" : " — exceeds remaining")}
+                </div>
+              )}
             </div>
           </div>
           <div>
@@ -236,11 +258,12 @@ export default function CombinedPayment() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={reset} disabled={saving}>{lang === "bn" ? "রিসেট" : "Reset"}</Button>
-              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id}>
+              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds}>
                 <Save className="h-4 w-4 mr-1" />{saving ? "…" : (lang === "bn" ? "সংরক্ষণ" : "Save")}
               </Button>
             </div>
           </div>
+
         </Card>
 
         <Card className="p-4 space-y-3">

@@ -101,7 +101,17 @@ export default function FarmerStatement() {
     setLoading(true);
     try {
       if (kind === "irrigation") {
-        // Build irrigation statement directly from irrigation_invoices
+        // Carry-forward: compute opening due from invoices generated BEFORE `from`
+        let opening = 0;
+        if (from) {
+          const { data: prior } = await supabase.from("irrigation_invoices")
+            .select("payable_amount,paid_amount,due_amount")
+            .eq("farmer_id", farmerId).is("deleted_at", null)
+            .neq("invoice_status", "cancelled")
+            .lt("generated_at", from);
+          opening = (prior ?? []).reduce((s: number, r: any) =>
+            s + (Number(r.due_amount ?? (Number(r.payable_amount || 0) - Number(r.paid_amount || 0))) || 0), 0);
+        }
         let q = supabase.from("irrigation_invoices")
           .select("id,generated_at,due_date,invoice_no,payable_amount,paid_amount,due_amount,seasons(name,year)")
           .eq("farmer_id", farmerId).is("deleted_at", null)
@@ -110,19 +120,31 @@ export default function FarmerStatement() {
         if (to) q = q.lte("generated_at", to);
         const { data, error } = await q;
         if (error) throw error;
-        let bal = 0;
-        const r: Row[] = (data ?? []).map((inv: any) => {
+        let bal = opening;
+        const r: Row[] = [];
+        if (opening !== 0 && from) {
+          r.push({
+            id: "__opening__",
+            entry_date: from,
+            description: lang === "bn" ? "পূর্বের বকেয়া (Opening / Carry-forward)" : "Opening due (carry-forward)",
+            debit: opening > 0 ? opening : 0,
+            credit: opening < 0 ? -opening : 0,
+            balance: bal,
+            reference_type: "opening", reference_id: null,
+          });
+        }
+        for (const inv of (data ?? []) as any[]) {
           const debit = Number(inv.payable_amount || 0);
           const credit = Number(inv.paid_amount || 0);
           bal += debit - credit;
-          return {
+          r.push({
             id: inv.id,
             entry_date: (inv.generated_at || "").slice(0, 10),
             description: `${inv.invoice_no || ""}${inv.seasons ? " — " + inv.seasons.name + " " + inv.seasons.year : ""}`,
             debit, credit, balance: bal,
             reference_type: "irrigation_invoice", reference_id: inv.id,
-          };
-        });
+          });
+        }
         setRows(r);
         setHasLoaded(true);
         return;
