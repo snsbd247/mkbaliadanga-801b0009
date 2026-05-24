@@ -1216,6 +1216,16 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         </CardContent>
       </Card>
 
+      {prevDueWarning && previewRows && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>{tx("Previous outstanding detected", "পূর্বের বকেয়া পাওয়া গেছে")}</AlertTitle>
+          <AlertDescription>
+            {prevDueWarning.farmers} {tx("farmer(s) have prior unpaid invoices totalling", "জন কৃষকের আগের অপরিশোধিত ইনভয়েস রয়েছে — মোট")} <span className="font-mono font-semibold">{money(prevDueWarning.total)}</span>.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {previewRows && (
         <Card>
           <CardContent className="pt-6">
