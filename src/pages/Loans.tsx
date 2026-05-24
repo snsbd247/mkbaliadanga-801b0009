@@ -351,6 +351,9 @@ export default function Loans() {
         </Dialog>
       } />
 
+      <FarmerLoanSummary loans={loans} t={t} tx={tx} />
+
+
       <Card className="p-3 mb-3 flex items-center gap-3">
         <Label className="text-sm flex items-center gap-2 cursor-pointer">
           <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
