@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anyone can submit a payment intent" ON public.public_payment_intents;

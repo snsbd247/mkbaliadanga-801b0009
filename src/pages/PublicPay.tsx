@@ -41,18 +41,20 @@ export default function PublicPay() {
   }
 
   async function submit() {
-    if (!form.farmer_code.trim()) return toast.error("কৃষক কোড দিন");
     if (!form.amount || form.amount <= 0) return toast.error("টাকার পরিমাণ দিন");
     setSubmitting(true);
     try {
-      const { data, error } = await sb.from("public_payment_intents").insert({
-        farmer_code: form.farmer_code.trim(),
-        phone: form.phone || null,
-        amount: form.amount,
-        allocation_hint: form.allocation_hint,
-        note: form.note || null,
-      }).select("id").single();
+      const { data, error } = await sb.functions.invoke("farmer-submit-payment-intent", {
+        body: {
+          phone: form.phone || null,
+          amount: form.amount,
+          allocation_hint: form.allocation_hint,
+          note: form.note || null,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Failed");
       setDone(data.id);
     } catch (e: any) {
       toast.error(e.message || "Failed");
@@ -60,6 +62,7 @@ export default function PublicPay() {
       setSubmitting(false);
     }
   }
+
 
   if (done) {
     return (
