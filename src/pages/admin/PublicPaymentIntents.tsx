@@ -24,6 +24,8 @@ const TYPES = ["all", "irrigation", "loan", "savings", "other"];
 
 export default function PublicPaymentIntents() {
   const { user } = useAuth();
+  const { tx } = useLang();
+
   const [rows, setRows] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [typeFilter, setTypeFilter] = useState<string>("all");
