@@ -148,6 +148,13 @@ function formatToken(fmt: string, ctx: { seq: number; office: string; year: numb
     .replace(/\{year\}/g, String(ctx.year));
 }
 
+// account_number must be 12–14 numeric digits (enforced by farmers_validate_identifiers trigger).
+// If a custom format yields non-digits or wrong length, fall back to {year}{seq:9} (13 digits).
+function safeAccountNumber(rendered: string, ctx: { seq: number; year: number }): string {
+  if (/^\d{12,14}$/.test(rendered)) return rendered;
+  return `${ctx.year}${String(ctx.seq).padStart(9, "0")}`;
+}
+
 async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[], customNames?: { en: string; bn?: string; father?: string; mother?: string; mobile?: string; nid?: string }[]) {
   const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
   const year = new Date().getFullYear();
