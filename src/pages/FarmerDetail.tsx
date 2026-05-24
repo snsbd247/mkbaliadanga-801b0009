@@ -728,13 +728,78 @@ export default function FarmerDetail() {
     return parts.length ? parts.join(" › ") : (l.mouza ?? "-");
   };
 
+  function levelLabel(level: LocationLevel) {
+    const map: Record<LocationLevel, string> = {
+      division: t("division"), district: t("district"), upazila: t("upazila"),
+      union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
+    };
+    return map[level];
+  }
+
+  async function uploadFarmerPhoto(file: File): Promise<string | undefined> {
+    const ext = file.name.split(".").pop();
+    const path = `farmers/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("farmer-photos").upload(path, file);
+    if (error) { toast.error(error.message); return undefined; }
+    return supabase.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
+  }
+
+  function openFarmerEdit() {
+    setEditFarmerLocErr(null);
+    setEditFarmerPhoto(null);
+    setEditFarmerForm({
+      ...farmer,
+      office_id: farmer.office_id ?? "",
+      voter_number: farmer.voter_number ?? "",
+      account_number: farmer.account_number ?? farmer.voter_number ?? "",
+      division_id: farmer.division_id ?? null,
+      district_id: farmer.district_id ?? null,
+      upazila_id: farmer.upazila_id ?? null,
+      union_id: farmer.union_id ?? null,
+      ward_id: farmer.ward_id ?? null,
+      village_id: farmer.village_id ?? null,
+      mouza_id: farmer.mouza_id ?? null,
+    });
+    setEditFarmerOpen(true);
+  }
+
+  async function saveFarmerEdit() {
+    if (!editFarmerForm) return;
+    if (!String(editFarmerForm.name_en ?? "").trim()) return toast.error(tx("Name (English) is required", "ইংরেজি নাম আবশ্যক"));
+    if (editFarmerForm.member_no) {
+      const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(editFarmerForm.member_no).trim(), _exclude_id: editFarmerForm.id ?? null });
+      if (dup === true) return toast.error(t("duplicateFarmerId"));
+    }
+    setEditFarmerSaving(true);
+    try {
+      let photo_url: string | undefined;
+      if (editFarmerPhoto) {
+        photo_url = await uploadFarmerPhoto(editFarmerPhoto);
+        if (!photo_url) return;
+      }
+      const payload = toFarmerUpdatePayload(editFarmerForm, photo_url ? { photo_url } : {});
+      const { error } = await supabase.from("farmers").update(payload as any).eq("id", editFarmerForm.id);
+      if (error) {
+        const lvl = parseLocationDbError(error.message);
+        if (lvl) setEditFarmerLocErr({ level: lvl, message: tx(`Invalid ${levelLabel(lvl)} selection`, `${levelLabel(lvl)} নির্বাচন সঠিক নয়`) });
+        else toast.error(error.message);
+        return;
+      }
+      toast.success(t("farmerUpdated"));
+      setEditFarmerOpen(false);
+      setEditFarmerForm(null);
+      setEditFarmerPhoto(null);
+      loadAll();
+    } finally { setEditFarmerSaving(false); }
+  }
+
   return (
     <>
       <PageHeader title={lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}
         description={`${farmer.member_no ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <ReceiptSettingsButton />
-          <Button variant="outline" onClick={() => nav(`/farmers?edit=${farmer.id}&returnTo=${encodeURIComponent(`/farmers/${farmer.id}`)}`)}><Pencil className="h-4 w-4 mr-1" />{t("edit")}</Button>
+          <Button variant="outline" onClick={openFarmerEdit}><Pencil className="h-4 w-4 mr-1" />{t("edit")}</Button>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />{t("pgPrintCard")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
