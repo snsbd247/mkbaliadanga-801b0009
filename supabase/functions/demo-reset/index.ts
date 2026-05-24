@@ -1211,6 +1211,11 @@ Deno.serve(async (req) => {
     ));
     // transactional rollback default ON; caller may opt out with `transactional: false`
     const transactional: boolean = body?.transactional !== false;
+    // 1-year operational seeding spread (default 1 = legacy point-in-time)
+    const monthsBack: number = Math.max(1, Math.min(36,
+      Number(body?.monthsBack) || preset?.monthsBack || 1,
+    ));
+
 
     const voterCfg: VoterCfg = {
       voterRatio: Math.max(2, Math.min(20, Number(body?.voterCfg?.voterRatio) || 3)),
