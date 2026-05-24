@@ -928,14 +928,16 @@ async function verifyRowCounts(admin: any, modules: string[]) {
 }
 
 // ---- Preset definitions (mirrors src/lib/demoPresets.ts) ----
-const PRESETS: Record<string, { size: number; modules: string[] }> = {
+const PRESETS: Record<string, { size: number; modules: string[]; monthsBack?: number }> = {
   small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
   medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
   large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
+  year_ops:        { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"], monthsBack: 12 },
   loans_only:      { size: 50,  modules: ["locations","settings","accounting","farmers","loans"] },
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
 };
+
 
 async function verifyLocations(admin: any) {
   const expected = {
