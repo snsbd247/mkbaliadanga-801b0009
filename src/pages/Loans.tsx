@@ -43,6 +43,10 @@ export default function Loans() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [formErrors, setFormErrors] = useState<FieldError[]>([]);
+  const { registerField, focusField, focusFirstError, preventEnterSubmit } = useFormUx();
+  const createDirty = !!(form.farmer_id || form.principal > 0 || form.note);
+  const createGuard = useUnsavedFormGuard("loan-create", form, createDirty && open);
   const [showDeleted, setShowDeleted] = useState(false);
   const [editLoan, setEditLoan] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
