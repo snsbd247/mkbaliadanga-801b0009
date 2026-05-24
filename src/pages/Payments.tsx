@@ -176,7 +176,7 @@ export default function Payments() {
   }
   async function loadDues() {
     const [l, i] = await Promise.all([
-      supabase.from("loans").select("id,principal,total_payable,issued_on,loan_payments(amount)").eq("farmer_id", farmerId).eq("status", "approved"),
+      supabase.from("loans").select("id,principal,total_payable,issued_on,interest_rate,plan_id,loan_payments(amount),loan_plans(duration_months)").eq("farmer_id", farmerId).eq("status", "approved"),
       supabase.from("irrigation_invoices")
         .select("id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge")
         .eq("farmer_id", farmerId)
