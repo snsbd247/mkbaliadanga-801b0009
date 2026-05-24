@@ -155,6 +155,28 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     );
   }, [rows, search]);
 
+  /** Farmer-wise aggregate of the currently-loaded invoices (payable/paid/due). */
+  const farmerSummary = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; code: string; payable: number; paid: number; due: number; count: number }>();
+    for (const r of filtered as any[]) {
+      const id = r.farmer_id;
+      if (!id) continue;
+      const cur = map.get(id) ?? {
+        id,
+        name: r.farmers?.name_bn || r.farmers?.name_en || "—",
+        code: r.farmers?.farmer_code || "",
+        payable: 0, paid: 0, due: 0, count: 0,
+      };
+      cur.payable += Number(r.payable_amount) || 0;
+      cur.paid += Number(r.paid_amount) || 0;
+      cur.due += Number(r.due_amount) || 0;
+      cur.count += 1;
+      map.set(id, cur);
+    }
+    return [...map.values()].sort((a, b) => b.due - a.due);
+  }, [filtered]);
+  const [showFarmerSummary, setShowFarmerSummary] = useState(false);
+
   async function cancelInvoice(inv: any) {
     const ok = await confirm({
       title: tx("Cancel invoice?", "ইনভয়েস বাতিল করুন?"),
