@@ -1,6 +1,7 @@
 // Public-facing payment intent submission page (P-E3).
 // i18n-ignore-file — public landing page
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,11 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 
 const sb = supabase as any;
 
 export default function PublicPay() {
+  // Farmer portal session gate — prevents anonymous false submissions from outside.
+  const token = useMemo(() => localStorage.getItem("farmer_portal_token") ?? "", []);
+  const expiresAt = useMemo(() => localStorage.getItem("farmer_portal_expires") ?? "", []);
+  const expired = expiresAt ? Date.parse(expiresAt) < Date.now() : false;
+  const nav = useNavigate();
+  if (!token || expired) {
+    return <Navigate to="/" replace />;
+  }
+
   const [form, setForm] = useState({
     farmer_code: "", phone: "", amount: 0, allocation_hint: "irrigation", note: "",
   });
