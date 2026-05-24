@@ -171,11 +171,18 @@ export default function FarmerDashboard() {
           <SummaryCard icon={Droplets} label={t("p5b_irrigationDue")} value={data.summary.irrigation_due} tone="info" />
         </div>
 
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => nav("/farmer/pay")}>
+            <HandCoins className="h-4 w-4 mr-1" /> পেমেন্ট অনুরোধ জমা দিন
+          </Button>
+        </div>
+
         <Tabs defaultValue="savings" className="w-full">
-          <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+          <TabsList className="grid grid-cols-4 w-full sm:w-auto">
             <TabsTrigger value="savings">{t("p5b_savings")}</TabsTrigger>
             <TabsTrigger value="loans">{t("p5b_loans")}</TabsTrigger>
             <TabsTrigger value="irrigation">{t("p5b_irrigation")}</TabsTrigger>
+            <TabsTrigger value="intents">অনুরোধ</TabsTrigger>
           </TabsList>
 
           <TabsContent value="savings">
