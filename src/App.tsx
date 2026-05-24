@@ -247,6 +247,7 @@ const App = () => (
                 <Route path="/reports/expenses" element={<RequirePerm module="reports" action="can_view"><ExpensesReport /></RequirePerm>} />
                 <Route path="/reports/promise-due" element={<RequirePerm module="reports"><PromiseDueReport /></RequirePerm>} />
                 <Route path="/reports/cultivation-history" element={<RequirePerm module="reports"><CultivationHistoryReport /></RequirePerm>} />
+                <Route path="/reports/loan-history" element={<RequirePerm module="reports"><LoanHistoryReport /></RequirePerm>} />
 
                 <Route path="/admin/irrigation-due-mismatch" element={<RequireRole roles={["admin","super_admin"]}><IrrigationDueMismatch /></RequireRole>} />
                 <Route path="/admin/retry-jobs" element={<RequireRole roles={["admin","super_admin"]}><RetryJobs /></RequireRole>} />
