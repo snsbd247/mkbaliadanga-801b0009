@@ -30,6 +30,7 @@ export default function CombinedPayment() {
   const { user, officeId } = useAuth();
   const { t, lang } = useLang();
   const brand = useBranding();
+  const qc = useQueryClient();
   const [form, setForm] = useState({ ...EMPTY });
   const [farmer, setFarmer] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
@@ -37,6 +38,8 @@ export default function CombinedPayment() {
   const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string } | null>(null);
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
+  const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
+  const loanExceeds = !!selectedLoan && Number(form.loan_amt || 0) > selectedLoan.remaining;
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
