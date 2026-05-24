@@ -1,59 +1,96 @@
-## Phase C — Reports & Analytics ✅ COMPLETE
+## স্কোপ
 
-- C1 Dashboard KPIs + sparkline, C2 Combined statement PDF, C3 Monthly Receipt Register, C4 Officer Summary
+সাম্প্রতিক যেসব ফিচার/ফিক্স ৫টি জায়গায় রিফ্লেক্ট করব:
 
-## Phase D — Asset lifecycle ✅ COMPLETE (core)
+1. Loan No office-wise unique (DB index + form hint)
+2. Member-wise Loan Summary (`/loans` পেজে)
+3. Irrigation payment-এ Hawlat/Bank/Mobile Banking category
+4. Combined Payment-এ farmer dues preview + Auto-download receipt
+5. QR `/r/{token}` receipt-verify পেজ (genuine/masked mobile)
+6. Form draft restore toast (farmer/loan/payment ফর্মে)
+7. Tab-return page-refresh permanent ফিক্স (focus refetch off)
+8. Farmer profile থেকে Edit করলে save-এর পর প্রোফাইলেই ফিরে আসা
+9. Lands form-এ village/ward/union ছাড়া save করার ফিক্স
 
-- 13 DB tables, 15 UI pages, transfer approval workflow
+---
 
-## Phase E — Automation & SMS depth ✅ COMPLETE
+## ১. User Manual (PDF v4 + in-app /help page)
 
-- **E1** Asset SMS alerts (low-stock + warranty) — `asset-alerts-scan` edge fn, `asset_alerts` table, `/assets/alerts` page
-- **E2** Recurring maintenance scheduler — `asset_maintenance_schedules` table, "Mark done & advance" UI, alerts integration
-- **E3** Depreciation auto-post — `run_monthly_depreciation_batch` RPC, `asset-depreciation-run` edge fn, batch button in UI
-- **E4** GreenWeb SMS deepening:
-  - `sms_provider_secrets.priority` for failover order (UI in SmsSettings)
-  - `sms_templates.preferred_provider` per-template override (UI in SmsTemplates)
-  - `sms-delivery-report` edge fn for provider DLR ingestion → `sms_logs.delivered_at` / `dlr_payload`
-  - `send-sms` rewritten to try providers in priority order, template override first
+- `public/help/user-manual-v4.pdf` জেনারেট — `reportlab` দিয়ে স্ক্রিপ্ট
+  - নতুন chapter: "Recent updates (2026 May)" উপরের ৯টা আইটেম স্ক্রিনশটসহ
+  - বাকি chapter v3 থেকে port (table of contents আপডেট)
+- In-app `/help` route যোগ:
+  - `src/pages/Help.tsx` — markdown-driven, bn/en টগল, sidebar TOC
+  - `public/help/manual.md` থেকে রেন্ডার (react-markdown)
+  - PDF ডাউনলোড বাটন (v4)
+- Sidebar nav-এ "Help / সহায়িকা" লিংক
 
-## Phase F — Candidates (next)
+## ২. Demo Import System
 
-### F1 — Operational dashboards
-- Per-office SMS health (sent / delivered / failed last 24h, provider mix)
-- Asset alerts heatmap + maintenance burn-down
-- Depreciation posting status calendar (which months are posted per asset)
+- `src/lib/demoPresets.ts`-এ নতুন preset আইটেম:
+  - Sample loans (২টা, office-wise unique loan_no সহ)
+  - Sample irrigation payment with Hawlat category
+  - Sample combined payment
+  - Sample QR token
+- `src/pages/admin/DemoManager.tsx`-এ নতুন seed বাটন: "Seed recent-features demo"
+- `supabase/functions/demo-reset/index.ts` — নতুন category গুলো reset scope-এ include
+- `src/lib/assetDemoSeed.ts` — অপরিবর্তিত, কিন্তু validation pass করে
 
-### F2 — Member self-service portal expansion
-- Maintenance / depreciation visibility for owned irrigation equipment
-- Push notifications via SMS for upcoming dues + delivery confirmations
+## ৩. ব্যাকেন্ড ফাইল (Laravel mirror)
 
-### F3 — Bulk operations
-- Bulk asset import/export (CSV) with validation
-- Bulk SMS announcements with template + variable preview
-- Bulk depreciation backfill for historical months
+`backend/` হল Laravel mirror (PHP); নতুন migrations:
 
-### F4 — Period-close & audit
-- Monthly period-close workflow with snapshot
-- Cross-office trial balance + variance report
-- Immutable journal locking once a period is closed
+- `2026_05_24_000001_add_loan_no_unique_index.php` — `loans (office_id, loan_no)` unique partial index
+- `2026_05_24_000002_add_hawlat_bank_to_irrigation_payments.php` — `category` enum extend
+- `2026_05_24_000003_create_qr_tokens_table.php` — token, payment_id, expires_at
+- `2026_05_24_000004_add_verify_token_to_payments.php` — nullable column
 
-### Order
-F1 → F2 → F3 → F4 (one per turn). User can also reorder.
+Models update:
+- `app/Models/Loan.php` — unique validation rule
+- `app/Models/IrrigationPayment.php` — category enum cast
+- `app/Models/QrToken.php` — new model
+- `app/Models/Payment.php` — verify_token fillable
 
-## Batch P-C1 — Original Phase C tail ✅ COMPLETE
+Controllers (API):
+- `app/Http/Controllers/Api/QrController.php` — `GET /api/r/{token}` mirror of edge function
+- `app/Http/Controllers/Api/LoanController.php` — duplicate loan_no error handling
 
-- Multi-rate per season: `seasonRates.ts` confirmed (office-override path); added test for office-scoped rate precedence.
-- কাঠা conversion: org standard **1 কাঠা = 0.15 বিঘা (≈ 4.95 শতক)** added to `irrigationCalc.ts` with helpers `shatakToKatha`, `kathaToShatak`, `bighaToKatha`, `kathaToBigha`, and new `formatLandSize(..., "with_katha")` variant. Tests added.
-- A5 irrigation receipt: added `"a5"` to `PaperFormat`, two A5 presets (single & tight) in `PRINTER_PRESETS`, A5 option in IrrigationInvoices paper-size selector, default cut-line 105mm.
+## ৪. ডিফল্ট সিডার (DatabaseSeeder)
 
-### Next remaining original-plan batches
-- ~~P-C2 historical land tracking~~ ✅ `land_history` table + `/land-history` page (Add/Filter, admin-only delete)
-- ~~P-D1 cashbook split + temporary loan report~~ ✅ `loans.is_temporary` flag + `/loans/temporary` report page with PDF/Excel
-- ~~P-D2 bank accounts + voucher upload~~ ✅ `bank_accounts`, `bank_transactions` (deposit/withdraw/charge/interest + bank-to-bank transfer via `transfer_group`), `/bank-accounts` page with running balance per account; `vouchers` table with auto `voucher_no` via `next_voucher_no()` RPC, private `vouchers` storage bucket, `/vouchers` page with file upload + signed-URL download.
-- ~~P-D3 audit reports (PDF/Excel/Word)~~ ✅ AuditLogs page now has CSV + Excel (`xlsx`) + Word (`.doc` HTML) + PDF export buttons.
-- ~~P-E1 land owner separation finishing + cultivation history + change remarks~~ ✅ `land_history` extended with `crop` / `yield_amount` / `yield_unit`; new `land_change_log` table tracks owner/cultivator change + remarks (admin/staff read).
-- ~~P-E2 better payment UI + receipt void~~ ✅ `payments` got `voided_at` / `voided_by` / `void_reason` + admin **Void** button on approved rows (auto-reverses irrigation allocations, shows ⊘ reason chip under status).
-- ~~P-E3 online public payment portal~~ ✅ Public route `/pay` (no auth, Bangla form, farmer-code lookup) writes to `public_payment_intents`; admin `/public-payments` page (sidebar: "পাবলিক পেমেন্ট অনুরোধ") to mark processed/rejected.
+- `DatabaseSeeder.php`-এ run order: Roles → ChartOfAccounts → AdminUser → SequenceFix → (new) DemoOfficeSeeder optional
+- `AdminUserSeeder.php` — `superadmin / Admin@123456` (current) verify
+- নতুন `IrrigationCategorySeeder.php` — Hawlat/Bank/Mobile Banking default rows
+- `ChartOfAccountsSeeder.php` — Hawlat/Bank ledger account add
 
-## All original-plan batches complete ✅
+## ৫. GeoSeeder
+
+- `backend/database/seeders/GeoSeeder.php` — বর্তমানে DemoOfficeSeeder-এর ভিতরে hardcoded; আলাদা করব
+- Source: `src/data/bd-geo.json` (existing) থেকে JSON read করে bulk insert:
+  - divisions (8)
+  - districts (64)
+  - upazilas (~495)
+  - unions (~4500)
+  - mouzas (sample subset, full optional flag)
+- Idempotent: `updateOrInsert` by `(parent_id, name_en)`
+- DatabaseSeeder-এ wire করব (production-safe: শুধু empty হলে seed)
+
+---
+
+## Deliverables
+
+- 1 PDF: `public/help/user-manual-v4.pdf`
+- 1 markdown: `public/help/manual.md`
+- 1 new page: `src/pages/Help.tsx` + route + sidebar link
+- demoPresets/DemoManager edits
+- 4 Laravel migrations + 4 models + 2 controllers
+- 3 seeder files (new/updated): DatabaseSeeder, IrrigationCategorySeeder, GeoSeeder
+
+## টেকনিক্যাল নোট
+
+- Laravel ফাইলগুলো sandbox-এ run হয় না (frontend-only project), শুধু mirror হিসেবে রাখা — তাই কোনো DB মাইগ্রেশন এই কাজে চলবে না; Supabase-এ আগে থেকেই আছে
+- PDF generation `code--exec` দিয়ে `/mnt/documents/`-এ আগে বানিয়ে QA করে তারপর `public/help/`-এ কপি
+- GeoSeeder-এর পূর্ণ mouza ডেটা বড়; default-এ skip, `--with-mouzas` flag-এ enable
+
+## প্রশ্ন
+
+এই ৫টা স্কোপ + ৯টা ফিচার দিয়ে এগোব? নাকি প্রথমে শুধু **User Manual (PDF v4 + /help page)** শেষ করে দেখাব, তারপর demo/backend/seeder আলাদা টার্নে?

@@ -169,7 +169,27 @@ const MODULES: Module[] = [
     edit: [{ bn: "সদস্য রো → Edit → আপডেট → Save।", en: "Member row → Edit → update → Save." }],
     remove: [{ bn: "সদস্য রো → Remove। পরিবর্তন কমিটি অডিটে লগ হয়।", en: "Member row → Remove — change is logged in committee audit." }],
   },
+  {
+    id: "recent",
+    title: { bn: "১১. সাম্প্রতিক আপডেট (২০২৬ মে)", en: "11. Recent Updates (May 2026)" },
+    intro: {
+      bn: "সাম্প্রতিক রিলিজে যুক্ত হওয়া নতুন ফিচার ও ফিক্স — Loan No unique, Hawlat/Bank category, QR receipt verify, draft restore, tab-return refresh fix, ও প্রোফাইল-ইডিট রিটার্ন।",
+      en: "New features and fixes in the latest release — Loan No uniqueness, Hawlat/Bank irrigation category, QR receipt verify, draft restore, tab-return refresh fix, and profile-edit return.",
+    },
+    add: [
+      { bn: "Loan No এখন একই অফিসে ইউনিক — duplicate দিলে error দেখাবে।", en: "Loan No is now unique within each office — duplicates show an error." },
+      { bn: "Loans পেজে \"Member-wise Loan Summary\" কার্ড নতুন সংযোজন।", en: "New \"Member-wise Loan Summary\" card on the Loans page." },
+      { bn: "Irrigation Payment এ Hawlat / Bank / Mobile Banking ক্যাটাগরি যোগ — রসিদে দেখা যাবে।", en: "Hawlat / Bank / Mobile Banking categories added to Irrigation Payment — shown on receipt." },
+      { bn: "Combined Payment-এ ফার্মার select করলেই বকেয়া সারাংশ ও Auto-download receipt চেকবক্স পাওয়া যায়।", en: "Selecting a farmer in Combined Payment now shows outstanding summary + Auto-download receipt option." },
+      { bn: "প্রতিটি রসিদে QR কোড — স্ক্যান করলে /r/{token} verify পেজ খুলবে (mobile masked)।", en: "Every receipt has a QR — scanning opens /r/{token} verify page (mobile masked)." },
+      { bn: "ফার্মার/লোন/পেমেন্ট ফর্মে accidental refresh হলে draft restore toast আসে — Continue / Discard বাটন।", en: "Farmer/Loan/Payment forms now show a draft restore toast after accidental refresh — Continue / Discard." },
+      { bn: "অন্য ট্যাবে গিয়ে ফিরে এলে আর পেজ refresh হবে না (window-focus refetch বন্ধ)।", en: "Returning from another browser tab no longer reloads the page (window-focus refetch disabled)." },
+      { bn: "ফার্মার প্রোফাইল থেকে Edit করে Save করলে এখন প্রোফাইলেই ফিরবে — list-এ যাবে না।", en: "Editing a farmer from their profile now returns to the profile after Save — not the list." },
+      { bn: "Lands ফর্মে village/ward/union ছাড়াই Save করা যায় (validation শিথিল)।", en: "Lands form now saves without village/ward/union (validation relaxed)." },
+    ],
+  },
 ];
+
 
 const REPORTS_GUIDE = {
   bn: {
@@ -232,12 +252,12 @@ export default function Help() {
             <Languages className="h-4 w-4 mr-1" /> English
           </Button>
           <Button asChild size="sm">
-            <a href="/help/user-manual-v3.pdf" download>
+            <a href="/help/user-manual-v4.pdf" download>
               <Download className="h-4 w-4 mr-1" /> {tx("PDF ডাউনলোড", "Download PDF")}
             </a>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="/help/user-manual-v3.pdf" target="_blank" rel="noopener noreferrer">
+            <a href="/help/user-manual-v4.pdf" target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4 mr-1" /> {tx("PDF দেখুন", "View PDF")}
             </a>
           </Button>
@@ -247,7 +267,7 @@ export default function Help() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-5 w-5" /> {tx("পূর্ণ ম্যানুয়াল (v3)", "Full Manual (v3)")}
+            <FileText className="h-5 w-5" /> {tx("পূর্ণ ম্যানুয়াল (v4)", "Full Manual (v4)")}
           </CardTitle>
           <CardDescription>
             {tx(
@@ -258,7 +278,7 @@ export default function Help() {
         </CardHeader>
         <CardContent>
           <object
-            data="/help/user-manual-v3.pdf#toolbar=1"
+            data="/help/user-manual-v4.pdf#toolbar=1"
             type="application/pdf"
             className="w-full h-[500px] rounded border"
           >

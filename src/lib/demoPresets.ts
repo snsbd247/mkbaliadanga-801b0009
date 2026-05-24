@@ -68,7 +68,15 @@ export const DEMO_PRESETS: DemoPreset[] = [
     description_en: "Farmers + irrigation only (no loans/savings)",
     description_bn: "শুধু ফার্মার + সেচ (ঋণ/সঞ্চয় বাদে)",
   },
+  {
+    id: "recent_features", label_en: "Recent Features Showcase (May 2026)",
+    label_bn: "সাম্প্রতিক ফিচার ডেমো (মে ২০২৬)",
+    size: 25, modules: ALL_MODULES, monthsBack: 2,
+    description_en: "Small dataset with Hawlat/Bank irrigation payments, multi-loan members, QR-verifiable receipts and combined payment samples.",
+    description_bn: "ছোট ডেটাসেট — Hawlat/Bank সেচ পেমেন্ট, multi-loan member, QR-verify রসিদ ও combined payment স্যাম্পল।",
+  },
 ];
+
 
 // (table, page route, expected min rows when module selected)
 export type ModuleVerifyEntry = {
