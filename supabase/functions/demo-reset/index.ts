@@ -173,6 +173,7 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
   const existingCodes = new Set<string>();
   for (const row of existing ?? []) {
     for (const value of [row.farmer_code, row.account_number, row.voter_number]) {
+      if (!value) continue;
       const normalized = normalizeFiveDigitIdentifier(value, 0);
       if (/^\d{5}$/.test(normalized)) existingCodes.add(normalized);
     }
@@ -200,9 +201,14 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
     // Generate one unique 5-digit ID used as farmer_code, account_number and voter_number.
     let seq = i + 1;
     let code = normalizeFiveDigitIdentifier(formatToken(cfg.accountNumberFormat, { ...tokenCtx, seq }), seq);
+    let guard = 0;
     while (existingCodes.has(code)) {
       seq++;
-      code = normalizeFiveDigitIdentifier(formatToken(cfg.accountNumberFormat, { ...tokenCtx, seq }), seq);
+      const formatted = normalizeFiveDigitIdentifier(formatToken(cfg.accountNumberFormat, { ...tokenCtx, seq }), seq);
+      const fallback = normalizeFiveDigitIdentifier("", seq);
+      code = existingCodes.has(formatted) ? fallback : formatted;
+      guard++;
+      if (guard > 99999) throw new Error("No available 5-digit farmer identifiers remain");
     }
     existingCodes.add(code);
 
