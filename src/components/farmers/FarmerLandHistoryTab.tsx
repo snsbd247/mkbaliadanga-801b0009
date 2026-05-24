@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { buildAutoLandChangeRemark } from "@/lib/landChangeRemark";
 
 const SEASONS = ["Boro", "Aman", "Aus", "Rabi"];
 const sb = supabase as any;
@@ -66,11 +67,15 @@ export default function FarmerLandHistoryTab({ farmerId }: Props) {
   async function save() {
     if (!f.farmer_id) return toast.error("Owner farmer required");
     if (!f.land_size || f.land_size <= 0) return toast.error("Land size required");
-    const payload: any = { ...f, recorded_by: user?.id };
+    const autoRemark = await buildAutoLandChangeRemark(f.farmer_id, f);
+    const mergedRemarks = autoRemark
+      ? (f.remarks ? `${autoRemark} ${f.remarks}` : autoRemark)
+      : f.remarks;
+    const payload: any = { ...f, remarks: mergedRemarks, recorded_by: user?.id };
     if (!payload.cultivator_farmer_id) delete payload.cultivator_farmer_id;
     const { error } = await sb.from("land_history").insert(payload);
     if (error) return toast.error(error.message);
-    toast.success("Saved");
+    toast.success(autoRemark ? "Saved — auto land-change remark added" : "Saved");
     setOpen(false);
     setF({ ...emptyForm });
     load();
