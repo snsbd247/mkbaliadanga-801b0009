@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
 
     const { data: inserted, error } = await admin.from("public_payment_intents").insert({
       farmer_code: farmer.farmer_code,
+      office_id: farmer.office_id,
       phone,
       amount,
       allocation_hint,
