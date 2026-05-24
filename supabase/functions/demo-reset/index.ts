@@ -218,7 +218,7 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
       status: "active",
       is_voter: isVoter,
       voter_number: isVoter ? formatToken(cfg.voterNumberFormat, tokenCtx) : null,
-      account_number: isVoter ? formatToken(cfg.accountNumberFormat, tokenCtx) : null,
+      account_number: isVoter ? safeAccountNumber(formatToken(cfg.accountNumberFormat, tokenCtx), tokenCtx) : null,
       division_id: loc?.division_id ?? null,
       district_id: loc?.district_id ?? null,
       upazila_id: loc?.upazila_id ?? null,
