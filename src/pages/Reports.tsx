@@ -36,16 +36,25 @@ export default function Reports() {
   const [savings, setSavings] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
 
+  const [landSummary, setLandSummary] = useState<{ totalLands: number; totalSize: number; mouzaCount: number; farmerCount: number } | null>(null);
+
   useEffect(() => {
     document.title = `${t("reports")} — ${t("appName")}`;
     Promise.all([
       supabase.from("seasons").select("*"),
       supabase.from("offices").select("id,name"),
       supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
-    ]).then(([s, o, f]) => {
+      supabase.from("lands").select("id,land_size,mouza,farmer_id").is("deleted_at", null),
+    ]).then(([s, o, f, l]) => {
       setSeasons(s.data ?? []); setOffices(o.data ?? []); setFarmers(f.data ?? []);
+      const lands = l.data ?? [];
+      const totalSize = lands.reduce((acc: number, x: any) => acc + Number(x.land_size || 0), 0);
+      const mouzaCount = new Set(lands.map((x: any) => (x.mouza || "").trim()).filter(Boolean)).size;
+      const farmerCount = new Set(lands.map((x: any) => x.farmer_id).filter(Boolean)).size;
+      setLandSummary({ totalLands: lands.length, totalSize, mouzaCount, farmerCount });
     });
   }, []);
+
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [from, to, seasonId, officeId, farmerId]);
 
