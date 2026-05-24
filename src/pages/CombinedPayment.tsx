@@ -39,6 +39,10 @@ export default function CombinedPayment() {
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string; verifyUrl?: string | null } | null>(null);
+  const [dues, setDues] = useState<FarmerDuesBreakdown | null>(null);
+  const [autoDownload, setAutoDownload] = useState<boolean>(() => {
+    try { return localStorage.getItem("combined:autoDl") === "1"; } catch { return false; }
+  });
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
@@ -46,8 +50,17 @@ export default function CombinedPayment() {
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
-    const restored = guard.restore();
-    if (restored) setForm(restored as typeof EMPTY);
+    if (guard.hasDraft()) {
+      toast.message(lang === "bn" ? "অসমাপ্ত খসড়া পাওয়া গেছে" : "Unsaved draft found", {
+        description: lang === "bn" ? "পুনরুদ্ধার করবেন?" : "Restore it?",
+        action: {
+          label: lang === "bn" ? "পুনরুদ্ধার" : "Restore",
+          onClick: () => { const r = guard.restore(); if (r) setForm(r as typeof EMPTY); },
+        },
+        cancel: { label: lang === "bn" ? "বাতিল" : "Discard", onClick: () => guard.clear() },
+        duration: 10000,
+      });
+    }
   }, []);
 
   useEffect(() => {
