@@ -20,6 +20,7 @@ import { money } from "@/lib/format";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
+import { useQueryClient } from "@tanstack/react-query";
 
 type LoanRow = { id: string; principal: number; total_payable: number; issued_on: string; remaining: number };
 
