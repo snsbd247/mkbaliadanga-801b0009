@@ -401,7 +401,11 @@ export default function Farmers() {
     setEditFieldErrors({});
     setSaving(false);
     editGuard.clear();
+    const back = editReturnToRef.current;
+    editReturnToRef.current = null;
+    if (back && back.startsWith("/")) nav(back);
   }
+
 
   function commonValidate(f: FormState, setErrors: (errors: FormErrors) => void): boolean {
     const parsed = farmerFormSchema.safeParse({
