@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 const TXN_TYPES = ["deposit", "withdraw", "charge", "interest"] as const;
