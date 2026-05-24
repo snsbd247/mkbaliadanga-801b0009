@@ -248,6 +248,8 @@ export default function Farmers() {
   const [editFieldErrors, setEditFieldErrors] = useState<FormErrors>({});
   const editNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const editReturnToRef = useRef<string | null>(null);
+
 
   // Unsaved-draft guard for the create form (survives accidental refresh/tab close)
   const createDirty = open && JSON.stringify({ ...form, office_id: "" }) !== JSON.stringify({ ...EMPTY_FORM, office_id: "" });
@@ -275,14 +277,18 @@ export default function Farmers() {
   useEffect(() => {
     const editId = searchParams.get("edit");
     if (editId && !editOpen) {
+      const returnTo = searchParams.get("returnTo");
+      editReturnToRef.current = returnTo;
       (async () => {
         const { data } = await supabase.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
         if (data) openEdit(data);
         const next = new URLSearchParams(searchParams);
         next.delete("edit");
+        next.delete("returnTo");
         setSearchParams(next, { replace: true });
       })();
     }
+
     const s = searchParams.get("status");
     if (s === "active" || s === "inactive" || s === "all") setStatusFilter(s as any);
     const p = searchParams.get("period");
@@ -395,7 +401,11 @@ export default function Farmers() {
     setEditFieldErrors({});
     setSaving(false);
     editGuard.clear();
+    const back = editReturnToRef.current;
+    editReturnToRef.current = null;
+    if (back && back.startsWith("/")) nav(back);
   }
+
 
   function commonValidate(f: FormState, setErrors: (errors: FormErrors) => void): boolean {
     const parsed = farmerFormSchema.safeParse({
