@@ -124,8 +124,6 @@ Deno.serve(async (req) => {
       loan_payments: payments,
       irrigation,
       irrigation_invoices: irrigationInvoices,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      irrigation_invoices: irrigationInvoices,
       payment_intents: intentsRes.data ?? [],
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
