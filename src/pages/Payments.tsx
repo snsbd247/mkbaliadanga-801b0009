@@ -65,6 +65,7 @@ export default function Payments() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
   const [savingsBalance, setSavingsBalance] = useState<number>(0);
+  const [methodSummary, setMethodSummary] = useState<MethodSummary[]>([]);
 
   async function loadSavingsBalance(fid: string) {
     const { data } = await supabase
