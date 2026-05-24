@@ -57,6 +57,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [specialPermission, setSpecialPermission] = useState(false);
   const [promiseDate, setPromiseDate] = useState("");
   const [promiseRemarks, setPromiseRemarks] = useState("");
+  const [simplifiedReceipt, setSimplifiedReceipt] = useState(false);
+
 
   const [submitting, setSubmitting] = useState(false);
   const [method, setMethod] = useState("cash");
