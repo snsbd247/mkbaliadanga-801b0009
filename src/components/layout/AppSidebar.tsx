@@ -74,7 +74,7 @@ export function AppSidebar() {
         { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
         { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
         { url: "/admin/loan-delay-settings", icon: HandCoins, label: t("loanDelaySettings" as any), permKey: "loans" },
-        { url: "/loans/temporary", icon: HandCoins, label: "অস্থায়ী ঋণ", permKey: "loans" },
+        { url: "/loans/temporary", icon: HandCoins, label: t("temporaryLoans"), permKey: "loans" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
