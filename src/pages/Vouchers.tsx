@@ -13,6 +13,8 @@ import { Plus, Paperclip, Download } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 const TYPES = [
