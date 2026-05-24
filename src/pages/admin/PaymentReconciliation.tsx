@@ -255,8 +255,9 @@ export default function PaymentReconciliation() {
   return (
     <>
       <PageHeader
-        title="পেমেন্ট রিকনসিলিয়েশন"
-        description="Payments vs public payment intents — অমিল হাইলাইট অফিস / কৃষক / সিজন অনুযায়ী"
+        title={tx("Payment Reconciliation", "পেমেন্ট রিকনসিলিয়েশন")}
+        description={tx("Payments vs public payment intents — mismatches by office / farmer / season", "পেমেন্ট বনাম পাবলিক পেমেন্ট অনুরোধ — অমিল হাইলাইট অফিস / কৃষক / সিজন অনুযায়ী")}
+
         actions={
           <Button size="sm" variant="outline" onClick={load} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}Reload
