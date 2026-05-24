@@ -250,7 +250,19 @@ export async function exportPaymentReceiptPDF(opts: {
   if (opts.farmer.village) doc.text(`${tPdf("Village", "গ্রাম")}: ${opts.farmer.village}`, 12, 57);
   if (opts.farmer.mobile) doc.text(`${tPdf("Mobile", "মোবাইল")}: ${opts.farmer.mobile}`, w - 12, 57, { align: "right" });
 
+  // Optional QR code (top-right corner under date)
+  if (opts.qrText) {
+    try {
+      const qrUrl = await QRCode.toDataURL(opts.qrText, { margin: 0, width: 160 });
+      doc.addImage(qrUrl, "PNG", w - 12 - 18, 8, 18, 18);
+      doc.setFontSize(6); doc.setTextColor(110);
+      doc.text(tPdf("Scan to verify", "যাচাইয়ের জন্য স্ক্যান"), w - 12 - 9, 28, { align: "center" });
+      doc.setFontSize(9); doc.setTextColor(0);
+    } catch { /* ignore */ }
+  }
+
   autoTable(doc, {
+
     startY: 62,
     head: [[tPdf("Allocation", "বরাদ্দ"), tPdf("Amount (BDT)", "পরিমাণ (টাকা)")]],
     body: opts.allocations.map(a => [a.kind.toUpperCase(), moneyPdf(a.amount)]),
