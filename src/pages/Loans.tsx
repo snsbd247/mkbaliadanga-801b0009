@@ -428,6 +428,71 @@ export default function Loans() {
   );
 }
 
+function FarmerLoanSummary({ loans, t, tx }: { loans: any[]; t: any; tx: any }) {
+  const [open, setOpen] = useState(false);
+  const groups = useMemo(() => {
+    const m = new Map<string, { farmer: any; loans: any[]; principal: number; payable: number; paid: number }>();
+    for (const l of loans) {
+      if (l.status === "rejected" || l.deleted_at) continue;
+      const fid = l.farmer_id;
+      if (!fid) continue;
+      const g = m.get(fid) ?? { farmer: l.farmers ?? {}, loans: [], principal: 0, payable: 0, paid: 0 };
+      g.loans.push(l);
+      g.principal += Number(l.principal || 0);
+      g.payable += Number(l.total_payable || 0);
+      g.paid += (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+      m.set(fid, g);
+    }
+    return Array.from(m.values())
+      .filter(g => g.loans.length > 1 || (g.payable - g.paid) > 0)
+      .sort((a, b) => (b.payable - b.paid) - (a.payable - a.paid));
+  }, [loans]);
+  if (!groups.length) return null;
+  return (
+    <Card className="p-3 mb-3">
+      <button type="button" className="w-full flex items-center justify-between text-sm font-semibold" onClick={() => setOpen(o => !o)}>
+        <span className="flex items-center gap-2">
+          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          {tx("Member-wise Loan Summary", "সদস্য-ভিত্তিক ঋণ সারাংশ")} ({groups.length})
+        </span>
+        <span className="text-xs text-muted-foreground">{tx("Click to toggle", "টগল করতে ক্লিক করুন")}</span>
+      </button>
+      {open && (
+        <div className="mt-2 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+              <tr>
+                <th className="text-left py-1">{t("farmerName")}</th>
+                <th className="text-right">{tx("Loans", "ঋণ সংখ্যা")}</th>
+                <th className="text-right">{t("principal")}</th>
+                <th className="text-right">{t("totalPayable")}</th>
+                <th className="text-right">{tx("Paid", "পরিশোধিত")}</th>
+                <th className="text-right">{t("dueAmount")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((g, i) => {
+                const due = g.payable - g.paid;
+                return (
+                  <tr key={i} className="border-t">
+                    <td className="py-1">{g.farmer?.name_en ?? "—"} <span className="text-xs text-muted-foreground">({g.farmer?.farmer_code ?? "—"})</span></td>
+                    <td className="text-right">{g.loans.length}</td>
+                    <td className="text-right">{money(g.principal)}</td>
+                    <td className="text-right">{money(g.payable)}</td>
+                    <td className="text-right text-success">{money(g.paid)}</td>
+                    <td className={`text-right font-semibold ${due > 0 ? "due-text" : ""}`}>{money(due)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+
 function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRestore, onDelete, onEdit, onPrint, profiles, expanded, setExpanded, installments }: any) {
   return (
     <Card className="overflow-x-auto"><Table>
