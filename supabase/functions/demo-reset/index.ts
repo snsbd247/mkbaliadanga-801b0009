@@ -468,7 +468,7 @@ async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: st
   return invoices.length;
 }
 
-async function seedLoans(admin: any, officeId: string, farmers: any[]) {
+async function seedLoans(admin: any, officeId: string, farmers: any[], monthsBack: number = 1) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const seeded: string[] = [];
   // Seed 3 plans (6/12/24 months)
@@ -482,17 +482,23 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   const planList = plans ?? [];
   const planId = planList[1]?.id ?? planList[0]?.id ?? null;
   const targets = voters.slice(0, Math.ceil(voters.length * 0.4));
+  const now = Date.now();
   const loanRows = targets.map((f, i) => {
     const p = planList[i % Math.max(1, planList.length)] ?? { id: planId, duration_months: 12, interest_rate: 12 };
     const principal = 10000 + (i % 5) * 5000;
     const totalPay = principal * (1 + Number(p.interest_rate) / 100);
     seeded.push(f.id);
+    // Spread issued_on across last `monthsBack` months when > 1
+    const monthsAgo = monthsBack > 1 ? (i % monthsBack) : 6;
+    const issued = new Date(now - monthsAgo * 30 * 86400000).toISOString().slice(0, 10);
     return {
       farmer_id: f.id, principal, interest_rate: p.interest_rate, total_payable: totalPay, total_due: totalPay,
       installment_amount: totalPay / p.duration_months, plan_id: p.id,
       status: i % 4 === 0 ? "pending" : "approved", office_id: officeId,
+      issued_on: issued,
     };
   });
+
   if (loanRows.length) {
     // Seed default delay-fee settings (idempotent per office)
     await admin.from("loan_delay_fee_settings").upsert({
