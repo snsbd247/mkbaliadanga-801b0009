@@ -149,6 +149,25 @@ export default function FarmerDetail() {
       .eq("farmer_id", id!)
       .is("deleted_at", null);
     setInvDue((inv.data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+
+    // Load active season + per-land rate map (for Rate/Total columns in Land tab)
+    try {
+      const { data: sn } = await supabase
+        .from("seasons")
+        .select("id,name,year,type,status")
+        .eq("status", "active")
+        .order("year", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sn?.id) {
+        setActiveSeasonName(sn.name || `${sn.type} ${sn.year}`);
+        const rows = await loadSeasonRateMap(sn.id, f.data?.office_id ?? null);
+        setRateMap(rows);
+      } else {
+        setActiveSeasonName("");
+        setRateMap([]);
+      }
+    } catch { /* non-fatal */ }
   }
 
   function farmerLocationLine(fr: any): string {
