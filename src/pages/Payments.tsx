@@ -941,7 +941,18 @@ export default function Payments() {
                             verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
                           }, copy, receiptArgs.options);
                         };
-                        return <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} /></span>;
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              hidden
+                              aria-hidden="true"
+                              data-auto-print={p.id}
+                              onClick={() => doDownload("both")}
+                            />
+                            <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} /></span>
+                          </>
+                        );
                       })()}
                     </div>
                   </TableCell>
