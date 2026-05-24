@@ -327,11 +327,11 @@ export default function DemoManager() {
             </div>
             <div>
               <Label>Voter Number Format</Label>
-              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:5}" />
+              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:8}" />
             </div>
             <div>
-              <Label>Account Number Format</Label>
-              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{seq:5}" />
+              <Label>Account Number Format (must yield 12–14 digits)</Label>
+              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{year}{seq:9}" />
             </div>
           </CardContent>
         </Card>
