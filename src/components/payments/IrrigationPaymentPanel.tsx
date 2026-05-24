@@ -363,17 +363,19 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           logo_url: company?.logo_url ?? null,
           org: company ?? null,
           farmer: { name: farmerName, member_no: farmer?.member_no ?? null, village: farmer?.village ?? null, mobile: farmer?.mobile ?? null },
-          current_season_charge: Number(currentCollected || 0),
-          collected_from_outstanding: Number(previousCollected || 0),
-          total_outstanding: previousDueTotal,
-          penalty_amount: totalDelay,
-          maintenance_charge: totalMaint,
-          canal_charge: totalCanal,
+          current_season_charge: simplifiedReceipt ? null : Number(currentCollected || 0),
+          collected_from_outstanding: simplifiedReceipt ? null : Number(previousCollected || 0),
+          total_outstanding: simplifiedReceipt ? null : previousDueTotal,
+          penalty_amount: simplifiedReceipt ? null : totalDelay,
+          maintenance_charge: simplifiedReceipt ? null : totalMaint,
+          canal_charge: simplifiedReceipt ? null : totalCanal,
           collected_amount: grandTotal,
           remark: specialPermission ? `${tx("Special permission until", "বিশেষ অনুমতি — পরিশোধের তারিখ")}: ${promiseDate}${promiseRemarks ? " — " + promiseRemarks : ""}` : (note || null),
+          verify_url: `${window.location.origin}/r/${receiptNo}`,
         }, "both"),
         { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
       );
+
       if (!receiptResult.ok) {
         toast.warning(tx("Receipt generation failed — queued for retry", "রসিদ তৈরি ব্যর্থ — রিট্রাই কিউতে যোগ হয়েছে"));
       }
