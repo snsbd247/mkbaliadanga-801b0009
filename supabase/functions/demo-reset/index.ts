@@ -155,23 +155,28 @@ function formatToken(fmt: string, ctx: { seq: number; office: string; year: numb
     .replace(/\{year\}/g, String(ctx.year));
 }
 
-// account_number must be exactly 5 digits (DB trigger farmers_validate_identifiers).
-// voter_number mirrors account_number — they are the same value.
-function safeAccountNumber(rendered: string, ctx: { seq: number }): string {
-  if (/^\d{5}$/.test(rendered)) return rendered;
-  return String(((ctx.seq - 1) % 99999) + 1).padStart(5, "0");
+// Farmer ID/account/voter identifiers must be the same unique 5-digit value.
+function normalizeFiveDigitIdentifier(rendered: string, fallbackSeq: number): string {
+  const digits = String(rendered ?? "").replace(/\D/g, "");
+  if (digits.length >= 5) return digits.slice(-5);
+  if (digits.length > 0) return digits.padStart(5, "0");
+  return String(((fallbackSeq - 1) % 99999) + 1).padStart(5, "0");
 }
 
 async function seedFarmers(admin: any, officeId: string, count: number, cfg: VoterCfg, locs: LocPick[], customNames?: { en: string; bn?: string; father?: string; mother?: string; mobile?: string; nid?: string }[]) {
   const ratio = Math.max(2, Math.floor(cfg.voterRatio || 3));
   const year = new Date().getFullYear();
   const officeShort = officeId.slice(0, 4).toUpperCase();
-  let voterSeq = 0;
-
-  // De-dup: load existing farmer_codes/nids/mobiles for this office to skip duplicates
+  // De-dup: load existing identifiers/nids/mobiles so inserts are safe with or without a wipe.
   const { data: existing } = await admin.from("farmers")
-    .select("farmer_code, nid, name_en, mobile").eq("office_id", officeId);
-  const existingCodes = new Set((existing ?? []).map((x: any) => x.farmer_code));
+    .select("farmer_code, account_number, voter_number, nid, name_en, mobile").eq("office_id", officeId);
+  const existingCodes = new Set<string>();
+  for (const row of existing ?? []) {
+    for (const value of [row.farmer_code, row.account_number, row.voter_number]) {
+      const normalized = normalizeFiveDigitIdentifier(value, 0);
+      if (/^\d{5}$/.test(normalized)) existingCodes.add(normalized);
+    }
+  }
   const existingNids = new Set((existing ?? []).map((x: any) => x.nid).filter(Boolean));
   const existingNames = new Set((existing ?? []).map((x: any) => x.name_en?.toLowerCase()));
   const existingMobiles = new Set((existing ?? []).map((x: any) => x.mobile).filter(Boolean));
@@ -182,8 +187,7 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
   const farmers: any[] = [];
   for (let i = 0; i < total; i++) {
     const isVoter = i % ratio === 0;
-    if (isVoter) voterSeq++;
-    const tokenCtx = { seq: voterSeq, office: officeShort, year };
+    const tokenCtx = { seq: i + 1, office: officeShort, year };
     const isFemale = i % 7 === 0;
     const fallback = isFemale ? pick(FEMALE_NAMES, i) : pick(MALE_NAMES, i);
     const custom = desired?.[i];
@@ -193,10 +197,13 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
     const mother = custom?.mother?.trim() || pick(MOTHERS, i + 5).en;
     const loc = locs.length ? locs[i % locs.length] : null;
 
-    // Generate unique farmer_code by skipping existing
+    // Generate one unique 5-digit ID used as farmer_code, account_number and voter_number.
     let seq = i + 1;
-    let code = `F-${String(seq).padStart(5, "0")}`;
-    while (existingCodes.has(code)) { seq++; code = `F-${String(seq).padStart(5, "0")}`; }
+    let code = normalizeFiveDigitIdentifier(formatToken(cfg.accountNumberFormat, { ...tokenCtx, seq }), seq);
+    while (existingCodes.has(code)) {
+      seq++;
+      code = normalizeFiveDigitIdentifier(formatToken(cfg.accountNumberFormat, { ...tokenCtx, seq }), seq);
+    }
     existingCodes.add(code);
 
     const nid = custom?.nid?.trim() || `19900${String(1000000000 + i).padStart(10, "0")}`;
@@ -231,9 +238,9 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
       office_id: officeId,
       status: "active",
       is_voter: isVoter,
-      // Single shared 5-digit value: voter_number === account_number
-      account_number: isVoter ? safeAccountNumber(formatToken(cfg.accountNumberFormat, tokenCtx), tokenCtx) : null,
-      voter_number: isVoter ? safeAccountNumber(formatToken(cfg.accountNumberFormat, tokenCtx), tokenCtx) : null,
+      // Single shared 5-digit value. Database triggers also enforce this permanently.
+      account_number: code,
+      voter_number: isVoter ? code : null,
       division_id: loc?.division_id ?? null,
       district_id: loc?.district_id ?? null,
       upazila_id: loc?.upazila_id ?? null,
