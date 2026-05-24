@@ -1014,7 +1014,9 @@ const PRESETS: Record<string, { size: number; modules: string[]; monthsBack?: nu
   loans_only:      { size: 50,  modules: ["locations","settings","accounting","farmers","loans"] },
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
+  recent_features: { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"], monthsBack: 2 },
 };
+
 
 
 async function verifyLocations(admin: any) {
