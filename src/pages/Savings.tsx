@@ -322,9 +322,10 @@ export default function Savings() {
     toast.success(t("deleted")); await load();
   }
   function printReceipt(r: any) {
+    const receiptNo = `SAV-${r.id.slice(0, 8).toUpperCase()}`;
     exportPaymentReceiptPDF({
       brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
-      receipt_no: `SAV-${r.id.slice(0, 8).toUpperCase()}`,
+      receipt_no: receiptNo,
       date: r.txn_date ?? r.created_at,
       farmer: {
         name_en: r.farmers?.name_en ?? "—",
@@ -337,8 +338,10 @@ export default function Savings() {
       method: "cash",
       note: r.note ?? `Savings ${r.type} (${r.status})`,
       allocations: [{ kind: `Savings ${r.type}`, amount: Number(r.amount) }],
+      qrText: `${window.location.origin}/r/sav-${r.id}`,
     });
   }
+
 
   const filteredTxns = categoryFilter === "__all__" ? txns : txns.filter((x: any) => (x.category ?? "general") === categoryFilter);
   const pending = filteredTxns.filter(x => x.status === "pending");
