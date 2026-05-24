@@ -26,13 +26,28 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
  */
 interface Row {
   date: string;
-  irrigation: number;
+  base: number;
   delay: number;
   maintenance: number;
   canal: number;
+  other: number;
   previous_due: number;
   total: number;
   count: number;
+}
+
+interface PaymentRow {
+  created_at: string;
+  collected_amount: number | null;
+  previous_due_collected: number | null;
+  irrigation_invoices?: {
+    irrigation_amount: number | null;
+    delay_fee: number | null;
+    maintenance_amount: number | null;
+    canal_amount: number | null;
+    other_charge: number | null;
+    payable_amount: number | null;
+  } | null;
 }
 
 const n = (v: any) => Number(v ?? 0) || 0;
@@ -53,19 +68,35 @@ export default function IrrigationCategoryReport() {
     try {
       const { data, error } = await supabase
         .from("irrigation_invoice_payments")
-        .select("created_at,collected_amount,irrigation_collected,delay_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected")
+        .select("created_at,collected_amount,previous_due_collected,irrigation_invoices(irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,payable_amount)")
         .gte("created_at", from)
         .lte("created_at", to + "T23:59:59");
       if (error) throw error;
       const map = new Map<string, Row>();
-      for (const r of (data ?? []) as any[]) {
+      for (const r of (data ?? []) as PaymentRow[]) {
         const d = String(r.created_at).slice(0, 10);
-        const row = map.get(d) ?? { date: d, irrigation: 0, delay: 0, maintenance: 0, canal: 0, previous_due: 0, total: 0, count: 0 };
-        row.irrigation += n(r.irrigation_collected);
-        row.delay += n(r.delay_collected);
-        row.maintenance += n(r.maintenance_collected);
-        row.canal += n(r.canal_collected);
-        row.previous_due += n(r.previous_due_collected);
+        const row = map.get(d) ?? { date: d, base: 0, delay: 0, maintenance: 0, canal: 0, other: 0, previous_due: 0, total: 0, count: 0 };
+        const prev = n(r.previous_due_collected);
+        const current = Math.max(0, n(r.collected_amount) - prev);
+        const inv = r.irrigation_invoices;
+        const baseHead = n(inv?.irrigation_amount);
+        const delayHead = n(inv?.delay_fee);
+        const maintenanceHead = n(inv?.maintenance_amount);
+        const canalHead = n(inv?.canal_amount);
+        const otherHead = n(inv?.other_charge);
+        const headTotal = baseHead + delayHead + maintenanceHead + canalHead + otherHead;
+        const scale = headTotal > 0 ? Math.min(1, current / headTotal) : 0;
+        const delayPart = +(delayHead * scale).toFixed(2);
+        const maintenancePart = +(maintenanceHead * scale).toFixed(2);
+        const canalPart = +(canalHead * scale).toFixed(2);
+        const otherPart = +(otherHead * scale).toFixed(2);
+        const basePart = +(current - delayPart - maintenancePart - canalPart - otherPart).toFixed(2);
+        row.base += Math.max(0, basePart);
+        row.delay += delayPart;
+        row.maintenance += maintenancePart;
+        row.canal += canalPart;
+        row.other += otherPart;
+        row.previous_due += prev;
         row.total += n(r.collected_amount);
         row.count += 1;
         map.set(d, row);
@@ -77,14 +108,15 @@ export default function IrrigationCategoryReport() {
   useEffect(() => { load(); }, [from, to]);
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
-    irrigation: acc.irrigation + r.irrigation,
+    base: acc.base + r.base,
     delay: acc.delay + r.delay,
     maintenance: acc.maintenance + r.maintenance,
     canal: acc.canal + r.canal,
+    other: acc.other + r.other,
     previous_due: acc.previous_due + r.previous_due,
     total: acc.total + r.total,
     count: acc.count + r.count,
-  }), { irrigation: 0, delay: 0, maintenance: 0, canal: 0, previous_due: 0, total: 0, count: 0 }), [rows]);
+  }), { base: 0, delay: 0, maintenance: 0, canal: 0, other: 0, previous_due: 0, total: 0, count: 0 }), [rows]);
 
   function exportPdf() {
     exportTablePDF(
