@@ -82,6 +82,33 @@ export default function FarmerStatement() {
     if (!farmerId) { toast.error(t("selectFarmerFirst")); return; }
     setLoading(true);
     try {
+      if (kind === "irrigation") {
+        // Build irrigation statement directly from irrigation_invoices
+        let q = supabase.from("irrigation_invoices")
+          .select("id,generated_at,due_date,invoice_no,payable_amount,paid_amount,due_amount,seasons(name,year)")
+          .eq("farmer_id", farmerId).is("deleted_at", null)
+          .order("generated_at", { ascending: true });
+        if (from) q = q.gte("generated_at", from);
+        if (to) q = q.lte("generated_at", to);
+        const { data, error } = await q;
+        if (error) throw error;
+        let bal = 0;
+        const r: Row[] = (data ?? []).map((inv: any) => {
+          const debit = Number(inv.payable_amount || 0);
+          const credit = Number(inv.paid_amount || 0);
+          bal += debit - credit;
+          return {
+            id: inv.id,
+            entry_date: (inv.generated_at || "").slice(0, 10),
+            description: `${inv.invoice_no || ""}${inv.seasons ? " — " + inv.seasons.name + " " + inv.seasons.year : ""}`,
+            debit, credit, balance: bal,
+            reference_type: "irrigation_invoice", reference_id: inv.id,
+          };
+        });
+        setRows(r);
+        setHasLoaded(true);
+        return;
+      }
       const fn = kind === "savings" ? "farmer_savings_statement" : "farmer_loan_statement";
       const { data, error } = await supabase.rpc(fn, {
         _farmer_id: farmerId,
@@ -93,7 +120,6 @@ export default function FarmerStatement() {
       setHasLoaded(true);
     } catch (e: any) {
       const msg = String(e?.message ?? "");
-      // RLS / SECURITY DEFINER block → friendly message
       if (/access denied|permission|row-level security|rls/i.test(msg)) {
         toast.error(t("accessDeniedStatement"));
       } else {
