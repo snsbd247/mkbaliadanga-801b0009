@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { hydrateReceiptOptionsFromProfile } from "@/lib/receiptOptions";
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [officeId, setOfficeId] = useState<string | null>(null);
   const [rolesLoaded, setRolesLoaded] = useState(false);
+  const loadedProfileUserIdRef = useRef<string | null>(null);
 
   // ── Supabase path ──────────────────────────────────────────────────
   const loadSupabaseProfile = async (uid: string) => {
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", uid),
       supabase.from("profiles").select("office_id").eq("id", uid).maybeSingle(),
     ]);
+    loadedProfileUserIdRef.current = uid;
     setRoles((rolesData ?? []).map((r: any) => r.role as AppRole));
     setOfficeId(prof?.office_id ?? null);
     setRolesLoaded(true);
@@ -100,9 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        setRolesLoaded(false);
-        setTimeout(() => loadSupabaseProfile(s.user.id), 0);
+        if (loadedProfileUserIdRef.current !== s.user.id) {
+          setRolesLoaded(false);
+          setTimeout(() => loadSupabaseProfile(s.user.id), 0);
+        }
       } else {
+        loadedProfileUserIdRef.current = null;
         setRoles([]);
         setOfficeId(null);
         setRolesLoaded(true);
