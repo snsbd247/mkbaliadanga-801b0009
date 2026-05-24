@@ -1629,6 +1629,9 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("bank")) steps.push({ key: "bank", label: `ব্যাংক একাউন্ট ও লেনদেন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { const b = await seedBankAccounts(admin, officeId, monthsBack); summary.bank = b; }});
           if (modules.includes("assets")) steps.push({ key: "assets", label: `অ্যাসেট মডিউল seed${monthsBack > 1 ? ` (${monthsBack} মাস অবচয় + maintenance + movement)` : ""}`, fn: async () => { summary.assets = await seedAssets(admin, officeId, monthsBack); }});
           if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
+          if (modules.includes("farmers")) steps.push({ key: "land_history", label: `ভূমির ইতিহাস seed${monthsBack > 12 ? ` (${Math.ceil(monthsBack/12)} বছর)` : ""}`, fn: async () => { if (lands.length) summary.land_history = await seedLandHistory(admin, officeId, farmers, lands, monthsBack); }});
+          if (modules.includes("farmers")) steps.push({ key: "voter_audit", label: "Voter Cancel/Reactivate History seed", fn: async () => { if (farmers.length) summary.voter_audit = await seedVoterAuditLogs(admin, officeId, farmers); }});
+          if (modules.includes("farmers")) steps.push({ key: "public_payment_intents", label: "পাবলিক পেমেন্ট অনুরোধ seed", fn: async () => { if (farmers.length) summary.public_payment_intents = await seedPublicPaymentIntents(admin, officeId, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
 
           if (modules.includes("farmers") || needFarmers) {
