@@ -26,13 +26,28 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
  */
 interface Row {
   date: string;
-  irrigation: number;
+  base: number;
   delay: number;
   maintenance: number;
   canal: number;
+  other: number;
   previous_due: number;
   total: number;
   count: number;
+}
+
+interface PaymentRow {
+  created_at: string;
+  collected_amount: number | null;
+  previous_due_collected: number | null;
+  irrigation_invoices?: {
+    irrigation_amount: number | null;
+    delay_fee: number | null;
+    maintenance_amount: number | null;
+    canal_amount: number | null;
+    other_charge: number | null;
+    payable_amount: number | null;
+  } | null;
 }
 
 const n = (v: any) => Number(v ?? 0) || 0;
@@ -53,19 +68,35 @@ export default function IrrigationCategoryReport() {
     try {
       const { data, error } = await supabase
         .from("irrigation_invoice_payments")
-        .select("created_at,collected_amount,irrigation_collected,delay_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected")
+        .select("created_at,collected_amount,previous_due_collected,irrigation_invoices(irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,payable_amount)")
         .gte("created_at", from)
         .lte("created_at", to + "T23:59:59");
       if (error) throw error;
       const map = new Map<string, Row>();
-      for (const r of (data ?? []) as any[]) {
+      for (const r of (data ?? []) as PaymentRow[]) {
         const d = String(r.created_at).slice(0, 10);
-        const row = map.get(d) ?? { date: d, irrigation: 0, delay: 0, maintenance: 0, canal: 0, previous_due: 0, total: 0, count: 0 };
-        row.irrigation += n(r.irrigation_collected);
-        row.delay += n(r.delay_collected);
-        row.maintenance += n(r.maintenance_collected);
-        row.canal += n(r.canal_collected);
-        row.previous_due += n(r.previous_due_collected);
+        const row = map.get(d) ?? { date: d, base: 0, delay: 0, maintenance: 0, canal: 0, other: 0, previous_due: 0, total: 0, count: 0 };
+        const prev = n(r.previous_due_collected);
+        const current = Math.max(0, n(r.collected_amount) - prev);
+        const inv = r.irrigation_invoices;
+        const baseHead = n(inv?.irrigation_amount);
+        const delayHead = n(inv?.delay_fee);
+        const maintenanceHead = n(inv?.maintenance_amount);
+        const canalHead = n(inv?.canal_amount);
+        const otherHead = n(inv?.other_charge);
+        const headTotal = baseHead + delayHead + maintenanceHead + canalHead + otherHead;
+        const scale = headTotal > 0 ? Math.min(1, current / headTotal) : 0;
+        const delayPart = +(delayHead * scale).toFixed(2);
+        const maintenancePart = +(maintenanceHead * scale).toFixed(2);
+        const canalPart = +(canalHead * scale).toFixed(2);
+        const otherPart = +(otherHead * scale).toFixed(2);
+        const basePart = +(current - delayPart - maintenancePart - canalPart - otherPart).toFixed(2);
+        row.base += Math.max(0, basePart);
+        row.delay += delayPart;
+        row.maintenance += maintenancePart;
+        row.canal += canalPart;
+        row.other += otherPart;
+        row.previous_due += prev;
         row.total += n(r.collected_amount);
         row.count += 1;
         map.set(d, row);
@@ -77,28 +108,30 @@ export default function IrrigationCategoryReport() {
   useEffect(() => { load(); }, [from, to]);
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
-    irrigation: acc.irrigation + r.irrigation,
+    base: acc.base + r.base,
     delay: acc.delay + r.delay,
     maintenance: acc.maintenance + r.maintenance,
     canal: acc.canal + r.canal,
+    other: acc.other + r.other,
     previous_due: acc.previous_due + r.previous_due,
     total: acc.total + r.total,
     count: acc.count + r.count,
-  }), { irrigation: 0, delay: 0, maintenance: 0, canal: 0, previous_due: 0, total: 0, count: 0 }), [rows]);
+  }), { base: 0, delay: 0, maintenance: 0, canal: 0, other: 0, previous_due: 0, total: 0, count: 0 }), [rows]);
 
   function exportPdf() {
     exportTablePDF(
       tx("Irrigation Category Report", "সেচ ক্যাটেগরি রিপোর্ট"),
       [
         tx("Date", "তারিখ"),
-        tx("Irrigation", "সেচ"),
+        tx("Base", "বেস"),
         tx("Delay", "বিলম্ব"),
         tx("Maintenance", "রক্ষণাবেক্ষণ"),
         tx("Canal", "ক্যানেল"),
+        tx("Other", "অন্যান্য"),
         tx("Prev Due", "পূর্বের বকেয়া"),
         tx("Total", "মোট"),
       ],
-      rows.map(r => [fmtDate(r.date), money(r.irrigation), money(r.delay), money(r.maintenance), money(r.canal), money(r.previous_due), money(r.total)]),
+      rows.map(r => [fmtDate(r.date), money(r.base), money(r.delay), money(r.maintenance), money(r.canal), money(r.other), money(r.previous_due), money(r.total)]),
       { from, to },
     );
   }
@@ -109,8 +142,8 @@ export default function IrrigationCategoryReport() {
       "Categories",
       rows.map(r => ({
         Date: r.date,
-        Irrigation: r.irrigation, Delay: r.delay, Maintenance: r.maintenance,
-        Canal: r.canal, "Previous Due": r.previous_due, Total: r.total, Receipts: r.count,
+        Base: r.base, Delay: r.delay, Maintenance: r.maintenance,
+        Canal: r.canal, Other: r.other, "Previous Due": r.previous_due, Total: r.total, Receipts: r.count,
       })),
       { from, to },
     );
@@ -132,14 +165,15 @@ export default function IrrigationCategoryReport() {
           </div>
         </div>
 
-        <div className="grid gap-2 md:grid-cols-6 text-sm">
-          {(["irrigation","delay","maintenance","canal","previous_due","total"] as const).map(k => (
+        <div className="grid gap-2 md:grid-cols-7 text-sm">
+          {(["base","delay","maintenance","canal","other","previous_due","total"] as const).map(k => (
             <div key={k} className="rounded-md border p-2">
               <div className="text-[10px] uppercase text-muted-foreground">
-                {k === "irrigation" ? tx("Irrigation","সেচ")
+                {k === "base" ? tx("Base","বেস")
                   : k === "delay" ? tx("Delay","বিলম্ব")
                   : k === "maintenance" ? tx("Maintenance","রক্ষণাবেক্ষণ")
                   : k === "canal" ? tx("Canal","ক্যানেল")
+                  : k === "other" ? tx("Other","অন্যান্য")
                   : k === "previous_due" ? tx("Previous Due","পূর্বের বকেয়া")
                   : tx("Grand Total","সর্বমোট")}
               </div>
@@ -151,24 +185,26 @@ export default function IrrigationCategoryReport() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>{tx("Date", "তারিখ")}</TableHead>
-            <TableHead className="text-right">{tx("Irrigation", "সেচ")}</TableHead>
+            <TableHead className="text-right">{tx("Base", "বেস")}</TableHead>
             <TableHead className="text-right">{tx("Delay", "বিলম্ব")}</TableHead>
             <TableHead className="text-right">{tx("Maintenance", "রক্ষণাবেক্ষণ")}</TableHead>
             <TableHead className="text-right">{tx("Canal", "ক্যানেল")}</TableHead>
+            <TableHead className="text-right">{tx("Other", "অন্যান্য")}</TableHead>
             <TableHead className="text-right">{tx("Prev Due", "পূর্বের বকেয়া")}</TableHead>
             <TableHead className="text-right">{tx("Total", "মোট")}</TableHead>
             <TableHead className="text-right">{tx("Receipts", "রসিদ")}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">…</TableCell></TableRow>}
-            {!loading && rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">{tx("No data", "কোনো ডাটা নেই")}</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">…</TableCell></TableRow>}
+            {!loading && rows.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">{tx("No data", "কোনো ডাটা নেই")}</TableCell></TableRow>}
             {rows.map(r => (
               <TableRow key={r.date}>
                 <TableCell>{fmtDate(r.date)}</TableCell>
-                <TableCell className="text-right font-mono">{money(r.irrigation)}</TableCell>
+                <TableCell className="text-right font-mono">{money(r.base)}</TableCell>
                 <TableCell className="text-right font-mono">{money(r.delay)}</TableCell>
                 <TableCell className="text-right font-mono">{money(r.maintenance)}</TableCell>
                 <TableCell className="text-right font-mono">{money(r.canal)}</TableCell>
+                <TableCell className="text-right font-mono">{money(r.other)}</TableCell>
                 <TableCell className="text-right font-mono">{money(r.previous_due)}</TableCell>
                 <TableCell className="text-right font-mono font-semibold">{money(r.total)}</TableCell>
                 <TableCell className="text-right">{r.count}</TableCell>
