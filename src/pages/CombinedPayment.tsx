@@ -156,7 +156,7 @@ export default function CombinedPayment() {
     }
   }
 
-  function printReceipt() {
+  async function printReceipt() {
     if (!lastReceipt) return;
     const paper = getDefaultPaperSize();
     const doc = new jsPDF({ unit: "mm", format: paper });
@@ -167,6 +167,16 @@ export default function CombinedPayment() {
     doc.setFontSize(11); doc.text("COMBINED PAYMENT RECEIPT", pageW / 2, margin + 12, { align: "center" });
     doc.setDrawColor(31, 78, 121); doc.setLineWidth(0.6);
     doc.line(margin, margin + 15, pageW - margin, margin + 15);
+    // QR code (top-right) for receipt verification
+    if (lastReceipt.verifyUrl) {
+      try {
+        const qrUrl = await QRCode.toDataURL(lastReceipt.verifyUrl, { margin: 0, width: 160 });
+        doc.addImage(qrUrl, "PNG", pageW - margin - 18, margin - 2, 18, 18);
+        doc.setFontSize(6); doc.setTextColor(110);
+        doc.text(lang === "bn" ? "যাচাইয়ের জন্য স্ক্যান" : "Scan to verify", pageW - margin - 9, margin + 18, { align: "center" });
+        doc.setTextColor(0);
+      } catch { /* ignore */ }
+    }
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     let y = margin + 22;
     doc.text(`Receipt No: ${lastReceipt.no}`, margin, y);
@@ -198,6 +208,7 @@ export default function CombinedPayment() {
     doc.text("Authorised signature", pageW - margin - 25, sigY + 4, { align: "center" });
     doc.save(`combined-${lastReceipt.no}.pdf`);
   }
+
 
   return (
     <>
