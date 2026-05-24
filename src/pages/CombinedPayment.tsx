@@ -3,6 +3,8 @@
 // receipt number (COMBO-YYYY-MM-NNNN) generated server-side.
 import { useEffect, useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
+
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
