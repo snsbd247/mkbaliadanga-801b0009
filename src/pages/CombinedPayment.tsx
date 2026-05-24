@@ -238,7 +238,14 @@ export default function CombinedPayment() {
             <div>
               <Label>{lang === "bn" ? "ঋণ পরিশোধ (৳)" : "Loan Repayment (৳)"}</Label>
               <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_amt}
+                     aria-invalid={loanExceeds || undefined}
                      onChange={(e) => setForm({ ...form, loan_amt: Number(e.target.value) || 0 })} />
+              {selectedLoan && (
+                <div className={`text-xs mt-1 ${loanExceeds ? "text-destructive" : "text-muted-foreground"}`}>
+                  {lang === "bn" ? "বাকি" : "Remaining"}: {money(selectedLoan.remaining)}
+                  {loanExceeds && (lang === "bn" ? " — বাকির চেয়ে বেশি" : " — exceeds remaining")}
+                </div>
+              )}
             </div>
           </div>
           <div>
@@ -251,11 +258,12 @@ export default function CombinedPayment() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={reset} disabled={saving}>{lang === "bn" ? "রিসেট" : "Reset"}</Button>
-              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id}>
+              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds}>
                 <Save className="h-4 w-4 mr-1" />{saving ? "…" : (lang === "bn" ? "সংরক্ষণ" : "Save")}
               </Button>
             </div>
           </div>
+
         </Card>
 
         <Card className="p-4 space-y-3">
