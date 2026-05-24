@@ -703,7 +703,7 @@ async function verifyVoterIntegrity(admin: any): Promise<{ ok: boolean; issues: 
   return { ok: issues.length === 0, issues };
 }
 
-async function seedBankAccounts(admin: any, officeId: string) {
+async function seedBankAccounts(admin: any, officeId: string, monthsBack: number = 1) {
   const existing = await admin.from("bank_accounts").select("id").eq("office_id", officeId).limit(1);
   if (existing.data && existing.data.length) return { accounts: 0, txns: 0 };
   const accountsSpec = [
@@ -714,11 +714,26 @@ async function seedBankAccounts(admin: any, officeId: string) {
   const { data: accts, error } = await admin.from("bank_accounts").insert(accountsSpec).select("id");
   if (error) throw new Error(`bank_accounts: ${error.message}`);
   const txns: any[] = [];
+  const today = new Date();
+  const dateAt = (m: number, d: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, d).toISOString().slice(0, 10);
+  let refSeq = 1;
   (accts ?? []).forEach((a: any, i: number) => {
-    txns.push(
-      { office_id: officeId, bank_account_id: a.id, txn_type: "deposit", amount: 10000 + i * 2000, reference_no: `DEP-${1000 + i}`, note: "Demo deposit" },
-      { office_id: officeId, bank_account_id: a.id, txn_type: "withdraw", amount: 3000 + i * 500, reference_no: `WD-${2000 + i}`, note: "Demo withdraw" },
-    );
+    if (monthsBack > 1) {
+      // Monthly cycle: 1 deposit, 1 withdraw, occasional interest
+      for (let m = monthsBack - 1; m >= 0; m--) {
+        txns.push({ office_id: officeId, bank_account_id: a.id, txn_type: "deposit",  amount: 8000 + i * 1500 + (m % 3) * 500, reference_no: `DEP-${1000 + refSeq++}`, note: "Demo monthly deposit", txn_date: dateAt(m, 5) });
+        txns.push({ office_id: officeId, bank_account_id: a.id, txn_type: "withdraw", amount: 2500 + i * 400  + (m % 4) * 300, reference_no: `WD-${2000 + refSeq++}`,  note: "Demo monthly withdraw", txn_date: dateAt(m, 20) });
+        if (m % 3 === 0) {
+          txns.push({ office_id: officeId, bank_account_id: a.id, txn_type: "interest", amount: 150 + i * 50, reference_no: `INT-${3000 + refSeq++}`, note: "Demo quarterly interest", txn_date: dateAt(m, 28) });
+        }
+      }
+    } else {
+      txns.push(
+        { office_id: officeId, bank_account_id: a.id, txn_type: "deposit",  amount: 10000 + i * 2000, reference_no: `DEP-${1000 + i}`, note: "Demo deposit" },
+        { office_id: officeId, bank_account_id: a.id, txn_type: "withdraw", amount: 3000 + i * 500,   reference_no: `WD-${2000 + i}`,  note: "Demo withdraw" },
+      );
+    }
   });
   if (txns.length) {
     const { error: e2 } = await admin.from("bank_transactions").insert(txns);
@@ -726,6 +741,7 @@ async function seedBankAccounts(admin: any, officeId: string) {
   }
   return { accounts: (accts ?? []).length, txns: txns.length };
 }
+
 
 async function seedFarmerNotes(admin: any, farmers: any[]) {
   const targets = farmers.slice(0, Math.min(10, farmers.length));
