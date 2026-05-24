@@ -312,6 +312,17 @@ export default function CombinedPayment() {
               </Button>
             </div>
           </div>
+          <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoDownload}
+              onChange={(e) => {
+                setAutoDownload(e.target.checked);
+                try { localStorage.setItem("combined:autoDl", e.target.checked ? "1" : "0"); } catch {}
+              }}
+            />
+            <span>{lang === "bn" ? "সংরক্ষণের পর রসিদ স্বয়ংক্রিয় ডাউনলোড" : "Auto-download receipt after save"}</span>
+          </label>
 
         </Card>
 
