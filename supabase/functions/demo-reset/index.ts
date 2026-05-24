@@ -1237,6 +1237,21 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
   expenses: [
     { table: "expenses", page: "/payments", page_label: "Payments / Expenses", required: true },
   ],
+  bank: [
+    { table: "bank_accounts",     page: "/banking", page_label: "Bank Accounts",     required: true },
+    { table: "bank_transactions", page: "/banking", page_label: "Bank Transactions", required: true },
+  ],
+  assets: [
+    { table: "asset_categories",            page: "/assets/categories",   page_label: "Asset Categories",      required: true },
+    { table: "assets",                      page: "/assets",              page_label: "Assets",                required: true },
+    { table: "asset_stocks",                page: "/assets/stocks",       page_label: "Asset Stocks",          required: true },
+    { table: "asset_purchases",             page: "/assets/purchases",    page_label: "Asset Purchases",       required: true },
+    { table: "asset_movements",             page: "/assets/movements",    page_label: "Asset Movements",       required: false },
+    { table: "asset_maintenance_logs",      page: "/assets/maintenance",  page_label: "Asset Maintenance",     required: false },
+    { table: "asset_depreciation_settings", page: "/assets/depreciation", page_label: "Depreciation Setup",    required: false },
+    { table: "asset_depreciation_schedule", page: "/assets/depreciation", page_label: "Depreciation Schedule", required: false },
+    { table: "asset_disposals",             page: "/assets/disposals",    page_label: "Asset Disposals",       required: false },
+  ],
 };
 
 async function verifyRowCounts(admin: any, modules: string[]) {
