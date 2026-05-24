@@ -15,6 +15,8 @@ import { fmtDate, money } from "@/lib/format";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ExternalLink, Download } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 
