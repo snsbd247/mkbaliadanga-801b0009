@@ -233,7 +233,7 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
 
     farmers.push({
       farmer_code: code,
-      member_no: String(seq).padStart(7, "0"),
+      member_no: code,
       name_en: en,
       name_bn: bn,
       father_name: father,
