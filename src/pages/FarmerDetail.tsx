@@ -227,15 +227,39 @@ export default function FarmerDetail() {
   function printSavings(s: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const typeLabel = s.type === "deposit" ? tx("Deposit", "জমা") : tx("Withdrawal", "উত্তোলন");
     const acNo = (farmer as any)?.account_number || (farmer as any)?.member_no || (farmer as any)?.farmer_code || "—";
+    // Build savings summary from loaded savings list (txns sorted desc by created_at)
+    const allTxns: any[] = (savings as any) || [];
+    const sorted = [...allTxns].sort((a, b) => String(a.txn_date ?? a.created_at).localeCompare(String(b.txn_date ?? b.created_at)));
+    let balance = 0;
+    let depositTotal = 0;
+    let balanceBefore = 0;
+    let balanceAfter = 0;
+    for (const t of sorted) {
+      const amt = Number(t.amount || 0);
+      if (t.type === "deposit") { depositTotal += amt; }
+      if (t.id === s.id) { balanceBefore = balance; }
+      balance += (t.type === "deposit" ? amt : -amt);
+      if (t.id === s.id) { balanceAfter = balance; }
+    }
+    const categoryMap: Record<string, string> = {
+      general: tx("General", "সাধারণ"), hawlat: tx("Hawlat", "হাওলাত"),
+      bank: tx("Bank", "ব্যাংক"), donation: tx("Donation", "দান"), misc: tx("Misc", "বিবিধ"),
+    };
     downloadBnReceiptPdf({
       kind: "savings",
       ...commonReceipt(),
       receipt_no: s.receipt_no || autoReceiptNo("SAV", s.id, new Date(s.txn_date ?? s.created_at)),
       date: s.txn_date ?? s.created_at,
       farmer: farmerForReceipt(),
-      description: `${tx("Account #", "হিসাব নং")}: ${acNo} — ${typeLabel}${s.note ? " — " + s.note : ""}`,
+      description: `${typeLabel}${s.note ? " — " + s.note : ""}`,
       collected_amount: Number(s.amount),
       verify_url: `${window.location.origin}/r/sav-${s.id}`,
+      savings_account_no: String(acNo),
+      savings_category_bn: s.category ? (categoryMap[s.category] || s.category) : null,
+      savings_balance_before: balanceBefore,
+      savings_balance_after: balanceAfter,
+      savings_deposit_total: depositTotal,
+      outstanding: balanceAfter,
     }, copy, receiptArgs.options);
   }
   function printLoan(l: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
