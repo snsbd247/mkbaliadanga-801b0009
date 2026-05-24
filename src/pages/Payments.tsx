@@ -706,9 +706,42 @@ export default function Payments() {
         </Card>
 
         <Card className="p-5 lg:col-span-2">
+          {methodSummary.length > 0 && (
+            <div className="mb-3 rounded-md border bg-muted/30 p-2 text-xs">
+              <div className="font-semibold uppercase text-[10px] text-muted-foreground mb-1">
+                {tx("Today's collections by method", "আজকের আদায় (মাধ্যম-ভিত্তিক)")}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {methodSummary.map(m => (
+                  <span key={m.method} className="inline-flex items-center gap-1">
+                    <Badge variant="secondary" className="uppercase">{m.method}</Badge>
+                    <span className="font-mono font-semibold">{money(m.total)}</span>
+                    <span className="text-muted-foreground">({m.count})</span>
+                  </span>
+                ))}
+                <span className="ml-auto font-mono font-semibold">
+                  {tx("Total", "মোট")}: {money(methodSummary.reduce((s, x) => s + x.total, 0))}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <h2 className="font-semibold">{t("recentTransactions")}</h2>
             <div className="flex items-center gap-3 flex-wrap">
+              {list[0] && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const el = document.querySelector<HTMLElement>(`[data-payment-row="${list[0].id}"] [data-receipt-menu] button`);
+                    el?.click();
+                  }}
+                  title={tx("Reprint last receipt", "শেষ রসিদ পুনঃমুদ্রণ")}
+                >
+                  <Printer className="h-4 w-4 mr-1" />
+                  {tx("Reprint last", "শেষ রসিদ")}
+                </Button>
+              )}
               <Select value={period} onValueChange={(v: any) => { setPeriod(v); const n = new URLSearchParams(params); if (v === "all") n.delete("period"); else n.set("period", v); setParams(n, { replace: true }); }}>
                 <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
