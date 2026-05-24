@@ -39,6 +39,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { formatId5 } from "@/lib/idFormat";
+import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
