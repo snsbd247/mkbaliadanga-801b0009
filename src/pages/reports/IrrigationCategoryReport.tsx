@@ -87,36 +87,33 @@ export default function IrrigationCategoryReport() {
   }), { irrigation: 0, delay: 0, maintenance: 0, canal: 0, previous_due: 0, total: 0, count: 0 }), [rows]);
 
   function exportPdf() {
-    exportTablePDF({
-      title: tx("Irrigation Category Report", "সেচ ক্যাটেগরি রিপোর্ট"),
-      subtitle: `${from} → ${to}`,
-      columns: [
-        { header: tx("Date", "তারিখ"), key: "date" },
-        { header: tx("Irrigation", "সেচ"), key: "irrigation" },
-        { header: tx("Delay", "বিলম্ব ফি"), key: "delay" },
-        { header: tx("Maintenance", "রক্ষণাবেক্ষণ"), key: "maintenance" },
-        { header: tx("Canal", "ক্যানেল"), key: "canal" },
-        { header: tx("Prev Due", "পূর্বের বকেয়া"), key: "previous_due" },
-        { header: tx("Total", "মোট"), key: "total" },
+    exportTablePDF(
+      tx("Irrigation Category Report", "সেচ ক্যাটেগরি রিপোর্ট"),
+      [
+        tx("Date", "তারিখ"),
+        tx("Irrigation", "সেচ"),
+        tx("Delay", "বিলম্ব"),
+        tx("Maintenance", "রক্ষণাবেক্ষণ"),
+        tx("Canal", "ক্যানেল"),
+        tx("Prev Due", "পূর্বের বকেয়া"),
+        tx("Total", "মোট"),
       ],
-      rows: rows.map(r => ({
-        date: fmtDate(r.date),
-        irrigation: money(r.irrigation),
-        delay: money(r.delay),
-        maintenance: money(r.maintenance),
-        canal: money(r.canal),
-        previous_due: money(r.previous_due),
-        total: money(r.total),
-      })),
-    } as any);
+      rows.map(r => [fmtDate(r.date), money(r.irrigation), money(r.delay), money(r.maintenance), money(r.canal), money(r.previous_due), money(r.total)]),
+      { from, to },
+    );
   }
 
   function exportXls() {
-    exportExcel("irrigation-category-report", rows.map(r => ({
-      Date: r.date,
-      Irrigation: r.irrigation, Delay: r.delay, Maintenance: r.maintenance,
-      Canal: r.canal, "Previous Due": r.previous_due, Total: r.total, Receipts: r.count,
-    })));
+    exportExcel(
+      "irrigation-category-report",
+      "Categories",
+      rows.map(r => ({
+        Date: r.date,
+        Irrigation: r.irrigation, Delay: r.delay, Maintenance: r.maintenance,
+        Canal: r.canal, "Previous Due": r.previous_due, Total: r.total, Receipts: r.count,
+      })),
+      { from, to },
+    );
   }
 
   return (
