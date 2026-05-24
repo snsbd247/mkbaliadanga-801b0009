@@ -139,10 +139,11 @@ export function AppSidebar() {
         { url: "/admin/reconciliation", icon: ClipboardCheck, label: t("monthlyReconciliation"), permKey: "accounting" },
         { url: "/admin/share-capital-reconciliation", icon: ClipboardCheck, label: t("shareCapitalReconciliation"), permKey: "accounting" },
         { url: "/ledger-integrity", icon: ShieldAlert, label: t("ledgerIntegrity"), permKey: "accounting" },
-        { url: "/bank-accounts", icon: Banknote, label: "ব্যাংক অ্যাকাউন্ট", permKey: "accounting" },
-        { url: "/vouchers", icon: BookText, label: "ভাউচার", permKey: "accounting" },
-        { url: "/public-payments", icon: Banknote, label: "পাবলিক পেমেন্ট অনুরোধ", permKey: "payments" },
-        { url: "/payment-reconciliation", icon: ClipboardCheck, label: "পেমেন্ট রিকনসিলিয়েশন", permKey: "accounting" },
+        { url: "/bank-accounts", icon: Banknote, label: t("bankAccounts"), permKey: "accounting" },
+        { url: "/vouchers", icon: BookText, label: t("vouchers"), permKey: "accounting" },
+        { url: "/public-payments", icon: Banknote, label: t("publicPaymentRequests"), permKey: "payments" },
+        { url: "/payment-reconciliation", icon: ClipboardCheck, label: t("paymentReconciliation"), permKey: "accounting" },
+
       ],
     },
 
