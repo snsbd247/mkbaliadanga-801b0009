@@ -244,6 +244,18 @@ export default function CombinedPayment() {
               onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_amt: 0 })}
             />
           </div>
+          {form.farmer_id && dues && (
+            <div className="rounded-md bg-muted/40 p-2 text-xs space-y-0.5 border">
+              <div className="font-semibold uppercase text-[10px] text-muted-foreground">
+                {lang === "bn" ? "বকেয়া সারাংশ" : "Outstanding summary"}
+              </div>
+              <div className="flex justify-between"><span>{lang === "bn" ? "সঞ্চয় ব্যালেন্স" : "Savings balance"}</span><span className="font-mono">{money(dues.savings_balance)}</span></div>
+              <div className="flex justify-between"><span>{lang === "bn" ? "শেয়ার ব্যালেন্স" : "Share balance"}</span><span className="font-mono">{money(dues.share_balance)}</span></div>
+              <div className="flex justify-between"><span>{lang === "bn" ? "ঋণ বাকি" : "Loan due"}</span><span className="font-mono">{money(dues.loan_due)}</span></div>
+              <div className="flex justify-between"><span>{lang === "bn" ? "সেচ বাকি" : "Irrigation due"}</span><span className="font-mono">{money(dues.irrigation_due)}</span></div>
+              <div className="flex justify-between border-t pt-0.5 font-semibold"><span>{lang === "bn" ? "নিট বকেয়া" : "Net due"}</span><span className="font-mono">{money(dues.net_due)}</span></div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "সঞ্চয় (৳)" : "Savings (৳)"}</Label>
