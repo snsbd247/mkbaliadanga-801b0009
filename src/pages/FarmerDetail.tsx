@@ -225,14 +225,17 @@ export default function FarmerDetail() {
   }
 
   function printSavings(s: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
+    const typeLabel = s.type === "deposit" ? tx("Deposit", "জমা") : tx("Withdrawal", "উত্তোলন");
+    const acNo = (farmer as any)?.account_number || (farmer as any)?.member_no || (farmer as any)?.farmer_code || "—";
     downloadBnReceiptPdf({
       kind: "savings",
       ...commonReceipt(),
       receipt_no: s.receipt_no || autoReceiptNo("SAV", s.id, new Date(s.txn_date ?? s.created_at)),
       date: s.txn_date ?? s.created_at,
       farmer: farmerForReceipt(),
-      description: s.note ?? `${tx("Savings", "সঞ্চয়")} ${s.type} (${s.status})`,
+      description: `${tx("Account #", "হিসাব নং")}: ${acNo} — ${typeLabel}${s.note ? " — " + s.note : ""}`,
       collected_amount: Number(s.amount),
+      verify_url: `${window.location.origin}/r/sav-${s.id}`,
     }, copy, receiptArgs.options);
   }
   function printLoan(l: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
@@ -245,6 +248,7 @@ export default function FarmerDetail() {
       description: `${tx("Loan disbursed — total payable", "ঋণ বিতরণ — মোট পরিশোধ্য")} ${money(l.total_payable)}`,
       outstanding: Number(l.total_payable),
       collected_amount: Number(l.principal),
+      verify_url: `${window.location.origin}/r/loan-${l.id}`,
     }, copy, receiptArgs.options);
   }
   async function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
