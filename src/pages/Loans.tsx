@@ -307,6 +307,11 @@ export default function Loans() {
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">When a plan is selected, an installment schedule is auto-generated upon committee approval.</p>
               </div>
+              <div>
+                <Label>{tx("Loan Number (optional)", "লোন নম্বর (ঐচ্ছিক)")}</Label>
+                <Input value={form.loan_no} onChange={e => setForm({ ...form, loan_no: e.target.value })} placeholder={tx("e.g. L-2026-001", "যেমন: L-2026-001")} />
+                <p className="text-xs text-muted-foreground mt-1">{tx("Must be unique within the office.", "একই অফিসে অনন্য হতে হবে।")}</p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div ref={registerField("principal")}><Label>{t("principal")}</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
                 <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={form.interest_rate} disabled={!form.interest_enabled || !!form.plan_id} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
