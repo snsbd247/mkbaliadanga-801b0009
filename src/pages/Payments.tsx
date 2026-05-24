@@ -299,12 +299,14 @@ export default function Payments() {
         kind: primary.kind,
         amount: totalAmount,
         method, note,
+        category,
         reference_id: primary.reference_id || null,
         collected_by: user?.id,
         status,
         idempotency_key: idemKey,
         receipt_no: finalReceiptNo,
       };
+
 
       const { data: inserted, error } = await supabase.from("payments").insert(payload).select("id").single();
       if (error) {
