@@ -172,7 +172,7 @@ function parseSheet(wb: XLSX.WorkBook): Record<string, any>[] {
 const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
   lands: [
     ["Column", "Required", "Format / Notes"],
-    ["account_number", "Yes", "Farmer Voter / Savings A/C No (12 digits)."],
+    ["account_number", "Yes", "Farmer Voter / Savings A/C No (5 digits)."],
     ["dag_no", "Yes", "One or more dag numbers, comma separated. Canonical: \"123, 124/A, 125-B\". Allowed chars per token: digits, letters, '/', '-' (max 32). No duplicates."],
     ["land_size", "Yes", "Decimal (acre/decimal as per office unit). > 0."],
     ["owner_type", "No", "owner | borgadar (default: owner)"],
@@ -185,7 +185,7 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
   ],
   land_relations: [
     ["Column", "Required", "Format / Notes"],
-    ["owner_account_number", "Yes", "Owner farmer A/C No (12 digits)."],
+    ["owner_account_number", "Yes", "Owner farmer A/C No (5 digits)."],
     ["tenant_account_number", "Yes", "Tenant / sharecropper farmer A/C No."],
     ["dag_no", "Yes", "Must EXACTLY match the owner's land dag_no in canonical comma-separated form (e.g. \"123, 124/A\")."],
     ["share_percentage", "Yes", "0 < value ≤ 100. Combined overlap must not exceed 100%."],
@@ -195,7 +195,7 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
   ],
   irrigation: [
     ["Column", "Required", "Format / Notes"],
-    ["account_number", "Yes", "Farmer A/C No (12 digits)."],
+    ["account_number", "Yes", "Farmer A/C No (5 digits)."],
     ["dag_no", "Yes", "Must match an existing land for this farmer. Canonical comma-separated form supported (e.g. \"123, 124/A\")."],
     ["season_year", "Yes", "e.g. 2026"],
     ["season_type", "Yes", "boro | aman | aus"],
