@@ -161,13 +161,15 @@ export default function CultivationHistoryReport() {
               <TableHead>পিতার নাম</TableHead>
               <TableHead>মোবাইল</TableHead>
               <TableHead>মৌজা</TableHead>
+              <TableHead>বিবরণ</TableHead>
+              <TableHead className="text-right">রেট/শতক</TableHead>
               <TableHead className="text-right">জমি (শতক)</TableHead>
               <TableHead className="text-right">মোট টাকা</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">Loading…</TableCell></TableRow>}
-            {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">কোনো ডেটা নেই</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">Loading…</TableCell></TableRow>}
+            {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">কোনো ডেটা নেই</TableCell></TableRow>}
             {filtered.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="text-xs font-mono">{r.member_no}</TableCell>
@@ -175,13 +177,15 @@ export default function CultivationHistoryReport() {
                 <TableCell className="text-xs">{r.father}</TableCell>
                 <TableCell className="text-xs">{r.mobile}</TableCell>
                 <TableCell className="text-xs">{r.mouzas}</TableCell>
+                <TableCell className="text-xs">{r.particulars}</TableCell>
+                <TableCell className="text-right text-xs">{r.rateLabel}</TableCell>
                 <TableCell className="text-right">{r.totalArea.toFixed(2)}</TableCell>
                 <TableCell className="text-right">{money(r.totalAmount)}</TableCell>
               </TableRow>
             ))}
             {filtered.length > 0 && (
               <TableRow className="bg-muted/70 font-bold border-t-2">
-                <TableCell colSpan={5} className="text-right">সর্বমোট ({filtered.length} জন)</TableCell>
+                <TableCell colSpan={7} className="text-right">সর্বমোট ({filtered.length} জন)</TableCell>
                 <TableCell className="text-right">{totals.area.toFixed(2)}</TableCell>
                 <TableCell className="text-right">{money(totals.amount)}</TableCell>
               </TableRow>
