@@ -36,6 +36,10 @@ export function useUnsavedFormGuard<T>(
   }, []);
 
   return {
+    /** True if a saved draft exists in sessionStorage (use to gate a restore prompt). */
+    hasDraft: (): boolean => {
+      try { return sessionStorage.getItem(storageKey) != null; } catch { return false; }
+    },
     restore: (): T | null => {
       try {
         const raw = sessionStorage.getItem(storageKey);

@@ -23,6 +23,7 @@ import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useQueryClient } from "@tanstack/react-query";
+import { getFarmerDues, type FarmerDuesBreakdown } from "@/lib/farmerDues";
 
 type LoanRow = { id: string; principal: number; total_payable: number; issued_on: string; remaining: number };
 
@@ -38,6 +39,10 @@ export default function CombinedPayment() {
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string; verifyUrl?: string | null } | null>(null);
+  const [dues, setDues] = useState<FarmerDuesBreakdown | null>(null);
+  const [autoDownload, setAutoDownload] = useState<boolean>(() => {
+    try { return localStorage.getItem("combined:autoDl") === "1"; } catch { return false; }
+  });
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
@@ -45,12 +50,21 @@ export default function CombinedPayment() {
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
-    const restored = guard.restore();
-    if (restored) setForm(restored as typeof EMPTY);
+    if (guard.hasDraft()) {
+      toast.message(lang === "bn" ? "অসমাপ্ত খসড়া পাওয়া গেছে" : "Unsaved draft found", {
+        description: lang === "bn" ? "পুনরুদ্ধার করবেন?" : "Restore it?",
+        action: {
+          label: lang === "bn" ? "পুনরুদ্ধার" : "Restore",
+          onClick: () => { const r = guard.restore(); if (r) setForm(r as typeof EMPTY); },
+        },
+        cancel: { label: lang === "bn" ? "বাতিল" : "Discard", onClick: () => guard.clear() },
+        duration: 10000,
+      });
+    }
   }, []);
 
   useEffect(() => {
-    if (!form.farmer_id) { setFarmer(null); setLoans([]); return; }
+    if (!form.farmer_id) { setFarmer(null); setLoans([]); setDues(null); return; }
     (async () => {
       const [f, lq] = await Promise.all([
         supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").eq("id", form.farmer_id).maybeSingle(),
@@ -67,6 +81,7 @@ export default function CombinedPayment() {
         };
       }).filter(r => r.remaining > 0);
       setLoans(rows);
+      try { setDues(await getFarmerDues(form.farmer_id)); } catch { setDues(null); }
     })();
   }, [form.farmer_id]);
 
@@ -149,6 +164,10 @@ export default function CombinedPayment() {
       toast.success(`${lang === "bn" ? "সংরক্ষিত" : "Saved"} — ${receiptNo}`);
       // Reset form, but keep farmer for fast next-entry
       setForm({ ...EMPTY, farmer_id: form.farmer_id });
+      // Auto-download receipt PDF if user has enabled it
+      if (autoDownload) {
+        setTimeout(() => { printReceipt().catch(() => {}); }, 50);
+      }
     } catch (e: any) {
       toast.error(e.message || "Save failed");
     } finally {
@@ -225,6 +244,18 @@ export default function CombinedPayment() {
               onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_amt: 0 })}
             />
           </div>
+          {form.farmer_id && dues && (
+            <div className="rounded-md bg-muted/40 p-2 text-xs space-y-0.5 border">
+              <div className="font-semibold uppercase text-[10px] text-muted-foreground">
+                {lang === "bn" ? "বকেয়া সারাংশ" : "Outstanding summary"}
+              </div>
+              <div className="flex justify-between"><span>{lang === "bn" ? "সঞ্চয় ব্যালেন্স" : "Savings balance"}</span><span className="font-mono">{money(dues.savings_balance)}</span></div>
+              <div className="flex justify-between"><span>{lang === "bn" ? "শেয়ার ব্যালেন্স" : "Share balance"}</span><span className="font-mono">{money(dues.share_balance)}</span></div>
+              <div className="flex justify-between"><span>{lang === "bn" ? "ঋণ বাকি" : "Loan due"}</span><span className="font-mono">{money(dues.loan_due)}</span></div>
+              <div className="flex justify-between"><span>{lang === "bn" ? "সেচ বাকি" : "Irrigation due"}</span><span className="font-mono">{money(dues.irrigation_due)}</span></div>
+              <div className="flex justify-between border-t pt-0.5 font-semibold"><span>{lang === "bn" ? "নিট বকেয়া" : "Net due"}</span><span className="font-mono">{money(dues.net_due)}</span></div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "সঞ্চয় (৳)" : "Savings (৳)"}</Label>
@@ -281,6 +312,17 @@ export default function CombinedPayment() {
               </Button>
             </div>
           </div>
+          <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoDownload}
+              onChange={(e) => {
+                setAutoDownload(e.target.checked);
+                try { localStorage.setItem("combined:autoDl", e.target.checked ? "1" : "0"); } catch {}
+              }}
+            />
+            <span>{lang === "bn" ? "সংরক্ষণের পর রসিদ স্বয়ংক্রিয় ডাউনলোড" : "Auto-download receipt after save"}</span>
+          </label>
 
         </Card>
 

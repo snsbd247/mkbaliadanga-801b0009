@@ -68,6 +68,10 @@ export default function Payments() {
   const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
   const [savingsBalance, setSavingsBalance] = useState<number>(0);
   const [methodSummary, setMethodSummary] = useState<MethodSummary[]>([]);
+  const [autoDownload, setAutoDownload] = useState<boolean>(() => {
+    try { return localStorage.getItem("payments:autoDl") === "1"; } catch { return false; }
+  });
+  const [pendingAutoId, setPendingAutoId] = useState<string | null>(null);
 
   async function loadSavingsBalance(fid: string) {
     const { data } = await supabase
@@ -135,6 +139,18 @@ export default function Payments() {
     })();
     return () => { cancelled = true; };
   }, [allocs, receiptNo, officeId]);
+
+  // Auto-download the freshly-saved receipt as soon as its row appears in the list
+  useEffect(() => {
+    if (!pendingAutoId) return;
+    if (!list.some(p => p.id === pendingAutoId)) return;
+    const id = pendingAutoId;
+    setPendingAutoId(null);
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLButtonElement>(`button[data-auto-print="${id}"]`);
+      el?.click();
+    });
+  }, [list, pendingAutoId]);
 
   async function loadPriority() {
     if (!user) return;
@@ -333,6 +349,7 @@ export default function Payments() {
       }
 
       toast.success(status === "pending" ? "Submitted for approval" : t("paymentSuccess"));
+      if (autoDownload && status === "approved") setPendingAutoId(inserted.id);
       resetForm();
       load();
     } finally {
@@ -716,6 +733,16 @@ export default function Payments() {
               <Input type="file" accept="image/*,application/pdf" onChange={e => setReceiptFile(e.target.files?.[0] ?? null)} />
               {receiptFile && <p className="text-xs text-muted-foreground mt-1">{receiptFile.name}</p>}
             </div>
+            <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+              <Switch
+                checked={autoDownload}
+                onCheckedChange={(v) => {
+                  setAutoDownload(!!v);
+                  try { localStorage.setItem("payments:autoDl", v ? "1" : "0"); } catch {}
+                }}
+              />
+              <span>{tx("Auto-download receipt after save", "সংরক্ষণের পর রসিদ স্বয়ংক্রিয় ডাউনলোড")}</span>
+            </label>
             <Button className="w-full" onClick={pay} disabled={submitting}>
               {submitting ? "Processing…" : t("payNow")}
             </Button>
@@ -914,7 +941,18 @@ export default function Payments() {
                             verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
                           }, copy, receiptArgs.options);
                         };
-                        return <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} /></span>;
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              hidden
+                              aria-hidden="true"
+                              data-auto-print={p.id}
+                              onClick={() => doDownload("both")}
+                            />
+                            <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} /></span>
+                          </>
+                        );
                       })()}
                     </div>
                   </TableCell>
