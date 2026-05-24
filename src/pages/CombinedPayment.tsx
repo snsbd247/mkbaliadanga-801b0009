@@ -132,7 +132,16 @@ export default function CombinedPayment() {
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
       setLastReceipt({ no: receiptNo, rows, total, farmerName });
       guard.clear();
+      // Refresh related caches so Savings/Loans/Payments/Statement views update immediately
+      qc.invalidateQueries({ queryKey: ["api", "payments"] });
+      qc.invalidateQueries({ queryKey: ["api", "savings"] });
+      qc.invalidateQueries({ queryKey: ["api", "loans"] });
+      qc.invalidateQueries({ queryKey: ["farmer-statement"] });
+      qc.invalidateQueries({ queryKey: ["farmer-dues", form.farmer_id] });
+      qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && q.queryKey.some((k) => typeof k === "string" && /savings|loan|payment|statement|due/i.test(k)) });
       toast.success(`${lang === "bn" ? "সংরক্ষিত" : "Saved"} — ${receiptNo}`);
+      // Reset form, but keep farmer for fast next-entry
+      setForm({ ...EMPTY, farmer_id: form.farmer_id });
     } catch (e: any) {
       toast.error(e.message || "Save failed");
     } finally {
