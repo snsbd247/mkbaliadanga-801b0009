@@ -33,6 +33,16 @@ export async function loadSeasonRateMap(season_id: string, office_id?: string | 
 }
 
 /** Resolve rate for a land — prefer land.land_type_id then fall back to enum field_type code. */
+/** Map legacy enum field_type values to canonical land_type codes. */
+const FIELD_TYPE_TO_CODE: Record<string, string> = {
+  high_land: "HIGH",
+  medium_land: "MEDIUM",
+  low_land: "LOW",
+  high: "HIGH",
+  medium: "MEDIUM",
+  low: "LOW",
+};
+
 export function resolveRateForLand(
   rates: RateRow[],
   land: { land_type_id?: string | null; field_type?: string | null },
@@ -42,8 +52,10 @@ export function resolveRateForLand(
     if (hit) return hit;
   }
   if (land.field_type) {
-    const hit = rates.find((r) => r.land_type_code === land.field_type);
+    const ft = String(land.field_type).toLowerCase();
+    const mapped = (FIELD_TYPE_TO_CODE[ft] ?? land.field_type).toString().toUpperCase();
+    const hit = rates.find((r) => (r.land_type_code ?? "").toUpperCase() === mapped);
     if (hit) return hit;
   }
-  return rates.find((r) => r.land_type_code === "other") ?? null;
+  return rates.find((r) => (r.land_type_code ?? "").toLowerCase() === "other") ?? null;
 }
