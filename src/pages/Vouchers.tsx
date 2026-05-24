@@ -26,6 +26,8 @@ const TYPES = [
 
 export default function Vouchers() {
   const { user } = useAuth();
+  const { tx } = useLang();
+
   const [rows, setRows] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<string>("all");
