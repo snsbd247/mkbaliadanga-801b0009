@@ -18,6 +18,8 @@ import { useLang } from "@/i18n/LanguageProvider";
 const sb = supabase as any;
 
 export default function TemporaryLoans() {
+  const { tx } = useLang();
+
   const [rows, setRows] = useState<any[]>([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
