@@ -102,6 +102,7 @@ import LoanDelaySettings from "./pages/admin/LoanDelaySettings";
 import LoanOverdueReport from "./pages/reports/LoanOverdueReport";
 import InstallmentCollectionReport from "./pages/reports/InstallmentCollectionReport";
 import LoanPenaltyReport from "./pages/reports/LoanPenaltyReport";
+import CultivationHistoryReport from "./pages/reports/CultivationHistoryReport";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
