@@ -228,6 +228,20 @@ export default function Payments() {
       if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
 
+    // Soft duplicate-payment guard: same farmer + same amount within 2 minutes.
+    const dup = await findRecentDuplicatePayment({ farmer_id: farmerId, amount: totalAmount, withinSeconds: 120 });
+    if (dup) {
+      const ago = Math.round((Date.now() - new Date(dup.created_at).getTime()) / 1000);
+      const ok = window.confirm(
+        tx(
+          `A payment of ৳${dup.amount} for this farmer was recorded ${ago}s ago (Receipt: ${dup.receipt_no ?? "—"}). Submit another one?`,
+          `এই কৃষকের ৳${dup.amount} টাকার একটি পেমেন্ট ${ago} সেকেন্ড আগে নেওয়া হয়েছে (রসিদ: ${dup.receipt_no ?? "—"})। আরেকটি জমা দেবেন?`,
+        ),
+      );
+      if (!ok) return;
+    }
+
+
     // Strict installment enforcement for loan allocations (engine v2)
     const loanContext: Record<string, { settings: any; next: any; breakdown: any; override?: string }> = {};
     for (const a of allocs) {
