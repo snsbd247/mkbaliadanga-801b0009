@@ -385,6 +385,27 @@ export default function FarmerStatement() {
             </div>
           )}
 
+          {farmer && health && (
+            <div className="rounded border p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-primary/5">
+              <div>
+                <div className="text-[11px] uppercase text-muted-foreground">{t("savings")} {t("balance" as any) || "Balance"}</div>
+                <div className="font-bold text-success">{money(health.savings)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase text-muted-foreground">{t("loans")} {t("dues" as any) || "Due"}</div>
+                <div className={`font-bold ${health.loanDue > 0 ? "text-destructive" : ""}`}>{money(health.loanDue)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase text-muted-foreground">{t("irrigation")} {t("dues" as any) || "Due"}</div>
+                <div className={`font-bold ${health.irrDue > 0 ? "text-destructive" : ""}`}>{money(health.irrDue)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase text-muted-foreground">মোট জমি (শতক)</div>
+                <div className="font-bold">{health.landArea.toFixed(2)}</div>
+              </div>
+            </div>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow>
