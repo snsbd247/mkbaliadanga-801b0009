@@ -80,9 +80,14 @@ export default function PublicPay() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <Card className="p-6 max-w-md w-full space-y-4">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={() => nav("/farmer/dashboard")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> ড্যাশবোর্ড
+          </Button>
+        </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold">পেমেন্ট অনুরোধ জমা দিন</h1>
-          <p className="text-xs text-muted-foreground mt-1">MK Baliadanga • অনলাইন পেমেন্ট পোর্টাল</p>
+          <p className="text-xs text-muted-foreground mt-1">MK Baliadanga • কৃষক পোর্টাল</p>
         </div>
 
         <div className="space-y-3">
