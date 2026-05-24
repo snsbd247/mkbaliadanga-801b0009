@@ -33,6 +33,8 @@ type Group = {
 };
 
 export default function PaymentReconciliation() {
+  const { tx } = useLang();
+
   const today = new Date();
   const monthAgo = new Date(today.getTime() - 30 * 86400_000);
   const [dateFrom, setDateFrom] = useState(monthAgo.toISOString().slice(0, 10));
