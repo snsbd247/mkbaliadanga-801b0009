@@ -163,6 +163,7 @@ export default function Payments() {
       pq,
     ]);
     setFarmers(f.data ?? []); setList(p.data ?? []);
+    try { setMethodSummary(await getTodayMethodSummary({ officeId })); } catch {}
   }
 
   function clearFilters() {
