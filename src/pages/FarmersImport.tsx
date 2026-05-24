@@ -174,8 +174,8 @@ export default function FarmersImport() {
       setRows([...updated]);
 
       const farmerId = String(r.raw.farmer_id ?? r.raw.member_no ?? "").trim();
-      const voterNumber = String(r.raw.voter_number ?? "").trim();
-      const isVoter = !!voterNumber;
+      const rawVoter = String(r.raw.is_voter ?? r.raw.voter_number ?? "").trim().toLowerCase();
+      const isVoter = ["1", "true", "yes", "y", "হ্যাঁ"].includes(rawVoter) || !!String(r.raw.voter_number ?? "").trim();
 
       const basePayload: any = {
         name_en:     String(r.raw.name_en ?? "").trim(),
@@ -183,9 +183,7 @@ export default function FarmersImport() {
         father_name: r.raw.father_name ? String(r.raw.father_name).trim() : null,
         mobile:      r.raw.mobile      ? String(r.raw.mobile).trim()      : null,
         village:     r.raw.village     ? String(r.raw.village).trim()     : null,
-        ...(isVoter
-          ? { voter_number: voterNumber, account_number: voterNumber, is_voter: true }
-          : {}),
+        is_voter: isVoter,
       };
 
       try {
@@ -202,7 +200,7 @@ export default function FarmersImport() {
           } else {
             const { error } = await supabase
               .from("farmers")
-              .insert({ ...basePayload, member_no: farmerId, office_id: officeId ?? null });
+              .insert({ ...basePayload, member_no: farmerId, farmer_code: farmerId, office_id: officeId ?? null });
             if (error) throw error;
           }
         } else {
