@@ -1717,7 +1717,17 @@ export const translations = {
     mouzasTab: "Mouzas",
     farmerIdCol: "Farmer ID",
     issueCol: "Issue",
+    landHistory: "Land History",
+    temporaryLoans: "Temporary Loans",
+    bankAccounts: "Bank Accounts",
+    vouchers: "Vouchers",
+    publicPaymentRequests: "Public Payment Requests",
+    paymentReconciliation: "Payment Reconciliation",
+    cultivationHistoryReport: "Cultivation History",
+    loanHistoryReport: "Loan History",
+    irrigationCategoryReport: "Irrigation Category",
   },
+
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
     accessDenied: "প্রবেশাধিকার নেই",
