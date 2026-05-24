@@ -1153,6 +1153,8 @@ export const translations = {
     dmModLoans: "Loans (plans + loans + payments)",
     dmModSavings: "Savings + shares",
     dmModExpenses: "Expenses",
+    dmModBank: "Bank accounts + transactions",
+    dmModAssets: "Assets (purchases, depreciation, maintenance, disposals)",
     // Shared page labels (audit fix 2026-05)
     pgPrintCard: "Print Card",
     pgFarmerId: "Farmer ID",
