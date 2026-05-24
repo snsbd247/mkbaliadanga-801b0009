@@ -1062,7 +1062,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
 
           if (modules.includes("farmers") || needFarmers) {
-            steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
+            steps.push({ key: "payments", label: `পেমেন্ট/কালেকশন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers, monthsBack); }});
           }
           steps.push({ key: "verify_locations", label: "লোকেশন কাউন্ট যাচাই", fn: async () => {
             const v = await verifyLocations(admin);
