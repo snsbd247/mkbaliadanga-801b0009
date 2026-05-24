@@ -22,6 +22,8 @@ const FULL_WIPE_ORDER = [
   "bank_transactions", "bank_accounts",
   "cashbook_submissions",
   "farmer_notes",
+  "public_payment_intents",
+  "land_history",
   "land_change_log",
   // Assets module (delete dependents first; assets last)
   "asset_alerts", "asset_audit_logs", "asset_scan_logs",
@@ -519,11 +521,14 @@ async function seedLoans(admin: any, officeId: string, farmers: any[], monthsBac
     // Spread issued_on across last `monthsBack` months when > 1
     const monthsAgo = monthsBack > 1 ? (i % monthsBack) : 6;
     const issued = new Date(now - monthsAgo * 30 * 86400000).toISOString().slice(0, 10);
+    const isTemp = i % 6 === 5; // ~17% temporary loans
     return {
       farmer_id: f.id, principal, interest_rate: p.interest_rate, total_payable: totalPay, total_due: totalPay,
       installment_amount: totalPay / p.duration_months, plan_id: p.id,
       status: i % 4 === 0 ? "pending" : "approved", office_id: officeId,
       issued_on: issued,
+      is_temporary: isTemp,
+      temp_purpose: isTemp ? (i % 2 === 0 ? "জরুরি কৃষি উপকরণ" : "অস্থায়ী চাষাবাদ সহায়তা") : null,
     };
   });
 
@@ -1024,19 +1029,220 @@ async function seedAssets(admin: any, officeId: string, monthsBack: number = 1) 
     if (error) throw new Error(`asset_disposals: ${error.message}`);
   }
 
+  // 10) Maintenance Schedules — recurring preventive maintenance per fixed asset
+  const schedules = assetSpec
+    .filter((a) => a.type === "fixed_asset" && !a.retire)
+    .map((a, i) => ({
+      office_id: officeId, asset_id: A[a.code].id,
+      title: `Quarterly service — ${a.name_en}`,
+      frequency_days: 90,
+      next_due_at: dateAt(-1, 10 + i), // due in ~1 month
+      vendor: "Demo Service Center",
+      notes: "Routine preventive maintenance",
+      active: true,
+    }));
+  if (schedules.length) await admin.from("asset_maintenance_schedules").insert(schedules);
+
+  // 11) Alerts — mix of stock/maintenance/depreciation, open + resolved
+  const alerts: any[] = [];
+  // Low-stock alert for consumable
+  alerts.push({
+    office_id: officeId, asset_id: A["SPR-IMP-01"].id, alert_type: "low_stock",
+    severity: "warning", message_en: "Stock for Pump Impeller below minimum",
+    message_bn: "পাম্প ইমপেলারের স্টক নিম্নসীমার নিচে", status: "open",
+  });
+  alerts.push({
+    office_id: officeId, asset_id: A["SPR-BRG-01"].id, alert_type: "low_stock",
+    severity: "info", message_en: "Motor Bearing Set running low",
+    message_bn: "মোটর বিয়ারিং স্টক কমছে", status: "resolved",
+    resolved_at: dateAt(1, 12) + "T10:00:00Z",
+  });
+  // Maintenance due alert
+  alerts.push({
+    office_id: officeId, asset_id: A["PMP-001"].id, alert_type: "maintenance_due",
+    severity: "warning", message_en: "Quarterly service due for Centrifugal Pump 5HP",
+    message_bn: "সেন্ট্রিফিউগাল পাম্প ৫HP-এর ত্রৈমাসিক সার্ভিস বাকি", status: "open",
+  });
+  // Depreciation alert
+  alerts.push({
+    office_id: officeId, asset_id: A["MOT-001"].id, alert_type: "high_depreciation",
+    severity: "info", message_en: "Motor 5HP nearing 60% depreciation",
+    message_bn: "মোটর ৫HP প্রায় ৬০% অবচয় ছুঁয়েছে", status: "acknowledged",
+    acknowledged_at: dateAt(0, 5) + "T08:00:00Z",
+  });
+  await admin.from("asset_alerts").insert(alerts);
+
+  // 12) Damage reports — 2 reports (1 open, 1 closed)
+  const damages = [
+    {
+      office_id: officeId, asset_id: A["PMP-002"].id,
+      report_date: dateAt(Math.min(monthsBack - 1, 2), 18),
+      severity: "minor", status: "open",
+      remarks: "Seal leakage observed during routine check",
+    },
+    {
+      office_id: officeId, asset_id: A["MOT-002"].id,
+      report_date: dateAt(Math.min(monthsBack - 1, 4), 12),
+      severity: "major", status: "resolved",
+      remarks: "Winding burnt; replaced/disposed",
+    },
+  ];
+  await admin.from("asset_damage_reports").insert(damages);
+
+  // 13) Scan logs — simulate QR/barcode scans across the window
+  const scans: any[] = [];
+  const scanSpread = Math.max(3, monthsBack);
+  for (let m = 0; m < scanSpread; m++) {
+    for (const a of assetSpec.slice(0, 4)) {
+      scans.push({
+        office_id: officeId, asset_id: A[a.code].id, asset_code: a.code,
+        scanned_text: A[a.code].id, source: m % 2 === 0 ? "camera" : "manual",
+        success: true, scanned_at: dateAt(m, 14) + "T09:30:00Z",
+      });
+    }
+  }
+  // 2 failed scans
+  scans.push({
+    office_id: officeId, asset_id: null, asset_code: null,
+    scanned_text: "UNKNOWN-XYZ-001", source: "camera",
+    success: false, error_message: "Asset not found",
+    scanned_at: dateAt(0, 20) + "T11:00:00Z",
+  });
+  if (scans.length) await admin.from("asset_scan_logs").insert(scans);
+
+  // 14) Audit logs — record key actions
+  const auditRows: any[] = [];
+  for (const a of assetSpec) {
+    auditRows.push({
+      office_id: officeId, asset_id: A[a.code].id,
+      entity: "asset", entity_id: A[a.code].id, action_type: "create",
+      remarks: `Demo seed: ${a.name_en} registered`,
+    });
+  }
+  auditRows.push({
+    office_id: officeId, asset_id: A["MOT-002"].id, entity: "asset_disposal",
+    action_type: "create", remarks: "Demo: disposal recorded",
+  });
+  await admin.from("asset_audit_logs").insert(auditRows);
+
   return {
     categories: catSpec.length,
     assets: assetSpec.length,
     purchases: purchases.length,
     movements: movements.length,
     maintenance: maint.length,
+    schedules: schedules.length,
     depreciation: schedule.length,
     disposals: disposals.length,
+    alerts: alerts.length,
+    damages: damages.length,
+    scans: scans.length,
+    audits: auditRows.length,
     skipped: false,
   };
 }
 
+// ---- Land History: one row per land per fiscal year covered ----
+async function seedLandHistory(admin: any, officeId: string, farmers: any[], lands: any[], monthsBack: number): Promise<number> {
+  if (!lands.length) return 0;
+  const today = new Date();
+  const currentFY = today.getMonth() >= 6 ? today.getFullYear() : today.getFullYear() - 1;
+  const yearsBack = Math.max(1, Math.ceil(monthsBack / 12));
+  const cropsByMonth = ["Boro", "Aman", "Aus"];
+  const rows: any[] = [];
+  for (let y = 0; y < yearsBack; y++) {
+    const fy = currentFY - y;
+    for (let i = 0; i < lands.length; i++) {
+      const l = lands[i];
+      const owner = farmers.find((f) => f.id === l.farmer_id);
+      if (!owner) continue;
+      const useBorga = i % 5 === 0;
+      const cultivator = useBorga ? farmers[(i + 3) % farmers.length] : null;
+      rows.push({
+        office_id: officeId, land_id: l.id, farmer_id: owner.id,
+        fiscal_year: fy,
+        season: pick(cropsByMonth, i),
+        mouza: l.mouza_name ?? null,
+        dag_no: l.dag_no ?? null,
+        land_size: l.size ?? l.land_size ?? 1,
+        owner_type: useBorga ? "borga" : "own",
+        field_type: i % 2 === 0 ? "irrigated" : "rainfed",
+        cultivator_farmer_id: cultivator?.id ?? null,
+        crop: pick(cropsByMonth, i + y),
+        yield_amount: 800 + (i % 7) * 50,
+        yield_unit: "kg",
+        remarks: `Demo land history ${fy}`,
+      });
+    }
+  }
+  if (!rows.length) return 0;
+  // Insert in chunks of 500 to avoid payload limits
+  for (let i = 0; i < rows.length; i += 500) {
+    const chunk = rows.slice(i, i + 500);
+    const { error } = await admin.from("land_history").insert(chunk);
+    if (error) throw new Error(`land_history: ${error.message}`);
+  }
+  return rows.length;
+}
 
+// ---- Voter Audit (Cancel/Reactivate History) ----
+async function seedVoterAuditLogs(admin: any, officeId: string, farmers: any[]): Promise<number> {
+  const voters = farmers.filter((f: any) => f.is_voter);
+  if (voters.length < 3) return 0;
+  const rows: any[] = [];
+  // pick a few voters: cancel one, then reactivate; cancel another permanently
+  const today = new Date();
+  const daysAgo = (d: number) => new Date(today.getTime() - d * 86400000).toISOString();
+  for (let i = 0; i < Math.min(5, voters.length); i++) {
+    const v = voters[i];
+    if (i % 2 === 0) {
+      rows.push({
+        farmer_id: v.id, office_id: officeId, account_number: v.account_number,
+        voter_number_old: v.voter_number, voter_number_new: null,
+        is_voter_old: true, is_voter_new: false, action: "cancel",
+        note: "Demo: ভোটার বাতিল (পরীক্ষামূলক)", created_at: daysAgo(60 - i * 5),
+      });
+      rows.push({
+        farmer_id: v.id, office_id: officeId, account_number: v.account_number,
+        voter_number_old: null, voter_number_new: v.voter_number,
+        is_voter_old: false, is_voter_new: true, action: "reactivate",
+        note: "Demo: ভোটার পুনঃসক্রিয় করা হলো", created_at: daysAgo(40 - i * 5),
+      });
+    } else {
+      rows.push({
+        farmer_id: v.id, office_id: officeId, account_number: v.account_number,
+        voter_number_old: v.voter_number, voter_number_new: v.voter_number,
+        is_voter_old: true, is_voter_new: true, action: "update",
+        note: "Demo: তথ্য হালনাগাদ", created_at: daysAgo(20 + i),
+      });
+    }
+  }
+  const { error } = await admin.from("voter_audit_logs").insert(rows);
+  if (error) throw new Error(`voter_audit_logs: ${error.message}`);
+  return rows.length;
+}
+
+// ---- Public Payment Intents (পাবলিক পেমেন্ট অনুরোধ) ----
+async function seedPublicPaymentIntents(admin: any, officeId: string, farmers: any[]): Promise<number> {
+  if (!farmers.length) return 0;
+  const today = new Date();
+  const daysAgo = (d: number) => new Date(today.getTime() - d * 86400000).toISOString();
+  const sample = farmers.slice(0, Math.min(8, farmers.length));
+  const rows = sample.map((f, i) => ({
+    office_id: officeId,
+    farmer_code: f.farmer_code,
+    phone: `017${String(10000000 + i * 1234).slice(0, 8)}`,
+    amount: 500 + (i % 5) * 250,
+    allocation_hint: i % 3 === 0 ? "irrigation" : i % 3 === 1 ? "loan" : "savings",
+    note: `Demo public payment request #${i + 1}`,
+    status: i < 3 ? "pending" : i < 6 ? "processed" : "rejected",
+    created_at: daysAgo(30 - i * 3),
+    processed_at: i >= 3 && i < 6 ? daysAgo(28 - i * 3) : null,
+  }));
+  const { error } = await admin.from("public_payment_intents").insert(rows);
+  if (error) throw new Error(`public_payment_intents: ${error.message}`);
+  return rows.length;
+}
 
 
 async function seedAccounts(admin: any) {
@@ -1189,10 +1395,18 @@ function estimateImport(modules: string[], size: number) {
     c["asset_categories"] = 4; c["assets"] = 8; c["asset_stocks"] = 8;
     c["asset_purchases"] = 8; c["asset_installations"] = 3;
     c["asset_movements"] = 12; c["asset_maintenance_logs"] = 12;
+    c["asset_maintenance_schedules"] = 3;
     c["asset_depreciation_settings"] = 4; c["asset_depreciation_schedule"] = 48;
     c["asset_disposals"] = 1;
+    c["asset_alerts"] = 4; c["asset_damage_reports"] = 2;
+    c["asset_scan_logs"] = 12; c["asset_audit_logs"] = 9;
   }
-  if (modules.includes("farmers")) c["farmer_notes"] = 10;
+  if (modules.includes("farmers")) {
+    c["farmer_notes"] = 10;
+    c["land_history"] = size;
+    c["voter_audit_logs"] = 5;
+    c["public_payment_intents"] = 8;
+  }
   return c;
 }
 
@@ -1223,10 +1437,13 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
     { table: "accounting_periods", page: "/period-close", page_label: "Period Close",      required: true },
   ],
   farmers: [
-    { table: "farmers",        page: "/farmers",         page_label: "Farmers",          required: true },
-    { table: "lands",          page: "/farmers",         page_label: "Farmers (Lands)",  required: true },
-    { table: "patwaris",       page: "/admin/patwaris",  page_label: "Patwaris",         required: false },
-    { table: "land_relations", page: "/farmers",         page_label: "Farmers (Borga)",  required: false },
+    { table: "farmers",                page: "/farmers",         page_label: "Farmers",          required: true },
+    { table: "lands",                  page: "/farmers",         page_label: "Farmers (Lands)",  required: true },
+    { table: "patwaris",               page: "/admin/patwaris",  page_label: "Patwaris",         required: false },
+    { table: "land_relations",         page: "/farmers",         page_label: "Farmers (Borga)",  required: false },
+    { table: "land_history",           page: "/land-history",    page_label: "ভূমির ইতিহাস (Land History)", required: false },
+    { table: "voter_audit_logs",       page: "/voter-history",   page_label: "Voter Cancel/Reactivate History", required: false },
+    { table: "public_payment_intents", page: "/admin/public-payments", page_label: "পাবলিক পেমেন্ট অনুরোধ", required: false },
   ],
   irrigation: [
     { table: "irrigation_charge_settings", page: "/irrigation-rates",    page_label: "Irrigation Rates",    required: true },
@@ -1236,7 +1453,7 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
   ],
   loans: [
     { table: "loan_plans",              page: "/loan-plans",                 page_label: "Loan Plans",           required: true },
-    { table: "loan_delay_fee_settings", page: "/admin/loan-delay-settings",  page_label: "Loan Delay Settings",  required: true },
+    { table: "loan_delay_fee_settings", page: "/admin/loan-delay-settings",  page_label: "Loan Installment Penalty Settings", required: true },
     { table: "loans",                   page: "/loans",                      page_label: "Loans",                required: true },
     { table: "loan_installments",       page: "/loans",                      page_label: "Loans (Installments)", required: true },
     { table: "loan_payments",           page: "/loans",                      page_label: "Loans (Payments)",     required: false },
@@ -1255,15 +1472,21 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
     { table: "bank_transactions", page: "/banking", page_label: "Bank Transactions", required: true },
   ],
   assets: [
-    { table: "asset_categories",            page: "/assets/categories",   page_label: "Asset Categories",      required: true },
-    { table: "assets",                      page: "/assets",              page_label: "Assets",                required: true },
-    { table: "asset_stocks",                page: "/assets/stocks",       page_label: "Asset Stocks",          required: true },
-    { table: "asset_purchases",             page: "/assets/purchases",    page_label: "Asset Purchases",       required: true },
-    { table: "asset_movements",             page: "/assets/movements",    page_label: "Asset Movements",       required: false },
-    { table: "asset_maintenance_logs",      page: "/assets/maintenance",  page_label: "Asset Maintenance",     required: false },
-    { table: "asset_depreciation_settings", page: "/assets/depreciation", page_label: "Depreciation Setup",    required: false },
-    { table: "asset_depreciation_schedule", page: "/assets/depreciation", page_label: "Depreciation Schedule", required: false },
-    { table: "asset_disposals",             page: "/assets/disposals",    page_label: "Asset Disposals",       required: false },
+    { table: "asset_categories",            page: "/assets/categories",    page_label: "Asset Categories",      required: true },
+    { table: "assets",                      page: "/assets",               page_label: "Asset Registry",        required: true },
+    { table: "asset_stocks",                page: "/assets/stocks",        page_label: "Asset Stock",           required: true },
+    { table: "asset_purchases",             page: "/assets/purchases",     page_label: "Asset Purchases",       required: true },
+    { table: "asset_installations",         page: "/assets/installations", page_label: "Asset Installations",   required: false },
+    { table: "asset_movements",             page: "/assets/movements",     page_label: "Asset Movements",       required: false },
+    { table: "asset_maintenance_logs",      page: "/assets/maintenance",   page_label: "Asset Maintenance",     required: false },
+    { table: "asset_maintenance_schedules", page: "/assets/maintenance",   page_label: "Maintenance Schedules", required: false },
+    { table: "asset_depreciation_settings", page: "/assets/depreciation",  page_label: "Depreciation Setup",    required: false },
+    { table: "asset_depreciation_schedule", page: "/assets/depreciation",  page_label: "Depreciation Schedule", required: false },
+    { table: "asset_disposals",             page: "/assets/disposals",     page_label: "Asset Disposals",       required: false },
+    { table: "asset_alerts",                page: "/assets/alerts",        page_label: "Asset Alerts",          required: false },
+    { table: "asset_damage_reports",        page: "/assets",               page_label: "Damage Reports",        required: false },
+    { table: "asset_scan_logs",             page: "/assets/scan-history",  page_label: "Scan History",          required: false },
+    { table: "asset_audit_logs",            page: "/assets",               page_label: "Asset Audit Logs",      required: false },
   ],
 };
 
@@ -1423,6 +1646,9 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("bank")) steps.push({ key: "bank", label: `ব্যাংক একাউন্ট ও লেনদেন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { const b = await seedBankAccounts(admin, officeId, monthsBack); summary.bank = b; }});
           if (modules.includes("assets")) steps.push({ key: "assets", label: `অ্যাসেট মডিউল seed${monthsBack > 1 ? ` (${monthsBack} মাস অবচয় + maintenance + movement)` : ""}`, fn: async () => { summary.assets = await seedAssets(admin, officeId, monthsBack); }});
           if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
+          if (modules.includes("farmers")) steps.push({ key: "land_history", label: `ভূমির ইতিহাস seed${monthsBack > 12 ? ` (${Math.ceil(monthsBack/12)} বছর)` : ""}`, fn: async () => { if (lands.length) summary.land_history = await seedLandHistory(admin, officeId, farmers, lands, monthsBack); }});
+          if (modules.includes("farmers")) steps.push({ key: "voter_audit", label: "Voter Cancel/Reactivate History seed", fn: async () => { if (farmers.length) summary.voter_audit = await seedVoterAuditLogs(admin, officeId, farmers); }});
+          if (modules.includes("farmers")) steps.push({ key: "public_payment_intents", label: "পাবলিক পেমেন্ট অনুরোধ seed", fn: async () => { if (farmers.length) summary.public_payment_intents = await seedPublicPaymentIntents(admin, officeId, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
 
           if (modules.includes("farmers") || needFarmers) {
