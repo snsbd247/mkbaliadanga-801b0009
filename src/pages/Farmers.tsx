@@ -248,6 +248,8 @@ export default function Farmers() {
   const [editFieldErrors, setEditFieldErrors] = useState<FormErrors>({});
   const editNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const editReturnToRef = useRef<string | null>(null);
+
 
   // Unsaved-draft guard for the create form (survives accidental refresh/tab close)
   const createDirty = open && JSON.stringify({ ...form, office_id: "" }) !== JSON.stringify({ ...EMPTY_FORM, office_id: "" });
