@@ -224,8 +224,9 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
       office_id: officeId,
       status: "active",
       is_voter: isVoter,
-      voter_number: isVoter ? formatToken(cfg.voterNumberFormat, tokenCtx) : null,
+      // Single shared 5-digit value: voter_number === account_number
       account_number: isVoter ? safeAccountNumber(formatToken(cfg.accountNumberFormat, tokenCtx), tokenCtx) : null,
+      voter_number: isVoter ? safeAccountNumber(formatToken(cfg.accountNumberFormat, tokenCtx), tokenCtx) : null,
       division_id: loc?.division_id ?? null,
       district_id: loc?.district_id ?? null,
       upazila_id: loc?.upazila_id ?? null,
