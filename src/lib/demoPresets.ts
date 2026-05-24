@@ -5,7 +5,8 @@
 
 export type DemoModule =
   | "locations" | "settings" | "accounting" | "farmers"
-  | "irrigation" | "loans" | "savings" | "expenses";
+  | "irrigation" | "loans" | "savings" | "expenses"
+  | "bank" | "assets";
 
 export type DemoPreset = {
   id: string;
@@ -21,7 +22,7 @@ export type DemoPreset = {
 
 export const ALL_MODULES: DemoModule[] = [
   "locations", "settings", "accounting", "farmers",
-  "irrigation", "loans", "savings", "expenses",
+  "irrigation", "loans", "savings", "expenses", "bank", "assets",
 ];
 
 export const DEMO_PRESETS: DemoPreset[] = [
