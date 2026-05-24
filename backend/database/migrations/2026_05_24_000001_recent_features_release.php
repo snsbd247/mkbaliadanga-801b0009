@@ -52,4 +52,8 @@ return new class extends Migration {
     public function down(): void {
         DB::statement("DROP INDEX IF EXISTS idx_loans_office_loan_no_unique");
         if (Schema::hasColumn('payments', 'verify_token')) {
-            Schema::table('payments', fn (Blueprint $t) => $t->dropColum
+            Schema::table('payments', fn (Blueprint $t) => $t->dropColumn('verify_token'));
+        }
+        Schema::dropIfExists('qr_tokens');
+    }
+};
