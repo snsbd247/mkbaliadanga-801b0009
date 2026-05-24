@@ -563,10 +563,12 @@ export default function FarmerDetail() {
 
   async function addLand() {
     setLandLocErr(null);
-    // Require location chain
-    const v = validateLocationChain(landLoc);
-    if (!v.ok) { setLandLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-    if (!(landLoc as any).mouza_id) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) }); return; }
+    // Require location: division → district → upazila → mouza (village not used on lands form)
+    const loc = landLoc as any;
+    if (!loc.division_id) { setLandLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+    if (!loc.district_id) { setLandLocErr({ level: "district", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+    if (!loc.upazila_id)  { setLandLocErr({ level: "upazila",  message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+    if (!loc.mouza_id)    { setLandLocErr({ level: "mouza",    message: t("mouzaRequired" as any) }); return; }
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
     let canonicalDag = land.dag_no.trim();
     if (land.owner_type === "owner") {
@@ -648,9 +650,11 @@ export default function FarmerDetail() {
     if (!editLand) return;
     setEditSaving(true);
     try {
-      const v = validateLocationChain(editLoc);
-      if (!v.ok) { setEditLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-      if (!(editLoc as any).mouza_id) { setEditLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "Mouza required" }); return; }
+      const el = editLoc as any;
+      if (!el.division_id) { setEditLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+      if (!el.district_id) { setEditLocErr({ level: "district", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+      if (!el.upazila_id)  { setEditLocErr({ level: "upazila",  message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+      if (!el.mouza_id)    { setEditLocErr({ level: "mouza",    message: t("mouzaRequired" as any) || "Mouza required" }); return; }
       let canonicalDag = editForm.dag_no.trim();
       if (editForm.owner_type === "owner") {
         const dv = validateDagNumbers(editForm.dag_no);
