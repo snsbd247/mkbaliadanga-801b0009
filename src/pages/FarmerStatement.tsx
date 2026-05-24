@@ -28,7 +28,7 @@ type Row = {
   reference_id: string | null;
 };
 
-type Kind = "savings" | "loan";
+type Kind = "savings" | "loan" | "irrigation";
 
 export default function FarmerStatement() {
   const brand = useBranding();
