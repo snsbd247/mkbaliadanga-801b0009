@@ -5527,6 +5527,10 @@ export type Database = {
           savings_bal: number
         }[]
       }
+      farmer_identifier_exists: {
+        Args: { _candidate: string; _exclude_id?: string }
+        Returns: boolean
+      }
       farmer_loan_statement: {
         Args: { _farmer_id: string; _from?: string; _to?: string }
         Returns: {
@@ -5664,6 +5668,7 @@ export type Database = {
         Args: { _office: string; _type: string }
         Returns: string
       }
+      normalize_farmer_identifier: { Args: { _value: string }; Returns: string }
       pg_public_table_columns: {
         Args: never
         Returns: {
