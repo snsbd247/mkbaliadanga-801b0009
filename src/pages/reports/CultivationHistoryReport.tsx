@@ -117,13 +117,14 @@ export default function CultivationHistoryReport() {
   function doExportPdf() {
     exportTablePDF(
       tx(`Cultivation History — ${seasonName}`, `চাষাবাদের তথ্য — ${seasonName}`),
-      ["ID", "নাম", "পিতা", "মোবাইল", "মৌজা", "জমি (শতক)", "টাকা"],
-      filtered.map((r) => [r.member_no, r.name, r.father, r.mobile, r.mouzas, r.totalArea.toFixed(2), money(r.totalAmount)]),
+      ["ID", "নাম", "পিতা", "মোবাইল", "মৌজা", "বিবরণ", "রেট/শতক", "জমি (শতক)", "টাকা"],
+      filtered.map((r) => [r.member_no, r.name, r.father, r.mobile, r.mouzas, r.particulars, r.rateLabel, r.totalArea.toFixed(2), money(r.totalAmount)]),
     );
   }
   function doExportExcel() {
     exportExcel("cultivation-history", "Cultivation", filtered.map((r) => ({
       ID: r.member_no, Name: r.name, Father: r.father, Mobile: r.mobile, Mouza: r.mouzas,
+      Particular: r.particulars, Rate_Per_Shotok: r.avgRate,
       Lands: r.landCount, Area_Shotok: r.totalArea, Amount_BDT: r.totalAmount,
     })));
   }
