@@ -140,6 +140,18 @@ export default function Payments() {
     return () => { cancelled = true; };
   }, [allocs, receiptNo, officeId]);
 
+  // Auto-download the freshly-saved receipt as soon as its row appears in the list
+  useEffect(() => {
+    if (!pendingAutoId) return;
+    if (!list.some(p => p.id === pendingAutoId)) return;
+    const id = pendingAutoId;
+    setPendingAutoId(null);
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLButtonElement>(`button[data-auto-print="${id}"]`);
+      el?.click();
+    });
+  }, [list, pendingAutoId]);
+
   async function loadPriority() {
     if (!user) return;
     const { data: prof } = await supabase.from("profiles").select("office_id").eq("id", user.id).maybeSingle();
