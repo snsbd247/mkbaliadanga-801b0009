@@ -12,10 +12,14 @@ import { FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 
 export default function TemporaryLoans() {
+  const { tx } = useLang();
+
   const [rows, setRows] = useState<any[]>([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -66,7 +70,7 @@ export default function TemporaryLoans() {
 
   return (
     <>
-      <PageHeader title="অস্থায়ী ঋণ রিপোর্ট (Temporary Loans)" description="স্বল্পমেয়াদী/অস্থায়ী ঋণ ট্র্যাকিং" />
+      <PageHeader title={tx("Temporary Loans", "অস্থায়ী ঋণ রিপোর্ট")} description={tx("Short-term / temporary loan tracking", "স্বল্পমেয়াদী/অস্থায়ী ঋণ ট্র্যাকিং")} />
       <Card className="p-3 mb-3 grid md:grid-cols-4 gap-3">
         <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
         <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>

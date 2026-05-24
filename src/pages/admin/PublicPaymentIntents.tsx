@@ -15,6 +15,8 @@ import { fmtDate, money } from "@/lib/format";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { ExternalLink, Download } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 
@@ -22,6 +24,8 @@ const TYPES = ["all", "irrigation", "loan", "savings", "other"];
 
 export default function PublicPaymentIntents() {
   const { user } = useAuth();
+  const { tx } = useLang();
+
   const [rows, setRows] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -90,11 +94,12 @@ export default function PublicPaymentIntents() {
   return (
     <>
       <PageHeader
-        title="পাবলিক পেমেন্ট অনুরোধ"
-        description="অনলাইন পোর্টালের মাধ্যমে জমা দেওয়া পেমেন্ট অনুরোধ"
+        title={tx("Public Payment Requests", "পাবলিক পেমেন্ট অনুরোধ")}
+        description={tx("Payment requests submitted via online portal", "অনলাইন পোর্টালের মাধ্যমে জমা দেওয়া পেমেন্ট অনুরোধ")}
         actions={
           <div className="flex items-center gap-2">
-            <Link to="/farmer/dashboard" target="_blank" className="text-xs text-primary inline-flex items-center gap-1">কৃষক পোর্টাল <ExternalLink className="h-3 w-3" /></Link>
+            <Link to="/farmer/dashboard" target="_blank" className="text-xs text-primary inline-flex items-center gap-1">{tx("Farmer Portal", "কৃষক পোর্টাল")} <ExternalLink className="h-3 w-3" /></Link>
+
             <Button size="sm" variant="outline" onClick={exportCsv} disabled={!filtered.length}>
               <Download className="h-4 w-4 mr-1" />CSV
             </Button>

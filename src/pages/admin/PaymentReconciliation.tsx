@@ -14,6 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, RefreshCw, Loader2 } from "lucide-react";
 import { money } from "@/lib/format";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 
@@ -31,6 +33,8 @@ type Group = {
 };
 
 export default function PaymentReconciliation() {
+  const { tx } = useLang();
+
   const today = new Date();
   const monthAgo = new Date(today.getTime() - 30 * 86400_000);
   const [dateFrom, setDateFrom] = useState(monthAgo.toISOString().slice(0, 10));
@@ -251,8 +255,9 @@ export default function PaymentReconciliation() {
   return (
     <>
       <PageHeader
-        title="পেমেন্ট রিকনসিলিয়েশন"
-        description="Payments vs public payment intents — অমিল হাইলাইট অফিস / কৃষক / সিজন অনুযায়ী"
+        title={tx("Payment Reconciliation", "পেমেন্ট রিকনসিলিয়েশন")}
+        description={tx("Payments vs public payment intents — mismatches by office / farmer / season", "পেমেন্ট বনাম পাবলিক পেমেন্ট অনুরোধ — অমিল হাইলাইট অফিস / কৃষক / সিজন অনুযায়ী")}
+
         actions={
           <Button size="sm" variant="outline" onClick={load} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}Reload

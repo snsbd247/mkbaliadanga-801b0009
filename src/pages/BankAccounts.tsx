@@ -15,12 +15,16 @@ import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 const TXN_TYPES = ["deposit", "withdraw", "charge", "interest"] as const;
 
 export default function BankAccounts() {
   const { user } = useAuth();
+  const { t } = useLang();
+
   const [accounts, setAccounts] = useState<any[]>([]);
   const [txns, setTxns] = useState<any[]>([]);
   const [openA, setOpenA] = useState(false);
@@ -116,7 +120,7 @@ export default function BankAccounts() {
   return (
     <>
       <PageHeader
-        title="ব্যাংক অ্যাকাউন্ট (Bank Accounts)"
+        title={t("bankAccounts")}
         description={`Total balance: ${money(totalBal)}`}
         actions={
           <>

@@ -13,6 +13,8 @@ import { Plus, Paperclip, Download } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 const TYPES = [
@@ -24,6 +26,8 @@ const TYPES = [
 
 export default function Vouchers() {
   const { user } = useAuth();
+  const { tx } = useLang();
+
   const [rows, setRows] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<string>("all");
@@ -88,8 +92,9 @@ export default function Vouchers() {
   return (
     <>
       <PageHeader
-        title="ভাউচার (Vouchers)"
-        description="পেমেন্ট / রিসিট / জার্নাল / কন্ট্রা ভাউচার + স্ক্যান আপলোড"
+        title={tx("Vouchers", "ভাউচার")}
+        description={tx("Payment / Receipt / Journal / Contra vouchers + scan upload", "পেমেন্ট / রিসিট / জার্নাল / কন্ট্রা ভাউচার + স্ক্যান আপলোড")}
+
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />New Voucher</Button></DialogTrigger>
