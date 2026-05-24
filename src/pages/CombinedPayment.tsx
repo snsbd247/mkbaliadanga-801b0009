@@ -216,7 +216,7 @@ export default function CombinedPayment() {
     }
   }
 
-  function printReceipt() {
+  async function printReceipt() {
     if (!lastReceipt) return;
     const paper = getDefaultPaperSize();
     const doc = new jsPDF({ unit: "mm", format: paper });
@@ -251,6 +251,14 @@ export default function CombinedPayment() {
     doc.setFont("helvetica", "bold");
     doc.text("Total", margin + 3, ry + 2);
     doc.text(lastReceipt.total.toFixed(2), pageW - margin - 3, ry + 2, { align: "right" });
+    if (lastReceipt.verifyUrl) {
+      try {
+        const qr = await QRCode.toDataURL(lastReceipt.verifyUrl, { margin: 0, width: 160 });
+        doc.addImage(qr, "PNG", margin, ry + 8, 24, 24);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(110);
+        doc.text("Scan to verify", margin + 12, ry + 35, { align: "center" });
+      } catch { /* QR failure must not block printing */ }
+    }
     // Signature
     const sigY = ry + 24;
     doc.setDrawColor(120); doc.line(pageW - margin - 50, sigY, pageW - margin, sigY);
