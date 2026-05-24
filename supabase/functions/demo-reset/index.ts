@@ -1408,6 +1408,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: `খরচ seed${monthsBack > 1 ? ` (${monthsBack} মাস পুনরাবৃত্ত)` : ""}`, fn: async () => { summary.expenses = await seedExpenses(admin, officeId, monthsBack); }});
           if (modules.includes("accounting")) steps.push({ key: "accounting_period", label: "চলতি অর্থবছরের পিরিয়ড open", fn: async () => { await seedAccountingPeriod(admin, officeId); }});
           if (modules.includes("bank")) steps.push({ key: "bank", label: `ব্যাংক একাউন্ট ও লেনদেন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { const b = await seedBankAccounts(admin, officeId, monthsBack); summary.bank = b; }});
+          if (modules.includes("assets")) steps.push({ key: "assets", label: `অ্যাসেট মডিউল seed${monthsBack > 1 ? ` (${monthsBack} মাস অবচয় + maintenance + movement)` : ""}`, fn: async () => { summary.assets = await seedAssets(admin, officeId, monthsBack); }});
           if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
 
