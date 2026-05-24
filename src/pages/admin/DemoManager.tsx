@@ -326,12 +326,12 @@ export default function DemoManager() {
                 onChange={(e) => setVoterRatio(Math.max(1, Number(e.target.value) || 3))} />
             </div>
             <div>
-              <Label>Voter Number Format</Label>
-              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:8}" />
+              <Label>Voter Number Format (5 digits, mirrors account)</Label>
+              <Input value={voterNumberFormat} onChange={(e) => setVoterNumberFormat(e.target.value)} placeholder="{seq:5}" />
             </div>
             <div>
-              <Label>Account Number Format (must yield 12–14 digits)</Label>
-              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{year}{seq:9}" />
+              <Label>Account Number Format (5 digits, same as farmer code)</Label>
+              <Input value={accountNumberFormat} onChange={(e) => setAccountNumberFormat(e.target.value)} placeholder="{seq:5}" />
             </div>
           </CardContent>
         </Card>
