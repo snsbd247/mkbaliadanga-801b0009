@@ -23,6 +23,13 @@ const FULL_WIPE_ORDER = [
   "cashbook_submissions",
   "farmer_notes",
   "land_change_log",
+  // Assets module (delete dependents first; assets last)
+  "asset_alerts", "asset_audit_logs", "asset_scan_logs",
+  "asset_damage_reports", "asset_disposals",
+  "asset_maintenance_schedules", "asset_maintenance_logs",
+  "asset_movements", "asset_installations", "asset_purchases",
+  "asset_depreciation_schedule", "asset_depreciation_settings",
+  "asset_stocks", "assets", "asset_categories",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
   "receipts", "receipt_counters", "receipt_settings",
   "sms_logs", "sms_office_settings", "sms_provider_secrets", "sms_settings",
