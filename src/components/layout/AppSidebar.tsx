@@ -168,9 +168,10 @@ export function AppSidebar() {
         { url: "/irrigation-reports", icon: FileBarChart, label: t("irrigationRevenueCollection" as any), permKey: "reports" },
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
        { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
-       { url: "/reports/cultivation-history", icon: FileBarChart, label: "চাষাবাদের তথ্য (Cultivation History)", permKey: "reports" },
-      { url: "/reports/loan-history", icon: FileBarChart, label: "ঋণ ইতিহাস (Loan History)", permKey: "reports" },
-      { url: "/reports/irrigation-category", icon: FileBarChart, label: "সেচ ক্যাটেগরি (Irrigation Category)", permKey: "reports" },
+       { url: "/reports/cultivation-history", icon: FileBarChart, label: t("cultivationHistoryReport"), permKey: "reports" },
+      { url: "/reports/loan-history", icon: FileBarChart, label: t("loanHistoryReport"), permKey: "reports" },
+      { url: "/reports/irrigation-category", icon: FileBarChart, label: t("irrigationCategoryReport"), permKey: "reports" },
+
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
         { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
