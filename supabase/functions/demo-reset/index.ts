@@ -1301,9 +1301,10 @@ Deno.serve(async (req) => {
     const voterCfg: VoterCfg = {
       voterRatio: Math.max(2, Math.min(20, Number(body?.voterCfg?.voterRatio) || 3)),
       voterNumberFormat: typeof body?.voterCfg?.voterNumberFormat === "string" && body.voterCfg.voterNumberFormat.trim()
-        ? body.voterCfg.voterNumberFormat.trim().slice(0, 80) : "V-{seq:5}",
+        ? body.voterCfg.voterNumberFormat.trim().slice(0, 80) : "{seq:8}",
+      // account_number trigger requires 12–14 digit numeric value
       accountNumberFormat: typeof body?.voterCfg?.accountNumberFormat === "string" && body.voterCfg.accountNumberFormat.trim()
-        ? body.voterCfg.accountNumberFormat.trim().slice(0, 80) : "SAV-{seq:6}",
+        ? body.voterCfg.accountNumberFormat.trim().slice(0, 80) : "{year}{seq:9}",
     };
 
     if (action === "preview") {
