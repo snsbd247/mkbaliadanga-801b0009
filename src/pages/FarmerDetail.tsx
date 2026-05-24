@@ -66,6 +66,9 @@ export default function FarmerDetail() {
   const [invDue, setInvDue] = useState<number>(0);
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
+  const [rateMap, setRateMap] = useState<RateRow[]>([]);
+  const [activeSeasonName, setActiveSeasonName] = useState<string>("");
+  
   
 
   // Add land dialog
