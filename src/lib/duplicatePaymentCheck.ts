@@ -34,7 +34,7 @@ export async function findRecentDuplicatePayment(opts: {
     .eq("amount", opts.amount)
     .gte("created_at", since)
     .is("deleted_at", null)
-    .neq("status", "voided")
+    .neq("status", "voided" as any)
     .order("created_at", { ascending: false })
     .limit(1);
   const row = (data ?? [])[0];
