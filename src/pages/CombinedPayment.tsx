@@ -3,6 +3,7 @@
 // receipt number (COMBO-YYYY-MM-NNNN) generated server-side.
 import { useEffect, useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -21,10 +22,13 @@ import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useQueryClient } from "@tanstack/react-query";
+import { FormErrorSummary, type FieldError } from "@/components/forms/FormErrorSummary";
+import { useFormUx } from "@/hooks/useFormUx";
 
 type LoanRow = { id: string; principal: number; total_payable: number; issued_on: string; remaining: number };
+type IrrigationRow = { id: string; invoice_no: string; due_date: string; due_amount: number; paid_amount: number; irrigation_amount: number; delay_fee: number; maintenance_amount: number; canal_amount: number; other_charge: number; office_id: string | null };
 
-const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_amt: 0, note: "" };
+const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_amt: 0, irrigation: 0, method: "cash", note: "" };
 
 export default function CombinedPayment() {
   const { user, officeId } = useAuth();
@@ -34,8 +38,11 @@ export default function CombinedPayment() {
   const [form, setForm] = useState({ ...EMPTY });
   const [farmer, setFarmer] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
+  const [irrigationInvoices, setIrrigationInvoices] = useState<IrrigationRow[]>([]);
   const [saving, setSaving] = useState(false);
-  const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string } | null>(null);
+  const [formErrors, setFormErrors] = useState<FieldError[]>([]);
+  const { registerField, focusField, focusFirstError, preventEnterSubmit } = useFormUx();
+  const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string; verifyUrl?: string | null } | null>(null);
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
@@ -48,11 +55,12 @@ export default function CombinedPayment() {
   }, []);
 
   useEffect(() => {
-    if (!form.farmer_id) { setFarmer(null); setLoans([]); return; }
+    if (!form.farmer_id) { setFarmer(null); setLoans([]); setIrrigationInvoices([]); return; }
     (async () => {
-      const [f, lq] = await Promise.all([
+      const [f, lq, iq] = await Promise.all([
         supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").eq("id", form.farmer_id).maybeSingle(),
         supabase.from("loans").select("id,principal,total_payable,issued_on,loan_payments(amount)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
+        supabase.from("irrigation_invoices").select("id,invoice_no,due_date,due_amount,paid_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,office_id").eq("farmer_id", form.farmer_id).is("deleted_at", null).neq("invoice_status", "cancelled").gt("due_amount", 0).order("due_date", { ascending: true }),
       ]);
       setFarmer(f.data ?? null);
       const rows: LoanRow[] = (lq.data ?? []).map((l: any) => {
@@ -65,13 +73,21 @@ export default function CombinedPayment() {
         };
       }).filter(r => r.remaining > 0);
       setLoans(rows);
+      setIrrigationInvoices(((iq.data ?? []) as any[]).map((i) => ({
+        id: i.id, invoice_no: i.invoice_no, due_date: i.due_date,
+        due_amount: Number(i.due_amount || 0), paid_amount: Number(i.paid_amount || 0),
+        irrigation_amount: Number(i.irrigation_amount || 0), delay_fee: Number(i.delay_fee || 0),
+        maintenance_amount: Number(i.maintenance_amount || 0), canal_amount: Number(i.canal_amount || 0),
+        other_charge: Number(i.other_charge || 0), office_id: i.office_id ?? null,
+      })));
     })();
   }, [form.farmer_id]);
 
   const total = useMemo(
-    () => Number(form.savings || 0) + Number(form.share || 0) + Number(form.loan_amt || 0),
-    [form.savings, form.share, form.loan_amt],
+    () => Number(form.savings || 0) + Number(form.share || 0) + Number(form.loan_amt || 0) + Number(form.irrigation || 0),
+    [form.savings, form.share, form.loan_amt, form.irrigation],
   );
+  const irrigationDue = useMemo(() => irrigationInvoices.reduce((s, i) => s + i.due_amount, 0), [irrigationInvoices]);
 
   function reset() { setForm({ ...EMPTY }); setLastReceipt(null); guard.clear(); }
 
