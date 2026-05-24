@@ -801,7 +801,7 @@ export default function FarmerDetail() {
           <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
-          <TabsTrigger value="notes">নোট</TabsTrigger>
+          <TabsTrigger value="notes">{tx("Notes", "নোট")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lands">
@@ -961,7 +961,7 @@ export default function FarmerDetail() {
             </div>
             {activeSeasonName && (
               <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/30">
-                চলতি মৌসুম: <span className="font-medium text-foreground">{activeSeasonName}</span> — Rate ও Total এই মৌসুমের সেচ রেট অনুযায়ী
+                {tx("Current season:", "চলতি মৌসুম:")} <span className="font-medium text-foreground">{activeSeasonName}</span> — {tx("Rate & Total are based on this season's irrigation rate", "Rate ও Total এই মৌসুমের সেচ রেট অনুযায়ী")}
               </div>
             )}
             <Table>
@@ -970,10 +970,10 @@ export default function FarmerDetail() {
                 <TableHead>{t("dagNo")}</TableHead>
                 <TableHead className="text-right">{t("landSize")}</TableHead>
                 <TableHead>{t("ownerType")}</TableHead>
-                <TableHead>মালিক (Owner)</TableHead>
+                <TableHead>{tx("Owner", "মালিক")}</TableHead>
                 <TableHead>{t("fieldType")}</TableHead>
-                <TableHead className="text-right">রেট/শতক</TableHead>
-                <TableHead className="text-right">মোট টাকা</TableHead>
+                <TableHead className="text-right">{tx("Rate / Shotok", "রেট/শতক")}</TableHead>
+                <TableHead className="text-right">{tx("Total Amount", "মোট টাকা")}</TableHead>
                 <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
@@ -992,7 +992,7 @@ export default function FarmerDetail() {
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                         <TableCell className="text-xs">
                           {l.owner_type === "owner"
-                            ? <span className="text-muted-foreground">নিজ মালিক</span>
+                            ? <span className="text-muted-foreground">{tx("Self-owned", "নিজ মালিক")}</span>
                             : (l.owner_farmer_id ? (ownerNames[l.owner_farmer_id] ?? "—") : "—")}
                         </TableCell>
                         <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
@@ -1014,7 +1014,7 @@ export default function FarmerDetail() {
                     }, 0);
                     return (
                       <TableRow className="bg-muted/40 font-semibold">
-                        <TableCell colSpan={2} className="text-right">{label} (Subtotal)</TableCell>
+                        <TableCell colSpan={2} className="text-right">{label} ({tx("Subtotal", "উপ-মোট")})</TableCell>
                         <TableCell className="text-right">{sizeSum.toFixed(2)}</TableCell>
                         <TableCell colSpan={4} />
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
@@ -1029,14 +1029,14 @@ export default function FarmerDetail() {
                   );
                   const out: React.ReactNode[] = [];
                   if (ownRows.length) {
-                    out.push(<React.Fragment key="own-h">{sectionHeader("নিজের জমি (Own)")}</React.Fragment>);
+                    out.push(<React.Fragment key="own-h">{sectionHeader(tx("Own Land", "নিজের জমি"))}</React.Fragment>);
                     ownRows.forEach(l => out.push(renderRow(l)));
-                    out.push(<React.Fragment key="own-st">{subtotalRow("নিজের জমি", ownRows)}</React.Fragment>);
+                    out.push(<React.Fragment key="own-st">{subtotalRow(tx("Own Land", "নিজের জমি"), ownRows)}</React.Fragment>);
                   }
                   if (borgaRows.length) {
-                    out.push(<React.Fragment key="borga-h">{sectionHeader("বর্গা জমি (Borga)")}</React.Fragment>);
+                    out.push(<React.Fragment key="borga-h">{sectionHeader(tx("Borga Land", "বর্গা জমি"))}</React.Fragment>);
                     borgaRows.forEach(l => out.push(renderRow(l)));
-                    out.push(<React.Fragment key="borga-st">{subtotalRow("বর্গা জমি", borgaRows)}</React.Fragment>);
+                    out.push(<React.Fragment key="borga-st">{subtotalRow(tx("Borga Land", "বর্গা জমি"), borgaRows)}</React.Fragment>);
                   }
                   if (lands.length > 0) {
                     const totalSize = lands.reduce((s, l) => s + Number(l.land_size || 0), 0);
@@ -1046,7 +1046,7 @@ export default function FarmerDetail() {
                     }, 0);
                     out.push(
                       <TableRow key="grand" className="bg-muted/70 font-bold border-t-2">
-                        <TableCell colSpan={2} className="text-right">সর্বমোট (Grand Total)</TableCell>
+                        <TableCell colSpan={2} className="text-right">{tx("Grand Total", "সর্বমোট")}</TableCell>
                         <TableCell className="text-right">{totalSize.toFixed(2)}</TableCell>
                         <TableCell colSpan={4} />
                         <TableCell className="text-right">{money(totalAmt)}</TableCell>
