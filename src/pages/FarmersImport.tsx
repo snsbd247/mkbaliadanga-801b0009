@@ -23,7 +23,7 @@ import { normalizeFarmerCode } from "@/lib/farmerCode";
  *
  * Columns (case-insensitive):
  *   farmer_id     (optional) — যদি দেয়া হয় ও already exist করে, এটি UPDATE হবে; না দিলে INSERT।
- *   voter_number  (optional) — থাকলে farmer অটো voter / savings active সদস্য হিসেবে গণ্য হবে।
+ *   is_voter      (optional) — true হলে Farmer ID-ই voter / savings account number হবে।
  *   name_en       (required)
  *   name_bn       (optional)
  *   father_name   (optional)
@@ -44,7 +44,7 @@ type RowState = {
   action: "insert" | "update" | null;
 };
 
-const COLUMNS = ["farmer_id", "voter_number", "name_en", "name_bn", "father_name", "mobile", "village"] as const;
+const COLUMNS = ["farmer_id", "is_voter", "name_en", "name_bn", "father_name", "mobile", "village"] as const;
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
   const isText = /\.(csv|txt|tsv)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
@@ -97,8 +97,8 @@ export default function FarmersImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const headers = [...COLUMNS];
     const sample = [
-      ["00001", "10001", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
-      ["",      "",      "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
+      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
+      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
     ];
     if (format === "csv") {
       const csv = [headers, ...sample]
@@ -115,7 +115,7 @@ export default function FarmersImport() {
     const notes = XLSX.utils.aoa_to_sheet([
       ["Column", "Required", "Notes"],
       ["farmer_id", "No", "5-digit padded code (e.g. 00001). 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে। existing হলে UPDATE, খালি হলে নতুন তৈরি হবে।"],
-      ["voter_number", "No", "নম্বর থাকলে অটো Voter / Savings active সদস্য।"],
+      ["is_voter", "No", "true হলে voter/savings number আলাদা নয় — Farmer ID-ই ব্যবহৃত হবে।"],
       ["name_en", "Yes", "ইংরেজী নাম"],
       ["name_bn", "No", "বাংলা নাম"],
       ["father_name", "No", ""],
@@ -174,8 +174,9 @@ export default function FarmersImport() {
       setRows([...updated]);
 
       const farmerId = String(r.raw.farmer_id ?? r.raw.member_no ?? "").trim();
-      const voterNumber = String(r.raw.voter_number ?? "").trim();
-      const isVoter = !!voterNumber;
+      const hasVoterInput = (r.raw.is_voter != null && String(r.raw.is_voter).trim() !== "") || !!String(r.raw.voter_number ?? "").trim();
+      const rawVoter = String(r.raw.is_voter ?? r.raw.voter_number ?? "").trim().toLowerCase();
+      const isVoter = ["1", "true", "yes", "y", "হ্যাঁ"].includes(rawVoter) || !!String(r.raw.voter_number ?? "").trim();
 
       const basePayload: any = {
         name_en:     String(r.raw.name_en ?? "").trim(),
@@ -183,9 +184,7 @@ export default function FarmersImport() {
         father_name: r.raw.father_name ? String(r.raw.father_name).trim() : null,
         mobile:      r.raw.mobile      ? String(r.raw.mobile).trim()      : null,
         village:     r.raw.village     ? String(r.raw.village).trim()     : null,
-        ...(isVoter
-          ? { voter_number: voterNumber, account_number: voterNumber, is_voter: true }
-          : {}),
+        ...(hasVoterInput ? { is_voter: isVoter } : {}),
       };
 
       try {
@@ -202,7 +201,7 @@ export default function FarmersImport() {
           } else {
             const { error } = await supabase
               .from("farmers")
-              .insert({ ...basePayload, member_no: farmerId, office_id: officeId ?? null });
+              .insert({ ...basePayload, member_no: farmerId, farmer_code: farmerId, office_id: officeId ?? null });
             if (error) throw error;
           }
         } else {
