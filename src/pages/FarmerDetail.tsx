@@ -21,7 +21,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 
 import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
-import { validateLocationChain } from "@/lib/locationValidation";
+import { parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
 import { validateDagNumbers } from "@/lib/dagNumbers";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
@@ -40,6 +40,7 @@ import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { formatId5 } from "@/lib/idFormat";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
+import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
@@ -68,6 +69,12 @@ export default function FarmerDetail() {
   const [payments, setPayments] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
+  const [offices, setOffices] = useState<any[]>([]);
+  const [editFarmerOpen, setEditFarmerOpen] = useState(false);
+  const [editFarmerForm, setEditFarmerForm] = useState<any | null>(null);
+  const [editFarmerPhoto, setEditFarmerPhoto] = useState<File | null>(null);
+  const [editFarmerSaving, setEditFarmerSaving] = useState(false);
+  const [editFarmerLocErr, setEditFarmerLocErr] = useState<{ level: LocationLevel; message: string } | null>(null);
   
   
 
@@ -116,6 +123,7 @@ export default function FarmerDetail() {
   useEffect(() => { if (id) loadAll(); }, [id]);
   useEffect(() => {
     supabase.from("loan_plans").select("*").eq("is_active", true).then(({ data }) => setLoanPlans(data ?? []));
+    supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices(data ?? []));
   }, []);
   useEffect(() => { document.title = `${farmer?.name_en ?? ""} — ${t("farmers")}`; }, [farmer, t]);
 
