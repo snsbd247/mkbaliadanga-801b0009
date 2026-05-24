@@ -18,18 +18,6 @@ function maskMobile(m?: string | null) {
   return m.length <= 4 ? "***" : m.slice(0, 3) + "****" + m.slice(-3);
 }
 
-function isReceiptToken(token: string) {
-  return /^[a-f0-9]{16,64}$/i.test(token);
-}
-
-function isLegacySavingsToken(token: string) {
-  return /^sav-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
-}
-
-function isLegacyLoanToken(token: string) {
-  return /^loan-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
-}
-
 // --- Ad-hoc in-memory rate limiting (per edge instance) ---
 // Per IP: max 30 requests / 60s window AND brute-force lockout
 // after 10 failed (404/400) attempts in 5 minutes.
@@ -105,56 +93,11 @@ Deno.serve(async (req) => {
       token = String(b?.token ?? "");
     }
     token = token.trim();
-    if (!isReceiptToken(token) && !isLegacySavingsToken(token) && !isLegacyLoanToken(token)) {
+    if (!/^[a-f0-9]{16,64}$/i.test(token)) {
       recordFail(ip);
       return new Response(JSON.stringify({ ok: false, error: "Invalid token" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    if (isLegacySavingsToken(token) || isLegacyLoanToken(token)) {
-      const isSavings = token.startsWith("sav-");
-      const id = token.replace(/^sav-|^loan-/i, "");
-      const { data: row } = isSavings
-        ? await admin.from("savings_transactions").select("id,farmer_id,office_id,receipt_no,amount,type,status,note,txn_date,created_at,deleted_at").eq("id", id).maybeSingle()
-        : await admin.from("loans").select("id,farmer_id,office_id,principal,total_payable,status,note,issued_on,created_at,deleted_at").eq("id", id).maybeSingle();
-
-      if (!row || row.deleted_at) {
-        recordFail(ip);
-        return new Response(JSON.stringify({
-          ok: false,
-          error: row?.deleted_at ? "Receipt voided" : "Receipt not found",
-          voided: !!row?.deleted_at,
-          voided_at: row?.deleted_at ?? null,
-        }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      const [{ data: f }, { data: o }, { data: c }] = await Promise.all([
-        admin.from("farmers").select("name_en, name_bn, farmer_code, member_no, mobile, village").eq("id", row.farmer_id).maybeSingle(),
-        row.office_id ? admin.from("offices").select("name").eq("id", row.office_id).maybeSingle() : Promise.resolve({ data: null }),
-        admin.from("company_settings").select("company_name, company_name_bn").eq("id", 1).maybeSingle(),
-      ]);
-
-      return new Response(JSON.stringify({
-        ok: true,
-        receipt: {
-          receipt_no: isSavings ? (row.receipt_no ?? `SAV-${String(row.id).slice(0, 8)}`) : `LOAN-${String(row.id).slice(0, 8)}`,
-          kind: isSavings ? "savings" : "loan",
-          amount: Number(isSavings ? row.amount : row.principal),
-          method: null,
-          note: isSavings ? (row.note ?? row.type) : (row.note ?? `Total payable: ${Number(row.total_payable || 0)}`),
-          date: isSavings ? (row.txn_date ?? row.created_at) : (row.issued_on ?? row.created_at),
-          status: row.status,
-        },
-        farmer: f ? {
-          name: f.name_bn || f.name_en,
-          member_no: f.member_no ?? f.farmer_code ?? null,
-          village: f.village ?? null,
-          mobile_masked: maskMobile(f.mobile),
-        } : null,
-        office: o?.name ?? null,
-        company: { name: c?.company_name ?? null, name_bn: c?.company_name_bn ?? null },
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const { data: p } = await admin
