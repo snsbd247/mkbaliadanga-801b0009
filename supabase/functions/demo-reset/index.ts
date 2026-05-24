@@ -1172,6 +1172,13 @@ function estimateImport(modules: string[], size: number) {
   if (modules.includes("irrigation") && modules.includes("farmers")) c["irrigation_due_promises"] = 5;
   if (modules.includes("expenses")) c["expenses"] = 3;
   if (modules.includes("bank")) { c["bank_accounts"] = 3; c["bank_transactions"] = 6; }
+  if (modules.includes("assets")) {
+    c["asset_categories"] = 4; c["assets"] = 8; c["asset_stocks"] = 8;
+    c["asset_purchases"] = 8; c["asset_installations"] = 3;
+    c["asset_movements"] = 12; c["asset_maintenance_logs"] = 12;
+    c["asset_depreciation_settings"] = 4; c["asset_depreciation_schedule"] = 48;
+    c["asset_disposals"] = 1;
+  }
   if (modules.includes("farmers")) c["farmer_notes"] = 10;
   return c;
 }
