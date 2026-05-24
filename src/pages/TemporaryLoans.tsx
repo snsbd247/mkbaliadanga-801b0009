@@ -12,6 +12,8 @@ import { FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 
