@@ -831,7 +831,7 @@ export default function Farmers() {
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <ViewButton title={t("viewTip")} onClick={() => nav(`/farmers/${f.id}`)} />
-                    {!f.deleted_at && <EditButton title={t("editTip")} onClick={() => nav(`/farmers/${f.id}?edit=1`)} />}
+                    {!f.deleted_at && <EditButton title={t("editTip")} onClick={() => nav(`/farmers/${f.id}`)} />}
                     {isSuper && f.deleted_at && (
                       <Button size="sm" variant="outline" onClick={() => restore(f.id)}>{t("restore")}</Button>
                     )}
