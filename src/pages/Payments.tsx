@@ -688,6 +688,20 @@ export default function Payments() {
 
             <div><Label>{t("method")}</Label><Input value={method} onChange={e => setMethod(e.target.value)} /></div>
             <div>
+              <Label>{tx("Category", "ক্যাটাগরি")}</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">{tx("General", "সাধারণ")}</SelectItem>
+                  <SelectItem value="hawlat">{tx("Hawlat", "হাওলাত")}</SelectItem>
+                  <SelectItem value="bank">{tx("Bank", "ব্যাংক")}</SelectItem>
+                  <SelectItem value="donation">{tx("Donation", "দান")}</SelectItem>
+                  <SelectItem value="misc">{tx("Misc", "বিবিধ")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — auto-generated if blank)</span></Label>
               <Input value={receiptNo} onChange={e => setReceiptNo(e.target.value)} placeholder="e.g. 12345" />
               {!receiptNo.trim() && previewSerial && (
