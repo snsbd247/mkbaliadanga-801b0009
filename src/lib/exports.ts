@@ -216,7 +216,10 @@ export async function exportPaymentReceiptPDF(opts: {
     installments?: Array<{ no: number; due_date: string; amount: number; paid_amount: number; status: string }>;
     paymentHistory?: Array<{ date: string; amount: number; note?: string }>;
   }>;
+  /** Optional QR payload — typically a verify URL like `${origin}/r/${verify_token}`. Renders top-right corner. */
+  qrText?: string | null;
 }) {
+
   const doc = new jsPDF({ unit: "mm", format: [148, 210] }); // A5
   const w = 148;
   const lang = pdfLang();
