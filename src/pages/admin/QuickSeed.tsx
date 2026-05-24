@@ -32,15 +32,15 @@ export default function QuickSeed() {
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [size, setSize] = useState(50);
 
-  const runEdge = async (key: string, modules: string[]) => {
+  const runEdge = async (key: string, modules: string[], monthsBack?: number) => {
     setStatus((s) => ({ ...s, [key]: "running" }));
     setMsg((m) => ({ ...m, [key]: "" }));
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Please sign in");
-      const { data, error } = await supabase.functions.invoke("demo-reset", {
-        body: { action: "import", modules, size, confirm: "RESET", transactional: true },
-      });
+      const body: any = { action: "import", modules, size, confirm: "RESET", transactional: true };
+      if (monthsBack && monthsBack > 1) body.monthsBack = monthsBack;
+      const { data, error } = await supabase.functions.invoke("demo-reset", { body });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const counts = (data as any)?.counts || (data as any)?.summary || {};
@@ -54,6 +54,7 @@ export default function QuickSeed() {
       toast.error(`${key}: ${e?.message ?? "Failed"}`);
     }
   };
+
 
   const runAsset = async (key: string) => {
     setStatus((s) => ({ ...s, [key]: "running" }));
