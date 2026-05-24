@@ -567,7 +567,7 @@ async function seedLoans(admin: any, officeId: string, farmers: any[], monthsBac
   return seeded;
 }
 
-async function seedSavings(admin: any, officeId: string, farmers: any[]) {
+async function seedSavings(admin: any, officeId: string, farmers: any[], monthsBack: number = 1) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const savingsSeeded: string[] = [];
   const sharesSeeded: string[] = [];
@@ -588,9 +588,11 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
       const expected = Number(p.installment_amount) * Number(p.duration_months);
       const interest = +(expected * Number(p.interest_rate) / 100 / 2).toFixed(2);
       fspSeeded.push(f.id);
+      // Spread enrollment start_date across the operational window
+      const monthsAgo = monthsBack > 1 ? (i % monthsBack) : 1;
       return {
         plan_id: p.id, farmer_id: f.id, office_id: officeId,
-        start_date: new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
+        start_date: new Date(Date.now() - monthsAgo * 30 * 86400000).toISOString().slice(0, 10),
         expected_total: expected,
         expected_interest: interest,
         maturity_amount: expected + interest,
@@ -605,13 +607,37 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
 
   const targets = voters.slice(0, Math.ceil(voters.length * 0.6));
   const CATS = ["general", "hawlat", "bank", "donation", "misc"];
+  const today = new Date();
   const txns = targets.flatMap((f, i) => {
     savingsSeeded.push(f.id);
-    return [
-      { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId, category: CATS[i % CATS.length] },
-      ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId, category: "general" }] : []),
-      ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection", category: "general" }] : []),
-    ];
+    const rows: any[] = [];
+    if (monthsBack > 1) {
+      // Monthly recurring deposit for each of the last N months
+      const baseAmt = 200 + (i % 5) * 50;
+      for (let m = monthsBack - 1; m >= 0; m--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - m, 5);
+        rows.push({
+          farmer_id: f.id, type: "deposit", amount: baseAmt,
+          status: "approved", office_id: officeId, category: CATS[i % CATS.length],
+          txn_date: d.toISOString().slice(0, 10),
+        });
+      }
+      // Occasional withdrawal/share collection
+      if (i % 4 === 0) {
+        const d = new Date(today.getFullYear(), today.getMonth() - Math.floor(monthsBack / 2), 15);
+        rows.push({ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId, category: "general", txn_date: d.toISOString().slice(0, 10) });
+      }
+      if (i % 3 === 0) {
+        const d = new Date(today.getFullYear(), today.getMonth() - (monthsBack - 1), 10);
+        rows.push({ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection", category: "general", txn_date: d.toISOString().slice(0, 10) });
+      }
+    } else {
+      // Legacy point-in-time
+      rows.push({ farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId, category: CATS[i % CATS.length] });
+      if (i % 4 === 0) rows.push({ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId, category: "general" });
+      if (i % 3 === 0) rows.push({ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection", category: "general" });
+    }
+    return rows;
   });
   if (txns.length) {
     const { error } = await admin.from("savings_transactions").insert(txns);
@@ -622,6 +648,7 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   if (shareRows.length) await admin.from("shares").insert(shareRows);
   return { savingsSeeded, sharesSeeded, fspSeeded };
 }
+
 
 async function seedPayments(admin: any, officeId: string, farmers: any[]) {
   if (!farmers.length) return;
