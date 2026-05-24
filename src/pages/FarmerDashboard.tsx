@@ -317,6 +317,38 @@ export default function FarmerDashboard() {
               </Card>
             )}
           </TabsContent>
+
+          <TabsContent value="intents" className="space-y-3">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-base">পেমেন্ট অনুরোধের তালিকা</CardTitle></CardHeader>
+              <CardContent>
+                {(data.payment_intents?.length ?? 0) === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-6">কোনো অনুরোধ নেই</div>
+                ) : (
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>তারিখ</TableHead><TableHead>খাত</TableHead>
+                      <TableHead className="text-right">টাকা</TableHead><TableHead>স্ট্যাটাস</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {data.payment_intents!.map((it) => (
+                        <TableRow key={it.id}>
+                          <TableCell className="text-xs">{new Date(it.created_at).toLocaleDateString("bn-BD")}</TableCell>
+                          <TableCell className="text-xs">{it.allocation_hint ?? "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">{fmt(it.amount)}</TableCell>
+                          <TableCell>
+                            <Badge variant={it.status === "processed" ? "default" : it.status === "rejected" ? "destructive" : "secondary"}>
+                              {it.status === "pending" ? "Pending" : it.status === "processed" ? "Approved" : "Rejected"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         <p className="text-center text-[11px] text-muted-foreground py-4">
