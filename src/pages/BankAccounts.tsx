@@ -23,6 +23,8 @@ const TXN_TYPES = ["deposit", "withdraw", "charge", "interest"] as const;
 
 export default function BankAccounts() {
   const { user } = useAuth();
+  const { t } = useLang();
+
   const [accounts, setAccounts] = useState<any[]>([]);
   const [txns, setTxns] = useState<any[]>([]);
   const [openA, setOpenA] = useState(false);
