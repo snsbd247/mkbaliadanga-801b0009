@@ -77,8 +77,9 @@ export default function LandHistory() {
   return (
     <>
       <PageHeader
-        title="ভূমির ইতিহাস (Land History)"
-        description="৫-৭ বছরের ভূমি রেকর্ড সংরক্ষণ"
+        title={tx("Land History", "ভূমির ইতিহাস")}
+        description={tx("5–7 year land record archive", "৫-৭ বছরের ভূমি রেকর্ড সংরক্ষণ")}
+
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Record</Button></DialogTrigger>
