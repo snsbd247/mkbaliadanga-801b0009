@@ -269,8 +269,10 @@ export default function Loans() {
       allocations: isIssue
         ? [{ kind: "Loan Disbursed (Principal)", amount: Number(loan.principal) }]
         : [{ kind: "Loan Repayment", amount: Number(payment.amount) }],
+      qrText: `${window.location.origin}/r/${receiptNo}`,
     });
   }
+
 
   const pending = loans.filter(l => l.status === "pending");
   const approved = loans.filter(l => l.status === "approved" || l.status === "paid");
