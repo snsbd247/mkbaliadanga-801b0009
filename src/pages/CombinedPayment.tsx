@@ -164,6 +164,10 @@ export default function CombinedPayment() {
       toast.success(`${lang === "bn" ? "সংরক্ষিত" : "Saved"} — ${receiptNo}`);
       // Reset form, but keep farmer for fast next-entry
       setForm({ ...EMPTY, farmer_id: form.farmer_id });
+      // Auto-download receipt PDF if user has enabled it
+      if (autoDownload) {
+        setTimeout(() => { printReceipt().catch(() => {}); }, 50);
+      }
     } catch (e: any) {
       toast.error(e.message || "Save failed");
     } finally {
