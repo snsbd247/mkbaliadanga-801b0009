@@ -169,7 +169,7 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
   const officeShort = officeId.slice(0, 4).toUpperCase();
   // De-dup: load existing identifiers/nids/mobiles so inserts are safe with or without a wipe.
   const { data: existing } = await admin.from("farmers")
-    .select("farmer_code, account_number, voter_number, nid, name_en, mobile").eq("office_id", officeId);
+    .select("office_id, farmer_code, account_number, voter_number, nid, name_en, mobile");
   const existingCodes = new Set<string>();
   for (const row of existing ?? []) {
     for (const value of [row.farmer_code, row.account_number, row.voter_number]) {
@@ -180,7 +180,7 @@ async function seedFarmers(admin: any, officeId: string, count: number, cfg: Vot
   }
   const existingNids = new Set((existing ?? []).map((x: any) => x.nid).filter(Boolean));
   const existingNames = new Set((existing ?? []).map((x: any) => x.name_en?.toLowerCase()));
-  const existingMobiles = new Set((existing ?? []).map((x: any) => x.mobile).filter(Boolean));
+  const existingMobiles = new Set((existing ?? []).filter((x: any) => x.office_id === officeId).map((x: any) => x.mobile).filter(Boolean));
 
   const desired = customNames?.length ? customNames.slice(0, count) : null;
   const total = desired ? desired.length : count;
