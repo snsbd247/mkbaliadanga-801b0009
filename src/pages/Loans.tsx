@@ -91,7 +91,12 @@ export default function Loans() {
     setInstallments(prev => ({ ...prev, [loanId]: data ?? [] }));
   }
   async function save() {
-    if (!form.farmer_id || form.principal <= 0) return toast.error(t("pickFarmerAndAmount"));
+    const errs: FieldError[] = [];
+    if (!form.farmer_id) errs.push({ field: "farmer_id", label: t("selectFarmer"), message: tx("Required", "আবশ্যক") });
+    if (!(form.principal > 0)) errs.push({ field: "principal", label: t("principal"), message: tx("Must be greater than 0", "০ এর বেশি হতে হবে") });
+    if (!form.issued_on) errs.push({ field: "issued_on", label: t("issuedOn"), message: tx("Required", "আবশ্যক") });
+    setFormErrors(errs);
+    if (errs.length) { focusFirstError(errs.map(e => e.field)); toast.error(t("pickFarmerAndAmount")); return; }
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
     const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
     if (!vchk?.is_voter) {
