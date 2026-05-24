@@ -43,12 +43,13 @@ export default function FarmerStatement() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [health, setHealth] = useState<{ savings: number; loanDue: number; irrDue: number; landArea: number } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { document.title = t("farmerStatement"); }, [t]);
 
   useEffect(() => {
-    if (!farmerId) { setFarmer(null); return; }
+    if (!farmerId) { setFarmer(null); setHealth(null); return; }
     supabase.from("farmers")
       .select("id, name_en, name_bn, account_number, farmer_code, mobile, village")
       .eq("id", farmerId).maybeSingle()
@@ -56,6 +57,23 @@ export default function FarmerStatement() {
         setFarmer(r.data);
         if (r.data?.account_number) setAccountInput(r.data.account_number);
       });
+    // Member-wise financial health
+    (async () => {
+      const [savTxns, loans, irrInv, lands] = await Promise.all([
+        supabase.from("savings_transactions").select("type,amount").eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null),
+        supabase.from("loans").select("total_payable,loan_payments(amount)").eq("farmer_id", farmerId).is("deleted_at", null).in("status", ["approved", "pending"]),
+        supabase.from("irrigation_invoices").select("due_amount").eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled"),
+        supabase.from("lands").select("land_size").eq("farmer_id", farmerId).is("deleted_at", null),
+      ]);
+      const savings = (savTxns.data ?? []).reduce((a: number, r: any) => a + (r.type === "deposit" ? Number(r.amount) : -Number(r.amount)), 0);
+      const loanDue = (loans.data ?? []).reduce((a: number, l: any) => {
+        const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        return a + Math.max(0, Number(l.total_payable || 0) - paid);
+      }, 0);
+      const irrDue = (irrInv.data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+      const landArea = (lands.data ?? []).reduce((a: number, l: any) => a + Number(l.land_size || 0), 0);
+      setHealth({ savings, loanDue, irrDue, landArea });
+    })();
   }, [farmerId]);
 
   async function lookupByAccount() {
