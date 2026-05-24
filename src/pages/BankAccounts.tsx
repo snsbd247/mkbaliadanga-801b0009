@@ -120,7 +120,7 @@ export default function BankAccounts() {
   return (
     <>
       <PageHeader
-        title="ব্যাংক অ্যাকাউন্ট (Bank Accounts)"
+        title={t("bankAccounts")}
         description={`Total balance: ${money(totalBal)}`}
         actions={
           <>
