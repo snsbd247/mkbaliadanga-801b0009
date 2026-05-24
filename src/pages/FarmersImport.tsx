@@ -174,6 +174,7 @@ export default function FarmersImport() {
       setRows([...updated]);
 
       const farmerId = String(r.raw.farmer_id ?? r.raw.member_no ?? "").trim();
+      const hasVoterInput = (r.raw.is_voter != null && String(r.raw.is_voter).trim() !== "") || !!String(r.raw.voter_number ?? "").trim();
       const rawVoter = String(r.raw.is_voter ?? r.raw.voter_number ?? "").trim().toLowerCase();
       const isVoter = ["1", "true", "yes", "y", "হ্যাঁ"].includes(rawVoter) || !!String(r.raw.voter_number ?? "").trim();
 
@@ -183,7 +184,7 @@ export default function FarmersImport() {
         father_name: r.raw.father_name ? String(r.raw.father_name).trim() : null,
         mobile:      r.raw.mobile      ? String(r.raw.mobile).trim()      : null,
         village:     r.raw.village     ? String(r.raw.village).trim()     : null,
-        is_voter: isVoter,
+        ...(hasVoterInput ? { is_voter: isVoter } : {}),
       };
 
       try {
