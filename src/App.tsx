@@ -104,6 +104,7 @@ import InstallmentCollectionReport from "./pages/reports/InstallmentCollectionRe
 import LoanPenaltyReport from "./pages/reports/LoanPenaltyReport";
 import CultivationHistoryReport from "./pages/reports/CultivationHistoryReport";
 import LoanHistoryReport from "./pages/reports/LoanHistoryReport";
+import IrrigationCategoryReport from "./pages/reports/IrrigationCategoryReport";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
@@ -248,6 +249,7 @@ const App = () => (
                 <Route path="/reports/promise-due" element={<RequirePerm module="reports"><PromiseDueReport /></RequirePerm>} />
                 <Route path="/reports/cultivation-history" element={<RequirePerm module="reports"><CultivationHistoryReport /></RequirePerm>} />
                 <Route path="/reports/loan-history" element={<RequirePerm module="reports"><LoanHistoryReport /></RequirePerm>} />
+                <Route path="/reports/irrigation-category" element={<RequirePerm module="reports"><IrrigationCategoryReport /></RequirePerm>} />
 
                 <Route path="/admin/irrigation-due-mismatch" element={<RequireRole roles={["admin","super_admin"]}><IrrigationDueMismatch /></RequireRole>} />
                 <Route path="/admin/retry-jobs" element={<RequireRole roles={["admin","super_admin"]}><RetryJobs /></RequireRole>} />

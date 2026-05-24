@@ -30,6 +30,8 @@ import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
+import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
+import { getTodayMethodSummary, type MethodSummary } from "@/lib/paymentMethodSummary";
 
 type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
 
@@ -63,6 +65,7 @@ export default function Payments() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
   const [savingsBalance, setSavingsBalance] = useState<number>(0);
+  const [methodSummary, setMethodSummary] = useState<MethodSummary[]>([]);
 
   async function loadSavingsBalance(fid: string) {
     const { data } = await supabase
@@ -160,6 +163,7 @@ export default function Payments() {
       pq,
     ]);
     setFarmers(f.data ?? []); setList(p.data ?? []);
+    try { setMethodSummary(await getTodayMethodSummary({ officeId })); } catch {}
   }
 
   function clearFilters() {
@@ -224,6 +228,20 @@ export default function Payments() {
       if (Number(a.amount) <= 0) return toast.error(t("eachAllocationMustBePositive"));
       if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
+
+    // Soft duplicate-payment guard: same farmer + same amount within 2 minutes.
+    const dup = await findRecentDuplicatePayment({ farmer_id: farmerId, amount: totalAmount, withinSeconds: 120 });
+    if (dup) {
+      const ago = Math.round((Date.now() - new Date(dup.created_at).getTime()) / 1000);
+      const ok = window.confirm(
+        tx(
+          `A payment of ৳${dup.amount} for this farmer was recorded ${ago}s ago (Receipt: ${dup.receipt_no ?? "—"}). Submit another one?`,
+          `এই কৃষকের ৳${dup.amount} টাকার একটি পেমেন্ট ${ago} সেকেন্ড আগে নেওয়া হয়েছে (রসিদ: ${dup.receipt_no ?? "—"})। আরেকটি জমা দেবেন?`,
+        ),
+      );
+      if (!ok) return;
+    }
+
 
     // Strict installment enforcement for loan allocations (engine v2)
     const loanContext: Record<string, { settings: any; next: any; breakdown: any; override?: string }> = {};
@@ -688,9 +706,42 @@ export default function Payments() {
         </Card>
 
         <Card className="p-5 lg:col-span-2">
+          {methodSummary.length > 0 && (
+            <div className="mb-3 rounded-md border bg-muted/30 p-2 text-xs">
+              <div className="font-semibold uppercase text-[10px] text-muted-foreground mb-1">
+                {tx("Today's collections by method", "আজকের আদায় (মাধ্যম-ভিত্তিক)")}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {methodSummary.map(m => (
+                  <span key={m.method} className="inline-flex items-center gap-1">
+                    <Badge variant="secondary" className="uppercase">{m.method}</Badge>
+                    <span className="font-mono font-semibold">{money(m.total)}</span>
+                    <span className="text-muted-foreground">({m.count})</span>
+                  </span>
+                ))}
+                <span className="ml-auto font-mono font-semibold">
+                  {tx("Total", "মোট")}: {money(methodSummary.reduce((s, x) => s + x.total, 0))}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <h2 className="font-semibold">{t("recentTransactions")}</h2>
             <div className="flex items-center gap-3 flex-wrap">
+              {list[0] && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const el = document.querySelector<HTMLElement>(`[data-payment-row="${list[0].id}"] [data-receipt-menu] button`);
+                    el?.click();
+                  }}
+                  title={tx("Reprint last receipt", "শেষ রসিদ পুনঃমুদ্রণ")}
+                >
+                  <Printer className="h-4 w-4 mr-1" />
+                  {tx("Reprint last", "শেষ রসিদ")}
+                </Button>
+              )}
               <Select value={period} onValueChange={(v: any) => { setPeriod(v); const n = new URLSearchParams(params); if (v === "all") n.delete("period"); else n.set("period", v); setParams(n, { replace: true }); }}>
                 <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -710,7 +761,7 @@ export default function Payments() {
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>Receipt #</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
             <TableBody>
               {list.map(p => (
-                <TableRow key={p.id}>
+                <TableRow key={p.id} data-payment-row={p.id}>
                   <TableCell>{fmtDate(p.created_at)}</TableCell>
                   <TableCell className="font-mono text-xs">{p.receipt_no ?? "—"}</TableCell>
                   <TableCell className="max-w-[220px]"><TruncateText>{p.farmers?.name_en}</TruncateText> <span className="text-xs text-muted-foreground">({p.farmers?.farmer_code})</span></TableCell>
@@ -845,7 +896,7 @@ export default function Payments() {
                             verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
                           }, copy, receiptArgs.options);
                         };
-                        return <ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} />;
+                        return <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} /></span>;
                       })()}
                     </div>
                   </TableCell>

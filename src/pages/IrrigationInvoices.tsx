@@ -155,6 +155,28 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     );
   }, [rows, search]);
 
+  /** Farmer-wise aggregate of the currently-loaded invoices (payable/paid/due). */
+  const farmerSummary = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; code: string; payable: number; paid: number; due: number; count: number }>();
+    for (const r of filtered as any[]) {
+      const id = r.farmer_id;
+      if (!id) continue;
+      const cur = map.get(id) ?? {
+        id,
+        name: r.farmers?.name_bn || r.farmers?.name_en || "—",
+        code: r.farmers?.farmer_code || "",
+        payable: 0, paid: 0, due: 0, count: 0,
+      };
+      cur.payable += Number(r.payable_amount) || 0;
+      cur.paid += Number(r.paid_amount) || 0;
+      cur.due += Number(r.due_amount) || 0;
+      cur.count += 1;
+      map.set(id, cur);
+    }
+    return [...map.values()].sort((a, b) => b.due - a.due);
+  }, [filtered]);
+  const [showFarmerSummary, setShowFarmerSummary] = useState(false);
+
   async function cancelInvoice(inv: any) {
     const ok = await confirm({
       title: tx("Cancel invoice?", "ইনভয়েস বাতিল করুন?"),
@@ -368,6 +390,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <p className="text-sm text-muted-foreground">{filtered.length} {tx("invoices", "টি ইনভয়েস")} {loading && tx("(loading…)", "(লোড হচ্ছে…)")}</p>
           <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant={showFarmerSummary ? "default" : "outline"} onClick={() => setShowFarmerSummary(v => !v)}>
+              {showFarmerSummary ? tx("Hide farmer summary", "ফার্মার সারাংশ লুকান") : tx("Farmer-wise summary", "ফার্মার-ভিত্তিক সারাংশ")}
+            </Button>
             <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(filtered, "irrigation-invoices.csv", lang)} disabled={!filtered.length}>
               <FileDown className="h-4 w-4 mr-1" /> CSV
             </Button>
@@ -376,6 +401,40 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             </Button>
           </div>
         </div>
+
+        {showFarmerSummary && (
+          <div className="rounded-md border bg-muted/20 p-3 space-y-2">
+            <div className="text-sm font-semibold">
+              {tx("Farmer-wise outstanding (from filtered invoices)", "ফার্মার-ভিত্তিক বকেয়া (ফিল্টার করা ইনভয়েস থেকে)")}
+              <span className="ml-2 text-xs text-muted-foreground">
+                {tx("Total due", "মোট বকেয়া")}: <span className="font-mono font-semibold text-foreground">{money(farmerSummary.reduce((s, x) => s + x.due, 0))}</span>
+              </span>
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
+                  <TableHead className="text-right">{tx("Invoices", "ইনভয়েস")}</TableHead>
+                  <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
+                  <TableHead className="text-right">{tx("Paid", "পরিশোধিত")}</TableHead>
+                  <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {farmerSummary.slice(0, 100).map(f => (
+                    <TableRow key={f.id}>
+                      <TableCell>{f.name} <span className="text-xs text-muted-foreground">({f.code})</span></TableCell>
+                      <TableCell className="text-right">{f.count}</TableCell>
+                      <TableCell className="text-right font-mono">{money(f.payable)}</TableCell>
+                      <TableCell className="text-right font-mono">{money(f.paid)}</TableCell>
+                      <TableCell className={`text-right font-mono font-semibold ${f.due > 0 ? "text-destructive" : ""}`}>{money(f.due)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
 
         {selected.size > 0 && (
           <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2 flex-wrap">
@@ -865,6 +924,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   });
   const [busy, setBusy] = useState(false);
   const [previewRows, setPreviewRows] = useState<any[] | null>(null);
+  const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
 
@@ -963,6 +1023,23 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       }
       setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
       setSkippedNoRate(noRate);
+      // Fetch previous outstanding for the farmers in this preview
+      try {
+        const farmerIds = Array.from(new Set(previewArr.map((r) => r.billed.billed_farmer_id).filter(Boolean)));
+        if (farmerIds.length) {
+          const { data: prev } = await supabase
+            .from("irrigation_invoices" as any)
+            .select("farmer_id,due_amount")
+            .in("farmer_id", farmerIds)
+            .neq("season_id", seasonId)
+            .gt("due_amount", 0)
+            .is("deleted_at", null)
+            .neq("invoice_status", "cancelled");
+          const uniq = new Set<string>(); let total = 0;
+          for (const r of (prev ?? []) as any[]) { uniq.add(r.farmer_id); total += Number(r.due_amount) || 0; }
+          setPrevDueWarning(uniq.size ? { farmers: uniq.size, total } : null);
+        } else setPrevDueWarning(null);
+      } catch { setPrevDueWarning(null); }
       toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
       toast.error(e.message);
@@ -1138,6 +1215,16 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           </div>
         </CardContent>
       </Card>
+
+      {prevDueWarning && previewRows && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>{tx("Previous outstanding detected", "পূর্বের বকেয়া পাওয়া গেছে")}</AlertTitle>
+          <AlertDescription>
+            {prevDueWarning.farmers} {tx("farmer(s) have prior unpaid invoices totalling", "জন কৃষকের আগের অপরিশোধিত ইনভয়েস রয়েছে — মোট")} <span className="font-mono font-semibold">{money(prevDueWarning.total)}</span>.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {previewRows && (
         <Card>
