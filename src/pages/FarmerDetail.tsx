@@ -650,9 +650,11 @@ export default function FarmerDetail() {
     if (!editLand) return;
     setEditSaving(true);
     try {
-      const v = validateLocationChain(editLoc);
-      if (!v.ok) { setEditLocErr({ level: (v as any).level, message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-      if (!(editLoc as any).mouza_id) { setEditLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "Mouza required" }); return; }
+      const el = editLoc as any;
+      if (!el.division_id) { setEditLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+      if (!el.district_id) { setEditLocErr({ level: "district", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+      if (!el.upazila_id)  { setEditLocErr({ level: "upazila",  message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
+      if (!el.mouza_id)    { setEditLocErr({ level: "mouza",    message: t("mouzaRequired" as any) || "Mouza required" }); return; }
       let canonicalDag = editForm.dag_no.trim();
       if (editForm.owner_type === "owner") {
         const dv = validateDagNumbers(editForm.dag_no);
