@@ -102,6 +102,7 @@ import LoanDelaySettings from "./pages/admin/LoanDelaySettings";
 import LoanOverdueReport from "./pages/reports/LoanOverdueReport";
 import InstallmentCollectionReport from "./pages/reports/InstallmentCollectionReport";
 import LoanPenaltyReport from "./pages/reports/LoanPenaltyReport";
+import CultivationHistoryReport from "./pages/reports/CultivationHistoryReport";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
@@ -244,6 +245,8 @@ const App = () => (
                 <Route path="/reports/farmer-statement" element={<RequirePerm module="reports"><FarmerStatement /></RequirePerm>} />
                 <Route path="/reports/expenses" element={<RequirePerm module="reports" action="can_view"><ExpensesReport /></RequirePerm>} />
                 <Route path="/reports/promise-due" element={<RequirePerm module="reports"><PromiseDueReport /></RequirePerm>} />
+                <Route path="/reports/cultivation-history" element={<RequirePerm module="reports"><CultivationHistoryReport /></RequirePerm>} />
+
                 <Route path="/admin/irrigation-due-mismatch" element={<RequireRole roles={["admin","super_admin"]}><IrrigationDueMismatch /></RequireRole>} />
                 <Route path="/admin/retry-jobs" element={<RequireRole roles={["admin","super_admin"]}><RetryJobs /></RequireRole>} />
                 <Route path="/admin/audit-timeline" element={<RequireRole roles={["admin","super_admin"]}><AuditTimeline /></RequireRole>} />

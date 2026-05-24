@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -39,6 +39,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { formatId5 } from "@/lib/idFormat";
+import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
@@ -65,6 +66,9 @@ export default function FarmerDetail() {
   const [invDue, setInvDue] = useState<number>(0);
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
+  const [rateMap, setRateMap] = useState<RateRow[]>([]);
+  const [activeSeasonName, setActiveSeasonName] = useState<string>("");
+  
   
 
   // Add land dialog
@@ -145,6 +149,25 @@ export default function FarmerDetail() {
       .eq("farmer_id", id!)
       .is("deleted_at", null);
     setInvDue((inv.data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+
+    // Load active season + per-land rate map (for Rate/Total columns in Land tab)
+    try {
+      const { data: sn } = await supabase
+        .from("seasons")
+        .select("id,name,year,type,status")
+        .eq("status", "active")
+        .order("year", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sn?.id) {
+        setActiveSeasonName(sn.name || `${sn.type} ${sn.year}`);
+        const rows = await loadSeasonRateMap(sn.id, f.data?.office_id ?? null);
+        setRateMap(rows);
+      } else {
+        setActiveSeasonName("");
+        setRateMap([]);
+      }
+    } catch { /* non-fatal */ }
   }
 
   function farmerLocationLine(fr: any): string {
@@ -904,43 +927,105 @@ export default function FarmerDetail() {
                 </DialogContent>
               </Dialog>
             </div>
+            {activeSeasonName && (
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/30">
+                চলতি মৌসুম: <span className="font-medium text-foreground">{activeSeasonName}</span> — Rate ও Total এই মৌসুমের সেচ রেট অনুযায়ী
+              </div>
+            )}
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{t("pgLocation")}</TableHead>
                 <TableHead>{t("dagNo")}</TableHead>
-                <TableHead>{t("landSize")}</TableHead>
+                <TableHead className="text-right">{t("landSize")}</TableHead>
                 <TableHead>{t("ownerType")}</TableHead>
                 <TableHead>মালিক (Owner)</TableHead>
                 <TableHead>{t("fieldType")}</TableHead>
+                <TableHead className="text-right">রেট/শতক</TableHead>
+                <TableHead className="text-right">মোট টাকা</TableHead>
                 <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {lands.map(l => (
-                  <TableRow key={l.id}>
-                    <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
-                    <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
-                    <TableCell>{l.land_size}</TableCell>
-                    <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
-                    <TableCell className="text-xs">
-                      {l.owner_type === "owner"
-                        ? <span className="text-muted-foreground">নিজ মালিক</span>
-                        : (l.owner_farmer_id ? (ownerNames[l.owner_farmer_id] ?? "—") : "—")}
-                    </TableCell>
-                    <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
-                    <TableCell className="text-right">
-                      <EditButton onClick={() => openEdit(l)} title={t("edit")} />
-                      <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {lands.length > 0 && (
-                  <TableRow className="bg-muted/60 font-bold">
-                    <TableCell colSpan={2} className="text-right">মোট (Total)</TableCell>
-                    <TableCell>{lands.reduce((s, l) => s + Number(l.land_size || 0), 0).toFixed(2)}</TableCell>
-                    <TableCell colSpan={4} />
-                  </TableRow>
-                )}
-                {lands.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
+                {(() => {
+                  const ownRows = lands.filter(l => l.owner_type === "owner");
+                  const borgaRows = lands.filter(l => l.owner_type !== "owner");
+                  const renderRow = (l: any) => {
+                    const matched = resolveRateForLand(rateMap, l);
+                    const rate = matched ? Number(matched.rate_per_shotok) : 0;
+                    const total = rate * Number(l.land_size || 0);
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
+                        <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
+                        <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
+                        <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                        <TableCell className="text-xs">
+                          {l.owner_type === "owner"
+                            ? <span className="text-muted-foreground">নিজ মালিক</span>
+                            : (l.owner_farmer_id ? (ownerNames[l.owner_farmer_id] ?? "—") : "—")}
+                        </TableCell>
+                        <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
+                        <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right">
+                          <EditButton onClick={() => openEdit(l)} title={t("edit")} />
+                          <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  };
+                  const subtotalRow = (label: string, rows: any[]) => {
+                    if (!rows.length) return null;
+                    const sizeSum = rows.reduce((s, l) => s + Number(l.land_size || 0), 0);
+                    const amtSum = rows.reduce((s, l) => {
+                      const m = resolveRateForLand(rateMap, l);
+                      return s + (m ? Number(m.rate_per_shotok) * Number(l.land_size || 0) : 0);
+                    }, 0);
+                    return (
+                      <TableRow className="bg-muted/40 font-semibold">
+                        <TableCell colSpan={2} className="text-right">{label} (Subtotal)</TableCell>
+                        <TableCell className="text-right">{sizeSum.toFixed(2)}</TableCell>
+                        <TableCell colSpan={4} />
+                        <TableCell className="text-right">{money(amtSum)}</TableCell>
+                        <TableCell />
+                      </TableRow>
+                    );
+                  };
+                  const sectionHeader = (label: string) => (
+                    <TableRow className="bg-primary/10">
+                      <TableCell colSpan={9} className="font-bold text-sm py-2">{label}</TableCell>
+                    </TableRow>
+                  );
+                  const out: React.ReactNode[] = [];
+                  if (ownRows.length) {
+                    out.push(<React.Fragment key="own-h">{sectionHeader("নিজের জমি (Own)")}</React.Fragment>);
+                    ownRows.forEach(l => out.push(renderRow(l)));
+                    out.push(<React.Fragment key="own-st">{subtotalRow("নিজের জমি", ownRows)}</React.Fragment>);
+                  }
+                  if (borgaRows.length) {
+                    out.push(<React.Fragment key="borga-h">{sectionHeader("বর্গা জমি (Borga)")}</React.Fragment>);
+                    borgaRows.forEach(l => out.push(renderRow(l)));
+                    out.push(<React.Fragment key="borga-st">{subtotalRow("বর্গা জমি", borgaRows)}</React.Fragment>);
+                  }
+                  if (lands.length > 0) {
+                    const totalSize = lands.reduce((s, l) => s + Number(l.land_size || 0), 0);
+                    const totalAmt = lands.reduce((s, l) => {
+                      const m = resolveRateForLand(rateMap, l);
+                      return s + (m ? Number(m.rate_per_shotok) * Number(l.land_size || 0) : 0);
+                    }, 0);
+                    out.push(
+                      <TableRow key="grand" className="bg-muted/70 font-bold border-t-2">
+                        <TableCell colSpan={2} className="text-right">সর্বমোট (Grand Total)</TableCell>
+                        <TableCell className="text-right">{totalSize.toFixed(2)}</TableCell>
+                        <TableCell colSpan={4} />
+                        <TableCell className="text-right">{money(totalAmt)}</TableCell>
+                        <TableCell />
+                      </TableRow>
+                    );
+                  } else {
+                    out.push(<TableRow key="empty"><TableCell colSpan={9} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
+                  }
+                  return out;
+                })()}
               </TableBody>
             </Table>
           </Card>
