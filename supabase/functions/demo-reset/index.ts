@@ -22,6 +22,8 @@ const FULL_WIPE_ORDER = [
   "bank_transactions", "bank_accounts",
   "cashbook_submissions",
   "farmer_notes",
+  "public_payment_intents",
+  "land_history",
   "land_change_log",
   // Assets module (delete dependents first; assets last)
   "asset_alerts", "asset_audit_logs", "asset_scan_logs",
