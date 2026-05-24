@@ -1,0 +1,2 @@
+ALTER TABLE public.public_payment_intents ADD COLUMN IF NOT EXISTS office_id uuid REFERENCES public.offices(id);
+CREATE INDEX IF NOT EXISTS idx_public_payment_intents_office ON public.public_payment_intents(office_id, created_at DESC);

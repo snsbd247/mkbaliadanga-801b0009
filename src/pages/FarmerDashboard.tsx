@@ -23,6 +23,7 @@ interface PortalData {
   loan_payments: Array<{ id: string; loan_id: string; amount: number; paid_on: string; status: string }>;
   irrigation: Array<{ id: string; entry_date: string; total: number; paid_amount: number; due_amount: number; note?: string }>;
   irrigation_invoices?: Array<{ id: string; invoice_no: string; generated_at: string; due_date: string; payable_amount: number; paid_amount: number; due_amount: number; invoice_status: string; season_rate?: number; land_type_name?: string; is_borga?: boolean; is_manual_rate?: boolean; seasons?: { name?: string; year?: number; type?: string }; lands?: { dag_no?: string; mouza?: string; land_size?: number } }>;
+  payment_intents?: Array<{ id: string; amount: number; allocation_hint?: string; note?: string; status: "pending" | "processed" | "rejected"; created_at: string; processed_at?: string | null }>;
 }
 
 function fmt(n: number) {
@@ -170,11 +171,18 @@ export default function FarmerDashboard() {
           <SummaryCard icon={Droplets} label={t("p5b_irrigationDue")} value={data.summary.irrigation_due} tone="info" />
         </div>
 
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => nav("/farmer/pay")}>
+            <HandCoins className="h-4 w-4 mr-1" /> পেমেন্ট অনুরোধ জমা দিন
+          </Button>
+        </div>
+
         <Tabs defaultValue="savings" className="w-full">
-          <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+          <TabsList className="grid grid-cols-4 w-full sm:w-auto">
             <TabsTrigger value="savings">{t("p5b_savings")}</TabsTrigger>
             <TabsTrigger value="loans">{t("p5b_loans")}</TabsTrigger>
             <TabsTrigger value="irrigation">{t("p5b_irrigation")}</TabsTrigger>
+            <TabsTrigger value="intents">অনুরোধ</TabsTrigger>
           </TabsList>
 
           <TabsContent value="savings">
@@ -308,6 +316,38 @@ export default function FarmerDashboard() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="intents" className="space-y-3">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-base">পেমেন্ট অনুরোধের তালিকা</CardTitle></CardHeader>
+              <CardContent>
+                {(data.payment_intents?.length ?? 0) === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-6">কোনো অনুরোধ নেই</div>
+                ) : (
+                  <Table>
+                    <TableHeader><TableRow>
+                      <TableHead>তারিখ</TableHead><TableHead>খাত</TableHead>
+                      <TableHead className="text-right">টাকা</TableHead><TableHead>স্ট্যাটাস</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {data.payment_intents!.map((it) => (
+                        <TableRow key={it.id}>
+                          <TableCell className="text-xs">{new Date(it.created_at).toLocaleDateString("bn-BD")}</TableCell>
+                          <TableCell className="text-xs">{it.allocation_hint ?? "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">{fmt(it.amount)}</TableCell>
+                          <TableCell>
+                            <Badge variant={it.status === "processed" ? "default" : it.status === "rejected" ? "destructive" : "secondary"}>
+                              {it.status === "pending" ? "Pending" : it.status === "processed" ? "Approved" : "Rejected"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

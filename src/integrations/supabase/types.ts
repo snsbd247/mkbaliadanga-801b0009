@@ -4273,6 +4273,7 @@ export type Database = {
           farmer_code: string
           id: string
           note: string | null
+          office_id: string | null
           payment_id: string | null
           phone: string | null
           processed_at: string | null
@@ -4286,6 +4287,7 @@ export type Database = {
           farmer_code: string
           id?: string
           note?: string | null
+          office_id?: string | null
           payment_id?: string | null
           phone?: string | null
           processed_at?: string | null
@@ -4299,13 +4301,22 @@ export type Database = {
           farmer_code?: string
           id?: string
           note?: string | null
+          office_id?: string | null
           payment_id?: string | null
           phone?: string | null
           processed_at?: string | null
           processed_by?: string | null
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "public_payment_intents_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       qr_rotation_settings: {
         Row: {
