@@ -756,14 +756,30 @@ async function seedFarmerNotes(admin: any, farmers: any[]) {
   return rows.length;
 }
 
-async function seedExpenses(admin: any, officeId: string) {
-
-  await admin.from("expenses").insert([
-    { head: "Office Rent", amount: 5000, office_id: officeId, payee: "Landlord", note: "Demo" },
-    { head: "Electricity", amount: 1200, office_id: officeId, payee: "PDB", note: "Demo" },
-    { head: "Stationery", amount: 800, office_id: officeId, payee: "Local Shop", note: "Demo" },
-  ]);
+async function seedExpenses(admin: any, officeId: string, monthsBack: number = 1) {
+  const today = new Date();
+  const dateAt = (m: number, d: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, d).toISOString().slice(0, 10);
+  const heads = [
+    { head: "Office Rent", amount: 5000, payee: "Landlord" },
+    { head: "Electricity", amount: 1200, payee: "PDB" },
+    { head: "Stationery",  amount: 800,  payee: "Local Shop" },
+  ];
+  const rows: any[] = [];
+  if (monthsBack > 1) {
+    for (let m = monthsBack - 1; m >= 0; m--) {
+      for (const h of heads) {
+        rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, note: "Demo monthly", expense_date: dateAt(m, h.head === "Office Rent" ? 1 : h.head === "Electricity" ? 10 : 18) });
+      }
+    }
+  } else {
+    for (const h of heads) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, note: "Demo" });
+  }
+  const { error } = await admin.from("expenses").insert(rows);
+  if (error) throw new Error(`expenses: ${error.message}`);
+  return rows.length;
 }
+
 
 async function seedAccounts(admin: any) {
   // Codes MUST match what ledger triggers (_acct) look up.
