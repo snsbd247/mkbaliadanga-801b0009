@@ -261,12 +261,21 @@ export default function Loans() {
   return (
     <>
       <PageHeader title={t("loans")} actions={
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => {
+          if (v) {
+            const draft = createGuard.restore();
+            if (draft) setForm(draft as any);
+          } else {
+            setFormErrors([]);
+          }
+          setOpen(v);
+        }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("issueLoan")}</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{t("issueLoan")}</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>{t("selectFarmer")}</Label>
+            <div className="space-y-3" onKeyDown={preventEnterSubmit}>
+              <FormErrorSummary errors={formErrors} onFocusField={focusField} />
+              <div ref={registerField("farmer_id")}><Label>{t("selectFarmer")}</Label>
                 <FarmerSearchSelect votersOnly value={form.farmer_id || null}
                   onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
               </div>
@@ -281,7 +290,7 @@ export default function Loans() {
                 <p className="text-xs text-muted-foreground mt-1">When a plan is selected, an installment schedule is auto-generated upon committee approval.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>{t("principal")}</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
+                <div ref={registerField("principal")}><Label>{t("principal")}</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
                 <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={form.interest_rate} disabled={!form.interest_enabled || !!form.plan_id} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
@@ -289,7 +298,7 @@ export default function Loans() {
                 <Switch checked={form.interest_enabled} onCheckedChange={v => setForm({ ...form, interest_enabled: v })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>{t("issuedOn")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
+                <div ref={registerField("issued_on")}><Label>{t("issuedOn")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
                 <div><Label>{t("nextDue")}</Label><Input type="date" value={form.next_due_on} onChange={e => setForm({ ...form, next_due_on: e.target.value })} /></div>
               </div>
               {(() => {
