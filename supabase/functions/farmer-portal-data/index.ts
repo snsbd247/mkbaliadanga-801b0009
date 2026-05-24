@@ -125,6 +125,9 @@ Deno.serve(async (req) => {
       irrigation,
       irrigation_invoices: irrigationInvoices,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      irrigation_invoices: irrigationInvoices,
+      payment_intents: intentsRes.data ?? [],
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("farmer-portal-data error", e);
     return new Response(JSON.stringify({ error: "Server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
