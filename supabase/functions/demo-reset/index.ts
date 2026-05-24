@@ -1027,14 +1027,115 @@ async function seedAssets(admin: any, officeId: string, monthsBack: number = 1) 
     if (error) throw new Error(`asset_disposals: ${error.message}`);
   }
 
+  // 10) Maintenance Schedules — recurring preventive maintenance per fixed asset
+  const schedules = assetSpec
+    .filter((a) => a.type === "fixed_asset" && !a.retire)
+    .map((a, i) => ({
+      office_id: officeId, asset_id: A[a.code].id,
+      title: `Quarterly service — ${a.name_en}`,
+      frequency_days: 90,
+      next_due_at: dateAt(-1, 10 + i), // due in ~1 month
+      vendor: "Demo Service Center",
+      notes: "Routine preventive maintenance",
+      active: true,
+    }));
+  if (schedules.length) await admin.from("asset_maintenance_schedules").insert(schedules);
+
+  // 11) Alerts — mix of stock/maintenance/depreciation, open + resolved
+  const alerts: any[] = [];
+  // Low-stock alert for consumable
+  alerts.push({
+    office_id: officeId, asset_id: A["SPR-IMP-01"].id, alert_type: "low_stock",
+    severity: "warning", message_en: "Stock for Pump Impeller below minimum",
+    message_bn: "পাম্প ইমপেলারের স্টক নিম্নসীমার নিচে", status: "open",
+  });
+  alerts.push({
+    office_id: officeId, asset_id: A["SPR-BRG-01"].id, alert_type: "low_stock",
+    severity: "info", message_en: "Motor Bearing Set running low",
+    message_bn: "মোটর বিয়ারিং স্টক কমছে", status: "resolved",
+    resolved_at: dateAt(1, 12) + "T10:00:00Z",
+  });
+  // Maintenance due alert
+  alerts.push({
+    office_id: officeId, asset_id: A["PMP-001"].id, alert_type: "maintenance_due",
+    severity: "warning", message_en: "Quarterly service due for Centrifugal Pump 5HP",
+    message_bn: "সেন্ট্রিফিউগাল পাম্প ৫HP-এর ত্রৈমাসিক সার্ভিস বাকি", status: "open",
+  });
+  // Depreciation alert
+  alerts.push({
+    office_id: officeId, asset_id: A["MOT-001"].id, alert_type: "high_depreciation",
+    severity: "info", message_en: "Motor 5HP nearing 60% depreciation",
+    message_bn: "মোটর ৫HP প্রায় ৬০% অবচয় ছুঁয়েছে", status: "acknowledged",
+    acknowledged_at: dateAt(0, 5) + "T08:00:00Z",
+  });
+  await admin.from("asset_alerts").insert(alerts);
+
+  // 12) Damage reports — 2 reports (1 open, 1 closed)
+  const damages = [
+    {
+      office_id: officeId, asset_id: A["PMP-002"].id,
+      report_date: dateAt(Math.min(monthsBack - 1, 2), 18),
+      severity: "minor", status: "open",
+      remarks: "Seal leakage observed during routine check",
+    },
+    {
+      office_id: officeId, asset_id: A["MOT-002"].id,
+      report_date: dateAt(Math.min(monthsBack - 1, 4), 12),
+      severity: "major", status: "resolved",
+      remarks: "Winding burnt; replaced/disposed",
+    },
+  ];
+  await admin.from("asset_damage_reports").insert(damages);
+
+  // 13) Scan logs — simulate QR/barcode scans across the window
+  const scans: any[] = [];
+  const scanSpread = Math.max(3, monthsBack);
+  for (let m = 0; m < scanSpread; m++) {
+    for (const a of assetSpec.slice(0, 4)) {
+      scans.push({
+        office_id: officeId, asset_id: A[a.code].id, asset_code: a.code,
+        scanned_text: A[a.code].id, source: m % 2 === 0 ? "camera" : "manual",
+        success: true, scanned_at: dateAt(m, 14) + "T09:30:00Z",
+      });
+    }
+  }
+  // 2 failed scans
+  scans.push({
+    office_id: officeId, asset_id: null, asset_code: null,
+    scanned_text: "UNKNOWN-XYZ-001", source: "camera",
+    success: false, error_message: "Asset not found",
+    scanned_at: dateAt(0, 20) + "T11:00:00Z",
+  });
+  if (scans.length) await admin.from("asset_scan_logs").insert(scans);
+
+  // 14) Audit logs — record key actions
+  const auditRows: any[] = [];
+  for (const a of assetSpec) {
+    auditRows.push({
+      office_id: officeId, asset_id: A[a.code].id,
+      entity: "asset", entity_id: A[a.code].id, action_type: "create",
+      remarks: `Demo seed: ${a.name_en} registered`,
+    });
+  }
+  auditRows.push({
+    office_id: officeId, asset_id: A["MOT-002"].id, entity: "asset_disposal",
+    action_type: "create", remarks: "Demo: disposal recorded",
+  });
+  await admin.from("asset_audit_logs").insert(auditRows);
+
   return {
     categories: catSpec.length,
     assets: assetSpec.length,
     purchases: purchases.length,
     movements: movements.length,
     maintenance: maint.length,
+    schedules: schedules.length,
     depreciation: schedule.length,
     disposals: disposals.length,
+    alerts: alerts.length,
+    damages: damages.length,
+    scans: scans.length,
+    audits: auditRows.length,
     skipped: false,
   };
 }
