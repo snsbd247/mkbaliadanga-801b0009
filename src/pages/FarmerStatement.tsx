@@ -314,6 +314,7 @@ export default function FarmerStatement() {
           <TabsList>
             <TabsTrigger value="savings">{t("savings")}</TabsTrigger>
             <TabsTrigger value="loan">{t("loans")}</TabsTrigger>
+            <TabsTrigger value="irrigation">{t("irrigation")}</TabsTrigger>
           </TabsList>
         </Tabs>
 
