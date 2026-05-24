@@ -301,7 +301,7 @@ export default function FarmerStatement() {
   }
 
 
-  const titleLabel = kind === "savings" ? t("savingsStatement") : t("loanStatement");
+  const titleLabel = kind === "savings" ? t("savingsStatement") : kind === "loan" ? t("loanStatement") : (t("irrigationStatement" as any) || "Irrigation Statement");
   const farmerName = farmer ? (lang === "bn" && farmer.name_bn ? farmer.name_bn : farmer.name_en) : "";
 
   return (
