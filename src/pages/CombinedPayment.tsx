@@ -87,6 +87,7 @@ export default function CombinedPayment() {
     try {
       const receiptNo = await nextMonthlyReceiptNo("COMBO", officeId, form.farmer_id);
       const rows: { kind: string; label_bn: string; label_en: string; amount: number }[] = [];
+      let verifyToken: string | null = null;
 
       // 1) Savings deposit
       if (Number(form.savings) > 0) {
@@ -96,10 +97,11 @@ export default function CombinedPayment() {
           receipt_no: receiptNo,
         } as any);
         if (error) throw error;
-        await supabase.from("payments").insert({
+        const { data: sp } = await supabase.from("payments").insert({
           farmer_id: form.farmer_id, kind: "savings", amount: Number(form.savings),
           collected_by: user?.id, receipt_no: receiptNo, status: "approved",
-        } as any);
+        } as any).select("verify_token").single();
+        if (sp?.verify_token && !verifyToken) verifyToken = sp.verify_token;
         rows.push({ kind: "savings", label_bn: "সঞ্চয়", label_en: "Savings", amount: Number(form.savings) });
       }
 
@@ -119,8 +121,9 @@ export default function CombinedPayment() {
         const { data: pay, error: payErr } = await supabase.from("payments").insert({
           farmer_id: form.farmer_id, kind: "loan", amount: Number(form.loan_amt),
           reference_id: form.loan_id, collected_by: user?.id, receipt_no: receiptNo, status: "approved",
-        } as any).select("id").single();
+        } as any).select("id,verify_token").single();
         if (payErr) throw payErr;
+        if (pay?.verify_token && !verifyToken) verifyToken = pay.verify_token;
         await supabase.from("payment_allocations").insert({
           payment_id: pay!.id, kind: "loan", reference_id: form.loan_id, amount: Number(form.loan_amt),
         } as any);
@@ -132,7 +135,9 @@ export default function CombinedPayment() {
       }
 
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
-      setLastReceipt({ no: receiptNo, rows, total, farmerName });
+      const verifyUrl = verifyToken ? `${window.location.origin}/r/${verifyToken}` : `${window.location.origin}/r/${receiptNo}`;
+      setLastReceipt({ no: receiptNo, rows, total, farmerName, verifyUrl });
+
       guard.clear();
       // Refresh related caches so Savings/Loans/Payments/Statement views update immediately
       qc.invalidateQueries({ queryKey: ["api", "payments"] });
