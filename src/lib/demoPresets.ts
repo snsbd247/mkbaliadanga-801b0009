@@ -44,7 +44,14 @@ export const DEMO_PRESETS: DemoPreset[] = [
     description_bn: "পারফরম্যান্স টেস্ট — সব মডিউল, ২০০ ফার্মার",
   },
   {
+    id: "year_ops", label_en: "Seed 1-Year Operational Demo Data", label_bn: "১ বছরের অপারেশনাল ডেমো ডাটা (12 mo)",
+    size: 50, modules: ALL_MODULES, monthsBack: 12,
+    description_en: "Full year of monthly savings deposits, recurring expenses, bank txns, payments, loans + 2 irrigation seasons (Boro + previous Aman).",
+    description_bn: "১২ মাসের মাসিক সঞ্চয়, পুনরাবৃত্ত খরচ, ব্যাংক লেনদেন, পেমেন্ট, ঋণ + ২টি সেচ সিজন (Boro + আগের Aman)।",
+  },
+  {
     id: "loans_only", label_en: "Loans Only", label_bn: "শুধু ঋণ",
+
     size: 50, modules: ["locations", "settings", "accounting", "farmers", "loans"],
     description_en: "Farmers + loans only (no irrigation/savings)",
     description_bn: "শুধু ফার্মার + ঋণ (সেচ/সঞ্চয় বাদে)",
