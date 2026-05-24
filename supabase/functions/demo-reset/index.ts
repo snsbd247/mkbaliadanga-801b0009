@@ -650,18 +650,30 @@ async function seedSavings(admin: any, officeId: string, farmers: any[], monthsB
 }
 
 
-async function seedPayments(admin: any, officeId: string, farmers: any[]) {
+async function seedPayments(admin: any, officeId: string, farmers: any[], monthsBack: number = 1) {
   if (!farmers.length) return;
-  const today = new Date().toISOString();
-  const yesterday = new Date(Date.now() - 86400000).toISOString();
-  const earlierMonth = new Date(Date.now() - 10 * 86400000).toISOString();
   const voters = farmers.filter((f: any) => f.is_voter);
+  const today = new Date();
+  const dateAt = (m: number, d: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, d).toISOString();
   const rows = voters.flatMap((f, i) => {
     const out: any[] = [];
-    if (i % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: today });
-    if (i % 5 === 0) out.push({ farmer_id: f.id, kind: "loan", amount: 1000, status: "approved", office_id: officeId, created_at: today });
-    if (i % 2 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 800, status: "approved", office_id: officeId, created_at: earlierMonth });
-    if (i % 4 === 0) out.push({ farmer_id: f.id, kind: "savings", amount: 500, status: "approved", office_id: officeId, created_at: yesterday });
+    if (monthsBack > 1) {
+      // Spread payments across the operational window
+      for (let m = 0; m < monthsBack; m++) {
+        if ((i + m) % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: dateAt(m, 7 + (i % 20)) });
+        if ((i + m) % 5 === 0) out.push({ farmer_id: f.id, kind: "loan",       amount: 1000,                 status: "approved", office_id: officeId, created_at: dateAt(m, 12 + (i % 15)) });
+        if ((i + m) % 4 === 0) out.push({ farmer_id: f.id, kind: "savings",    amount: 500,                  status: "approved", office_id: officeId, created_at: dateAt(m, 20 + (i % 8)) });
+      }
+    } else {
+      const todayIso = today.toISOString();
+      const yesterday = new Date(Date.now() - 86400000).toISOString();
+      const earlierMonth = new Date(Date.now() - 10 * 86400000).toISOString();
+      if (i % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: todayIso });
+      if (i % 5 === 0) out.push({ farmer_id: f.id, kind: "loan", amount: 1000, status: "approved", office_id: officeId, created_at: todayIso });
+      if (i % 2 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 800, status: "approved", office_id: officeId, created_at: earlierMonth });
+      if (i % 4 === 0) out.push({ farmer_id: f.id, kind: "savings", amount: 500, status: "approved", office_id: officeId, created_at: yesterday });
+    }
     return out;
   });
   if (rows.length) {
@@ -669,6 +681,7 @@ async function seedPayments(admin: any, officeId: string, farmers: any[]) {
     if (error) throw new Error(`payments: ${error.message}`);
   }
 }
+
 
 // After import, verify integrity: every farmer with savings/loans/shares MUST have is_voter=true,
 // and every voter MUST have voter_number + account_number.
