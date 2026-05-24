@@ -42,7 +42,7 @@ export default function Loans() {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [form, setForm] = useState({ farmer_id: "", plan_id: "", loan_no: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
   const [formErrors, setFormErrors] = useState<FieldError[]>([]);
   const { registerField, focusField, focusFirstError, preventEnterSubmit } = useFormUx();
   const createDirty = !!(form.farmer_id || form.principal > 0 || form.note);
@@ -139,19 +139,37 @@ export default function Loans() {
       ));
       if (!ok) return;
     }
+    // Loan Number duplicate check (case-insensitive, within office)
+    const loanNo = form.loan_no.trim();
+    if (loanNo) {
+      const { data: lnDupes } = await supabase
+        .from("loans")
+        .select("id,farmers(name_en,farmer_code)")
+        .ilike("loan_no" as any, loanNo)
+        .is("deleted_at", null)
+        .limit(1);
+      if ((lnDupes ?? []).length > 0) {
+        const d: any = lnDupes![0];
+        return toast.error(tx(
+          `Loan Number "${loanNo}" already used (${d.farmers?.name_en ?? ""} ${d.farmers?.farmer_code ?? ""}).`,
+          `লোন নম্বর "${loanNo}" ইতিমধ্যে ব্যবহৃত (${d.farmers?.name_en ?? ""} ${d.farmers?.farmer_code ?? ""})।`,
+        ));
+      }
+    }
     const plan = plans.find((p: any) => p.id === form.plan_id);
     const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
     const total_payable = form.principal * (1 + interest_rate / 100);
     const { error } = await supabase.from("loans").insert({
       farmer_id: form.farmer_id,
       plan_id: form.plan_id || null,
+      loan_no: loanNo || null,
       principal: form.principal,
       interest_enabled: form.interest_enabled,
       interest_rate,
       total_payable,
       issued_on: form.issued_on, next_due_on: form.next_due_on || null, note: form.note,
       status: "pending", created_by: user?.id,
-    });
+    } as any);
     if (error) return toast.error(error.message);
     await supabase.from("notifications").insert({
       kind: "loan_pending",
