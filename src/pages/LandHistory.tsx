@@ -12,6 +12,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { buildAutoLandChangeRemark } from "@/lib/landChangeRemark";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const SEASONS = ["Boro", "Aman", "Aus", "Rabi"];
 const sb = supabase as any;
