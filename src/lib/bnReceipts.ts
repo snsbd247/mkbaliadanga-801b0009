@@ -88,6 +88,14 @@ export interface BnReceiptData {
   office_collector_signature_url?: string | null;
   /** Public URL for QR-based receipt verification */
   verify_url?: string | null;
+
+  /** Savings receipt — enriched fields (optional, used when kind === "savings") */
+  savings_account_no?: string | null;
+  savings_category_bn?: string | null;     // সাধারণ / হাওলাত / ব্যাংক / দান / বিবিধ
+  savings_opening_date?: string | null;
+  savings_balance_before?: number | null;  // স্থিতি (লেনদেনের পূর্বে)
+  savings_balance_after?: number | null;   // স্থিতি (লেনদেনের পরে)
+  savings_deposit_total?: number | null;   // মোট জমা (সর্বমোট)
 }
 
 const fmt2 = (n: number) =>
@@ -261,9 +269,15 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   } else if (d.kind === "savings") {
     const sl = getSavingsLabels(lang);
     const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+    if (d.savings_account_no) rows.push([lang === "bn" ? "সঞ্চয়ী হিসাব নং:" : "Savings A/C No:", String(d.savings_account_no)]);
+    if (d.savings_category_bn) rows.push([lang === "bn" ? "ক্যাটাগরি:" : "Category:", d.savings_category_bn]);
+    if (d.savings_opening_date) rows.push([lang === "bn" ? "হিসাব খোলার তারিখ:" : "Account opened:", fmtDate(d.savings_opening_date)]);
     if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
     if (d.description) rows.push([sl.desc, d.description]);
+    if (d.savings_balance_before != null) rows.push([lang === "bn" ? "পূর্বের স্থিতি:" : "Balance before:", fmt2(Number(d.savings_balance_before))]);
     if (d.outstanding != null) rows.push([sl.balance, fmt2(Number(d.outstanding))]);
+    if (d.savings_balance_after != null) rows.push([lang === "bn" ? "নতুন স্থিতি:" : "New balance:", fmt2(Number(d.savings_balance_after))]);
+    if (d.savings_deposit_total != null) rows.push([lang === "bn" ? "মোট জমা:" : "Total deposited:", fmt2(Number(d.savings_deposit_total))]);
   } else {
     const ll = getLoanLabels(lang);
     const { mouza: mouzaLabel } = getIrrigationLabels(lang);

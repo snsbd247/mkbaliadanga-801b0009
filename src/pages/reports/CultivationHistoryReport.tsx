@@ -73,7 +73,13 @@ export default function CultivationHistoryReport() {
         const m = resolveRateForLand(rateMap, l);
         return s + (m ? Number(m.rate_per_shotok) * Number(l.land_size || 0) : 0);
       }, 0);
+      const rates = Array.from(new Set(fl.map(l => {
+        const m = resolveRateForLand(rateMap, l);
+        return m ? Number(m.rate_per_shotok) : null;
+      }).filter(v => v !== null))) as number[];
+      const avgRate = totalArea > 0 ? totalAmount / totalArea : 0;
       const mouzas = Array.from(new Set(fl.map((l) => l.mouza_name || l.mouza).filter(Boolean))).join(", ");
+      const particulars = Array.from(new Set(fl.map((l) => l.field_type).filter(Boolean))).join(", ");
       return {
         id: f.id,
         member_no: f.member_no ?? f.farmer_code ?? "—",
@@ -81,6 +87,9 @@ export default function CultivationHistoryReport() {
         father: f.father_name ?? "—",
         mobile: f.mobile ?? "—",
         mouzas: mouzas || "—",
+        particulars: particulars || "—",
+        rateLabel: rates.length === 0 ? "—" : rates.length === 1 ? money(rates[0]) : `${money(Math.min(...rates))}–${money(Math.max(...rates))}`,
+        avgRate,
         landCount: fl.length,
         totalArea,
         totalAmount,
@@ -108,13 +117,14 @@ export default function CultivationHistoryReport() {
   function doExportPdf() {
     exportTablePDF(
       tx(`Cultivation History — ${seasonName}`, `চাষাবাদের তথ্য — ${seasonName}`),
-      ["ID", "নাম", "পিতা", "মোবাইল", "মৌজা", "জমি (শতক)", "টাকা"],
-      filtered.map((r) => [r.member_no, r.name, r.father, r.mobile, r.mouzas, r.totalArea.toFixed(2), money(r.totalAmount)]),
+      ["ID", "নাম", "পিতা", "মোবাইল", "মৌজা", "বিবরণ", "রেট/শতক", "জমি (শতক)", "টাকা"],
+      filtered.map((r) => [r.member_no, r.name, r.father, r.mobile, r.mouzas, r.particulars, r.rateLabel, r.totalArea.toFixed(2), money(r.totalAmount)]),
     );
   }
   function doExportExcel() {
     exportExcel("cultivation-history", "Cultivation", filtered.map((r) => ({
       ID: r.member_no, Name: r.name, Father: r.father, Mobile: r.mobile, Mouza: r.mouzas,
+      Particular: r.particulars, Rate_Per_Shotok: r.avgRate,
       Lands: r.landCount, Area_Shotok: r.totalArea, Amount_BDT: r.totalAmount,
     })));
   }
@@ -151,13 +161,15 @@ export default function CultivationHistoryReport() {
               <TableHead>পিতার নাম</TableHead>
               <TableHead>মোবাইল</TableHead>
               <TableHead>মৌজা</TableHead>
+              <TableHead>বিবরণ</TableHead>
+              <TableHead className="text-right">রেট/শতক</TableHead>
               <TableHead className="text-right">জমি (শতক)</TableHead>
               <TableHead className="text-right">মোট টাকা</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">Loading…</TableCell></TableRow>}
-            {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">কোনো ডেটা নেই</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">Loading…</TableCell></TableRow>}
+            {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">কোনো ডেটা নেই</TableCell></TableRow>}
             {filtered.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="text-xs font-mono">{r.member_no}</TableCell>
@@ -165,13 +177,15 @@ export default function CultivationHistoryReport() {
                 <TableCell className="text-xs">{r.father}</TableCell>
                 <TableCell className="text-xs">{r.mobile}</TableCell>
                 <TableCell className="text-xs">{r.mouzas}</TableCell>
+                <TableCell className="text-xs">{r.particulars}</TableCell>
+                <TableCell className="text-right text-xs">{r.rateLabel}</TableCell>
                 <TableCell className="text-right">{r.totalArea.toFixed(2)}</TableCell>
                 <TableCell className="text-right">{money(r.totalAmount)}</TableCell>
               </TableRow>
             ))}
             {filtered.length > 0 && (
               <TableRow className="bg-muted/70 font-bold border-t-2">
-                <TableCell colSpan={5} className="text-right">সর্বমোট ({filtered.length} জন)</TableCell>
+                <TableCell colSpan={7} className="text-right">সর্বমোট ({filtered.length} জন)</TableCell>
                 <TableCell className="text-right">{totals.area.toFixed(2)}</TableCell>
                 <TableCell className="text-right">{money(totals.amount)}</TableCell>
               </TableRow>

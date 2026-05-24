@@ -42,7 +42,7 @@ export default function Loans() {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [form, setForm] = useState({ farmer_id: "", plan_id: "", loan_no: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
   const [formErrors, setFormErrors] = useState<FieldError[]>([]);
   const { registerField, focusField, focusFirstError, preventEnterSubmit } = useFormUx();
   const createDirty = !!(form.farmer_id || form.principal > 0 || form.note);
@@ -139,19 +139,37 @@ export default function Loans() {
       ));
       if (!ok) return;
     }
+    // Loan Number duplicate check (case-insensitive, within office)
+    const loanNo = form.loan_no.trim();
+    if (loanNo) {
+      const { data: lnDupes } = await supabase
+        .from("loans")
+        .select("id,farmers(name_en,farmer_code)")
+        .ilike("loan_no" as any, loanNo)
+        .is("deleted_at", null)
+        .limit(1);
+      if ((lnDupes ?? []).length > 0) {
+        const d: any = lnDupes![0];
+        return toast.error(tx(
+          `Loan Number "${loanNo}" already used (${d.farmers?.name_en ?? ""} ${d.farmers?.farmer_code ?? ""}).`,
+          `লোন নম্বর "${loanNo}" ইতিমধ্যে ব্যবহৃত (${d.farmers?.name_en ?? ""} ${d.farmers?.farmer_code ?? ""})।`,
+        ));
+      }
+    }
     const plan = plans.find((p: any) => p.id === form.plan_id);
     const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
     const total_payable = form.principal * (1 + interest_rate / 100);
     const { error } = await supabase.from("loans").insert({
       farmer_id: form.farmer_id,
       plan_id: form.plan_id || null,
+      loan_no: loanNo || null,
       principal: form.principal,
       interest_enabled: form.interest_enabled,
       interest_rate,
       total_payable,
       issued_on: form.issued_on, next_due_on: form.next_due_on || null, note: form.note,
       status: "pending", created_by: user?.id,
-    });
+    } as any);
     if (error) return toast.error(error.message);
     await supabase.from("notifications").insert({
       kind: "loan_pending",
@@ -289,6 +307,11 @@ export default function Loans() {
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">When a plan is selected, an installment schedule is auto-generated upon committee approval.</p>
               </div>
+              <div>
+                <Label>{tx("Loan Number (optional)", "লোন নম্বর (ঐচ্ছিক)")}</Label>
+                <Input value={form.loan_no} onChange={e => setForm({ ...form, loan_no: e.target.value })} placeholder={tx("e.g. L-2026-001", "যেমন: L-2026-001")} />
+                <p className="text-xs text-muted-foreground mt-1">{tx("Must be unique within the office.", "একই অফিসে অনন্য হতে হবে।")}</p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div ref={registerField("principal")}><Label>{t("principal")}</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
                 <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={form.interest_rate} disabled={!form.interest_enabled || !!form.plan_id} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
@@ -327,6 +350,9 @@ export default function Loans() {
           </DialogContent>
         </Dialog>
       } />
+
+      <FarmerLoanSummary loans={loans} t={t} tx={tx} />
+
 
       <Card className="p-3 mb-3 flex items-center gap-3">
         <Label className="text-sm flex items-center gap-2 cursor-pointer">
@@ -402,6 +428,71 @@ export default function Loans() {
   );
 }
 
+function FarmerLoanSummary({ loans, t, tx }: { loans: any[]; t: any; tx: any }) {
+  const [open, setOpen] = useState(false);
+  const groups = useMemo(() => {
+    const m = new Map<string, { farmer: any; loans: any[]; principal: number; payable: number; paid: number }>();
+    for (const l of loans) {
+      if (l.status === "rejected" || l.deleted_at) continue;
+      const fid = l.farmer_id;
+      if (!fid) continue;
+      const g = m.get(fid) ?? { farmer: l.farmers ?? {}, loans: [], principal: 0, payable: 0, paid: 0 };
+      g.loans.push(l);
+      g.principal += Number(l.principal || 0);
+      g.payable += Number(l.total_payable || 0);
+      g.paid += (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+      m.set(fid, g);
+    }
+    return Array.from(m.values())
+      .filter(g => g.loans.length > 1 || (g.payable - g.paid) > 0)
+      .sort((a, b) => (b.payable - b.paid) - (a.payable - a.paid));
+  }, [loans]);
+  if (!groups.length) return null;
+  return (
+    <Card className="p-3 mb-3">
+      <button type="button" className="w-full flex items-center justify-between text-sm font-semibold" onClick={() => setOpen(o => !o)}>
+        <span className="flex items-center gap-2">
+          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          {tx("Member-wise Loan Summary", "সদস্য-ভিত্তিক ঋণ সারাংশ")} ({groups.length})
+        </span>
+        <span className="text-xs text-muted-foreground">{tx("Click to toggle", "টগল করতে ক্লিক করুন")}</span>
+      </button>
+      {open && (
+        <div className="mt-2 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+              <tr>
+                <th className="text-left py-1">{t("farmerName")}</th>
+                <th className="text-right">{tx("Loans", "ঋণ সংখ্যা")}</th>
+                <th className="text-right">{t("principal")}</th>
+                <th className="text-right">{t("totalPayable")}</th>
+                <th className="text-right">{tx("Paid", "পরিশোধিত")}</th>
+                <th className="text-right">{t("dueAmount")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((g, i) => {
+                const due = g.payable - g.paid;
+                return (
+                  <tr key={i} className="border-t">
+                    <td className="py-1">{g.farmer?.name_en ?? "—"} <span className="text-xs text-muted-foreground">({g.farmer?.farmer_code ?? "—"})</span></td>
+                    <td className="text-right">{g.loans.length}</td>
+                    <td className="text-right">{money(g.principal)}</td>
+                    <td className="text-right">{money(g.payable)}</td>
+                    <td className="text-right text-success">{money(g.paid)}</td>
+                    <td className={`text-right font-semibold ${due > 0 ? "due-text" : ""}`}>{money(due)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+
 function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRestore, onDelete, onEdit, onPrint, profiles, expanded, setExpanded, installments }: any) {
   return (
     <Card className="overflow-x-auto"><Table>
@@ -434,7 +525,12 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                   )}
                 </TableCell>
                 <TableCell>{fmtDate(l.issued_on)}</TableCell>
-                <TableCell className="max-w-[220px]"><TruncateText>{l.farmers?.name_en}</TruncateText> <span className="text-xs text-muted-foreground">({l.farmers?.farmer_code})</span></TableCell>
+                <TableCell className="max-w-[220px]">
+                  <TruncateText>{l.farmers?.name_en}</TruncateText>
+                  <div className="text-xs text-muted-foreground">
+                    ({l.farmers?.farmer_code}){l.loan_no ? <> · <span className="font-mono">#{l.loan_no}</span></> : null}
+                  </div>
+                </TableCell>
                 <TableCell>{money(l.principal)}</TableCell>
                 <TableCell>{l.interest_enabled ? `${l.interest_rate}%` : "-"}</TableCell>
                 <TableCell>{money(l.total_payable)}</TableCell>

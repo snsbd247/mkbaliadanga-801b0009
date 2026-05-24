@@ -3788,6 +3788,7 @@ export type Database = {
           interest_rate: number
           is_temporary: boolean
           issued_on: string
+          loan_no: string | null
           next_due_on: string | null
           note: string | null
           office_id: string | null
@@ -3812,6 +3813,7 @@ export type Database = {
           interest_rate?: number
           is_temporary?: boolean
           issued_on?: string
+          loan_no?: string | null
           next_due_on?: string | null
           note?: string | null
           office_id?: string | null
@@ -3836,6 +3838,7 @@ export type Database = {
           interest_rate?: number
           is_temporary?: boolean
           issued_on?: string
+          loan_no?: string | null
           next_due_on?: string | null
           note?: string | null
           office_id?: string | null
