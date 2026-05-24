@@ -103,10 +103,13 @@ export const MODULE_VERIFY: Record<DemoModule, ModuleVerifyEntry[]> = {
     { table: "accounting_periods", page: "/period-close",  page_label: "Period Close", required: true },
   ],
   farmers: [
-    { table: "farmers",        page: "/farmers",   page_label: "Farmers", required: true },
-    { table: "lands",          page: "/farmers",   page_label: "Farmers (Lands)", required: true },
-    { table: "patwaris",       page: "/admin/patwaris", page_label: "Patwaris", required: false },
-    { table: "land_relations", page: "/farmers",   page_label: "Farmers (Borga)", required: false },
+    { table: "farmers",                page: "/farmers",   page_label: "Farmers", required: true },
+    { table: "lands",                  page: "/farmers",   page_label: "Farmers (Lands)", required: true },
+    { table: "patwaris",               page: "/admin/patwaris", page_label: "Patwaris", required: false },
+    { table: "land_relations",         page: "/farmers",   page_label: "Farmers (Borga)", required: false },
+    { table: "land_history",           page: "/land-history", page_label: "ভূমির ইতিহাস (Land History)", required: false },
+    { table: "voter_audit_logs",       page: "/voter-history", page_label: "Voter Cancel/Reactivate History", required: false },
+    { table: "public_payment_intents", page: "/admin/public-payments", page_label: "পাবলিক পেমেন্ট অনুরোধ", required: false },
   ],
   irrigation: [
     { table: "irrigation_charge_settings", page: "/irrigation-rates",    page_label: "Irrigation Rates", required: true },
@@ -116,7 +119,7 @@ export const MODULE_VERIFY: Record<DemoModule, ModuleVerifyEntry[]> = {
   ],
   loans: [
     { table: "loan_plans",                page: "/loan-plans", page_label: "Loan Plans", required: true },
-    { table: "loan_delay_fee_settings",   page: "/admin/loan-delay-settings", page_label: "Loan Delay Settings", required: true },
+    { table: "loan_delay_fee_settings",   page: "/admin/loan-delay-settings", page_label: "Loan Installment Penalty Settings", required: true },
     { table: "loans",                     page: "/loans",      page_label: "Loans", required: true },
     { table: "loan_installments",         page: "/loans",      page_label: "Loans (Installments)", required: true },
     { table: "loan_payments",             page: "/loans",      page_label: "Loans (Payments)", required: false },
