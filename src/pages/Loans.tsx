@@ -525,7 +525,12 @@ function LoanTable({ rows, t, isCommittee, isSuper, showDeleted, onDecide, onRes
                   )}
                 </TableCell>
                 <TableCell>{fmtDate(l.issued_on)}</TableCell>
-                <TableCell className="max-w-[220px]"><TruncateText>{l.farmers?.name_en}</TruncateText> <span className="text-xs text-muted-foreground">({l.farmers?.farmer_code})</span></TableCell>
+                <TableCell className="max-w-[220px]">
+                  <TruncateText>{l.farmers?.name_en}</TruncateText>
+                  <div className="text-xs text-muted-foreground">
+                    ({l.farmers?.farmer_code}){l.loan_no ? <> · <span className="font-mono">#{l.loan_no}</span></> : null}
+                  </div>
+                </TableCell>
                 <TableCell>{money(l.principal)}</TableCell>
                 <TableCell>{l.interest_enabled ? `${l.interest_rate}%` : "-"}</TableCell>
                 <TableCell>{money(l.total_payable)}</TableCell>
