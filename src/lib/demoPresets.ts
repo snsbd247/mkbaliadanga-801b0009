@@ -15,7 +15,9 @@ export type DemoPreset = {
   modules: DemoModule[];
   description_en: string;
   description_bn: string;
+  monthsBack?: number;   // spread operational rows across last N months
 };
+
 
 export const ALL_MODULES: DemoModule[] = [
   "locations", "settings", "accounting", "farmers",
