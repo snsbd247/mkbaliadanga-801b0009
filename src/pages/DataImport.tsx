@@ -56,31 +56,31 @@ type RowResult = {
 const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any> }> = {
   lands: {
     columns: ["account_number", "dag_no", "land_size", "owner_type", "field_type", "mouza"],
-    sample: { account_number: "100000000001", dag_no: "123, 124/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
+    sample: { account_number: "10001", dag_no: "123, 124/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
   },
   land_relations: {
     columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
-    sample: { owner_account_number: "100000000001", tenant_account_number: "100000000002", dag_no: "123, 124/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
+    sample: { owner_account_number: "10001", tenant_account_number: "10002", dag_no: "123, 124/A", share_percentage: 50, valid_from: "2026-01-01", valid_to: "", note: "" },
   },
   loans: {
     columns: ["account_number", "principal", "interest_rate", "total_payable", "issued_on", "note"],
-    sample: { account_number: "100000000001", principal: 10000, interest_rate: 12, total_payable: 11200, issued_on: "2026-01-15", note: "Crop loan" },
+    sample: { account_number: "10001", principal: 10000, interest_rate: 12, total_payable: 11200, issued_on: "2026-01-15", note: "Crop loan" },
   },
   loan_payments: {
     columns: ["account_number", "amount", "paid_on", "note"],
-    sample: { account_number: "100000000001", amount: 1000, paid_on: "2026-02-15", note: "1st installment" },
+    sample: { account_number: "10001", amount: 1000, paid_on: "2026-02-15", note: "1st installment" },
   },
   loan_installments: {
     columns: ["account_number", "installment_no", "due_date", "amount", "status"],
-    sample: { account_number: "100000000001", installment_no: 1, due_date: "2026-02-15", amount: 1000, status: "due" },
+    sample: { account_number: "10001", installment_no: 1, due_date: "2026-02-15", amount: 1000, status: "due" },
   },
   savings: {
     columns: ["account_number", "type", "amount", "txn_date", "note"],
-    sample: { account_number: "100000000001", type: "deposit", amount: 500, txn_date: "2026-02-01", note: "Monthly deposit" },
+    sample: { account_number: "10001", type: "deposit", amount: 500, txn_date: "2026-02-01", note: "Monthly deposit" },
   },
   payments: {
     columns: ["account_number", "kind", "amount", "method", "note"],
-    sample: { account_number: "100000000001", kind: "savings", amount: 500, method: "cash", note: "" },
+    sample: { account_number: "10001", kind: "savings", amount: 500, method: "cash", note: "" },
   },
   ledger: {
     columns: ["entry_date", "account_code", "debit", "credit", "description", "reference_type"],
@@ -88,7 +88,7 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   },
   irrigation: {
     columns: ["account_number", "dag_no", "season_year", "season_type", "quantity", "base_charge", "canal_charge", "maintenance_charge", "other_charge", "previous_due_brought", "penalty_amount", "entry_date", "note"],
-    sample: { account_number: "100000000001", dag_no: "123/A", season_year: 2026, season_type: "boro", quantity: 0.33, base_charge: 200, canal_charge: 50, maintenance_charge: 20, other_charge: 0, previous_due_brought: 0, penalty_amount: 0, entry_date: "2026-02-01", note: "" },
+    sample: { account_number: "10001", dag_no: "123/A", season_year: 2026, season_type: "boro", quantity: 0.33, base_charge: 200, canal_charge: 50, maintenance_charge: 20, other_charge: 0, previous_due_brought: 0, penalty_amount: 0, entry_date: "2026-02-01", note: "" },
   },
   cashbook_receipts: {
     columns: ["receipt_date", "kind", "account_number", "amount", "method", "note"],
@@ -100,7 +100,7 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   },
   shares: {
     columns: ["account_number", "balance"],
-    sample: { account_number: "100000000001", balance: 500 },
+    sample: { account_number: "10001", balance: 500 },
   },
 };
 
@@ -180,8 +180,8 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
     ["mouza", "No", "Free text mouza name."],
     [],
     ["Examples", "", ""],
-    ["100000000001", "", "dag_no = 123  → single dag"],
-    ["100000000001", "", "dag_no = 123, 124/A, 125-B  → multi-dag (canonical)"],
+    ["10001", "", "dag_no = 123  → single dag"],
+    ["10001", "", "dag_no = 123, 124/A, 125-B  → multi-dag (canonical)"],
   ],
   land_relations: [
     ["Column", "Required", "Format / Notes"],
