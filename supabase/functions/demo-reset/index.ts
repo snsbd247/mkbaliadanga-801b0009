@@ -805,6 +805,8 @@ async function seedAccounts(admin: any) {
     { code: "1010", name: "Cash", type: "asset", is_system: true },
     { code: "1020", name: "Bank", type: "asset", is_system: true },
     { code: "1040", name: "Loans Receivable", type: "asset", is_system: true },
+    { code: "1600", name: "Fixed Assets", type: "asset", is_system: false },
+    { code: "1610", name: "Accumulated Depreciation", type: "asset", is_system: false },
     { code: "2010", name: "Savings Payable", type: "liability", is_system: true },
     { code: "3020", name: "Share Capital", type: "equity", is_system: true },
     { code: "4010", name: "Irrigation Income", type: "income", is_system: true },
@@ -814,6 +816,7 @@ async function seedAccounts(admin: any) {
     { code: "5030", name: "Salary", type: "expense", is_system: true },
     { code: "5040", name: "Repair", type: "expense", is_system: true },
     { code: "5090", name: "Other Expenses", type: "expense", is_system: true },
+    { code: "5410", name: "Depreciation Expense", type: "expense", is_system: false },
   ];
   const { error } = await admin.from("accounts").upsert(accts, { onConflict: "code" });
   if (error) throw error;
