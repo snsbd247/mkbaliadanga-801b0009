@@ -48,8 +48,10 @@ export default function Payments() {
   const [list, setList] = useState<any[]>([]);
   const [farmerId, setFarmerId] = useState(params.get("farmer") ?? "");
   const [method, setMethod] = useState("cash");
+  const [category, setCategory] = useState<string>("general");
   const [note, setNote] = useState("");
   const [receiptNo, setReceiptNo] = useState("");
+
   const [allocs, setAllocs] = useState<Allocation[]>([{ kind: "irrigation", reference_id: "", amount: 0 }]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [openLoans, setOpenLoans] = useState<any[]>([]);
