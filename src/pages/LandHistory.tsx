@@ -20,6 +20,8 @@ const sb = supabase as any;
 
 export default function LandHistory() {
   const { user, isAdmin } = useAuth();
+  const { tx } = useLang();
+
   const [farmers, setFarmers] = useState<any[]>([]);
   const [rows, setRows] = useState<any[]>([]);
   const [farmerId, setFarmerId] = useState<string>("");
