@@ -519,11 +519,14 @@ async function seedLoans(admin: any, officeId: string, farmers: any[], monthsBac
     // Spread issued_on across last `monthsBack` months when > 1
     const monthsAgo = monthsBack > 1 ? (i % monthsBack) : 6;
     const issued = new Date(now - monthsAgo * 30 * 86400000).toISOString().slice(0, 10);
+    const isTemp = i % 6 === 5; // ~17% temporary loans
     return {
       farmer_id: f.id, principal, interest_rate: p.interest_rate, total_payable: totalPay, total_due: totalPay,
       installment_amount: totalPay / p.duration_months, plan_id: p.id,
       status: i % 4 === 0 ? "pending" : "approved", office_id: officeId,
       issued_on: issued,
+      is_temporary: isTemp,
+      temp_purpose: isTemp ? (i % 2 === 0 ? "জরুরি কৃষি উপকরণ" : "অস্থায়ী চাষাবাদ সহায়তা") : null,
     };
   });
 
