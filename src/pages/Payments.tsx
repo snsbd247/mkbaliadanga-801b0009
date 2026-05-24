@@ -68,6 +68,10 @@ export default function Payments() {
   const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
   const [savingsBalance, setSavingsBalance] = useState<number>(0);
   const [methodSummary, setMethodSummary] = useState<MethodSummary[]>([]);
+  const [autoDownload, setAutoDownload] = useState<boolean>(() => {
+    try { return localStorage.getItem("payments:autoDl") === "1"; } catch { return false; }
+  });
+  const [pendingAutoId, setPendingAutoId] = useState<string | null>(null);
 
   async function loadSavingsBalance(fid: string) {
     const { data } = await supabase
