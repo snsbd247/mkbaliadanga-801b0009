@@ -21,7 +21,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 
 import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
-import { validateLocationChain } from "@/lib/locationValidation";
+import { parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
 import { validateDagNumbers } from "@/lib/dagNumbers";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
@@ -40,6 +40,7 @@ import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { formatId5 } from "@/lib/idFormat";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
+import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
@@ -68,6 +69,12 @@ export default function FarmerDetail() {
   const [payments, setPayments] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
+  const [offices, setOffices] = useState<any[]>([]);
+  const [editFarmerOpen, setEditFarmerOpen] = useState(false);
+  const [editFarmerForm, setEditFarmerForm] = useState<any | null>(null);
+  const [editFarmerPhoto, setEditFarmerPhoto] = useState<File | null>(null);
+  const [editFarmerSaving, setEditFarmerSaving] = useState(false);
+  const [editFarmerLocErr, setEditFarmerLocErr] = useState<{ level: LocationLevel; message: string } | null>(null);
   
   
 
@@ -116,6 +123,7 @@ export default function FarmerDetail() {
   useEffect(() => { if (id) loadAll(); }, [id]);
   useEffect(() => {
     supabase.from("loan_plans").select("*").eq("is_active", true).then(({ data }) => setLoanPlans(data ?? []));
+    supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices(data ?? []));
   }, []);
   useEffect(() => { document.title = `${farmer?.name_en ?? ""} — ${t("farmers")}`; }, [farmer, t]);
 
@@ -720,13 +728,78 @@ export default function FarmerDetail() {
     return parts.length ? parts.join(" › ") : (l.mouza ?? "-");
   };
 
+  function levelLabel(level: LocationLevel) {
+    const map: Record<LocationLevel, string> = {
+      division: t("division"), district: t("district"), upazila: t("upazila"),
+      union: t("union"), ward: t("ward"), village: t("village"), mouza: t("mouza"),
+    };
+    return map[level];
+  }
+
+  async function uploadFarmerPhoto(file: File): Promise<string | undefined> {
+    const ext = file.name.split(".").pop();
+    const path = `farmers/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("farmer-photos").upload(path, file);
+    if (error) { toast.error(error.message); return undefined; }
+    return supabase.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
+  }
+
+  function openFarmerEdit() {
+    setEditFarmerLocErr(null);
+    setEditFarmerPhoto(null);
+    setEditFarmerForm({
+      ...farmer,
+      office_id: farmer.office_id ?? "",
+      voter_number: farmer.voter_number ?? "",
+      account_number: farmer.account_number ?? farmer.voter_number ?? "",
+      division_id: farmer.division_id ?? null,
+      district_id: farmer.district_id ?? null,
+      upazila_id: farmer.upazila_id ?? null,
+      union_id: farmer.union_id ?? null,
+      ward_id: farmer.ward_id ?? null,
+      village_id: farmer.village_id ?? null,
+      mouza_id: farmer.mouza_id ?? null,
+    });
+    setEditFarmerOpen(true);
+  }
+
+  async function saveFarmerEdit() {
+    if (!editFarmerForm) return;
+    if (!String(editFarmerForm.name_en ?? "").trim()) return toast.error(tx("Name (English) is required", "ইংরেজি নাম আবশ্যক"));
+    if (editFarmerForm.member_no) {
+      const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(editFarmerForm.member_no).trim(), _exclude_id: editFarmerForm.id ?? null });
+      if (dup === true) return toast.error(t("duplicateFarmerId"));
+    }
+    setEditFarmerSaving(true);
+    try {
+      let photo_url: string | undefined;
+      if (editFarmerPhoto) {
+        photo_url = await uploadFarmerPhoto(editFarmerPhoto);
+        if (!photo_url) return;
+      }
+      const payload = toFarmerUpdatePayload(editFarmerForm, photo_url ? { photo_url } : {});
+      const { error } = await supabase.from("farmers").update(payload as any).eq("id", editFarmerForm.id);
+      if (error) {
+        const lvl = parseLocationDbError(error.message);
+        if (lvl) setEditFarmerLocErr({ level: lvl, message: tx(`Invalid ${levelLabel(lvl)} selection`, `${levelLabel(lvl)} নির্বাচন সঠিক নয়`) });
+        else toast.error(error.message);
+        return;
+      }
+      toast.success(t("farmerUpdated"));
+      setEditFarmerOpen(false);
+      setEditFarmerForm(null);
+      setEditFarmerPhoto(null);
+      loadAll();
+    } finally { setEditFarmerSaving(false); }
+  }
+
   return (
     <>
       <PageHeader title={lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}
         description={`${farmer.member_no ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <ReceiptSettingsButton />
-          <Button variant="outline" onClick={() => nav(`/farmers?edit=${farmer.id}&returnTo=${encodeURIComponent(`/farmers/${farmer.id}`)}`)}><Pencil className="h-4 w-4 mr-1" />{t("edit")}</Button>
+          <Button variant="outline" onClick={openFarmerEdit}><Pencil className="h-4 w-4 mr-1" />{t("edit")}</Button>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />{t("pgPrintCard")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
@@ -1233,6 +1306,44 @@ export default function FarmerDetail() {
           <FarmerNotesTab farmerId={id!} />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={editFarmerOpen} onOpenChange={(o) => { if (!o && !editFarmerSaving) { setEditFarmerOpen(false); setEditFarmerForm(null); setEditFarmerPhoto(null); setEditFarmerLocErr(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{t("edit")} — {lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}</DialogTitle></DialogHeader>
+          {editFarmerForm && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div><Label>{t("nameEn")} *</Label><Input value={editFarmerForm.name_en ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, name_en: e.target.value })} /></div>
+                <div><Label>{t("nameBn")}</Label><Input value={editFarmerForm.name_bn ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, name_bn: e.target.value })} /></div>
+                <div><Label>{t("fatherName")}</Label><Input value={editFarmerForm.father_name ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, father_name: e.target.value })} /></div>
+                <div><Label>{t("motherName")}</Label><Input value={editFarmerForm.mother_name ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, mother_name: e.target.value })} /></div>
+                <div><Label>{t("nid")}</Label><Input value={editFarmerForm.nid ?? ""} disabled={editFarmerSaving} inputMode="numeric" maxLength={17} onChange={e => setEditFarmerForm({ ...editFarmerForm, nid: e.target.value })} /></div>
+                <div><Label>{t("mobile")}</Label><Input value={editFarmerForm.mobile ?? ""} disabled={editFarmerSaving} inputMode="tel" maxLength={20} onChange={e => setEditFarmerForm({ ...editFarmerForm, mobile: e.target.value })} /></div>
+                <div><Label>{t("farmerIdLabel")}</Label><Input value={editFarmerForm.member_no ?? ""} disabled={editFarmerSaving || !isSuper} maxLength={5} inputMode="numeric" onChange={e => setEditFarmerForm({ ...editFarmerForm, member_no: e.target.value.replace(/\D/g, "").slice(0, 5) })} /></div>
+                <div><Label>{t("voterSavingsAccount")}</Label><Input value={editFarmerForm.voter_number ?? ""} disabled={editFarmerSaving || (!!farmer.voter_number && !isSuper)} maxLength={5} inputMode="numeric" onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 5); setEditFarmerForm({ ...editFarmerForm, voter_number: v, account_number: v, is_voter: !!v }); }} /></div>
+                <div><Label>{t("office")}</Label><Select value={editFarmerForm.office_id || "__none__"} disabled={editFarmerSaving} onValueChange={v => setEditFarmerForm({ ...editFarmerForm, office_id: v === "__none__" ? "" : v })}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="__none__">—</SelectItem>{offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label>{t("photo")}</Label><Input type="file" accept="image/*" disabled={editFarmerSaving} onChange={e => setEditFarmerPhoto(e.target.files?.[0] ?? null)} /></div>
+                <div className="md:col-span-2"><Label>{t("address")}</Label><Input value={editFarmerForm.address ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, address: e.target.value })} /></div>
+              </div>
+              <div className="border-t pt-3">
+                <div className="text-xs font-semibold text-muted-foreground mb-2">{tx("Nominee Information", "নমিনির তথ্য")}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div><Label>{tx("Nominee Name", "নমিনির নাম")}</Label><Input value={editFarmerForm.nominee_name ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_name: e.target.value })} /></div>
+                  <div><Label>{tx("Nominee Mobile", "নমিনির মোবাইল")}</Label><Input value={editFarmerForm.nominee_mobile ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_mobile: e.target.value })} /></div>
+                  <div><Label>{tx("Relation", "সম্পর্ক")}</Label><Input value={editFarmerForm.nominee_relation ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_relation: e.target.value })} /></div>
+                  <div><Label>{tx("Nominee NID", "নমিনির এনআইডি")}</Label><Input value={editFarmerForm.nominee_nid ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_nid: e.target.value })} /></div>
+                  <div className="md:col-span-2"><Label>{tx("Nominee Address", "নমিনির ঠিকানা")}</Label><Input value={editFarmerForm.nominee_address ?? ""} disabled={editFarmerSaving} onChange={e => setEditFarmerForm({ ...editFarmerForm, nominee_address: e.target.value })} /></div>
+                </div>
+              </div>
+              <div className="border-t pt-3">
+                <div className="text-xs font-medium text-muted-foreground mb-2">{t("locationStrictHint")}</div>
+                <LocationPicker value={editFarmerForm} onChange={(loc) => { setEditFarmerForm({ ...editFarmerForm, ...loc }); setEditFarmerLocErr(null); }} errorLevel={(editFarmerLocErr?.level as any) ?? null} errorMessage={editFarmerLocErr?.message ?? null} labels={{ division: t("division"), district: t("district"), upazila: t("upazila"), village: t("village"), mouza: t("mouza") }} />
+              </div>
+              <DialogFooter><Button variant="outline" disabled={editFarmerSaving} onClick={() => setEditFarmerOpen(false)}>{t("cancel")}</Button><Button disabled={editFarmerSaving} onClick={saveFarmerEdit}>{editFarmerSaving ? "…" : t("save")}</Button></DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit land dialog */}
       <Dialog open={!!editLand} onOpenChange={(o) => { if (!o && !editSaving) { setEditLand(null); setEditLoc({}); setEditLocErr(null); } }}>
