@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -160,7 +160,19 @@ import ApiAssets from "./pages/ApiAssets";
 import ApiDashboard from "./pages/ApiDashboard";
 import { USE_API_BACKEND, LEGACY_TO_API } from "./lib/api/featureFlag";
 
-const queryClient = new QueryClient();
+// Returning to a background tab must not look like a page refresh or reset open forms.
+// Keep data stable on focus; explicit mutations/invalidations still refresh the needed lists.
+focusManager.setEventListener(() => () => {});
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 60_000,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
