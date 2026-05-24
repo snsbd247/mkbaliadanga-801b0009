@@ -5,7 +5,8 @@
 
 export type DemoModule =
   | "locations" | "settings" | "accounting" | "farmers"
-  | "irrigation" | "loans" | "savings" | "expenses";
+  | "irrigation" | "loans" | "savings" | "expenses"
+  | "bank" | "assets";
 
 export type DemoPreset = {
   id: string;
@@ -21,7 +22,7 @@ export type DemoPreset = {
 
 export const ALL_MODULES: DemoModule[] = [
   "locations", "settings", "accounting", "farmers",
-  "irrigation", "loans", "savings", "expenses",
+  "irrigation", "loans", "savings", "expenses", "bank", "assets",
 ];
 
 export const DEMO_PRESETS: DemoPreset[] = [
@@ -44,10 +45,10 @@ export const DEMO_PRESETS: DemoPreset[] = [
     description_bn: "পারফরম্যান্স টেস্ট — সব মডিউল, ২০০ ফার্মার",
   },
   {
-    id: "year_ops", label_en: "Seed 1-Year Operational Demo Data", label_bn: "১ বছরের অপারেশনাল ডেমো ডাটা (12 mo)",
+    id: "year_ops", label_en: "Full 1-Year Operational Demo (everything)", label_bn: "১ বছরের পূর্ণ অপারেশনাল ডেমো (সব কিছু)",
     size: 50, modules: ALL_MODULES, monthsBack: 12,
-    description_en: "Full year of monthly savings deposits, recurring expenses, bank txns, payments, loans + 2 irrigation seasons (Boro + previous Aman).",
-    description_bn: "১২ মাসের মাসিক সঞ্চয়, পুনরাবৃত্ত খরচ, ব্যাংক লেনদেন, পেমেন্ট, ঋণ + ২টি সেচ সিজন (Boro + আগের Aman)।",
+    description_en: "Full year of monthly savings, expenses, bank txns, payments, loan installments, irrigation invoices + assets module: purchases, monthly depreciation schedule, maintenance, movements & a disposal — produces realistic year-end reports.",
+    description_bn: "১২ মাসের মাসিক সঞ্চয়, খরচ, ব্যাংক লেনদেন, পেমেন্ট, ঋণ কিস্তি, সেচ ইনভয়েস + অ্যাসেট মডিউলের সব কিছু: ক্রয়, মাসিক অবচয়, রক্ষণাবেক্ষণ, মুভমেন্ট ও ডিসপোজাল — বাস্তবসম্মত বার্ষিক রিপোর্ট তৈরি করে।",
   },
   {
     id: "loans_only", label_en: "Loans Only", label_bn: "শুধু ঋণ",
@@ -128,6 +129,21 @@ export const MODULE_VERIFY: Record<DemoModule, ModuleVerifyEntry[]> = {
   ],
   expenses: [
     { table: "expenses", page: "/payments", page_label: "Payments / Expenses", required: true },
+  ],
+  bank: [
+    { table: "bank_accounts",      page: "/banking", page_label: "Bank Accounts",     required: true },
+    { table: "bank_transactions",  page: "/banking", page_label: "Bank Transactions", required: true },
+  ],
+  assets: [
+    { table: "asset_categories",            page: "/assets/categories",   page_label: "Asset Categories",    required: true },
+    { table: "assets",                      page: "/assets",              page_label: "Assets",              required: true },
+    { table: "asset_stocks",                page: "/assets/stocks",       page_label: "Asset Stocks",        required: true },
+    { table: "asset_purchases",             page: "/assets/purchases",    page_label: "Asset Purchases",     required: true },
+    { table: "asset_movements",             page: "/assets/movements",    page_label: "Asset Movements",     required: false },
+    { table: "asset_maintenance_logs",      page: "/assets/maintenance",  page_label: "Asset Maintenance",   required: false },
+    { table: "asset_depreciation_settings", page: "/assets/depreciation", page_label: "Depreciation Setup",  required: false },
+    { table: "asset_depreciation_schedule", page: "/assets/depreciation", page_label: "Depreciation Schedule", required: false },
+    { table: "asset_disposals",             page: "/assets/disposals",    page_label: "Asset Disposals",     required: false },
   ],
 };
 

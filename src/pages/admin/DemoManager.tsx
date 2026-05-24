@@ -32,6 +32,8 @@ const MODULE_KEYS = [
   { id: "loans", tk: "dmModLoans" },
   { id: "savings", tk: "dmModSavings" },
   { id: "expenses", tk: "dmModExpenses" },
+  { id: "bank", tk: "dmModBank" },
+  { id: "assets", tk: "dmModAssets" },
 ] as const;
 
 type Action = "reset" | "import" | "both";

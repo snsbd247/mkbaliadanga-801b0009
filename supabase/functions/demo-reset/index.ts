@@ -23,6 +23,13 @@ const FULL_WIPE_ORDER = [
   "cashbook_submissions",
   "farmer_notes",
   "land_change_log",
+  // Assets module (delete dependents first; assets last)
+  "asset_alerts", "asset_audit_logs", "asset_scan_logs",
+  "asset_damage_reports", "asset_disposals",
+  "asset_maintenance_schedules", "asset_maintenance_logs",
+  "asset_movements", "asset_installations", "asset_purchases",
+  "asset_depreciation_schedule", "asset_depreciation_settings",
+  "asset_stocks", "assets", "asset_categories",
   "journal_entry_lines", "journal_entries", "ledger_entries", "accounting_periods",
   "receipts", "receipt_counters", "receipt_settings",
   "sms_logs", "sms_office_settings", "sms_provider_secrets", "sms_settings",
@@ -789,6 +796,236 @@ async function seedExpenses(admin: any, officeId: string, monthsBack: number = 1
 }
 
 
+// ---- ASSETS module seeder ----
+// Seeds categories, assets, stock, purchases, monthly depreciation schedule,
+// maintenance logs, movements, installations and a disposal so the whole
+// Assets module + year-end depreciation reports light up.
+async function seedAssets(admin: any, officeId: string, monthsBack: number = 1) {
+  // Skip if already seeded for this office (idempotent)
+  const probe = await admin.from("assets").select("id").eq("office_id", officeId).limit(1);
+  if (probe.data && probe.data.length) {
+    return { categories: 0, assets: 0, purchases: 0, movements: 0, maintenance: 0, depreciation: 0, disposals: 0, skipped: true };
+  }
+
+  const today = new Date();
+  const dateAt = (m: number, d: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, d).toISOString().slice(0, 10);
+  const monthFirst = (m: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, 1).toISOString().slice(0, 10);
+
+  // 1) Categories
+  const catSpec = [
+    { code: "PUMP",   name_en: "Irrigation Pumps", name_bn: "সেচ পাম্প",      tracking_mode: "serial",   asset_type: "fixed_asset" },
+    { code: "MOTOR",  name_en: "Electric Motors",  name_bn: "ইলেকট্রিক মোটর", tracking_mode: "serial",   asset_type: "fixed_asset" },
+    { code: "PIPE",   name_en: "Pipes & Fittings", name_bn: "পাইপ ও ফিটিং",   tracking_mode: "quantity", asset_type: "consumable" },
+    { code: "SPARE",  name_en: "Spare Parts",      name_bn: "যন্ত্রাংশ",       tracking_mode: "quantity", asset_type: "inventory" },
+  ];
+  const { data: cats, error: catErr } = await admin.from("asset_categories")
+    .insert(catSpec.map((c) => ({ office_id: officeId, code: c.code, name_en: c.name_en, name_bn: c.name_bn, tracking_mode: c.tracking_mode, is_active: true })))
+    .select("id, code");
+  if (catErr) throw new Error(`asset_categories: ${catErr.message}`);
+  const catMap: Record<string, string> = {};
+  for (const c of (cats ?? [])) catMap[c.code] = c.id;
+
+  // 2) Assets (mix of fixed + consumable + inventory)
+  const assetSpec: any[] = [
+    { code: "PMP-001", cat: "PUMP",  name_en: "Centrifugal Pump 5HP",  name_bn: "সেন্ট্রিফিউগাল পাম্প ৫HP",  tracking: "serial",   type: "fixed_asset", price: 65000, life: 60, salvage: 5000, unit: "pcs",  qty: 1 },
+    { code: "PMP-002", cat: "PUMP",  name_en: "Submersible Pump 3HP",  name_bn: "সাবমার্সিবল পাম্প ৩HP",     tracking: "serial",   type: "fixed_asset", price: 48000, life: 60, salvage: 4000, unit: "pcs",  qty: 1 },
+    { code: "MOT-001", cat: "MOTOR", name_en: "Electric Motor 5HP",    name_bn: "ইলেকট্রিক মোটর ৫HP",       tracking: "serial",   type: "fixed_asset", price: 32000, life: 72, salvage: 2500, unit: "pcs",  qty: 1 },
+    { code: "MOT-002", cat: "MOTOR", name_en: "Electric Motor 3HP (old)", name_bn: "পুরাতন মোটর ৩HP",     tracking: "serial",   type: "fixed_asset", price: 22000, life: 60, salvage: 1500, unit: "pcs",  qty: 1, retire: true },
+    { code: "PIPE-PVC-4", cat: "PIPE", name_en: "PVC Pipe 4 inch",     name_bn: "পিভিসি পাইপ ৪ ইঞ্চি",     tracking: "quantity", type: "consumable",  price: 320,   life: 0,  salvage: 0,    unit: "ft",   qty: 500 },
+    { code: "PIPE-PVC-6", cat: "PIPE", name_en: "PVC Pipe 6 inch",     name_bn: "পিভিসি পাইপ ৬ ইঞ্চি",     tracking: "quantity", type: "consumable",  price: 520,   life: 0,  salvage: 0,    unit: "ft",   qty: 300 },
+    { code: "SPR-IMP-01", cat: "SPARE", name_en: "Pump Impeller",       name_bn: "পাম্প ইমপেলার",            tracking: "quantity", type: "inventory",   price: 1800,  life: 0,  salvage: 0,    unit: "pcs",  qty: 12 },
+    { code: "SPR-BRG-01", cat: "SPARE", name_en: "Motor Bearing Set",   name_bn: "মোটর বিয়ারিং সেট",        tracking: "quantity", type: "inventory",   price: 950,   life: 0,  salvage: 0,    unit: "set",  qty: 20 },
+  ];
+
+  const assetRows = assetSpec.map((a, i) => ({
+    office_id: officeId,
+    asset_category_id: catMap[a.cat],
+    asset_code: a.code,
+    serial_no: a.tracking === "serial" ? `SN-${a.code}-${1000 + i}` : null,
+    name_en: a.name_en,
+    name_bn: a.name_bn,
+    tracking_mode: a.tracking,
+    asset_type: a.type,
+    unit: a.unit,
+    purchase_price: a.price,
+    current_status: a.retire ? "disposed" : (a.tracking === "serial" ? "installed" : "in_stock"),
+    min_stock_level: a.tracking === "quantity" ? Math.max(5, Math.floor(a.qty * 0.1)) : 0,
+  }));
+  const { data: assets, error: aErr } = await admin.from("assets").insert(assetRows).select("id, asset_code, purchase_price, asset_type, tracking_mode");
+  if (aErr) throw new Error(`assets: ${aErr.message}`);
+  const A: Record<string, any> = {};
+  for (const x of (assets ?? [])) A[x.asset_code] = x;
+
+  // 3) Stocks
+  const stockRows = assetSpec.map((a) => ({
+    office_id: officeId, asset_id: A[a.code].id, location_id: null,
+    quantity: a.retire ? 0 : a.qty,
+  }));
+  await admin.from("asset_stocks").insert(stockRows);
+
+  // 4) Purchases — for fixed assets at the very start of window;
+  // consumables/inventory get monthly small restocks across the window.
+  const purchases: any[] = [];
+  let invSeq = 1;
+  const startMonth = Math.max(1, monthsBack);
+  for (const a of assetSpec) {
+    if (a.type === "fixed_asset") {
+      purchases.push({
+        office_id: officeId, asset_id: A[a.code].id,
+        purchase_date: dateAt(startMonth - 1, 5),
+        quantity: 1, unit_price: a.price, total_amount: a.price,
+        supplier: "Demo Supplier Co.", invoice_no: `PO-${1000 + invSeq++}`,
+        payment_method: "bank", notes: "Demo initial purchase",
+      });
+    } else if (monthsBack > 1) {
+      // monthly small restock every 2-3 months
+      for (let m = monthsBack - 1; m >= 0; m -= 3) {
+        const restockQty = Math.max(10, Math.floor(a.qty / 4));
+        purchases.push({
+          office_id: officeId, asset_id: A[a.code].id,
+          purchase_date: dateAt(m, 8),
+          quantity: restockQty, unit_price: a.price, total_amount: a.price * restockQty,
+          supplier: "Demo Supplier Co.", invoice_no: `PO-${1000 + invSeq++}`,
+          payment_method: "cash", notes: "Demo periodic restock",
+        });
+      }
+    } else {
+      purchases.push({
+        office_id: officeId, asset_id: A[a.code].id,
+        purchase_date: dateAt(0, 5),
+        quantity: a.qty, unit_price: a.price, total_amount: a.price * a.qty,
+        supplier: "Demo Supplier Co.", invoice_no: `PO-${1000 + invSeq++}`,
+        payment_method: "cash", notes: "Demo purchase",
+      });
+    }
+  }
+  if (purchases.length) {
+    const { error } = await admin.from("asset_purchases").insert(purchases);
+    if (error) throw new Error(`asset_purchases: ${error.message}`);
+  }
+
+  // 5) Installations — for fixed (serial) assets, install around purchase date
+  const installs = assetSpec
+    .filter((a) => a.tracking === "serial" && !a.retire)
+    .map((a) => ({
+      office_id: officeId, asset_id: A[a.code].id, location_id: null,
+      location_name: "Pump House #1", install_date: dateAt(Math.max(0, startMonth - 1), 10),
+      condition_status: "good", remarks: "Demo installation",
+    }));
+  if (installs.length) await admin.from("asset_installations").insert(installs);
+
+  // 6) Movements — monthly small movements for consumables
+  const movements: any[] = [];
+  if (monthsBack > 1) {
+    for (const a of assetSpec.filter((x) => x.tracking === "quantity")) {
+      for (let m = monthsBack - 1; m >= 0; m--) {
+        if (m % 2 !== 0) continue;
+        movements.push({
+          office_id: officeId, asset_id: A[a.code].id, movement_date: dateAt(m, 15),
+          from_location_id: null, to_location_id: null,
+          quantity: Math.max(5, Math.floor(a.qty / 10)),
+          remarks: `Demo site delivery (${a.name_en})`,
+          approval_status: "approved", applied: true,
+        });
+      }
+    }
+  }
+  if (movements.length) await admin.from("asset_movements").insert(movements);
+
+  // 7) Maintenance — quarterly for each fixed asset
+  const maint: any[] = [];
+  for (const a of assetSpec.filter((x) => x.type === "fixed_asset" && !x.retire)) {
+    const every = monthsBack >= 6 ? 3 : Math.max(1, Math.floor(monthsBack / 2));
+    for (let m = monthsBack - 1; m >= 0; m -= every) {
+      maint.push({
+        office_id: officeId, asset_id: A[a.code].id,
+        maintenance_date: dateAt(m, 20), vendor: "Demo Service Center",
+        cost: 800 + (m * 50), downtime_days: 1, status: "completed",
+        remarks: `Routine maintenance — ${a.name_en}`,
+      });
+    }
+  }
+  if (maint.length) await admin.from("asset_maintenance_logs").insert(maint);
+
+  // 8) Depreciation settings + monthly schedule for fixed assets
+  const depSettings = assetSpec
+    .filter((a) => a.type === "fixed_asset" && a.life > 0)
+    .map((a) => ({
+      office_id: officeId, asset_id: A[a.code].id,
+      method: "straight_line", useful_life_months: a.life,
+      salvage_value: a.salvage, wdv_rate_pct: 0,
+      start_on: dateAt(Math.max(0, startMonth - 1), 1),
+      expense_account_code: "5410", accum_account_code: "1610", is_active: true,
+    }));
+  if (depSettings.length) {
+    const { error } = await admin.from("asset_depreciation_settings").insert(depSettings);
+    if (error) throw new Error(`asset_depreciation_settings: ${error.message}`);
+  }
+
+  // Generate monthly schedule rows for last `monthsBack` months (pending — no journal posted)
+  const schedule: any[] = [];
+  for (const a of assetSpec.filter((x) => x.type === "fixed_asset" && x.life > 0)) {
+    const monthly = +(((a.price - a.salvage) / a.life)).toFixed(2);
+    let opening = a.price;
+    let accum = 0;
+    const months = Math.min(monthsBack, a.life);
+    for (let m = months - 1; m >= 0; m--) {
+      accum = +(accum + monthly).toFixed(2);
+      const closing = +(opening - monthly).toFixed(2);
+      schedule.push({
+        office_id: officeId, asset_id: A[a.code].id,
+        period_month: monthFirst(m),
+        opening_book_value: opening,
+        depreciation_amount: monthly,
+        accumulated_depreciation: accum,
+        closing_book_value: closing,
+        status: "pending",
+      });
+      opening = closing;
+    }
+  }
+  if (schedule.length) {
+    const { error } = await admin.from("asset_depreciation_schedule").insert(schedule);
+    if (error) throw new Error(`asset_depreciation_schedule: ${error.message}`);
+  }
+
+  // 9) Disposal — retire one old asset at end of window (sale below book value → loss)
+  const disposals: any[] = [];
+  for (const a of assetSpec.filter((x) => x.retire)) {
+    const monthsDep = Math.min(monthsBack, a.life);
+    const accumDep = +(((a.price - a.salvage) / a.life) * monthsDep).toFixed(2);
+    const bookValue = Math.max(a.salvage, +(a.price - accumDep).toFixed(2));
+    const saleAmount = Math.max(500, Math.floor(bookValue * 0.4));
+    disposals.push({
+      office_id: officeId, asset_id: A[a.code].id,
+      disposal_date: dateAt(0, 25), method: "scrap_sale",
+      sale_amount: saleAmount, book_value: bookValue,
+      gain_loss: +(saleAmount - bookValue).toFixed(2),
+      remarks: "Demo: old unit scrapped",
+    });
+  }
+  if (disposals.length) {
+    const { error } = await admin.from("asset_disposals").insert(disposals);
+    if (error) throw new Error(`asset_disposals: ${error.message}`);
+  }
+
+  return {
+    categories: catSpec.length,
+    assets: assetSpec.length,
+    purchases: purchases.length,
+    movements: movements.length,
+    maintenance: maint.length,
+    depreciation: schedule.length,
+    disposals: disposals.length,
+    skipped: false,
+  };
+}
+
+
+
+
 async function seedAccounts(admin: any) {
   // Codes MUST match what ledger triggers (_acct) look up.
   // Triggers reference: 1010 (cash), 1040 (loans receivable), 2010 (savings payable),
@@ -798,6 +1035,8 @@ async function seedAccounts(admin: any) {
     { code: "1010", name: "Cash", type: "asset", is_system: true },
     { code: "1020", name: "Bank", type: "asset", is_system: true },
     { code: "1040", name: "Loans Receivable", type: "asset", is_system: true },
+    { code: "1600", name: "Fixed Assets", type: "asset", is_system: false },
+    { code: "1610", name: "Accumulated Depreciation", type: "asset", is_system: false },
     { code: "2010", name: "Savings Payable", type: "liability", is_system: true },
     { code: "3020", name: "Share Capital", type: "equity", is_system: true },
     { code: "4010", name: "Irrigation Income", type: "income", is_system: true },
@@ -807,6 +1046,7 @@ async function seedAccounts(admin: any) {
     { code: "5030", name: "Salary", type: "expense", is_system: true },
     { code: "5040", name: "Repair", type: "expense", is_system: true },
     { code: "5090", name: "Other Expenses", type: "expense", is_system: true },
+    { code: "5410", name: "Depreciation Expense", type: "expense", is_system: false },
   ];
   const { error } = await admin.from("accounts").upsert(accts, { onConflict: "code" });
   if (error) throw error;
@@ -932,6 +1172,13 @@ function estimateImport(modules: string[], size: number) {
   if (modules.includes("irrigation") && modules.includes("farmers")) c["irrigation_due_promises"] = 5;
   if (modules.includes("expenses")) c["expenses"] = 3;
   if (modules.includes("bank")) { c["bank_accounts"] = 3; c["bank_transactions"] = 6; }
+  if (modules.includes("assets")) {
+    c["asset_categories"] = 4; c["assets"] = 8; c["asset_stocks"] = 8;
+    c["asset_purchases"] = 8; c["asset_installations"] = 3;
+    c["asset_movements"] = 12; c["asset_maintenance_logs"] = 12;
+    c["asset_depreciation_settings"] = 4; c["asset_depreciation_schedule"] = 48;
+    c["asset_disposals"] = 1;
+  }
   if (modules.includes("farmers")) c["farmer_notes"] = 10;
   return c;
 }
@@ -990,6 +1237,21 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
   expenses: [
     { table: "expenses", page: "/payments", page_label: "Payments / Expenses", required: true },
   ],
+  bank: [
+    { table: "bank_accounts",     page: "/banking", page_label: "Bank Accounts",     required: true },
+    { table: "bank_transactions", page: "/banking", page_label: "Bank Transactions", required: true },
+  ],
+  assets: [
+    { table: "asset_categories",            page: "/assets/categories",   page_label: "Asset Categories",      required: true },
+    { table: "assets",                      page: "/assets",              page_label: "Assets",                required: true },
+    { table: "asset_stocks",                page: "/assets/stocks",       page_label: "Asset Stocks",          required: true },
+    { table: "asset_purchases",             page: "/assets/purchases",    page_label: "Asset Purchases",       required: true },
+    { table: "asset_movements",             page: "/assets/movements",    page_label: "Asset Movements",       required: false },
+    { table: "asset_maintenance_logs",      page: "/assets/maintenance",  page_label: "Asset Maintenance",     required: false },
+    { table: "asset_depreciation_settings", page: "/assets/depreciation", page_label: "Depreciation Setup",    required: false },
+    { table: "asset_depreciation_schedule", page: "/assets/depreciation", page_label: "Depreciation Schedule", required: false },
+    { table: "asset_disposals",             page: "/assets/disposals",    page_label: "Asset Disposals",       required: false },
+  ],
 };
 
 async function verifyRowCounts(admin: any, modules: string[]) {
@@ -1015,14 +1277,14 @@ async function verifyRowCounts(admin: any, modules: string[]) {
 
 // ---- Preset definitions (mirrors src/lib/demoPresets.ts) ----
 const PRESETS: Record<string, { size: number; modules: string[]; monthsBack?: number }> = {
-  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
-  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
-  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
-  year_ops:        { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"], monthsBack: 12 },
+  small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"] },
+  medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"] },
+  large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"] },
+  year_ops:        { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"], monthsBack: 12 },
   loans_only:      { size: 50,  modules: ["locations","settings","accounting","farmers","loans"] },
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
-  recent_features: { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"], monthsBack: 2 },
+  recent_features: { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"], monthsBack: 2 },
 };
 
 
@@ -1146,6 +1408,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: `খরচ seed${monthsBack > 1 ? ` (${monthsBack} মাস পুনরাবৃত্ত)` : ""}`, fn: async () => { summary.expenses = await seedExpenses(admin, officeId, monthsBack); }});
           if (modules.includes("accounting")) steps.push({ key: "accounting_period", label: "চলতি অর্থবছরের পিরিয়ড open", fn: async () => { await seedAccountingPeriod(admin, officeId); }});
           if (modules.includes("bank")) steps.push({ key: "bank", label: `ব্যাংক একাউন্ট ও লেনদেন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { const b = await seedBankAccounts(admin, officeId, monthsBack); summary.bank = b; }});
+          if (modules.includes("assets")) steps.push({ key: "assets", label: `অ্যাসেট মডিউল seed${monthsBack > 1 ? ` (${monthsBack} মাস অবচয় + maintenance + movement)` : ""}`, fn: async () => { summary.assets = await seedAssets(admin, officeId, monthsBack); }});
           if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
 
