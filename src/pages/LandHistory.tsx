@@ -94,12 +94,12 @@ export default function LandHistory() {
                     <SelectContent>{SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Mouza</Label><Input value={f.mouza} onChange={e => setF({ ...f, mouza: e.target.value })} /></div>
-                <div><Label>Dag No</Label><Input value={f.dag_no} onChange={e => setF({ ...f, dag_no: e.target.value })} /></div>
-                <div><Label>Land Size (শতক)</Label><Input type="number" step="0.001" value={f.land_size || ""} onChange={e => setF({ ...f, land_size: +e.target.value })} /></div>
+                <div><Label>Mouza</Label><Input value={f.mouza} onChange={e => setF({ ...f, mouza: e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit Mouza" : undefined} /></div>
+                <div><Label>Dag No</Label><Input value={f.dag_no} onChange={e => setF({ ...f, dag_no: e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit Dag No" : undefined} /></div>
+                <div><Label>Land Size (শতক)</Label><Input type="number" step="0.001" value={f.land_size || ""} onChange={e => setF({ ...f, land_size: +e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit land size" : undefined} /></div>
                 <div><Label>Owner Type</Label>
-                  <Select value={f.owner_type} onValueChange={v => setF({ ...f, owner_type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select value={f.owner_type} onValueChange={v => setF({ ...f, owner_type: v })} disabled={!isAdmin}>
+                    <SelectTrigger title={!isAdmin ? "Only admin can change owner type" : undefined}><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="owner">নিজস্ব (Owner)</SelectItem>
                       <SelectItem value="borga">বর্গা (Borga)</SelectItem>
@@ -107,6 +107,11 @@ export default function LandHistory() {
                     </SelectContent>
                   </Select>
                 </div>
+                {!isAdmin && (
+                  <div className="col-span-2 text-[11px] text-muted-foreground">
+                    মৌজা/দাগ/জমি/মালিকানা পরিবর্তন শুধু অ্যাডমিনের জন্য সংরক্ষিত।
+                  </div>
+                )}
                 <div className="col-span-2"><Label>Cultivator (if different)</Label>
                   <Select value={f.cultivator_farmer_id} onValueChange={v => setF({ ...f, cultivator_farmer_id: v })}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
