@@ -1244,9 +1244,10 @@ Deno.serve(async (req) => {
       ? body.customNames.filter((r: any) => r && typeof r.en === "string" && r.en.trim()).slice(0, 1000)
       : undefined;
 
-    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId);
+    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId, monthsBack);
 
-    const resp = await runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId);
+    const resp = await runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId, monthsBack);
+
     const text = await resp.text();
     return json({ ok: true, log: text.split("\n").filter(Boolean).map((l) => JSON.parse(l)) });
   } catch (e: any) {
