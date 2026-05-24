@@ -3347,7 +3347,17 @@ export const translations = {
     mouzasTab: "মৌজা",
     farmerIdCol: "কৃষক আইডি",
     issueCol: "সমস্যা",
+    landHistory: "ভূমির ইতিহাস",
+    temporaryLoans: "অস্থায়ী ঋণ",
+    bankAccounts: "ব্যাংক অ্যাকাউন্ট",
+    vouchers: "ভাউচার",
+    publicPaymentRequests: "পাবলিক পেমেন্ট অনুরোধ",
+    paymentReconciliation: "পেমেন্ট রিকনসিলিয়েশন",
+    cultivationHistoryReport: "চাষাবাদের তথ্য",
+    loanHistoryReport: "ঋণ ইতিহাস",
+    irrigationCategoryReport: "সেচ ক্যাটেগরি",
   },
+
 } as const;
 
 export type TranslationKey = keyof typeof translations.en;
