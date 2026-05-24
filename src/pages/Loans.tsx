@@ -112,6 +112,21 @@ export default function Loans() {
         "আগের লোন এখনও পরিশোধ হয়নি। নতুন লোন ইস্যুর আগে বর্তমান লোন পরিশোধ করুন।",
       ));
     }
+    // Duplicate-loan guard: same farmer + same principal + same issued_on within active loans
+    const { data: dupes } = await supabase
+      .from("loans")
+      .select("id")
+      .eq("farmer_id", form.farmer_id)
+      .eq("principal", form.principal)
+      .eq("issued_on", form.issued_on)
+      .is("deleted_at", null);
+    if ((dupes ?? []).length > 0) {
+      const ok = window.confirm(tx(
+        "A loan with the same amount and issue date already exists for this farmer. Create anyway?",
+        "এই কৃষকের একই পরিমাণ ও তারিখে ইতিমধ্যে একটি ঋণ আছে। তারপরও তৈরি করবেন?",
+      ));
+      if (!ok) return;
+    }
     const plan = plans.find((p: any) => p.id === form.plan_id);
     const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
     const total_payable = form.principal * (1 + interest_rate / 100);
