@@ -159,7 +159,7 @@ export default function Loans() {
       body: t("loanRequestedBody").replace("{name}", farmer?.name_en ?? "").replace("{amount}", String(form.principal)),
       link: "/loans",
     });
-    toast.success(t("saved")); setOpen(false); load();
+    toast.success(t("saved")); createGuard.clear(); setFormErrors([]); setOpen(false); load();
   }
   async function decide(id: string, status: "approved" | "rejected") {
     const { error } = await supabase.from("loans").update({ status, approved_by: user?.id, updated_at: new Date().toISOString() }).eq("id", id);
