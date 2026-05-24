@@ -761,7 +761,7 @@ export default function Payments() {
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>Receipt #</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
             <TableBody>
               {list.map(p => (
-                <TableRow key={p.id}>
+                <TableRow key={p.id} data-payment-row={p.id}>
                   <TableCell>{fmtDate(p.created_at)}</TableCell>
                   <TableCell className="font-mono text-xs">{p.receipt_no ?? "—"}</TableCell>
                   <TableCell className="max-w-[220px]"><TruncateText>{p.farmers?.name_en}</TruncateText> <span className="text-xs text-muted-foreground">({p.farmers?.farmer_code})</span></TableCell>
@@ -896,7 +896,7 @@ export default function Payments() {
                             verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
                           }, copy, receiptArgs.options);
                         };
-                        return <ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} />;
+                        return <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} /></span>;
                       })()}
                     </div>
                   </TableCell>
