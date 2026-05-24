@@ -733,6 +733,16 @@ export default function Payments() {
               <Input type="file" accept="image/*,application/pdf" onChange={e => setReceiptFile(e.target.files?.[0] ?? null)} />
               {receiptFile && <p className="text-xs text-muted-foreground mt-1">{receiptFile.name}</p>}
             </div>
+            <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+              <Switch
+                checked={autoDownload}
+                onCheckedChange={(v) => {
+                  setAutoDownload(!!v);
+                  try { localStorage.setItem("payments:autoDl", v ? "1" : "0"); } catch {}
+                }}
+              />
+              <span>{tx("Auto-download receipt after save", "সংরক্ষণের পর রসিদ স্বয়ংক্রিয় ডাউনলোড")}</span>
+            </label>
             <Button className="w-full" onClick={pay} disabled={submitting}>
               {submitting ? "Processing…" : t("payNow")}
             </Button>
