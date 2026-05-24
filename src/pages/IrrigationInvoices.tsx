@@ -390,6 +390,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <p className="text-sm text-muted-foreground">{filtered.length} {tx("invoices", "টি ইনভয়েস")} {loading && tx("(loading…)", "(লোড হচ্ছে…)")}</p>
           <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant={showFarmerSummary ? "default" : "outline"} onClick={() => setShowFarmerSummary(v => !v)}>
+              {showFarmerSummary ? tx("Hide farmer summary", "ফার্মার সারাংশ লুকান") : tx("Farmer-wise summary", "ফার্মার-ভিত্তিক সারাংশ")}
+            </Button>
             <Button size="sm" variant="outline" onClick={() => exportInvoicesCSV(filtered, "irrigation-invoices.csv", lang)} disabled={!filtered.length}>
               <FileDown className="h-4 w-4 mr-1" /> CSV
             </Button>
@@ -398,6 +401,40 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             </Button>
           </div>
         </div>
+
+        {showFarmerSummary && (
+          <div className="rounded-md border bg-muted/20 p-3 space-y-2">
+            <div className="text-sm font-semibold">
+              {tx("Farmer-wise outstanding (from filtered invoices)", "ফার্মার-ভিত্তিক বকেয়া (ফিল্টার করা ইনভয়েস থেকে)")}
+              <span className="ml-2 text-xs text-muted-foreground">
+                {tx("Total due", "মোট বকেয়া")}: <span className="font-mono font-semibold text-foreground">{money(farmerSummary.reduce((s, x) => s + x.due, 0))}</span>
+              </span>
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
+                  <TableHead className="text-right">{tx("Invoices", "ইনভয়েস")}</TableHead>
+                  <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
+                  <TableHead className="text-right">{tx("Paid", "পরিশোধিত")}</TableHead>
+                  <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {farmerSummary.slice(0, 100).map(f => (
+                    <TableRow key={f.id}>
+                      <TableCell>{f.name} <span className="text-xs text-muted-foreground">({f.code})</span></TableCell>
+                      <TableCell className="text-right">{f.count}</TableCell>
+                      <TableCell className="text-right font-mono">{money(f.payable)}</TableCell>
+                      <TableCell className="text-right font-mono">{money(f.paid)}</TableCell>
+                      <TableCell className={`text-right font-mono font-semibold ${f.due > 0 ? "text-destructive" : ""}`}>{money(f.due)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
 
         {selected.size > 0 && (
           <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2 flex-wrap">
