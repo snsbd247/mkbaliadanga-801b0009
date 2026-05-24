@@ -94,7 +94,7 @@ export default function PublicPaymentIntents() {
         description="অনলাইন পোর্টালের মাধ্যমে জমা দেওয়া পেমেন্ট অনুরোধ"
         actions={
           <div className="flex items-center gap-2">
-            <Link to="/pay" target="_blank" className="text-xs text-primary inline-flex items-center gap-1">পাবলিক পোর্টাল <ExternalLink className="h-3 w-3" /></Link>
+            <Link to="/farmer/dashboard" target="_blank" className="text-xs text-primary inline-flex items-center gap-1">কৃষক পোর্টাল <ExternalLink className="h-3 w-3" /></Link>
             <Button size="sm" variant="outline" onClick={exportCsv} disabled={!filtered.length}>
               <Download className="h-4 w-4 mr-1" />CSV
             </Button>
