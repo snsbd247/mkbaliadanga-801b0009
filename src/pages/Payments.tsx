@@ -337,6 +337,7 @@ export default function Payments() {
       }
 
       toast.success(status === "pending" ? "Submitted for approval" : t("paymentSuccess"));
+      if (autoDownload && status === "approved") setPendingAutoId(inserted.id);
       resetForm();
       load();
     } finally {
