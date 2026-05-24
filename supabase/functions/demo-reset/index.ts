@@ -1395,10 +1395,18 @@ function estimateImport(modules: string[], size: number) {
     c["asset_categories"] = 4; c["assets"] = 8; c["asset_stocks"] = 8;
     c["asset_purchases"] = 8; c["asset_installations"] = 3;
     c["asset_movements"] = 12; c["asset_maintenance_logs"] = 12;
+    c["asset_maintenance_schedules"] = 3;
     c["asset_depreciation_settings"] = 4; c["asset_depreciation_schedule"] = 48;
     c["asset_disposals"] = 1;
+    c["asset_alerts"] = 4; c["asset_damage_reports"] = 2;
+    c["asset_scan_logs"] = 12; c["asset_audit_logs"] = 9;
   }
-  if (modules.includes("farmers")) c["farmer_notes"] = 10;
+  if (modules.includes("farmers")) {
+    c["farmer_notes"] = 10;
+    c["land_history"] = size;
+    c["voter_audit_logs"] = 5;
+    c["public_payment_intents"] = 8;
+  }
   return c;
 }
 
