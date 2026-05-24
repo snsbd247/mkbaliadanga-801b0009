@@ -30,6 +30,8 @@ import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
+import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
+import { getTodayMethodSummary, type MethodSummary } from "@/lib/paymentMethodSummary";
 
 type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
 
