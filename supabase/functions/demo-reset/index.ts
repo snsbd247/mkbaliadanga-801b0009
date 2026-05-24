@@ -1043,23 +1043,24 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               if (seasonId) summary.irrigation_invoices = await seedIrrigationInvoices(admin, officeId, seasonId, landTypes);
             }});
           }
-          if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed (শুধু ভোটার)", fn: async () => {
+          if (modules.includes("loans")) steps.push({ key: "loans", label: `ঋণ seed (শুধু ভোটার${monthsBack > 1 ? ` — ${monthsBack} মাস ছড়ানো` : ""})`, fn: async () => {
             if (!farmers.length) return;
-            const ids = await seedLoans(admin, officeId, farmers);
+            const ids = await seedLoans(admin, officeId, farmers, monthsBack);
             ids.forEach((x) => loanFarmerIds.add(x));
           }});
-          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় + শেয়ার + প্ল্যান এনরোলমেন্ট seed (শুধু ভোটার)", fn: async () => {
+          if (modules.includes("savings")) steps.push({ key: "savings", label: `সঞ্চয় + শেয়ার + প্ল্যান এনরোলমেন্ট seed${monthsBack > 1 ? ` (${monthsBack} মাস মাসিক ডিপোজিট)` : ""}`, fn: async () => {
             if (!farmers.length) return;
-            const out = await seedSavings(admin, officeId, farmers);
+            const out = await seedSavings(admin, officeId, farmers, monthsBack);
             out.savingsSeeded.forEach((x) => savingsFarmerIds.add(x));
             out.sharesSeeded.forEach((x) => sharesFarmerIds.add(x));
             out.fspSeeded.forEach((x) => fspFarmerIds.add(x));
           }});
-          if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
+          if (modules.includes("expenses")) steps.push({ key: "expenses", label: `খরচ seed${monthsBack > 1 ? ` (${monthsBack} মাস পুনরাবৃত্ত)` : ""}`, fn: async () => { summary.expenses = await seedExpenses(admin, officeId, monthsBack); }});
           if (modules.includes("accounting")) steps.push({ key: "accounting_period", label: "চলতি অর্থবছরের পিরিয়ড open", fn: async () => { await seedAccountingPeriod(admin, officeId); }});
-          if (modules.includes("bank")) steps.push({ key: "bank", label: "ব্যাংক একাউন্ট ও লেনদেন seed", fn: async () => { const b = await seedBankAccounts(admin, officeId); summary.bank = b; }});
+          if (modules.includes("bank")) steps.push({ key: "bank", label: `ব্যাংক একাউন্ট ও লেনদেন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { const b = await seedBankAccounts(admin, officeId, monthsBack); summary.bank = b; }});
           if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
+
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
           }
