@@ -61,10 +61,15 @@ Deno.serve(async (req) => {
       admin.from("irrigation_invoices")
         .select("id, invoice_no, generated_at, due_date, payable_amount, paid_amount, due_amount, invoice_status, season_rate, land_type_name, is_borga, is_manual_rate, seasons(name,year,type), lands(dag_no,mouza,land_size)")
         .eq("farmer_id", farmerId).is("deleted_at", null).order("generated_at", { ascending: false }).limit(200),
-      admin.from("public_payment_intents")
-        .select("id, amount, allocation_hint, note, status, created_at, processed_at")
-        .order("created_at", { ascending: false }).limit(100),
     ]);
+
+    const farmerCodeForIntents = farmerRes.data?.farmer_code ?? null;
+    const intentsRes = farmerCodeForIntents
+      ? await admin.from("public_payment_intents")
+          .select("id, amount, allocation_hint, note, status, created_at, processed_at")
+          .eq("farmer_code", farmerCodeForIntents)
+          .order("created_at", { ascending: false }).limit(100)
+      : { data: [] as any[] };
 
     const farmer = farmerRes.data;
     if (!farmer) return unauthorized();
