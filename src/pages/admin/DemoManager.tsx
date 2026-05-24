@@ -49,9 +49,9 @@ export default function DemoManager() {
 
   // voter config
   const [voterRatio, setVoterRatio] = useState(3);
-  // account_number must be 12–14 numeric digits (DB trigger farmers_validate_identifiers)
-  const [voterNumberFormat, setVoterNumberFormat] = useState("{seq:8}");
-  const [accountNumberFormat, setAccountNumberFormat] = useState("{year}{seq:9}");
+  // Farmer code, voter number, and account number are all the same 5-digit value.
+  const [voterNumberFormat, setVoterNumberFormat] = useState("{seq:5}");
+  const [accountNumberFormat, setAccountNumberFormat] = useState("{seq:5}");
 
   // progress
   const [progress, setProgress] = useState(0);
