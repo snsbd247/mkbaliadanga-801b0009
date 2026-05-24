@@ -260,7 +260,7 @@ export default function CombinedPayment() {
       } catch { /* QR failure must not block printing */ }
     }
     // Signature
-    const sigY = ry + 24;
+    const sigY = ry + (lastReceipt.verifyUrl ? 44 : 24);
     doc.setDrawColor(120); doc.line(pageW - margin - 50, sigY, pageW - margin, sigY);
     doc.setFontSize(8); doc.setTextColor(110);
     doc.text("Authorised signature", pageW - margin - 25, sigY + 4, { align: "center" });
@@ -271,18 +271,19 @@ export default function CombinedPayment() {
     <>
       <PageHeader
         title={lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"}
-        description={lang === "bn" ? "সঞ্চয় + শেয়ার + ঋণ একসাথে গ্রহণ" : "Collect Savings + Share + Loan together"}
+        description={lang === "bn" ? "সঞ্চয় + শেয়ার + ঋণ + সেচ একসাথে গ্রহণ" : "Collect Savings + Share + Loan + Irrigation together"}
       />
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="p-4 space-y-3">
-          <div>
+        <Card className="p-4 space-y-3" onKeyDown={preventEnterSubmit}>
+          <FormErrorSummary errors={formErrors} onFocusField={focusField} />
+          <div ref={registerField("farmer")}>
             <Label>{lang === "bn" ? "কৃষক" : "Farmer"} *</Label>
             <FarmerSearchSelect
               value={form.farmer_id}
-              onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_amt: 0 })}
+              onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_amt: 0, irrigation: 0 })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" ref={registerField("amounts")}>
             <div>
               <Label>{lang === "bn" ? "সঞ্চয় (৳)" : "Savings (৳)"}</Label>
               <Input type="number" min={0} step="0.01" value={form.savings}
@@ -295,7 +296,7 @@ export default function CombinedPayment() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div ref={registerField("loan")}>
               <Label>{lang === "bn" ? "ঋণ" : "Loan"}</Label>
               <Select value={form.loan_id || "none"}
                       onValueChange={(v) => setForm({ ...form, loan_id: v === "none" ? "" : v })}>
@@ -310,7 +311,7 @@ export default function CombinedPayment() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div ref={registerField("loan_amt")}>
               <Label>{lang === "bn" ? "ঋণ পরিশোধ (৳)" : "Loan Repayment (৳)"}</Label>
               <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_amt}
                      aria-invalid={loanExceeds || undefined}
@@ -323,6 +324,28 @@ export default function CombinedPayment() {
               )}
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div ref={registerField("irrigation")}>
+              <Label>{lang === "bn" ? "সেচ পেমেন্ট (৳)" : "Irrigation Payment (৳)"}</Label>
+              <Input type="number" min={0} step="0.01" value={form.irrigation}
+                     aria-invalid={Number(form.irrigation) > irrigationDue || undefined}
+                     onChange={(e) => setForm({ ...form, irrigation: Number(e.target.value) || 0 })} />
+              <div className={`text-xs mt-1 ${Number(form.irrigation) > irrigationDue ? "text-destructive" : "text-muted-foreground"}`}>
+                {lang === "bn" ? "সেচ বকেয়া" : "Irrigation due"}: {money(irrigationDue)}
+              </div>
+            </div>
+            <div>
+              <Label>{lang === "bn" ? "পেমেন্ট মাধ্যম" : "Payment Method"}</Label>
+              <Select value={form.method} onValueChange={(v) => setForm({ ...form, method: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">{lang === "bn" ? "নগদ" : "Cash"}</SelectItem>
+                  <SelectItem value="bank">{lang === "bn" ? "ব্যাংক" : "Bank"}</SelectItem>
+                  <SelectItem value="mobile_banking">{lang === "bn" ? "মোবাইল ব্যাংকিং" : "Mobile Banking"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div>
             <Label>{lang === "bn" ? "মন্তব্য" : "Note"}</Label>
             <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
@@ -333,7 +356,7 @@ export default function CombinedPayment() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={reset} disabled={saving}>{lang === "bn" ? "রিসেট" : "Reset"}</Button>
-              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds}>
+              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds || Number(form.irrigation) > irrigationDue}>
                 <Save className="h-4 w-4 mr-1" />{saving ? "…" : (lang === "bn" ? "সংরক্ষণ" : "Save")}
               </Button>
             </div>
