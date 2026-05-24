@@ -277,14 +277,18 @@ export default function Farmers() {
   useEffect(() => {
     const editId = searchParams.get("edit");
     if (editId && !editOpen) {
+      const returnTo = searchParams.get("returnTo");
+      editReturnToRef.current = returnTo;
       (async () => {
         const { data } = await supabase.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
         if (data) openEdit(data);
         const next = new URLSearchParams(searchParams);
         next.delete("edit");
+        next.delete("returnTo");
         setSearchParams(next, { replace: true });
       })();
     }
+
     const s = searchParams.get("status");
     if (s === "active" || s === "inactive" || s === "all") setStatusFilter(s as any);
     const p = searchParams.get("period");
