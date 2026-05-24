@@ -1023,6 +1023,23 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       }
       setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
       setSkippedNoRate(noRate);
+      // Fetch previous outstanding for the farmers in this preview
+      try {
+        const farmerIds = Array.from(new Set(previewArr.map((r) => r.billed.billed_farmer_id).filter(Boolean)));
+        if (farmerIds.length) {
+          const { data: prev } = await supabase
+            .from("irrigation_invoices" as any)
+            .select("farmer_id,due_amount")
+            .in("farmer_id", farmerIds)
+            .neq("season_id", seasonId)
+            .gt("due_amount", 0)
+            .is("deleted_at", null)
+            .neq("invoice_status", "cancelled");
+          const uniq = new Set<string>(); let total = 0;
+          for (const r of (prev ?? []) as any[]) { uniq.add(r.farmer_id); total += Number(r.due_amount) || 0; }
+          setPrevDueWarning(uniq.size ? { farmers: uniq.size, total } : null);
+        } else setPrevDueWarning(null);
+      } catch { setPrevDueWarning(null); }
       toast.success(`${previewArr.length} ${tx("preview", "টি প্রিভিউ")}${noRate ? ` • ${noRate} ${tx("lands have no rate", "টি জমিতে রেট নেই")}` : ""}`);
     } catch (e: any) {
       toast.error(e.message);
