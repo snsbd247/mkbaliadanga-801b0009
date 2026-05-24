@@ -1140,7 +1140,107 @@ async function seedAssets(admin: any, officeId: string, monthsBack: number = 1) 
   };
 }
 
+// ---- Land History: one row per land per fiscal year covered ----
+async function seedLandHistory(admin: any, officeId: string, farmers: any[], lands: any[], monthsBack: number): Promise<number> {
+  if (!lands.length) return 0;
+  const today = new Date();
+  const currentFY = today.getMonth() >= 6 ? today.getFullYear() : today.getFullYear() - 1;
+  const yearsBack = Math.max(1, Math.ceil(monthsBack / 12));
+  const cropsByMonth = ["Boro", "Aman", "Aus"];
+  const rows: any[] = [];
+  for (let y = 0; y < yearsBack; y++) {
+    const fy = currentFY - y;
+    for (let i = 0; i < lands.length; i++) {
+      const l = lands[i];
+      const owner = farmers.find((f) => f.id === l.farmer_id);
+      if (!owner) continue;
+      const useBorga = i % 5 === 0;
+      const cultivator = useBorga ? farmers[(i + 3) % farmers.length] : null;
+      rows.push({
+        office_id: officeId, land_id: l.id, farmer_id: owner.id,
+        fiscal_year: fy,
+        season: pick(cropsByMonth, i),
+        mouza: l.mouza_name ?? null,
+        dag_no: l.dag_no ?? null,
+        land_size: l.size ?? l.land_size ?? 1,
+        owner_type: useBorga ? "borga" : "own",
+        field_type: i % 2 === 0 ? "irrigated" : "rainfed",
+        cultivator_farmer_id: cultivator?.id ?? null,
+        crop: pick(cropsByMonth, i + y),
+        yield_amount: 800 + (i % 7) * 50,
+        yield_unit: "kg",
+        remarks: `Demo land history ${fy}`,
+      });
+    }
+  }
+  if (!rows.length) return 0;
+  // Insert in chunks of 500 to avoid payload limits
+  for (let i = 0; i < rows.length; i += 500) {
+    const chunk = rows.slice(i, i + 500);
+    const { error } = await admin.from("land_history").insert(chunk);
+    if (error) throw new Error(`land_history: ${error.message}`);
+  }
+  return rows.length;
+}
 
+// ---- Voter Audit (Cancel/Reactivate History) ----
+async function seedVoterAuditLogs(admin: any, officeId: string, farmers: any[]): Promise<number> {
+  const voters = farmers.filter((f: any) => f.is_voter);
+  if (voters.length < 3) return 0;
+  const rows: any[] = [];
+  // pick a few voters: cancel one, then reactivate; cancel another permanently
+  const today = new Date();
+  const daysAgo = (d: number) => new Date(today.getTime() - d * 86400000).toISOString();
+  for (let i = 0; i < Math.min(5, voters.length); i++) {
+    const v = voters[i];
+    if (i % 2 === 0) {
+      rows.push({
+        farmer_id: v.id, office_id: officeId, account_number: v.account_number,
+        voter_number_old: v.voter_number, voter_number_new: null,
+        is_voter_old: true, is_voter_new: false, action: "cancel",
+        note: "Demo: ভোটার বাতিল (পরীক্ষামূলক)", created_at: daysAgo(60 - i * 5),
+      });
+      rows.push({
+        farmer_id: v.id, office_id: officeId, account_number: v.account_number,
+        voter_number_old: null, voter_number_new: v.voter_number,
+        is_voter_old: false, is_voter_new: true, action: "reactivate",
+        note: "Demo: ভোটার পুনঃসক্রিয় করা হলো", created_at: daysAgo(40 - i * 5),
+      });
+    } else {
+      rows.push({
+        farmer_id: v.id, office_id: officeId, account_number: v.account_number,
+        voter_number_old: v.voter_number, voter_number_new: v.voter_number,
+        is_voter_old: true, is_voter_new: true, action: "update",
+        note: "Demo: তথ্য হালনাগাদ", created_at: daysAgo(20 + i),
+      });
+    }
+  }
+  const { error } = await admin.from("voter_audit_logs").insert(rows);
+  if (error) throw new Error(`voter_audit_logs: ${error.message}`);
+  return rows.length;
+}
+
+// ---- Public Payment Intents (পাবলিক পেমেন্ট অনুরোধ) ----
+async function seedPublicPaymentIntents(admin: any, officeId: string, farmers: any[]): Promise<number> {
+  if (!farmers.length) return 0;
+  const today = new Date();
+  const daysAgo = (d: number) => new Date(today.getTime() - d * 86400000).toISOString();
+  const sample = farmers.slice(0, Math.min(8, farmers.length));
+  const rows = sample.map((f, i) => ({
+    office_id: officeId,
+    farmer_code: f.farmer_code,
+    phone: `017${String(10000000 + i * 1234).slice(0, 8)}`,
+    amount: 500 + (i % 5) * 250,
+    allocation_hint: i % 3 === 0 ? "irrigation" : i % 3 === 1 ? "loan" : "savings",
+    note: `Demo public payment request #${i + 1}`,
+    status: i < 3 ? "pending" : i < 6 ? "processed" : "rejected",
+    created_at: daysAgo(30 - i * 3),
+    processed_at: i >= 3 && i < 6 ? daysAgo(28 - i * 3) : null,
+  }));
+  const { error } = await admin.from("public_payment_intents").insert(rows);
+  if (error) throw new Error(`public_payment_intents: ${error.message}`);
+  return rows.length;
+}
 
 
 async function seedAccounts(admin: any) {
