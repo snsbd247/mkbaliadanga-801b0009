@@ -252,12 +252,12 @@ export default function Help() {
             <Languages className="h-4 w-4 mr-1" /> English
           </Button>
           <Button asChild size="sm">
-            <a href="/help/user-manual-v3.pdf" download>
+            <a href="/help/user-manual-v4.pdf" download>
               <Download className="h-4 w-4 mr-1" /> {tx("PDF ডাউনলোড", "Download PDF")}
             </a>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <a href="/help/user-manual-v3.pdf" target="_blank" rel="noopener noreferrer">
+            <a href="/help/user-manual-v4.pdf" target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4 mr-1" /> {tx("PDF দেখুন", "View PDF")}
             </a>
           </Button>
@@ -267,7 +267,7 @@ export default function Help() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-5 w-5" /> {tx("পূর্ণ ম্যানুয়াল (v3)", "Full Manual (v3)")}
+            <FileText className="h-5 w-5" /> {tx("পূর্ণ ম্যানুয়াল (v4)", "Full Manual (v4)")}
           </CardTitle>
           <CardDescription>
             {tx(
@@ -278,7 +278,7 @@ export default function Help() {
         </CardHeader>
         <CardContent>
           <object
-            data="/help/user-manual-v3.pdf#toolbar=1"
+            data="/help/user-manual-v4.pdf#toolbar=1"
             type="application/pdf"
             className="w-full h-[500px] rounded border"
           >
