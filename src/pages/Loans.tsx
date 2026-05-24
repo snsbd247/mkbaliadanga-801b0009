@@ -24,6 +24,9 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
 import { useBranding } from "@/lib/branding";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
+import { useFormUx } from "@/hooks/useFormUx";
+import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
+import { FormErrorSummary, type FieldError } from "@/components/forms/FormErrorSummary";
 
 const DEFAULT_INTEREST = 8.0;
 
@@ -40,6 +43,10 @@ export default function Loans() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ farmer_id: "", plan_id: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [formErrors, setFormErrors] = useState<FieldError[]>([]);
+  const { registerField, focusField, focusFirstError, preventEnterSubmit } = useFormUx();
+  const createDirty = !!(form.farmer_id || form.principal > 0 || form.note);
+  const createGuard = useUnsavedFormGuard("loan-create", form, createDirty && open);
   const [showDeleted, setShowDeleted] = useState(false);
   const [editLoan, setEditLoan] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ principal: 0, interest_rate: 0, interest_enabled: true, issued_on: "", next_due_on: "", note: "" });
@@ -84,7 +91,12 @@ export default function Loans() {
     setInstallments(prev => ({ ...prev, [loanId]: data ?? [] }));
   }
   async function save() {
-    if (!form.farmer_id || form.principal <= 0) return toast.error(t("pickFarmerAndAmount"));
+    const errs: FieldError[] = [];
+    if (!form.farmer_id) errs.push({ field: "farmer_id", label: t("selectFarmer"), message: tx("Required", "আবশ্যক") });
+    if (!(form.principal > 0)) errs.push({ field: "principal", label: t("principal"), message: tx("Must be greater than 0", "০ এর বেশি হতে হবে") });
+    if (!form.issued_on) errs.push({ field: "issued_on", label: t("issuedOn"), message: tx("Required", "আবশ্যক") });
+    setFormErrors(errs);
+    if (errs.length) { focusFirstError(errs.map(e => e.field)); toast.error(t("pickFarmerAndAmount")); return; }
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
     const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
     if (!vchk?.is_voter) {
@@ -147,7 +159,7 @@ export default function Loans() {
       body: t("loanRequestedBody").replace("{name}", farmer?.name_en ?? "").replace("{amount}", String(form.principal)),
       link: "/loans",
     });
-    toast.success(t("saved")); setOpen(false); load();
+    toast.success(t("saved")); createGuard.clear(); setFormErrors([]); setOpen(false); load();
   }
   async function decide(id: string, status: "approved" | "rejected") {
     const { error } = await supabase.from("loans").update({ status, approved_by: user?.id, updated_at: new Date().toISOString() }).eq("id", id);
@@ -249,12 +261,21 @@ export default function Loans() {
   return (
     <>
       <PageHeader title={t("loans")} actions={
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => {
+          if (v) {
+            const draft = createGuard.restore();
+            if (draft) setForm(draft as any);
+          } else {
+            setFormErrors([]);
+          }
+          setOpen(v);
+        }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />{t("issueLoan")}</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{t("issueLoan")}</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>{t("selectFarmer")}</Label>
+            <div className="space-y-3" onKeyDown={preventEnterSubmit}>
+              <FormErrorSummary errors={formErrors} onFocusField={focusField} />
+              <div ref={registerField("farmer_id")}><Label>{t("selectFarmer")}</Label>
                 <FarmerSearchSelect votersOnly value={form.farmer_id || null}
                   onChange={(id) => setForm({ ...form, farmer_id: id ?? "" })} />
               </div>
@@ -269,7 +290,7 @@ export default function Loans() {
                 <p className="text-xs text-muted-foreground mt-1">When a plan is selected, an installment schedule is auto-generated upon committee approval.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>{t("principal")}</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
+                <div ref={registerField("principal")}><Label>{t("principal")}</Label><Input type="number" value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
                 <div><Label>{t("interestRate")}</Label><Input type="number" step="0.1" value={form.interest_rate} disabled={!form.interest_enabled || !!form.plan_id} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
@@ -277,7 +298,7 @@ export default function Loans() {
                 <Switch checked={form.interest_enabled} onCheckedChange={v => setForm({ ...form, interest_enabled: v })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>{t("issuedOn")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
+                <div ref={registerField("issued_on")}><Label>{t("issuedOn")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
                 <div><Label>{t("nextDue")}</Label><Input type="date" value={form.next_due_on} onChange={e => setForm({ ...form, next_due_on: e.target.value })} /></div>
               </div>
               {(() => {
