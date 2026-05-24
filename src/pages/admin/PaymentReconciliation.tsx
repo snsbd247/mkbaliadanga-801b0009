@@ -14,6 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, RefreshCw, Loader2 } from "lucide-react";
 import { money } from "@/lib/format";
 import { toast } from "sonner";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 const sb = supabase as any;
 
