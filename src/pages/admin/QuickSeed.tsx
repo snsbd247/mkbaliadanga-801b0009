@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange } from "lucide-react";
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 
@@ -32,15 +32,15 @@ export default function QuickSeed() {
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [size, setSize] = useState(50);
 
-  const runEdge = async (key: string, modules: string[]) => {
+  const runEdge = async (key: string, modules: string[], monthsBack?: number) => {
     setStatus((s) => ({ ...s, [key]: "running" }));
     setMsg((m) => ({ ...m, [key]: "" }));
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Please sign in");
-      const { data, error } = await supabase.functions.invoke("demo-reset", {
-        body: { action: "import", modules, size, confirm: "RESET", transactional: true },
-      });
+      const body: any = { action: "import", modules, size, confirm: "RESET", transactional: true };
+      if (monthsBack && monthsBack > 1) body.monthsBack = monthsBack;
+      const { data, error } = await supabase.functions.invoke("demo-reset", { body });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const counts = (data as any)?.counts || (data as any)?.summary || {};
@@ -54,6 +54,7 @@ export default function QuickSeed() {
       toast.error(`${key}: ${e?.message ?? "Failed"}`);
     }
   };
+
 
   const runAsset = async (key: string) => {
     setStatus((s) => ({ ...s, [key]: "running" }));
@@ -96,7 +97,7 @@ export default function QuickSeed() {
         title="Quick Seed — ডামি ডাটা জেনারেটর"
         description="প্রতি মডিউলে এক ক্লিকে টেস্ট ডাটা তৈরি করুন। প্রিরিকুইজিট মডিউল (locations/settings/accounting) স্বয়ংক্রিয়ভাবে অন্তর্ভুক্ত।"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <label className="text-xs text-muted-foreground">Size</label>
             <input
               type="number"
@@ -106,6 +107,15 @@ export default function QuickSeed() {
               onChange={(e) => setSize(Math.max(5, Math.min(500, Number(e.target.value) || 50)))}
               className="w-20 h-9 rounded-md border border-input bg-background px-2 text-sm"
             />
+            <Button
+              variant="secondary"
+              onClick={() => runEdge("year_ops", ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"], 12)}
+              disabled={status.year_ops === "running"}
+              title="১২ মাসের মাসিক সঞ্চয়, পুনরাবৃত্ত খরচ, ব্যাংক লেনদেন, পেমেন্ট ও ঋণ ছড়িয়ে seed করে"
+            >
+              {status.year_ops === "running" ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CalendarRange className="h-4 w-4 mr-1" />}
+              ১ বছরের অপারেশনাল ডেমো
+            </Button>
             <Button onClick={runAll} disabled={status.all === "running"}>
               {status.all === "running" ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
               সব মডিউল একসাথে
@@ -116,7 +126,14 @@ export default function QuickSeed() {
 
       <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm mb-4">
         ⚠️ <b>সতর্কতা:</b> এটি শুধু টেস্টিং / ডেমো-এর জন্য। বিদ্যমান ডাটা মুছে ফেলা হবে না, কিন্তু ডুপ্লিকেট কোড এড়াতে চেষ্টা করা হবে। প্রতি মডিউলের জন্য আপনার অফিসে রান করুন।
+        {msg.year_ops && (
+          <div className="mt-2 text-xs">
+            <b>১ বছরের অপারেশনাল রান:</b>{" "}
+            <span className={status.year_ops === "err" ? "text-destructive" : ""}>{msg.year_ops}</span>
+          </div>
+        )}
       </div>
+
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {MODULES.map((m) => {

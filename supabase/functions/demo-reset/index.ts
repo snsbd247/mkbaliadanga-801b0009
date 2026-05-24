@@ -468,7 +468,7 @@ async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: st
   return invoices.length;
 }
 
-async function seedLoans(admin: any, officeId: string, farmers: any[]) {
+async function seedLoans(admin: any, officeId: string, farmers: any[], monthsBack: number = 1) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const seeded: string[] = [];
   // Seed 3 plans (6/12/24 months)
@@ -482,17 +482,23 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   const planList = plans ?? [];
   const planId = planList[1]?.id ?? planList[0]?.id ?? null;
   const targets = voters.slice(0, Math.ceil(voters.length * 0.4));
+  const now = Date.now();
   const loanRows = targets.map((f, i) => {
     const p = planList[i % Math.max(1, planList.length)] ?? { id: planId, duration_months: 12, interest_rate: 12 };
     const principal = 10000 + (i % 5) * 5000;
     const totalPay = principal * (1 + Number(p.interest_rate) / 100);
     seeded.push(f.id);
+    // Spread issued_on across last `monthsBack` months when > 1
+    const monthsAgo = monthsBack > 1 ? (i % monthsBack) : 6;
+    const issued = new Date(now - monthsAgo * 30 * 86400000).toISOString().slice(0, 10);
     return {
       farmer_id: f.id, principal, interest_rate: p.interest_rate, total_payable: totalPay, total_due: totalPay,
       installment_amount: totalPay / p.duration_months, plan_id: p.id,
       status: i % 4 === 0 ? "pending" : "approved", office_id: officeId,
+      issued_on: issued,
     };
   });
+
   if (loanRows.length) {
     // Seed default delay-fee settings (idempotent per office)
     await admin.from("loan_delay_fee_settings").upsert({
@@ -561,7 +567,7 @@ async function seedLoans(admin: any, officeId: string, farmers: any[]) {
   return seeded;
 }
 
-async function seedSavings(admin: any, officeId: string, farmers: any[]) {
+async function seedSavings(admin: any, officeId: string, farmers: any[], monthsBack: number = 1) {
   const voters = farmers.filter((f: any) => f.is_voter);
   const savingsSeeded: string[] = [];
   const sharesSeeded: string[] = [];
@@ -582,9 +588,11 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
       const expected = Number(p.installment_amount) * Number(p.duration_months);
       const interest = +(expected * Number(p.interest_rate) / 100 / 2).toFixed(2);
       fspSeeded.push(f.id);
+      // Spread enrollment start_date across the operational window
+      const monthsAgo = monthsBack > 1 ? (i % monthsBack) : 1;
       return {
         plan_id: p.id, farmer_id: f.id, office_id: officeId,
-        start_date: new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
+        start_date: new Date(Date.now() - monthsAgo * 30 * 86400000).toISOString().slice(0, 10),
         expected_total: expected,
         expected_interest: interest,
         maturity_amount: expected + interest,
@@ -599,13 +607,37 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
 
   const targets = voters.slice(0, Math.ceil(voters.length * 0.6));
   const CATS = ["general", "hawlat", "bank", "donation", "misc"];
+  const today = new Date();
   const txns = targets.flatMap((f, i) => {
     savingsSeeded.push(f.id);
-    return [
-      { farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId, category: CATS[i % CATS.length] },
-      ...(i % 4 === 0 ? [{ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId, category: "general" }] : []),
-      ...(i % 3 === 0 ? [{ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection", category: "general" }] : []),
-    ];
+    const rows: any[] = [];
+    if (monthsBack > 1) {
+      // Monthly recurring deposit for each of the last N months
+      const baseAmt = 200 + (i % 5) * 50;
+      for (let m = monthsBack - 1; m >= 0; m--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - m, 5);
+        rows.push({
+          farmer_id: f.id, type: "deposit", amount: baseAmt,
+          status: "approved", office_id: officeId, category: CATS[i % CATS.length],
+          txn_date: d.toISOString().slice(0, 10),
+        });
+      }
+      // Occasional withdrawal/share collection
+      if (i % 4 === 0) {
+        const d = new Date(today.getFullYear(), today.getMonth() - Math.floor(monthsBack / 2), 15);
+        rows.push({ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId, category: "general", txn_date: d.toISOString().slice(0, 10) });
+      }
+      if (i % 3 === 0) {
+        const d = new Date(today.getFullYear(), today.getMonth() - (monthsBack - 1), 10);
+        rows.push({ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection", category: "general", txn_date: d.toISOString().slice(0, 10) });
+      }
+    } else {
+      // Legacy point-in-time
+      rows.push({ farmer_id: f.id, type: "deposit", amount: 1000 + (i % 5) * 200, status: "approved", office_id: officeId, category: CATS[i % CATS.length] });
+      if (i % 4 === 0) rows.push({ farmer_id: f.id, type: "withdraw", amount: 300, status: "approved", office_id: officeId, category: "general" });
+      if (i % 3 === 0) rows.push({ farmer_id: f.id, type: "share_collection", amount: 500, status: "approved", office_id: officeId, note: "Demo share collection", category: "general" });
+    }
+    return rows;
   });
   if (txns.length) {
     const { error } = await admin.from("savings_transactions").insert(txns);
@@ -617,18 +649,31 @@ async function seedSavings(admin: any, officeId: string, farmers: any[]) {
   return { savingsSeeded, sharesSeeded, fspSeeded };
 }
 
-async function seedPayments(admin: any, officeId: string, farmers: any[]) {
+
+async function seedPayments(admin: any, officeId: string, farmers: any[], monthsBack: number = 1) {
   if (!farmers.length) return;
-  const today = new Date().toISOString();
-  const yesterday = new Date(Date.now() - 86400000).toISOString();
-  const earlierMonth = new Date(Date.now() - 10 * 86400000).toISOString();
   const voters = farmers.filter((f: any) => f.is_voter);
+  const today = new Date();
+  const dateAt = (m: number, d: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, d).toISOString();
   const rows = voters.flatMap((f, i) => {
     const out: any[] = [];
-    if (i % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: today });
-    if (i % 5 === 0) out.push({ farmer_id: f.id, kind: "loan", amount: 1000, status: "approved", office_id: officeId, created_at: today });
-    if (i % 2 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 800, status: "approved", office_id: officeId, created_at: earlierMonth });
-    if (i % 4 === 0) out.push({ farmer_id: f.id, kind: "savings", amount: 500, status: "approved", office_id: officeId, created_at: yesterday });
+    if (monthsBack > 1) {
+      // Spread payments across the operational window
+      for (let m = 0; m < monthsBack; m++) {
+        if ((i + m) % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: dateAt(m, 7 + (i % 20)) });
+        if ((i + m) % 5 === 0) out.push({ farmer_id: f.id, kind: "loan",       amount: 1000,                 status: "approved", office_id: officeId, created_at: dateAt(m, 12 + (i % 15)) });
+        if ((i + m) % 4 === 0) out.push({ farmer_id: f.id, kind: "savings",    amount: 500,                  status: "approved", office_id: officeId, created_at: dateAt(m, 20 + (i % 8)) });
+      }
+    } else {
+      const todayIso = today.toISOString();
+      const yesterday = new Date(Date.now() - 86400000).toISOString();
+      const earlierMonth = new Date(Date.now() - 10 * 86400000).toISOString();
+      if (i % 3 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 500 + (i % 5) * 100, status: "approved", office_id: officeId, created_at: todayIso });
+      if (i % 5 === 0) out.push({ farmer_id: f.id, kind: "loan", amount: 1000, status: "approved", office_id: officeId, created_at: todayIso });
+      if (i % 2 === 0) out.push({ farmer_id: f.id, kind: "irrigation", amount: 800, status: "approved", office_id: officeId, created_at: earlierMonth });
+      if (i % 4 === 0) out.push({ farmer_id: f.id, kind: "savings", amount: 500, status: "approved", office_id: officeId, created_at: yesterday });
+    }
     return out;
   });
   if (rows.length) {
@@ -636,6 +681,7 @@ async function seedPayments(admin: any, officeId: string, farmers: any[]) {
     if (error) throw new Error(`payments: ${error.message}`);
   }
 }
+
 
 // After import, verify integrity: every farmer with savings/loans/shares MUST have is_voter=true,
 // and every voter MUST have voter_number + account_number.
@@ -657,7 +703,7 @@ async function verifyVoterIntegrity(admin: any): Promise<{ ok: boolean; issues: 
   return { ok: issues.length === 0, issues };
 }
 
-async function seedBankAccounts(admin: any, officeId: string) {
+async function seedBankAccounts(admin: any, officeId: string, monthsBack: number = 1) {
   const existing = await admin.from("bank_accounts").select("id").eq("office_id", officeId).limit(1);
   if (existing.data && existing.data.length) return { accounts: 0, txns: 0 };
   const accountsSpec = [
@@ -668,11 +714,26 @@ async function seedBankAccounts(admin: any, officeId: string) {
   const { data: accts, error } = await admin.from("bank_accounts").insert(accountsSpec).select("id");
   if (error) throw new Error(`bank_accounts: ${error.message}`);
   const txns: any[] = [];
+  const today = new Date();
+  const dateAt = (m: number, d: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, d).toISOString().slice(0, 10);
+  let refSeq = 1;
   (accts ?? []).forEach((a: any, i: number) => {
-    txns.push(
-      { office_id: officeId, bank_account_id: a.id, txn_type: "deposit", amount: 10000 + i * 2000, reference_no: `DEP-${1000 + i}`, note: "Demo deposit" },
-      { office_id: officeId, bank_account_id: a.id, txn_type: "withdraw", amount: 3000 + i * 500, reference_no: `WD-${2000 + i}`, note: "Demo withdraw" },
-    );
+    if (monthsBack > 1) {
+      // Monthly cycle: 1 deposit, 1 withdraw, occasional interest
+      for (let m = monthsBack - 1; m >= 0; m--) {
+        txns.push({ office_id: officeId, bank_account_id: a.id, txn_type: "deposit",  amount: 8000 + i * 1500 + (m % 3) * 500, reference_no: `DEP-${1000 + refSeq++}`, note: "Demo monthly deposit", txn_date: dateAt(m, 5) });
+        txns.push({ office_id: officeId, bank_account_id: a.id, txn_type: "withdraw", amount: 2500 + i * 400  + (m % 4) * 300, reference_no: `WD-${2000 + refSeq++}`,  note: "Demo monthly withdraw", txn_date: dateAt(m, 20) });
+        if (m % 3 === 0) {
+          txns.push({ office_id: officeId, bank_account_id: a.id, txn_type: "interest", amount: 150 + i * 50, reference_no: `INT-${3000 + refSeq++}`, note: "Demo quarterly interest", txn_date: dateAt(m, 28) });
+        }
+      }
+    } else {
+      txns.push(
+        { office_id: officeId, bank_account_id: a.id, txn_type: "deposit",  amount: 10000 + i * 2000, reference_no: `DEP-${1000 + i}`, note: "Demo deposit" },
+        { office_id: officeId, bank_account_id: a.id, txn_type: "withdraw", amount: 3000 + i * 500,   reference_no: `WD-${2000 + i}`,  note: "Demo withdraw" },
+      );
+    }
   });
   if (txns.length) {
     const { error: e2 } = await admin.from("bank_transactions").insert(txns);
@@ -680,6 +741,7 @@ async function seedBankAccounts(admin: any, officeId: string) {
   }
   return { accounts: (accts ?? []).length, txns: txns.length };
 }
+
 
 async function seedFarmerNotes(admin: any, farmers: any[]) {
   const targets = farmers.slice(0, Math.min(10, farmers.length));
@@ -694,14 +756,30 @@ async function seedFarmerNotes(admin: any, farmers: any[]) {
   return rows.length;
 }
 
-async function seedExpenses(admin: any, officeId: string) {
-
-  await admin.from("expenses").insert([
-    { head: "Office Rent", amount: 5000, office_id: officeId, payee: "Landlord", note: "Demo" },
-    { head: "Electricity", amount: 1200, office_id: officeId, payee: "PDB", note: "Demo" },
-    { head: "Stationery", amount: 800, office_id: officeId, payee: "Local Shop", note: "Demo" },
-  ]);
+async function seedExpenses(admin: any, officeId: string, monthsBack: number = 1) {
+  const today = new Date();
+  const dateAt = (m: number, d: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, d).toISOString().slice(0, 10);
+  const heads = [
+    { head: "Office Rent", amount: 5000, payee: "Landlord" },
+    { head: "Electricity", amount: 1200, payee: "PDB" },
+    { head: "Stationery",  amount: 800,  payee: "Local Shop" },
+  ];
+  const rows: any[] = [];
+  if (monthsBack > 1) {
+    for (let m = monthsBack - 1; m >= 0; m--) {
+      for (const h of heads) {
+        rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, note: "Demo monthly", expense_date: dateAt(m, h.head === "Office Rent" ? 1 : h.head === "Electricity" ? 10 : 18) });
+      }
+    }
+  } else {
+    for (const h of heads) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, note: "Demo" });
+  }
+  const { error } = await admin.from("expenses").insert(rows);
+  if (error) throw new Error(`expenses: ${error.message}`);
+  return rows.length;
 }
+
 
 async function seedAccounts(admin: any) {
   // Codes MUST match what ledger triggers (_acct) look up.
@@ -928,14 +1006,16 @@ async function verifyRowCounts(admin: any, modules: string[]) {
 }
 
 // ---- Preset definitions (mirrors src/lib/demoPresets.ts) ----
-const PRESETS: Record<string, { size: number; modules: string[] }> = {
+const PRESETS: Record<string, { size: number; modules: string[]; monthsBack?: number }> = {
   small:           { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
   medium:          { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
   large:           { size: 200, modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"] },
+  year_ops:        { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"], monthsBack: 12 },
   loans_only:      { size: 50,  modules: ["locations","settings","accounting","farmers","loans"] },
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
 };
+
 
 async function verifyLocations(admin: any) {
   const expected = {
@@ -959,10 +1039,11 @@ async function verifyLocations(admin: any) {
 // ---- Streaming runner ----
 async function runStream(admin: any, action: string, modules: string[], size: number, voterCfg: VoterCfg,
   ctx: { userId: string | null; userEmail: string | null; ip: string | null; ua: string | null },
-  customNames?: any[], transactional: boolean = true, preset?: string) {
+  customNames?: any[], transactional: boolean = true, preset?: string, monthsBack: number = 1) {
 
   const encoder = new TextEncoder();
-  const summary: any = { action, modules, voterCfg, transactional, preset: preset ?? null };
+  const summary: any = { action, modules, voterCfg, transactional, preset: preset ?? null, monthsBack };
+
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -1040,25 +1121,26 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               if (seasonId) summary.irrigation_invoices = await seedIrrigationInvoices(admin, officeId, seasonId, landTypes);
             }});
           }
-          if (modules.includes("loans")) steps.push({ key: "loans", label: "ঋণ seed (শুধু ভোটার)", fn: async () => {
+          if (modules.includes("loans")) steps.push({ key: "loans", label: `ঋণ seed (শুধু ভোটার${monthsBack > 1 ? ` — ${monthsBack} মাস ছড়ানো` : ""})`, fn: async () => {
             if (!farmers.length) return;
-            const ids = await seedLoans(admin, officeId, farmers);
+            const ids = await seedLoans(admin, officeId, farmers, monthsBack);
             ids.forEach((x) => loanFarmerIds.add(x));
           }});
-          if (modules.includes("savings")) steps.push({ key: "savings", label: "সঞ্চয় + শেয়ার + প্ল্যান এনরোলমেন্ট seed (শুধু ভোটার)", fn: async () => {
+          if (modules.includes("savings")) steps.push({ key: "savings", label: `সঞ্চয় + শেয়ার + প্ল্যান এনরোলমেন্ট seed${monthsBack > 1 ? ` (${monthsBack} মাস মাসিক ডিপোজিট)` : ""}`, fn: async () => {
             if (!farmers.length) return;
-            const out = await seedSavings(admin, officeId, farmers);
+            const out = await seedSavings(admin, officeId, farmers, monthsBack);
             out.savingsSeeded.forEach((x) => savingsFarmerIds.add(x));
             out.sharesSeeded.forEach((x) => sharesFarmerIds.add(x));
             out.fspSeeded.forEach((x) => fspFarmerIds.add(x));
           }});
-          if (modules.includes("expenses")) steps.push({ key: "expenses", label: "খরচ seed", fn: async () => { await seedExpenses(admin, officeId); }});
+          if (modules.includes("expenses")) steps.push({ key: "expenses", label: `খরচ seed${monthsBack > 1 ? ` (${monthsBack} মাস পুনরাবৃত্ত)` : ""}`, fn: async () => { summary.expenses = await seedExpenses(admin, officeId, monthsBack); }});
           if (modules.includes("accounting")) steps.push({ key: "accounting_period", label: "চলতি অর্থবছরের পিরিয়ড open", fn: async () => { await seedAccountingPeriod(admin, officeId); }});
-          if (modules.includes("bank")) steps.push({ key: "bank", label: "ব্যাংক একাউন্ট ও লেনদেন seed", fn: async () => { const b = await seedBankAccounts(admin, officeId); summary.bank = b; }});
+          if (modules.includes("bank")) steps.push({ key: "bank", label: `ব্যাংক একাউন্ট ও লেনদেন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { const b = await seedBankAccounts(admin, officeId, monthsBack); summary.bank = b; }});
           if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
+
           if (modules.includes("farmers") || needFarmers) {
-            steps.push({ key: "payments", label: "পেমেন্ট/কালেকশন seed", fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers); }});
+            steps.push({ key: "payments", label: `পেমেন্ট/কালেকশন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers, monthsBack); }});
           }
           steps.push({ key: "verify_locations", label: "লোকেশন কাউন্ট যাচাই", fn: async () => {
             const v = await verifyLocations(admin);
@@ -1208,6 +1290,11 @@ Deno.serve(async (req) => {
     ));
     // transactional rollback default ON; caller may opt out with `transactional: false`
     const transactional: boolean = body?.transactional !== false;
+    // 1-year operational seeding spread (default 1 = legacy point-in-time)
+    const monthsBack: number = Math.max(1, Math.min(36,
+      Number(body?.monthsBack) || preset?.monthsBack || 1,
+    ));
+
 
     const voterCfg: VoterCfg = {
       voterRatio: Math.max(2, Math.min(20, Number(body?.voterCfg?.voterRatio) || 3)),
@@ -1236,9 +1323,10 @@ Deno.serve(async (req) => {
       ? body.customNames.filter((r: any) => r && typeof r.en === "string" && r.en.trim()).slice(0, 1000)
       : undefined;
 
-    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId);
+    if (body?.stream) return runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId, monthsBack);
 
-    const resp = await runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId);
+    const resp = await runStream(admin, action, modules, size, voterCfg, ctx, customNames, transactional, presetId, monthsBack);
+
     const text = await resp.text();
     return json({ ok: true, log: text.split("\n").filter(Boolean).map((l) => JSON.parse(l)) });
   } catch (e: any) {
