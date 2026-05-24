@@ -2776,6 +2776,8 @@ export const translations = {
     dmModLoans: "ঋণ (পরিকল্পনা + ঋণ + পেমেন্ট)",
     dmModSavings: "সঞ্চয় + শেয়ার",
     dmModExpenses: "খরচ",
+    dmModBank: "ব্যাংক একাউন্ট + লেনদেন",
+    dmModAssets: "অ্যাসেট (ক্রয়, অবচয়, রক্ষণাবেক্ষণ, ডিসপোজাল)",
     pgPrintCard: "কার্ড প্রিন্ট",
     pgFarmerId: "কৃষক আইডি",
     pgVoterNumber: "ভোটার নম্বর",
