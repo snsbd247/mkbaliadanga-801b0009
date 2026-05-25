@@ -3362,7 +3362,13 @@ export const translations = {
     cultivationHistoryReport: "চাষাবাদের তথ্য",
     loanHistoryReport: "ঋণ ইতিহাস",
     irrigationCategoryReport: "সেচ ক্যাটেগরি",
+    combinedPayment: "সম্মিলিত পেমেন্ট",
+    maintenanceSchedules: "মেরামত সময়সূচি",
+    assetAlerts: "এসেট সতর্কতা",
+    monthlyReceiptRegister: "মাসিক রসিদ রেজিস্টার",
+    officerSummary: "অফিসার সারাংশ",
   },
+
 
 } as const;
 
