@@ -905,7 +905,10 @@ export default function Farmers() {
             setTimeout(() => editNameRef.current?.focus(), 50);
           }}
         >
-          <DialogHeader><DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle>
+            <DialogDescription>{tx("Update farmer details below.", "নিচে কৃষকের তথ্য আপডেট করুন।")}</DialogDescription>
+          </DialogHeader>
           {editForm && (
             <div>
               {renderFormFields({
