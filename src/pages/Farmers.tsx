@@ -751,7 +751,10 @@ export default function Farmers() {
               setTimeout(() => createNameRef.current?.focus(), 50);
             }}
           >
-            <DialogHeader><DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle>
+              <DialogDescription>{tx("Fill in farmer details below.", "নিচে কৃষকের তথ্য পূরণ করুন।")}</DialogDescription>
+            </DialogHeader>
             <div>
               {renderFormFields({
                 f: form,
