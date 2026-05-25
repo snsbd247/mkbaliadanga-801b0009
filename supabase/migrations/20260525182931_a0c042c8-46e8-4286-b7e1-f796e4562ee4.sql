@@ -1,0 +1,1 @@
+DELETE FROM savings_transactions WHERE id='612642e7-9f24-45f6-a7c2-8993a7daa947';
