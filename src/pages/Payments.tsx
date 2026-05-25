@@ -604,7 +604,7 @@ export default function Payments() {
           <IrrigationPaymentPanel initialFarmerId={farmerId} onPaid={load} />
         </TabsContent>
         <TabsContent value="quick">
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-1">
           <h2 className="font-semibold mb-1">{t("payNow")}</h2>
           <p className="text-xs text-muted-foreground mb-3">Approved payments automatically update loan, savings &amp; irrigation ledgers.</p>
