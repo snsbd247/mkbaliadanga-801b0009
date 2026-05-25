@@ -53,7 +53,7 @@ export default function IrrigationCategoryReport() {
     try {
       const { data, error } = await supabase
         .from("irrigation_invoice_payments")
-        .select("created_at,collected_amount,irrigation_collected,delay_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected")
+        .select("created_at,collected_amount,irrigation_collected,delay_fee_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected")
         .gte("created_at", from)
         .lte("created_at", to + "T23:59:59");
       if (error) throw error;
