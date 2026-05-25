@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -751,7 +751,10 @@ export default function Farmers() {
               setTimeout(() => createNameRef.current?.focus(), 50);
             }}
           >
-            <DialogHeader><DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{t("addNew")} — {t("farmers")}</DialogTitle>
+              <DialogDescription>{tx("Fill in farmer details below.", "নিচে কৃষকের তথ্য পূরণ করুন।")}</DialogDescription>
+            </DialogHeader>
             <div>
               {renderFormFields({
                 f: form,
@@ -902,7 +905,10 @@ export default function Farmers() {
             setTimeout(() => editNameRef.current?.focus(), 50);
           }}
         >
-          <DialogHeader><DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{t("edit")} — {t("farmers")}</DialogTitle>
+            <DialogDescription>{tx("Update farmer details below.", "নিচে কৃষকের তথ্য আপডেট করুন।")}</DialogDescription>
+          </DialogHeader>
           {editForm && (
             <div>
               {renderFormFields({
