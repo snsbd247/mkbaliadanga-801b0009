@@ -9,15 +9,13 @@ export type LocationValidation =
 
 /** Mirror of the DB trigger — validates the chain client-side for instant feedback. */
 export function validateLocationChain(v: LocationValue): LocationValidation {
-  // If a child is selected, every ancestor must also be selected.
+  // Current picker hierarchy: division → district → upazila → mouza (+ free-text village).
+  // Legacy union/ward/village_id are unused by the new picker and intentionally skipped.
   const order: { level: LocationLevel; id?: string | null; parents: LocationLevel[] }[] = [
     { level: "division", id: v.division_id, parents: [] },
     { level: "district", id: v.district_id, parents: ["division"] },
     { level: "upazila",  id: v.upazila_id,  parents: ["division", "district"] },
-    { level: "union",    id: v.union_id,    parents: ["division", "district", "upazila"] },
-    { level: "ward",     id: v.ward_id,     parents: ["division", "district", "upazila", "union"] },
-    { level: "village",  id: v.village_id,  parents: ["division", "district", "upazila", "union", "ward"] },
-    { level: "mouza",    id: v.mouza_id,    parents: ["division", "district", "upazila", "union", "ward", "village"] },
+    { level: "mouza",    id: v.mouza_id,    parents: ["division", "district", "upazila"] },
   ];
   const idMap: Record<LocationLevel, string | null | undefined> = {
     division: v.division_id, district: v.district_id, upazila: v.upazila_id,
