@@ -235,7 +235,7 @@ export default function Dashboard() {
         <Badge variant={isSuper ? "secondary" : "default"}>
           {isSuper ? t("viewingAllOffices") : `${t("officeLabel")}: ${officeName || "—"}`}
         </Badge>
-        <span className="text-muted-foreground flex-1">{t("officeAccessNote")}</span>
+        <span className="text-muted-foreground w-full sm:flex-1 sm:w-auto">{t("officeAccessNote")}</span>
         <div className="flex items-center gap-2">
           <Switch id="voters-only" checked={votersOnly} onCheckedChange={setVotersOnly} />
           <Label htmlFor="voters-only" className="cursor-pointer">{t("voterFarmersOnly")}</Label>
