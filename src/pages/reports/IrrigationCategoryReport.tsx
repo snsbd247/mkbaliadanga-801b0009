@@ -53,7 +53,7 @@ export default function IrrigationCategoryReport() {
     try {
       const { data, error } = await supabase
         .from("irrigation_invoice_payments")
-        .select("created_at,collected_amount,irrigation_collected,delay_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected")
+        .select("created_at,collected_amount,irrigation_collected,delay_fee_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected")
         .gte("created_at", from)
         .lte("created_at", to + "T23:59:59");
       if (error) throw error;
@@ -62,7 +62,7 @@ export default function IrrigationCategoryReport() {
         const d = String(r.created_at).slice(0, 10);
         const row = map.get(d) ?? { date: d, irrigation: 0, delay: 0, maintenance: 0, canal: 0, previous_due: 0, total: 0, count: 0 };
         row.irrigation += n(r.irrigation_collected);
-        row.delay += n(r.delay_collected);
+        row.delay += n(r.delay_fee_collected);
         row.maintenance += n(r.maintenance_collected);
         row.canal += n(r.canal_collected);
         row.previous_due += n(r.previous_due_collected);
