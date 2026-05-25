@@ -1726,7 +1726,13 @@ export const translations = {
     cultivationHistoryReport: "Cultivation History",
     loanHistoryReport: "Loan History",
     irrigationCategoryReport: "Irrigation Category",
+    combinedPayment: "Combined Payment",
+    maintenanceSchedules: "Maintenance Schedules",
+    assetAlerts: "Asset Alerts",
+    monthlyReceiptRegister: "Monthly Receipt Register",
+    officerSummary: "Officer Summary",
   },
+
 
   bn: {
     appName: "স্মার্ট সেচ ও সমবায় ব্যবস্থাপনা",
@@ -3356,7 +3362,13 @@ export const translations = {
     cultivationHistoryReport: "চাষাবাদের তথ্য",
     loanHistoryReport: "ঋণ ইতিহাস",
     irrigationCategoryReport: "সেচ ক্যাটেগরি",
+    combinedPayment: "সম্মিলিত পেমেন্ট",
+    maintenanceSchedules: "মেরামত সময়সূচি",
+    assetAlerts: "এসেট সতর্কতা",
+    monthlyReceiptRegister: "মাসিক রসিদ রেজিস্টার",
+    officerSummary: "অফিসার সারাংশ",
   },
+
 
 } as const;
 
