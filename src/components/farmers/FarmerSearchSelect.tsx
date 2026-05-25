@@ -128,7 +128,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" disabled={disabled}
           className={cn("w-full justify-between font-normal", !display && "text-muted-foreground", className)}>
-          <span className="truncate">{display || placeholder}</span>
+          <span className="truncate">{display || ph}</span>
           {selected ? (
             <X className="h-4 w-4 shrink-0 opacity-60 hover:opacity-100" onClick={(e) => { e.stopPropagation(); setSelected(null); onChange(null, null); }} />
           ) : (
@@ -138,21 +138,22 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <div className="p-2 border-b">
-          <Input autoFocus placeholder="Type name, account, mobile, voter no…" value={q}
+          <Input autoFocus placeholder={tx("Type name, account, mobile, voter no…", "নাম, অ্যাকাউন্ট, মোবাইল, ভোটার নম্বর লিখুন…")} value={q}
             onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} />
         </div>
         <div ref={listRef} className="max-h-72 overflow-y-auto">
           {loading && (
             <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />Searching…
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />{tx("Searching…", "খোঁজা হচ্ছে…")}
             </div>
           )}
           {!loading && tooShort && (
-            <div className="py-6 text-center text-xs text-muted-foreground">Type at least {MIN_SEARCH} characters…</div>
+            <div className="py-6 text-center text-xs text-muted-foreground">{tx(`Type at least ${MIN_SEARCH} characters…`, `কমপক্ষে ${MIN_SEARCH} অক্ষর লিখুন…`)}</div>
           )}
           {!loading && !tooShort && items.length === 0 && (
-            <div className="py-6 text-center text-sm text-muted-foreground">{/* i18n-ignore */}No farmer found</div>
+            <div className="py-6 text-center text-sm text-muted-foreground">{tx("No farmer found", "কোনো কৃষক পাওয়া যায়নি")}</div>
           )}
+
           {!loading && items.map((it, idx) => (
             <button
               key={it.id}
