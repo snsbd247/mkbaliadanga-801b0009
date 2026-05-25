@@ -45,8 +45,8 @@ export default function CultivationHistoryReport() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      supabase.from("farmers").select("id,name_en,name_bn,father_name,mobile,member_no,farmer_code,is_active").is("deleted_at", null).order("name_en"),
-      (supabase.from as any)("lands_with_location").select("id,farmer_id,owner_type,land_size,field_type,land_type_id,mouza_name,mouza,dag_no").is("deleted_at", null),
+      supabase.from("farmers").select("id,name_en,name_bn,father_name,mobile,member_no,farmer_code,status").is("deleted_at", null).order("name_en"),
+      (supabase.from as any)("lands_with_location").select("id,farmer_id,owner_type,land_size,field_type,mouza_name,mouza,dag_no"),
     ]).then(([f, l]) => {
       setFarmers(f.data ?? []);
       setLands(l.data ?? []);
