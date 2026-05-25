@@ -29,11 +29,8 @@ export default function LoanDelaySettings() {
       const officeRes = await supabase.rpc("current_user_office" as any).single();
       const officeId = (officeRes.data as any) ?? null;
       const { data: u } = await supabase.auth.getUser();
-      const { data } = await supabase
-        .from("loan_delay_fee_settings")
-        .select("*")
-        .eq("office_id", officeId as any)
-        .maybeSingle();
+      const q = supabase.from("loan_delay_fee_settings").select("*");
+      const { data } = await (officeId ? q.eq("office_id", officeId as any) : q.is("office_id", null)).maybeSingle();
       setRow(data ?? { ...DEFAULT_DELAY_SETTINGS, office_id: officeId, created_by: u?.user?.id });
       setLoading(false);
     })();
