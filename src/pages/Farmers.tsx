@@ -215,6 +215,8 @@ function pickLocation(form: FormState): LocationValue {
     division_id: form.division_id, district_id: form.district_id,
     upazila_id: form.upazila_id, union_id: form.union_id,
     ward_id: form.ward_id, village_id: form.village_id, mouza_id: form.mouza_id,
+    mouza_name: form.mouza_name ?? null,
+    village: form.village ?? null,
   };
 }
 
