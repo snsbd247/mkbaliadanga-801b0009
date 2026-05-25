@@ -26,6 +26,8 @@ type Props = { farmerId: string };
  */
 export default function FarmerLandHistoryTab({ farmerId }: Props) {
   const { user, isAdmin } = useAuth();
+  const { tx } = useLang();
+
   const [rows, setRows] = useState<any[]>([]);
   const [farmers, setFarmers] = useState<any[]>([]);
   const [year, setYear] = useState<string>("");
