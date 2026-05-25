@@ -34,7 +34,8 @@ function classifyCameraError(e: any): CamError {
 }
 
 export default function Scan() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
+
   const nav = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
@@ -155,7 +156,7 @@ export default function Scan() {
 
   return (
     <>
-      <PageHeader title={t("scanQr")} description="Scan farmer QR (account number) to open payment screen" />
+      <PageHeader title={t("scanQr")} description={tx("Scan farmer QR (account number) to open payment screen", "কৃষকের কিউআর (অ্যাকাউন্ট নম্বর) স্ক্যান করে পেমেন্ট স্ক্রিন খুলুন")} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-4 sm:p-5">
           <div
@@ -173,10 +174,10 @@ export default function Scan() {
               <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
               <div className="flex-1">
                 <div className="font-medium text-destructive">
-                  {camError.kind === "permission" && "Camera blocked"}
-                  {camError.kind === "no-device" && "No camera found"}
-                  {camError.kind === "insecure" && "Insecure connection"}
-                  {camError.kind === "other" && "Camera error"}
+                  {camError.kind === "permission" && tx("Camera blocked", "ক্যামেরা ব্লকড")}
+                  {camError.kind === "no-device" && tx("No camera found", "কোনো ক্যামেরা পাওয়া যায়নি")}
+                  {camError.kind === "insecure" && tx("Insecure connection", "অনিরাপদ সংযোগ")}
+                  {camError.kind === "other" && tx("Camera error", "ক্যামেরা ত্রুটি")}
                 </div>
                 <div className="text-muted-foreground">{camError.msg}</div>
               </div>
@@ -187,11 +188,11 @@ export default function Scan() {
             {!scanning ? (
               <>
                 <Button onClick={start} className="min-w-[10rem]" size="lg">
-                  <Camera className="h-4 w-4 mr-1" />Start Camera
+                  <Camera className="h-4 w-4 mr-1" />{tx("Start Camera", "ক্যামেরা চালু করুন")}
                 </Button>
                 {camError && (
                   <Button variant="outline" size="lg" onClick={retry} data-testid="retry-camera">
-                    <RefreshCcw className="h-4 w-4 mr-1" />Retry
+                    <RefreshCcw className="h-4 w-4 mr-1" />{tx("Retry", "পুনরায় চেষ্টা")}
                   </Button>
                 )}
               </>
@@ -201,18 +202,19 @@ export default function Scan() {
           </div>
         </Card>
         <Card className="p-4 sm:p-5">
-          <h2 className="font-semibold mb-3">Manual lookup</h2>
+          <h2 className="font-semibold mb-3">{tx("Manual lookup", "ম্যানুয়াল খোঁজ")}</h2>
           <div className="space-y-3">
             <div>
-              <Label>Account Number / Mobile / Code</Label>
+              <Label>{tx("Account Number / Mobile / Code", "অ্যাকাউন্ট নম্বর / মোবাইল / কোড")}</Label>
               <Input value={manual} onChange={e => setManual(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") lookupManual(); }}
                 placeholder="2401510064476" inputMode="numeric" />
             </div>
-            <Button onClick={lookupManual} className="w-full" size="lg">Open Payment Screen</Button>
+            <Button onClick={lookupManual} className="w-full" size="lg">{tx("Open Payment Screen", "পেমেন্ট স্ক্রিন খুলুন")}</Button>
           </div>
         </Card>
       </div>
     </>
   );
 }
+

@@ -10,7 +10,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 import { buildAutoLandChangeRemark } from "@/lib/landChangeRemark";
+
 
 const SEASONS = ["Boro", "Aman", "Aus", "Rabi"];
 const sb = supabase as any;
@@ -24,6 +26,8 @@ type Props = { farmerId: string };
  */
 export default function FarmerLandHistoryTab({ farmerId }: Props) {
   const { user, isAdmin } = useAuth();
+  const { tx } = useLang();
+
   const [rows, setRows] = useState<any[]>([]);
   const [farmers, setFarmers] = useState<any[]>([]);
   const [year, setYear] = useState<string>("");
@@ -94,11 +98,11 @@ export default function FarmerLandHistoryTab({ farmerId }: Props) {
     <div className="space-y-3">
       <Card className="p-3 flex flex-wrap items-end gap-3">
         <div className="min-w-[180px]">
-          <Label>Fiscal Year</Label>
+          <Label>{tx("Fiscal Year", "অর্থবছর")}</Label>
           <Select value={year || "all"} onValueChange={v => setYear(v === "all" ? "" : v)}>
-            <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={tx("All", "সব")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Years</SelectItem>
+              <SelectItem value="all">{tx("All Years", "সব বছর")}</SelectItem>
               {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -106,57 +110,57 @@ export default function FarmerLandHistoryTab({ farmerId }: Props) {
         <div className="ml-auto">
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setF({ ...emptyForm }); }}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Record</Button>
+              <Button size="sm"><Plus className="h-4 w-4 mr-1" />{tx("Add Record", "রেকর্ড যোগ")}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>Add Land History</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{tx("Add Land History", "জমির ইতিহাস যোগ")}</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <Label>Owner Farmer</Label>
+                  <Label>{tx("Owner Farmer", "মালিক কৃষক")}</Label>
                   <Select value={f.farmer_id} onValueChange={v => setF({ ...f, farmer_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select farmer" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={tx("Select farmer", "কৃষক নির্বাচন")} /></SelectTrigger>
                     <SelectContent>{farmers.map(x => <SelectItem key={x.id} value={x.id}>{x.farmer_code} — {x.name_en}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Fiscal Year</Label><Input type="number" value={f.fiscal_year} onChange={e => setF({ ...f, fiscal_year: +e.target.value })} /></div>
-                <div><Label>Season</Label>
+                <div><Label>{tx("Fiscal Year", "অর্থবছর")}</Label><Input type="number" value={f.fiscal_year} onChange={e => setF({ ...f, fiscal_year: +e.target.value })} /></div>
+                <div><Label>{tx("Season", "মৌসুম")}</Label>
                   <Select value={f.season} onValueChange={v => setF({ ...f, season: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Mouza</Label><Input value={f.mouza} onChange={e => setF({ ...f, mouza: e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit Mouza" : undefined} /></div>
-                <div><Label>Dag No</Label><Input value={f.dag_no} onChange={e => setF({ ...f, dag_no: e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit Dag No" : undefined} /></div>
-                <div><Label>Land Size (শতক)</Label><Input type="number" step="0.001" value={f.land_size || ""} onChange={e => setF({ ...f, land_size: +e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit land size" : undefined} /></div>
-                <div><Label>Owner Type</Label>
+                <div><Label>{tx("Mouza", "মৌজা")}</Label><Input value={f.mouza} onChange={e => setF({ ...f, mouza: e.target.value })} disabled={!isAdmin} title={!isAdmin ? tx("Only admin can edit Mouza", "শুধু অ্যাডমিন মৌজা পরিবর্তন করতে পারে") : undefined} /></div>
+                <div><Label>{tx("Dag No", "দাগ নম্বর")}</Label><Input value={f.dag_no} onChange={e => setF({ ...f, dag_no: e.target.value })} disabled={!isAdmin} title={!isAdmin ? tx("Only admin can edit Dag No", "শুধু অ্যাডমিন দাগ পরিবর্তন করতে পারে") : undefined} /></div>
+                <div><Label>{tx("Land Size (Shotok)", "জমির পরিমাণ (শতক)")}</Label><Input type="number" step="0.001" value={f.land_size || ""} onChange={e => setF({ ...f, land_size: +e.target.value })} disabled={!isAdmin} title={!isAdmin ? tx("Only admin can edit land size", "শুধু অ্যাডমিন জমির পরিমাণ পরিবর্তন করতে পারে") : undefined} /></div>
+                <div><Label>{tx("Owner Type", "মালিকানা ধরন")}</Label>
                   <Select value={f.owner_type} onValueChange={v => setF({ ...f, owner_type: v })} disabled={!isAdmin}>
-                    <SelectTrigger title={!isAdmin ? "Only admin can change owner type" : undefined}><SelectValue /></SelectTrigger>
+                    <SelectTrigger title={!isAdmin ? tx("Only admin can change owner type", "শুধু অ্যাডমিন মালিকানা ধরন পরিবর্তন করতে পারে") : undefined}><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="owner">নিজস্ব (Owner)</SelectItem>
-                      <SelectItem value="borga">বর্গা (Borga)</SelectItem>
-                      <SelectItem value="lease">লিজ (Lease)</SelectItem>
+                      <SelectItem value="owner">{tx("Owner", "নিজস্ব")}</SelectItem>
+                      <SelectItem value="borga">{tx("Borga", "বর্গা")}</SelectItem>
+                      <SelectItem value="lease">{tx("Lease", "লিজ")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {!isAdmin && (
                   <div className="col-span-2 text-[11px] text-muted-foreground">
-                    মৌজা/দাগ/জমি/মালিকানা পরিবর্তন শুধু অ্যাডমিনের জন্য সংরক্ষিত।
+                    {tx("Mouza/Dag/Land/Ownership changes are reserved for admin only.", "মৌজা/দাগ/জমি/মালিকানা পরিবর্তন শুধু অ্যাডমিনের জন্য সংরক্ষিত।")}
                   </div>
                 )}
-                <div className="col-span-2"><Label>Cultivator (if different — e.g. borgadar)</Label>
+                <div className="col-span-2"><Label>{tx("Cultivator (if different — e.g. borgadar)", "চাষী (ভিন্ন হলে — যেমন বর্গাদার)")}</Label>
                   <Select value={f.cultivator_farmer_id || "none"} onValueChange={v => setF({ ...f, cultivator_farmer_id: v === "none" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— None —</SelectItem>
+                      <SelectItem value="none">{tx("— None —", "— কেউ না —")}</SelectItem>
                       {farmers.map(x => <SelectItem key={x.id} value={x.id}>{x.farmer_code} — {x.name_en}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="col-span-2"><Label>Remarks</Label><Input value={f.remarks} onChange={e => setF({ ...f, remarks: e.target.value })} /></div>
+                <div className="col-span-2"><Label>{tx("Remarks", "মন্তব্য")}</Label><Input value={f.remarks} onChange={e => setF({ ...f, remarks: e.target.value })} /></div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={save}>Save</Button>
+                <Button variant="outline" onClick={() => setOpen(false)}>{tx("Cancel", "বাতিল")}</Button>
+                <Button onClick={save}>{tx("Save", "সংরক্ষণ")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -167,27 +171,27 @@ export default function FarmerLandHistoryTab({ farmerId }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Year</TableHead>
-              <TableHead>Season</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Mouza / Dag</TableHead>
-              <TableHead className="text-right">Size</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Cultivator</TableHead>
-              <TableHead>Remarks</TableHead>
+              <TableHead>{tx("Year", "বছর")}</TableHead>
+              <TableHead>{tx("Season", "মৌসুম")}</TableHead>
+              <TableHead>{tx("Role", "ভূমিকা")}</TableHead>
+              <TableHead>{tx("Mouza / Dag", "মৌজা / দাগ")}</TableHead>
+              <TableHead className="text-right">{tx("Size", "পরিমাণ")}</TableHead>
+              <TableHead>{tx("Owner", "মালিক")}</TableHead>
+              <TableHead>{tx("Cultivator", "চাষী")}</TableHead>
+              <TableHead>{tx("Remarks", "মন্তব্য")}</TableHead>
               {isAdmin && <TableHead></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">Loading…</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</TableCell></TableRow>}
             {!loading && rows.length === 0 && (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No history yet</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">{tx("No history yet", "কোনো ইতিহাস নেই")}</TableCell></TableRow>
             )}
             {rows.map(r => {
               const isOwnerRow = r.farmer_id === farmerId;
               const role = isOwnerRow
-                ? (r.cultivator_farmer_id ? "Owner (gave borga)" : "Self-cultivated")
-                : "Cultivator (borga)";
+                ? (r.cultivator_farmer_id ? tx("Owner (gave borga)", "মালিক (বর্গা দিয়েছেন)") : tx("Self-cultivated", "নিজে চাষ"))
+                : tx("Cultivator (borga)", "চাষী (বর্গা)");
               return (
                 <TableRow key={r.id}>
                   <TableCell>{r.fiscal_year}</TableCell>
@@ -214,3 +218,4 @@ export default function FarmerLandHistoryTab({ farmerId }: Props) {
     </div>
   );
 }
+
