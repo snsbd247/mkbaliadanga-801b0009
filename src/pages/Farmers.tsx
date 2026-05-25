@@ -809,6 +809,7 @@ export default function Farmers() {
       </Card>
 
       <Card>
+        <div className="[&_table]:min-w-[900px]">
         <Table>
           <TableHeader><TableRow>
             <TableHead>{t("farmerIdLabel")}</TableHead><TableHead>{t("voterNumber")}</TableHead><TableHead>{t("farmerName")}</TableHead>
@@ -885,6 +886,7 @@ export default function Farmers() {
             {list.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
           </TableBody>
         </Table>
+        </div>
         <div className="flex items-center justify-between p-3 border-t">
           <div className="text-xs text-muted-foreground">{t("pageNum").replace("{n}", String(page + 1))}</div>
           <div className="flex gap-2">
