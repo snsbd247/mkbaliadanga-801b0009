@@ -232,7 +232,10 @@ export default function Savings() {
     // Auto-generate SAV monthly receipt no when user did not enter one.
     let finalReceiptNo = form.receipt_no?.trim() || "";
     if (!finalReceiptNo) {
-      finalReceiptNo = await nextMonthlyReceiptNo("SAV", officeId, form.farmer_id);
+      // Unique seed so the offline fallback (PREFIX-YYYYMMDD-XXXXXX) never collides
+      // when the same farmer makes more than one entry on the same day.
+      const uniqueSeed = `${form.farmer_id}-${Date.now()}-${crypto.randomUUID()}`;
+      finalReceiptNo = await nextMonthlyReceiptNo("SAV", officeId, uniqueSeed);
     }
     const payload: any = {
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
