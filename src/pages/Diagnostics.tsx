@@ -104,7 +104,14 @@ export default function Diagnostics() {
   async function runIsolationTest() {
     setIsoBusy(true);
     // 1. Distinct office_ids visible to current user
-    const tables = ["farmers", "loans", "savings_transactions", "payments", "irrigation_charges", "expenses"] as const;
+    const tables = [
+      "farmers", "loans", "loan_payments", "savings_transactions",
+      "payments", "payment_allocations", "expenses",
+      "irrigation_charges", "irrigation_invoices", "irrigation_invoice_payments",
+      "lands", "land_relations", "shares", "receipts",
+      "assets", "bank_accounts", "bank_transactions",
+      "journal_entries", "ledger_entries",
+    ] as const;
     const result: Record<string, any> = { user_office: officeId, is_super: true, tables: {} };
     for (const t of tables) {
       const { data, error } = await supabase.from(t as any).select("office_id");
