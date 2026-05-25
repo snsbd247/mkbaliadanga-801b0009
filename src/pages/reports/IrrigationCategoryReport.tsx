@@ -62,7 +62,7 @@ export default function IrrigationCategoryReport() {
         const d = String(r.created_at).slice(0, 10);
         const row = map.get(d) ?? { date: d, irrigation: 0, delay: 0, maintenance: 0, canal: 0, previous_due: 0, total: 0, count: 0 };
         row.irrigation += n(r.irrigation_collected);
-        row.delay += n(r.delay_collected);
+        row.delay += n(r.delay_fee_collected);
         row.maintenance += n(r.maintenance_collected);
         row.canal += n(r.canal_collected);
         row.previous_due += n(r.previous_due_collected);
