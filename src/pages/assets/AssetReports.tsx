@@ -86,7 +86,7 @@ export default function AssetReports() {
     (async () => {
       const [a, s, o, c] = await Promise.all([
         supabase.from("assets" as any)
-          .select("id,office_id,asset_category_id,asset_code,name_en,name_bn,serial_no,tracking_mode,current_status,asset_type,purchase_price,unit,purchase_date")
+          .select("id,office_id,asset_category_id,asset_code,name_en,name_bn,serial_no,tracking_mode,current_status,asset_type,purchase_price,unit")
           .is("deleted_at", null).order("asset_code"),
         supabase.from("asset_stocks" as any).select("*"),
         supabase.from("offices").select("id,name").order("name"),
