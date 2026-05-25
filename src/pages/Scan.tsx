@@ -34,7 +34,8 @@ function classifyCameraError(e: any): CamError {
 }
 
 export default function Scan() {
-  const { t } = useLang();
+  const { t, tx } = useLang();
+
   const nav = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
