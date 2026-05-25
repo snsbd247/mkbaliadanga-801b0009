@@ -49,8 +49,11 @@ function highlight(text: string | null | undefined, q: string): React.ReactNode 
 }
 
 /** Searchable, debounced farmer combobox. Searches name / code / account / mobile / voter / member. */
-export function FarmerSearchSelect({ value, onChange, excludeIds = [], placeholder = "Search farmer…", disabled, className, votersOnly = false }: Props) {
+export function FarmerSearchSelect({ value, onChange, excludeIds = [], placeholder, disabled, className, votersOnly = false }: Props) {
+  const { tx } = useLang();
+  const ph = placeholder ?? tx("Search farmer…", "কৃষক খুঁজুন…");
   const [open, setOpen] = useState(false);
+
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<FarmerLite[]>([]);
