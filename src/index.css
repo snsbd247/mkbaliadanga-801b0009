@@ -175,6 +175,18 @@
   .tabular-nums { overflow-wrap: anywhere; }
   /* Make sure flex/grid children can shrink below content width */
   main, main * > .min-w-fix { min-width: 0; }
+
+  /* Mobile safety: prevent media + long strings from blowing past the viewport.
+     Tables keep their own horizontal scroll via the shadcn wrapper. */
+  @media (max-width: 640px) {
+    main img, main video, main canvas {
+      max-width: 100%;
+      height: auto;
+    }
+    main p, main span, main label, main h1, main h2, main h3, main h4 {
+      overflow-wrap: anywhere;
+    }
+  }
 }
 
 @media print {
