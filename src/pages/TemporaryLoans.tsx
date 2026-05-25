@@ -72,10 +72,10 @@ export default function TemporaryLoans() {
     <>
       <PageHeader title={tx("Temporary Loans", "অস্থায়ী ঋণ রিপোর্ট")} description={tx("Short-term / temporary loan tracking", "স্বল্পমেয়াদী/অস্থায়ী ঋণ ট্র্যাকিং")} />
       <Card className="p-3 mb-3 grid md:grid-cols-4 gap-3">
-        <div><Label>From</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
-        <div><Label>To</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
+        <div><Label>{tx("From", "শুরু")}</Label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></div>
+        <div><Label>{tx("To", "শেষ")}</Label><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></div>
         <div className="md:col-span-2 self-end text-sm">
-          Issued: <b>{money(totals.issued)}</b> · Paid: <b className="text-success">{money(totals.paid)}</b> · Due: <b className="text-destructive">{money(totals.due)}</b>
+          {tx("Issued", "ইস্যু")}: <b>{money(totals.issued)}</b> · {tx("Paid", "পরিশোধিত")}: <b className="text-success">{money(totals.paid)}</b> · {tx("Due", "বকেয়া")}: <b className="text-destructive">{money(totals.due)}</b>
         </div>
       </Card>
       <div className="flex gap-2 mb-3">
@@ -88,14 +88,14 @@ export default function TemporaryLoans() {
       </div>
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>
-          <TableHead>Date</TableHead><TableHead>Farmer</TableHead><TableHead>Purpose</TableHead>
-          <TableHead className="text-right">Principal</TableHead>
-          <TableHead className="text-right">Paid</TableHead>
-          <TableHead className="text-right">Due</TableHead>
-          <TableHead>Status</TableHead>
+          <TableHead>{tx("Date", "তারিখ")}</TableHead><TableHead>{tx("Farmer", "কৃষক")}</TableHead><TableHead>{tx("Purpose", "উদ্দেশ্য")}</TableHead>
+          <TableHead className="text-right">{tx("Principal", "মূলধন")}</TableHead>
+          <TableHead className="text-right">{tx("Paid", "পরিশোধিত")}</TableHead>
+          <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
+          <TableHead>{tx("Status", "অবস্থা")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
-          {rows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No temporary loans. Mark a loan as temporary from its detail page.</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{tx("No temporary loans. Mark a loan as temporary from its detail page.", "কোনো অস্থায়ী ঋণ নেই। ঋণের বিস্তারিত পেজ থেকে 'অস্থায়ী' চেক করুন।")}</TableCell></TableRow>}
           {rows.map(r => {
             const p = (r.loan_payments ?? []).reduce((a: number, x: any) => a + Number(x.amount || 0), 0);
             const due = Number(r.total_payable || r.principal) - p;
@@ -113,7 +113,8 @@ export default function TemporaryLoans() {
           })}
         </TableBody>
       </Table></Card>
-      <p className="mt-3 text-xs text-muted-foreground">Tip: on any loan in /loans, edit and check "Temporary" to include it here.</p>
+      <p className="mt-3 text-xs text-muted-foreground">{tx("Tip: on any loan in /loans, edit and check \"Temporary\" to include it here.", "টিপ: /loans পেজে যেকোনো ঋণ এডিট করে \"Temporary\" চেক করলে এখানে দেখা যাবে।")}</p>
+
     </>
   );
 }
