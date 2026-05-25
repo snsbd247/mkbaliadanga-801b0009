@@ -215,6 +215,8 @@ function pickLocation(form: FormState): LocationValue {
     division_id: form.division_id, district_id: form.district_id,
     upazila_id: form.upazila_id, union_id: form.union_id,
     ward_id: form.ward_id, village_id: form.village_id, mouza_id: form.mouza_id,
+    mouza_name: form.mouza_name ?? null,
+    village: form.village ?? null,
   };
 }
 
@@ -660,9 +662,30 @@ export default function Farmers() {
             </div>
             <div>
               <Label>{tx("Relation", "সম্পর্ক")}</Label>
-              <Input value={f.nominee_relation ?? ""} disabled={disabled} maxLength={50}
-                placeholder={tx("e.g. Son, Wife, Father", "যেমন: ছেলে, স্ত্রী, পিতা")}
-                onChange={e => setF({ ...f, nominee_relation: e.target.value })} />
+              <Select
+                value={f.nominee_relation || ""}
+                disabled={disabled}
+                onValueChange={(v) => setF({ ...f, nominee_relation: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={tx("Select relation", "সম্পর্ক নির্বাচন করুন")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    ["son", "ছেলে"],
+                    ["daughter", "মেয়ে"],
+                    ["wife", "স্ত্রী"],
+                    ["husband", "স্বামী"],
+                    ["father", "পিতা"],
+                    ["mother", "মাতা"],
+                    ["brother", "ভাই"],
+                    ["sister", "বোন"],
+                    ["other", "অন্যান্য"],
+                  ].map(([en, bn]) => (
+                    <SelectItem key={en} value={bn}>{tx(en.charAt(0).toUpperCase() + en.slice(1), bn)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>{tx("Nominee NID", "নমিনির এনআইডি")}</Label>
