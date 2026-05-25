@@ -809,6 +809,7 @@ export default function Farmers() {
       </Card>
 
       <Card>
+        <div className="[&_table]:min-w-[900px]">
         <Table>
           <TableHeader><TableRow>
             <TableHead>{t("farmerIdLabel")}</TableHead><TableHead>{t("voterNumber")}</TableHead><TableHead>{t("farmerName")}</TableHead>
