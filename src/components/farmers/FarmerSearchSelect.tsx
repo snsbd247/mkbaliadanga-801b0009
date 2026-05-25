@@ -5,6 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { ChevronsUpDown, Loader2, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/LanguageProvider";
+
 
 export type FarmerLite = {
   id: string;
