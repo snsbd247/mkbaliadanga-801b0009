@@ -309,21 +309,32 @@ async function seedSeasonTypes(admin: any): Promise<{ id: string; code: string }
   return out;
 }
 
-async function seedPatwaris(admin: any, officeId: string, locs: LocPick[]) {
+async function seedPatwaris(admin: any, officeId: string, locs: LocPick[], desired?: number) {
   const names = [
-    { en: "Md. Kamrul Hasan", bn: "মোঃ কামরুল হাসান" },
-    { en: "Md. Abdul Latif",  bn: "মোঃ আব্দুল লতিফ" },
-    { en: "Md. Shahin Alam",  bn: "মোঃ শাহিন আলম" },
-    { en: "Md. Bashir Ahmed", bn: "মোঃ বশির আহমেদ" },
+    { en: "Md. Kamrul Hasan",  bn: "মোঃ কামরুল হাসান" },
+    { en: "Md. Abdul Latif",   bn: "মোঃ আব্দুল লতিফ" },
+    { en: "Md. Shahin Alam",   bn: "মোঃ শাহিন আলম" },
+    { en: "Md. Bashir Ahmed",  bn: "মোঃ বশির আহমেদ" },
+    { en: "Md. Rafiqul Islam", bn: "মোঃ রফিকুল ইসলাম" },
+    { en: "Md. Jahangir Alam", bn: "মোঃ জাহাঙ্গীর আলম" },
+    { en: "Md. Nazrul Haque",  bn: "মোঃ নজরুল হক" },
+    { en: "Md. Saiful Mia",    bn: "মোঃ সাইফুল মিয়া" },
+    { en: "Md. Anwar Hossain", bn: "মোঃ আনোয়ার হোসেন" },
+    { en: "Md. Mizanur Rahman", bn: "মোঃ মিজানুর রহমান" },
   ];
-  const rows = names.map((n, i) => ({
-    name: n.en, name_bn: n.bn,
-    mobile: `018${String(20000000 + i).padStart(8, "0")}`,
-    nid: `199${String(8000000000 + i).padStart(10, "0")}`,
-    address: locs[i % Math.max(1, locs.length)]?.mouza_name ?? "",
-    mouza_id: locs[i % Math.max(1, locs.length)]?.mouza_id ?? null,
-    office_id: officeId, is_active: true,
-  }));
+  const count = Math.max(4, Math.min(desired ?? 4, locs.length || 4, names.length));
+  const rows = Array.from({ length: count }, (_, i) => {
+    const n = names[i % names.length];
+    const loc = locs[i % Math.max(1, locs.length)];
+    return {
+      name: n.en, name_bn: n.bn,
+      mobile: `018${String(20000000 + i).padStart(8, "0")}`,
+      nid: `199${String(8000000000 + i).padStart(10, "0")}`,
+      address: loc?.mouza_name ?? "",
+      mouza_id: loc?.mouza_id ?? null,
+      office_id: officeId, is_active: true,
+    };
+  });
   const { data, error } = await admin.from("patwaris").insert(rows).select("id");
   if (error) throw new Error(`patwaris: ${error.message}`);
   return data ?? [];
@@ -1383,7 +1394,7 @@ function estimateImport(modules: string[], size: number) {
   c["land_types"] = 3; c["irrigation_season_types"] = 3;
   if (modules.includes("settings")) c["company/card/sms/receipt settings"] = 4;
   if (modules.includes("accounting")) c["accounts"] = 12;
-  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; c["patwaris"] = 4; c["land_relations"] = Math.ceil(size / 7); }
+  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; c["patwaris"] = Math.max(4, Math.ceil(size / 12)); c["land_relations"] = Math.ceil(size / 7); }
   if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_charge_settings"] = 1; c["irrigation_season_rates"] = 3; c["irrigation_charges"] = size; c["irrigation_invoices"] = size; }
   if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 3; c["loan_delay_fee_settings"] = 1; c["loans"] = n; c["loan_installments"] = n * 12; c["loan_payments"] = n * 3; }
   if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 3; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); c["farmer_savings_plans"] = Math.ceil(n * 0.5); }
@@ -1521,6 +1532,7 @@ const PRESETS: Record<string, { size: number; modules: string[]; monthsBack?: nu
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
   recent_features: { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"], monthsBack: 2 },
+  patwari_workflow:{ size: 40,  modules: ["locations","settings","accounting","farmers","irrigation"], monthsBack: 3 },
 };
 
 
@@ -1610,7 +1622,8 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               if (lands.length) summary.land_relations = await seedLandRelations(admin, officeId, lands, farmers);
             }});
             steps.push({ key: "patwaris", label: "পাটোয়ারী seed", fn: async () => {
-              const p = await seedPatwaris(admin, officeId, locs); summary.patwaris = p.length;
+              const desired = preset === "patwari_workflow" ? 10 : Math.max(4, Math.ceil(size / 12));
+              const p = await seedPatwaris(admin, officeId, locs, desired); summary.patwaris = p.length;
             }});
           }
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
