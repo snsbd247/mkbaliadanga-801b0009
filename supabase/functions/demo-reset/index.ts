@@ -1788,6 +1788,10 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("farmers")) steps.push({ key: "voter_audit", label: "Voter Cancel/Reactivate History seed", fn: async () => { if (farmers.length) summary.voter_audit = await seedVoterAuditLogs(admin, officeId, farmers); }});
           if (modules.includes("farmers")) steps.push({ key: "public_payment_intents", label: "পাবলিক পেমেন্ট অনুরোধ seed", fn: async () => { if (farmers.length) summary.public_payment_intents = await seedPublicPaymentIntents(admin, officeId, farmers); }});
           if (modules.includes("irrigation") && modules.includes("farmers")) steps.push({ key: "due_promises", label: "পূর্ব বকেয়া কথা (due promises) seed", fn: async () => { if (farmers.length) summary.due_promises = await seedDuePromises(admin, officeId, farmers); }});
+          if (modules.includes("farmers")) steps.push({ key: "land_transfers", label: "জমি হস্তান্তর (উত্তরাধিকার/বিক্রি/বর্গা/বিভক্তি) seed", fn: async () => { if (lands.length) summary.land_transfers = await seedLandTransfers(admin, officeId, lands, farmers); }});
+          if (modules.includes("farmers")) steps.push({ key: "land_change_log", label: "জমি পরিবর্তন লগ seed", fn: async () => { if (lands.length) summary.land_change_log = await seedLandChangeLog(admin, officeId, lands, farmers); }});
+          if (modules.includes("loans")) steps.push({ key: "loan_guarantors", label: "ঋণের জামিনদার (Guarantors) seed", fn: async () => { summary.loan_guarantors = await seedLoanGuarantors(admin, officeId); }});
+          if (modules.includes("savings")) steps.push({ key: "savings_yearly_opening", label: "সঞ্চয় পূর্ববর্তী বছরের ওপেনিং ব্যালেন্স seed", fn: async () => { if (farmers.length) summary.savings_yearly_opening = await seedSavingsYearlyOpening(admin, officeId, farmers); }});
 
           if (modules.includes("farmers") || needFarmers) {
             steps.push({ key: "payments", label: `পেমেন্ট/কালেকশন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { if (farmers.length) await seedPayments(admin, officeId, farmers, monthsBack); }});
