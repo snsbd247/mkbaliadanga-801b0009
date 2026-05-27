@@ -517,6 +517,52 @@ export default function FarmerProfileReport() {
             </tbody>
           </table>
 
+          {savingsRows.length > 0 && (
+            <>
+              <div className="farmer-section-title">Savings Transactions</div>
+              <table className="farmer-table compact-gap">
+                <colgroup>
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "18%" }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Receipt No</th>
+                    <th>Deposit</th>
+                    <th>Withdraw</th>
+                    <th>Balance</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {savingsRows.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.date}</td>
+                      <td>{r.type}</td>
+                      <td>{r.receipt_no}</td>
+                      <td>{r.deposit || ""}</td>
+                      <td>{r.withdraw || ""}</td>
+                      <td>{Math.round(r.balance)}</td>
+                      <td>{r.note}</td>
+                    </tr>
+                  ))}
+                  <tr className="totals-row">
+                    <td colSpan={5} style={{ textAlign: "right" }}>{tx("Current Balance", "বর্তমান ব্যালেন্স")}</td>
+                    <td>{Math.round(savingsBalance)}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          )}
+
           <div className="farmer-section-title">Irrigation Charge Information</div>
           {(ownerByYear.length ? ownerByYear : [[irrigationYear, []]]).map(([year, rows]) => {
             const totals = rows.reduce(
@@ -526,44 +572,32 @@ export default function FarmerProfileReport() {
                 acc.maintenance += r.maintenance_num;
                 acc.other += r.other_num;
                 acc.charge += r.charge_num;
+                acc.paid += r.paid_num;
                 acc.due += r.due_num;
                 return acc;
               },
-              { land_size: 0, canal: 0, maintenance: 0, other: 0, charge: 0, due: 0 }
+              { land_size: 0, canal: 0, maintenance: 0, other: 0, charge: 0, paid: 0, due: 0 }
             );
             return (
               <div key={year} className="irrigation-year-block">
                 <div className="farmer-year-row">{tx("Irrigation Year:", "সেচ বর্ষ:")} {year}</div>
                 <table className="farmer-table compact-gap">
-                  <colgroup>
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "6.5%" }} />
-                    <col style={{ width: "10%" }} />
-                    <col style={{ width: "6%" }} />
-                    <col style={{ width: "14%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "9%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "6%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "6.5%" }} />
-                    <col style={{ width: "6.5%" }} />
-                    <col style={{ width: "6.5%" }} />
-                  </colgroup>
                   <thead>
                     <tr>
                       <th>Mouza</th>
                       <th>Season</th>
                       <th>Dag No</th>
+                      <th>Patwari</th>
                       <th>Owner Type</th>
                       <th>Owner Name - FID</th>
                       <th>Land Size</th>
                       <th>Field Type</th>
                       <th>Charge Rate</th>
-                      <th>Canal Charge</th>
-                      <th>Maintenance Charge</th>
-                      <th>Other Charges</th>
+                      <th>Canal</th>
+                      <th>Maint.</th>
+                      <th>Other</th>
                       <th>Charge</th>
+                      <th>Paid</th>
                       <th>Due</th>
                     </tr>
                   </thead>
@@ -573,6 +607,7 @@ export default function FarmerProfileReport() {
                         <td>{row.mouza}</td>
                         <td>{row.season}</td>
                         <td>{row.dag_no}</td>
+                        <td>{row.patwari}</td>
                         <td>{row.owner_type}</td>
                         <td>{row.owner_name_fid}</td>
                         <td>{row.land_size}</td>
@@ -582,18 +617,20 @@ export default function FarmerProfileReport() {
                         <td>{row.maintenance_charge}</td>
                         <td>{row.other_charge}</td>
                         <td>{row.charge}</td>
+                        <td>{row.paid}</td>
                         <td>{row.due}</td>
                       </tr>
                     ))}
                     {rows.length > 0 && (
                       <tr className="totals-row">
-                        <td></td><td></td><td></td><td></td><td></td>
+                        <td colSpan={6} style={{ textAlign: "right" }}>{tx("Total", "মোট")}</td>
                         <td>{totals.land_size.toFixed(4).replace(/\.?0+$/, "")}</td>
-                        <td></td><td></td>
+                        <td colSpan={2}></td>
                         <td>{totals.canal || 0}</td>
                         <td>{totals.maintenance || 0}</td>
                         <td>{totals.other || 0}</td>
                         <td>{Math.round(totals.charge)}</td>
+                        <td>{Math.round(totals.paid)}</td>
                         <td>{Math.round(totals.due)}</td>
                       </tr>
                     )}
@@ -603,26 +640,40 @@ export default function FarmerProfileReport() {
             );
           })}
 
+          {ownerRows.length > 0 && (
+            <table className="farmer-table compact-gap">
+              <thead>
+                <tr>
+                  <th colSpan={3}>{tx("Irrigation Summary (All Years)", "সেচ সারাংশ (সর্বমোট)")}</th>
+                </tr>
+                <tr>
+                  <th>Total Charge</th>
+                  <th>Total Paid</th>
+                  <th>Total Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="totals-row">
+                  <td>{Math.round(irrigationTotals.total)}</td>
+                  <td>{Math.round(irrigationTotals.paid)}</td>
+                  <td>{Math.round(irrigationTotals.due)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+
           <div className="farmer-section-title">Loan Information</div>
           <table className="farmer-table">
-            <colgroup>
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "14.5%" }} />
-              <col style={{ width: "17%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "11.5%" }} />
-            </colgroup>
             <thead>
               <tr>
                 <th>Loan Account</th>
                 <th>Loan Amount</th>
-                <th>Interest Rate</th>
-                <th>Total Loan Amt</th>
+                <th>Interest %</th>
+                <th>Total Payable</th>
                 <th>Issue Date</th>
-                <th>Next Due Date</th>
-                <th>Due Amt</th>
+                <th>Next Due</th>
+                <th>Paid</th>
+                <th>Due</th>
               </tr>
             </thead>
             <tbody>
@@ -634,8 +685,9 @@ export default function FarmerProfileReport() {
                 total_loan_amount: "",
                 issue_date: "",
                 next_due_date: "",
+                paid_amount: "",
                 due_amount: "",
-              }]).map((row) => (
+              }]).map((row: any) => (
                 <tr key={row.id}>
                   <td>{row.loan_account}</td>
                   <td>{row.loan_amount}</td>
@@ -643,11 +695,52 @@ export default function FarmerProfileReport() {
                   <td>{row.total_loan_amount}</td>
                   <td>{row.issue_date}</td>
                   <td>{row.next_due_date}</td>
+                  <td>{row.paid_amount !== "" ? Math.round(Number(row.paid_amount)) : ""}</td>
                   <td>{row.due_amount}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {loanRows.map((loan: any) => {
+            const items = installmentsByLoan.get(loan.id) || [];
+            if (!items.length) return null;
+            return (
+              <div key={`inst-${loan.id}`} className="irrigation-year-block">
+                <div className="farmer-year-row">{tx("Installments for Loan", "লোনের কিস্তি")}: {loan.loan_account}</div>
+                <table className="farmer-table compact-gap">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Due Date</th>
+                      <th>Amount</th>
+                      <th>Paid</th>
+                      <th>Remaining</th>
+                      <th>Status</th>
+                      <th>Paid On</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it: any) => {
+                      const amt = Number(it.amount || 0);
+                      const paid = Number(it.paid_amount || 0);
+                      return (
+                        <tr key={it.id}>
+                          <td>{it.installment_no}</td>
+                          <td>{formatDate(it.due_date)}</td>
+                          <td>{Math.round(amt)}</td>
+                          <td>{Math.round(paid)}</td>
+                          <td>{Math.round(amt - paid)}</td>
+                          <td>{safeText(it.status)}</td>
+                          <td>{formatDate(it.paid_on)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
