@@ -1038,6 +1038,22 @@ export default function FarmerDetail() {
                         </div>
                       </div>
                     )}
+
+                    {/* 5. Patwari */}
+                    {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
+                      <div>
+                        <Label>{tx("Patwari", "পাটুয়ারি")}</Label>
+                        <Select value={land.patwari_id || "__none__"} disabled={savingLand} onValueChange={v => setLand({ ...land, patwari_id: v === "__none__" ? "" : v })}>
+                          <SelectTrigger><SelectValue placeholder={tx("Select patwari", "পাটুয়ারি নির্বাচন করুন")} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">{tx("— None —", "— নেই —")}</SelectItem>
+                            {patwaris.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.name_bn || p.name}{p.mobile ? ` (${p.mobile})` : ""}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                   <DialogFooter><Button variant="outline" disabled={savingLand} onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand} disabled={savingLand}>{savingLand ? "…" : t("save")}</Button></DialogFooter>
                 </DialogContent>
