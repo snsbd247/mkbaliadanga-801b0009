@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, FileDown } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { downloadCsv } from "@/lib/csvExport";
+import { exportExcel, exportTablePDF } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 import { moneyL, fmtDateL } from "@/lib/format";
 
