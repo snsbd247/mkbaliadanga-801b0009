@@ -42,7 +42,7 @@ export default function Loans() {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({ farmer_id: "", plan_id: "", loan_no: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [form, setForm] = useState({ farmer_id: "", plan_id: "", loan_no: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "", repayment_mode: "installment" as "installment" | "bullet", guarantor_name: "", guarantor_father: "", guarantor_village: "", guarantor_mobile: "", guarantor_nid: "" });
   const [formErrors, setFormErrors] = useState<FieldError[]>([]);
   const { registerField, focusField, focusFirstError, preventEnterSubmit } = useFormUx();
   const createDirty = !!(form.farmer_id || form.principal > 0 || form.note);
