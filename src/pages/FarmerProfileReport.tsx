@@ -35,6 +35,7 @@ export default function FarmerProfileReport() {
   const [share, setShare] = useState<any>(null);
   const [loans, setLoans] = useState<any[]>([]);
   const [ownerRows, setOwnerRows] = useState<any[]>([]);
+  const [installments, setInstallments] = useState<any[]>([]);
 
   useEffect(() => {
     if (!id) return;
