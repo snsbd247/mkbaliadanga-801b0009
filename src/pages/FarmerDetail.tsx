@@ -1140,6 +1140,9 @@ export default function FarmerDetail() {
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
+                            {tx("Transfer", "হস্তান্তর")}
+                          </Button>
                           <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
                         </TableCell>
                       </TableRow>
