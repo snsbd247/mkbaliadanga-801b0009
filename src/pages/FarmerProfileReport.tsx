@@ -44,7 +44,7 @@ export default function FarmerProfileReport() {
       setLoading(true);
       const [f, s, sh, ln, ir, rel, inst] = await Promise.all([
         supabase.from("farmers").select("*").eq("id", id).maybeSingle(),
-        supabase.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null).order("tx_date", { ascending: true }),
+        supabase.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null).order("txn_date", { ascending: true }),
         supabase.from("shares").select("balance").eq("farmer_id", id).maybeSingle(),
         supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
         supabase
