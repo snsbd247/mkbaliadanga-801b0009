@@ -338,6 +338,7 @@ export default function LoanDetail() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{tx("Date", "তারিখ")}</TableHead>
+                  <TableHead>{tx("Receipt #", "রসিদ নং")}</TableHead>
                   <TableHead className="text-right">{tx("Amount", "পরিমাণ")}</TableHead>
                   <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
                   <TableHead>{tx("Note", "মন্তব্য")}</TableHead>
@@ -347,6 +348,7 @@ export default function LoanDetail() {
                 {payments.map(p => (
                   <TableRow key={p.id}>
                     <TableCell>{fmtDate(p.paid_on)}</TableCell>
+                    <TableCell className="font-mono text-xs">{p.receipt_no || "—"}</TableCell>
                     <TableCell className="text-right">{money(p.amount)}</TableCell>
                     <TableCell><Badge variant="outline">{p.status}</Badge></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{p.note || "-"}</TableCell>
