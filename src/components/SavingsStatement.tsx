@@ -42,7 +42,12 @@ export function SavingsStatement({ farmer }: Props) {
       .eq("status", "approved")
       .is("deleted_at", null)
       .lt("txn_date", yearStart);
-    const priorBal = (prior ?? []).reduce((s, r: any) => s + (r.type === "deposit" ? +r.amount : -r.amount), 0);
+    const priorBal = (prior ?? []).reduce((s, r: any) => {
+      const a = Number(r.amount) || 0;
+      if (r.type === "deposit" || r.type === "deposit_collection" || r.type === "profit") return s + a;
+      if (r.type === "withdraw") return s - a;
+      return s; // share_* excluded
+    }, 0);
     setPriorBalance(priorBal);
     setOpening(ob?.opening_balance != null ? Number(ob.opening_balance) : priorBal);
 
@@ -61,7 +66,11 @@ export function SavingsStatement({ farmer }: Props) {
   const enriched = useMemo(() => {
     let bal = opening;
     return txns.map(r => {
-      if (r.status === "approved") bal += r.type === "deposit" ? Number(r.amount) : -Number(r.amount);
+      if (r.status === "approved") {
+        const a = Number(r.amount) || 0;
+        if (r.type === "deposit" || r.type === "deposit_collection" || r.type === "profit") bal += a;
+        else if (r.type === "withdraw") bal -= a;
+      }
       return { ...r, running: bal };
     });
   }, [txns, opening]);
@@ -108,15 +117,19 @@ export function SavingsStatement({ farmer }: Props) {
 
       <Table>
         <TableHeader><TableRow>
-          <TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead>
+          <TableHead>{t("date")}</TableHead>
+          <TableHead>{t("type")}</TableHead>
+          <TableHead className="text-xs">Receipt #</TableHead>
+          <TableHead className="text-xs">Field Receipt #</TableHead>
           <TableHead className="text-right">{t("deposit")}</TableHead>
           <TableHead className="text-right">{t("withdraw")}</TableHead>
+          <TableHead className="text-right">Profit</TableHead>
           <TableHead className="text-right">{t("runningBalance")}</TableHead>
           <TableHead>{t("status")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           <TableRow className="bg-muted/40">
-            <TableCell className="font-medium" colSpan={4}>{t("openingBalance")} — Jan 1 {year}</TableCell>
+            <TableCell className="font-medium" colSpan={7}>{t("openingBalance")} — Jan 1 {year}</TableCell>
             <TableCell className="text-right font-bold">{money(opening)}</TableCell>
             <TableCell />
           </TableRow>
@@ -124,13 +137,16 @@ export function SavingsStatement({ farmer }: Props) {
             <TableRow key={r.id}>
               <TableCell>{fmtDate(r.txn_date)}</TableCell>
               <TableCell>{t(r.type as any)}</TableCell>
-              <TableCell className="text-right text-success">{r.type === "deposit" ? money(r.amount) : "—"}</TableCell>
+              <TableCell className="font-mono text-xs">{r.receipt_no ?? "—"}</TableCell>
+              <TableCell className="font-mono text-xs">{r.field_receipt_no ?? "—"}</TableCell>
+              <TableCell className="text-right text-success">{(r.type === "deposit" || r.type === "deposit_collection") ? money(r.amount) : "—"}</TableCell>
               <TableCell className="text-right text-destructive">{r.type === "withdraw" ? money(r.amount) : "—"}</TableCell>
+              <TableCell className="text-right text-primary">{r.type === "profit" ? money(r.amount) : "—"}</TableCell>
               <TableCell className="text-right font-semibold">{money(r.running)}</TableCell>
               <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "pending" ? "outline" : "destructive"}>{t(r.status as any)}</Badge></TableCell>
             </TableRow>
           ))}
-          {enriched.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {enriched.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table>
     </Card>

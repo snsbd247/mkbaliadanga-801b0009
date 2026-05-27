@@ -33,7 +33,7 @@ export default function Savings() {
   const [txns, setTxns] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", category: "general" });
+  const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", field_receipt_no: "", category: "general" });
   const [categoryFilter, setCategoryFilter] = useState<string>("__all__");
   const SAV_CATEGORIES = [
     { v: "general", l: tx("General", "সাধারণ") },
@@ -202,10 +202,11 @@ export default function Savings() {
     if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? tx("This farmer", "এই ফার্মার")} ${tx("does not have Voter / Savings A/C enabled — savings/share entry not allowed.", "এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।")}`);
     const isWithdraw = form.type === "withdraw";
     const isShare = form.type === "share_deposit" || form.type === "share_collection";
-    const isDepositKind = !isWithdraw;
+    const isProfit = form.type === "profit";
+    const isDepositKind = !isWithdraw && !isProfit;
 
     if (isShare && form.amount < 50) return toast.error(t("minShareDeposit"));
-    if (!isShare && !isWithdraw && form.amount < 10) return toast.error(t("minSavingsDeposit"));
+    if (!isShare && !isWithdraw && !isProfit && form.amount < 10) return toast.error(t("minSavingsDeposit"));
 
     // Withdraw balance check (savings only)
     if (isWithdraw) {
@@ -220,6 +221,7 @@ export default function Savings() {
         if (r.type === "withdraw") return s - a;
         // share collections excluded from withdrawable savings balance
         if (r.type === "share_deposit" || r.type === "share_collection") return s;
+        // deposits, deposit_collection, and profit all add to balance
         return s + a;
       }, 0);
       if (form.amount > available) {
@@ -241,10 +243,16 @@ export default function Savings() {
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
       receipt_no: finalReceiptNo,
+      field_receipt_no: form.field_receipt_no?.trim() || null,
       category: form.category || "general",
     };
     const { error } = await supabase.from("savings_transactions").insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.message?.includes("SAVINGS_WITHDRAW_EXCEEDS_BALANCE")) {
+        return toast.error(tx("Withdrawal exceeds available balance", "জমাকৃত টাকার বেশি উত্তলন সম্ভব নয়"));
+      }
+      return toast.error(error.message);
+    }
     if (isDepositKind) {
       const payPayload: any = { farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id, receipt_no: finalReceiptNo };
       await supabase.from("payments").insert(payPayload);
@@ -259,7 +267,7 @@ export default function Savings() {
     }
     toast.success(isWithdraw ? t("pgSavWithdrawSubmitted" as any) : t("pgSavSaved" as any));
     setOpen(false);
-    setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", category: "general" });
+    setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", field_receipt_no: "", category: "general" });
     load();
   }
   async function decide(id: string, status: "approved" | "rejected") {
@@ -370,6 +378,7 @@ export default function Savings() {
                     <SelectItem value="deposit">{tx("Savings Deposit", "সঞ্চয় জমা")} (min ৳10)</SelectItem>
                     <SelectItem value="share_deposit">{tx("Share Deposit", "শেয়ার জমা")} (min ৳50)</SelectItem>
                     <SelectItem value="withdraw">{t("withdraw")}</SelectItem>
+                    {isCommittee && <SelectItem value="profit">{tx("Profit", "প্রফিট")}</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
@@ -383,8 +392,12 @@ export default function Savings() {
                 </Select>
               </div>
               <div>
-                <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — leave blank to auto-generate)</span></Label>
-                <Input value={form.receipt_no} placeholder="e.g. 12345" onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
+                <Label>{tx("System Receipt #", "সিস্টেম রশিদ #")} <span className="text-xs text-muted-foreground">({tx("optional — auto-generate if blank", "ঐচ্ছিক — খালি রাখলে অটো জেনারেট হবে")})</span></Label>
+                <Input value={form.receipt_no} placeholder="auto" onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
+              </div>
+              <div>
+                <Label>{tx("Field Receipt #", "ফিল্ড রশিদ #")} <span className="text-xs text-muted-foreground">({tx("paper receipt from field collection", "ফিল্ড থেকে পেপার রশিদ নাম্বার")})</span></Label>
+                <Input value={form.field_receipt_no} placeholder="e.g. 12345" onChange={e => setForm({ ...form, field_receipt_no: e.target.value })} />
               </div>
               <div><Label>{t("note")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
               <p className="text-xs text-muted-foreground">{t("withdrawalsRequireApproval")}</p>

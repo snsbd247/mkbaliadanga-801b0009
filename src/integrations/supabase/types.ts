@@ -4656,6 +4656,7 @@ export type Database = {
           decided_at: string | null
           deleted_at: string | null
           farmer_id: string
+          field_receipt_no: string | null
           id: string
           note: string | null
           office_id: string | null
@@ -4674,6 +4675,7 @@ export type Database = {
           decided_at?: string | null
           deleted_at?: string | null
           farmer_id: string
+          field_receipt_no?: string | null
           id?: string
           note?: string | null
           office_id?: string | null
@@ -4692,6 +4694,7 @@ export type Database = {
           decided_at?: string | null
           deleted_at?: string | null
           farmer_id?: string
+          field_receipt_no?: string | null
           id?: string
           note?: string | null
           office_id?: string | null
@@ -5887,6 +5890,7 @@ export type Database = {
         | "deposit_collection"
         | "share_collection"
         | "share_deposit"
+        | "profit"
       season_type: "aman" | "boro" | "iri" | "other"
     }
     CompositeTypes: {
@@ -6080,6 +6084,7 @@ export const Constants = {
         "deposit_collection",
         "share_collection",
         "share_deposit",
+        "profit",
       ],
       season_type: ["aman", "boro", "iri", "other"],
     },
