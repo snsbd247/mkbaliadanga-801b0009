@@ -154,7 +154,17 @@ export default function LoanOverdueReport() {
     <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl md:text-2xl font-bold">{t("loanOverdueReportTitle" as any)}</h1>
-        <Button variant="outline" onClick={exportCsv}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("export")}</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportTablePDF(t("loanOverdueReportTitle" as any) || "Loan Overdue", pdfHead, pdfBody)}>
+            <FileDown className="h-4 w-4 mr-1" /> PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportCsv}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportXlsx}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+          </Button>
+        </div>
       </div>
 
       <Card>
