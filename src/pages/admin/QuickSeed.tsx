@@ -119,7 +119,18 @@ export default function QuickSeed() {
             />
             <Button
               variant="secondary"
-              onClick={() => runEdge("year_ops", ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank"], 12)}
+              size="sm"
+              onClick={() => runEdge("recent_features", ALL_OPS_MODULES, 2)}
+              disabled={status.recent_features === "running"}
+              title="সাম্প্রতিক ফিচার শোকেস — Hawlat/Bank পেমেন্ট, QR রসিদ, multi-loan"
+            >
+              {status.recent_features === "running" ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
+              সাম্প্রতিক ফিচার
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => runEdge("year_ops", ALL_OPS_MODULES, 12)}
               disabled={status.year_ops === "running"}
               title="১২ মাসের মাসিক সঞ্চয়, পুনরাবৃত্ত খরচ, ব্যাংক লেনদেন, পেমেন্ট ও ঋণ ছড়িয়ে seed করে"
             >
@@ -134,12 +145,25 @@ export default function QuickSeed() {
         }
       />
 
-      <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm mb-4">
-        ⚠️ <b>সতর্কতা:</b> এটি শুধু টেস্টিং / ডেমো-এর জন্য। বিদ্যমান ডাটা মুছে ফেলা হবে না, কিন্তু ডুপ্লিকেট কোড এড়াতে চেষ্টা করা হবে। প্রতি মডিউলের জন্য আপনার অফিসে রান করুন।
+      <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm mb-4 flex flex-wrap items-center justify-between gap-2">
+        <span>
+          ⚠️ <b>সতর্কতা:</b> এটি শুধু টেস্টিং / ডেমো-এর জন্য। বিদ্যমান ডাটা মুছে ফেলা হবে না, কিন্তু ডুপ্লিকেট কোড এড়াতে চেষ্টা করা হবে।
+        </span>
+        <div className="flex items-center gap-2 text-xs">
+          {counts.ok > 0 && <Badge variant="default" className="bg-green-600">✓ {counts.ok} সফল</Badge>}
+          {counts.running > 0 && <Badge variant="secondary">⟳ {counts.running} চলছে</Badge>}
+          {counts.err > 0 && <Badge variant="destructive">✕ {counts.err} ত্রুটি</Badge>}
+        </div>
         {msg.year_ops && (
-          <div className="mt-2 text-xs">
+          <div className="w-full mt-2 text-xs">
             <b>১ বছরের অপারেশনাল রান:</b>{" "}
             <span className={status.year_ops === "err" ? "text-destructive" : ""}>{msg.year_ops}</span>
+          </div>
+        )}
+        {msg.recent_features && (
+          <div className="w-full mt-1 text-xs">
+            <b>সাম্প্রতিক ফিচার রান:</b>{" "}
+            <span className={status.recent_features === "err" ? "text-destructive" : ""}>{msg.recent_features}</span>
           </div>
         )}
       </div>
