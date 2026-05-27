@@ -80,8 +80,10 @@ ok "Caches rebuilt + queue workers restarted"
 # ---------- 6. Frontend rebuild ----------
 step "6/7  Rebuilding frontend → $WEB_ROOT"
 cd "$APP_DIR"
-sudo -u "$APP_USER" VITE_API_URL="https://${API_SUB}/api" VITE_BACKEND="laravel" VITE_USE_API="1" \
-  bash -lc "npm ci && npm run build" \
+sudo -u "$APP_USER" \
+  VITE_API_URL="https://${API_SUB}/api" VITE_BACKEND="laravel" VITE_USE_API="1" \
+  NODE_OPTIONS="--max-old-space-size=3072" \
+  bash -lc "npm install --no-audit --no-fund --legacy-peer-deps && npm run build" \
   || die "Frontend build failed (Node $(node -v 2>/dev/null || echo missing))"
 mkdir -p "$WEB_ROOT"
 rsync -a --delete "$APP_DIR/dist/" "$WEB_ROOT/"
