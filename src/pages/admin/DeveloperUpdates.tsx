@@ -364,23 +364,55 @@ export default function DeveloperUpdates() {
 
         <TabsContent value="download">
           {parsed && (
-            <Card className="p-4 space-y-3 text-sm">
-              <p className="font-medium">Apply updates on a self-hosted deployment:</p>
-              <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
-                <li>SSH into your server and navigate to your project directory.</li>
-                <li>Run <code className="bg-muted px-1 rounded">git pull origin main</code></li>
-                <li>Install deps: <code className="bg-muted px-1 rounded">npm install</code></li>
-                <li>Run pending DB migrations on your Supabase/Postgres backend.</li>
-                <li>Build &amp; restart: <code className="bg-muted px-1 rounded">npm run build &amp;&amp; pm2 restart app</code></li>
-              </ol>
-              <div className="pt-2 flex gap-2 flex-wrap">
+            <Card className="p-4 space-y-4 text-sm">
+              <div>
+                <p className="font-semibold mb-1">🚀 Fresh VPS install (one command, as root)</p>
+                <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto whitespace-pre">
+{`curl -fsSL https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/main/scripts/install.sh | sudo bash`}
+                </pre>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Installs Docker, Nginx, SSL, backend stack, builds frontend, runs all seeders. Idempotent — safe to re-run.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-1">🔄 Update existing VPS (pulls latest + re-seeds)</p>
+                <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto whitespace-pre">
+{`sudo bash /home/mkadmin/mkbaliadanga/scripts/update.sh`}
+                </pre>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pulls latest code → rebuilds containers → runs migrations + idempotent seeders → rebuilds frontend → reloads Nginx.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-1">📦 Other useful commands</p>
+                <ul className="list-disc pl-5 space-y-1 text-xs text-muted-foreground">
+                  <li>Health check: <code className="bg-muted px-1 rounded">sudo bash scripts/healthcheck.sh</code></li>
+                  <li>Backup DB + files: <code className="bg-muted px-1 rounded">sudo bash scripts/backup.sh</code></li>
+                  <li>Backend logs: <code className="bg-muted px-1 rounded">cd backend &amp;&amp; docker compose logs -f app</code></li>
+                  <li>Restart all: <code className="bg-muted px-1 rounded">cd backend &amp;&amp; docker compose restart</code></li>
+                </ul>
+              </div>
+
+              <div className="pt-2 flex gap-2 flex-wrap border-t">
                 <Button asChild variant="outline" size="sm">
                   <a href={`https://github.com/${parsed.owner}/${parsed.repo}/archive/refs/heads/main.zip`} target="_blank" rel="noreferrer">
                     <Download className="h-3 w-3 mr-1" /> Download main.zip
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/tree/main/supabase/migrations`} target="_blank" rel="noreferrer">
+                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/blob/main/scripts/install.sh`} target="_blank" rel="noreferrer">
+                    <Github className="h-3 w-3 mr-1" /> View install.sh
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/blob/main/scripts/update.sh`} target="_blank" rel="noreferrer">
+                    <Github className="h-3 w-3 mr-1" /> View update.sh
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/tree/main/backend/database/migrations`} target="_blank" rel="noreferrer">
                     <Github className="h-3 w-3 mr-1" /> View migrations
                   </a>
                 </Button>
