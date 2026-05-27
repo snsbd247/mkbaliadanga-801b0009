@@ -44,7 +44,7 @@ import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "" };
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -86,6 +86,14 @@ export default function FarmerDetail() {
   const [savingLand, setSavingLand] = useState(false);
   const [ownerLands, setOwnerLands] = useState<any[]>([]);
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
+  const [patwaris, setPatwaris] = useState<any[]>([]);
+
+  // Load patwaris for assignment
+  useEffect(() => {
+    let qb = supabase.from("patwaris").select("id,name,name_bn,mobile").eq("is_active", true).order("name");
+    if (farmer?.office_id) qb = qb.eq("office_id", farmer.office_id);
+    qb.then(({ data }) => setPatwaris(data ?? []));
+  }, [farmer?.office_id]);
 
   // Load lands of selected owner (for borgadar) so user can pick a Dag
   useEffect(() => {
@@ -602,6 +610,7 @@ export default function FarmerDetail() {
         owner_type: land.owner_type as any,
         field_type: land.field_type as any,
         owner_farmer_id: land.owner_type === "borgadar" ? land.owner_farmer_id : null,
+        patwari_id: land.patwari_id || null,
       } as any);
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved")); setOpenLand(false);
@@ -619,6 +628,7 @@ export default function FarmerDetail() {
       owner_type: (row.owner_type as any) ?? "owner",
       field_type: (row.field_type as any) ?? "medium_land",
       owner_farmer_id: ((row as any).owner_farmer_id as string) ?? "",
+      patwari_id: ((row as any).patwari_id as string) ?? "",
     });
     setEditLocErr(null);
     // Hydrate full location chain so LocationPicker preselects the saved values.
@@ -679,6 +689,7 @@ export default function FarmerDetail() {
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
         field_type: editForm.field_type as any,
+        patwari_id: editForm.patwari_id || null,
       } as any).eq("id", editLand.id);
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved"));
@@ -1027,6 +1038,22 @@ export default function FarmerDetail() {
                         </div>
                       </div>
                     )}
+
+                    {/* 5. Patwari */}
+                    {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
+                      <div>
+                        <Label>{tx("Patwari", "পাটুয়ারি")}</Label>
+                        <Select value={land.patwari_id || "__none__"} disabled={savingLand} onValueChange={v => setLand({ ...land, patwari_id: v === "__none__" ? "" : v })}>
+                          <SelectTrigger><SelectValue placeholder={tx("Select patwari", "পাটুয়ারি নির্বাচন করুন")} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">{tx("— None —", "— নেই —")}</SelectItem>
+                            {patwaris.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.name_bn || p.name}{p.mobile ? ` (${p.mobile})` : ""}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                   <DialogFooter><Button variant="outline" disabled={savingLand} onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand} disabled={savingLand}>{savingLand ? "…" : t("save")}</Button></DialogFooter>
                 </DialogContent>
@@ -1044,6 +1071,7 @@ export default function FarmerDetail() {
                 <TableHead className="text-right">{t("landSize")}</TableHead>
                 <TableHead>{t("ownerType")}</TableHead>
                 <TableHead>{tx("Owner", "মালিক")}</TableHead>
+                <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
                 <TableHead>{t("fieldType")}</TableHead>
                 <TableHead className="text-right">{tx("Rate / Shotok", "রেট/শতক")}</TableHead>
                 <TableHead className="text-right">{tx("Total Amount", "মোট টাকা")}</TableHead>
@@ -1066,8 +1094,13 @@ export default function FarmerDetail() {
                         <TableCell className="text-xs">
                           {l.owner_type === "owner"
                             ? <span className="text-muted-foreground">{tx("Self-owned", "নিজ মালিক")}</span>
-                            : (l.owner_farmer_id ? (ownerNames[l.owner_farmer_id] ?? "—") : "—")}
+                            : (l.owner_farmer_id ? (
+                                <Link to={`/farmers/${l.owner_farmer_id}`} className="underline text-primary">
+                                  {ownerNames[l.owner_farmer_id] ?? "—"}
+                                </Link>
+                              ) : "—")}
                         </TableCell>
+                        <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                         <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
@@ -1089,7 +1122,7 @@ export default function FarmerDetail() {
                       <TableRow className="bg-muted/40 font-semibold">
                         <TableCell colSpan={2} className="text-right">{label} ({tx("Subtotal", "উপ-মোট")})</TableCell>
                         <TableCell className="text-right">{sizeSum.toFixed(2)}</TableCell>
-                        <TableCell colSpan={4} />
+                        <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
                       </TableRow>
@@ -1097,7 +1130,7 @@ export default function FarmerDetail() {
                   };
                   const sectionHeader = (label: string) => (
                     <TableRow className="bg-primary/10">
-                      <TableCell colSpan={9} className="font-bold text-sm py-2">{label}</TableCell>
+                      <TableCell colSpan={10} className="font-bold text-sm py-2">{label}</TableCell>
                     </TableRow>
                   );
                   const out: React.ReactNode[] = [];
@@ -1121,13 +1154,13 @@ export default function FarmerDetail() {
                       <TableRow key="grand" className="bg-muted/70 font-bold border-t-2">
                         <TableCell colSpan={2} className="text-right">{tx("Grand Total", "সর্বমোট")}</TableCell>
                         <TableCell className="text-right">{totalSize.toFixed(2)}</TableCell>
-                        <TableCell colSpan={4} />
+                        <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(totalAmt)}</TableCell>
                         <TableCell />
                       </TableRow>
                     );
                   } else {
-                    out.push(<TableRow key="empty"><TableCell colSpan={9} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
+                    out.push(<TableRow key="empty"><TableCell colSpan={10} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
                   }
                   return out;
                 })()}
@@ -1402,6 +1435,18 @@ export default function FarmerDetail() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div>
+              <Label>{tx("Patwari", "পাটুয়ারি")}</Label>
+              <Select value={editForm.patwari_id || "__none__"} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, patwari_id: v === "__none__" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder={tx("Select patwari", "পাটুয়ারি নির্বাচন করুন")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{tx("— None —", "— নেই —")}</SelectItem>
+                  {patwaris.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name_bn || p.name}{p.mobile ? ` (${p.mobile})` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

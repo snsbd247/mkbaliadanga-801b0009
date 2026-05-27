@@ -31,23 +31,21 @@ export default function PatwariDetail() {
     setPatwari(p);
     document.title = `${tx("Patwari", "পাটুয়ারী")} — ${p?.name_bn || p?.name || ""}`;
 
-    if (p?.mouza_id) {
-      const { data: ls } = await supabase
-        .from("lands")
-        .select("id,dag_no,land_size,farmer_id,farmers(name_en,name_bn,farmer_code,mobile)")
-        .eq("mouza_id", p.mouza_id)
-        .is("deleted_at", null);
-      setLands(ls ?? []);
+    // New: lands directly assigned to this patwari (req #1, #4)
+    const { data: assignedLands } = await supabase
+      .from("lands")
+      .select("id,dag_no,land_size,farmer_id,farmers(name_en,name_bn,farmer_code,mobile)")
+      .eq("patwari_id", id!)
+      .is("deleted_at", null);
+    setLands(assignedLands ?? []);
 
-      const farmerMap = new Map<string, any>();
-      (ls ?? []).forEach((l: any) => {
-        if (l.farmers && l.farmer_id) farmerMap.set(l.farmer_id, { id: l.farmer_id, ...l.farmers });
-      });
-      setFarmers(Array.from(farmerMap.values()));
-    } else {
-      setLands([]); setFarmers([]);
-    }
+    const farmerMap = new Map<string, any>();
+    (assignedLands ?? []).forEach((l: any) => {
+      if (l.farmers && l.farmer_id) farmerMap.set(l.farmer_id, { id: l.farmer_id, ...l.farmers });
+    });
+    setFarmers(Array.from(farmerMap.values()));
 
+    // Legacy: irrigation_charges directly assigned (kept for historical audit only)
     const { data: ovs } = await supabase
       .from("irrigation_charges")
       .select("id,entry_date,land_id,farmer_id,total,paid_amount,lands(dag_no),farmers(name_en,name_bn)")
@@ -93,7 +91,7 @@ export default function PatwariDetail() {
         <TabsList>
           <TabsTrigger value="farmers">{tx("Farmers", "কৃষক")} ({farmers.length})</TabsTrigger>
           <TabsTrigger value="lands">{tx("Lands", "জমি")} ({lands.length})</TabsTrigger>
-          <TabsTrigger value="overrides">{tx("Special entries", "বিশেষ এন্ট্রি")} ({overrides.length})</TabsTrigger>
+          <TabsTrigger value="overrides">{tx("Legacy entries", "পুরাতন এন্ট্রি")} ({overrides.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="farmers">
@@ -110,7 +108,7 @@ export default function PatwariDetail() {
                     <TableCell>{f.mobile ?? "—"}</TableCell>
                   </TableRow>
                 ))}
-                {farmers.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No farmers in this mouza", "এই মৌজায় কৃষক নেই")}</TableCell></TableRow>}
+                {farmers.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No farmers assigned to this patwari", "এই পাটুয়ারির অধীনে কোন কৃষক নেই")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
@@ -130,14 +128,14 @@ export default function PatwariDetail() {
                     <TableCell>{l.farmers?.name_bn || l.farmers?.name_en || "—"}</TableCell>
                   </TableRow>
                 ))}
-                {lands.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No lands in this mouza", "এই মৌজায় জমি নেই")}</TableCell></TableRow>}
+                {lands.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No lands assigned to this patwari", "এই পাটুয়ারির অধীনে কোন জমি নেই")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
         </TabsContent>
 
         <TabsContent value="overrides">
-          <p className="text-xs text-muted-foreground mb-2">{tx("Irrigation entries where this patwari was specifically assigned.", "যেসব সেচ এন্ট্রিতে এই পাটুয়ারীকে সরাসরি অ্যাসাইন করা হয়েছে।")}</p>
+          <p className="text-xs text-muted-foreground mb-2">{tx("Legacy irrigation entries from old per-charge assignment (read-only history).", "পুরাতন প্রতি-এন্ট্রি ভিত্তিক assignment এর হিস্ট্রি (শুধু পড়ার জন্য)।")}</p>
           <Card>
             <Table>
               <TableHeader><TableRow>
