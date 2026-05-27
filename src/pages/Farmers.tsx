@@ -198,10 +198,11 @@ type FormErrors = {
 };
 
 const farmerFormSchema = z.object({
+  // Only English name is required (UI shows * only on this field). Other names are optional.
   name_en: z.string().trim().min(1, "Name (English) is required").max(100),
-  name_bn: z.string().trim().min(1, "Name (Bangla) is required").max(100),
-  father_name: z.string().trim().min(1, "Father's name is required").max(100),
-  mother_name: z.string().trim().min(1, "Mother's name is required").max(100),
+  name_bn: z.string().trim().max(100).optional().or(z.literal("")),
+  father_name: z.string().trim().max(100).optional().or(z.literal("")),
+  mother_name: z.string().trim().max(100).optional().or(z.literal("")),
   nid: z.string().trim().refine((v) => !v || /^\d{10,17}$/.test(v.replace(/\D/g, "")), "Invalid NID (10–17 digits)").optional().or(z.literal("")),
   mobile: z.string().trim().refine((v) => !v || /^\+?\d[\d\s-]{6,20}$/.test(v), "Invalid mobile number").optional().or(z.literal("")),
   member_no: z.string().trim().refine((v) => !v || /^\d{5}$/.test(v), "Farmer ID must be exactly 5 digits (e.g. 00001)").optional().or(z.literal("")),
