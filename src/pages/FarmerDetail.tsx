@@ -32,6 +32,8 @@ import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButt
 import IrrigationInvoicesTab from "@/components/farmers/IrrigationInvoicesTab";
 import FarmerLandHistoryTab from "@/components/farmers/FarmerLandHistoryTab";
 import FarmerNotesTab from "@/components/farmers/FarmerNotesTab";
+import LandTransferDialog from "@/components/farmers/LandTransferDialog";
+import LandTransferHistoryTab from "@/components/farmers/LandTransferHistoryTab";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
 import { useBranding } from "@/lib/branding";
 import { exportLandsPdf, exportLandsExcel, type LandExportRow } from "@/lib/landExport";
@@ -87,6 +89,7 @@ export default function FarmerDetail() {
   const [ownerLands, setOwnerLands] = useState<any[]>([]);
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
   const [patwaris, setPatwaris] = useState<any[]>([]);
+  const [transferLand, setTransferLand] = useState<any | null>(null);
   // Lands owned by this farmer that are given out to sharecroppers (borga)
   const [borgaOut, setBorgaOut] = useState<any[]>([]);
 
@@ -909,6 +912,7 @@ export default function FarmerDetail() {
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
           <TabsTrigger value="land_history">Land History</TabsTrigger>
+          <TabsTrigger value="land_transfers">{tx("Transfer History", "হস্তান্তর ইতিহাস")}</TabsTrigger>
           {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
           {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
@@ -1137,6 +1141,9 @@ export default function FarmerDetail() {
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
+                            {tx("Transfer", "হস্তান্তর")}
+                          </Button>
                           <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
                         </TableCell>
                       </TableRow>
@@ -1203,6 +1210,12 @@ export default function FarmerDetail() {
 
         <TabsContent value="land_history">
           <FarmerLandHistoryTab farmerId={id!} />
+        </TabsContent>
+
+        <TabsContent value="land_transfers">
+          <Card className="p-3">
+            <LandTransferHistoryTab farmerId={id!} />
+          </Card>
         </TabsContent>
 
         <TabsContent value="owned_borga">
@@ -1425,6 +1438,14 @@ export default function FarmerDetail() {
           <FarmerNotesTab farmerId={id!} />
         </TabsContent>
       </Tabs>
+
+      <LandTransferDialog
+        open={!!transferLand}
+        onOpenChange={(v) => { if (!v) setTransferLand(null); }}
+        sourceLand={transferLand}
+        sourceFarmerId={id!}
+        onDone={() => { setTransferLand(null); loadAll(); }}
+      />
 
       <Dialog open={editFarmerOpen} onOpenChange={(o) => { if (!o && !editFarmerSaving) { setEditFarmerOpen(false); setEditFarmerForm(null); setEditFarmerPhoto(null); setEditFarmerLocErr(null); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
