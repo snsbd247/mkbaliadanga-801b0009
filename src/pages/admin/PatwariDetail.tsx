@@ -108,7 +108,7 @@ export default function PatwariDetail() {
                     <TableCell>{f.mobile ?? "—"}</TableCell>
                   </TableRow>
                 ))}
-                {farmers.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No farmers in this mouza", "এই মৌজায় কৃষক নেই")}</TableCell></TableRow>}
+                {farmers.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No farmers assigned to this patwari", "এই পাটুয়ারির অধীনে কোন কৃষক নেই")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
