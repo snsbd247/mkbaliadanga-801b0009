@@ -338,6 +338,27 @@ export default function Loans() {
                 <div ref={registerField("issued_on")}><Label>{t("issuedOn")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
                 <div><Label>{t("nextDue")}</Label><Input type="date" value={form.next_due_on} onChange={e => setForm({ ...form, next_due_on: e.target.value })} /></div>
               </div>
+              <div>
+                <Label>{tx("Repayment Mode", "পরিশোধ মোড")}</Label>
+                <Select value={form.repayment_mode} onValueChange={(v: "installment" | "bullet") => setForm({ ...form, repayment_mode: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="installment">{tx("Installments", "কিস্তিতে")}</SelectItem>
+                    <SelectItem value="bullet">{tx("One-time (Bullet)", "এককালীন")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">{tx("Bullet = repay full amount in one payment at end of term.", "এককালীন = মেয়াদ শেষে একবারে পুরো টাকা পরিশোধ।")}</p>
+              </div>
+              <div className="rounded-md border p-3 space-y-2">
+                <div className="text-sm font-semibold">{tx("Guarantor (optional)", "জামিনদার (ঐচ্ছিক)")}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><Label className="text-xs">{tx("Name", "নাম")}</Label><Input value={form.guarantor_name} onChange={e => setForm({ ...form, guarantor_name: e.target.value })} /></div>
+                  <div><Label className="text-xs">{tx("Father's Name", "পিতার নাম")}</Label><Input value={form.guarantor_father} onChange={e => setForm({ ...form, guarantor_father: e.target.value })} /></div>
+                  <div><Label className="text-xs">{tx("Village", "গ্রাম")}</Label><Input value={form.guarantor_village} onChange={e => setForm({ ...form, guarantor_village: e.target.value })} /></div>
+                  <div><Label className="text-xs">{tx("Mobile", "মোবাইল")}</Label><Input value={form.guarantor_mobile} onChange={e => setForm({ ...form, guarantor_mobile: e.target.value })} /></div>
+                  <div className="col-span-2"><Label className="text-xs">{tx("NID", "এনআইডি")}</Label><Input value={form.guarantor_nid} onChange={e => setForm({ ...form, guarantor_nid: e.target.value })} /></div>
+                </div>
+              </div>
               {(() => {
                 const total = form.interest_enabled ? form.principal * (1 + form.interest_rate / 100) : form.principal;
                 const plan = plans.find(p => p.id === form.plan_id);
