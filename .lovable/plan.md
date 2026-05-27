@@ -1,96 +1,106 @@
-## স্কোপ
+# Farmer Module Enhancement Plan
 
-সাম্প্রতিক যেসব ফিচার/ফিক্স ৫টি জায়গায় রিফ্লেক্ট করব:
-
-1. Loan No office-wise unique (DB index + form hint)
-2. Member-wise Loan Summary (`/loans` পেজে)
-3. Irrigation payment-এ Hawlat/Bank/Mobile Banking category
-4. Combined Payment-এ farmer dues preview + Auto-download receipt
-5. QR `/r/{token}` receipt-verify পেজ (genuine/masked mobile)
-6. Form draft restore toast (farmer/loan/payment ফর্মে)
-7. Tab-return page-refresh permanent ফিক্স (focus refetch off)
-8. Farmer profile থেকে Edit করলে save-এর পর প্রোফাইলেই ফিরে আসা
-9. Lands form-এ village/ward/union ছাড়া save করার ফিক্স
+১৪টা request কে ৫টা logical group এ ভাগ করছি। প্রতিটা group আলাদা migration + UI change হবে যাতে review সহজ হয়।
 
 ---
 
-## ১. User Manual (PDF v4 + in-app /help page)
+## Group A — Land + Patwari (req #1, #2, #4)
 
-- `public/help/user-manual-v4.pdf` জেনারেট — `reportlab` দিয়ে স্ক্রিপ্ট
-  - নতুন chapter: "Recent updates (2026 May)" উপরের ৯টা আইটেম স্ক্রিনশটসহ
-  - বাকি chapter v3 থেকে port (table of contents আপডেট)
-- In-app `/help` route যোগ:
-  - `src/pages/Help.tsx` — markdown-driven, bn/en টগল, sidebar TOC
-  - `public/help/manual.md` থেকে রেন্ডার (react-markdown)
-  - PDF ডাউনলোড বাটন (v4)
-- Sidebar nav-এ "Help / সহায়িকা" লিংক
+**DB changes (`lands` table):**
+- নতুন column: `patwari_id uuid` (references farmers — patwari নিজেও একটা farmer/staff record)
+- পুরাতন patwari assign system (যেটা আলাদা page/table-এ ছিল) remove
 
-## ২. Demo Import System
-
-- `src/lib/demoPresets.ts`-এ নতুন preset আইটেম:
-  - Sample loans (২টা, office-wise unique loan_no সহ)
-  - Sample irrigation payment with Hawlat category
-  - Sample combined payment
-  - Sample QR token
-- `src/pages/admin/DemoManager.tsx`-এ নতুন seed বাটন: "Seed recent-features demo"
-- `supabase/functions/demo-reset/index.ts` — নতুন category গুলো reset scope-এ include
-- `src/lib/assetDemoSeed.ts` — অপরিবর্তিত, কিন্তু validation pass করে
-
-## ৩. ব্যাকেন্ড ফাইল (Laravel mirror)
-
-`backend/` হল Laravel mirror (PHP); নতুন migrations:
-
-- `2026_05_24_000001_add_loan_no_unique_index.php` — `loans (office_id, loan_no)` unique partial index
-- `2026_05_24_000002_add_hawlat_bank_to_irrigation_payments.php` — `category` enum extend
-- `2026_05_24_000003_create_qr_tokens_table.php` — token, payment_id, expires_at
-- `2026_05_24_000004_add_verify_token_to_payments.php` — nullable column
-
-Models update:
-- `app/Models/Loan.php` — unique validation rule
-- `app/Models/IrrigationPayment.php` — category enum cast
-- `app/Models/QrToken.php` — new model
-- `app/Models/Payment.php` — verify_token fillable
-
-Controllers (API):
-- `app/Http/Controllers/Api/QrController.php` — `GET /api/r/{token}` mirror of edge function
-- `app/Http/Controllers/Api/LoanController.php` — duplicate loan_no error handling
-
-## ৪. ডিফল্ট সিডার (DatabaseSeeder)
-
-- `DatabaseSeeder.php`-এ run order: Roles → ChartOfAccounts → AdminUser → SequenceFix → (new) DemoOfficeSeeder optional
-- `AdminUserSeeder.php` — `superadmin / Admin@123456` (current) verify
-- নতুন `IrrigationCategorySeeder.php` — Hawlat/Bank/Mobile Banking default rows
-- `ChartOfAccountsSeeder.php` — Hawlat/Bank ledger account add
-
-## ৫. GeoSeeder
-
-- `backend/database/seeders/GeoSeeder.php` — বর্তমানে DemoOfficeSeeder-এর ভিতরে hardcoded; আলাদা করব
-- Source: `src/data/bd-geo.json` (existing) থেকে JSON read করে bulk insert:
-  - divisions (8)
-  - districts (64)
-  - upazilas (~495)
-  - unions (~4500)
-  - mouzas (sample subset, full optional flag)
-- Idempotent: `updateOrInsert` by `(parent_id, name_en)`
-- DatabaseSeeder-এ wire করব (production-safe: শুধু empty হলে seed)
+**UI:**
+- Land Add/Edit dialog-এ "পাটুয়ারি" dropdown (FarmerSearchSelect দিয়ে)
+- Farmer Profile → Lands tab-এ "পাটুয়ারি" column add
+- পুরাতন patwari assignment page/menu remove
 
 ---
 
-## Deliverables
+## Group B — Ownership & Sharecrop (req #3, #6, #8, #9)
 
-- 1 PDF: `public/help/user-manual-v4.pdf`
-- 1 markdown: `public/help/manual.md`
-- 1 new page: `src/pages/Help.tsx` + route + sidebar link
-- demoPresets/DemoManager edits
-- 4 Laravel migrations + 4 models + 2 controllers
-- 3 seeder files (new/updated): DatabaseSeeder, IrrigationCategorySeeder, GeoSeeder
+**DB changes (`lands` table):**
+- `tenure_type text` — values: `own` / `borga` (sharecrop)
+- `owner_farmer_id uuid` — মালিকের farmer_id (borga হলে required)
+- `area_decimal` constraint: একই owner+dag combination-এ মোট বর্গা+নিজ চাষ ≤ মোট জমি (validation trigger)
 
-## টেকনিক্যাল নোট
+**Logic:**
+- জমির মালিকের ৭৫ শতক → একাধিক row হিসেবে split করা যাবে: 70 শতক borga (farmer A), 5 শতক own (মালিক নিজে)
+- সেচ চার্জ যেই farmer_id-তে land row আছে তার বিপরীতে generate হবে (existing flow)
 
-- Laravel ফাইলগুলো sandbox-এ run হয় না (frontend-only project), শুধু mirror হিসেবে রাখা — তাই কোনো DB মাইগ্রেশন এই কাজে চলবে না; Supabase-এ আগে থেকেই আছে
-- PDF generation `code--exec` দিয়ে `/mnt/documents/`-এ আগে বানিয়ে QA করে তারপর `public/help/`-এ কপি
-- GeoSeeder-এর পূর্ণ mouza ডেটা বড়; default-এ skip, `--with-mouzas` flag-এ enable
+**UI:**
+- Land Add form-এ "জমির ধরন" radio: নিজস্ব / বর্গা
+- বর্গা select হলে "মালিকের নাম" FarmerSearchSelect দেখাবে
+- Farmer Profile → Lands tab-এ borga row-তে "মালিক: [নাম]" — clickable link → owner farmer profile
+- **Owner View** (Farmer Profile-এর নতুন "মালিকানাধীন জমি" tab):
+  - সব borga-দেয়া জমির list + কোন farmer-এ assigned + ঐ জমির latest irrigation invoice status (Paid/Unpaid badge)
+- **Tenant view** (existing Lands tab): নিজের জমি + অন্যের থেকে borga নেওয়া জমি — already covers req #9
 
-## প্রশ্ন
+---
 
-এই ৫টা স্কোপ + ৯টা ফিচার দিয়ে এগোব? নাকি প্রথমে শুধু **User Manual (PDF v4 + /help page)** শেষ করে দেখাব, তারপর demo/backend/seeder আলাদা টার্নে?
+## Group C — Land Inheritance & Transfer History (req #5, #7)
+
+**DB changes:** নতুন table `land_transfer_history`
+- columns: `land_id`, `from_farmer_id`, `to_farmer_id`, `transfer_type` (inheritance/borga_transfer/sale), `area_decimal`, `remark`, `transferred_at`, `created_by`
+- পুরাতন land row never modified — নতুন land row create হবে নতুন owner-এ, original row "transferred" status-এ archive
+
+**UI:**
+- Land row → "Transfer/বণ্টন" button:
+  - Inheritance mode: মালিকের n জন ছেলে select → equal split (or custom %) → n টা নতুন land row auto-create
+  - Borga transfer mode: এক বর্গাদার → অন্য বর্গাদার, remark field সহ
+- Land History tab: পুরো transfer chain timeline view, remark সহ
+
+---
+
+## Group D — Savings Statement & Profit (req #10, #11)
+
+**DB changes (`savings_transactions`):**
+- নতুন kind value: `profit` (admin manual entry)
+- নতুন column: `field_receipt_no text` (ফিল্ড রশিদ নাম্বার, optional)
+- নতুন column: `remark text` (existing memo rename বা parallel)
+- Withdrawal validation trigger: `amount > current_balance` হলে reject
+
+**UI:**
+- Savings page → "Profit Entry" button (admin only): farmer select + amount + remark
+- Farmer Profile → Statement tab columns: তারিখ | রশিদ# | ফিল্ড রশিদ# | টাইপ | জমা | উত্তলন | প্রফিট | চলমান ব্যালেন্স | রিমার্ক | স্ট্যাটাস
+- Withdrawal form: balance check + error message "জমাকৃত টাকার বেশি উত্তলন সম্ভব নয়"
+
+---
+
+## Group E — Loan Guarantor & Flexible Plan (req #12, #13, #14)
+
+**DB changes:**
+- নতুন table `loan_guarantors`: `loan_id`, `farmer_id` (nullable), `name`, `father_name`, `village`, `mobile`, `nid`
+- `loans` table: `repayment_mode text` — values: `installment` / `bullet` (lump-sum at end)
+- `loans` table: `fully_paid_on date`, computed `days_to_repay` (issue → fully_paid)
+
+**UI:**
+- Loan create form: 
+  - Repayment mode toggle (installment vs bullet)
+  - Guarantor section: manual entry fields OR "Select farmer" toggle (auto-fill from farmer record)
+  - Nominee section removed from loan (savings-only)
+- Loan summary: ইস্যু তারিখ, পরিষোধ তারিখ, কত দিন, mode
+- Previous loan repayment days নতুন loan create-এ informational badge হিসেবে দেখাবে (eligibility hint)
+- Installment list table: নতুন column "পেমেন্ট রশিদ#" (linked payment receipt_no)
+
+---
+
+## Execution Order
+
+1. Group A (smallest, foundation) → migration + UI
+2. Group D (savings — independent) → migration + UI  
+3. Group B (ownership) → migration + UI
+4. Group E (loan) → migration + UI
+5. Group C (transfer/inheritance — most complex, depends on B) → migration + UI
+
+প্রতিটা group শেষ করে browser test করে next-এ যাব।
+
+---
+
+## Questions আমার (approve করার আগে)
+
+1. **Patwari** কি farmer record-এর মধ্যেই একটা flag/role, নাকি আলাদা `staff` table আছে? — existing schema check করব implementation-এ।
+2. **Inheritance split**: equal split default, কিন্তু custom % override allow করব?
+3. **Profit entry** কি savings_balance-এ যোগ হবে (compounded), নাকি শুধু statement-এ দেখাবে আলাদা column হিসেবে?
+
+আপনি approve করলে Group A থেকে শুরু করছি। কোনো group reorder/skip চাইলে বলুন।
