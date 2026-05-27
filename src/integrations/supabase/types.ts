@@ -3396,6 +3396,7 @@ export type Database = {
           office_id: string | null
           owner_farmer_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"]
+          patwari_id: string | null
           upazila_id: string | null
         }
         Insert: {
@@ -3415,6 +3416,7 @@ export type Database = {
           office_id?: string | null
           owner_farmer_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
+          patwari_id?: string | null
           upazila_id?: string | null
         }
         Update: {
@@ -3434,6 +3436,7 @@ export type Database = {
           office_id?: string | null
           owner_farmer_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
+          patwari_id?: string | null
           upazila_id?: string | null
         }
         Relationships: [
@@ -3470,6 +3473,13 @@ export type Database = {
             columns: ["owner_farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_patwari_id_fkey"
+            columns: ["patwari_id"]
+            isOneToOne: false
+            referencedRelation: "patwaris"
             referencedColumns: ["id"]
           },
         ]
