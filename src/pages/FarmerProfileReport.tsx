@@ -131,6 +131,7 @@ export default function FarmerProfileReport() {
       setShare(sh.data ?? null);
       setLoans(ln.data ?? []);
       setOwnerRows(ownerInformation);
+      setInstallments(inst.data ?? []);
       setLoading(false);
     }
 
