@@ -62,6 +62,7 @@ export default function DeveloperUpdates() {
   const [lastChecked, setLastChecked] = useState<string | null>(null);
   const [history, setHistory] = useState<LogRow[]>([]);
   const [marking, setMarking] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("commits");
 
   // filters
   const [qUser, setQUser] = useState("");
@@ -71,12 +72,11 @@ export default function DeveloperUpdates() {
 
   useEffect(() => {
     document.title = "Developer Updates";
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setRepoUrl(saved);
-      void check(saved);
-    }
+    const saved = localStorage.getItem(STORAGE_KEY) ?? DEFAULT_REPO;
+    setRepoUrl(saved);
+    void check(saved);
     void loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadHistory() {
