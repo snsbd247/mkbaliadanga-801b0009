@@ -31,23 +31,21 @@ export default function PatwariDetail() {
     setPatwari(p);
     document.title = `${tx("Patwari", "পাটুয়ারী")} — ${p?.name_bn || p?.name || ""}`;
 
-    if (p?.mouza_id) {
-      const { data: ls } = await supabase
-        .from("lands")
-        .select("id,dag_no,land_size,farmer_id,farmers(name_en,name_bn,farmer_code,mobile)")
-        .eq("mouza_id", p.mouza_id)
-        .is("deleted_at", null);
-      setLands(ls ?? []);
+    // New: lands directly assigned to this patwari (req #1, #4)
+    const { data: assignedLands } = await supabase
+      .from("lands")
+      .select("id,dag_no,land_size,farmer_id,farmers(name_en,name_bn,farmer_code,mobile)")
+      .eq("patwari_id", id!)
+      .is("deleted_at", null);
+    setLands(assignedLands ?? []);
 
-      const farmerMap = new Map<string, any>();
-      (ls ?? []).forEach((l: any) => {
-        if (l.farmers && l.farmer_id) farmerMap.set(l.farmer_id, { id: l.farmer_id, ...l.farmers });
-      });
-      setFarmers(Array.from(farmerMap.values()));
-    } else {
-      setLands([]); setFarmers([]);
-    }
+    const farmerMap = new Map<string, any>();
+    (assignedLands ?? []).forEach((l: any) => {
+      if (l.farmers && l.farmer_id) farmerMap.set(l.farmer_id, { id: l.farmer_id, ...l.farmers });
+    });
+    setFarmers(Array.from(farmerMap.values()));
 
+    // Legacy: irrigation_charges directly assigned (kept for historical audit only)
     const { data: ovs } = await supabase
       .from("irrigation_charges")
       .select("id,entry_date,land_id,farmer_id,total,paid_amount,lands(dag_no),farmers(name_en,name_bn)")
