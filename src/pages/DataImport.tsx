@@ -734,6 +734,27 @@ export default function DataImport() {
             next[i] = { ...next[i], status: "ok" };
             if (i % 10 === 0) setRows([...next]);
             continue;
+          } else if (mod === "patwaris") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            let mouzaId: string | null = null;
+            if (raw.mouza) {
+              const { data: mz } = await supabase
+                .from("mouzas").select("id").eq("name", String(raw.mouza).trim()).maybeSingle();
+              if (mz) mouzaId = mz.id;
+            }
+            table = "patwaris";
+            payload = {
+              name,
+              name_bn: raw.name_bn ?? null,
+              mobile: raw.mobile ?? null,
+              nid: raw.nid ?? null,
+              address: raw.address ?? null,
+              mouza_id: mouzaId,
+              note: raw.note ?? null,
+              is_active: true,
+              created_by: user?.id,
+            };
           }
 
           if (dryRun) {
