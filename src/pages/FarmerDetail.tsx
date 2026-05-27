@@ -1205,6 +1205,61 @@ export default function FarmerDetail() {
           <FarmerLandHistoryTab farmerId={id!} />
         </TabsContent>
 
+        <TabsContent value="owned_borga">
+          <Card>
+            <div className="p-3 border-b font-medium">
+              {tx("Lands you own that are sharecropped by others", "আপনার মালিকানার জমি যা অন্যরা বর্গা চাষ করছেন")}
+            </div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{tx("Dag", "দাগ")}</TableHead>
+                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead>{tx("Area", "জমির পরিমাণ")}</TableHead>
+                <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
+                <TableHead>{tx("Latest Invoice", "সর্বশেষ ইনভয়েস")}</TableHead>
+                <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {borgaOut.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    {tx("No sharecropped lands", "কোনো বর্গা জমি নেই")}
+                  </TableCell></TableRow>
+                )}
+                {borgaOut.map((l) => {
+                  const inv = l.latest_invoice;
+                  const due = inv ? Number(inv.due_amount || 0) : 0;
+                  const status = !inv ? "—" : (due <= 0 ? tx("Paid", "পরিশোধিত") : tx("Due", "বকেয়া"));
+                  return (
+                    <TableRow key={l.id}>
+                      <TableCell>{l.dag_no || (l.dag_numbers || []).join(", ") || "—"}</TableCell>
+                      <TableCell>{l.mouza_name || l.mouza || "—"}</TableCell>
+                      <TableCell>{l.land_size}</TableCell>
+                      <TableCell>
+                        {l.tenant ? (
+                          <Link to={`/farmers/${l.tenant.id}`} className="underline text-primary">
+                            {l.tenant.name_bn || l.tenant.name_en}
+                            {l.tenant.farmer_code ? <span className="text-xs text-muted-foreground"> ({l.tenant.farmer_code})</span> : null}
+                          </Link>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {inv ? `${fmtDate((inv.generated_at || "").slice(0,10))} · ৳${inv.payable_amount}` : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {inv ? (
+                          <Badge variant={due <= 0 ? "default" : "destructive"}>{status}</Badge>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+
+
 
 
         <TabsContent value="savings">
