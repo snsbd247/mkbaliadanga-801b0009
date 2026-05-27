@@ -160,6 +160,34 @@ export default function FarmerDetail() {
       setOwnerNames(map);
     } else setOwnerNames({});
 
+    // Load borga lands where THIS farmer is the owner (given out to sharecroppers)
+    try {
+      const { data: bout } = await (supabase.from as any)("lands_with_location")
+        .select("*")
+        .eq("owner_farmer_id", id!)
+        .eq("owner_type", "borgadar")
+        .order("created_at");
+      const rows = (bout as any[]) ?? [];
+      const tenantIds = Array.from(new Set(rows.map((r) => r.farmer_id).filter(Boolean)));
+      const tenantMap: Record<string, any> = {};
+      if (tenantIds.length) {
+        const { data: tenants } = await supabase.from("farmers")
+          .select("id,name_en,name_bn,farmer_code,mobile").in("id", tenantIds as string[]);
+        (tenants ?? []).forEach((t: any) => { tenantMap[t.id] = t; });
+      }
+      const landIds = rows.map((r) => r.id);
+      const invMap: Record<string, any> = {};
+      if (landIds.length) {
+        const { data: invs } = await supabase.from("irrigation_invoices")
+          .select("land_id,generated_at,payable_amount,paid_amount,due_amount")
+          .in("land_id", landIds as string[])
+          .is("deleted_at", null)
+          .order("generated_at", { ascending: false });
+        (invs ?? []).forEach((iv: any) => { if (!invMap[iv.land_id]) invMap[iv.land_id] = iv; });
+      }
+      setBorgaOut(rows.map((r) => ({ ...r, tenant: tenantMap[r.farmer_id], latest_invoice: invMap[r.id] })));
+    } catch { setBorgaOut([]); }
+
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
       .from("irrigation_invoices")
