@@ -101,6 +101,20 @@ ufw --force enable >/dev/null
 systemctl enable --now fail2ban >/dev/null
 ok "Firewall enabled (22, 80, 443)"
 
+# ---------- 5b. Swap (helps frontend build on 4GB VPS) ----------
+if [ ! -f /swapfile ]; then
+  log "Creating 4GB swapfile (improves Vite build stability on 4GB RAM VPS)"
+  fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
+  chmod 600 /swapfile
+  mkswap /swapfile >/dev/null
+  swapon /swapfile
+  grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  sysctl -w vm.swappiness=10 >/dev/null
+  ok "Swap enabled (4GB)"
+else
+  ok "Swap already configured"
+fi
+
 # ---------- 6. DNS pre-flight ----------
 step "6/14  Checking DNS for $DOMAIN, www.$DOMAIN, $API_SUB"
 VPS_IP="$(curl -fsS https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
