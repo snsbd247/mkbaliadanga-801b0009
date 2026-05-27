@@ -308,11 +308,11 @@ export default function DeveloperUpdates() {
         </Alert>
       )}
 
-      <Tabs defaultValue={commits.length > 0 || latestRelease ? "commits" : "history"}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="commits" disabled={!parsed || commits.length === 0}><GitBranch className="h-4 w-4 mr-1" />Recent Commits</TabsTrigger>
+          <TabsTrigger value="commits" disabled={!parsed || commits.length === 0}><GitBranch className="h-4 w-4 mr-1" />Recent Commits {commits.length > 0 && <span className="ml-1 text-xs opacity-70">({commits.length})</span>}</TabsTrigger>
           <TabsTrigger value="release" disabled={!parsed}><CheckCircle2 className="h-4 w-4 mr-1" />Latest Release</TabsTrigger>
-          <TabsTrigger value="download" disabled={!parsed}><Download className="h-4 w-4 mr-1" />Download / Pull</TabsTrigger>
+          <TabsTrigger value="download" disabled={!parsed}><Download className="h-4 w-4 mr-1" />Deploy / Update VPS</TabsTrigger>
           <TabsTrigger value="history"><History className="h-4 w-4 mr-1" />Update History ({history.length})</TabsTrigger>
         </TabsList>
 
