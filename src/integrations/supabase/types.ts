@@ -5410,6 +5410,10 @@ export type Database = {
           office_id: string | null
           owner_farmer_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"] | null
+          patwari_id: string | null
+          patwari_mobile: string | null
+          patwari_name: string | null
+          patwari_name_bn: string | null
           upazila_id: string | null
           upazila_name: string | null
         }
@@ -5440,6 +5444,13 @@ export type Database = {
             columns: ["owner_farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_patwari_id_fkey"
+            columns: ["patwari_id"]
+            isOneToOne: false
+            referencedRelation: "patwaris"
             referencedColumns: ["id"]
           },
         ]
