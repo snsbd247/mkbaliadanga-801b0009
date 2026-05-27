@@ -76,6 +76,13 @@ export const DEMO_PRESETS: DemoPreset[] = [
     description_en: "Small dataset with Hawlat/Bank irrigation payments, multi-loan members, QR-verifiable receipts and combined payment samples.",
     description_bn: "ছোট ডেটাসেট — Hawlat/Bank সেচ পেমেন্ট, multi-loan member, QR-verify রসিদ ও combined payment স্যাম্পল।",
   },
+  {
+    id: "patwari_workflow", label_en: "Patwari Workflow Demo",
+    label_bn: "পাটোয়ারী ওয়ার্কফ্লো ডেমো",
+    size: 40, modules: ["locations", "settings", "accounting", "farmers", "irrigation"], monthsBack: 3,
+    description_en: "Focused dataset with 10 patwaris mapped to mouzas, 40 farmers with lands and 3 months of irrigation invoices — ideal for testing patwari/land/irrigation reports.",
+    description_bn: "১০ জন পাটোয়ারী মৌজার সাথে ম্যাপ করা, ৪০ ফার্মার জমিসহ এবং ৩ মাসের সেচ ইনভয়েস — পাটোয়ারী/জমি/সেচ রিপোর্ট টেস্টের জন্য আদর্শ।",
+  },
 ];
 
 
