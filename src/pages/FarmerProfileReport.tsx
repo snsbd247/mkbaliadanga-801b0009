@@ -96,6 +96,7 @@ export default function FarmerProfileReport() {
           ? `${safeText(sc.name_en)} - ${safeText(sc.farmer_code)}`
           : "";
 
+        const pw = row.lands?.patwaris;
         return {
           id: row.id,
           mouza: safeText(row.lands?.mouza),
@@ -103,6 +104,7 @@ export default function FarmerProfileReport() {
           dag_no: safeText(row.lands?.dag_no),
           owner_type: ownerTypeText,
           owner_name_fid: ownerNameFid,
+          patwari: pw ? safeText(pw.name_bn || pw.name) : "",
           land_size: row.lands?.land_size !== null && row.lands?.land_size !== undefined ? Number(row.lands.land_size).toFixed(6) : "",
           field_type: fieldTypeLabel(row.lands?.field_type),
           charge_rate: String(Math.round(Number(row.irrigation_amount || 0))),
@@ -110,16 +112,19 @@ export default function FarmerProfileReport() {
           maintenance_charge: String(Math.round(Number(row.maintenance_amount || 0))),
           other_charge: String(Math.round(Number(row.other_charge || 0))),
           charge: String(Math.round(Number(row.payable_amount || 0))),
+          paid: String(Math.round(Number(row.paid_amount || 0))),
           due: String(Math.round(Number(row.due_amount || 0))),
           land_size_num: Number(row.lands?.land_size || 0),
           canal_num: Number(row.canal_amount || 0),
           maintenance_num: Number(row.maintenance_amount || 0),
           other_num: Number(row.other_charge || 0),
           charge_num: Number(row.payable_amount || 0),
+          paid_num: Number(row.paid_amount || 0),
           due_num: Number(row.due_amount || 0),
           irrigation_year: Number(row.seasons?.year) || new Date().getFullYear(),
         };
       });
+
 
       setFarmer(f.data ?? null);
       setSavings(s.data ?? []);
