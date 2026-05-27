@@ -87,6 +87,8 @@ export default function FarmerDetail() {
   const [ownerLands, setOwnerLands] = useState<any[]>([]);
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
   const [patwaris, setPatwaris] = useState<any[]>([]);
+  // Lands owned by this farmer that are given out to sharecroppers (borga)
+  const [borgaOut, setBorgaOut] = useState<any[]>([]);
 
   // Load patwaris for assignment
   useEffect(() => {
@@ -157,6 +159,34 @@ export default function FarmerDetail() {
       (owners ?? []).forEach((o: any) => { map[o.id] = o.name_bn || o.name_en || o.farmer_code || "—"; });
       setOwnerNames(map);
     } else setOwnerNames({});
+
+    // Load borga lands where THIS farmer is the owner (given out to sharecroppers)
+    try {
+      const { data: bout } = await (supabase.from as any)("lands_with_location")
+        .select("*")
+        .eq("owner_farmer_id", id!)
+        .eq("owner_type", "borgadar")
+        .order("created_at");
+      const rows = (bout as any[]) ?? [];
+      const tenantIds = Array.from(new Set(rows.map((r) => r.farmer_id).filter(Boolean)));
+      const tenantMap: Record<string, any> = {};
+      if (tenantIds.length) {
+        const { data: tenants } = await supabase.from("farmers")
+          .select("id,name_en,name_bn,farmer_code,mobile").in("id", tenantIds as string[]);
+        (tenants ?? []).forEach((t: any) => { tenantMap[t.id] = t; });
+      }
+      const landIds = rows.map((r) => r.id);
+      const invMap: Record<string, any> = {};
+      if (landIds.length) {
+        const { data: invs } = await supabase.from("irrigation_invoices")
+          .select("land_id,generated_at,payable_amount,paid_amount,due_amount")
+          .in("land_id", landIds as string[])
+          .is("deleted_at", null)
+          .order("generated_at", { ascending: false });
+        (invs ?? []).forEach((iv: any) => { if (!invMap[iv.land_id]) invMap[iv.land_id] = iv; });
+      }
+      setBorgaOut(rows.map((r) => ({ ...r, tenant: tenantMap[r.farmer_id], latest_invoice: invMap[r.id] })));
+    } catch { setBorgaOut([]); }
 
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
@@ -879,6 +909,7 @@ export default function FarmerDetail() {
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
           <TabsTrigger value="land_history">Land History</TabsTrigger>
+          {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
           {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="loans">{t("loans")}</TabsTrigger>}
@@ -1173,6 +1204,61 @@ export default function FarmerDetail() {
         <TabsContent value="land_history">
           <FarmerLandHistoryTab farmerId={id!} />
         </TabsContent>
+
+        <TabsContent value="owned_borga">
+          <Card>
+            <div className="p-3 border-b font-medium">
+              {tx("Lands you own that are sharecropped by others", "আপনার মালিকানার জমি যা অন্যরা বর্গা চাষ করছেন")}
+            </div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{tx("Dag", "দাগ")}</TableHead>
+                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead>{tx("Area", "জমির পরিমাণ")}</TableHead>
+                <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
+                <TableHead>{tx("Latest Invoice", "সর্বশেষ ইনভয়েস")}</TableHead>
+                <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {borgaOut.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    {tx("No sharecropped lands", "কোনো বর্গা জমি নেই")}
+                  </TableCell></TableRow>
+                )}
+                {borgaOut.map((l) => {
+                  const inv = l.latest_invoice;
+                  const due = inv ? Number(inv.due_amount || 0) : 0;
+                  const status = !inv ? "—" : (due <= 0 ? tx("Paid", "পরিশোধিত") : tx("Due", "বকেয়া"));
+                  return (
+                    <TableRow key={l.id}>
+                      <TableCell>{l.dag_no || (l.dag_numbers || []).join(", ") || "—"}</TableCell>
+                      <TableCell>{l.mouza_name || l.mouza || "—"}</TableCell>
+                      <TableCell>{l.land_size}</TableCell>
+                      <TableCell>
+                        {l.tenant ? (
+                          <Link to={`/farmers/${l.tenant.id}`} className="underline text-primary">
+                            {l.tenant.name_bn || l.tenant.name_en}
+                            {l.tenant.farmer_code ? <span className="text-xs text-muted-foreground"> ({l.tenant.farmer_code})</span> : null}
+                          </Link>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {inv ? `${fmtDate((inv.generated_at || "").slice(0,10))} · ৳${inv.payable_amount}` : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {inv ? (
+                          <Badge variant={due <= 0 ? "default" : "destructive"}>{status}</Badge>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+
 
 
 
