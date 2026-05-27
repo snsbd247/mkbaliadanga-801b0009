@@ -189,14 +189,14 @@ export default function DeveloperUpdates() {
   const filtered = useMemo(() => {
     const u = qUser.trim().toLowerCase();
     const r = qRepo.trim().toLowerCase();
-    const t = qText.trim().toLowerCase();
+    const txt = qText.trim().toLowerCase();
     return history.filter(h => {
       if (qAction !== "all" && h.action !== qAction) return false;
       if (u && !(`${h.user_name} ${h.user_email}`.toLowerCase().includes(u))) return false;
       if (r && !(h.repo_url || "").toLowerCase().includes(r)) return false;
-      if (t) {
+      if (txt) {
         const blob = `${h.commit_sha ?? ""} ${h.commit_message ?? ""} ${h.release_tag ?? ""} ${h.note ?? ""}`.toLowerCase();
-        if (!blob.includes(t)) return false;
+        if (!blob.includes(txt)) return false;
       }
       return true;
     });
