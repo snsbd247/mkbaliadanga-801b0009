@@ -306,6 +306,9 @@ export default function LoanDetail() {
                       <TableCell className="text-right">{money(i.paid_amount)}</TableCell>
                       <TableCell className="text-right">{money(remaining)}</TableCell>
                       <TableCell>{fmtDate(i.paid_on)}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {(payments.filter(p => p.paid_on === i.paid_on && p.receipt_no).map(p => p.receipt_no).join(", ")) || "—"}
+                      </TableCell>
                       <TableCell className="text-right">{money(i.penalty_amount)}</TableCell>
                       <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
                       <TableCell className="text-right">
