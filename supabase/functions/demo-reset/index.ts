@@ -1532,6 +1532,7 @@ const PRESETS: Record<string, { size: number; modules: string[]; monthsBack?: nu
   savings_only:    { size: 50,  modules: ["locations","settings","accounting","farmers","savings"] },
   irrigation_only: { size: 50,  modules: ["locations","settings","accounting","farmers","irrigation"] },
   recent_features: { size: 25,  modules: ["locations","settings","accounting","farmers","irrigation","loans","savings","expenses","bank","assets"], monthsBack: 2 },
+  patwari_workflow:{ size: 40,  modules: ["locations","settings","accounting","farmers","irrigation"], monthsBack: 3 },
 };
 
 
