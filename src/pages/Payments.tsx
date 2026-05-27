@@ -370,7 +370,7 @@ export default function Payments() {
     } catch (_) { /* SMS failure must not break payment flow */ }
   }
 
-  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string, loanContext: Record<string, any> = {}) {
+  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string, loanContext: Record<string, any> = {}, receiptNo?: string | null) {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
       if (a.kind === "loan" && a.reference_id) {
@@ -381,6 +381,7 @@ export default function Payments() {
           amount: Number(a.amount),
           collected_by: user?.id,
           note: noteText,
+          receipt_no: receiptNo ?? null,
           penalty_collected: penalty,
           override_reason: ctx?.override ?? null,
           override_by: ctx?.override ? user?.id : null,
