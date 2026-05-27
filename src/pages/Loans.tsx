@@ -159,7 +159,7 @@ export default function Loans() {
     const plan = plans.find((p: any) => p.id === form.plan_id);
     const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
     const total_payable = form.principal * (1 + interest_rate / 100);
-    const { error } = await supabase.from("loans").insert({
+    const { data: newLoan, error } = await supabase.from("loans").insert({
       farmer_id: form.farmer_id,
       plan_id: form.plan_id || null,
       loan_no: loanNo || null,
@@ -168,9 +168,21 @@ export default function Loans() {
       interest_rate,
       total_payable,
       issued_on: form.issued_on, next_due_on: form.next_due_on || null, note: form.note,
+      repayment_mode: form.repayment_mode,
       status: "pending", created_by: user?.id,
-    } as any);
+    } as any).select("id, office_id").single();
     if (error) return toast.error(error.message);
+    if (newLoan && form.guarantor_name.trim()) {
+      await supabase.from("loan_guarantors").insert({
+        loan_id: newLoan.id,
+        office_id: newLoan.office_id ?? officeId ?? null,
+        name: form.guarantor_name.trim(),
+        father_name: form.guarantor_father.trim() || null,
+        village: form.guarantor_village.trim() || null,
+        mobile: form.guarantor_mobile.trim() || null,
+        nid: form.guarantor_nid.trim() || null,
+      } as any);
+    }
     await supabase.from("notifications").insert({
       kind: "loan_pending",
       title: t("loanApprovalNeededTitle"),
