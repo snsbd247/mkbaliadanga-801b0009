@@ -42,7 +42,7 @@ export default function Loans() {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({ farmer_id: "", plan_id: "", loan_no: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "" });
+  const [form, setForm] = useState({ farmer_id: "", plan_id: "", loan_no: "", principal: 0, interest_enabled: true, interest_rate: DEFAULT_INTEREST, issued_on: new Date().toISOString().slice(0, 10), next_due_on: "", note: "", repayment_mode: "installment" as "installment" | "bullet", guarantor_name: "", guarantor_father: "", guarantor_village: "", guarantor_mobile: "", guarantor_nid: "" });
   const [formErrors, setFormErrors] = useState<FieldError[]>([]);
   const { registerField, focusField, focusFirstError, preventEnterSubmit } = useFormUx();
   const createDirty = !!(form.farmer_id || form.principal > 0 || form.note);
@@ -159,7 +159,7 @@ export default function Loans() {
     const plan = plans.find((p: any) => p.id === form.plan_id);
     const interest_rate = form.interest_enabled ? (plan?.interest_rate ?? form.interest_rate) : 0;
     const total_payable = form.principal * (1 + interest_rate / 100);
-    const { error } = await supabase.from("loans").insert({
+    const { data: newLoan, error } = await supabase.from("loans").insert({
       farmer_id: form.farmer_id,
       plan_id: form.plan_id || null,
       loan_no: loanNo || null,
@@ -168,9 +168,21 @@ export default function Loans() {
       interest_rate,
       total_payable,
       issued_on: form.issued_on, next_due_on: form.next_due_on || null, note: form.note,
+      repayment_mode: form.repayment_mode,
       status: "pending", created_by: user?.id,
-    } as any);
+    } as any).select("id, office_id").single();
     if (error) return toast.error(error.message);
+    if (newLoan && form.guarantor_name.trim()) {
+      await supabase.from("loan_guarantors").insert({
+        loan_id: newLoan.id,
+        office_id: newLoan.office_id ?? officeId ?? null,
+        name: form.guarantor_name.trim(),
+        father_name: form.guarantor_father.trim() || null,
+        village: form.guarantor_village.trim() || null,
+        mobile: form.guarantor_mobile.trim() || null,
+        nid: form.guarantor_nid.trim() || null,
+      } as any);
+    }
     await supabase.from("notifications").insert({
       kind: "loan_pending",
       title: t("loanApprovalNeededTitle"),
@@ -325,6 +337,27 @@ export default function Loans() {
               <div className="grid grid-cols-2 gap-3">
                 <div ref={registerField("issued_on")}><Label>{t("issuedOn")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
                 <div><Label>{t("nextDue")}</Label><Input type="date" value={form.next_due_on} onChange={e => setForm({ ...form, next_due_on: e.target.value })} /></div>
+              </div>
+              <div>
+                <Label>{tx("Repayment Mode", "পরিশোধ মোড")}</Label>
+                <Select value={form.repayment_mode} onValueChange={(v: "installment" | "bullet") => setForm({ ...form, repayment_mode: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="installment">{tx("Installments", "কিস্তিতে")}</SelectItem>
+                    <SelectItem value="bullet">{tx("One-time (Bullet)", "এককালীন")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">{tx("Bullet = repay full amount in one payment at end of term.", "এককালীন = মেয়াদ শেষে একবারে পুরো টাকা পরিশোধ।")}</p>
+              </div>
+              <div className="rounded-md border p-3 space-y-2">
+                <div className="text-sm font-semibold">{tx("Guarantor (optional)", "জামিনদার (ঐচ্ছিক)")}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><Label className="text-xs">{tx("Name", "নাম")}</Label><Input value={form.guarantor_name} onChange={e => setForm({ ...form, guarantor_name: e.target.value })} /></div>
+                  <div><Label className="text-xs">{tx("Father's Name", "পিতার নাম")}</Label><Input value={form.guarantor_father} onChange={e => setForm({ ...form, guarantor_father: e.target.value })} /></div>
+                  <div><Label className="text-xs">{tx("Village", "গ্রাম")}</Label><Input value={form.guarantor_village} onChange={e => setForm({ ...form, guarantor_village: e.target.value })} /></div>
+                  <div><Label className="text-xs">{tx("Mobile", "মোবাইল")}</Label><Input value={form.guarantor_mobile} onChange={e => setForm({ ...form, guarantor_mobile: e.target.value })} /></div>
+                  <div className="col-span-2"><Label className="text-xs">{tx("NID", "এনআইডি")}</Label><Input value={form.guarantor_nid} onChange={e => setForm({ ...form, guarantor_nid: e.target.value })} /></div>
+                </div>
               </div>
               {(() => {
                 const total = form.interest_enabled ? form.principal * (1 + form.interest_rate / 100) : form.principal;

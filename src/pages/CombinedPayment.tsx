@@ -145,6 +145,7 @@ export default function CombinedPayment() {
         await supabase.from("loan_payments").insert({
           loan_id: form.loan_id, amount: Number(form.loan_amt),
           paid_on: new Date().toISOString().slice(0, 10), collected_by: user?.id,
+          receipt_no: receiptNo,
         } as any);
         rows.push({ kind: "loan", label_bn: "ঋণ পরিশোধ", label_en: "Loan Repayment", amount: Number(form.loan_amt) });
       }

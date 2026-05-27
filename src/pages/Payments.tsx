@@ -344,7 +344,7 @@ export default function Payments() {
       }
 
       if (status === "approved") {
-        await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note, loanContext);
+        await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note, loanContext, finalReceiptNo);
         await sendIrrigationPaymentSms(farmerId, allocs, finalReceiptNo);
       }
 
@@ -370,7 +370,7 @@ export default function Payments() {
     } catch (_) { /* SMS failure must not break payment flow */ }
   }
 
-  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string, loanContext: Record<string, any> = {}) {
+  async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string, loanContext: Record<string, any> = {}, receiptNo?: string | null) {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
       if (a.kind === "loan" && a.reference_id) {
@@ -381,6 +381,7 @@ export default function Payments() {
           amount: Number(a.amount),
           collected_by: user?.id,
           note: noteText,
+          receipt_no: receiptNo ?? null,
           penalty_collected: penalty,
           override_reason: ctx?.override ?? null,
           override_by: ctx?.override ? user?.id : null,
@@ -442,7 +443,7 @@ export default function Payments() {
       ? p.payment_allocations.map((x: any) => ({ kind: x.kind, reference_id: x.reference_id ?? "", amount: Number(x.amount) }))
       : [{ kind: p.kind, reference_id: p.reference_id ?? "", amount: Number(p.amount) }];
 
-    await applyAllocationsToLedgers(p.id, p.farmer_id, allocList, p.note);
+    await applyAllocationsToLedgers(p.id, p.farmer_id, allocList, p.note, {}, p.receipt_no ?? null);
     await sendIrrigationPaymentSms(p.farmer_id, allocList, p.receipt_no ?? null);
     toast.success(t("approvedToast"));
     load();

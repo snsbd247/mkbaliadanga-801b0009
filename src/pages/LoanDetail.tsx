@@ -22,7 +22,8 @@ type Inst = {
   status: string;
 };
 
-type Pay = { id: string; amount: number; paid_on: string; note: string | null; status: string };
+type Pay = { id: string; amount: number; paid_on: string; note: string | null; status: string; receipt_no: string | null };
+type Guarantor = { id: string; name: string; father_name: string | null; village: string | null; mobile: string | null; nid: string | null };
 
 function deriveStatus(
   i: Inst,
@@ -51,6 +52,7 @@ export default function LoanDetail() {
   const [plan, setPlan] = useState<any>(null);
   const [installments, setInstallments] = useState<Inst[]>([]);
   const [payments, setPayments] = useState<Pay[]>([]);
+  const [guarantors, setGuarantors] = useState<Guarantor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,16 +62,18 @@ export default function LoanDetail() {
       const { data: l } = await supabase.from("loans").select("*").eq("id", loanId).maybeSingle();
       if (!l) { setLoading(false); return; }
       setLoan(l);
-      const [{ data: f }, { data: p }, { data: ins }, { data: pays }] = await Promise.all([
+      const [{ data: f }, { data: p }, { data: ins }, { data: pays }, { data: gs }] = await Promise.all([
         supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,father_name,nominee_name,nominee_mobile,nominee_relation").eq("id", l.farmer_id).maybeSingle(),
         l.plan_id ? supabase.from("loan_plans").select("*").eq("id", l.plan_id).maybeSingle() : Promise.resolve({ data: null } as any),
         supabase.from("loan_installments").select("*").eq("loan_id", loanId).order("installment_no"),
         supabase.from("loan_payments").select("*").eq("loan_id", loanId).order("paid_on", { ascending: false }),
+        supabase.from("loan_guarantors").select("*").eq("loan_id", loanId),
       ]);
       setFarmer(f);
       setPlan(p);
       setInstallments((ins ?? []) as Inst[]);
       setPayments((pays ?? []) as Pay[]);
+      setGuarantors((gs ?? []) as Guarantor[]);
       setLoading(false);
     })();
   }, [loanId]);
@@ -189,6 +193,9 @@ export default function LoanDetail() {
             <Field label={tx("Status", "স্ট্যাটাস")} value={<Badge>{loan.status}</Badge> as any} />
             <Field label={tx("Issued On", "ঋণ প্রদান তারিখ")} value={fmtDate(loan.issued_on)} />
             <Field label={tx("Last Paid On", "শেষ পরিশোধ তারিখ")} value={fmtDate(summary.lastPay)} />
+            <Field label={tx("Repayment Mode", "পরিশোধ মোড")} value={loan.repayment_mode === "bullet" ? tx("One-time (Bullet)", "এককালীন") : tx("Installments", "কিস্তিতে")} />
+            <Field label={tx("Fully Paid On", "পূর্ণ পরিশোধ তারিখ")} value={loan.fully_paid_on ? fmtDate(loan.fully_paid_on) : "—"} />
+            <Field label={tx("Days to Repay", "পরিশোধে দিন")} value={loan.fully_paid_on && loan.issued_on ? `${Math.max(0, Math.round((new Date(loan.fully_paid_on).getTime() - new Date(loan.issued_on).getTime()) / 86400000))} ${tx("days", "দিন")}` : "—"} />
           </div>
         </CardContent>
       </Card>
@@ -204,6 +211,38 @@ export default function LoanDetail() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Guarantors */}
+      {guarantors.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">{tx("Guarantors", "জামিনদার")}</CardTitle></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tx("Name", "নাম")}</TableHead>
+                  <TableHead>{tx("Father's Name", "পিতার নাম")}</TableHead>
+                  <TableHead>{tx("Village", "গ্রাম")}</TableHead>
+                  <TableHead>{tx("Mobile", "মোবাইল")}</TableHead>
+                  <TableHead>{tx("NID", "এনআইডি")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {guarantors.map(g => (
+                  <TableRow key={g.id}>
+                    <TableCell>{g.name}</TableCell>
+                    <TableCell>{g.father_name || "—"}</TableCell>
+                    <TableCell>{g.village || "—"}</TableCell>
+                    <TableCell>{g.mobile || "—"}</TableCell>
+                    <TableCell>{g.nid || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* Counters */}
       <Card>
@@ -249,6 +288,7 @@ export default function LoanDetail() {
                   <TableHead className="text-right">{tx("Paid", "পরিশোধিত")}</TableHead>
                   <TableHead className="text-right">{tx("Remaining", "বাকি")}</TableHead>
                   <TableHead>{tx("Paid On", "পরিশোধ তারিখ")}</TableHead>
+                  <TableHead>{tx("Receipt #", "রসিদ নং")}</TableHead>
                   <TableHead className="text-right">{tx("Penalty", "জরিমানা")}</TableHead>
                   <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
                   <TableHead className="text-right">{tx("Action", "কার্যক্রম")}</TableHead>
@@ -266,6 +306,9 @@ export default function LoanDetail() {
                       <TableCell className="text-right">{money(i.paid_amount)}</TableCell>
                       <TableCell className="text-right">{money(remaining)}</TableCell>
                       <TableCell>{fmtDate(i.paid_on)}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {(payments.filter(p => p.paid_on === i.paid_on && p.receipt_no).map(p => p.receipt_no).join(", ")) || "—"}
+                      </TableCell>
                       <TableCell className="text-right">{money(i.penalty_amount)}</TableCell>
                       <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
                       <TableCell className="text-right">
@@ -295,6 +338,7 @@ export default function LoanDetail() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{tx("Date", "তারিখ")}</TableHead>
+                  <TableHead>{tx("Receipt #", "রসিদ নং")}</TableHead>
                   <TableHead className="text-right">{tx("Amount", "পরিমাণ")}</TableHead>
                   <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
                   <TableHead>{tx("Note", "মন্তব্য")}</TableHead>
@@ -304,6 +348,7 @@ export default function LoanDetail() {
                 {payments.map(p => (
                   <TableRow key={p.id}>
                     <TableCell>{fmtDate(p.paid_on)}</TableCell>
+                    <TableCell className="font-mono text-xs">{p.receipt_no || "—"}</TableCell>
                     <TableCell className="text-right">{money(p.amount)}</TableCell>
                     <TableCell><Badge variant="outline">{p.status}</Badge></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{p.note || "-"}</TableCell>
