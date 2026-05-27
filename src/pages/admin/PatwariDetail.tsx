@@ -91,7 +91,7 @@ export default function PatwariDetail() {
         <TabsList>
           <TabsTrigger value="farmers">{tx("Farmers", "কৃষক")} ({farmers.length})</TabsTrigger>
           <TabsTrigger value="lands">{tx("Lands", "জমি")} ({lands.length})</TabsTrigger>
-          <TabsTrigger value="overrides">{tx("Special entries", "বিশেষ এন্ট্রি")} ({overrides.length})</TabsTrigger>
+          <TabsTrigger value="overrides">{tx("Legacy entries", "পুরাতন এন্ট্রি")} ({overrides.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="farmers">
