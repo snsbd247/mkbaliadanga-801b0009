@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import { money } from "@/lib/format";
-import { exportTablePDF, exportExcel } from "@/lib/exports";
+import { exportTablePDF, exportExcel, exportCSV } from "@/lib/exports";
 import { formatLandSize, shatakToBigha } from "@/lib/irrigationCalc";
 import { formatDagNumbers } from "@/lib/dagNumbers";
 import { useAuth } from "@/auth/AuthProvider";
@@ -235,6 +235,11 @@ export default function IrrigationDueReport() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body)}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => exportCSV(
+                "Irrigation-Due", head, body,
+              )}>
+                <FileSpreadsheet className="mr-1 h-4 w-4" /> CSV
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportExcel(
                 "Irrigation-Due", "Due",
