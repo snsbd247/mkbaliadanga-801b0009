@@ -66,7 +66,11 @@ export function SavingsStatement({ farmer }: Props) {
   const enriched = useMemo(() => {
     let bal = opening;
     return txns.map(r => {
-      if (r.status === "approved") bal += r.type === "deposit" ? Number(r.amount) : -Number(r.amount);
+      if (r.status === "approved") {
+        const a = Number(r.amount) || 0;
+        if (r.type === "deposit" || r.type === "deposit_collection" || r.type === "profit") bal += a;
+        else if (r.type === "withdraw") bal -= a;
+      }
       return { ...r, running: bal };
     });
   }, [txns, opening]);
