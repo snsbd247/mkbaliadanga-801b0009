@@ -270,8 +270,10 @@ ok "Backend bootstrapped (DB migrated + all reference data seeded)"
 step "12/14  Building frontend → $WEB_ROOT"
 mkdir -p "$WEB_ROOT"
 cd "$APP_DIR"
-sudo -u "$APP_USER" VITE_API_URL="https://${API_SUB}/api" VITE_BACKEND="laravel" VITE_USE_API="1" \
-  bash -lc "npm ci && npm run build" \
+sudo -u "$APP_USER" \
+  VITE_API_URL="https://${API_SUB}/api" VITE_BACKEND="laravel" VITE_USE_API="1" \
+  NODE_OPTIONS="--max-old-space-size=3072" \
+  bash -lc "npm install --no-audit --no-fund --legacy-peer-deps && npm run build" \
   || die "Frontend build failed. Check Node version: $(node -v)"
 rsync -a --delete "$APP_DIR/dist/" "$WEB_ROOT/"
 chown -R www-data:www-data "$WEB_ROOT"
