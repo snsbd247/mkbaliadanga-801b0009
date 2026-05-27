@@ -38,15 +38,16 @@ export default function LoanOverdueReport() {
       const [f, p, lands] = await Promise.all([
         supabase.from("farmers").select("id,name_en,name_bn,farmer_code").is("deleted_at", null).order("farmer_code").limit(5000),
         supabase.from("patwaris").select("id,name,name_bn").eq("is_active", true).order("name"),
-        supabase.from("lands").select("owner_farmer_id,patwari_id").not("patwari_id", "is", null),
+        supabase.from("lands").select("farmer_id,owner_farmer_id,patwari_id").not("patwari_id", "is", null),
       ]);
       setFarmers(f.data ?? []);
       setPatwaris(p.data ?? []);
       const m = new Map<string, Set<string>>();
       (lands.data ?? []).forEach((l: any) => {
-        if (!l.owner_farmer_id || !l.patwari_id) return;
-        if (!m.has(l.owner_farmer_id)) m.set(l.owner_farmer_id, new Set());
-        m.get(l.owner_farmer_id)!.add(l.patwari_id);
+        const fid = l.owner_farmer_id || l.farmer_id;
+        if (!fid || !l.patwari_id) return;
+        if (!m.has(fid)) m.set(fid, new Set());
+        m.get(fid)!.add(l.patwari_id);
       });
       setFarmerPatwariMap(m);
     })();
