@@ -1212,6 +1212,12 @@ export default function FarmerDetail() {
           <FarmerLandHistoryTab farmerId={id!} />
         </TabsContent>
 
+        <TabsContent value="land_transfers">
+          <Card className="p-3">
+            <LandTransferHistoryTab farmerId={id!} />
+          </Card>
+        </TabsContent>
+
         <TabsContent value="owned_borga">
           <Card>
             <div className="p-3 border-b font-medium">
