@@ -42,14 +42,14 @@ export default function FarmerProfileReport() {
 
     async function load() {
       setLoading(true);
-      const [f, s, sh, ln, ir, rel] = await Promise.all([
+      const [f, s, sh, ln, ir, rel, inst] = await Promise.all([
         supabase.from("farmers").select("*").eq("id", id).maybeSingle(),
-        supabase.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null),
+        supabase.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null).order("tx_date", { ascending: true }),
         supabase.from("shares").select("balance").eq("farmer_id", id).maybeSingle(),
         supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
         supabase
           .from("irrigation_invoices")
-          .select("id, payable_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type)")
+          .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type, patwari_id, patwaris(name,name_bn))")
           .eq("farmer_id", id)
           .is("deleted_at", null)
           .order("generated_at", { ascending: false }),
@@ -58,7 +58,13 @@ export default function FarmerProfileReport() {
           .select("land_id, valid_to, sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en, farmer_code)")
           .eq("owner_farmer_id", id)
           .is("deleted_at", null),
+        supabase
+          .from("loan_installments")
+          .select("id, loan_id, installment_no, due_date, amount, paid_amount, status, paid_on, loans!inner(farmer_id)")
+          .eq("loans.farmer_id", id)
+          .order("due_date", { ascending: true }),
       ]);
+
 
       if (ignore) return;
 
