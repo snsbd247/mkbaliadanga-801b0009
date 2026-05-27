@@ -244,4 +244,53 @@ export default function IrrigationDueReport() {
                   "Bigha": Number(r.land_size_bigha.toFixed(2)),
                   "Shatak": Number(r.land_size_shatak.toFixed(2)),
                   "Season": r.season_label,
-                  "Total": r.total,
+                  "Total": r.total, "Paid": r.paid, "Due": r.due,
+                })),
+              )}>
+                <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
+              </Button>
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("code")}</TableHead>
+                <TableHead>{t("farmer")}</TableHead>
+                <TableHead>{t("land")}</TableHead>
+                <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
+                <TableHead>{t("season")}</TableHead>
+                <TableHead className="text-right">{t("total")}</TableHead>
+                <TableHead className="text-right">{t("paid")}</TableHead>
+                <TableHead className="text-right">{t("dueAmount")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((r, i) => (
+                <TableRow key={i}>
+                  <TableCell className="text-xs">{r.farmer_code}</TableCell>
+                  <TableCell>{r.farmer_name}</TableCell>
+                  <TableCell className="text-xs">{r.land_label}</TableCell>
+                  <TableCell className="text-xs">{r.patwari_name}</TableCell>
+                  <TableCell className="text-xs">{r.season_label}</TableCell>
+                  <TableCell className="text-right">{money(r.total)}</TableCell>
+                  <TableCell className="text-right">{money(r.paid)}</TableCell>
+                  <TableCell className="text-right font-semibold text-destructive">{money(r.due)}</TableCell>
+                </TableRow>
+              ))}
+              {!filtered.length && (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+          {filtered.length > 0 && (
+            <div className="mt-3 flex justify-end gap-6 text-sm">
+              <div>{t("total")}: <span className="font-semibold">{money(totals.total)}</span></div>
+              <div>{t("paid")}: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
+              <div>{t("dueAmount")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
