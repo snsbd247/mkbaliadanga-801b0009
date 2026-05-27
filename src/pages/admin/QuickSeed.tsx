@@ -79,13 +79,19 @@ export default function QuickSeed() {
   const runAll = async () => {
     setStatus((s) => ({ ...s, all: "running" }));
     try {
-      await runEdge("all", ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank"]);
+      await runEdge("all", ALL_OPS_MODULES);
       await runAsset("all_asset");
       setStatus((s) => ({ ...s, all: "ok" }));
       toast.success("সব মডিউলে ডামি ডাটা তৈরি হয়েছে");
     } catch {
       setStatus((s) => ({ ...s, all: "err" }));
     }
+  };
+
+  const counts = {
+    ok: Object.values(status).filter((s) => s === "ok").length,
+    err: Object.values(status).filter((s) => s === "err").length,
+    running: Object.values(status).filter((s) => s === "running").length,
   };
 
   const StatusIcon = ({ s }: { s?: Status }) => {
