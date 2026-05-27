@@ -42,7 +42,12 @@ export function SavingsStatement({ farmer }: Props) {
       .eq("status", "approved")
       .is("deleted_at", null)
       .lt("txn_date", yearStart);
-    const priorBal = (prior ?? []).reduce((s, r: any) => s + (r.type === "deposit" ? +r.amount : -r.amount), 0);
+    const priorBal = (prior ?? []).reduce((s, r: any) => {
+      const a = Number(r.amount) || 0;
+      if (r.type === "deposit" || r.type === "deposit_collection" || r.type === "profit") return s + a;
+      if (r.type === "withdraw") return s - a;
+      return s; // share_* excluded
+    }, 0);
     setPriorBalance(priorBal);
     setOpening(ob?.opening_balance != null ? Number(ob.opening_balance) : priorBal);
 
