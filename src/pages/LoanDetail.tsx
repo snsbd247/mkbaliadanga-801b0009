@@ -288,6 +288,7 @@ export default function LoanDetail() {
                   <TableHead className="text-right">{tx("Paid", "পরিশোধিত")}</TableHead>
                   <TableHead className="text-right">{tx("Remaining", "বাকি")}</TableHead>
                   <TableHead>{tx("Paid On", "পরিশোধ তারিখ")}</TableHead>
+                  <TableHead>{tx("Receipt #", "রসিদ নং")}</TableHead>
                   <TableHead className="text-right">{tx("Penalty", "জরিমানা")}</TableHead>
                   <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
                   <TableHead className="text-right">{tx("Action", "কার্যক্রম")}</TableHead>
