@@ -11,7 +11,7 @@ const json = (b: unknown, s = 200) =>
 // Wipe everything EXCEPT: profiles, user_roles, role_permissions, user_permissions, demo_operations_log, developer_update_logs
 const FULL_WIPE_ORDER = [
   "payment_allocations", "payments",
-  "loan_payments", "loan_installments", "loans", "loan_plans", "loan_delay_fee_settings",
+  "loan_payments", "loan_installment_delay_audit", "loan_installments", "loan_guarantors", "loans", "loan_plans", "loan_delay_fee_settings",
   "irrigation_sms_logs",
   "irrigation_due_promises",
   "irrigation_invoice_payments", "irrigation_invoice_audit", "irrigation_invoices",
@@ -23,6 +23,7 @@ const FULL_WIPE_ORDER = [
   "cashbook_submissions",
   "farmer_notes",
   "public_payment_intents",
+  "land_transfer_recipients", "land_transfers",
   "land_history",
   "land_change_log",
   // Assets module (delete dependents first; assets last)
