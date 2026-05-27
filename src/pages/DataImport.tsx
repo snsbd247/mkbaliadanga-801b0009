@@ -871,6 +871,7 @@ export default function DataImport() {
                 <SelectItem value="cashbook_receipts">Cashbook — Receipts</SelectItem>
                 <SelectItem value="cashbook_expenses">Cashbook — Expenses</SelectItem>
                 <SelectItem value="shares">Share Balance (upsert)</SelectItem>
+                <SelectItem value="patwaris">Patwaris</SelectItem>
                 {isSuper && <SelectItem value="ledger">Ledger Entries (super-admin)</SelectItem>}
               </SelectContent>
             </Select>
@@ -879,11 +880,9 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadTemplate(mod)}>
               <Download className="h-4 w-4 mr-1" /> Template (.xlsx)
             </Button>
-            {(["lands","land_relations","payments","irrigation","cashbook_receipts","cashbook_expenses","shares"] as Module[]).includes(mod) && (
-              <Button variant="outline" onClick={() => downloadCsvTemplate(mod as any)}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => downloadCsvTemplate(mod as any)}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
+            </Button>
             <input
               ref={fileRef}
               type="file"
@@ -907,7 +906,7 @@ export default function DataImport() {
         <div className="text-xs text-muted-foreground space-y-1">
           <div><strong>Required columns:</strong> {tpl.columns.join(", ")}</div>
           <div className="text-[11px]">
-            💡 <strong>account_number</strong> = farmer-এর Voter / Savings A/C No (১২ ডিজিট নম্বর)। Farmer তৈরি করার সময় auto-generate হয়। Bulk Farmer Import-এ <code>voter_number</code> কলাম দিয়ে এটি আপনি সরাসরি দিতে পারেন।
+            💡 <strong>account_number</strong> = farmer-এর Voter / Savings A/C No (৫ ডিজিট নম্বর)। Farmer তৈরি করার সময় auto-generate হয়। Bulk Farmer Import-এ <code>voter_number</code> কলাম দিয়ে এটি আপনি সরাসরি দিতে পারেন।
           {(mod === "lands" || mod === "irrigation" || mod === "land_relations") && (
             <div className="text-[11px]">
               🏷️ <strong>dag_no</strong> এ একটি জমির একাধিক দাগ নম্বর কমা দিয়ে দিতে পারেন (যেমন <code>123, 124/A, 125-B</code>)। প্রতিটি টোকেনে শুধু সংখ্যা/অক্ষর/<code>/</code>/<code>-</code> ব্যবহার করা যাবে। ইমপোর্টের সময় canonical format-এ অটো রূপান্তর হবে এবং invalid হলে সেই row error দেখাবে।
