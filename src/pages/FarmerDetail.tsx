@@ -86,6 +86,14 @@ export default function FarmerDetail() {
   const [savingLand, setSavingLand] = useState(false);
   const [ownerLands, setOwnerLands] = useState<any[]>([]);
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
+  const [patwaris, setPatwaris] = useState<any[]>([]);
+
+  // Load patwaris for assignment
+  useEffect(() => {
+    let qb = supabase.from("patwaris").select("id,name,name_bn,mobile").eq("is_active", true).order("name");
+    if (farmer?.office_id) qb = qb.eq("office_id", farmer.office_id);
+    qb.then(({ data }) => setPatwaris(data ?? []));
+  }, [farmer?.office_id]);
 
   // Load lands of selected owner (for borgadar) so user can pick a Dag
   useEffect(() => {
