@@ -212,6 +212,38 @@ export default function LoanDetail() {
         </CardContent>
       </Card>
 
+      {/* Guarantors */}
+      {guarantors.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">{tx("Guarantors", "জামিনদার")}</CardTitle></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tx("Name", "নাম")}</TableHead>
+                  <TableHead>{tx("Father's Name", "পিতার নাম")}</TableHead>
+                  <TableHead>{tx("Village", "গ্রাম")}</TableHead>
+                  <TableHead>{tx("Mobile", "মোবাইল")}</TableHead>
+                  <TableHead>{tx("NID", "এনআইডি")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {guarantors.map(g => (
+                  <TableRow key={g.id}>
+                    <TableCell>{g.name}</TableCell>
+                    <TableCell>{g.father_name || "—"}</TableCell>
+                    <TableCell>{g.village || "—"}</TableCell>
+                    <TableCell>{g.mobile || "—"}</TableCell>
+                    <TableCell>{g.nid || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+
       {/* Counters */}
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">{tx("Installment Summary", "কিস্তি সারাংশ")}</CardTitle></CardHeader>
