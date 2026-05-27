@@ -101,6 +101,20 @@ ufw --force enable >/dev/null
 systemctl enable --now fail2ban >/dev/null
 ok "Firewall enabled (22, 80, 443)"
 
+# ---------- 5b. Swap (helps frontend build on 4GB VPS) ----------
+if [ ! -f /swapfile ]; then
+  log "Creating 4GB swapfile (improves Vite build stability on 4GB RAM VPS)"
+  fallocate -l 4G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=4096
+  chmod 600 /swapfile
+  mkswap /swapfile >/dev/null
+  swapon /swapfile
+  grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  sysctl -w vm.swappiness=10 >/dev/null
+  ok "Swap enabled (4GB)"
+else
+  ok "Swap already configured"
+fi
+
 # ---------- 6. DNS pre-flight ----------
 step "6/14  Checking DNS for $DOMAIN, www.$DOMAIN, $API_SUB"
 VPS_IP="$(curl -fsS https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
@@ -270,8 +284,10 @@ ok "Backend bootstrapped (DB migrated + all reference data seeded)"
 step "12/14  Building frontend → $WEB_ROOT"
 mkdir -p "$WEB_ROOT"
 cd "$APP_DIR"
-sudo -u "$APP_USER" VITE_API_URL="https://${API_SUB}/api" VITE_BACKEND="laravel" VITE_USE_API="1" \
-  bash -lc "npm ci && npm run build" \
+sudo -u "$APP_USER" \
+  VITE_API_URL="https://${API_SUB}/api" VITE_BACKEND="laravel" VITE_USE_API="1" \
+  NODE_OPTIONS="--max-old-space-size=3072" \
+  bash -lc "npm install --no-audit --no-fund --legacy-peer-deps && npm run build" \
   || die "Frontend build failed. Check Node version: $(node -v)"
 rsync -a --delete "$APP_DIR/dist/" "$WEB_ROOT/"
 chown -R www-data:www-data "$WEB_ROOT"
