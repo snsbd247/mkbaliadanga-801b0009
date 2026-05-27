@@ -241,7 +241,10 @@ export default function DemoManager() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Preset</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>Preset</span>
+            <Badge variant="outline" className="text-[10px]">{DEMO_PRESETS.length} presets available</Badge>
+          </CardTitle>
           <CardDescription>{tx("Quick presets — auto-fill size + modules. Choose Custom to configure manually.", "দ্রুত preset — size + module অটো-সেট। ম্যানুয়ালি সেট করতে Custom নির্বাচন করুন।")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -251,6 +254,7 @@ export default function DemoManager() {
             if (p) {
               setSize(p.size);
               setSelected(p.modules as string[]);
+              toast.success(`Preset loaded: ${p.label_en}`, { description: `${p.size} farmers · ${p.modules.length} modules${p.monthsBack ? ` · ${p.monthsBack} months` : ""}` });
             }
           }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -263,6 +267,21 @@ export default function DemoManager() {
               ))}
             </SelectContent>
           </Select>
+          {presetId !== "custom" && (() => {
+            const p = DEMO_PRESETS.find((x) => x.id === presetId);
+            if (!p) return null;
+            return (
+              <div className="rounded-md border bg-muted/40 p-3 text-xs space-y-1">
+                <div className="font-medium">{p.label_bn}</div>
+                <div className="text-muted-foreground">{p.description_bn}</div>
+                <div className="flex flex-wrap gap-1 pt-1">
+                  <Badge variant="secondary" className="text-[10px]">{p.size} farmers</Badge>
+                  {p.monthsBack && <Badge variant="secondary" className="text-[10px]">{p.monthsBack} months back</Badge>}
+                  {p.modules.map((m) => <Badge key={m} variant="outline" className="text-[10px]">{m}</Badge>)}
+                </div>
+              </div>
+            );
+          })()}
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox checked={transactional} onCheckedChange={(v) => setTransactional(!!v)} />
             <span>{tx("Transactional — auto-rollback partial data on error", "ট্রানজ্যাকশনাল — error হলে আংশিক ডেটা auto-মুছে যাবে")}</span>

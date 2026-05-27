@@ -23,6 +23,7 @@ import autoTable from "jspdf-autotable";
 import { applyPdfHeaderFooter } from "@/lib/exports";
 
 const STORAGE_KEY = "developer:github_repo_url";
+const DEFAULT_REPO = "https://github.com/snsbd247/mkbaliadanga-801b0009";
 
 type Commit = {
   sha: string;
@@ -61,6 +62,7 @@ export default function DeveloperUpdates() {
   const [lastChecked, setLastChecked] = useState<string | null>(null);
   const [history, setHistory] = useState<LogRow[]>([]);
   const [marking, setMarking] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("commits");
 
   // filters
   const [qUser, setQUser] = useState("");
@@ -70,12 +72,11 @@ export default function DeveloperUpdates() {
 
   useEffect(() => {
     document.title = "Developer Updates";
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      setRepoUrl(saved);
-      void check(saved);
-    }
+    const saved = localStorage.getItem(STORAGE_KEY) ?? DEFAULT_REPO;
+    setRepoUrl(saved);
+    void check(saved);
     void loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadHistory() {
@@ -133,6 +134,7 @@ export default function DeveloperUpdates() {
       localStorage.setItem(STORAGE_KEY, url);
       setLastChecked(new Date().toLocaleString());
       const top = commitsData?.[0];
+      if (commitsData?.length > 0) setActiveTab("commits");
       toast.success("Update check successful", {
         description: top
           ? `Latest: ${top.sha.slice(0, 7)} — ${top.commit.message.split("\n")[0].slice(0, 80)}`
@@ -187,14 +189,14 @@ export default function DeveloperUpdates() {
   const filtered = useMemo(() => {
     const u = qUser.trim().toLowerCase();
     const r = qRepo.trim().toLowerCase();
-    const t = qText.trim().toLowerCase();
+    const txt = qText.trim().toLowerCase();
     return history.filter(h => {
       if (qAction !== "all" && h.action !== qAction) return false;
       if (u && !(`${h.user_name} ${h.user_email}`.toLowerCase().includes(u))) return false;
       if (r && !(h.repo_url || "").toLowerCase().includes(r)) return false;
-      if (t) {
+      if (txt) {
         const blob = `${h.commit_sha ?? ""} ${h.commit_message ?? ""} ${h.release_tag ?? ""} ${h.note ?? ""}`.toLowerCase();
-        if (!blob.includes(t)) return false;
+        if (!blob.includes(txt)) return false;
       }
       return true;
     });
@@ -306,11 +308,11 @@ export default function DeveloperUpdates() {
         </Alert>
       )}
 
-      <Tabs defaultValue={commits.length > 0 || latestRelease ? "commits" : "history"}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="commits" disabled={!parsed || commits.length === 0}><GitBranch className="h-4 w-4 mr-1" />Recent Commits</TabsTrigger>
+          <TabsTrigger value="commits" disabled={!parsed || commits.length === 0}><GitBranch className="h-4 w-4 mr-1" />Recent Commits {commits.length > 0 && <span className="ml-1 text-xs opacity-70">({commits.length})</span>}</TabsTrigger>
           <TabsTrigger value="release" disabled={!parsed}><CheckCircle2 className="h-4 w-4 mr-1" />Latest Release</TabsTrigger>
-          <TabsTrigger value="download" disabled={!parsed}><Download className="h-4 w-4 mr-1" />Download / Pull</TabsTrigger>
+          <TabsTrigger value="download" disabled={!parsed}><Download className="h-4 w-4 mr-1" />Deploy / Update VPS</TabsTrigger>
           <TabsTrigger value="history"><History className="h-4 w-4 mr-1" />Update History ({history.length})</TabsTrigger>
         </TabsList>
 
@@ -362,23 +364,55 @@ export default function DeveloperUpdates() {
 
         <TabsContent value="download">
           {parsed && (
-            <Card className="p-4 space-y-3 text-sm">
-              <p className="font-medium">Apply updates on a self-hosted deployment:</p>
-              <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
-                <li>SSH into your server and navigate to your project directory.</li>
-                <li>Run <code className="bg-muted px-1 rounded">git pull origin main</code></li>
-                <li>Install deps: <code className="bg-muted px-1 rounded">npm install</code></li>
-                <li>Run pending DB migrations on your Supabase/Postgres backend.</li>
-                <li>Build &amp; restart: <code className="bg-muted px-1 rounded">npm run build &amp;&amp; pm2 restart app</code></li>
-              </ol>
-              <div className="pt-2 flex gap-2 flex-wrap">
+            <Card className="p-4 space-y-4 text-sm">
+              <div>
+                <p className="font-semibold mb-1">🚀 Fresh VPS install (one command, as root)</p>
+                <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto whitespace-pre">
+{`curl -fsSL https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/main/scripts/install.sh | sudo bash`}
+                </pre>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Installs Docker, Nginx, SSL, backend stack, builds frontend, runs all seeders. Idempotent — safe to re-run.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-1">🔄 Update existing VPS (pulls latest + re-seeds)</p>
+                <pre className="bg-muted p-3 rounded-md text-xs overflow-x-auto whitespace-pre">
+{`sudo bash /home/mkadmin/mkbaliadanga/scripts/update.sh`}
+                </pre>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pulls latest code → rebuilds containers → runs migrations + idempotent seeders → rebuilds frontend → reloads Nginx.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-1">📦 Other useful commands</p>
+                <ul className="list-disc pl-5 space-y-1 text-xs text-muted-foreground">
+                  <li>Health check: <code className="bg-muted px-1 rounded">sudo bash scripts/healthcheck.sh</code></li>
+                  <li>Backup DB + files: <code className="bg-muted px-1 rounded">sudo bash scripts/backup.sh</code></li>
+                  <li>Backend logs: <code className="bg-muted px-1 rounded">cd backend &amp;&amp; docker compose logs -f app</code></li>
+                  <li>Restart all: <code className="bg-muted px-1 rounded">cd backend &amp;&amp; docker compose restart</code></li>
+                </ul>
+              </div>
+
+              <div className="pt-2 flex gap-2 flex-wrap border-t">
                 <Button asChild variant="outline" size="sm">
                   <a href={`https://github.com/${parsed.owner}/${parsed.repo}/archive/refs/heads/main.zip`} target="_blank" rel="noreferrer">
                     <Download className="h-3 w-3 mr-1" /> Download main.zip
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/tree/main/supabase/migrations`} target="_blank" rel="noreferrer">
+                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/blob/main/scripts/install.sh`} target="_blank" rel="noreferrer">
+                    <Github className="h-3 w-3 mr-1" /> View install.sh
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/blob/main/scripts/update.sh`} target="_blank" rel="noreferrer">
+                    <Github className="h-3 w-3 mr-1" /> View update.sh
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <a href={`https://github.com/${parsed.owner}/${parsed.repo}/tree/main/backend/database/migrations`} target="_blank" rel="noreferrer">
                     <Github className="h-3 w-3 mr-1" /> View migrations
                   </a>
                 </Button>
