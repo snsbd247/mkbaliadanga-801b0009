@@ -1154,13 +1154,13 @@ export default function FarmerDetail() {
                       <TableRow key="grand" className="bg-muted/70 font-bold border-t-2">
                         <TableCell colSpan={2} className="text-right">{tx("Grand Total", "সর্বমোট")}</TableCell>
                         <TableCell className="text-right">{totalSize.toFixed(2)}</TableCell>
-                        <TableCell colSpan={4} />
+                        <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(totalAmt)}</TableCell>
                         <TableCell />
                       </TableRow>
                     );
                   } else {
-                    out.push(<TableRow key="empty"><TableCell colSpan={9} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
+                    out.push(<TableRow key="empty"><TableCell colSpan={10} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
                   }
                   return out;
                 })()}
