@@ -73,21 +73,55 @@ const MODULES: Module[] = [
     remove: [{ bn: "Edit/অনুমোদিত ব্যবহারকারী রো-র Delete আইকন থেকে মুছে ফেলতে পারবেন।", en: "Authorized user can delete via the row's Delete icon." }],
   },
   {
-    id: "loans",
-    title: { bn: "৪. ঋণ (Loans)", en: "4. Loans" },
+    id: "lands",
+    title: { bn: "৪. জমি (Lands) ও পাটোয়ারি", en: "4. Lands & Patwari" },
     intro: {
-      bn: "ঋণ ইস্যু, কিস্তি আদায়, প্ল্যান নির্ধারণ ও বিলম্ব জরিমানা সবকিছু এই মডিউলে।",
-      en: "Issue loans, collect installments, configure plans and late penalties.",
+      bn: "ফার্মার প্রোফাইলের জমি ট্যাব থেকে দাগ, খতিয়ান, এলাকা ও পাটোয়ারি অ্যাসাইন করুন।",
+      en: "Add plot/khatian/area and assign a patwari from the Lands tab.",
     },
     add: [
-      { bn: "সাইডবার → Loans।", en: "Sidebar → Loans.", img: "07_loans_bn.png" },
-      { bn: "\"+ New Loan\" চাপুন।", en: "Click \"+ New Loan\"." },
-      { bn: "ফার্মার, প্ল্যান, পরিমাণ ও মেয়াদ পূরণ করুন।", en: "Choose farmer, plan, amount and tenure.", img: "24_loan_add_dialog.png" },
-      { bn: "Save → Loan ID তৈরি হবে।", en: "Save — a Loan ID is generated." },
+      { bn: "ফার্মার প্রোফাইল → জমি ট্যাব → \"+ জমি যোগ\"।", en: "Farmer profile → Lands tab → \"+ Add Land\"." },
+      { bn: "দাগ, খতিয়ান, এলাকা (একর/বিঘা/শতাংশ) ও অবস্থান দিন।", en: "Enter plot no, khatian, area and location." },
+      { bn: "পাটোয়ারি ড্রপডাউন থেকে নির্বাচন করুন (সেচ চার্জে কমিশন অটো যোগ হবে)।", en: "Select patwari — commission auto-applies to irrigation charge." },
+      { bn: "Save। গ্রাম/ওয়ার্ড/ইউনিয়ন ছাড়াই Save করা যায়।", en: "Save. Village/ward/union are optional." },
+    ],
+    edit: [{ bn: "জমির রো → Edit আইকন → পরিবর্তন → Save।", en: "Row Edit icon → modify → Save." }],
+  },
+  {
+    id: "landTransfer",
+    title: { bn: "৫. জমি হস্তান্তর ও উত্তরাধিকার", en: "5. Land Transfer & Inheritance" },
+    intro: {
+      bn: "উত্তরাধিকার, বিক্রি, বরগা — এক জমি একাধিক প্রাপকের মধ্যে ভাগ/হস্তান্তর। মূল জমি archive হয়, পূর্ববর্তী সেচ ইতিহাস অক্ষুণ্ণ থাকে।",
+      en: "Inheritance, sale, borga — split a land among multiple recipients. Original is archived; prior irrigation history is preserved.",
+    },
+    add: [
+      { bn: "জমির রো-তে \"হস্তান্তর\" বোতাম ক্লিক করুন।", en: "Click \"Transfer\" on the land row." },
+      { bn: "হস্তান্তরের ধরন বাছাই (উত্তরাধিকার / বিক্রি / বরগা / অন্যান্য)।", en: "Pick transfer type (Inheritance / Sale / Borga / Other)." },
+      { bn: "এক বা একাধিক প্রাপক যোগ করুন। \"সমান ভাগ\" টোগল চালু রাখলে এলাকা সমানভাবে ভাগ হবে।", en: "Add one or more recipients. \"Equal Split\" toggle distributes area equally." },
+      { bn: "Save → মূল জমি archive, প্রতি প্রাপকের নামে নতুন জমি তৈরি।", en: "Save → original archived, new land created per recipient." },
+    ],
+    extra: {
+      title: { bn: "হস্তান্তর ইতিহাস", en: "Transfer History" },
+      steps: [{ bn: "প্রোফাইল → \"হস্তান্তর ইতিহাস\" ট্যাব — কাকে দেওয়া/পাওয়া পূর্ণ লেজার।", en: "Profile → \"Transfer History\" tab — full ledger of given/received lands." }],
+    },
+  },
+  {
+    id: "loans",
+    title: { bn: "৬. ঋণ (Loans) ও Flexible Repayment", en: "6. Loans & Flexible Repayment" },
+    intro: {
+      bn: "ঋণ ইস্যু, গ্যারান্টর, কিস্তি আদায়, বিলম্ব জরিমানা। Repayment Mode: Equal / Flexible / Bullet।",
+      en: "Issue loans with guarantors, collect installments, configure late penalties. Modes: Equal / Flexible / Bullet.",
+    },
+    add: [
+      { bn: "সাইডবার → Loans → \"+ New Loan\"।", en: "Sidebar → Loans → \"+ New Loan\"." },
+      { bn: "ফার্মার, প্ল্যান, পরিমাণ, মেয়াদ ও Repayment Mode দিন।", en: "Pick farmer, plan, amount, tenure and repayment mode." },
+      { bn: "প্রয়োজনে এক/একাধিক গ্যারান্টর যোগ করুন।", en: "Add one or more guarantors if needed." },
+      { bn: "Save → ইউনিক Loan No তৈরি (একই অফিসে duplicate বাধা)।", en: "Save — unique Loan No (duplicates blocked per office)." },
     ],
     edit: [{ bn: "Loan তালিকা → কাঙ্ক্ষিত ঋণ → Edit।", en: "Loan list → select loan → Edit." }],
-    remove: [{ bn: "শুধু খসড়া (draft) ঋণ ডিলিট হয়; অনুমোদিত ঋণ ক্যান্সেল করতে হবে।", en: "Only draft loans are deletable; approved loans must be cancelled." }],
+    remove: [{ bn: "শুধু draft ঋণ ডিলিট হয়; অনুমোদিত ঋণ ক্যান্সেল করতে হবে।", en: "Only draft loans are deletable; approved loans must be cancelled." }],
   },
+
   {
     id: "irrigation",
     title: { bn: "৫. সেচ ইনভয়েস", en: "5. Irrigation Invoices" },
