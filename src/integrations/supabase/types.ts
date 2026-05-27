@@ -3333,6 +3333,134 @@ export type Database = {
           },
         ]
       }
+      land_transfer_recipients: {
+        Row: {
+          area_decimal: number
+          created_at: string
+          id: string
+          new_land_id: string | null
+          recipient_farmer_id: string
+          transfer_id: string
+        }
+        Insert: {
+          area_decimal: number
+          created_at?: string
+          id?: string
+          new_land_id?: string | null
+          recipient_farmer_id: string
+          transfer_id: string
+        }
+        Update: {
+          area_decimal?: number
+          created_at?: string
+          id?: string
+          new_land_id?: string | null
+          recipient_farmer_id?: string
+          transfer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_transfer_recipients_new_land_id_fkey"
+            columns: ["new_land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_transfer_recipients_new_land_id_fkey"
+            columns: ["new_land_id"]
+            isOneToOne: false
+            referencedRelation: "lands_with_location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_transfer_recipients_recipient_farmer_id_fkey"
+            columns: ["recipient_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "land_transfer_recipients_recipient_farmer_id_fkey"
+            columns: ["recipient_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_transfer_recipients_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "land_transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      land_transfers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          office_id: string | null
+          remark: string | null
+          source_farmer_id: string
+          source_land_id: string
+          transfer_type: string
+          transferred_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          office_id?: string | null
+          remark?: string | null
+          source_farmer_id: string
+          source_land_id: string
+          transfer_type: string
+          transferred_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          office_id?: string | null
+          remark?: string | null
+          source_farmer_id?: string
+          source_land_id?: string
+          transfer_type?: string
+          transferred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_transfers_source_farmer_id_fkey"
+            columns: ["source_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "land_transfers_source_farmer_id_fkey"
+            columns: ["source_farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_transfers_source_land_id_fkey"
+            columns: ["source_land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_transfers_source_land_id_fkey"
+            columns: ["source_land_id"]
+            isOneToOne: false
+            referencedRelation: "lands_with_location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       land_types: {
         Row: {
           code: string
