@@ -3585,6 +3585,67 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_guarantors: {
+        Row: {
+          created_at: string
+          farmer_id: string | null
+          father_name: string | null
+          id: string
+          loan_id: string
+          mobile: string | null
+          name: string
+          nid: string | null
+          office_id: string | null
+          village: string | null
+        }
+        Insert: {
+          created_at?: string
+          farmer_id?: string | null
+          father_name?: string | null
+          id?: string
+          loan_id: string
+          mobile?: string | null
+          name: string
+          nid?: string | null
+          office_id?: string | null
+          village?: string | null
+        }
+        Update: {
+          created_at?: string
+          farmer_id?: string | null
+          father_name?: string | null
+          id?: string
+          loan_id?: string
+          mobile?: string | null
+          name?: string
+          nid?: string | null
+          office_id?: string | null
+          village?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_guarantors_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "loan_guarantors_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_guarantors_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_installment_delay_audit: {
         Row: {
           changed_by: string | null
@@ -3702,6 +3763,7 @@ export type Database = {
           override_reason: string | null
           paid_on: string
           penalty_collected: number
+          receipt_no: string | null
           status: Database["public"]["Enums"]["loan_payment_status"]
         }
         Insert: {
@@ -3719,6 +3781,7 @@ export type Database = {
           override_reason?: string | null
           paid_on?: string
           penalty_collected?: number
+          receipt_no?: string | null
           status?: Database["public"]["Enums"]["loan_payment_status"]
         }
         Update: {
@@ -3736,6 +3799,7 @@ export type Database = {
           override_reason?: string | null
           paid_on?: string
           penalty_collected?: number
+          receipt_no?: string | null
           status?: Database["public"]["Enums"]["loan_payment_status"]
         }
         Relationships: [
@@ -3807,6 +3871,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           farmer_id: string
+          fully_paid_on: string | null
           id: string
           installment_amount: number | null
           interest_enabled: boolean
@@ -3819,6 +3884,7 @@ export type Database = {
           office_id: string | null
           plan_id: string | null
           principal: number
+          repayment_mode: string
           status: Database["public"]["Enums"]["loan_status"]
           temp_purpose: string | null
           total_due: number | null
@@ -3832,6 +3898,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           farmer_id: string
+          fully_paid_on?: string | null
           id?: string
           installment_amount?: number | null
           interest_enabled?: boolean
@@ -3844,6 +3911,7 @@ export type Database = {
           office_id?: string | null
           plan_id?: string | null
           principal: number
+          repayment_mode?: string
           status?: Database["public"]["Enums"]["loan_status"]
           temp_purpose?: string | null
           total_due?: number | null
@@ -3857,6 +3925,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           farmer_id?: string
+          fully_paid_on?: string | null
           id?: string
           installment_amount?: number | null
           interest_enabled?: boolean
@@ -3869,6 +3938,7 @@ export type Database = {
           office_id?: string | null
           plan_id?: string | null
           principal?: number
+          repayment_mode?: string
           status?: Database["public"]["Enums"]["loan_status"]
           temp_purpose?: string | null
           total_due?: number | null
