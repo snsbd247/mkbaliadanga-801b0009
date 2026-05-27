@@ -344,7 +344,7 @@ export default function Payments() {
       }
 
       if (status === "approved") {
-        await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note, loanContext);
+        await applyAllocationsToLedgers(inserted.id, farmerId, allocs, note, loanContext, finalReceiptNo);
         await sendIrrigationPaymentSms(farmerId, allocs, finalReceiptNo);
       }
 
