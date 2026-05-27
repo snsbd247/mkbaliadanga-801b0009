@@ -1122,7 +1122,7 @@ export default function FarmerDetail() {
                       <TableRow className="bg-muted/40 font-semibold">
                         <TableCell colSpan={2} className="text-right">{label} ({tx("Subtotal", "উপ-মোট")})</TableCell>
                         <TableCell className="text-right">{sizeSum.toFixed(2)}</TableCell>
-                        <TableCell colSpan={4} />
+                        <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
                       </TableRow>
@@ -1130,7 +1130,7 @@ export default function FarmerDetail() {
                   };
                   const sectionHeader = (label: string) => (
                     <TableRow className="bg-primary/10">
-                      <TableCell colSpan={9} className="font-bold text-sm py-2">{label}</TableCell>
+                      <TableCell colSpan={10} className="font-bold text-sm py-2">{label}</TableCell>
                     </TableRow>
                   );
                   const out: React.ReactNode[] = [];
