@@ -23,6 +23,7 @@ import autoTable from "jspdf-autotable";
 import { applyPdfHeaderFooter } from "@/lib/exports";
 
 const STORAGE_KEY = "developer:github_repo_url";
+const DEFAULT_REPO = "https://github.com/snsbd247/mkbaliadanga-801b0009";
 
 type Commit = {
   sha: string;
