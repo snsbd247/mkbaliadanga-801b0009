@@ -1621,7 +1621,8 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               if (lands.length) summary.land_relations = await seedLandRelations(admin, officeId, lands, farmers);
             }});
             steps.push({ key: "patwaris", label: "পাটোয়ারী seed", fn: async () => {
-              const p = await seedPatwaris(admin, officeId, locs); summary.patwaris = p.length;
+              const desired = preset === "patwari_workflow" ? 10 : Math.max(4, Math.ceil(size / 12));
+              const p = await seedPatwaris(admin, officeId, locs, desired); summary.patwaris = p.length;
             }});
           }
           const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
