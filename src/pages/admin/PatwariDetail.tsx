@@ -128,7 +128,7 @@ export default function PatwariDetail() {
                     <TableCell>{l.farmers?.name_bn || l.farmers?.name_en || "—"}</TableCell>
                   </TableRow>
                 ))}
-                {lands.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No lands in this mouza", "এই মৌজায় জমি নেই")}</TableCell></TableRow>}
+                {lands.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">{tx("No lands assigned to this patwari", "এই পাটুয়ারির অধীনে কোন জমি নেই")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
