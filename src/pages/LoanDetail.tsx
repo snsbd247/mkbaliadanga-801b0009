@@ -22,7 +22,8 @@ type Inst = {
   status: string;
 };
 
-type Pay = { id: string; amount: number; paid_on: string; note: string | null; status: string };
+type Pay = { id: string; amount: number; paid_on: string; note: string | null; status: string; receipt_no: string | null };
+type Guarantor = { id: string; name: string; father_name: string | null; village: string | null; mobile: string | null; nid: string | null };
 
 function deriveStatus(
   i: Inst,
