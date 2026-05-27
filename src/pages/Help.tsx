@@ -361,6 +361,9 @@ export default function Help() {
                   {m.remove && (
                     <Section title={tx("মুছে ফেলুন (Delete)", "Delete")} badge="delete" steps={m.remove} lang={lang} />
                   )}
+                  {m.extra && (
+                    <Section title={m.extra.title[lang]} badge="edit" steps={m.extra.steps} lang={lang} />
+                  )}
                 </AccordionContent>
               </AccordionItem>
             ))}
