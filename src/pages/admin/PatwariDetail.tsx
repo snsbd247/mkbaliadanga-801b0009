@@ -135,7 +135,7 @@ export default function PatwariDetail() {
         </TabsContent>
 
         <TabsContent value="overrides">
-          <p className="text-xs text-muted-foreground mb-2">{tx("Irrigation entries where this patwari was specifically assigned.", "যেসব সেচ এন্ট্রিতে এই পাটুয়ারীকে সরাসরি অ্যাসাইন করা হয়েছে।")}</p>
+          <p className="text-xs text-muted-foreground mb-2">{tx("Legacy irrigation entries from old per-charge assignment (read-only history).", "পুরাতন প্রতি-এন্ট্রি ভিত্তিক assignment এর হিস্ট্রি (শুধু পড়ার জন্য)।")}</p>
           <Card>
             <Table>
               <TableHeader><TableRow>
