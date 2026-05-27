@@ -261,7 +261,7 @@ export default function Savings() {
     }
     toast.success(isWithdraw ? t("pgSavWithdrawSubmitted" as any) : t("pgSavSaved" as any));
     setOpen(false);
-    setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", category: "general" });
+    setForm({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", field_receipt_no: "", category: "general" });
     load();
   }
   async function decide(id: string, status: "approved" | "rejected") {
