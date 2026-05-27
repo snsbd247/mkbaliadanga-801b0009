@@ -372,6 +372,7 @@ export default function Savings() {
                     <SelectItem value="deposit">{tx("Savings Deposit", "সঞ্চয় জমা")} (min ৳10)</SelectItem>
                     <SelectItem value="share_deposit">{tx("Share Deposit", "শেয়ার জমা")} (min ৳50)</SelectItem>
                     <SelectItem value="withdraw">{t("withdraw")}</SelectItem>
+                    {isCommittee && <SelectItem value="profit">{tx("Profit", "প্রফিট")}</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
@@ -385,8 +386,12 @@ export default function Savings() {
                 </Select>
               </div>
               <div>
-                <Label>Field Receipt # <span className="text-xs text-muted-foreground">(optional — leave blank to auto-generate)</span></Label>
-                <Input value={form.receipt_no} placeholder="e.g. 12345" onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
+                <Label>{tx("System Receipt #", "সিস্টেম রশিদ #")} <span className="text-xs text-muted-foreground">({tx("optional — auto-generate if blank", "ঐচ্ছিক — খালি রাখলে অটো জেনারেট হবে")})</span></Label>
+                <Input value={form.receipt_no} placeholder="auto" onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
+              </div>
+              <div>
+                <Label>{tx("Field Receipt #", "ফিল্ড রশিদ #")} <span className="text-xs text-muted-foreground">({tx("paper receipt from field collection", "ফিল্ড থেকে পেপার রশিদ নাম্বার")})</span></Label>
+                <Input value={form.field_receipt_no} placeholder="e.g. 12345" onChange={e => setForm({ ...form, field_receipt_no: e.target.value })} />
               </div>
               <div><Label>{t("note")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
               <p className="text-xs text-muted-foreground">{t("withdrawalsRequireApproval")}</p>
