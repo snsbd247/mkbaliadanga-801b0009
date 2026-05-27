@@ -242,6 +242,7 @@ export default function Savings() {
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
       receipt_no: finalReceiptNo,
+      field_receipt_no: form.field_receipt_no?.trim() || null,
       category: form.category || "general",
     };
     const { error } = await supabase.from("savings_transactions").insert(payload);
