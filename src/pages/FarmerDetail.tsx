@@ -1430,6 +1430,18 @@ export default function FarmerDetail() {
                 </Select>
               </div>
             </div>
+            <div>
+              <Label>{tx("Patwari", "পাটুয়ারি")}</Label>
+              <Select value={editForm.patwari_id || "__none__"} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, patwari_id: v === "__none__" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder={tx("Select patwari", "পাটুয়ারি নির্বাচন করুন")} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{tx("— None —", "— নেই —")}</SelectItem>
+                  {patwaris.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name_bn || p.name}{p.mobile ? ` (${p.mobile})` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" disabled={editSaving} onClick={() => setEditLand(null)}>{t("cancel")}</Button>
