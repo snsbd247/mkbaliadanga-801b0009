@@ -1,0 +1,1 @@
+ALTER VIEW public.lands_with_location SET (security_invoker = true);
