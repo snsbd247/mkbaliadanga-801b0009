@@ -1439,6 +1439,14 @@ export default function FarmerDetail() {
         </TabsContent>
       </Tabs>
 
+      <LandTransferDialog
+        open={!!transferLand}
+        onOpenChange={(v) => { if (!v) setTransferLand(null); }}
+        sourceLand={transferLand}
+        sourceFarmerId={id!}
+        onDone={() => { setTransferLand(null); loadAll(); }}
+      />
+
       <Dialog open={editFarmerOpen} onOpenChange={(o) => { if (!o && !editFarmerSaving) { setEditFarmerOpen(false); setEditFarmerForm(null); setEditFarmerPhoto(null); setEditFarmerLocErr(null); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{t("edit")} — {lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}</DialogTitle></DialogHeader>
