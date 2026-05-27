@@ -6,25 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 
-type ModuleKey = "office" | "asset" | "farmers" | "lands" | "seasons" | "savings" | "loans" | "irrigation" | "bank" | "all";
+type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "all";
 
 type Status = "idle" | "running" | "ok" | "err";
 
-const MODULES: { key: ModuleKey; title: string; desc: string; icon: any; modules: string[] | "asset" | "all" }[] = [
+const MODULES: { key: ModuleKey; title: string; desc: string; icon: any; modules: string[] | "asset" | "all"; monthsBack?: number }[] = [
   { key: "office",     title: "অফিস ও সেটিংস",        desc: "Divisions, districts, upazilas, mouzas + কোম্পানি সেটিংস + চার্ট অফ অ্যাকাউন্টস", icon: Building2,    modules: ["locations", "settings", "accounting"] },
   { key: "asset",      title: "এসেট",                  desc: "ক্যাটাগরি + ডেমো পাম্প/মোটর/কনজিউমেবলস + মুভমেন্ট/মেরামত/ডিসপোজাল",                  icon: Package,      modules: "asset" },
-  { key: "farmers",    title: "ফার্মার (সদস্য)",      desc: "৫০ জন ডামি ফার্মার ভোটার নম্বর, মোবাইল, ঠিকানা সহ + পাটোয়ারি",                          icon: Users,        modules: ["locations", "settings", "accounting", "farmers"] },
-  { key: "lands",      title: "জমি (Lands)",           desc: "প্রতিটি ফার্মারের জন্য জমি, দাগ নম্বর, জমির ধরন, বর্গা সম্পর্ক",                          icon: Map,          modules: ["locations", "settings", "accounting", "farmers"] },
+  { key: "farmers",    title: "ফার্মার (সদস্য)",      desc: "৫০ জন ডামি ফার্মার ভোটার নম্বর, মোবাইল, ঠিকানা সহ + পাটোয়ারি + ভোটার অডিট",          icon: Users,        modules: ["locations", "settings", "accounting", "farmers"] },
+  { key: "lands",      title: "জমি (Lands)",           desc: "প্রতিটি ফার্মারের জন্য জমি, দাগ নম্বর, জমির ধরন, বর্গা সম্পর্ক + হস্তান্তর ও ইতিহাস",     icon: Map,          modules: ["locations", "settings", "accounting", "farmers"] },
+  { key: "patwari",    title: "পাটোয়ারী ওয়ার্কফ্লো",  desc: "১০ জন পাটোয়ারী মৌজার সাথে ম্যাপ + ৩ মাসের সেচ ইনভয়েস (পাটোয়ারী রিপোর্ট টেস্টের জন্য)", icon: UserCog,      modules: ["locations", "settings", "accounting", "farmers", "irrigation"], monthsBack: 3 },
   { key: "seasons",    title: "সিজন",                  desc: "Boro/Aman সিজন + সিজন টাইপ + ক্যাটাগরি রেট",                                                icon: CalendarDays, modules: ["locations", "settings", "accounting", "farmers", "irrigation"] },
-  { key: "savings",    title: "সঞ্চয়",                desc: "ফার্মারভিত্তিক সঞ্চয় আমানত ও কিছু উত্তোলন এন্ট্রি",                                       icon: PiggyBank,    modules: ["locations", "settings", "accounting", "farmers", "savings"] },
-  { key: "loans",      title: "ঋণ",                    desc: "অনুমোদিত ঋণ + কিস্তি শিডিউল + কিছু পরিশোধ",                                                icon: Landmark,     modules: ["locations", "settings", "accounting", "farmers", "loans"] },
-  { key: "irrigation", title: "সেচ",                  desc: "সিজন + রেট + ইনভয়েস + কিছু পেমেন্ট",                                                       icon: Droplets,     modules: ["locations", "settings", "accounting", "farmers", "irrigation"] },
+  { key: "savings",    title: "সঞ্চয়",                desc: "সঞ্চয় প্ল্যান, ফার্মারভিত্তিক আমানত/উত্তোলন + শেয়ার + Yearly Opening Balance",        icon: PiggyBank,    modules: ["locations", "settings", "accounting", "farmers", "savings"] },
+  { key: "loans",      title: "ঋণ",                    desc: "অনুমোদিত ঋণ + কিস্তি শিডিউল + কিছু পরিশোধ + গ্যারান্টর + বিলম্ব ফি সেটিংস",            icon: Landmark,     modules: ["locations", "settings", "accounting", "farmers", "loans"] },
+  { key: "irrigation", title: "সেচ",                  desc: "সিজন + রেট + ইনভয়েস + পেমেন্ট (Cash/Hawlat/Bank) + QR verifiable রসিদ",              icon: Droplets,     modules: ["locations", "settings", "accounting", "farmers", "irrigation"] },
+  { key: "expenses",   title: "খরচ",                  desc: "মাসিক/বার্ষিক বিভিন্ন ধরনের খরচ এন্ট্রি (অফিস, বেতন, ইউটিলিটি ইত্যাদি)",                     icon: Receipt,      modules: ["settings", "accounting", "expenses"] },
   { key: "bank",       title: "ব্যাংক",               desc: "৩টি ব্যাংক একাউন্ট + ডিপোজিট/উইথড্র লেনদেন",                                                 icon: Banknote,     modules: ["settings", "accounting", "bank"] },
 ];
+
+const ALL_OPS_MODULES = ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank"];
 
 export default function QuickSeed() {
   const { officeId } = useAuth();
