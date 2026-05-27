@@ -134,6 +134,7 @@ export default function DeveloperUpdates() {
       localStorage.setItem(STORAGE_KEY, url);
       setLastChecked(new Date().toLocaleString());
       const top = commitsData?.[0];
+      if (commitsData?.length > 0) setActiveTab("commits");
       toast.success("Update check successful", {
         description: top
           ? `Latest: ${top.sha.slice(0, 7)} — ${top.commit.message.split("\n")[0].slice(0, 80)}`
