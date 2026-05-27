@@ -117,15 +117,19 @@ export function SavingsStatement({ farmer }: Props) {
 
       <Table>
         <TableHeader><TableRow>
-          <TableHead>{t("date")}</TableHead><TableHead>{t("type")}</TableHead>
+          <TableHead>{t("date")}</TableHead>
+          <TableHead>{t("type")}</TableHead>
+          <TableHead className="text-xs">Receipt #</TableHead>
+          <TableHead className="text-xs">Field Receipt #</TableHead>
           <TableHead className="text-right">{t("deposit")}</TableHead>
           <TableHead className="text-right">{t("withdraw")}</TableHead>
+          <TableHead className="text-right">Profit</TableHead>
           <TableHead className="text-right">{t("runningBalance")}</TableHead>
           <TableHead>{t("status")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           <TableRow className="bg-muted/40">
-            <TableCell className="font-medium" colSpan={4}>{t("openingBalance")} — Jan 1 {year}</TableCell>
+            <TableCell className="font-medium" colSpan={7}>{t("openingBalance")} — Jan 1 {year}</TableCell>
             <TableCell className="text-right font-bold">{money(opening)}</TableCell>
             <TableCell />
           </TableRow>
@@ -133,13 +137,16 @@ export function SavingsStatement({ farmer }: Props) {
             <TableRow key={r.id}>
               <TableCell>{fmtDate(r.txn_date)}</TableCell>
               <TableCell>{t(r.type as any)}</TableCell>
-              <TableCell className="text-right text-success">{r.type === "deposit" ? money(r.amount) : "—"}</TableCell>
+              <TableCell className="font-mono text-xs">{r.receipt_no ?? "—"}</TableCell>
+              <TableCell className="font-mono text-xs">{r.field_receipt_no ?? "—"}</TableCell>
+              <TableCell className="text-right text-success">{(r.type === "deposit" || r.type === "deposit_collection") ? money(r.amount) : "—"}</TableCell>
               <TableCell className="text-right text-destructive">{r.type === "withdraw" ? money(r.amount) : "—"}</TableCell>
+              <TableCell className="text-right text-primary">{r.type === "profit" ? money(r.amount) : "—"}</TableCell>
               <TableCell className="text-right font-semibold">{money(r.running)}</TableCell>
               <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "pending" ? "outline" : "destructive"}>{t(r.status as any)}</Badge></TableCell>
             </TableRow>
           ))}
-          {enriched.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {enriched.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table>
     </Card>
