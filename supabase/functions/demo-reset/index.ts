@@ -309,21 +309,32 @@ async function seedSeasonTypes(admin: any): Promise<{ id: string; code: string }
   return out;
 }
 
-async function seedPatwaris(admin: any, officeId: string, locs: LocPick[]) {
+async function seedPatwaris(admin: any, officeId: string, locs: LocPick[], desired?: number) {
   const names = [
-    { en: "Md. Kamrul Hasan", bn: "মোঃ কামরুল হাসান" },
-    { en: "Md. Abdul Latif",  bn: "মোঃ আব্দুল লতিফ" },
-    { en: "Md. Shahin Alam",  bn: "মোঃ শাহিন আলম" },
-    { en: "Md. Bashir Ahmed", bn: "মোঃ বশির আহমেদ" },
+    { en: "Md. Kamrul Hasan",  bn: "মোঃ কামরুল হাসান" },
+    { en: "Md. Abdul Latif",   bn: "মোঃ আব্দুল লতিফ" },
+    { en: "Md. Shahin Alam",   bn: "মোঃ শাহিন আলম" },
+    { en: "Md. Bashir Ahmed",  bn: "মোঃ বশির আহমেদ" },
+    { en: "Md. Rafiqul Islam", bn: "মোঃ রফিকুল ইসলাম" },
+    { en: "Md. Jahangir Alam", bn: "মোঃ জাহাঙ্গীর আলম" },
+    { en: "Md. Nazrul Haque",  bn: "মোঃ নজরুল হক" },
+    { en: "Md. Saiful Mia",    bn: "মোঃ সাইফুল মিয়া" },
+    { en: "Md. Anwar Hossain", bn: "মোঃ আনোয়ার হোসেন" },
+    { en: "Md. Mizanur Rahman", bn: "মোঃ মিজানুর রহমান" },
   ];
-  const rows = names.map((n, i) => ({
-    name: n.en, name_bn: n.bn,
-    mobile: `018${String(20000000 + i).padStart(8, "0")}`,
-    nid: `199${String(8000000000 + i).padStart(10, "0")}`,
-    address: locs[i % Math.max(1, locs.length)]?.mouza_name ?? "",
-    mouza_id: locs[i % Math.max(1, locs.length)]?.mouza_id ?? null,
-    office_id: officeId, is_active: true,
-  }));
+  const count = Math.max(4, Math.min(desired ?? 4, locs.length || 4, names.length));
+  const rows = Array.from({ length: count }, (_, i) => {
+    const n = names[i % names.length];
+    const loc = locs[i % Math.max(1, locs.length)];
+    return {
+      name: n.en, name_bn: n.bn,
+      mobile: `018${String(20000000 + i).padStart(8, "0")}`,
+      nid: `199${String(8000000000 + i).padStart(10, "0")}`,
+      address: loc?.mouza_name ?? "",
+      mouza_id: loc?.mouza_id ?? null,
+      office_id: officeId, is_active: true,
+    };
+  });
   const { data, error } = await admin.from("patwaris").insert(rows).select("id");
   if (error) throw new Error(`patwaris: ${error.message}`);
   return data ?? [];
