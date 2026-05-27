@@ -1071,6 +1071,7 @@ export default function FarmerDetail() {
                 <TableHead className="text-right">{t("landSize")}</TableHead>
                 <TableHead>{t("ownerType")}</TableHead>
                 <TableHead>{tx("Owner", "মালিক")}</TableHead>
+                <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
                 <TableHead>{t("fieldType")}</TableHead>
                 <TableHead className="text-right">{tx("Rate / Shotok", "রেট/শতক")}</TableHead>
                 <TableHead className="text-right">{tx("Total Amount", "মোট টাকা")}</TableHead>
