@@ -35,6 +35,7 @@ export default function FarmerProfileReport() {
   const [share, setShare] = useState<any>(null);
   const [loans, setLoans] = useState<any[]>([]);
   const [ownerRows, setOwnerRows] = useState<any[]>([]);
+  const [installments, setInstallments] = useState<any[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -42,14 +43,14 @@ export default function FarmerProfileReport() {
 
     async function load() {
       setLoading(true);
-      const [f, s, sh, ln, ir, rel] = await Promise.all([
+      const [f, s, sh, ln, ir, rel, inst] = await Promise.all([
         supabase.from("farmers").select("*").eq("id", id).maybeSingle(),
-        supabase.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null),
+        supabase.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null).order("txn_date", { ascending: true }),
         supabase.from("shares").select("balance").eq("farmer_id", id).maybeSingle(),
         supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
         supabase
           .from("irrigation_invoices")
-          .select("id, payable_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type)")
+          .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type, patwari_id, patwaris(name,name_bn))")
           .eq("farmer_id", id)
           .is("deleted_at", null)
           .order("generated_at", { ascending: false }),
@@ -58,7 +59,13 @@ export default function FarmerProfileReport() {
           .select("land_id, valid_to, sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en, farmer_code)")
           .eq("owner_farmer_id", id)
           .is("deleted_at", null),
+        supabase
+          .from("loan_installments")
+          .select("id, loan_id, installment_no, due_date, amount, paid_amount, status, paid_on, loans!inner(farmer_id)")
+          .eq("loans.farmer_id", id)
+          .order("due_date", { ascending: true }),
       ]);
+
 
       if (ignore) return;
 
@@ -89,6 +96,7 @@ export default function FarmerProfileReport() {
           ? `${safeText(sc.name_en)} - ${safeText(sc.farmer_code)}`
           : "";
 
+        const pw = row.lands?.patwaris;
         return {
           id: row.id,
           mouza: safeText(row.lands?.mouza),
@@ -96,6 +104,7 @@ export default function FarmerProfileReport() {
           dag_no: safeText(row.lands?.dag_no),
           owner_type: ownerTypeText,
           owner_name_fid: ownerNameFid,
+          patwari: pw ? safeText(pw.name_bn || pw.name) : "",
           land_size: row.lands?.land_size !== null && row.lands?.land_size !== undefined ? Number(row.lands.land_size).toFixed(6) : "",
           field_type: fieldTypeLabel(row.lands?.field_type),
           charge_rate: String(Math.round(Number(row.irrigation_amount || 0))),
@@ -103,22 +112,26 @@ export default function FarmerProfileReport() {
           maintenance_charge: String(Math.round(Number(row.maintenance_amount || 0))),
           other_charge: String(Math.round(Number(row.other_charge || 0))),
           charge: String(Math.round(Number(row.payable_amount || 0))),
+          paid: String(Math.round(Number(row.paid_amount || 0))),
           due: String(Math.round(Number(row.due_amount || 0))),
           land_size_num: Number(row.lands?.land_size || 0),
           canal_num: Number(row.canal_amount || 0),
           maintenance_num: Number(row.maintenance_amount || 0),
           other_num: Number(row.other_charge || 0),
           charge_num: Number(row.payable_amount || 0),
+          paid_num: Number(row.paid_amount || 0),
           due_num: Number(row.due_amount || 0),
           irrigation_year: Number(row.seasons?.year) || new Date().getFullYear(),
         };
       });
+
 
       setFarmer(f.data ?? null);
       setSavings(s.data ?? []);
       setShare(sh.data ?? null);
       setLoans(ln.data ?? []);
       setOwnerRows(ownerInformation);
+      setInstallments(inst.data ?? []);
       setLoading(false);
     }
 
@@ -146,15 +159,60 @@ export default function FarmerProfileReport() {
     const paid = (loan.loan_payments ?? []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
     return {
       id: loan.id,
-      loan_account: safeText(loan.id).slice(0, 8).toUpperCase(),
+      loan_account: safeText(loan.loan_no || loan.id).slice(0, 12).toUpperCase(),
       loan_amount: safeNumber(loan.principal),
       interest_rate: loan.interest_rate !== null && loan.interest_rate !== undefined ? `${loan.interest_rate}` : "0",
       total_loan_amount: safeNumber(loan.total_payable),
       issue_date: formatDate(loan.issued_on),
       next_due_date: formatDate(loan.next_due_on),
       due_amount: safeNumber(Number(loan.total_payable || 0) - paid),
+      paid_amount: paid,
     };
   });
+
+  // Savings transactions with running balance
+  const savingsRows = (() => {
+    let bal = 0;
+    return savings
+      .filter((r) => r.status === "approved")
+      .map((r) => {
+        const amt = Number(r.amount || 0);
+        if (r.type === "deposit") bal += amt;
+        else if (r.type === "withdraw" || r.type === "withdrawal") bal -= amt;
+        return {
+          id: r.id,
+          date: formatDate(r.txn_date),
+          type: r.type,
+          receipt_no: safeText(r.receipt_no || r.field_receipt_no),
+          deposit: r.type === "deposit" ? amt : 0,
+          withdraw: (r.type === "withdraw" || r.type === "withdrawal") ? amt : 0,
+          balance: bal,
+          note: safeText(r.note),
+        };
+      });
+  })();
+  const savingsBalance = savingsRows.length ? savingsRows[savingsRows.length - 1].balance : 0;
+
+  // Installments per loan
+  const installmentsByLoan = (() => {
+    const m = new Map<string, any[]>();
+    installments.forEach((it) => {
+      if (!m.has(it.loan_id)) m.set(it.loan_id, []);
+      m.get(it.loan_id)!.push(it);
+    });
+    return m;
+  })();
+
+  // Irrigation overall totals
+  const irrigationTotals = ownerRows.reduce(
+    (a, r) => ({
+      total: a.total + r.charge_num,
+      paid: a.paid + r.paid_num,
+      due: a.due + r.due_num,
+    }),
+    { total: 0, paid: 0, due: 0 },
+  );
+
 
   const ownerByYear = (() => {
     const map = new Map<number, any[]>();
@@ -459,6 +517,52 @@ export default function FarmerProfileReport() {
             </tbody>
           </table>
 
+          {savingsRows.length > 0 && (
+            <>
+              <div className="farmer-section-title">Savings Transactions</div>
+              <table className="farmer-table compact-gap">
+                <colgroup>
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "18%" }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Receipt No</th>
+                    <th>Deposit</th>
+                    <th>Withdraw</th>
+                    <th>Balance</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {savingsRows.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.date}</td>
+                      <td>{r.type}</td>
+                      <td>{r.receipt_no}</td>
+                      <td>{r.deposit || ""}</td>
+                      <td>{r.withdraw || ""}</td>
+                      <td>{Math.round(r.balance)}</td>
+                      <td>{r.note}</td>
+                    </tr>
+                  ))}
+                  <tr className="totals-row">
+                    <td colSpan={5} style={{ textAlign: "right" }}>{tx("Current Balance", "বর্তমান ব্যালেন্স")}</td>
+                    <td>{Math.round(savingsBalance)}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          )}
+
           <div className="farmer-section-title">Irrigation Charge Information</div>
           {(ownerByYear.length ? ownerByYear : [[irrigationYear, []]]).map(([year, rows]) => {
             const totals = rows.reduce(
@@ -468,44 +572,32 @@ export default function FarmerProfileReport() {
                 acc.maintenance += r.maintenance_num;
                 acc.other += r.other_num;
                 acc.charge += r.charge_num;
+                acc.paid += r.paid_num;
                 acc.due += r.due_num;
                 return acc;
               },
-              { land_size: 0, canal: 0, maintenance: 0, other: 0, charge: 0, due: 0 }
+              { land_size: 0, canal: 0, maintenance: 0, other: 0, charge: 0, paid: 0, due: 0 }
             );
             return (
               <div key={year} className="irrigation-year-block">
                 <div className="farmer-year-row">{tx("Irrigation Year:", "সেচ বর্ষ:")} {year}</div>
                 <table className="farmer-table compact-gap">
-                  <colgroup>
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "6.5%" }} />
-                    <col style={{ width: "10%" }} />
-                    <col style={{ width: "6%" }} />
-                    <col style={{ width: "14%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "9%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "6%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "6.5%" }} />
-                    <col style={{ width: "6.5%" }} />
-                    <col style={{ width: "6.5%" }} />
-                  </colgroup>
                   <thead>
                     <tr>
                       <th>Mouza</th>
                       <th>Season</th>
                       <th>Dag No</th>
+                      <th>Patwari</th>
                       <th>Owner Type</th>
                       <th>Owner Name - FID</th>
                       <th>Land Size</th>
                       <th>Field Type</th>
                       <th>Charge Rate</th>
-                      <th>Canal Charge</th>
-                      <th>Maintenance Charge</th>
-                      <th>Other Charges</th>
+                      <th>Canal</th>
+                      <th>Maint.</th>
+                      <th>Other</th>
                       <th>Charge</th>
+                      <th>Paid</th>
                       <th>Due</th>
                     </tr>
                   </thead>
@@ -515,6 +607,7 @@ export default function FarmerProfileReport() {
                         <td>{row.mouza}</td>
                         <td>{row.season}</td>
                         <td>{row.dag_no}</td>
+                        <td>{row.patwari}</td>
                         <td>{row.owner_type}</td>
                         <td>{row.owner_name_fid}</td>
                         <td>{row.land_size}</td>
@@ -524,18 +617,20 @@ export default function FarmerProfileReport() {
                         <td>{row.maintenance_charge}</td>
                         <td>{row.other_charge}</td>
                         <td>{row.charge}</td>
+                        <td>{row.paid}</td>
                         <td>{row.due}</td>
                       </tr>
                     ))}
                     {rows.length > 0 && (
                       <tr className="totals-row">
-                        <td></td><td></td><td></td><td></td><td></td>
+                        <td colSpan={6} style={{ textAlign: "right" }}>{tx("Total", "মোট")}</td>
                         <td>{totals.land_size.toFixed(4).replace(/\.?0+$/, "")}</td>
-                        <td></td><td></td>
+                        <td colSpan={2}></td>
                         <td>{totals.canal || 0}</td>
                         <td>{totals.maintenance || 0}</td>
                         <td>{totals.other || 0}</td>
                         <td>{Math.round(totals.charge)}</td>
+                        <td>{Math.round(totals.paid)}</td>
                         <td>{Math.round(totals.due)}</td>
                       </tr>
                     )}
@@ -545,26 +640,40 @@ export default function FarmerProfileReport() {
             );
           })}
 
+          {ownerRows.length > 0 && (
+            <table className="farmer-table compact-gap">
+              <thead>
+                <tr>
+                  <th colSpan={3}>{tx("Irrigation Summary (All Years)", "সেচ সারাংশ (সর্বমোট)")}</th>
+                </tr>
+                <tr>
+                  <th>Total Charge</th>
+                  <th>Total Paid</th>
+                  <th>Total Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="totals-row">
+                  <td>{Math.round(irrigationTotals.total)}</td>
+                  <td>{Math.round(irrigationTotals.paid)}</td>
+                  <td>{Math.round(irrigationTotals.due)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+
           <div className="farmer-section-title">Loan Information</div>
           <table className="farmer-table">
-            <colgroup>
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "14.5%" }} />
-              <col style={{ width: "17%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "15%" }} />
-              <col style={{ width: "11.5%" }} />
-            </colgroup>
             <thead>
               <tr>
                 <th>Loan Account</th>
                 <th>Loan Amount</th>
-                <th>Interest Rate</th>
-                <th>Total Loan Amt</th>
+                <th>Interest %</th>
+                <th>Total Payable</th>
                 <th>Issue Date</th>
-                <th>Next Due Date</th>
-                <th>Due Amt</th>
+                <th>Next Due</th>
+                <th>Paid</th>
+                <th>Due</th>
               </tr>
             </thead>
             <tbody>
@@ -576,8 +685,9 @@ export default function FarmerProfileReport() {
                 total_loan_amount: "",
                 issue_date: "",
                 next_due_date: "",
+                paid_amount: "",
                 due_amount: "",
-              }]).map((row) => (
+              }]).map((row: any) => (
                 <tr key={row.id}>
                   <td>{row.loan_account}</td>
                   <td>{row.loan_amount}</td>
@@ -585,11 +695,52 @@ export default function FarmerProfileReport() {
                   <td>{row.total_loan_amount}</td>
                   <td>{row.issue_date}</td>
                   <td>{row.next_due_date}</td>
+                  <td>{row.paid_amount !== "" ? Math.round(Number(row.paid_amount)) : ""}</td>
                   <td>{row.due_amount}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {loanRows.map((loan: any) => {
+            const items = installmentsByLoan.get(loan.id) || [];
+            if (!items.length) return null;
+            return (
+              <div key={`inst-${loan.id}`} className="irrigation-year-block">
+                <div className="farmer-year-row">{tx("Installments for Loan", "লোনের কিস্তি")}: {loan.loan_account}</div>
+                <table className="farmer-table compact-gap">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Due Date</th>
+                      <th>Amount</th>
+                      <th>Paid</th>
+                      <th>Remaining</th>
+                      <th>Status</th>
+                      <th>Paid On</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it: any) => {
+                      const amt = Number(it.amount || 0);
+                      const paid = Number(it.paid_amount || 0);
+                      return (
+                        <tr key={it.id}>
+                          <td>{it.installment_no}</td>
+                          <td>{formatDate(it.due_date)}</td>
+                          <td>{Math.round(amt)}</td>
+                          <td>{Math.round(paid)}</td>
+                          <td>{Math.round(amt - paid)}</td>
+                          <td>{safeText(it.status)}</td>
+                          <td>{formatDate(it.paid_on)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
