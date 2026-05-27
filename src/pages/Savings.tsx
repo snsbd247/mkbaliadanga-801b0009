@@ -202,10 +202,11 @@ export default function Savings() {
     if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? tx("This farmer", "এই ফার্মার")} ${tx("does not have Voter / Savings A/C enabled — savings/share entry not allowed.", "এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।")}`);
     const isWithdraw = form.type === "withdraw";
     const isShare = form.type === "share_deposit" || form.type === "share_collection";
-    const isDepositKind = !isWithdraw;
+    const isProfit = form.type === "profit";
+    const isDepositKind = !isWithdraw && !isProfit;
 
     if (isShare && form.amount < 50) return toast.error(t("minShareDeposit"));
-    if (!isShare && !isWithdraw && form.amount < 10) return toast.error(t("minSavingsDeposit"));
+    if (!isShare && !isWithdraw && !isProfit && form.amount < 10) return toast.error(t("minSavingsDeposit"));
 
     // Withdraw balance check (savings only)
     if (isWithdraw) {
