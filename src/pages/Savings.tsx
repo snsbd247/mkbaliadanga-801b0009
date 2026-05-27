@@ -247,7 +247,12 @@ export default function Savings() {
       category: form.category || "general",
     };
     const { error } = await supabase.from("savings_transactions").insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.message?.includes("SAVINGS_WITHDRAW_EXCEEDS_BALANCE")) {
+        return toast.error(tx("Withdrawal exceeds available balance", "জমাকৃত টাকার বেশি উত্তলন সম্ভব নয়"));
+      }
+      return toast.error(error.message);
+    }
     if (isDepositKind) {
       const payPayload: any = { farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id, receipt_no: finalReceiptNo };
       await supabase.from("payments").insert(payPayload);
