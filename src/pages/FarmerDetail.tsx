@@ -44,7 +44,7 @@ import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "" };
 
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
