@@ -1094,8 +1094,13 @@ export default function FarmerDetail() {
                         <TableCell className="text-xs">
                           {l.owner_type === "owner"
                             ? <span className="text-muted-foreground">{tx("Self-owned", "নিজ মালিক")}</span>
-                            : (l.owner_farmer_id ? (ownerNames[l.owner_farmer_id] ?? "—") : "—")}
+                            : (l.owner_farmer_id ? (
+                                <Link to={`/farmers/${l.owner_farmer_id}`} className="underline text-primary">
+                                  {ownerNames[l.owner_farmer_id] ?? "—"}
+                                </Link>
+                              ) : "—")}
                         </TableCell>
+                        <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                         <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
