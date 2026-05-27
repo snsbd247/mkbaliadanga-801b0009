@@ -38,6 +38,36 @@ const TEMPLATES: Record<string, Tpl> = {
     sample: { account_number: "10001", balance: 500 },
     instructions: "Sets share capital balance per farmer (one row per farmer). Existing balance is overwritten.",
   },
+  loans: {
+    columns: ["account_number", "principal", "interest_rate", "total_payable", "issued_on", "note"],
+    sample: { account_number: "10001", principal: 10000, interest_rate: 12, total_payable: 11200, issued_on: "2026-01-15", note: "Crop loan" },
+    instructions: "Creates an approved loan per row. interest_rate in percent (0-100). total_payable optional (defaults to principal).",
+  },
+  loan_payments: {
+    columns: ["account_number", "amount", "paid_on", "note"],
+    sample: { account_number: "10001", amount: 1000, paid_on: "2026-02-15", note: "1st installment" },
+    instructions: "Applied to the farmer's most recent active/approved loan. Use Loan module to create the loan first.",
+  },
+  loan_installments: {
+    columns: ["account_number", "installment_no", "due_date", "amount", "status"],
+    sample: { account_number: "10001", installment_no: 1, due_date: "2026-02-15", amount: 1000, status: "due" },
+    instructions: "status = due | paid | missed | partial. installment_no starts at 1.",
+  },
+  savings: {
+    columns: ["account_number", "type", "amount", "txn_date", "note"],
+    sample: { account_number: "10001", type: "deposit", amount: 500, txn_date: "2026-02-01", note: "Monthly deposit" },
+    instructions: "type = deposit | withdrawal. All rows are inserted as approved.",
+  },
+  ledger: {
+    columns: ["entry_date", "account_code", "debit", "credit", "description", "reference_type"],
+    sample: { entry_date: "2026-02-01", account_code: "1010", debit: 500, credit: 0, description: "Cash adjustment", reference_type: "manual" },
+    instructions: "Super-admin only. account_code must exist in Chart of Accounts. Provide debit OR credit (not both zero).",
+  },
+  patwaris: {
+    columns: ["name", "name_bn", "mobile", "nid", "address", "mouza", "note"],
+    sample: { name: "Md. Rahim", name_bn: "মোঃ রহিম", mobile: "01700000000", nid: "1234567890", address: "Village A", mouza: "Mouza A", note: "" },
+    instructions: "Bulk-add patwaris. mouza is matched by name to an existing mouza (optional). Patwaris are created as active.",
+  },
 };
 
 function csvEscape(v: any): string {

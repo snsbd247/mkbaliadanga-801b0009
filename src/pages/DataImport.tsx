@@ -1,5 +1,5 @@
 // i18n-ignore-file — admin-only page (English UI)
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -43,6 +43,7 @@ type Module =
   | "shares"
   | "cashbook_receipts"
   | "cashbook_expenses"
+  | "patwaris"
   | "ledger";
 
 type RowResult = {
@@ -101,6 +102,10 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   shares: {
     columns: ["account_number", "balance"],
     sample: { account_number: "10001", balance: 500 },
+  },
+  patwaris: {
+    columns: ["name", "name_bn", "mobile", "nid", "address", "mouza", "note"],
+    sample: { name: "Md. Rahim", name_bn: "মোঃ রহিম", mobile: "01700000000", nid: "1234567890", address: "Village A", mouza: "Mouza A", note: "" },
   },
 };
 
@@ -270,7 +275,7 @@ export default function DataImport() {
       .select("*").order("created_at", { ascending: false }).limit(20);
     setRecentImports((data as any) ?? []);
   }
-  useMemo(() => { loadRecentImports(); }, []);
+  useEffect(() => { loadRecentImports(); }, []);
 
   const stats = useMemo(() => ({
     total: rows.length,
@@ -307,8 +312,7 @@ export default function DataImport() {
       cashbook_receipts: ["receipt_date", "kind", "amount"],
       cashbook_expenses: ["expense_date", "head", "amount"],
       ledger: ["entry_date", "account_code"],
-      shares: ["account_number", "balance"],
-    };
+      shares: ["
     const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
     const req = required[m] ?? TEMPLATES[m].columns;
     const missingCols = req.filter((c) => !headerSet.has(c));
