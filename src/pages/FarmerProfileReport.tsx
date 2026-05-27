@@ -159,15 +159,60 @@ export default function FarmerProfileReport() {
     const paid = (loan.loan_payments ?? []).reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
     return {
       id: loan.id,
-      loan_account: safeText(loan.id).slice(0, 8).toUpperCase(),
+      loan_account: safeText(loan.loan_no || loan.id).slice(0, 12).toUpperCase(),
       loan_amount: safeNumber(loan.principal),
       interest_rate: loan.interest_rate !== null && loan.interest_rate !== undefined ? `${loan.interest_rate}` : "0",
       total_loan_amount: safeNumber(loan.total_payable),
       issue_date: formatDate(loan.issued_on),
       next_due_date: formatDate(loan.next_due_on),
       due_amount: safeNumber(Number(loan.total_payable || 0) - paid),
+      paid_amount: paid,
     };
   });
+
+  // Savings transactions with running balance
+  const savingsRows = (() => {
+    let bal = 0;
+    return savings
+      .filter((r) => r.status === "approved")
+      .map((r) => {
+        const amt = Number(r.amount || 0);
+        if (r.type === "deposit") bal += amt;
+        else if (r.type === "withdraw" || r.type === "withdrawal") bal -= amt;
+        return {
+          id: r.id,
+          date: formatDate(r.txn_date),
+          type: r.type,
+          receipt_no: safeText(r.receipt_no || r.field_receipt_no),
+          deposit: r.type === "deposit" ? amt : 0,
+          withdraw: (r.type === "withdraw" || r.type === "withdrawal") ? amt : 0,
+          balance: bal,
+          note: safeText(r.note),
+        };
+      });
+  })();
+  const savingsBalance = savingsRows.length ? savingsRows[savingsRows.length - 1].balance : 0;
+
+  // Installments per loan
+  const installmentsByLoan = (() => {
+    const m = new Map<string, any[]>();
+    installments.forEach((it) => {
+      if (!m.has(it.loan_id)) m.set(it.loan_id, []);
+      m.get(it.loan_id)!.push(it);
+    });
+    return m;
+  })();
+
+  // Irrigation overall totals
+  const irrigationTotals = ownerRows.reduce(
+    (a, r) => ({
+      total: a.total + r.charge_num,
+      paid: a.paid + r.paid_num,
+      due: a.due + r.due_num,
+    }),
+    { total: 0, paid: 0, due: 0 },
+  );
+
 
   const ownerByYear = (() => {
     const map = new Map<number, any[]>();
