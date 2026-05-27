@@ -52,6 +52,7 @@ export default function LoanDetail() {
   const [plan, setPlan] = useState<any>(null);
   const [installments, setInstallments] = useState<Inst[]>([]);
   const [payments, setPayments] = useState<Pay[]>([]);
+  const [guarantors, setGuarantors] = useState<Guarantor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,16 +62,18 @@ export default function LoanDetail() {
       const { data: l } = await supabase.from("loans").select("*").eq("id", loanId).maybeSingle();
       if (!l) { setLoading(false); return; }
       setLoan(l);
-      const [{ data: f }, { data: p }, { data: ins }, { data: pays }] = await Promise.all([
+      const [{ data: f }, { data: p }, { data: ins }, { data: pays }, { data: gs }] = await Promise.all([
         supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,father_name,nominee_name,nominee_mobile,nominee_relation").eq("id", l.farmer_id).maybeSingle(),
         l.plan_id ? supabase.from("loan_plans").select("*").eq("id", l.plan_id).maybeSingle() : Promise.resolve({ data: null } as any),
         supabase.from("loan_installments").select("*").eq("loan_id", loanId).order("installment_no"),
         supabase.from("loan_payments").select("*").eq("loan_id", loanId).order("paid_on", { ascending: false }),
+        supabase.from("loan_guarantors").select("*").eq("loan_id", loanId),
       ]);
       setFarmer(f);
       setPlan(p);
       setInstallments((ins ?? []) as Inst[]);
       setPayments((pays ?? []) as Pay[]);
+      setGuarantors((gs ?? []) as Guarantor[]);
       setLoading(false);
     })();
   }, [loanId]);
