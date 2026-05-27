@@ -220,6 +220,7 @@ export default function Savings() {
         if (r.type === "withdraw") return s - a;
         // share collections excluded from withdrawable savings balance
         if (r.type === "share_deposit" || r.type === "share_collection") return s;
+        // deposits, deposit_collection, and profit all add to balance
         return s + a;
       }, 0);
       if (form.amount > available) {
