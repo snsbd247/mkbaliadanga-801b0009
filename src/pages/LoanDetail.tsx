@@ -193,6 +193,9 @@ export default function LoanDetail() {
             <Field label={tx("Status", "স্ট্যাটাস")} value={<Badge>{loan.status}</Badge> as any} />
             <Field label={tx("Issued On", "ঋণ প্রদান তারিখ")} value={fmtDate(loan.issued_on)} />
             <Field label={tx("Last Paid On", "শেষ পরিশোধ তারিখ")} value={fmtDate(summary.lastPay)} />
+            <Field label={tx("Repayment Mode", "পরিশোধ মোড")} value={loan.repayment_mode === "bullet" ? tx("One-time (Bullet)", "এককালীন") : tx("Installments", "কিস্তিতে")} />
+            <Field label={tx("Fully Paid On", "পূর্ণ পরিশোধ তারিখ")} value={loan.fully_paid_on ? fmtDate(loan.fully_paid_on) : "—"} />
+            <Field label={tx("Days to Repay", "পরিশোধে দিন")} value={loan.fully_paid_on && loan.issued_on ? `${Math.max(0, Math.round((new Date(loan.fully_paid_on).getTime() - new Date(loan.issued_on).getTime()) / 86400000))} ${tx("days", "দিন")}` : "—"} />
           </div>
         </CardContent>
       </Card>
