@@ -194,7 +194,7 @@ export default function QuickSeed() {
                   size="sm"
                   variant={st === "ok" ? "outline" : "default"}
                   disabled={st === "running"}
-                  onClick={() => (m.modules === "asset" ? runAsset(m.key) : runEdge(m.key, m.modules as string[]))}
+                  onClick={() => (m.modules === "asset" ? runAsset(m.key) : runEdge(m.key, m.modules as string[], m.monthsBack))}
                 >
                   {st === "running" ? (
                     <><Loader2 className="h-4 w-4 animate-spin mr-1" /> চলছে…</>
