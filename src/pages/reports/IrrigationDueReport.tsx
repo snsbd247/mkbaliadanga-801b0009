@@ -236,6 +236,11 @@ export default function IrrigationDueReport() {
               <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body)}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
+              <Button variant="outline" size="sm" onClick={() => exportCSV(
+                "Irrigation-Due", head, body,
+              )}>
+                <FileSpreadsheet className="mr-1 h-4 w-4" /> CSV
+              </Button>
               <Button variant="outline" size="sm" onClick={() => exportExcel(
                 "Irrigation-Due", "Due",
                 filtered.map((r) => ({

@@ -118,6 +118,38 @@ export default function LoanOverdueReport() {
     ]);
   }
 
+  function exportXlsx() {
+    exportExcel(
+      "Loan-Overdue", "Overdue",
+      filtered.map((r) => ({
+        "Farmer": r.loans?.farmers?.name_bn || r.loans?.farmers?.name_en || "",
+        "Account No": r.loans?.farmers?.farmer_code || "",
+        "Plan": r.loans?.loan_plans?.name_bn || r.loans?.loan_plans?.name || "",
+        "Installment #": r.installment_no,
+        "Issued On": fmt(r.loans?.issued_on),
+        "Due Date": fmt(r.due_date),
+        "Delay Days": Math.max(0, differenceInDays(new Date(), new Date(r.due_date))),
+        "Amount": Number(r.amount || 0),
+        "Paid": Number(r.paid_amount || 0),
+        "Remaining": Number(r.amount || 0) - Number(r.paid_amount || 0),
+      }))
+    );
+  }
+
+  const pdfHead = [t("farmer"), t("account"), t("plan" as any), "#", tx("Issued", "প্রদান"), t("dueDateLabel" as any), t("delayDays" as any), t("amount"), t("paid"), t("remaining" as any)];
+  const pdfBody = filtered.map(r => [
+    r.loans?.farmers?.name_bn || r.loans?.farmers?.name_en || "",
+    r.loans?.farmers?.farmer_code || "",
+    r.loans?.loan_plans?.name_bn || r.loans?.loan_plans?.name || "",
+    String(r.installment_no),
+    fmt(r.loans?.issued_on),
+    fmt(r.due_date),
+    String(Math.max(0, differenceInDays(new Date(), new Date(r.due_date)))),
+    money(r.amount),
+    money(r.paid_amount),
+    money(Number(r.amount || 0) - Number(r.paid_amount || 0)),
+  ]);
+
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-2">
