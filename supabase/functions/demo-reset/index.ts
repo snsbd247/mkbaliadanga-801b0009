@@ -1256,6 +1256,130 @@ async function seedPublicPaymentIntents(admin: any, officeId: string, farmers: a
   return rows.length;
 }
 
+// ---- Land Transfers (inheritance / sale / borga / split) ----
+async function seedLandTransfers(admin: any, officeId: string, lands: any[], farmers: any[]): Promise<number> {
+  const voters = farmers.filter((f: any) => f.is_voter);
+  if (!lands.length || voters.length < 2) return 0;
+  const types = ["inheritance", "sale", "borga_transfer", "split"];
+  const today = new Date();
+  const daysAgo = (d: number) => new Date(today.getTime() - d * 86400000).toISOString().slice(0, 10);
+  // ~12% of lands have at least one historical transfer
+  const sample = lands.filter((_, i) => i % 8 === 0).slice(0, 12);
+  let count = 0;
+  for (let i = 0; i < sample.length; i++) {
+    const l = sample[i];
+    const ttype = types[i % types.length];
+    const { data: tr, error: trErr } = await admin.from("land_transfers").insert({
+      source_land_id: l.id,
+      source_farmer_id: l.farmer_id,
+      transfer_type: ttype,
+      remark: `Demo ${ttype} transfer #${i + 1}`,
+      office_id: officeId,
+      transferred_at: daysAgo(30 + i * 7),
+    }).select("id").single();
+    if (trErr || !tr) continue;
+    // 1–2 recipients
+    const recipients = ttype === "split" ? 2 : 1;
+    const area = Number(l.land_size ?? l.size ?? 1);
+    const each = +(area / recipients).toFixed(3);
+    const rows: any[] = [];
+    for (let r = 0; r < recipients; r++) {
+      const recipient = voters.find((v: any) => v.id !== l.farmer_id && !rows.some((x) => x.recipient_farmer_id === v.id));
+      if (!recipient) continue;
+      rows.push({
+        transfer_id: tr.id,
+        recipient_farmer_id: recipient.id,
+        new_land_id: null,
+        area_decimal: Math.max(0.001, each),
+      });
+    }
+    if (rows.length) {
+      const { error: rErr } = await admin.from("land_transfer_recipients").insert(rows);
+      if (!rErr) count += rows.length;
+    }
+    count += 1;
+  }
+  return count;
+}
+
+// ---- Loan Guarantors (1–2 per approved loan) ----
+async function seedLoanGuarantors(admin: any, officeId: string): Promise<number> {
+  const { data: loans } = await admin.from("loans").select("id, farmer_id, office_id, status").eq("office_id", officeId).eq("status", "approved").limit(500);
+  if (!loans?.length) return 0;
+  const { data: pool } = await admin.from("farmers").select("id, name_en, name_bn, father_name_en, village, mobile, nid").eq("office_id", officeId).limit(200);
+  const farmers = pool ?? [];
+  if (!farmers.length) return 0;
+  const rows: any[] = [];
+  for (let i = 0; i < loans.length; i++) {
+    const loan = loans[i];
+    const want = i % 4 === 0 ? 2 : 1;
+    const used = new Set<string>([loan.farmer_id]);
+    for (let g = 0; g < want; g++) {
+      const cand = farmers[(i + g * 7 + 3) % farmers.length];
+      if (!cand || used.has(cand.id)) continue;
+      used.add(cand.id);
+      rows.push({
+        loan_id: loan.id,
+        farmer_id: cand.id,
+        name: cand.name_bn || cand.name_en || "Demo Guarantor",
+        father_name: cand.father_name_en ?? null,
+        village: cand.village ?? null,
+        mobile: cand.mobile ?? null,
+        nid: cand.nid ?? null,
+        office_id: officeId,
+      });
+    }
+  }
+  if (!rows.length) return 0;
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error } = await admin.from("loan_guarantors").insert(rows.slice(i, i + 500));
+    if (error) throw new Error(`loan_guarantors: ${error.message}`);
+  }
+  return rows.length;
+}
+
+// ---- Land Change Log (basic edit/transfer events) ----
+async function seedLandChangeLog(admin: any, officeId: string, lands: any[], farmers: any[]): Promise<number> {
+  if (!lands.length) return 0;
+  const today = new Date();
+  const daysAgo = (d: number) => new Date(today.getTime() - d * 86400000).toISOString();
+  const rows = lands.filter((_, i) => i % 6 === 0).slice(0, 15).map((l, i) => ({
+    land_id: l.id,
+    farmer_id: l.farmer_id,
+    office_id: officeId,
+    change_type: i % 3 === 0 ? "update" : i % 3 === 1 ? "transfer" : "field_type_change",
+    old_values: { land_size: Number(l.land_size ?? 1) - 0.1, field_type: "low_land" },
+    new_values: { land_size: Number(l.land_size ?? 1), field_type: "medium_land" },
+    remarks: `Demo land change event #${i + 1}`,
+    created_at: daysAgo(20 + i * 3),
+  }));
+  if (!rows.length) return 0;
+  const { error } = await admin.from("land_change_log").insert(rows);
+  if (error) throw new Error(`land_change_log: ${error.message}`);
+  return rows.length;
+}
+
+// ---- Savings Yearly Opening Balances (previous year carry-over) ----
+async function seedSavingsYearlyOpening(admin: any, officeId: string, farmers: any[]): Promise<number> {
+  const voters = farmers.filter((f: any) => f.is_voter);
+  if (!voters.length) return 0;
+  const lastYear = new Date().getFullYear() - 1;
+  const targets = voters.slice(0, Math.ceil(voters.length * 0.4));
+  const rows = targets.map((f, i) => ({
+    farmer_id: f.id,
+    year: lastYear,
+    opening_balance: 500 + (i % 10) * 250,
+    office_id: officeId,
+  }));
+  if (!rows.length) return 0;
+  const { error } = await admin.from("savings_yearly_opening").insert(rows);
+  if (error) throw new Error(`savings_yearly_opening: ${error.message}`);
+  return rows.length;
+}
+
+
+
+
 
 async function seedAccounts(admin: any) {
   // Codes MUST match what ledger triggers (_acct) look up.
