@@ -87,6 +87,8 @@ export default function FarmerDetail() {
   const [ownerLands, setOwnerLands] = useState<any[]>([]);
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
   const [patwaris, setPatwaris] = useState<any[]>([]);
+  // Lands owned by this farmer that are given out to sharecroppers (borga)
+  const [borgaOut, setBorgaOut] = useState<any[]>([]);
 
   // Load patwaris for assignment
   useEffect(() => {
