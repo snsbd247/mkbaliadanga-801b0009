@@ -1394,7 +1394,7 @@ function estimateImport(modules: string[], size: number) {
   c["land_types"] = 3; c["irrigation_season_types"] = 3;
   if (modules.includes("settings")) c["company/card/sms/receipt settings"] = 4;
   if (modules.includes("accounting")) c["accounts"] = 12;
-  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; c["patwaris"] = 4; c["land_relations"] = Math.ceil(size / 7); }
+  if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; c["patwaris"] = Math.max(4, Math.ceil(size / 12)); c["land_relations"] = Math.ceil(size / 7); }
   if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_charge_settings"] = 1; c["irrigation_season_rates"] = 3; c["irrigation_charges"] = size; c["irrigation_invoices"] = size; }
   if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 3; c["loan_delay_fee_settings"] = 1; c["loans"] = n; c["loan_installments"] = n * 12; c["loan_payments"] = n * 3; }
   if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 3; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); c["farmer_savings_plans"] = Math.ceil(n * 0.5); }
