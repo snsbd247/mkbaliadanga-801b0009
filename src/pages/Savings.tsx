@@ -33,7 +33,7 @@ export default function Savings() {
   const [txns, setTxns] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", category: "general" });
+  const [form, setForm] = useState({ farmer_id: "", type: "deposit", amount: 0, note: "", receipt_no: "", field_receipt_no: "", category: "general" });
   const [categoryFilter, setCategoryFilter] = useState<string>("__all__");
   const SAV_CATEGORIES = [
     { v: "general", l: tx("General", "সাধারণ") },
