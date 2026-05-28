@@ -268,8 +268,21 @@ else
   warn "backend/.env exists — keeping existing secrets"
 fi
 
-# ---------- 9. Build & start backend stack ----------
-step "9/14  Building + starting backend containers"
+# ---------- 9. Pre-create writable dirs on host (bind-mount safety) ----------
+step "9/14  Preparing Laravel writable directories on host"
+sudo -u "$APP_USER" mkdir -p \
+  "$APP_DIR/backend/bootstrap/cache" \
+  "$APP_DIR/backend/storage/framework/cache/data" \
+  "$APP_DIR/backend/storage/framework/sessions" \
+  "$APP_DIR/backend/storage/framework/views" \
+  "$APP_DIR/backend/storage/framework/testing" \
+  "$APP_DIR/backend/storage/logs" \
+  "$APP_DIR/backend/storage/app/public"
+chmod -R 775 "$APP_DIR/backend/bootstrap/cache" "$APP_DIR/backend/storage" 2>/dev/null || true
+ok "Writable directories ensured"
+
+# ---------- 9b. Build & start backend stack ----------
+step "9b/14  Building + starting backend containers"
 cd "$APP_DIR/backend"
 sudo -u "$APP_USER" docker compose pull 2>/dev/null || true
 sudo -u "$APP_USER" docker compose build
@@ -288,12 +301,38 @@ for i in $(seq 1 60); do
   [ "$i" = 60 ] && die "App/Postgres failed to start in 120s. Check: cd $APP_DIR/backend && docker compose logs"
 done
 
-# ---------- 11. Laravel bootstrap (idempotent) ----------
+# Ensure writable inside container (bind-mount overlay after entrypoint already
+# handles it, but re-assert in case host UIDs differ).
+docker exec mkb_app sh -c "chown -R www-data:www-data bootstrap/cache storage 2>/dev/null; chmod -R 775 bootstrap/cache storage 2>/dev/null" || true
+
+# ---------- 11. Laravel bootstrap (idempotent + diagnostic) ----------
 step "11/14  Laravel: composer install + key:generate + migrate + seed"
 docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 docker exec mkb_app php artisan key:generate --force
-docker exec mkb_app php artisan migrate --force
-docker exec mkb_app php artisan db:seed --force
+
+run_migrate() {
+  local attempt=$1
+  log "Running migrations (attempt ${attempt})…"
+  if docker exec mkb_app php artisan migrate --force --no-ansi 2>&1 | tee /tmp/mkb-migrate.log; then
+    return 0
+  fi
+  warn "Migration attempt ${attempt} failed. Last failing migration:"
+  grep -Ei 'migrat|error|SQLSTATE' /tmp/mkb-migrate.log | tail -20 || true
+  return 1
+}
+
+if ! run_migrate 1; then
+  warn "Retrying migrations after 5s…"
+  sleep 5
+  if ! run_migrate 2; then
+    die "Migrations failed after 2 attempts. Inspect: docker exec -it mkb_app php artisan migrate:status — full log at $LOG_FILE and /tmp/mkb-migrate.log"
+  fi
+fi
+
+if ! docker exec mkb_app php artisan db:seed --force --no-ansi 2>&1 | tee /tmp/mkb-seed.log; then
+  warn "Seeder reported issues — continuing (most seeders are idempotent). See /tmp/mkb-seed.log"
+fi
+
 docker exec mkb_app php artisan storage:link 2>/dev/null || true
 docker exec mkb_app php artisan config:cache
 docker exec mkb_app php artisan route:cache
