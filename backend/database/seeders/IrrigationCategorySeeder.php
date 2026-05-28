@@ -4,16 +4,18 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Seeds the default Irrigation Payment categories.
- *
- * Mirrors the enum used by the frontend (Irrigation Payment dialog) and
- * by supabase/functions/demo-reset (CATS = general/hawlat/bank/donation/misc).
- * Adds "mobile_banking" introduced in the May 2026 release.
+ * Safe to re-run; no-op if the lookup table is not present.
  */
 class IrrigationCategorySeeder extends Seeder {
     public function run(): void {
+        if (!Schema::hasTable('irrigation_payment_categories')) {
+            $this->command?->warn('[seed] irrigation_payment_categories table missing — skipping.');
+            return;
+        }
         $rows = [
             ['code' => 'general',        'label_en' => 'General',        'label_bn' => 'সাধারণ'],
             ['code' => 'hawlat',         'label_en' => 'Hawlat',         'label_bn' => 'হাওলাত'],
