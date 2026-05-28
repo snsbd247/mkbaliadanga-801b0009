@@ -16,6 +16,11 @@
 # =============================================================================
 set -euo pipefail
 
+LOG_FILE="${LOG_FILE:-/root/mkbaliadanga-update.log}"
+mkdir -p "$(dirname "$LOG_FILE")"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "[update] === run started $(date -Iseconds) ==="
+
 DOMAIN="${DOMAIN:-mohammadkhani.com}"
 API_SUB="${API_SUB:-api.${DOMAIN}}"
 APP_USER="${APP_USER:-mkadmin}"
@@ -47,6 +52,16 @@ sudo -u "$APP_USER" docker compose pull 2>/dev/null || true
 sudo -u "$APP_USER" docker compose up -d --build
 ok "Containers up"
 
+# ---------- 2b. Ensure host writable dirs (bind-mount safety) ----------
+sudo -u "$APP_USER" mkdir -p \
+  "$APP_DIR/backend/bootstrap/cache" \
+  "$APP_DIR/backend/storage/framework/cache/data" \
+  "$APP_DIR/backend/storage/framework/sessions" \
+  "$APP_DIR/backend/storage/framework/views" \
+  "$APP_DIR/backend/storage/logs" \
+  "$APP_DIR/backend/storage/app/public"
+chmod -R 775 "$APP_DIR/backend/bootstrap/cache" "$APP_DIR/backend/storage" 2>/dev/null || true
+
 # ---------- 3. Wait for app + postgres ----------
 step "3/7  Waiting for app + postgres"
 for i in $(seq 1 60); do
@@ -59,12 +74,20 @@ for i in $(seq 1 60); do
   [ "$i" = 60 ] && die "App/Postgres not ready after 120s. Check: docker compose logs"
 done
 
+docker exec mkb_app sh -c "chown -R www-data:www-data bootstrap/cache storage 2>/dev/null; chmod -R 775 bootstrap/cache storage 2>/dev/null" || true
+
 # ---------- 4. Composer + migrate + seed ----------
 step "4/7  Composer + migrate + seed (idempotent)"
 docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
-docker exec mkb_app php artisan migrate --force
+if ! docker exec mkb_app php artisan migrate --force --no-ansi 2>&1 | tee /tmp/mkb-migrate.log; then
+  warn "Migration failed — retrying once after 5s"
+  sleep 5
+  docker exec mkb_app php artisan migrate --force --no-ansi 2>&1 | tee /tmp/mkb-migrate.log \
+    || die "Migrations failed twice. See /tmp/mkb-migrate.log and $LOG_FILE"
+fi
 # Full DatabaseSeeder = all reference data, all idempotent (firstOrCreate / updateOrCreate)
-docker exec mkb_app php artisan db:seed --force
+docker exec mkb_app php artisan db:seed --force --no-ansi 2>&1 | tee /tmp/mkb-seed.log \
+  || warn "Seeder reported issues — continuing (see /tmp/mkb-seed.log)"
 ok "Migrations + full seed completed"
 
 # ---------- 5. Cache refresh ----------
