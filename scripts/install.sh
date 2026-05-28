@@ -29,6 +29,9 @@ APP_DIR="/home/${APP_USER}/mkbaliadanga"
 WEB_ROOT="/var/www/${DOMAIN}"
 CRED_FILE="/root/mkbaliadanga-credentials.txt"
 SKIP_SSL="${SKIP_SSL:-0}"   # set to 1 to skip certbot
+ENABLE_PGADMIN="${ENABLE_PGADMIN:-1}"   # set to 0 to skip pgAdmin GUI
+PGADMIN_PORT="${PGADMIN_PORT:-5050}"
+PGADMIN_PASSWORD="${PGADMIN_PASSWORD:-Admin@123456}"
 
 # ---------- Pretty ----------
 C_R="\033[0;31m"; C_G="\033[0;32m"; C_Y="\033[1;33m"; C_C="\033[1;36m"; C_N="\033[0m"
