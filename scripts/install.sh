@@ -308,7 +308,25 @@ docker exec mkb_app sh -c "chown -R www-data:www-data bootstrap/cache storage 2>
 # ---------- 11. Laravel bootstrap (idempotent + diagnostic) ----------
 step "11/14  Laravel: composer install + key:generate + migrate + seed"
 docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
-docker exec mkb_app php artisan key:generate --force
+
+# Clear any stale cached config BEFORE generating key, otherwise the cached
+# config can keep APP_KEY="" and Laravel throws "No application encryption key".
+docker exec mkb_app php artisan config:clear || true
+docker exec mkb_app php artisan cache:clear  || true
+
+# Generate APP_KEY only if missing/empty in .env (idempotent across re-runs)
+if ! docker exec mkb_app sh -c "grep -E '^APP_KEY=base64:.+' .env" >/dev/null 2>&1; then
+  log "APP_KEY missing — generating new key"
+  docker exec mkb_app php artisan key:generate --force --ansi
+else
+  ok "APP_KEY already set in .env"
+fi
+
+# Sanity: confirm the running app can actually read the key
+if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); exit(empty(config("app.key")) ? 1 : 0);' 2>/dev/null; then
+  warn "APP_KEY still empty after generate — forcing regenerate"
+  docker exec mkb_app php artisan key:generate --force --ansi
+fi
 
 run_migrate() {
   local attempt=$1
