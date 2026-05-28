@@ -311,7 +311,7 @@ step "9b/14  Building + starting backend containers"
 cd "$APP_DIR/backend"
 sudo -u "$APP_USER" docker compose pull 2>/dev/null || true
 sudo -u "$APP_USER" docker compose build
-sudo -u "$APP_USER" docker compose up -d
+sudo -u "$APP_USER" docker compose up -d --force-recreate
 ok "Containers started"
 
 # ---------- 10. Wait for app + postgres ----------
