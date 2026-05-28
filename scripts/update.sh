@@ -79,6 +79,16 @@ docker exec mkb_app sh -c "chown -R www-data:www-data bootstrap/cache storage 2>
 # ---------- 4. Composer + migrate + seed ----------
 step "4/7  Composer + migrate + seed (idempotent)"
 docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+# Clear stale config BEFORE checking APP_KEY (cached config can mask empty key)
+docker exec mkb_app php artisan config:clear || true
+
+# Ensure APP_KEY exists (don't regenerate if already set — would invalidate sessions/encrypted data)
+if ! docker exec mkb_app sh -c "grep -E '^APP_KEY=base64:.+' .env" >/dev/null 2>&1; then
+  warn "APP_KEY missing in .env — generating one"
+  docker exec mkb_app php artisan key:generate --force --ansi
+fi
+
 if ! docker exec mkb_app php artisan migrate --force --no-ansi 2>&1 | tee /tmp/mkb-migrate.log; then
   warn "Migration failed — retrying once after 5s"
   sleep 5
