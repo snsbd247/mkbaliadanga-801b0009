@@ -34,6 +34,29 @@ warn() { echo -e "${C_Y}[warn]${C_N} $*"; }
 die()  { echo -e "${C_R}[err]${C_N} $*" >&2; exit 1; }
 step() { echo; echo -e "${C_C}━━━ $* ━━━${C_N}"; }
 
+generate_laravel_key() { printf 'base64:%s' "$(openssl rand -base64 32)"; }
+
+ensure_env_app_key() {
+  local env_file="$APP_DIR/backend/.env"
+  [ -f "$env_file" ] || die "Missing backend .env at $env_file — run install.sh first."
+
+  if grep -Eq '^APP_KEY=base64:.+' "$env_file"; then
+    ok "APP_KEY already present in backend/.env"
+    return 0
+  fi
+
+  local app_key
+  app_key="$(generate_laravel_key)"
+  if grep -q '^APP_KEY=' "$env_file"; then
+    sed -i "s|^APP_KEY=.*|APP_KEY=${app_key}|" "$env_file"
+  else
+    printf '\nAPP_KEY=%s\n' "$app_key" >> "$env_file"
+  fi
+  chown "$APP_USER":"$APP_USER" "$env_file" 2>/dev/null || true
+  chmod 600 "$env_file" 2>/dev/null || true
+  ok "APP_KEY generated in backend/.env"
+}
+
 [ "$(id -u)" = 0 ] || die "Run as root (sudo bash $0)"
 [ -d "$APP_DIR/.git" ] || die "Repo missing at $APP_DIR — run install.sh first."
 
@@ -45,11 +68,13 @@ sudo -u "$APP_USER" git fetch --all
 sudo -u "$APP_USER" git reset --hard origin/main
 ok "Code synced to origin/main"
 
+ensure_env_app_key
+
 # ---------- 2. Rebuild backend containers ----------
 step "2/7  Rebuilding backend containers"
 cd "$APP_DIR/backend"
 sudo -u "$APP_USER" docker compose pull 2>/dev/null || true
-sudo -u "$APP_USER" docker compose up -d --build
+sudo -u "$APP_USER" docker compose up -d --build --force-recreate app queue scheduler nginx
 ok "Containers up"
 
 # ---------- 2b. Ensure host writable dirs (bind-mount safety) ----------
