@@ -100,9 +100,12 @@ ufw default allow outgoing
 ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
+if [ "$ENABLE_PGADMIN" = "1" ]; then
+  ufw allow ${PGADMIN_PORT}/tcp
+fi
 ufw --force enable >/dev/null
 systemctl enable --now fail2ban >/dev/null
-ok "Firewall enabled (22, 80, 443)"
+ok "Firewall enabled (22, 80, 443$([ "$ENABLE_PGADMIN" = "1" ] && echo ", ${PGADMIN_PORT}"))"
 
 # ---------- 5b. Swap (helps frontend build on 4GB VPS) ----------
 if [ ! -f /swapfile ]; then
