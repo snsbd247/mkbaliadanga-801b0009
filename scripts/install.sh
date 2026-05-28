@@ -49,6 +49,29 @@ die()  { echo -e "${C_R}[err]${C_N} $*" >&2; exit 1; }
 
 step() { echo; echo -e "${C_C}━━━ $* ━━━${C_N}"; }
 
+generate_laravel_key() { printf 'base64:%s' "$(openssl rand -base64 32)"; }
+
+ensure_env_app_key() {
+  local env_file="$1"
+  [ -f "$env_file" ] || die "Missing backend .env at $env_file"
+
+  if grep -Eq '^APP_KEY=base64:.+' "$env_file"; then
+    ok "APP_KEY already present in backend/.env"
+    return 0
+  fi
+
+  local app_key
+  app_key="$(generate_laravel_key)"
+  if grep -q '^APP_KEY=' "$env_file"; then
+    sed -i "s|^APP_KEY=.*|APP_KEY=${app_key}|" "$env_file"
+  else
+    printf '\nAPP_KEY=%s\n' "$app_key" >> "$env_file"
+  fi
+  chown "$APP_USER":"$APP_USER" "$env_file" 2>/dev/null || true
+  chmod 600 "$env_file" 2>/dev/null || true
+  ok "APP_KEY generated in backend/.env before containers start"
+}
+
 [ "$(id -u)" = 0 ] || die "Run as root (use: sudo bash install.sh)"
 
 echo
@@ -180,13 +203,14 @@ if [ ! -f "$ENV_FILE" ]; then
   PG_PASSWORD="$(rand)"
   REDIS_PASSWORD="$(rand)"
   MINIO_PASSWORD="$(rand)"
+  APP_KEY_VALUE="$(generate_laravel_key)"
   DEV_PASSWORD="${DEV_PASSWORD:-123456}"
   SUPERADMIN_PASSWORD="${SUPERADMIN_PASSWORD:-Admin@123456}"
 
   cat > "$ENV_FILE" <<EOF
 APP_NAME="MK Baliadanga"
 APP_ENV=production
-APP_KEY=
+APP_KEY=${APP_KEY_VALUE}
 APP_DEBUG=false
 APP_URL=https://${API_SUB}
 APP_TIMEZONE=Asia/Dhaka
@@ -267,6 +291,7 @@ EOF
 else
   warn "backend/.env exists — keeping existing secrets"
 fi
+ensure_env_app_key "$ENV_FILE"
 
 # ---------- 9. Pre-create writable dirs on host (bind-mount safety) ----------
 step "9/14  Preparing Laravel writable directories on host"
@@ -286,7 +311,7 @@ step "9b/14  Building + starting backend containers"
 cd "$APP_DIR/backend"
 sudo -u "$APP_USER" docker compose pull 2>/dev/null || true
 sudo -u "$APP_USER" docker compose build
-sudo -u "$APP_USER" docker compose up -d
+sudo -u "$APP_USER" docker compose up -d --force-recreate
 ok "Containers started"
 
 # ---------- 10. Wait for app + postgres ----------
