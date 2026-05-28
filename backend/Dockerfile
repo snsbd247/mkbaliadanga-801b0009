@@ -25,7 +25,14 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-in
 
 COPY . .
 
-RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+# Build-time skeleton (covers non-bind-mount deployments)
+RUN mkdir -p bootstrap/cache \
+             storage/framework/cache/data \
+             storage/framework/sessions \
+             storage/framework/views \
+             storage/framework/testing \
+             storage/logs \
+             storage/app/public \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && composer dump-autoload --optimize
@@ -34,5 +41,10 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-app.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
 
+# Runtime entrypoint — recreates writable dirs after bind-mount overlays
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 EXPOSE 9000
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm", "-F"]
