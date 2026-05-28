@@ -374,6 +374,45 @@ cat >/etc/cron.d/mkbaliadanga-certbot <<EOF
 EOF
 chmod 644 /etc/cron.d/mkbaliadanga-*
 
+# ---------- pgAdmin (optional database GUI) ----------
+if [ "$ENABLE_PGADMIN" = "1" ]; then
+  step "Extra  Installing pgAdmin (database GUI on port ${PGADMIN_PORT})"
+  BACKEND_NET="$(docker network ls --format '{{.Name}}' | grep -E 'backend_default|mkb' | head -n1 || true)"
+  [ -z "$BACKEND_NET" ] && BACKEND_NET="backend_default"
+  if ! docker ps -a --format '{{.Names}}' | grep -q '^mkb_pgadmin$'; then
+    docker run -d --name mkb_pgadmin --restart unless-stopped \
+      --network "$BACKEND_NET" \
+      -p ${PGADMIN_PORT}:80 \
+      -e PGADMIN_DEFAULT_EMAIL="${EMAIL}" \
+      -e PGADMIN_DEFAULT_PASSWORD="${PGADMIN_PASSWORD}" \
+      -e PGADMIN_CONFIG_SERVER_MODE=False \
+      -e PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False \
+      dpage/pgadmin4:latest >/dev/null
+    ok "pgAdmin running → http://${VPS_IP}:${PGADMIN_PORT}"
+  else
+    docker start mkb_pgadmin >/dev/null 2>&1 || true
+    ok "pgAdmin already installed"
+  fi
+  # Append pgAdmin creds to credentials file
+  if ! grep -q "pgAdmin" "$CRED_FILE" 2>/dev/null; then
+    cat >> "$CRED_FILE" <<EOF
+
+---- pgAdmin (DB GUI) ----
+URL                  : http://${VPS_IP}:${PGADMIN_PORT}
+Login email          : ${EMAIL}
+Login password       : ${PGADMIN_PASSWORD}
+
+Add server (inside pgAdmin):
+  Name     : MK Baliadanga
+  Host     : postgres        (container name on same docker network)
+  Port     : 5432
+  Database : mkbaliadanga
+  Username : mkb_user
+  Password : (see "Postgres password" above)
+EOF
+  fi
+fi
+
 # ---------- Final verification ----------
 step "Final verification"
 sleep 3
