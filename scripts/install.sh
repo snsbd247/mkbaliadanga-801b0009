@@ -439,6 +439,9 @@ echo -e "${C_G}Frontend       :${C_N} https://${DOMAIN}"
 echo -e "${C_G}API            :${C_N} https://${API_SUB}/api"
 echo -e "${C_G}Health probe   :${C_N} https://${API_SUB}/api/health"
 echo -e "${C_G}Credentials    :${C_N} ${CRED_FILE}    ${C_Y}(KEEP THIS SAFE)${C_N}"
+if [ "$ENABLE_PGADMIN" = "1" ]; then
+echo -e "${C_G}pgAdmin (DB)   :${C_N} http://${VPS_IP}:${PGADMIN_PORT}  (login: ${EMAIL} / ${PGADMIN_PASSWORD})"
+fi
 echo
 echo -e "${C_Y}Login accounts:${C_N}"
 echo "  Developer  → ismail162  / 123456"
@@ -450,6 +453,13 @@ echo "  Health check     : sudo bash ${APP_DIR}/scripts/healthcheck.sh"
 echo "  Backup now       : sudo bash ${APP_DIR}/scripts/backup.sh"
 echo "  Backend logs     : cd ${APP_DIR}/backend && docker compose logs -f app"
 echo "  Restart all      : cd ${APP_DIR}/backend && docker compose restart"
+echo
+echo -e "${C_Y}Database management:${C_N}"
+echo "  psql console     : docker exec -it mkb_postgres psql -U mkb_user -d mkbaliadanga"
+echo "  Run migrations   : docker exec mkb_app php artisan migrate --force"
+echo "  Run seeders      : docker exec mkb_app php artisan db:seed --force"
+echo "  Fresh + seed     : docker exec mkb_app php artisan migrate:fresh --seed --force  (⚠️ wipes data)"
+echo "  Full DB guide    : ${APP_DIR}/docs/DATABASE.md"
 echo
 
 if [ "$HEALTH_OK" = "0" ]; then
