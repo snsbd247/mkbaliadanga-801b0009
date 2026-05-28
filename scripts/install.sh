@@ -18,6 +18,12 @@
 # =============================================================================
 set -euo pipefail
 
+# ---------- Logging: tee everything to /root/mkbaliadanga-install.log ----------
+LOG_FILE="${LOG_FILE:-/root/mkbaliadanga-install.log}"
+mkdir -p "$(dirname "$LOG_FILE")"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "[install] === run started $(date -Iseconds) ==="
+
 # ---------- Defaults (pre-filled for this project) ----------
 DOMAIN="${DOMAIN:-mohammadkhani.com}"
 API_SUB="${API_SUB:-api.${DOMAIN}}"
@@ -32,6 +38,7 @@ SKIP_SSL="${SKIP_SSL:-0}"   # set to 1 to skip certbot
 ENABLE_PGADMIN="${ENABLE_PGADMIN:-1}"   # set to 0 to skip pgAdmin GUI
 PGADMIN_PORT="${PGADMIN_PORT:-5050}"
 PGADMIN_PASSWORD="${PGADMIN_PASSWORD:-Admin@123456}"
+PGADMIN_ALLOW_IP="${PGADMIN_ALLOW_IP:-}"   # e.g. 203.0.113.5 — restrict pgAdmin to this IP only
 
 # ---------- Pretty ----------
 C_R="\033[0;31m"; C_G="\033[0;32m"; C_Y="\033[1;33m"; C_C="\033[1;36m"; C_N="\033[0m"
@@ -101,7 +108,13 @@ ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
 if [ "$ENABLE_PGADMIN" = "1" ]; then
-  ufw allow ${PGADMIN_PORT}/tcp
+  if [ -n "$PGADMIN_ALLOW_IP" ]; then
+    ufw allow from "$PGADMIN_ALLOW_IP" to any port ${PGADMIN_PORT} proto tcp
+    log "pgAdmin port ${PGADMIN_PORT} restricted to ${PGADMIN_ALLOW_IP}"
+  else
+    ufw allow ${PGADMIN_PORT}/tcp
+    warn "pgAdmin port ${PGADMIN_PORT} open to ALL IPs — set PGADMIN_ALLOW_IP to restrict"
+  fi
 fi
 ufw --force enable >/dev/null
 systemctl enable --now fail2ban >/dev/null
