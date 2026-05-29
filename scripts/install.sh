@@ -52,11 +52,14 @@ step() { echo; echo -e "${C_C}━━━ $* ━━━${C_N}"; }
 generate_laravel_key() { printf 'base64:%s' "$(openssl rand -base64 32)"; }
 
 is_valid_laravel_key() {
-  local key="${1:-}" payload decoded_len
+  local key="${1:-}" payload decoded_len tmp_key_file
   [[ "$key" == base64:* ]] || return 1
   payload="${key#base64:}"
   [ -n "$payload" ] || return 1
-  decoded_len="$(printf '%s' "$payload" | base64 -d 2>/dev/null | wc -c | tr -d '[:space:]')" || return 1
+  tmp_key_file="$(mktemp)"
+  printf '%s' "$payload" | base64 -d > "$tmp_key_file" 2>/dev/null || { rm -f "$tmp_key_file"; return 1; }
+  decoded_len="$(wc -c < "$tmp_key_file" | tr -d '[:space:]')"
+  rm -f "$tmp_key_file"
   [ "$decoded_len" = "32" ]
 }
 
@@ -77,14 +80,24 @@ ensure_env_app_key() {
 
   current_key="$(grep -E '^APP_KEY=' "$env_file" 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
   if is_valid_laravel_key "$current_key"; then
-    ok "APP_KEY valid in backend/.env"
+    ok "APP_KEY validation status: valid Laravel base64 key (32 bytes)"
     return 0
   fi
 
-  warn "APP_KEY missing/invalid in backend/.env — generating a valid 32-byte key"
+  warn "APP_KEY validation status: missing/empty/malformed/wrong length — regenerating"
   app_key="$(generate_laravel_key)"
   write_env_app_key "$env_file" "$app_key"
-  ok "Valid APP_KEY written before containers start"
+  ok "APP_KEY validation status: regenerated valid Laravel base64 key (32 bytes)"
+}
+
+verify_laravel_encryption() {
+  local label="${1:-Laravel encryption}"
+  log "APP_KEY validation status: testing encryption with php artisan tinker"
+  if docker exec mkb_app php artisan tinker --execute="encrypt('test')" >/dev/null 2>&1; then
+    ok "${label}: encrypt('test') succeeded"
+    return 0
+  fi
+  return 1
 }
 
 [ "$(id -u)" = 0 ] || die "Run as root (use: sudo bash install.sh)"
@@ -354,12 +367,14 @@ docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --o
 docker exec mkb_app php artisan config:clear || true
 docker exec mkb_app php artisan cache:clear  || true
 
-# Sanity: confirm the running app can actually build Laravel's encrypter.
-if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); try { $app->make("encrypter"); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage().PHP_EOL); exit(1); }'; then
-  warn "APP_KEY invalid inside container — rewriting .env and recreating PHP containers"
+# Sanity: confirm Laravel encryption works before migrations/cache are rebuilt.
+if ! verify_laravel_encryption "Laravel encryption preflight"; then
+  warn "APP_KEY invalid inside container — rewriting .env, clearing config, and recreating PHP containers"
   ensure_env_app_key "$ENV_FILE"
   sudo -u "$APP_USER" docker compose up -d --force-recreate app queue scheduler
   docker exec mkb_app php artisan config:clear || true
+  docker exec mkb_app php artisan cache:clear  || true
+  verify_laravel_encryption "Laravel encryption retry" || die "Laravel encryption is broken after APP_KEY regeneration. Installation stopped. Check $LOG_FILE"
 fi
 
 run_migrate() {
@@ -389,6 +404,7 @@ docker exec mkb_app php artisan storage:link 2>/dev/null || true
 docker exec mkb_app php artisan config:cache
 docker exec mkb_app php artisan route:cache
 sudo -u "$APP_USER" docker compose restart app queue scheduler >/dev/null
+verify_laravel_encryption "Laravel encryption final check" || die "Laravel encryption failed after cache rebuild. Installation stopped. Check $LOG_FILE"
 ok "Backend bootstrapped (DB migrated + all reference data seeded)"
 
 # ---------- 12. Frontend build ----------
@@ -534,6 +550,7 @@ else
   warn "API not responding yet"
   HEALTH_OK=0
 fi
+verify_laravel_encryption "Laravel encryption healthcheck" || die "Laravel encryption healthcheck failed: php artisan tinker --execute=\"encrypt('test')\" did not succeed. Installation stopped. Check $LOG_FILE"
 
 echo
 echo "╔══════════════════════════════════════════════════════════════╗"

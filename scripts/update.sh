@@ -37,11 +37,14 @@ step() { echo; echo -e "${C_C}━━━ $* ━━━${C_N}"; }
 generate_laravel_key() { printf 'base64:%s' "$(openssl rand -base64 32)"; }
 
 is_valid_laravel_key() {
-  local key="${1:-}" payload decoded_len
+  local key="${1:-}" payload decoded_len tmp_key_file
   [[ "$key" == base64:* ]] || return 1
   payload="${key#base64:}"
   [ -n "$payload" ] || return 1
-  decoded_len="$(printf '%s' "$payload" | base64 -d 2>/dev/null | wc -c | tr -d '[:space:]')" || return 1
+  tmp_key_file="$(mktemp)"
+  printf '%s' "$payload" | base64 -d > "$tmp_key_file" 2>/dev/null || { rm -f "$tmp_key_file"; return 1; }
+  decoded_len="$(wc -c < "$tmp_key_file" | tr -d '[:space:]')"
+  rm -f "$tmp_key_file"
   [ "$decoded_len" = "32" ]
 }
 
@@ -62,14 +65,24 @@ ensure_env_app_key() {
 
   current_key="$(grep -E '^APP_KEY=' "$env_file" 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
   if is_valid_laravel_key "$current_key"; then
-    ok "APP_KEY valid in backend/.env"
+    ok "APP_KEY validation status: valid Laravel base64 key (32 bytes)"
     return 0
   fi
 
-  warn "APP_KEY missing/invalid in backend/.env — generating a valid 32-byte key"
+  warn "APP_KEY validation status: missing/empty/malformed/wrong length — regenerating"
   app_key="$(generate_laravel_key)"
   write_env_app_key "$env_file" "$app_key"
-  ok "Valid APP_KEY written in backend/.env"
+  ok "APP_KEY validation status: regenerated valid Laravel base64 key (32 bytes)"
+}
+
+verify_laravel_encryption() {
+  local label="${1:-Laravel encryption}"
+  log "APP_KEY validation status: testing encryption with php artisan tinker"
+  if docker exec mkb_app php artisan tinker --execute="encrypt('test')" >/dev/null 2>&1; then
+    ok "${label}: encrypt('test') succeeded"
+    return 0
+  fi
+  return 1
 }
 
 [ "$(id -u)" = 0 ] || die "Run as root (sudo bash $0)"
@@ -123,13 +136,15 @@ docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --o
 # Clear stale config BEFORE checking APP_KEY (cached config can mask empty key)
 docker exec mkb_app php artisan config:clear || true
 
-# Confirm Laravel can build the encrypter before migrations/cache are rebuilt.
-if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); try { $app->make("encrypter"); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage().PHP_EOL); exit(1); }'; then
-  warn "APP_KEY invalid inside container — rewriting .env and recreating PHP containers"
+# Confirm Laravel encryption works before migrations/cache are rebuilt.
+if ! verify_laravel_encryption "Laravel encryption preflight"; then
+  warn "APP_KEY invalid inside container — rewriting .env, clearing config, and recreating PHP containers"
   ensure_env_app_key
   cd "$APP_DIR/backend"
   sudo -u "$APP_USER" docker compose up -d --force-recreate app queue scheduler
   docker exec mkb_app php artisan config:clear || true
+  docker exec mkb_app php artisan cache:clear  || true
+  verify_laravel_encryption "Laravel encryption retry" || die "Laravel encryption is broken after APP_KEY regeneration. Update stopped. Check $LOG_FILE"
 fi
 
 if ! docker exec mkb_app php artisan migrate --force --no-ansi 2>&1 | tee /tmp/mkb-migrate.log; then
@@ -153,6 +168,7 @@ docker exec mkb_app php artisan route:cache
 docker exec mkb_app php artisan queue:restart || true
 cd "$APP_DIR/backend"
 sudo -u "$APP_USER" docker compose restart app queue scheduler >/dev/null
+verify_laravel_encryption "Laravel encryption final check" || die "Laravel encryption failed after cache rebuild. Update stopped. Check $LOG_FILE"
 ok "Caches rebuilt + queue workers restarted"
 
 # ---------- 6. Frontend rebuild ----------
@@ -172,7 +188,7 @@ ok "Frontend deployed + nginx reloaded"
 # ---------- 7. Healthcheck ----------
 step "7/7  Healthcheck"
 if [ -x "$APP_DIR/scripts/healthcheck.sh" ]; then
-  bash "$APP_DIR/scripts/healthcheck.sh" || warn "Healthcheck reported issues — investigate above"
+  bash "$APP_DIR/scripts/healthcheck.sh" || die "Healthcheck failed — update stopped. See $LOG_FILE"
 else
   warn "healthcheck.sh missing — skipping"
 fi

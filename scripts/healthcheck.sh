@@ -35,9 +35,9 @@ if docker exec mkb_app test -w bootstrap/cache 2>/dev/null && docker exec mkb_ap
   ok "storage + bootstrap/cache writable"
 else bad "storage / bootstrap/cache NOT writable"; fi
 
-if docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); try { $app->make("encrypter"); exit(0); } catch (Throwable $e) { exit(1); }' >/dev/null 2>&1; then
-  ok "Laravel APP_KEY valid"
-else bad "Laravel APP_KEY invalid"; fi
+if docker exec mkb_app php artisan tinker --execute="encrypt('test')" >/dev/null 2>&1; then
+  ok "Laravel APP_KEY/encryption valid (encrypt('test') succeeded)"
+else bad "Laravel APP_KEY/encryption invalid (encrypt('test') failed)"; fi
 
 PENDING="$(docker exec mkb_app php artisan migrate:status 2>/dev/null | grep -c 'Pending' || echo 0)"
 if [ "${PENDING:-0}" = "0" ]; then ok "no pending migrations"

@@ -24,10 +24,13 @@ chmod -R 775 bootstrap/cache storage 2>/dev/null || true
 # base64 payload decodes to exactly 32 bytes, then export the known-good key.
 is_valid_laravel_key() {
   key="${1:-}"
+  tmp_key_file="/tmp/mkb_app_key_check.$$"
   case "$key" in base64:*) ;; *) return 1 ;; esac
   payload="${key#base64:}"
   [ -n "$payload" ] || return 1
-  decoded_len="$(printf '%s' "$payload" | base64 -d 2>/dev/null | wc -c | tr -d '[:space:]')" || return 1
+  printf '%s' "$payload" | base64 -d > "$tmp_key_file" 2>/dev/null || { rm -f "$tmp_key_file"; return 1; }
+  decoded_len="$(wc -c < "$tmp_key_file" | tr -d '[:space:]')"
+  rm -f "$tmp_key_file"
   [ "$decoded_len" = "32" ]
 }
 
