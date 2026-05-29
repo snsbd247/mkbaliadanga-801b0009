@@ -148,6 +148,8 @@ docker exec mkb_app php artisan view:clear
 docker exec mkb_app php artisan config:cache
 docker exec mkb_app php artisan route:cache
 docker exec mkb_app php artisan queue:restart || true
+cd "$APP_DIR/backend"
+sudo -u "$APP_USER" docker compose restart app queue scheduler >/dev/null
 ok "Caches rebuilt + queue workers restarted"
 
 # ---------- 6. Frontend rebuild ----------
