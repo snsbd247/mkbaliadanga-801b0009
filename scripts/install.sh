@@ -394,6 +394,7 @@ fi
 docker exec mkb_app php artisan storage:link 2>/dev/null || true
 docker exec mkb_app php artisan config:cache
 docker exec mkb_app php artisan route:cache
+sudo -u "$APP_USER" docker compose restart app queue scheduler >/dev/null
 ok "Backend bootstrapped (DB migrated + all reference data seeded)"
 
 # ---------- 12. Frontend build ----------
