@@ -49,9 +49,14 @@ if docker exec mkb_app php artisan tinker --execute="encrypt('test')" >/dev/null
   ok "Laravel APP_KEY/encryption valid (encrypt('test') succeeded)"
 else bad "Laravel APP_KEY/encryption invalid (encrypt('test') failed)"; fi
 
-PENDING="$(docker exec mkb_app php artisan migrate:status 2>/dev/null | awk '/Pending/{c++} END{print c+0}')"
-if [ "${PENDING:-0}" = "0" ]; then ok "no pending migrations"
-else bad "${PENDING} pending migrations"; fi
+MIGRATE_STATUS="$(docker exec mkb_app php artisan migrate:status 2>/dev/null)"
+if [ "$?" != "0" ]; then
+  bad "could not read migration status"
+else
+  PENDING="$(printf '%s\n' "$MIGRATE_STATUS" | awk '/Pending/{c++} END{print c+0}')"
+  if [ "${PENDING:-0}" = "0" ]; then ok "no pending migrations"
+  else bad "${PENDING} pending migrations"; fi
+fi
 
 check_http "frontend (http)"  "http://${DOMAIN}/"
 check_http "frontend (https)" "https://${DOMAIN}/" || true
