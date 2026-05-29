@@ -51,17 +51,17 @@ step() { echo; echo -e "${C_C}━━━ $* ━━━${C_N}"; }
 
 generate_laravel_key() { printf 'base64:%s' "$(openssl rand -base64 32)"; }
 
-ensure_env_app_key() {
-  local env_file="$1"
-  [ -f "$env_file" ] || die "Missing backend .env at $env_file"
+is_valid_laravel_key() {
+  local key="${1:-}" payload decoded_len
+  [[ "$key" == base64:* ]] || return 1
+  payload="${key#base64:}"
+  [ -n "$payload" ] || return 1
+  decoded_len="$(printf '%s' "$payload" | base64 -d 2>/dev/null | wc -c | tr -d '[:space:]')" || return 1
+  [ "$decoded_len" = "32" ]
+}
 
-  if grep -Eq '^APP_KEY=base64:.+' "$env_file"; then
-    ok "APP_KEY already present in backend/.env"
-    return 0
-  fi
-
-  local app_key
-  app_key="$(generate_laravel_key)"
+write_env_app_key() {
+  local env_file="$1" app_key="$2"
   if grep -q '^APP_KEY=' "$env_file"; then
     sed -i "s|^APP_KEY=.*|APP_KEY=${app_key}|" "$env_file"
   else
@@ -69,7 +69,22 @@ ensure_env_app_key() {
   fi
   chown "$APP_USER":"$APP_USER" "$env_file" 2>/dev/null || true
   chmod 600 "$env_file" 2>/dev/null || true
-  ok "APP_KEY generated in backend/.env before containers start"
+}
+
+ensure_env_app_key() {
+  local env_file="$1" current_key app_key
+  [ -f "$env_file" ] || die "Missing backend .env at $env_file"
+
+  current_key="$(grep -E '^APP_KEY=' "$env_file" 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
+  if is_valid_laravel_key "$current_key"; then
+    ok "APP_KEY valid in backend/.env"
+    return 0
+  fi
+
+  warn "APP_KEY missing/invalid in backend/.env — generating a valid 32-byte key"
+  app_key="$(generate_laravel_key)"
+  write_env_app_key "$env_file" "$app_key"
+  ok "Valid APP_KEY written before containers start"
 }
 
 [ "$(id -u)" = 0 ] || die "Run as root (use: sudo bash install.sh)"
@@ -339,18 +354,12 @@ docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --o
 docker exec mkb_app php artisan config:clear || true
 docker exec mkb_app php artisan cache:clear  || true
 
-# Generate APP_KEY only if missing/empty in .env (idempotent across re-runs)
-if ! docker exec mkb_app sh -c "grep -E '^APP_KEY=base64:.+' .env" >/dev/null 2>&1; then
-  log "APP_KEY missing — generating new key"
-  docker exec mkb_app php artisan key:generate --force --ansi
-else
-  ok "APP_KEY already set in .env"
-fi
-
-# Sanity: confirm the running app can actually read the key
-if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); exit(empty(config("app.key")) ? 1 : 0);' 2>/dev/null; then
-  warn "APP_KEY still empty after generate — forcing regenerate"
-  docker exec mkb_app php artisan key:generate --force --ansi
+# Sanity: confirm the running app can actually build Laravel's encrypter.
+if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); try { $app->make("encrypter"); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage().PHP_EOL); exit(1); }'; then
+  warn "APP_KEY invalid inside container — rewriting .env and recreating PHP containers"
+  ensure_env_app_key "$ENV_FILE"
+  sudo -u "$APP_USER" docker compose up -d --force-recreate app queue scheduler
+  docker exec mkb_app php artisan config:clear || true
 fi
 
 run_migrate() {
@@ -379,6 +388,7 @@ fi
 docker exec mkb_app php artisan storage:link 2>/dev/null || true
 docker exec mkb_app php artisan config:cache
 docker exec mkb_app php artisan route:cache
+sudo -u "$APP_USER" docker compose restart app queue scheduler >/dev/null
 ok "Backend bootstrapped (DB migrated + all reference data seeded)"
 
 # ---------- 12. Frontend build ----------

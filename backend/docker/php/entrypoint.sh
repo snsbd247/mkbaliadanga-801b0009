@@ -19,11 +19,20 @@ mkdir -p \
 chown -R www-data:www-data bootstrap/cache storage 2>/dev/null || true
 chmod -R 775 bootstrap/cache storage 2>/dev/null || true
 
-# Docker Compose env_file exports APP_KEY at container start. If it was empty,
-# Laravel will keep reading the empty process env even after .env is edited.
-# Ensure .env has a key and export the same key before php-fpm/queue starts.
-env_key="$(grep -E '^APP_KEY=base64:.+' .env 2>/dev/null | tail -n1 | cut -d= -f2- || true)"
-if [ -z "$env_key" ]; then
+# Docker Compose env_file exports APP_KEY at container start. If that value is
+# empty or malformed, Laravel keeps reading the bad process env. Validate the
+# base64 payload decodes to exactly 32 bytes, then export the known-good key.
+is_valid_laravel_key() {
+  key="${1:-}"
+  case "$key" in base64:*) ;; *) return 1 ;; esac
+  payload="${key#base64:}"
+  [ -n "$payload" ] || return 1
+  decoded_len="$(printf '%s' "$payload" | base64 -d 2>/dev/null | wc -c | tr -d '[:space:]')" || return 1
+  [ "$decoded_len" = "32" ]
+}
+
+env_key="$(grep -E '^APP_KEY=' .env 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
+if ! is_valid_laravel_key "$env_key"; then
   env_key="$(php -r 'echo "base64:".base64_encode(random_bytes(32));')"
   if grep -q '^APP_KEY=' .env 2>/dev/null; then
     sed -i "s|^APP_KEY=.*|APP_KEY=${env_key}|" .env
