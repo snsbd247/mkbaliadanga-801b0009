@@ -133,13 +133,15 @@ docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --o
 # Clear stale config BEFORE checking APP_KEY (cached config can mask empty key)
 docker exec mkb_app php artisan config:clear || true
 
-# Confirm Laravel can build the encrypter before migrations/cache are rebuilt.
-if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); try { $app->make("encrypter"); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage().PHP_EOL); exit(1); }'; then
-  warn "APP_KEY invalid inside container — rewriting .env and recreating PHP containers"
+# Confirm Laravel encryption works before migrations/cache are rebuilt.
+if ! verify_laravel_encryption "Laravel encryption preflight"; then
+  warn "APP_KEY invalid inside container — rewriting .env, clearing config, and recreating PHP containers"
   ensure_env_app_key
   cd "$APP_DIR/backend"
   sudo -u "$APP_USER" docker compose up -d --force-recreate app queue scheduler
   docker exec mkb_app php artisan config:clear || true
+  docker exec mkb_app php artisan cache:clear  || true
+  verify_laravel_encryption "Laravel encryption retry" || die "Laravel encryption is broken after APP_KEY regeneration. Update stopped. Check $LOG_FILE"
 fi
 
 if ! docker exec mkb_app php artisan migrate --force --no-ansi 2>&1 | tee /tmp/mkb-migrate.log; then
@@ -163,6 +165,7 @@ docker exec mkb_app php artisan route:cache
 docker exec mkb_app php artisan queue:restart || true
 cd "$APP_DIR/backend"
 sudo -u "$APP_USER" docker compose restart app queue scheduler >/dev/null
+verify_laravel_encryption "Laravel encryption final check" || die "Laravel encryption failed after cache rebuild. Update stopped. Check $LOG_FILE"
 ok "Caches rebuilt + queue workers restarted"
 
 # ---------- 6. Frontend rebuild ----------
@@ -182,7 +185,7 @@ ok "Frontend deployed + nginx reloaded"
 # ---------- 7. Healthcheck ----------
 step "7/7  Healthcheck"
 if [ -x "$APP_DIR/scripts/healthcheck.sh" ]; then
-  bash "$APP_DIR/scripts/healthcheck.sh" || warn "Healthcheck reported issues — investigate above"
+  bash "$APP_DIR/scripts/healthcheck.sh" || die "Healthcheck failed — update stopped. See $LOG_FILE"
 else
   warn "healthcheck.sh missing — skipping"
 fi
