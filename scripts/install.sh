@@ -77,14 +77,24 @@ ensure_env_app_key() {
 
   current_key="$(grep -E '^APP_KEY=' "$env_file" 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
   if is_valid_laravel_key "$current_key"; then
-    ok "APP_KEY valid in backend/.env"
+    ok "APP_KEY validation status: valid Laravel base64 key (32 bytes)"
     return 0
   fi
 
-  warn "APP_KEY missing/invalid in backend/.env — generating a valid 32-byte key"
+  warn "APP_KEY validation status: missing/empty/malformed/wrong length — regenerating"
   app_key="$(generate_laravel_key)"
   write_env_app_key "$env_file" "$app_key"
-  ok "Valid APP_KEY written before containers start"
+  ok "APP_KEY validation status: regenerated valid Laravel base64 key (32 bytes)"
+}
+
+verify_laravel_encryption() {
+  local label="${1:-Laravel encryption}"
+  log "APP_KEY validation status: testing encryption with php artisan tinker"
+  if docker exec mkb_app php artisan tinker --execute="encrypt('test')" >/dev/null 2>&1; then
+    ok "${label}: encrypt('test') succeeded"
+    return 0
+  fi
+  return 1
 }
 
 [ "$(id -u)" = 0 ] || die "Run as root (use: sudo bash install.sh)"
