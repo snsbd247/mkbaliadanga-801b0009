@@ -96,6 +96,12 @@ sudo -u "$APP_USER" git fetch --all
 sudo -u "$APP_USER" git reset --hard origin/main
 ok "Code synced to origin/main"
 
+if [ "${MKB_UPDATE_REEXEC:-0}" != "1" ]; then
+  log "Restarting update script from freshly synced code"
+  export MKB_UPDATE_REEXEC=1 DOMAIN API_SUB APP_USER APP_DIR WEB_ROOT LOG_FILE
+  exec bash "$APP_DIR/scripts/update.sh"
+fi
+
 ensure_env_app_key
 
 # ---------- 2. Rebuild backend containers ----------
