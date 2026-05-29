@@ -123,10 +123,13 @@ docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --o
 # Clear stale config BEFORE checking APP_KEY (cached config can mask empty key)
 docker exec mkb_app php artisan config:clear || true
 
-# Ensure APP_KEY exists (don't regenerate if already set — would invalidate sessions/encrypted data)
-if ! docker exec mkb_app sh -c "grep -E '^APP_KEY=base64:.+' .env" >/dev/null 2>&1; then
-  warn "APP_KEY missing in .env — generating one"
-  docker exec mkb_app php artisan key:generate --force --ansi
+# Confirm Laravel can build the encrypter before migrations/cache are rebuilt.
+if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); try { $app->make("encrypter"); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage().PHP_EOL); exit(1); }'; then
+  warn "APP_KEY invalid inside container — rewriting .env and recreating PHP containers"
+  ensure_env_app_key
+  cd "$APP_DIR/backend"
+  sudo -u "$APP_USER" docker compose up -d --force-recreate app queue scheduler
+  docker exec mkb_app php artisan config:clear || true
 fi
 
 if ! docker exec mkb_app php artisan migrate --force --no-ansi 2>&1 | tee /tmp/mkb-migrate.log; then
