@@ -51,17 +51,17 @@ step() { echo; echo -e "${C_C}━━━ $* ━━━${C_N}"; }
 
 generate_laravel_key() { printf 'base64:%s' "$(openssl rand -base64 32)"; }
 
-ensure_env_app_key() {
-  local env_file="$1"
-  [ -f "$env_file" ] || die "Missing backend .env at $env_file"
+is_valid_laravel_key() {
+  local key="${1:-}" payload decoded_len
+  [[ "$key" == base64:* ]] || return 1
+  payload="${key#base64:}"
+  [ -n "$payload" ] || return 1
+  decoded_len="$(printf '%s' "$payload" | base64 -d 2>/dev/null | wc -c | tr -d '[:space:]')" || return 1
+  [ "$decoded_len" = "32" ]
+}
 
-  if grep -Eq '^APP_KEY=base64:.+' "$env_file"; then
-    ok "APP_KEY already present in backend/.env"
-    return 0
-  fi
-
-  local app_key
-  app_key="$(generate_laravel_key)"
+write_env_app_key() {
+  local env_file="$1" app_key="$2"
   if grep -q '^APP_KEY=' "$env_file"; then
     sed -i "s|^APP_KEY=.*|APP_KEY=${app_key}|" "$env_file"
   else
@@ -69,7 +69,22 @@ ensure_env_app_key() {
   fi
   chown "$APP_USER":"$APP_USER" "$env_file" 2>/dev/null || true
   chmod 600 "$env_file" 2>/dev/null || true
-  ok "APP_KEY generated in backend/.env before containers start"
+}
+
+ensure_env_app_key() {
+  local env_file="$1" current_key app_key
+  [ -f "$env_file" ] || die "Missing backend .env at $env_file"
+
+  current_key="$(grep -E '^APP_KEY=' "$env_file" 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
+  if is_valid_laravel_key "$current_key"; then
+    ok "APP_KEY valid in backend/.env"
+    return 0
+  fi
+
+  warn "APP_KEY missing/invalid in backend/.env — generating a valid 32-byte key"
+  app_key="$(generate_laravel_key)"
+  write_env_app_key "$env_file" "$app_key"
+  ok "Valid APP_KEY written before containers start"
 }
 
 [ "$(id -u)" = 0 ] || die "Run as root (use: sudo bash install.sh)"
