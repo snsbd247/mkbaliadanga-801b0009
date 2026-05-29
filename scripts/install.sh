@@ -364,12 +364,14 @@ docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --o
 docker exec mkb_app php artisan config:clear || true
 docker exec mkb_app php artisan cache:clear  || true
 
-# Sanity: confirm the running app can actually build Laravel's encrypter.
-if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); try { $app->make("encrypter"); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage().PHP_EOL); exit(1); }'; then
-  warn "APP_KEY invalid inside container — rewriting .env and recreating PHP containers"
+# Sanity: confirm Laravel encryption works before migrations/cache are rebuilt.
+if ! verify_laravel_encryption "Laravel encryption preflight"; then
+  warn "APP_KEY invalid inside container — rewriting .env, clearing config, and recreating PHP containers"
   ensure_env_app_key "$ENV_FILE"
   sudo -u "$APP_USER" docker compose up -d --force-recreate app queue scheduler
   docker exec mkb_app php artisan config:clear || true
+  docker exec mkb_app php artisan cache:clear  || true
+  verify_laravel_encryption "Laravel encryption retry" || die "Laravel encryption is broken after APP_KEY regeneration. Installation stopped. Check $LOG_FILE"
 fi
 
 run_migrate() {
@@ -399,6 +401,7 @@ docker exec mkb_app php artisan storage:link 2>/dev/null || true
 docker exec mkb_app php artisan config:cache
 docker exec mkb_app php artisan route:cache
 sudo -u "$APP_USER" docker compose restart app queue scheduler >/dev/null
+verify_laravel_encryption "Laravel encryption final check" || die "Laravel encryption failed after cache rebuild. Installation stopped. Check $LOG_FILE"
 ok "Backend bootstrapped (DB migrated + all reference data seeded)"
 
 # ---------- 12. Frontend build ----------
