@@ -547,6 +547,7 @@ else
   warn "API not responding yet"
   HEALTH_OK=0
 fi
+verify_laravel_encryption "Laravel encryption healthcheck" || die "Laravel encryption healthcheck failed: php artisan tinker --execute=\"encrypt('test')\" did not succeed. Installation stopped. Check $LOG_FILE"
 
 echo
 echo "╔══════════════════════════════════════════════════════════════╗"
