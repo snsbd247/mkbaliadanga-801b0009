@@ -26,12 +26,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ─── Health (for load balancer / installer) ──────────────────────────────
-Route::get('health', fn () => response()->json([
-    'ok'   => true,
-    'app'  => config('app.name'),
-    'env'  => config('app.env'),
-    'time' => now()->toIso8601String(),
-]));
+Route::get('health', function () {
+    encrypt('test');
+
+    return response()->json([
+        'ok'         => true,
+        'app'        => config('app.name'),
+        'env'        => config('app.env'),
+        'encryption' => 'ok',
+        'time'       => now()->toIso8601String(),
+    ]);
+});
 
 // ─── Public ───────────────────────────────────────────────────────────────
 Route::post('auth/login',                [AuthController::class, 'login'])->middleware('throttle:10,1');

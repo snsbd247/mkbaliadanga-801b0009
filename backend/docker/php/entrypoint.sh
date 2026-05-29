@@ -34,6 +34,7 @@ is_valid_laravel_key() {
   [ "$decoded_len" = "32" ]
 }
 
+key_repaired=0
 env_key="$(grep -E '^APP_KEY=' .env 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r' || true)"
 if ! is_valid_laravel_key "$env_key"; then
   env_key="$(php -r 'echo "base64:".base64_encode(random_bytes(32));')"
@@ -42,7 +43,14 @@ if ! is_valid_laravel_key "$env_key"; then
   else
     printf '\nAPP_KEY=%s\n' "$env_key" >> .env
   fi
+  key_repaired=1
 fi
 export APP_KEY="$env_key"
+
+# If the runtime had to repair APP_KEY, any cached config may still contain the
+# broken key and must be discarded before PHP-FPM/CLI boots Laravel.
+if [ "$key_repaired" = "1" ]; then
+  rm -f bootstrap/cache/config.php
+fi
 
 exec "$@"
