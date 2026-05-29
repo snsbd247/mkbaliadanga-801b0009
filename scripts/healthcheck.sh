@@ -3,6 +3,9 @@
 set +e
 DOMAIN="${DOMAIN:-mohammadkhani.com}"
 API_SUB="${API_SUB:-api.${DOMAIN}}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="${APP_DIR:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
+ENV_FILE="${ENV_FILE:-${APP_DIR}/backend/.env}"
 
 FAIL=0
 ok()  { echo "  [ok]   $*"; }
@@ -18,6 +21,10 @@ check_container() {
   if docker ps --format '{{.Names}}' | grep -q "^${name}$"; then ok "container $name up"
   else bad "container $name NOT running"; fi
 }
+env_value() {
+  local key="$1"
+  grep -E "^${key}=" "$ENV_FILE" 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r' | sed -e 's/^"//' -e 's/"$//'
+}
 
 echo "[health] $(date -Iseconds)"
 
@@ -27,7 +34,10 @@ if docker exec mkb_postgres pg_isready -U mkb_user -d mkbaliadanga >/dev/null 2>
   ok "postgres ready"
 else bad "postgres not ready"; fi
 
-if docker exec mkb_redis redis-cli ping 2>/dev/null | grep -q PONG; then
+REDIS_PASSWORD="$(env_value REDIS_PASSWORD)"
+if [ -n "$REDIS_PASSWORD" ] && docker exec mkb_redis redis-cli -a "$REDIS_PASSWORD" ping 2>/dev/null | grep -q PONG; then
+  ok "redis ready"
+elif [ -z "$REDIS_PASSWORD" ] && docker exec mkb_redis redis-cli ping 2>/dev/null | grep -q PONG; then
   ok "redis ready"
 else bad "redis not ready"; fi
 
@@ -39,7 +49,7 @@ if docker exec mkb_app php artisan tinker --execute="encrypt('test')" >/dev/null
   ok "Laravel APP_KEY/encryption valid (encrypt('test') succeeded)"
 else bad "Laravel APP_KEY/encryption invalid (encrypt('test') failed)"; fi
 
-PENDING="$(docker exec mkb_app php artisan migrate:status 2>/dev/null | grep -c 'Pending' || echo 0)"
+PENDING="$(docker exec mkb_app php artisan migrate:status 2>/dev/null | awk '/Pending/{c++} END{print c+0}')"
 if [ "${PENDING:-0}" = "0" ]; then ok "no pending migrations"
 else bad "${PENDING} pending migrations"; fi
 
