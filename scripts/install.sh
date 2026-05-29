@@ -52,11 +52,14 @@ step() { echo; echo -e "${C_C}━━━ $* ━━━${C_N}"; }
 generate_laravel_key() { printf 'base64:%s' "$(openssl rand -base64 32)"; }
 
 is_valid_laravel_key() {
-  local key="${1:-}" payload decoded_len
+  local key="${1:-}" payload decoded_len tmp_key_file
   [[ "$key" == base64:* ]] || return 1
   payload="${key#base64:}"
   [ -n "$payload" ] || return 1
-  decoded_len="$(printf '%s' "$payload" | base64 -d 2>/dev/null | wc -c | tr -d '[:space:]')" || return 1
+  tmp_key_file="$(mktemp)"
+  printf '%s' "$payload" | base64 -d > "$tmp_key_file" 2>/dev/null || { rm -f "$tmp_key_file"; return 1; }
+  decoded_len="$(wc -c < "$tmp_key_file" | tr -d '[:space:]')"
+  rm -f "$tmp_key_file"
   [ "$decoded_len" = "32" ]
 }
 
