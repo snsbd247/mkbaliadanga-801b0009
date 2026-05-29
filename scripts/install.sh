@@ -354,18 +354,12 @@ docker exec mkb_app composer install --no-dev --prefer-dist --no-interaction --o
 docker exec mkb_app php artisan config:clear || true
 docker exec mkb_app php artisan cache:clear  || true
 
-# Generate APP_KEY only if missing/empty in .env (idempotent across re-runs)
-if ! docker exec mkb_app sh -c "grep -E '^APP_KEY=base64:.+' .env" >/dev/null 2>&1; then
-  log "APP_KEY missing — generating new key"
-  docker exec mkb_app php artisan key:generate --force --ansi
-else
-  ok "APP_KEY already set in .env"
-fi
-
-# Sanity: confirm the running app can actually read the key
-if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); exit(empty(config("app.key")) ? 1 : 0);' 2>/dev/null; then
-  warn "APP_KEY still empty after generate — forcing regenerate"
-  docker exec mkb_app php artisan key:generate --force --ansi
+# Sanity: confirm the running app can actually build Laravel's encrypter.
+if ! docker exec mkb_app php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); try { $app->make("encrypter"); exit(0); } catch (Throwable $e) { fwrite(STDERR, $e->getMessage().PHP_EOL); exit(1); }'; then
+  warn "APP_KEY invalid inside container — rewriting .env and recreating PHP containers"
+  ensure_env_app_key "$ENV_FILE"
+  sudo -u "$APP_USER" docker compose up -d --force-recreate app queue scheduler
+  docker exec mkb_app php artisan config:clear || true
 fi
 
 run_migrate() {
