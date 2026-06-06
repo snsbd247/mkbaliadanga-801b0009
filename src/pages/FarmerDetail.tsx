@@ -1253,6 +1253,44 @@ export default function FarmerDetail() {
 
         </TabsContent>
 
+        <TabsContent value="paid_lands">
+          <Card>
+            <div className="p-3 border-b font-medium">
+              {tx("Lands with fully paid irrigation charge", "যে জমিগুলোর সেচ চার্জ সম্পূর্ণ পরিশোধিত")}
+            </div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{t("pgLocation")}</TableHead>
+                <TableHead>{t("dagNo")}</TableHead>
+                <TableHead className="text-right">{t("landSize")}</TableHead>
+                <TableHead>{t("ownerType")}</TableHead>
+                <TableHead className="text-right">{tx("Paid Amount", "পরিশোধিত টাকা")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {(() => {
+                  const paidLands = lands.filter((l) => {
+                    const m = landInvMap[l.id];
+                    return m && m.count > 0 && m.due <= 0.005;
+                  });
+                  if (paidLands.length === 0) {
+                    return <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{tx("No fully paid lands", "কোনো সম্পূর্ণ পরিশোধিত জমি নেই")}</TableCell></TableRow>;
+                  }
+                  return paidLands.map((l) => (
+                    <TableRow key={l.id}>
+                      <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
+                      <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
+                      <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
+                      <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                      <TableCell className="text-right">{money(landInvMap[l.id]?.paid ?? 0)}</TableCell>
+                    </TableRow>
+                  ));
+                })()}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+
         <TabsContent value="land_history">
           <FarmerLandHistoryTab farmerId={id!} />
         </TabsContent>
