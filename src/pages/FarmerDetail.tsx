@@ -1113,6 +1113,24 @@ export default function FarmerDetail() {
                 {tx("Current season:", "চলতি মৌসুম:")} <span className="font-medium text-foreground">{activeSeasonName}</span> — {tx("Rate & Total are based on this season's irrigation rate", "Rate ও Total এই মৌসুমের সেচ রেট অনুযায়ী")}
               </div>
             )}
+            {(() => {
+              const statuses = lands.map((l) => {
+                const m = landInvMap[l.id];
+                if (!m || m.count === 0) return "none";
+                return m.due > 0.005 ? "due" : "paid";
+              });
+              const paidCount = statuses.filter((s) => s === "paid").length;
+              const dueCount = statuses.filter((s) => s === "due").length;
+              const noneCount = statuses.filter((s) => s === "none").length;
+              return (
+                <div className="px-3 py-2 flex flex-wrap items-center gap-3 text-sm border-b">
+                  <span className="font-medium">{tx("Total Lands", "মোট জমি")}: <strong>{lands.length}</strong></span>
+                  <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}: {paidCount}</Badge>
+                  <Badge variant="destructive">{tx("Due", "বকেয়া")}: {dueCount}</Badge>
+                  {noneCount > 0 && <Badge variant="secondary">{tx("No invoice", "ইনভয়েস নেই")}: {noneCount}</Badge>}
+                </div>
+              );
+            })()}
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{t("pgLocation")}</TableHead>
@@ -1124,6 +1142,7 @@ export default function FarmerDetail() {
                 <TableHead>{t("fieldType")}</TableHead>
                 <TableHead className="text-right">{tx("Rate / Shotok", "রেট/শতক")}</TableHead>
                 <TableHead className="text-right">{tx("Total Amount", "মোট টাকা")}</TableHead>
+                <TableHead>{tx("Irrigation Charge", "সেচ চার্জ")}</TableHead>
                 <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
