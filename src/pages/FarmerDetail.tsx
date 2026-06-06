@@ -194,10 +194,23 @@ export default function FarmerDetail() {
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
       .from("irrigation_invoices")
-      .select("due_amount")
+      .select("land_id,payable_amount,paid_amount,due_amount,invoice_status")
       .eq("farmer_id", id!)
       .is("deleted_at", null);
-    setInvDue((inv.data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+    const invRows = inv.data ?? [];
+    setInvDue(invRows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+    // Per-land irrigation payment status (aggregate all invoices per land)
+    const lim: Record<string, { payable: number; paid: number; due: number; count: number }> = {};
+    invRows.forEach((r: any) => {
+      if (!r.land_id || r.invoice_status === "cancelled") return;
+      const m = lim[r.land_id] ?? { payable: 0, paid: 0, due: 0, count: 0 };
+      m.payable += Number(r.payable_amount || 0);
+      m.paid += Number(r.paid_amount || 0);
+      m.due += Number(r.due_amount || 0);
+      m.count += 1;
+      lim[r.land_id] = m;
+    });
+    setLandInvMap(lim);
 
     // Load active season + per-land rate map (for Rate/Total columns in Land tab)
     try {
