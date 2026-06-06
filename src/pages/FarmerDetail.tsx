@@ -1172,6 +1172,15 @@ export default function FarmerDetail() {
                         <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                         <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const m = landInvMap[l.id];
+                            if (!m || m.count === 0) return <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>;
+                            return m.due > 0.005
+                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
+                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
+                          })()}
+                        </TableCell>
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
