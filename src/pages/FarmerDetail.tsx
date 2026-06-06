@@ -1205,12 +1205,13 @@ export default function FarmerDetail() {
                         <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
+                        <TableCell />
                       </TableRow>
                     );
                   };
                   const sectionHeader = (label: string) => (
                     <TableRow className="bg-primary/10">
-                      <TableCell colSpan={10} className="font-bold text-sm py-2">{label}</TableCell>
+                      <TableCell colSpan={11} className="font-bold text-sm py-2">{label}</TableCell>
                     </TableRow>
                   );
                   const out: React.ReactNode[] = [];
