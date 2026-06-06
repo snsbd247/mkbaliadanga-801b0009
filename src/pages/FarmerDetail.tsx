@@ -67,6 +67,7 @@ export default function FarmerDetail() {
   const [loanPlans, setLoanPlans] = useState<any[]>([]);
   const [irr, setIrr] = useState<any[]>([]);
   const [invDue, setInvDue] = useState<number>(0);
+  const [landInvMap, setLandInvMap] = useState<Record<string, { payable: number; paid: number; due: number; count: number }>>({});
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
@@ -194,10 +195,23 @@ export default function FarmerDetail() {
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
       .from("irrigation_invoices")
-      .select("due_amount")
+      .select("land_id,payable_amount,paid_amount,due_amount,invoice_status")
       .eq("farmer_id", id!)
       .is("deleted_at", null);
-    setInvDue((inv.data ?? []).reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+    const invRows = inv.data ?? [];
+    setInvDue(invRows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+    // Per-land irrigation payment status (aggregate all invoices per land)
+    const lim: Record<string, { payable: number; paid: number; due: number; count: number }> = {};
+    invRows.forEach((r: any) => {
+      if (!r.land_id || r.invoice_status === "cancelled") return;
+      const m = lim[r.land_id] ?? { payable: 0, paid: 0, due: 0, count: 0 };
+      m.payable += Number(r.payable_amount || 0);
+      m.paid += Number(r.paid_amount || 0);
+      m.due += Number(r.due_amount || 0);
+      m.count += 1;
+      lim[r.land_id] = m;
+    });
+    setLandInvMap(lim);
 
     // Load active season + per-land rate map (for Rate/Total columns in Land tab)
     try {
@@ -911,6 +925,7 @@ export default function FarmerDetail() {
       <Tabs defaultValue="lands">
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
+          <TabsTrigger value="paid_lands">{tx("Paid Lands", "পরিশোধিত জমি")}</TabsTrigger>
           <TabsTrigger value="land_history">{tx("Land History", "ভূমির ইতিহাস")}</TabsTrigger>
           <TabsTrigger value="land_transfers">{tx("Transfer History", "হস্তান্তর ইতিহাস")}</TabsTrigger>
           {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
@@ -1099,6 +1114,24 @@ export default function FarmerDetail() {
                 {tx("Current season:", "চলতি মৌসুম:")} <span className="font-medium text-foreground">{activeSeasonName}</span> — {tx("Rate & Total are based on this season's irrigation rate", "Rate ও Total এই মৌসুমের সেচ রেট অনুযায়ী")}
               </div>
             )}
+            {(() => {
+              const statuses = lands.map((l) => {
+                const m = landInvMap[l.id];
+                if (!m || m.count === 0) return "none";
+                return m.due > 0.005 ? "due" : "paid";
+              });
+              const paidCount = statuses.filter((s) => s === "paid").length;
+              const dueCount = statuses.filter((s) => s === "due").length;
+              const noneCount = statuses.filter((s) => s === "none").length;
+              return (
+                <div className="px-3 py-2 flex flex-wrap items-center gap-3 text-sm border-b">
+                  <span className="font-medium">{tx("Total Lands", "মোট জমি")}: <strong>{lands.length}</strong></span>
+                  <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}: {paidCount}</Badge>
+                  <Badge variant="destructive">{tx("Due", "বকেয়া")}: {dueCount}</Badge>
+                  {noneCount > 0 && <Badge variant="secondary">{tx("No invoice", "ইনভয়েস নেই")}: {noneCount}</Badge>}
+                </div>
+              );
+            })()}
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{t("pgLocation")}</TableHead>
@@ -1110,6 +1143,7 @@ export default function FarmerDetail() {
                 <TableHead>{t("fieldType")}</TableHead>
                 <TableHead className="text-right">{tx("Rate / Shotok", "রেট/শতক")}</TableHead>
                 <TableHead className="text-right">{tx("Total Amount", "মোট টাকা")}</TableHead>
+                <TableHead>{tx("Irrigation Charge", "সেচ চার্জ")}</TableHead>
                 <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
@@ -1139,6 +1173,15 @@ export default function FarmerDetail() {
                         <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
                         <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const m = landInvMap[l.id];
+                            if (!m || m.count === 0) return <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>;
+                            return m.due > 0.005
+                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
+                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
+                          })()}
+                        </TableCell>
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
@@ -1163,12 +1206,13 @@ export default function FarmerDetail() {
                         <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
+                        <TableCell />
                       </TableRow>
                     );
                   };
                   const sectionHeader = (label: string) => (
                     <TableRow className="bg-primary/10">
-                      <TableCell colSpan={10} className="font-bold text-sm py-2">{label}</TableCell>
+                      <TableCell colSpan={11} className="font-bold text-sm py-2">{label}</TableCell>
                     </TableRow>
                   );
                   const out: React.ReactNode[] = [];
@@ -1195,10 +1239,11 @@ export default function FarmerDetail() {
                         <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(totalAmt)}</TableCell>
                         <TableCell />
+                        <TableCell />
                       </TableRow>
                     );
                   } else {
-                    out.push(<TableRow key="empty"><TableCell colSpan={10} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
+                    out.push(<TableRow key="empty"><TableCell colSpan={11} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
                   }
                   return out;
                 })()}
@@ -1207,6 +1252,44 @@ export default function FarmerDetail() {
           </Card>
 
         </TabsContent>
+
+        <TabsContent value="paid_lands">
+          <Card>
+            <div className="p-3 border-b font-medium">
+              {tx("Lands with fully paid irrigation charge", "যে জমিগুলোর সেচ চার্জ সম্পূর্ণ পরিশোধিত")}
+            </div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{t("pgLocation")}</TableHead>
+                <TableHead>{t("dagNo")}</TableHead>
+                <TableHead className="text-right">{t("landSize")}</TableHead>
+                <TableHead>{t("ownerType")}</TableHead>
+                <TableHead className="text-right">{tx("Paid Amount", "পরিশোধিত টাকা")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {(() => {
+                  const paidLands = lands.filter((l) => {
+                    const m = landInvMap[l.id];
+                    return m && m.count > 0 && m.due <= 0.005;
+                  });
+                  if (paidLands.length === 0) {
+                    return <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{tx("No fully paid lands", "কোনো সম্পূর্ণ পরিশোধিত জমি নেই")}</TableCell></TableRow>;
+                  }
+                  return paidLands.map((l) => (
+                    <TableRow key={l.id}>
+                      <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
+                      <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
+                      <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
+                      <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                      <TableCell className="text-right">{money(landInvMap[l.id]?.paid ?? 0)}</TableCell>
+                    </TableRow>
+                  ));
+                })()}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
 
         <TabsContent value="land_history">
           <FarmerLandHistoryTab farmerId={id!} />
