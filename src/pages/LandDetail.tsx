@@ -144,3 +144,38 @@ export default function LandDetail() {
     </>
   );
 }
+
+function LandNotesCard({ land, onSaved }: { land: any; onSaved: (notes: string, remarks: string) => void }) {
+  const { tx } = useLang();
+  const [notes, setNotes] = useState<string>(land.notes ?? "");
+  const [remarks, setRemarks] = useState<string>(land.remarks ?? "");
+  const [saving, setSaving] = useState(false);
+  const dirty = notes !== (land.notes ?? "") || remarks !== (land.remarks ?? "");
+
+  async function save() {
+    setSaving(true);
+    const { error } = await supabase.from("lands").update({ notes, remarks } as any).eq("id", land.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(tx("Saved", "সংরক্ষিত হয়েছে"));
+    onSaved(notes, remarks);
+  }
+
+  return (
+    <Card className="mt-4 p-4 space-y-3">
+      <div className="font-medium">{tx("Notes & Remarks", "নোট ও মন্তব্য")}</div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <label className="text-xs text-muted-foreground">{tx("Notes", "নোট")}</label>
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder={tx("Add notes about this land…", "এই জমি সম্পর্কে নোট লিখুন…")} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">{tx("Remarks", "মন্তব্য")}</label>
+          <Textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={3} placeholder={tx("Add remarks…", "মন্তব্য লিখুন…")} />
+        </div>
+      </div>
+      <Button size="sm" onClick={save} disabled={!dirty || saving}>{saving ? "…" : tx("Save notes", "নোট সংরক্ষণ")}</Button>
+    </Card>
+  );
+}
+
