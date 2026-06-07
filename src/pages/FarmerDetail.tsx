@@ -325,19 +325,6 @@ export default function FarmerDetail() {
       outstanding: balanceAfter,
     }, copy, receiptArgs.options);
   }
-  function printLoan(l: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
-    downloadBnReceiptPdf({
-      kind: "loan",
-      ...commonReceipt(),
-      receipt_no: l.receipt_no || autoReceiptNo("LOAN", l.id, new Date(l.issued_on)),
-      date: l.issued_on,
-      farmer: farmerForReceipt(),
-      description: `${tx("Loan disbursed — total payable", "ঋণ বিতরণ — মোট পরিশোধ্য")} ${money(l.total_payable)}`,
-      outstanding: Number(l.total_payable),
-      collected_amount: Number(l.principal),
-      verify_url: `${window.location.origin}/r/loan-${l.id}`,
-    }, copy, receiptArgs.options);
-  }
   async function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id) as any;
     const pw = i.patwaris ?? null;
