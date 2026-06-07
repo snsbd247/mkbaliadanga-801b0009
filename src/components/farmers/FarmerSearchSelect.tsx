@@ -139,7 +139,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <div className="p-2 border-b">
-          <Input autoFocus placeholder={tx("Type name, account, mobile, voter no…", "নাম, অ্যাকাউন্ট, মোবাইল, ভোটার নম্বর লিখুন…")} value={q}
+          <Input autoFocus placeholder={tx("Type name, father name, account, mobile…", "নাম, পিতার নাম, অ্যাকাউন্ট, মোবাইল লিখুন…")} value={q}
             onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} />
         </div>
         <div ref={listRef} className="max-h-72 overflow-y-auto">
