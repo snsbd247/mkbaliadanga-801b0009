@@ -563,15 +563,6 @@ export default function Payments() {
                       <DeleteButton onClick={() => setAllocs(allocs.filter((_, idx) => idx !== i))} />
                     )}
                   </div>
-                  {a.kind === "loan" && (
-                    <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })}>
-                      <SelectTrigger><SelectValue placeholder={openLoans.length ? "Pick loan" : "No open loans"} /></SelectTrigger>
-                      <SelectContent>{openLoans.map(l => {
-                        const paid = (l.loan_payments ?? []).reduce((x: number, p: any) => x + Number(p.amount), 0);
-                        return <SelectItem key={l.id} value={l.id}>{fmtDate(l.issued_on)} — Due {money(Number(l.total_payable) - paid)}</SelectItem>;
-                      })}</SelectContent>
-                    </Select>
-                  )}
                   {a.kind === "irrigation" && (
                     <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })}>
                       <SelectTrigger><SelectValue placeholder={openIrr.length ? "Pick invoice" : "No open invoices"} /></SelectTrigger>
