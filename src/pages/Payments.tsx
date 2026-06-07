@@ -54,7 +54,7 @@ export default function Payments() {
 
   const [allocs, setAllocs] = useState<Allocation[]>([{ kind: "irrigation", reference_id: "", amount: 0 }]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [openLoans, setOpenLoans] = useState<any[]>([]);
+  
   const [openIrr, setOpenIrr] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
