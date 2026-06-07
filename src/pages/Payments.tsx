@@ -556,7 +556,6 @@ export default function Payments() {
                       <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="irrigation">{t("irrigation")}</SelectItem>
-                        <SelectItem value="loan">{t("loans")}</SelectItem>
                         <SelectItem value="savings">{t("savings")}</SelectItem>
                       </SelectContent>
                     </Select>
