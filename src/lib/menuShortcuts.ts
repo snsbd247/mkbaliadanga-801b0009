@@ -74,7 +74,7 @@ export const MENU_SHORTCUTS: MenuShortcut[] = [
 
   // Tools & Imports
   { code: "M71", url: "/import",                                  labelKey: "universalImport",  parentKey: "toolsImports", permKey: "farmers" },
-  { code: "M72", url: "/admin/bulk-loan-export",                  labelKey: "bulkExportLoans",  parentKey: "toolsImports", superOnly: true },
+  
   { code: "M73", url: "/admin/card-designer",                     labelKey: "cardDesigner",     parentKey: "toolsImports", superOnly: true },
   { code: "M74", url: "/admin/qr-rotation",                       labelKey: "qrRotation",       parentKey: "toolsImports", superOnly: true },
   { code: "M75", url: "/backup",                                  labelKey: "backup",           parentKey: "toolsImports", superOnly: true, keywords: ["ব্যাকআপ"] },
