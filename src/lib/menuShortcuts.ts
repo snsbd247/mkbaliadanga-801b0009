@@ -82,7 +82,7 @@ export const MENU_SHORTCUTS: MenuShortcut[] = [
   // Settings
   { code: "M81", url: "/settings",                                labelKey: "settings",         parentKey: "settings", superOnly: true, keywords: ["সেটিংস"] },
   { code: "M82", url: "/admin/receipt-template",                  labelKey: "receiptTemplate",  parentKey: "settings", superOnly: true },
-  { code: "M83", url: "/admin/loan-receipt-settings",             labelKey: "loanReceiptSettings", parentKey: "settings", superOnly: true },
+  
   { code: "M84", url: "/sms-settings",                            labelKey: "smsSettings",      parentKey: "settings", superOnly: true },
   { code: "M85", url: "/sms-logs",                                labelKey: "smsLogs",          parentKey: "settings", permKey: "sms" },
 
