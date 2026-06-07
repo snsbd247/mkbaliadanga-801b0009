@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ApiShell } from "@/components/api/ApiShell";
 import { useCreatePayment, useDeletePayment, usePaymentsList } from "@/hooks/usePaymentsApi";
 import { useFarmersList } from "@/hooks/useFarmersApi";
-import { useLoansList } from "@/hooks/useLoansApi";
+
 import { useSavingsList } from "@/hooks/useSavingsApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
