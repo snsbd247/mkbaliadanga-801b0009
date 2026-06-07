@@ -5,7 +5,7 @@ import { useLaravelAuth } from "@/auth/LaravelAuthProvider";
 
 const TILES = [
   { to: "/api/farmers", title: "Farmers", desc: "Members, lands, KYC" },
-  { to: "/api/loans", title: "Loans", desc: "Disburse, schedule, EMI" },
+  
   { to: "/api/savings", title: "Savings", desc: "Deposits, withdrawals" },
   { to: "/api/payments", title: "Payments", desc: "Collections, receipts" },
   { to: "/api/accounts", title: "Accounts", desc: "Chart of Accounts" },
@@ -14,7 +14,7 @@ const TILES = [
   { to: "/api/lands", title: "Lands", desc: "Land registry" },
   { to: "/api/seasons", title: "Seasons", desc: "Operational periods" },
   { to: "/api/irrigation-rates", title: "Irrigation Rates", desc: "Per-crop pricing" },
-  { to: "/api/loan-plans", title: "Loan Plans", desc: "Products & tenure" },
+  
   { to: "/api/assets", title: "Assets", desc: "Inventory" },
   { to: "/api/users", title: "Users", desc: "Staff & access" },
   { to: "/api/roles", title: "Roles", desc: "RBAC matrix" },
