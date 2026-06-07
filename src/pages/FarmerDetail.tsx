@@ -726,7 +726,7 @@ export default function FarmerDetail() {
           {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
           {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
-          {farmer.is_voter && <TabsTrigger value="loans">{t("loans")}</TabsTrigger>}
+          
           <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
           <TabsTrigger value="payments">{t("pgPaymentsTab")}</TabsTrigger>
           {farmer.is_voter && <TabsTrigger value="shares">{t("shareBalance")}</TabsTrigger>}
