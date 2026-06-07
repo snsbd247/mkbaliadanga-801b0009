@@ -188,6 +188,7 @@ export function LandRelations({ farmerId }: Props) {
           <TableHead>{t("owner")}</TableHead>
           <TableHead>{t("tenant")}</TableHead>
           <TableHead>{t("sharePercent")}</TableHead>
+          <TableHead>{tx("Borga area", "বর্গা পরিমাণ")}</TableHead>
           <TableHead>{t("validFrom")}</TableHead>
           <TableHead>{t("validTo")}</TableHead>
           <TableHead>{t("status")}</TableHead>
