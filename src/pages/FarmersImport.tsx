@@ -134,14 +134,27 @@ export default function FarmersImport() {
       const wb = await readBookFromFile(f);
       const parsed = parseSheet(wb);
       if (parsed.length === 0) { toast.error("File is empty."); return; }
+      // Count member-no occurrences within this file to catch in-file duplicates
+      const idCounts: Record<string, number> = {};
+      parsed.forEach((raw) => {
+        const idRaw = String(raw.farmer_id ?? raw.member_no ?? "").trim();
+        if (!idRaw) return;
+        const r = normalizeFarmerCode(idRaw);
+        const key = r.ok === false ? idRaw : r.value;
+        idCounts[key] = (idCounts[key] ?? 0) + 1;
+      });
       const initial: RowState[] = parsed.map((raw, idx) => {
         const nameEn = String(raw.name_en ?? "").trim();
         const farmerIdRaw = String(raw.farmer_id ?? raw.member_no ?? "").trim();
         let farmerIdErr: string | null = null;
+        let normalizedId: string | null = null;
         if (farmerIdRaw) {
           const r = normalizeFarmerCode(farmerIdRaw);
           if (r.ok === false) farmerIdErr = r.error;
-          else raw.farmer_id = r.value; // canonicalize in-place for the save loop
+          else { raw.farmer_id = r.value; normalizedId = r.value; } // canonicalize in-place for the save loop
+        }
+        if (!farmerIdErr && normalizedId && idCounts[normalizedId] > 1) {
+          farmerIdErr = `Duplicate member no in file: ${normalizedId}`;
         }
         const errorMsg = !nameEn ? "name_en is required" : farmerIdErr;
         return {
