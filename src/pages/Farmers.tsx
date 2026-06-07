@@ -105,7 +105,7 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
         )}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        {hasNumber ? `✓ ${t("voterSavingsActive")}` : tx("If a number is set, will be auto-treated as Voter / Savings member", "নম্বর থাকলেই স্বয়ংক্রিয়ভাবে Voter / Savings সদস্য হিসেবে গণ্য হবে")}
+        {hasNumber ? `✓ ${t("voterSavingsActive")}` : tx("If a number is set, will be auto-treated as a Savings Member", "নম্বর থাকলেই স্বয়ংক্রিয়ভাবে সেভিং সদস্য হিসেবে গণ্য হবে")}
       </p>
       <VoterHistoryDialog farmerId={f.id ?? null} open={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
