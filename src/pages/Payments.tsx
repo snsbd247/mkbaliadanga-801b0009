@@ -583,28 +583,6 @@ export default function Payments() {
                     </Select>
                   )}
                   <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
-                  {a.kind === "loan" && a.reference_id && (() => {
-                    const lo = openLoans.find((x: any) => x.id === a.reference_id);
-                    if (!lo) return null;
-                    const months = Number(lo.loan_plans?.duration_months) || 12;
-                    const profitTotal = Math.max(0, Number(lo.total_payable || 0) - Number(lo.principal || 0));
-                    const monthlyPrincipal = Number(lo.principal || 0) / months;
-                    const monthlyProfit = profitTotal / months;
-                    const monthly = monthlyPrincipal + monthlyProfit;
-                    return (
-                      <div className="rounded-md bg-muted/40 border-l-2 border-primary px-2 py-1 text-[11px] space-y-0.5">
-                        <div className="font-semibold text-muted-foreground uppercase text-[10px]">
-                          {tx("Monthly Suggestion", "মাসিক প্রস্তাবনা")} ({months} {tx("mo", "মাস")})
-                        </div>
-                        <div className="flex justify-between"><span>{tx("Principal", "মূল")}</span><span className="font-mono">{money(monthlyPrincipal)}</span></div>
-                        <div className="flex justify-between"><span>{tx("Profit", "মুনাফা")}</span><span className="font-mono">{money(monthlyProfit)}</span></div>
-                        <div className="flex justify-between font-semibold border-t pt-0.5"><span>{tx("Total / month", "মাসিক মোট")}</span><span className="font-mono">{money(monthly)}</span></div>
-                        <button type="button" className="text-primary underline text-[10px]" onClick={() => updateAlloc(i, { amount: +monthly.toFixed(2) })}>
-                          {tx("Use suggested amount", "প্রস্তাবিত পরিমাণ ব্যবহার করুন")}
-                        </button>
-                      </div>
-                    );
-                  })()}
                 </div>
               ))}
               <div className="text-right text-sm font-semibold">Total: {money(totalAmount)}</div>
