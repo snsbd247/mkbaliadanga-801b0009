@@ -20,7 +20,7 @@ import LandDetail from "./pages/LandDetail";
 import ScanPayment from "./pages/ScanPayment";
 import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
-import Loans from "./pages/Loans";
+
 import IrrigationInvoices from "./pages/IrrigationInvoices";
 import IrrigationReports from "./pages/IrrigationReports";
 import IrrigationRates from "./pages/IrrigationRates";
@@ -45,7 +45,7 @@ import Approvals from "./pages/Approvals";
 import PeriodClose from "./pages/PeriodClose";
 import FinanceSummary from "./pages/FinanceSummary";
 import LandHistory from "./pages/LandHistory";
-import TemporaryLoans from "./pages/TemporaryLoans";
+
 import BankAccounts from "./pages/BankAccounts";
 import Vouchers from "./pages/Vouchers";
 import PublicPay from "./pages/PublicPay";
@@ -61,15 +61,13 @@ import ShareCapitalReconciliation from "./pages/ShareCapitalReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
 import ReceiptTemplate from "./pages/ReceiptTemplate";
-import LoanReceiptSettings from "./pages/LoanReceiptSettings";
-import BulkLoanExport from "./pages/BulkLoanExport";
 import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import MyPermissions from "./pages/admin/MyPermissions";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import InvoiceReport from "./pages/reports/InvoiceReport";
 import CollectionReport from "./pages/reports/CollectionReport";
-import SavingsLoanReport from "./pages/reports/SavingsLoanReport";
+
 import ReceiptKindReport from "./pages/reports/ReceiptKindReport";
 import MonthlyReceiptRegister from "./pages/reports/MonthlyReceiptRegister";
 import OfficerSummaryReport from "./pages/reports/OfficerSummaryReport";
@@ -96,14 +94,7 @@ import Patwaris from "./pages/admin/Patwaris";
 import PatwariDetail from "./pages/admin/PatwariDetail";
 import FarmerStatement from "./pages/FarmerStatement";
 
-import LoanPlans from "./pages/LoanPlans";
-import LoanDetail from "./pages/LoanDetail";
-import LoanDelaySettings from "./pages/admin/LoanDelaySettings";
-import LoanOverdueReport from "./pages/reports/LoanOverdueReport";
-import InstallmentCollectionReport from "./pages/reports/InstallmentCollectionReport";
-import LoanPenaltyReport from "./pages/reports/LoanPenaltyReport";
 import CultivationHistoryReport from "./pages/reports/CultivationHistoryReport";
-import LoanHistoryReport from "./pages/reports/LoanHistoryReport";
 import IrrigationCategoryReport from "./pages/reports/IrrigationCategoryReport";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
@@ -140,7 +131,7 @@ import ApiAuth from "./pages/ApiAuth";
 import ApiFarmerPortal from "./pages/ApiFarmerPortal";
 import ApiFarmerAuth from "./pages/ApiFarmerAuth";
 import ApiFarmers from "./pages/ApiFarmers";
-import ApiLoans from "./pages/ApiLoans";
+
 import ApiSavings from "./pages/ApiSavings";
 import ApiPayments from "./pages/ApiPayments";
 import ApiAccounts from "./pages/ApiAccounts";
@@ -154,7 +145,7 @@ import ApiSms from "./pages/ApiSms";
 import ApiQr from "./pages/ApiQr";
 import ApiLands from "./pages/ApiLands";
 import ApiSeasons from "./pages/ApiSeasons";
-import ApiLoanPlans from "./pages/ApiLoanPlans";
+
 import ApiIrrigationRates from "./pages/ApiIrrigationRates";
 import ApiAssets from "./pages/ApiAssets";
 import ApiDashboard from "./pages/ApiDashboard";
