@@ -171,8 +171,9 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   {highlight(it.member_no ?? it.farmer_code, term)}
+                  {it.father_name ? <> • {tx("Father", "পিতা")}: {highlight(it.father_name, term)}</> : null}
                   {it.mobile ? <> • {highlight(it.mobile, term)}</> : null}
-                  {it.voter_number ? <> • Voter {highlight(it.voter_number, term)}</> : null}
+                  {it.voter_number ? <> • {tx("Savings Member", "সেভিং সদস্য")} {highlight(it.voter_number, term)}</> : null}
                 </div>
               </div>
             </button>
