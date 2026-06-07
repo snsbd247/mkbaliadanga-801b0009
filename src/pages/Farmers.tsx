@@ -338,7 +338,7 @@ export default function Farmers() {
       qy = qy.gte("created_at", from.toISOString());
     }
     if (q) {
-      const base = `name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`;
+      const base = `name_en.ilike.%${q}%,name_bn.ilike.%${q}%,father_name.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`;
       const idClause = dagFarmerIds.length ? `,id.in.(${dagFarmerIds.join(",")})` : "";
       qy = qy.or(base + idClause);
     }
