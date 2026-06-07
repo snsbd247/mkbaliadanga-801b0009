@@ -38,7 +38,7 @@ export function AppSidebar() {
   const closeOnNav = () => { if (isMobile) setOpenMobile(false); };
   const { pathname } = useLocation();
   const { t, lang } = useLang();
-  const { isSuper, isDeveloper, user } = useAuth();
+  const { isSuper, isDeveloper, isAdmin, user } = useAuth();
   const brand = useBranding();
   const { can } = usePermissions();
   const searchRef = useRef<HTMLInputElement | null>(null);
