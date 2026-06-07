@@ -30,8 +30,6 @@ export const MENU_SHORTCUTS: MenuShortcut[] = [
   { code: "M21", url: "/seasons",                                 labelKey: "seasons",          parentKey: "operations", permKey: "seasons" },
   { code: "M22", url: "/savings",                                 labelKey: "savings",          parentKey: "operations", permKey: "savings", keywords: ["সঞ্চয়"] },
   { code: "M23", url: "/share-collection",                        labelKey: "shareCollection",  parentKey: "operations", permKey: "savings" },
-  { code: "M24", url: "/loans",                                   labelKey: "loans",            parentKey: "operations", permKey: "loans", keywords: ["ঋণ"] },
-  { code: "M25", url: "/loans/plans",                             labelKey: "loanPlans",        parentKey: "operations", permKey: "loans" },
   { code: "M26", url: "/irrigation",                              labelKey: "irrigation",       parentKey: "operations", permKey: "irrigation", keywords: ["সেচ"] },
   { code: "M27", url: "/irrigation/rates",                        labelKey: "irrigationRatesLabel", parentKey: "operations", permKey: "irrigation" },
   { code: "M28", url: "/statement",                               labelKey: "statementLabel",   parentKey: "operations", permKey: "savings" },
