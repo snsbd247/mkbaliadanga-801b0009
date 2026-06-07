@@ -165,8 +165,15 @@ export function LandRelations({ farmerId }: Props) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>{t("sharePercent")}</Label><Input type="number" min={0} max={100} step="0.1" disabled={saving} value={form.share_percentage} onChange={e => setForm({ ...form, share_percentage: +e.target.value })} /></div>
-                <div><Label>{t("validFrom")}</Label><Input type="date" disabled={saving} value={form.valid_from} onChange={e => setForm({ ...form, valid_from: e.target.value })} /></div>
+                <div><Label>{tx("Borga area (shatak)", "বর্গা পরিমাণ (শতক)")}</Label><Input type="number" min={0} step="0.01" disabled={saving || !form.land_id} value={form.area_decimal} onChange={e => setForm({ ...form, area_decimal: e.target.value })} placeholder={selectedLand ? `≤ ${selectedLand.land_size}` : "—"} /></div>
               </div>
+              {selectedLand && (
+                <div className={`rounded-md border p-2 text-xs ${ownerRemaining != null && ownerRemaining < 0 ? "border-destructive text-destructive" : "text-muted-foreground"}`}>
+                  {tx("Parcel size", "জমির পরিমাণ")}: {selectedLand.land_size} · {tx("Already allocated", "ইতিমধ্যে বরাদ্দ")}: {allocatedForSelected} · {tx("Owner remaining", "মালিকের অবশিষ্ট")}: <strong>{ownerRemaining}</strong>
+                  {ownerRemaining != null && ownerRemaining < 0 && <> — {tx("exceeds parcel size!", "জমির পরিমাণ ছাড়িয়ে গেছে!")}</>}
+                </div>
+              )}
+              <div><Label>{t("validFrom")}</Label><Input type="date" disabled={saving} value={form.valid_from} onChange={e => setForm({ ...form, valid_from: e.target.value })} /></div>
               <div><Label>{t("note")}</Label><Input disabled={saving} value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
             </div>
             <DialogFooter><Button variant="outline" disabled={saving} onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save} disabled={saving}>{saving ? "…" : t("save")}</Button></DialogFooter>
