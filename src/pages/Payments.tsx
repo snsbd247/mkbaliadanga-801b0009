@@ -449,13 +449,6 @@ export default function Payments() {
         .sort((a, b) => new Date(a.due_date || a.generated_at).getTime() - new Date(b.due_date || b.generated_at).getTime())
         .map(i => ({ reference_id: i.id, due: Number(i.due_amount || 0) }))
         .filter(x => x.due > 0),
-      loan: [...openLoans]
-        .map(l => {
-          const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
-          return { reference_id: l.id, due: Math.max(0, Number(l.total_payable || 0) - paid), issued_on: l.issued_on };
-        })
-        .filter(x => x.due > 0)
-        .sort((a, b) => new Date(a.issued_on).getTime() - new Date(b.issued_on).getTime()),
       savings: [], // savings = deposit, no "due"; consumes remainder
     };
 
