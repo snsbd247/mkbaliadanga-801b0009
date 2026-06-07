@@ -113,15 +113,15 @@ export default function Dashboard() {
       { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users, href: "/farmers" },
       { label: t("activeFarmers"), value: String(farmersList.filter((f: any) => f.status === "active").length), icon: UserCheck, tone: "success", href: "/farmers?status=active" },
       { label: lang === "bn" ? "এই মাসের নতুন সদস্য" : "New Members (This Month)", value: String(newMembersCount ?? 0), icon: UserPlus, tone: "success", href: "/farmers?period=this_month" },
-      { label: lang === "bn" ? "চলমান ঋণ" : "Active Loans", value: String(activeLoanCount), icon: HandCoins, href: "/loans?status=approved" },
+      
       { label: t("totalSavings"), value: money(totalSavings), icon: Wallet, href: "/savings" },
       { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins, href: "/share-collection" },
-      { label: t("totalLoan"), value: money(totalLoan), icon: HandCoins, href: "/loans" },
+      
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets, href: "/reports/collections" },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success", href: "/payments?period=today" },
       { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta, href: "/payments?period=this_month" },
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
-      { label: lang === "bn" ? "ঋণের বাকি" : "Loan Due", value: money(loanDue), icon: HandCoins, tone: "danger", href: "/reports/loan-overdue" },
+      
       { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
       { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
