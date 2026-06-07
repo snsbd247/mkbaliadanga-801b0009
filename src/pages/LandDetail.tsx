@@ -82,6 +82,8 @@ export default function LandDetail() {
         </div>
       </Card>
 
+      <LandNotesCard land={land} onSaved={(n, r) => setLand((p: any) => ({ ...p, notes: n, remarks: r }))} />
+
       <Card className="mt-4">
         <div className="p-3 border-b flex items-center justify-between">
           <div className="font-medium">{t("ld_relationsTitle" as any)}</div>
