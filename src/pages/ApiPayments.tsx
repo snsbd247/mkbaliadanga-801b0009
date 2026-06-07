@@ -82,13 +82,12 @@ function CreatePaymentForm({ onDone }: { onDone: () => void }) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Allocations (remaining: {remaining.toFixed(2)})</Label>
-          <Button type="button" size="sm" variant="outline" onClick={() => setAllocs([...allocs, { target_type: "loan", target_id: "", amount: 0 }])}>
+          <Button type="button" size="sm" variant="outline" onClick={() => setAllocs([...allocs, { target_type: "savings", target_id: "", amount: 0 }])}>
             <Plus className="h-4 w-4 mr-1" /> Add
           </Button>
         </div>
         {allocs.map((a, i) => {
           const opts =
-            a.target_type === "loan" ? (loans.data?.data ?? []).map((l) => ({ id: l.id, label: `Loan ${l.id.slice(0, 8)} — ${l.principal}` })) :
             a.target_type === "savings" ? (savings.data?.data ?? []).map((s) => ({ id: s.id, label: `${s.account_no} (bal ${s.balance})` })) :
             [];
           return (
@@ -98,7 +97,6 @@ function CreatePaymentForm({ onDone }: { onDone: () => void }) {
               }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="loan">Loan</SelectItem>
                   <SelectItem value="savings">Savings</SelectItem>
                   <SelectItem value="irrigation_invoice">Irrigation</SelectItem>
                 </SelectContent>
