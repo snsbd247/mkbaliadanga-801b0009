@@ -1839,6 +1839,9 @@ export type Database = {
           id: string
           is_voter: boolean
           member_no: string | null
+          merged_at: string | null
+          merged_by: string | null
+          merged_into: string | null
           mobile: string | null
           mother_name: string | null
           mouza_id: string | null
@@ -1884,6 +1887,9 @@ export type Database = {
           id?: string
           is_voter?: boolean
           member_no?: string | null
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into?: string | null
           mobile?: string | null
           mother_name?: string | null
           mouza_id?: string | null
@@ -1929,6 +1935,9 @@ export type Database = {
           id?: string
           is_voter?: boolean
           member_no?: string | null
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into?: string | null
           mobile?: string | null
           mother_name?: string | null
           mouza_id?: string | null
@@ -1972,6 +1981,20 @@ export type Database = {
             columns: ["division_id"]
             isOneToOne: false
             referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmers_merged_into_fkey"
+            columns: ["merged_into"]
+            isOneToOne: false
+            referencedRelation: "farmer_savings_balance"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "farmers_merged_into_fkey"
+            columns: ["merged_into"]
+            isOneToOne: false
+            referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
           {
@@ -5895,6 +5918,10 @@ export type Database = {
       member_no_exists: {
         Args: { _exclude_id?: string; _member_no: string }
         Returns: boolean
+      }
+      merge_farmers: {
+        Args: { _source: string; _target: string }
+        Returns: undefined
       }
       next_monthly_receipt_no: {
         Args: { p_kind: string; p_office_id: string }

@@ -80,6 +80,7 @@ import IrrigationDueMismatch from "./pages/admin/IrrigationDueMismatch";
 import RetryJobs from "./pages/admin/RetryJobs";
 import AuditTimeline from "./pages/admin/AuditTimeline";
 import FarmersImport from "./pages/FarmersImport";
+import FarmerMerge from "./pages/admin/FarmerMerge";
 import DataImport from "./pages/DataImport";
 import VoterList from "./pages/VoterList";
 import VoterAudit from "./pages/VoterAudit";
@@ -211,6 +212,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/offices" element={<RequirePerm module="offices"><Offices /></RequirePerm>} />
                 <Route path="/farmers" element={<RequirePerm module="farmers"><Farmers /></RequirePerm>} />
+                <Route path="/admin/farmer-merge" element={<RequireRole roles={["admin","super_admin"]}><FarmerMerge /></RequireRole>} />
                 <Route path="/voters" element={<RequirePerm module="farmers"><VoterList /></RequirePerm>} />
                 <Route path="/farmers/:id" element={<RequirePerm module="farmers"><FarmerDetail /></RequirePerm>} />
                 <Route path="/farmers/:id/report" element={<RequirePerm module="farmers"><FarmerProfileReport /></RequirePerm>} />

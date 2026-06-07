@@ -20,7 +20,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useBranding } from "@/lib/branding";
 import { usePermissions } from "@/lib/permissions";
 
-type SubItem = { url: string; icon: any; label: string; permKey?: string; superOnly?: boolean; developerOnly?: boolean };
+type SubItem = { url: string; icon: any; label: string; permKey?: string; superOnly?: boolean; developerOnly?: boolean; adminOnly?: boolean };
 type ParentItem = {
   key: string;
   icon: any;
@@ -38,7 +38,7 @@ export function AppSidebar() {
   const closeOnNav = () => { if (isMobile) setOpenMobile(false); };
   const { pathname } = useLocation();
   const { t, lang } = useLang();
-  const { isSuper, isDeveloper, user } = useAuth();
+  const { isSuper, isDeveloper, isAdmin, user } = useAuth();
   const brand = useBranding();
   const { can } = usePermissions();
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -57,6 +57,7 @@ export function AppSidebar() {
         { url: "/farmers/import", icon: Upload, label: t("bulkFarmerImport"), permKey: "farmers" },
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
+        { url: "/admin/farmer-merge", icon: Users, label: t("farmerMerge" as any) || "Farmer Merge", adminOnly: true },
         { url: "/admin/patwaris", icon: Users, label: t("patwaris") },
         { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
         { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
@@ -225,9 +226,10 @@ export function AppSidebar() {
     },
   ];
 
-  const allowed = (i: { permKey?: string; superOnly?: boolean; developerOnly?: boolean }) => {
+  const allowed = (i: { permKey?: string; superOnly?: boolean; developerOnly?: boolean; adminOnly?: boolean }) => {
     if (i.developerOnly) return isDeveloper;
     if (i.superOnly) return isSuper;
+    if (i.adminOnly) return isAdmin || isSuper;
     if (i.permKey) return can(i.permKey as any, "can_view");
     return true;
   };
