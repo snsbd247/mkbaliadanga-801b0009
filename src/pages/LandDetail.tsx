@@ -105,8 +105,8 @@ export default function LandDetail() {
           <TableBody>
             {relations.map((r) => (
               <TableRow key={r.id}>
-                <TableCell>{r.owner?.name_en} <span className="text-xs text-muted-foreground">({r.owner?.member_no ?? r.owner?.farmer_code})</span></TableCell>
-                <TableCell>{r.sc?.name_en ? <>{r.sc.name_en} <span className="text-xs text-muted-foreground">({r.sc.member_no ?? r.sc.farmer_code})</span></> : <span className="text-muted-foreground">—</span>}</TableCell>
+                <TableCell>{r.owner?.id ? <Link to={`/farmers/${r.owner.id}`} className="font-medium underline">{r.owner.name_en} <span className="text-xs text-muted-foreground">({r.owner.member_no ?? r.owner.farmer_code})</span></Link> : "—"}</TableCell>
+                <TableCell>{r.sc?.id ? <Link to={`/farmers/${r.sc.id}`} className="font-medium underline">{r.sc.name_en} <span className="text-xs text-muted-foreground">({r.sc.member_no ?? r.sc.farmer_code})</span></Link> : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell>{r.share_percentage}%</TableCell>
                 <TableCell>{fmtDate(r.valid_from)}</TableCell>
                 <TableCell>{r.valid_to ? fmtDate(r.valid_to) : "—"}</TableCell>
