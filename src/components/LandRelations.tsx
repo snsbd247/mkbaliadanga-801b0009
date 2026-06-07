@@ -103,6 +103,7 @@ export function LandRelations({ farmerId }: Props) {
         owner_farmer_id: form.owner_farmer_id,
         sharecropper_farmer_id: form.sharecropper_farmer_id || null,
         share_percentage: Number(form.share_percentage),
+        area_decimal: form.area_decimal === "" ? null : Number(form.area_decimal),
         valid_from: form.valid_from,
         note: form.note,
         created_by: user?.id,
