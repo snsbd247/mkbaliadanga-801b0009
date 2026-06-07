@@ -197,7 +197,7 @@ const App = () => (
               <Route path="/api" element={<Navigate to="/api/dashboard" replace />} />
               <Route path="/api/dashboard" element={<ApiDashboard />} />
               <Route path="/api/farmers" element={<ApiFarmers />} />
-              <Route path="/api/loans" element={<ApiLoans />} />
+              
               <Route path="/api/savings" element={<ApiSavings />} />
               <Route path="/api/payments" element={<ApiPayments />} />
               <Route path="/api/accounts" element={<ApiAccounts />} />
@@ -211,7 +211,7 @@ const App = () => (
               <Route path="/api/qr" element={<ApiQr />} />
               <Route path="/api/lands" element={<ApiLands />} />
               <Route path="/api/seasons" element={<ApiSeasons />} />
-              <Route path="/api/loan-plans" element={<ApiLoanPlans />} />
+              
               <Route path="/api/irrigation-rates" element={<ApiIrrigationRates />} />
               <Route path="/api/assets" element={<ApiAssets />} />
               {/* Legacy → API redirects disabled: same login/UI on preview and VPS. */}
@@ -229,13 +229,8 @@ const App = () => (
                 <Route path="/seasons" element={<RequirePerm module="seasons"><Seasons /></RequirePerm>} />
                 <Route path="/savings" element={<RequirePerm module="savings"><Savings /></RequirePerm>} />
 
-                <Route path="/loans" element={<RequirePerm module="loans"><Loans /></RequirePerm>} />
-                <Route path="/loans/plans" element={<RequirePerm module="loans"><LoanPlans /></RequirePerm>} />
-                <Route path="/loans/:loanId" element={<RequirePerm module="loans"><LoanDetail /></RequirePerm>} />
-                <Route path="/admin/loan-delay-settings" element={<RequirePerm module="loans" action="can_edit"><LoanDelaySettings /></RequirePerm>} />
-                <Route path="/reports/loan-overdue" element={<RequirePerm module="reports"><LoanOverdueReport /></RequirePerm>} />
-                <Route path="/reports/installment-collection" element={<RequirePerm module="reports"><InstallmentCollectionReport /></RequirePerm>} />
-                <Route path="/reports/loan-penalty" element={<RequirePerm module="reports"><LoanPenaltyReport /></RequirePerm>} />
+
+
                 <Route path="/share-collection" element={<RequirePerm module="savings"><ShareCollection /></RequirePerm>} />
                 {/* Legacy routes redirect to unified invoice/payment pages */}
                 <Route path="/irrigation" element={<Navigate to="/irrigation/invoices" replace />} />
@@ -248,7 +243,7 @@ const App = () => (
                 <Route path="/reports/irrigation-due" element={<RequirePerm module="reports"><IrrigationDueReport /></RequirePerm>} />
                 <Route path="/reports/invoices" element={<RequirePerm module="reports"><InvoiceReport /></RequirePerm>} />
                 <Route path="/reports/collections" element={<RequirePerm module="reports"><CollectionReport /></RequirePerm>} />
-                <Route path="/reports/savings-loan" element={<RequirePerm module="reports"><SavingsLoanReport /></RequirePerm>} />
+                
                 <Route path="/reports/receipts" element={<RequirePerm module="reports"><ReceiptKindReport /></RequirePerm>} />
                 <Route path="/reports/receipt-register" element={<RequirePerm module="reports"><MonthlyReceiptRegister /></RequirePerm>} />
                 <Route path="/reports/officer-summary" element={<RequirePerm module="reports"><OfficerSummaryReport /></RequirePerm>} />
@@ -261,7 +256,7 @@ const App = () => (
                 <Route path="/reports/expenses" element={<RequirePerm module="reports" action="can_view"><ExpensesReport /></RequirePerm>} />
                 <Route path="/reports/promise-due" element={<RequirePerm module="reports"><PromiseDueReport /></RequirePerm>} />
                 <Route path="/reports/cultivation-history" element={<RequirePerm module="reports"><CultivationHistoryReport /></RequirePerm>} />
-                <Route path="/reports/loan-history" element={<RequirePerm module="reports"><LoanHistoryReport /></RequirePerm>} />
+                
                 <Route path="/reports/irrigation-category" element={<RequirePerm module="reports"><IrrigationCategoryReport /></RequirePerm>} />
 
                 <Route path="/admin/irrigation-due-mismatch" element={<RequireRole roles={["admin","super_admin"]}><IrrigationDueMismatch /></RequireRole>} />
@@ -288,7 +283,7 @@ const App = () => (
                 <Route path="/period-close" element={<RequirePerm module="accounting" action="can_edit"><PeriodClose /></RequirePerm>} />
                 <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
                 <Route path="/land-history" element={<RequirePerm module="farmers"><LandHistory /></RequirePerm>} />
-                <Route path="/loans/temporary" element={<RequirePerm module="loans"><TemporaryLoans /></RequirePerm>} />
+                
                 <Route path="/bank-accounts" element={<RequirePerm module="accounting"><BankAccounts /></RequirePerm>} />
                 <Route path="/vouchers" element={<RequirePerm module="accounting"><Vouchers /></RequirePerm>} />
                 <Route path="/public-payments" element={<RequireRole roles={["admin","super_admin","staff"]}><PublicPaymentIntents /></RequireRole>} />
@@ -303,8 +298,6 @@ const App = () => (
                 <Route path="/admin/qr-rotation" element={<RequireRole roles={["admin","super_admin"]}><QrRotation /></RequireRole>} />
                 <Route path="/admin/bulk-cards" element={<RequirePerm module="farmers"><BulkCards /></RequirePerm>} />
                 <Route path="/admin/receipt-template" element={<RequireRole roles={["admin","super_admin"]}><ReceiptTemplate /></RequireRole>} />
-                <Route path="/admin/loan-receipt-settings" element={<RequireRole roles={["admin","super_admin"]}><LoanReceiptSettings /></RequireRole>} />
-                <Route path="/admin/bulk-loan-export" element={<RequireRole roles={["admin","super_admin"]}><BulkLoanExport /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
                 <Route path="/admin/my-permissions" element={<MyPermissions />} />
