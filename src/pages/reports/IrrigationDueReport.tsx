@@ -20,6 +20,7 @@ type Row = {
   farmer_id: string;
   farmer_name: string;
   farmer_code: string;
+  father_name: string;
   land_id: string;
   land_label: string;
   patwari_id: string | null;
