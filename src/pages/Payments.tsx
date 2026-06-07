@@ -119,13 +119,6 @@ export default function Payments() {
     const pr = params.get("period");
     if (pr === "today" || pr === "this_month" || pr === "all") setPeriod(pr);
   }, [params]);
-  useEffect(() => {
-    const loan = params.get("loan");
-    const amt = params.get("amount");
-    if (loan && farmerId) {
-      setAllocs([{ kind: "loan", reference_id: loan, amount: amt ? Number(amt) : 0 }]);
-    }
-  }, [params, farmerId, openLoans.length]);
 
   // Live preview of the auto-generated monthly receipt no. Reads (does not consume) the counter.
   useEffect(() => {
