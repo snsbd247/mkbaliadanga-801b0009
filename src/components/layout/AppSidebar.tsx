@@ -225,9 +225,10 @@ export function AppSidebar() {
     },
   ];
 
-  const allowed = (i: { permKey?: string; superOnly?: boolean; developerOnly?: boolean }) => {
+  const allowed = (i: { permKey?: string; superOnly?: boolean; developerOnly?: boolean; adminOnly?: boolean }) => {
     if (i.developerOnly) return isDeveloper;
     if (i.superOnly) return isSuper;
+    if (i.adminOnly) return isAdmin || isSuper;
     if (i.permKey) return can(i.permKey as any, "can_view");
     return true;
   };
