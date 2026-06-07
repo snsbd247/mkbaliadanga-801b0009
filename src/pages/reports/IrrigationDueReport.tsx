@@ -129,6 +129,7 @@ export default function IrrigationDueReport() {
       return (
         r.farmer_name.toLowerCase().includes(s) ||
         r.farmer_code.toLowerCase().includes(s) ||
+        (r.father_name || "").toLowerCase().includes(s) ||
         r.land_label.toLowerCase().includes(s) ||
         r.patwari_name.toLowerCase().includes(s)
       );
