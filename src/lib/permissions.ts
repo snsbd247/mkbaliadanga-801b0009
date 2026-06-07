@@ -4,7 +4,7 @@ import { useAuth } from "@/auth/AuthProvider";
 
 export type ModuleKey =
   | "dashboard" | "offices" | "farmers" | "seasons"
-  | "savings" | "loans" | "irrigation" | "payments"
+  | "savings" | "irrigation" | "payments"
   | "reports" | "users" | "audit" | "settings"
   | "accounting" | "cashbook" | "approvals" | "sms" | "locations"
   | "assets";
