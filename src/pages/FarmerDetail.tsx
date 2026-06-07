@@ -1083,6 +1083,9 @@ export default function FarmerDetail() {
               </TableBody>
             </Table>
           </Card>
+          <div className="mt-4">
+            <PaidLandHistory farmerId={id!} />
+          </div>
         </TabsContent>
 
 
