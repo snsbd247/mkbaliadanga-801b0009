@@ -20,7 +20,7 @@ import LandDetail from "./pages/LandDetail";
 import ScanPayment from "./pages/ScanPayment";
 import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
-import Loans from "./pages/Loans";
+
 import IrrigationInvoices from "./pages/IrrigationInvoices";
 import IrrigationReports from "./pages/IrrigationReports";
 import IrrigationRates from "./pages/IrrigationRates";
@@ -45,7 +45,7 @@ import Approvals from "./pages/Approvals";
 import PeriodClose from "./pages/PeriodClose";
 import FinanceSummary from "./pages/FinanceSummary";
 import LandHistory from "./pages/LandHistory";
-import TemporaryLoans from "./pages/TemporaryLoans";
+
 import BankAccounts from "./pages/BankAccounts";
 import Vouchers from "./pages/Vouchers";
 import PublicPay from "./pages/PublicPay";
@@ -61,15 +61,13 @@ import ShareCapitalReconciliation from "./pages/ShareCapitalReconciliation";
 import QrRotation from "./pages/QrRotation";
 import BulkCards from "./pages/BulkCards";
 import ReceiptTemplate from "./pages/ReceiptTemplate";
-import LoanReceiptSettings from "./pages/LoanReceiptSettings";
-import BulkLoanExport from "./pages/BulkLoanExport";
 import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import MyPermissions from "./pages/admin/MyPermissions";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import InvoiceReport from "./pages/reports/InvoiceReport";
 import CollectionReport from "./pages/reports/CollectionReport";
-import SavingsLoanReport from "./pages/reports/SavingsLoanReport";
+
 import ReceiptKindReport from "./pages/reports/ReceiptKindReport";
 import MonthlyReceiptRegister from "./pages/reports/MonthlyReceiptRegister";
 import OfficerSummaryReport from "./pages/reports/OfficerSummaryReport";
@@ -96,14 +94,7 @@ import Patwaris from "./pages/admin/Patwaris";
 import PatwariDetail from "./pages/admin/PatwariDetail";
 import FarmerStatement from "./pages/FarmerStatement";
 
-import LoanPlans from "./pages/LoanPlans";
-import LoanDetail from "./pages/LoanDetail";
-import LoanDelaySettings from "./pages/admin/LoanDelaySettings";
-import LoanOverdueReport from "./pages/reports/LoanOverdueReport";
-import InstallmentCollectionReport from "./pages/reports/InstallmentCollectionReport";
-import LoanPenaltyReport from "./pages/reports/LoanPenaltyReport";
 import CultivationHistoryReport from "./pages/reports/CultivationHistoryReport";
-import LoanHistoryReport from "./pages/reports/LoanHistoryReport";
 import IrrigationCategoryReport from "./pages/reports/IrrigationCategoryReport";
 import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
@@ -140,7 +131,7 @@ import ApiAuth from "./pages/ApiAuth";
 import ApiFarmerPortal from "./pages/ApiFarmerPortal";
 import ApiFarmerAuth from "./pages/ApiFarmerAuth";
 import ApiFarmers from "./pages/ApiFarmers";
-import ApiLoans from "./pages/ApiLoans";
+
 import ApiSavings from "./pages/ApiSavings";
 import ApiPayments from "./pages/ApiPayments";
 import ApiAccounts from "./pages/ApiAccounts";
@@ -154,7 +145,7 @@ import ApiSms from "./pages/ApiSms";
 import ApiQr from "./pages/ApiQr";
 import ApiLands from "./pages/ApiLands";
 import ApiSeasons from "./pages/ApiSeasons";
-import ApiLoanPlans from "./pages/ApiLoanPlans";
+
 import ApiIrrigationRates from "./pages/ApiIrrigationRates";
 import ApiAssets from "./pages/ApiAssets";
 import ApiDashboard from "./pages/ApiDashboard";
@@ -197,7 +188,7 @@ const App = () => (
               <Route path="/api" element={<Navigate to="/api/dashboard" replace />} />
               <Route path="/api/dashboard" element={<ApiDashboard />} />
               <Route path="/api/farmers" element={<ApiFarmers />} />
-              <Route path="/api/loans" element={<ApiLoans />} />
+              
               <Route path="/api/savings" element={<ApiSavings />} />
               <Route path="/api/payments" element={<ApiPayments />} />
               <Route path="/api/accounts" element={<ApiAccounts />} />
@@ -211,7 +202,7 @@ const App = () => (
               <Route path="/api/qr" element={<ApiQr />} />
               <Route path="/api/lands" element={<ApiLands />} />
               <Route path="/api/seasons" element={<ApiSeasons />} />
-              <Route path="/api/loan-plans" element={<ApiLoanPlans />} />
+              
               <Route path="/api/irrigation-rates" element={<ApiIrrigationRates />} />
               <Route path="/api/assets" element={<ApiAssets />} />
               {/* Legacy → API redirects disabled: same login/UI on preview and VPS. */}
@@ -229,13 +220,8 @@ const App = () => (
                 <Route path="/seasons" element={<RequirePerm module="seasons"><Seasons /></RequirePerm>} />
                 <Route path="/savings" element={<RequirePerm module="savings"><Savings /></RequirePerm>} />
 
-                <Route path="/loans" element={<RequirePerm module="loans"><Loans /></RequirePerm>} />
-                <Route path="/loans/plans" element={<RequirePerm module="loans"><LoanPlans /></RequirePerm>} />
-                <Route path="/loans/:loanId" element={<RequirePerm module="loans"><LoanDetail /></RequirePerm>} />
-                <Route path="/admin/loan-delay-settings" element={<RequirePerm module="loans" action="can_edit"><LoanDelaySettings /></RequirePerm>} />
-                <Route path="/reports/loan-overdue" element={<RequirePerm module="reports"><LoanOverdueReport /></RequirePerm>} />
-                <Route path="/reports/installment-collection" element={<RequirePerm module="reports"><InstallmentCollectionReport /></RequirePerm>} />
-                <Route path="/reports/loan-penalty" element={<RequirePerm module="reports"><LoanPenaltyReport /></RequirePerm>} />
+
+
                 <Route path="/share-collection" element={<RequirePerm module="savings"><ShareCollection /></RequirePerm>} />
                 {/* Legacy routes redirect to unified invoice/payment pages */}
                 <Route path="/irrigation" element={<Navigate to="/irrigation/invoices" replace />} />
@@ -248,7 +234,7 @@ const App = () => (
                 <Route path="/reports/irrigation-due" element={<RequirePerm module="reports"><IrrigationDueReport /></RequirePerm>} />
                 <Route path="/reports/invoices" element={<RequirePerm module="reports"><InvoiceReport /></RequirePerm>} />
                 <Route path="/reports/collections" element={<RequirePerm module="reports"><CollectionReport /></RequirePerm>} />
-                <Route path="/reports/savings-loan" element={<RequirePerm module="reports"><SavingsLoanReport /></RequirePerm>} />
+                
                 <Route path="/reports/receipts" element={<RequirePerm module="reports"><ReceiptKindReport /></RequirePerm>} />
                 <Route path="/reports/receipt-register" element={<RequirePerm module="reports"><MonthlyReceiptRegister /></RequirePerm>} />
                 <Route path="/reports/officer-summary" element={<RequirePerm module="reports"><OfficerSummaryReport /></RequirePerm>} />
@@ -261,7 +247,7 @@ const App = () => (
                 <Route path="/reports/expenses" element={<RequirePerm module="reports" action="can_view"><ExpensesReport /></RequirePerm>} />
                 <Route path="/reports/promise-due" element={<RequirePerm module="reports"><PromiseDueReport /></RequirePerm>} />
                 <Route path="/reports/cultivation-history" element={<RequirePerm module="reports"><CultivationHistoryReport /></RequirePerm>} />
-                <Route path="/reports/loan-history" element={<RequirePerm module="reports"><LoanHistoryReport /></RequirePerm>} />
+                
                 <Route path="/reports/irrigation-category" element={<RequirePerm module="reports"><IrrigationCategoryReport /></RequirePerm>} />
 
                 <Route path="/admin/irrigation-due-mismatch" element={<RequireRole roles={["admin","super_admin"]}><IrrigationDueMismatch /></RequireRole>} />
@@ -288,7 +274,7 @@ const App = () => (
                 <Route path="/period-close" element={<RequirePerm module="accounting" action="can_edit"><PeriodClose /></RequirePerm>} />
                 <Route path="/finance-summary" element={<RequirePerm module="accounting"><FinanceSummary /></RequirePerm>} />
                 <Route path="/land-history" element={<RequirePerm module="farmers"><LandHistory /></RequirePerm>} />
-                <Route path="/loans/temporary" element={<RequirePerm module="loans"><TemporaryLoans /></RequirePerm>} />
+                
                 <Route path="/bank-accounts" element={<RequirePerm module="accounting"><BankAccounts /></RequirePerm>} />
                 <Route path="/vouchers" element={<RequirePerm module="accounting"><Vouchers /></RequirePerm>} />
                 <Route path="/public-payments" element={<RequireRole roles={["admin","super_admin","staff"]}><PublicPaymentIntents /></RequireRole>} />
@@ -303,8 +289,6 @@ const App = () => (
                 <Route path="/admin/qr-rotation" element={<RequireRole roles={["admin","super_admin"]}><QrRotation /></RequireRole>} />
                 <Route path="/admin/bulk-cards" element={<RequirePerm module="farmers"><BulkCards /></RequirePerm>} />
                 <Route path="/admin/receipt-template" element={<RequireRole roles={["admin","super_admin"]}><ReceiptTemplate /></RequireRole>} />
-                <Route path="/admin/loan-receipt-settings" element={<RequireRole roles={["admin","super_admin"]}><LoanReceiptSettings /></RequireRole>} />
-                <Route path="/admin/bulk-loan-export" element={<RequireRole roles={["admin","super_admin"]}><BulkLoanExport /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
                 <Route path="/admin/my-permissions" element={<MyPermissions />} />

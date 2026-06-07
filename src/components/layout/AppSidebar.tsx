@@ -65,16 +65,12 @@ export function AppSidebar() {
       ],
     },
 
-    // ── Savings & Loans ──
+    // ── Savings ──
     {
-      key: "savingsLoans", icon: Wallet, label: t("savingsAndLoans" as any) || "সঞ্চয় ও ঋণ",
+      key: "savingsLoans", icon: Wallet, label: t("savings"),
       children: [
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
         { url: "/share-collection", icon: Wallet, label: t("shareCollection"), permKey: "savings" },
-        { url: "/loans", icon: HandCoins, label: t("loans"), permKey: "loans" },
-        { url: "/loans/plans", icon: HandCoins, label: t("loanPlans"), permKey: "loans" },
-        { url: "/admin/loan-delay-settings", icon: HandCoins, label: t("loanDelaySettings" as any), permKey: "loans" },
-        { url: "/loans/temporary", icon: HandCoins, label: t("temporaryLoans"), permKey: "loans" },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
@@ -153,10 +149,6 @@ export function AppSidebar() {
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
-        { url: "/reports/savings-loan", icon: FileBarChart, label: t("savingsLoanReport" as any), permKey: "reports" },
-        { url: "/reports/loan-overdue", icon: AlertTriangle, label: t("loanOverdueReport" as any), permKey: "reports" },
-        { url: "/reports/installment-collection", icon: FileBarChart, label: t("installmentCollectionReport" as any), permKey: "reports" },
-        { url: "/reports/loan-penalty", icon: FileBarChart, label: t("loanPenaltyReport" as any), permKey: "reports" },
        { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
        { url: "/reports/receipt-register", icon: FileBarChart, label: t("monthlyReceiptRegister" as any) || "Monthly Receipt Register", permKey: "reports" },
        { url: "/reports/officer-summary", icon: FileBarChart, label: t("officerSummary" as any) || "Officer Summary", permKey: "reports" },
@@ -169,7 +161,7 @@ export function AppSidebar() {
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
        { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
        { url: "/reports/cultivation-history", icon: FileBarChart, label: t("cultivationHistoryReport"), permKey: "reports" },
-      { url: "/reports/loan-history", icon: FileBarChart, label: t("loanHistoryReport"), permKey: "reports" },
+      
       { url: "/reports/irrigation-category", icon: FileBarChart, label: t("irrigationCategoryReport"), permKey: "reports" },
 
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
@@ -209,7 +201,7 @@ export function AppSidebar() {
       key: "tools", icon: Upload, label: t("toolsImports"),
       children: [
         { url: "/import", icon: Upload, label: t("universalImport"), permKey: "farmers" },
-        { url: "/admin/bulk-loan-export", icon: Upload, label: t("bulkExportLoans"), superOnly: true },
+        
         { url: "/admin/card-designer", icon: IdCard, label: t("cardDesigner"), superOnly: true },
         { url: "/admin/qr-rotation", icon: RefreshCw, label: t("qrRotation"), superOnly: true },
         { url: "/backup", icon: Database, label: t("backup"), developerOnly: true },
@@ -225,7 +217,7 @@ export function AppSidebar() {
       children: [
         { url: "/settings", icon: SettingsIcon, label: t("settings"), superOnly: true },
         { url: "/admin/receipt-template", icon: Receipt, label: t("receiptTemplate"), superOnly: true },
-        { url: "/admin/loan-receipt-settings", icon: Receipt, label: t("loanReceiptSettings"), superOnly: true },
+        
         { url: "/sms-settings", icon: MessageSquare, label: t("smsSettings"), superOnly: true },
         { url: "/sms-logs", icon: MessagesSquare, label: t("smsLogs"), permKey: "sms" },
         { url: "/sms-templates", icon: MessageSquare, label: "SMS Templates", superOnly: true },

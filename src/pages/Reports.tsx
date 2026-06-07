@@ -376,7 +376,7 @@ export default function Reports() {
           <TabsTrigger value="recon">{t("rpReconciliation" as any)}</TabsTrigger>
           <TabsTrigger value="irrigation">{t("irrigationReport")}</TabsTrigger>
           <TabsTrigger value="arrears">{t("rpIrrArrears" as any)}</TabsTrigger>
-          <TabsTrigger value="loan">{t("loanReport")}</TabsTrigger>
+          
           <TabsTrigger value="savings">{t("savingsReport")}</TabsTrigger>
           <TabsTrigger value="balances">{t("rpSavBalances" as any)}</TabsTrigger>
           <TabsTrigger value="payments">{t("rpPayments" as any)}</TabsTrigger>
@@ -481,20 +481,6 @@ export default function Reports() {
           </Table></Card>
         </TabsContent>
 
-        <TabsContent value="loan">
-          <ExportBar
-            onPdf={() => exportTablePDF(`Loan Report${filterTitleSuffix()}`, ["Date", "Farmer", "Principal", "Rate", "Payable", "Status"], loans.map(r => [fmtDate(r.issued_on), r.farmers?.name_en, r.principal, r.interest_rate, r.total_payable, r.status]))}
-            onXlsx={() => exportExcel("loan-report", "Loans", loans.map(r => ({ Date: r.issued_on, Farmer: r.farmers?.name_en, Principal: r.principal, Rate: r.interest_rate, Payable: r.total_payable, Status: r.status })))}
-          />
-          <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("principal")}</TableHead><TableHead>{t("interestRate")}</TableHead><TableHead>{t("totalPayable")}</TableHead><TableHead>{t("dueAmount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
-            <TableBody>{loans.map((r, i) => {
-              const paid = (r.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0);
-              const due = Number(r.total_payable) - paid;
-              return <TableRow key={i}><TableCell>{fmtDate(r.issued_on)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{money(r.principal)}</TableCell><TableCell>{r.interest_rate}%</TableCell><TableCell>{money(r.total_payable)}</TableCell><TableCell className={due > 0 && r.status === "approved" ? "due-text" : ""}>{money(due)}</TableCell><TableCell>{r.status}</TableCell></TableRow>;
-            })}</TableBody>
-          </Table></Card>
-        </TabsContent>
 
         <TabsContent value="savings">
           <ExportBar
