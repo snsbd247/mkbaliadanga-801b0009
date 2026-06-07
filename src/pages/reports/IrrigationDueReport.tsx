@@ -100,6 +100,7 @@ export default function IrrigationDueReport() {
           farmer_id: r.farmer_id,
           farmer_name: r.farmers?.name_bn || r.farmers?.name_en || "—",
           farmer_code: r.farmers?.farmer_code ?? "—",
+          father_name: r.farmers?.father_name ?? "",
           land_id: r.land_id,
           land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${formatDagNumbers(r.lands.dag_no)}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
           patwari_id: r.lands?.patwari_id ?? null,
