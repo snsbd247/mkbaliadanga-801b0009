@@ -18,6 +18,7 @@ export type FarmerLite = {
   mobile?: string | null;
   voter_number?: string | null;
   is_voter?: boolean | null;
+  father_name?: string | null;
 };
 
 interface Props {
