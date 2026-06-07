@@ -45,7 +45,7 @@ export default function FarmerMerge() {
     <div className="space-y-4">
       <PageHeader
         title={tx("Farmer Merge", "কৃষক একত্রীকরণ")}
-        subtitle={tx("Merge a duplicate farmer into the correct one (Admin only).", "ডুপ্লিকেট কৃষককে সঠিক কৃষকের সাথে একত্রিত করুন (শুধু অ্যাডমিন)।")}
+        description={tx("Merge a duplicate farmer into the correct one (Admin only).", "ডুপ্লিকেট কৃষককে সঠিক কৃষকের সাথে একত্রিত করুন (শুধু অ্যাডমিন)।")}
       />
 
       <Alert variant="destructive">
