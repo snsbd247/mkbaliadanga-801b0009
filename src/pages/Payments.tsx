@@ -33,7 +33,7 @@ import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentP
 import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
 import { getTodayMethodSummary, type MethodSummary } from "@/lib/paymentMethodSummary";
 
-type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
+type Allocation = { kind: "savings" | "irrigation"; reference_id: string; amount: number };
 
 const newKey = () =>
   (typeof crypto !== "undefined" && "randomUUID" in crypto) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
