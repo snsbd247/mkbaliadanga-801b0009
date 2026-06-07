@@ -64,7 +64,7 @@ describe("farmer_code formatting consistency across modules", () => {
     "src/pages/FarmersImport.tsx",
     "src/pages/IrrigationInvoices.tsx",
     "src/pages/Savings.tsx",
-    "src/pages/Loans.tsx",
+    
     "src/pages/Payments.tsx",
     "src/pages/Settings.tsx",
     "src/lib/bnReceipts.ts",

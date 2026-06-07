@@ -33,7 +33,7 @@ import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentP
 import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
 import { getTodayMethodSummary, type MethodSummary } from "@/lib/paymentMethodSummary";
 
-type Allocation = { kind: "loan" | "savings" | "irrigation"; reference_id: string; amount: number };
+type Allocation = { kind: "savings" | "irrigation"; reference_id: string; amount: number };
 
 const newKey = () =>
   (typeof crypto !== "undefined" && "randomUUID" in crypto) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -54,12 +54,12 @@ export default function Payments() {
 
   const [allocs, setAllocs] = useState<Allocation[]>([{ kind: "irrigation", reference_id: "", amount: 0 }]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [openLoans, setOpenLoans] = useState<any[]>([]);
+  
   const [openIrr, setOpenIrr] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
-  const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
+  const [priority, setPriority] = useState<string[]>(["irrigation", "savings"]);
   const [previewSerial, setPreviewSerial] = useState<string>("");
   const [autoAmount, setAutoAmount] = useState<number>(0);
   const [showDeleted, setShowDeleted] = useState(false);
@@ -113,19 +113,12 @@ export default function Payments() {
 
   useEffect(() => { document.title = `${t("payments")} — ${t("appName")}`; load(); checkRole(); loadPriority(); }, []);
   useEffect(() => { load(); /* refresh on filters */ }, [showDeleted, period]);
-  useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenLoans([]); setOpenIrr([]); setSavingsBalance(0); } }, [farmerId]);
+  useEffect(() => { if (farmerId) { loadDues(); loadSavingsBalance(farmerId); } else { setOpenIrr([]); setSavingsBalance(0); } }, [farmerId]);
   useEffect(() => {
     const f = params.get("farmer"); if (f) setFarmerId(f);
     const pr = params.get("period");
     if (pr === "today" || pr === "this_month" || pr === "all") setPeriod(pr);
   }, [params]);
-  useEffect(() => {
-    const loan = params.get("loan");
-    const amt = params.get("amount");
-    if (loan && farmerId) {
-      setAllocs([{ kind: "loan", reference_id: loan, amount: amt ? Number(amt) : 0 }]);
-    }
-  }, [params, farmerId, openLoans.length]);
 
   // Live preview of the auto-generated monthly receipt no. Reads (does not consume) the counter.
   useEffect(() => {
@@ -197,17 +190,14 @@ export default function Payments() {
     toast.success(t("restored")); load();
   }
   async function loadDues() {
-    const [l, i] = await Promise.all([
-      supabase.from("loans").select("id,principal,total_payable,issued_on,interest_rate,plan_id,loan_payments(amount),loan_plans(duration_months)").eq("farmer_id", farmerId).eq("status", "approved"),
-      supabase.from("irrigation_invoices")
-        .select("id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge")
-        .eq("farmer_id", farmerId)
-        .is("deleted_at", null)
-        .neq("invoice_status", "cancelled")
-        .gt("due_amount", 0)
-        .order("due_date", { ascending: true }),
-    ]);
-    setOpenLoans(l.data ?? []); setOpenIrr(i.data ?? []);
+    const i = await supabase.from("irrigation_invoices")
+      .select("id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge")
+      .eq("farmer_id", farmerId)
+      .is("deleted_at", null)
+      .neq("invoice_status", "cancelled")
+      .gt("due_amount", 0)
+      .order("due_date", { ascending: true });
+    setOpenIrr(i.data ?? []);
 
     // Preload allocations from URL ?irr=id1,id2 — used by FarmerDetail "Pay" flow
     const irrParam = params.get("irr");
@@ -244,7 +234,7 @@ export default function Payments() {
     if (totalAmount <= 0) return toast.error(t("totalMustBePositive"));
     for (const a of allocs) {
       if (Number(a.amount) <= 0) return toast.error(t("eachAllocationMustBePositive"));
-      if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
+      if (a.kind === "irrigation" && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
 
     // Soft duplicate-payment guard: same farmer + same amount within 2 minutes.
@@ -260,40 +250,7 @@ export default function Payments() {
       if (!ok) return;
     }
 
-
-    // Strict installment enforcement for loan allocations (engine v2)
-    const loanContext: Record<string, { settings: any; next: any; breakdown: any; override?: string }> = {};
-    for (const a of allocs) {
-      if (a.kind !== "loan" || !a.reference_id) continue;
-      const { data: loanRow } = await supabase.from("loans").select("office_id").eq("id", a.reference_id).maybeSingle();
-      const officeId = (loanRow as any)?.office_id ?? null;
-      const [{ data: instList }, { data: settingsList }] = await Promise.all([
-        supabase.from("loan_installments").select("id,installment_no,amount,paid_amount,due_date,status").eq("loan_id", a.reference_id).order("installment_no"),
-        supabase.from("loan_delay_fee_settings").select("*").or(officeId ? `office_id.eq.${officeId},office_id.is.null` : "office_id.is.null"),
-      ]);
-      const engine = await import("@/lib/loanDelayFee");
-      const next = engine.nextDueInstallment((instList ?? []) as any);
-      if (!next) continue; // no schedule → fall through (legacy loans)
-      const settings = (settingsList && settingsList[0]) || engine.DEFAULT_DELAY_SETTINGS;
-      const v = engine.validateInstallmentPayment(next as any, settings as any, Number(a.amount));
-      const breakdown = engine.computePenaltyBreakdown(next as any, settings as any);
-      let overrideReason: string | undefined;
-      if (!v.ok || v.needsOverride) {
-        const enf = v.enforcement;
-        if (enf === "block") {
-          return toast.error(`${v.reason} (${tx("Required", "নির্ধারিত")}: ৳${v.required.toFixed(2)}, ${tx("Given", "প্রদত্ত")}: ৳${Number(a.amount).toFixed(2)})`);
-        }
-        if (enf === "warn") {
-          if (!window.confirm(`⚠ ${tx("Required", "নির্ধারিত")}: ৳${v.required.toFixed(2)} | ${tx("Given", "প্রদত্ত")}: ৳${Number(a.amount).toFixed(2)}\n${tx("Save anyway?", "তবুও সংরক্ষণ করবেন?")}`)) return;
-        }
-        if (enf === "allow") {
-          const reason = window.prompt(tx("Enter reason for partial payment override (saved in audit):", "আংশিক পেমেন্ট override কারণ লিখুন (অডিটে সংরক্ষিত হবে):"), "")?.trim();
-          if (!reason) return toast.error(tx("Override reason required", "Override কারণ আবশ্যক"));
-          overrideReason = reason;
-        }
-      }
-      loanContext[a.reference_id] = { settings, next, breakdown, override: overrideReason };
-    }
+    const loanContext: Record<string, any> = {};
 
     setSubmitting(true);
     try {
@@ -373,44 +330,7 @@ export default function Payments() {
   async function applyAllocationsToLedgers(paymentId: string, fId: string, list: Allocation[], desc?: string, loanContext: Record<string, any> = {}, receiptNo?: string | null) {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
-      if (a.kind === "loan" && a.reference_id) {
-        const ctx = loanContext[a.reference_id];
-        const penalty = Math.min(Number(a.amount), ctx?.breakdown?.total ?? 0);
-        await supabase.from("loan_payments").insert({
-          loan_id: a.reference_id,
-          amount: Number(a.amount),
-          collected_by: user?.id,
-          note: noteText,
-          receipt_no: receiptNo ?? null,
-          penalty_collected: penalty,
-          override_reason: ctx?.override ?? null,
-          override_by: ctx?.override ? user?.id : null,
-        } as any);
-        if (ctx?.next) {
-          const engine = await import("@/lib/loanDelayFee");
-          const snapshot = engine.buildPenaltySnapshot(ctx.next, ctx.settings);
-          const newPaid = Number(ctx.next.paid_amount || 0) + Math.max(0, Number(a.amount) - penalty);
-          const fullyPaid = newPaid + 0.005 >= Number(ctx.next.amount);
-          await supabase.from("loan_installments").update({
-            paid_amount: newPaid,
-            penalty_amount: (Number(ctx.next.penalty_amount || 0) + penalty),
-            overdue_days: ctx.breakdown?.overdueDays ?? 0,
-            penalty_rule_snapshot: snapshot as any,
-            strict_validation_override: !!ctx.override,
-            status: fullyPaid ? "paid" : (newPaid > 0 ? "partial" : ctx.next.status),
-            paid_on: fullyPaid ? new Date().toISOString().slice(0, 10) : ctx.next.paid_on,
-          } as any).eq("id", ctx.next.id);
-          if (ctx.override) {
-            await supabase.from("loan_installment_delay_audit").insert({
-              installment_id: ctx.next.id,
-              original_amount: ctx.breakdown?.total ?? 0,
-              modified_amount: penalty,
-              reason: ctx.override,
-              changed_by: user?.id,
-            } as any);
-          }
-        }
-      } else if (a.kind === "irrigation" && a.reference_id) {
+      if (a.kind === "irrigation" && a.reference_id) {
         const { data: inv } = await supabase
           .from("irrigation_invoices")
           .select("paid_amount,office_id")
@@ -483,12 +403,6 @@ export default function Payments() {
           await supabase.from("irrigation_invoices").update({ paid_amount: newPaid, invoice_status: newStatus } as any).eq("id", a.reference_id);
         }
         await supabase.from("irrigation_invoice_payments").delete().eq("invoice_id", a.reference_id).eq("payment_id", p.id);
-      } else if (a.kind === "loan" && a.reference_id) {
-        // Reversal loan_payment entry (negative)
-        await supabase.from("loan_payments").insert({
-          loan_id: a.reference_id, amount: -amt, collected_by: user?.id,
-          note: `Void reversal of payment ${p.receipt_no ?? p.id} — ${reason.trim()}`,
-        } as any);
       } else if (a.kind === "savings") {
         await supabase.from("savings_transactions").insert({
           farmer_id: p.farmer_id, type: "withdraw" as any, amount: amt,
@@ -528,13 +442,6 @@ export default function Payments() {
         .sort((a, b) => new Date(a.due_date || a.generated_at).getTime() - new Date(b.due_date || b.generated_at).getTime())
         .map(i => ({ reference_id: i.id, due: Number(i.due_amount || 0) }))
         .filter(x => x.due > 0),
-      loan: [...openLoans]
-        .map(l => {
-          const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
-          return { reference_id: l.id, due: Math.max(0, Number(l.total_payable || 0) - paid), issued_on: l.issued_on };
-        })
-        .filter(x => x.due > 0)
-        .sort((a, b) => new Date(a.issued_on).getTime() - new Date(b.issued_on).getTime()),
       savings: [], // savings = deposit, no "due"; consumes remainder
     };
 
@@ -620,7 +527,7 @@ export default function Payments() {
               <div className="rounded-md bg-muted/40 p-2 text-xs space-y-0.5">
                 <div className="font-semibold uppercase text-[10px] text-muted-foreground">{t("outstandingDues")}</div>
                 <div className="flex justify-between"><span>{t("irrigation")}</span><span className="font-mono">{money(openIrr.reduce((s, x) => s + Number(x.due_amount || 0), 0))}</span></div>
-                <div className="flex justify-between"><span>{t("loans")}</span><span className="font-mono">{money(openLoans.reduce((s, l) => s + (Number(l.total_payable) - (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0)), 0))}</span></div>
+                
               </div>
             )}
 
@@ -649,7 +556,6 @@ export default function Payments() {
                       <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="irrigation">{t("irrigation")}</SelectItem>
-                        <SelectItem value="loan">{t("loans")}</SelectItem>
                         <SelectItem value="savings">{t("savings")}</SelectItem>
                       </SelectContent>
                     </Select>
@@ -657,15 +563,6 @@ export default function Payments() {
                       <DeleteButton onClick={() => setAllocs(allocs.filter((_, idx) => idx !== i))} />
                     )}
                   </div>
-                  {a.kind === "loan" && (
-                    <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })}>
-                      <SelectTrigger><SelectValue placeholder={openLoans.length ? "Pick loan" : "No open loans"} /></SelectTrigger>
-                      <SelectContent>{openLoans.map(l => {
-                        const paid = (l.loan_payments ?? []).reduce((x: number, p: any) => x + Number(p.amount), 0);
-                        return <SelectItem key={l.id} value={l.id}>{fmtDate(l.issued_on)} — Due {money(Number(l.total_payable) - paid)}</SelectItem>;
-                      })}</SelectContent>
-                    </Select>
-                  )}
                   {a.kind === "irrigation" && (
                     <Select value={a.reference_id} onValueChange={(v) => updateAlloc(i, { reference_id: v })}>
                       <SelectTrigger><SelectValue placeholder={openIrr.length ? "Pick invoice" : "No open invoices"} /></SelectTrigger>
@@ -677,28 +574,6 @@ export default function Payments() {
                     </Select>
                   )}
                   <Input type="number" placeholder={t("amountPh")} value={a.amount || ""} onChange={(e) => updateAlloc(i, { amount: +e.target.value })} />
-                  {a.kind === "loan" && a.reference_id && (() => {
-                    const lo = openLoans.find((x: any) => x.id === a.reference_id);
-                    if (!lo) return null;
-                    const months = Number(lo.loan_plans?.duration_months) || 12;
-                    const profitTotal = Math.max(0, Number(lo.total_payable || 0) - Number(lo.principal || 0));
-                    const monthlyPrincipal = Number(lo.principal || 0) / months;
-                    const monthlyProfit = profitTotal / months;
-                    const monthly = monthlyPrincipal + monthlyProfit;
-                    return (
-                      <div className="rounded-md bg-muted/40 border-l-2 border-primary px-2 py-1 text-[11px] space-y-0.5">
-                        <div className="font-semibold text-muted-foreground uppercase text-[10px]">
-                          {tx("Monthly Suggestion", "মাসিক প্রস্তাবনা")} ({months} {tx("mo", "মাস")})
-                        </div>
-                        <div className="flex justify-between"><span>{tx("Principal", "মূল")}</span><span className="font-mono">{money(monthlyPrincipal)}</span></div>
-                        <div className="flex justify-between"><span>{tx("Profit", "মুনাফা")}</span><span className="font-mono">{money(monthlyProfit)}</span></div>
-                        <div className="flex justify-between font-semibold border-t pt-0.5"><span>{tx("Total / month", "মাসিক মোট")}</span><span className="font-mono">{money(monthly)}</span></div>
-                        <button type="button" className="text-primary underline text-[10px]" onClick={() => updateAlloc(i, { amount: +monthly.toFixed(2) })}>
-                          {tx("Use suggested amount", "প্রস্তাবিত পরিমাণ ব্যবহার করুন")}
-                        </button>
-                      </div>
-                    );
-                  })()}
                 </div>
               ))}
               <div className="text-right text-sm font-semibold">Total: {money(totalAmount)}</div>

@@ -30,8 +30,6 @@ export const MENU_SHORTCUTS: MenuShortcut[] = [
   { code: "M21", url: "/seasons",                                 labelKey: "seasons",          parentKey: "operations", permKey: "seasons" },
   { code: "M22", url: "/savings",                                 labelKey: "savings",          parentKey: "operations", permKey: "savings", keywords: ["সঞ্চয়"] },
   { code: "M23", url: "/share-collection",                        labelKey: "shareCollection",  parentKey: "operations", permKey: "savings" },
-  { code: "M24", url: "/loans",                                   labelKey: "loans",            parentKey: "operations", permKey: "loans", keywords: ["ঋণ"] },
-  { code: "M25", url: "/loans/plans",                             labelKey: "loanPlans",        parentKey: "operations", permKey: "loans" },
   { code: "M26", url: "/irrigation",                              labelKey: "irrigation",       parentKey: "operations", permKey: "irrigation", keywords: ["সেচ"] },
   { code: "M27", url: "/irrigation/rates",                        labelKey: "irrigationRatesLabel", parentKey: "operations", permKey: "irrigation" },
   { code: "M28", url: "/statement",                               labelKey: "statementLabel",   parentKey: "operations", permKey: "savings" },
@@ -76,7 +74,7 @@ export const MENU_SHORTCUTS: MenuShortcut[] = [
 
   // Tools & Imports
   { code: "M71", url: "/import",                                  labelKey: "universalImport",  parentKey: "toolsImports", permKey: "farmers" },
-  { code: "M72", url: "/admin/bulk-loan-export",                  labelKey: "bulkExportLoans",  parentKey: "toolsImports", superOnly: true },
+  
   { code: "M73", url: "/admin/card-designer",                     labelKey: "cardDesigner",     parentKey: "toolsImports", superOnly: true },
   { code: "M74", url: "/admin/qr-rotation",                       labelKey: "qrRotation",       parentKey: "toolsImports", superOnly: true },
   { code: "M75", url: "/backup",                                  labelKey: "backup",           parentKey: "toolsImports", superOnly: true, keywords: ["ব্যাকআপ"] },
@@ -84,7 +82,7 @@ export const MENU_SHORTCUTS: MenuShortcut[] = [
   // Settings
   { code: "M81", url: "/settings",                                labelKey: "settings",         parentKey: "settings", superOnly: true, keywords: ["সেটিংস"] },
   { code: "M82", url: "/admin/receipt-template",                  labelKey: "receiptTemplate",  parentKey: "settings", superOnly: true },
-  { code: "M83", url: "/admin/loan-receipt-settings",             labelKey: "loanReceiptSettings", parentKey: "settings", superOnly: true },
+  
   { code: "M84", url: "/sms-settings",                            labelKey: "smsSettings",      parentKey: "settings", superOnly: true },
   { code: "M85", url: "/sms-logs",                                labelKey: "smsLogs",          parentKey: "settings", permKey: "sms" },
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ApiShell } from "@/components/api/ApiShell";
 import { useCreatePayment, useDeletePayment, usePaymentsList } from "@/hooks/usePaymentsApi";
 import { useFarmersList } from "@/hooks/useFarmersApi";
-import { useLoansList } from "@/hooks/useLoansApi";
+
 import { useSavingsList } from "@/hooks/useSavingsApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,6 @@ function CreatePaymentForm({ onDone }: { onDone: () => void }) {
   const [method, setMethod] = useState<"cash" | "bank" | "mobile" | "cheque">("cash");
   const [reference, setReference] = useState("");
   const [allocs, setAllocs] = useState<PaymentAllocation[]>([]);
-  const loans = useLoansList({ farmer_id: farmerId || undefined, per_page: 100 });
   const savings = useSavingsList({ farmer_id: farmerId || undefined, per_page: 100 });
 
   const totalAlloc = allocs.reduce((s, a) => s + (Number(a.amount) || 0), 0);
@@ -83,13 +82,12 @@ function CreatePaymentForm({ onDone }: { onDone: () => void }) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Allocations (remaining: {remaining.toFixed(2)})</Label>
-          <Button type="button" size="sm" variant="outline" onClick={() => setAllocs([...allocs, { target_type: "loan", target_id: "", amount: 0 }])}>
+          <Button type="button" size="sm" variant="outline" onClick={() => setAllocs([...allocs, { target_type: "savings", target_id: "", amount: 0 }])}>
             <Plus className="h-4 w-4 mr-1" /> Add
           </Button>
         </div>
         {allocs.map((a, i) => {
           const opts =
-            a.target_type === "loan" ? (loans.data?.data ?? []).map((l) => ({ id: l.id, label: `Loan ${l.id.slice(0, 8)} — ${l.principal}` })) :
             a.target_type === "savings" ? (savings.data?.data ?? []).map((s) => ({ id: s.id, label: `${s.account_no} (bal ${s.balance})` })) :
             [];
           return (
@@ -99,7 +97,6 @@ function CreatePaymentForm({ onDone }: { onDone: () => void }) {
               }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="loan">Loan</SelectItem>
                   <SelectItem value="savings">Savings</SelectItem>
                   <SelectItem value="irrigation_invoice">Irrigation</SelectItem>
                 </SelectContent>
