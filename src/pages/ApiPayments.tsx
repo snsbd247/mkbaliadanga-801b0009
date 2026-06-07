@@ -24,7 +24,6 @@ function CreatePaymentForm({ onDone }: { onDone: () => void }) {
   const [method, setMethod] = useState<"cash" | "bank" | "mobile" | "cheque">("cash");
   const [reference, setReference] = useState("");
   const [allocs, setAllocs] = useState<PaymentAllocation[]>([]);
-  const loans = useLoansList({ farmer_id: farmerId || undefined, per_page: 100 });
   const savings = useSavingsList({ farmer_id: farmerId || undefined, per_page: 100 });
 
   const totalAlloc = allocs.reduce((s, a) => s + (Number(a.amount) || 0), 0);
