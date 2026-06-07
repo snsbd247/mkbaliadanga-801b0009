@@ -20,6 +20,7 @@ type Row = {
   farmer_id: string;
   farmer_name: string;
   farmer_code: string;
+  father_name: string;
   land_id: string;
   land_label: string;
   patwari_id: string | null;
@@ -74,7 +75,7 @@ export default function IrrigationDueReport() {
     (async () => {
       let q = supabase.from("irrigation_invoices").select(
         "farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,due_date," +
-        "farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code)," +
+        "farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,father_name)," +
         "lands(mouza,dag_no,land_size,patwari_id,patwaris(name,name_bn))," +
         "seasons(name,year,type)"
       ).is("deleted_at", null).neq("invoice_status", "cancelled").limit(10000);
@@ -99,6 +100,7 @@ export default function IrrigationDueReport() {
           farmer_id: r.farmer_id,
           farmer_name: r.farmers?.name_bn || r.farmers?.name_en || "—",
           farmer_code: r.farmers?.farmer_code ?? "—",
+          father_name: r.farmers?.father_name ?? "",
           land_id: r.land_id,
           land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${formatDagNumbers(r.lands.dag_no)}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
           patwari_id: r.lands?.patwari_id ?? null,
@@ -127,6 +129,7 @@ export default function IrrigationDueReport() {
       return (
         r.farmer_name.toLowerCase().includes(s) ||
         r.farmer_code.toLowerCase().includes(s) ||
+        (r.father_name || "").toLowerCase().includes(s) ||
         r.land_label.toLowerCase().includes(s) ||
         r.patwari_name.toLowerCase().includes(s)
       );

@@ -18,6 +18,7 @@ export type FarmerLite = {
   mobile?: string | null;
   voter_number?: string | null;
   is_voter?: boolean | null;
+  father_name?: string | null;
 };
 
 interface Props {
@@ -31,7 +32,7 @@ interface Props {
   votersOnly?: boolean;
 }
 
-const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter";
+const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter,father_name";
 const MIN_SEARCH = 2;
 
 function highlight(text: string | null | undefined, q: string): React.ReactNode {
@@ -91,7 +92,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       if (votersOnly) qy = qy.eq("is_voter", true);
       if (term) {
         const esc = term.replace(/[%,()]/g, " ");
-        qy = qy.or(`name_en.ilike.%${esc}%,name_bn.ilike.%${esc}%,farmer_code.ilike.%${esc}%,account_number.ilike.%${esc}%,member_no.ilike.%${esc}%,mobile.ilike.%${esc}%,voter_number.ilike.%${esc}%`);
+        qy = qy.or(`name_en.ilike.%${esc}%,name_bn.ilike.%${esc}%,father_name.ilike.%${esc}%,farmer_code.ilike.%${esc}%,account_number.ilike.%${esc}%,member_no.ilike.%${esc}%,mobile.ilike.%${esc}%,voter_number.ilike.%${esc}%`);
       }
       const { data } = await qy;
       if (myReq !== reqIdRef.current) return;
@@ -138,7 +139,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <div className="p-2 border-b">
-          <Input autoFocus placeholder={tx("Type name, account, mobile, voter no…", "নাম, অ্যাকাউন্ট, মোবাইল, ভোটার নম্বর লিখুন…")} value={q}
+          <Input autoFocus placeholder={tx("Type name, father name, account, mobile…", "নাম, পিতার নাম, অ্যাকাউন্ট, মোবাইল লিখুন…")} value={q}
             onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} />
         </div>
         <div ref={listRef} className="max-h-72 overflow-y-auto">
@@ -170,8 +171,9 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   {highlight(it.member_no ?? it.farmer_code, term)}
+                  {it.father_name ? <> • {tx("Father", "পিতা")}: {highlight(it.father_name, term)}</> : null}
                   {it.mobile ? <> • {highlight(it.mobile, term)}</> : null}
-                  {it.voter_number ? <> • Voter {highlight(it.voter_number, term)}</> : null}
+                  {it.voter_number ? <> • {tx("Savings Member", "সেভিং সদস্য")} {highlight(it.voter_number, term)}</> : null}
                 </div>
               </div>
             </button>

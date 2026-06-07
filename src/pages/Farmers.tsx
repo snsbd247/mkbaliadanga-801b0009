@@ -79,7 +79,7 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
 
   return (
     <div className="col-span-2">
-      <Label>{t("voterSavingsAccount")} <span className="text-xs text-muted-foreground">(Voter / Savings A/C No)</span></Label>
+      <Label>{t("voterSavingsAccount")} <span className="text-xs text-muted-foreground">(Savings Member A/C No)</span></Label>
       <div className="flex gap-2">
         <Input
           value={f.voter_number || ""}
@@ -105,7 +105,7 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
         )}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        {hasNumber ? `✓ ${t("voterSavingsActive")}` : tx("If a number is set, will be auto-treated as Voter / Savings member", "নম্বর থাকলেই স্বয়ংক্রিয়ভাবে Voter / Savings সদস্য হিসেবে গণ্য হবে")}
+        {hasNumber ? `✓ ${t("voterSavingsActive")}` : tx("If a number is set, will be auto-treated as a Savings Member", "নম্বর থাকলেই স্বয়ংক্রিয়ভাবে সেভিং সদস্য হিসেবে গণ্য হবে")}
       </p>
       <VoterHistoryDialog farmerId={f.id ?? null} open={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
@@ -338,7 +338,7 @@ export default function Farmers() {
       qy = qy.gte("created_at", from.toISOString());
     }
     if (q) {
-      const base = `name_en.ilike.%${q}%,name_bn.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`;
+      const base = `name_en.ilike.%${q}%,name_bn.ilike.%${q}%,father_name.ilike.%${q}%,farmer_code.ilike.%${q}%,account_number.ilike.%${q}%,member_no.ilike.%${q}%,mobile.ilike.%${q}%,nid.ilike.%${q}%`;
       const idClause = dagFarmerIds.length ? `,id.in.(${dagFarmerIds.join(",")})` : "";
       qy = qy.or(base + idClause);
     }
