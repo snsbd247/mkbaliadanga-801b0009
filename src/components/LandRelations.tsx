@@ -19,7 +19,7 @@ import { exportLandRelationsPdf, exportLandRelationsExcel, type LandRelationExpo
 interface Props { farmerId: string; }
 
 export function LandRelations({ farmerId }: Props) {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { user, isAdmin } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
