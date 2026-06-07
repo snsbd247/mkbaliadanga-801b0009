@@ -59,7 +59,7 @@ export default function Payments() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [idemKey, setIdemKey] = useState<string>(newKey());
-  const [priority, setPriority] = useState<string[]>(["irrigation", "loan", "savings"]);
+  const [priority, setPriority] = useState<string[]>(["irrigation", "savings"]);
   const [previewSerial, setPreviewSerial] = useState<string>("");
   const [autoAmount, setAutoAmount] = useState<number>(0);
   const [showDeleted, setShowDeleted] = useState(false);
