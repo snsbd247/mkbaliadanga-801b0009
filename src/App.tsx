@@ -211,6 +211,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/offices" element={<RequirePerm module="offices"><Offices /></RequirePerm>} />
                 <Route path="/farmers" element={<RequirePerm module="farmers"><Farmers /></RequirePerm>} />
+                <Route path="/admin/farmer-merge" element={<RequireRole roles={["admin","super_admin"]}><FarmerMerge /></RequireRole>} />
                 <Route path="/voters" element={<RequirePerm module="farmers"><VoterList /></RequirePerm>} />
                 <Route path="/farmers/:id" element={<RequirePerm module="farmers"><FarmerDetail /></RequirePerm>} />
                 <Route path="/farmers/:id/report" element={<RequirePerm module="farmers"><FarmerProfileReport /></RequirePerm>} />
