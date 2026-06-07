@@ -92,7 +92,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
       if (votersOnly) qy = qy.eq("is_voter", true);
       if (term) {
         const esc = term.replace(/[%,()]/g, " ");
-        qy = qy.or(`name_en.ilike.%${esc}%,name_bn.ilike.%${esc}%,farmer_code.ilike.%${esc}%,account_number.ilike.%${esc}%,member_no.ilike.%${esc}%,mobile.ilike.%${esc}%,voter_number.ilike.%${esc}%`);
+        qy = qy.or(`name_en.ilike.%${esc}%,name_bn.ilike.%${esc}%,father_name.ilike.%${esc}%,farmer_code.ilike.%${esc}%,account_number.ilike.%${esc}%,member_no.ilike.%${esc}%,mobile.ilike.%${esc}%,voter_number.ilike.%${esc}%`);
       }
       const { data } = await qy;
       if (myReq !== reqIdRef.current) return;
