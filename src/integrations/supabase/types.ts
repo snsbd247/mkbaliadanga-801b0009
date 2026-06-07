@@ -5999,6 +5999,8 @@ export type Database = {
         }[]
       }
       seed_rajshahi_locations: { Args: never; Returns: Json }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       sms_enqueue: {
         Args: {
           _event: string
