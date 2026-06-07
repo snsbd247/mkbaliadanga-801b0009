@@ -26,15 +26,24 @@ export function LandRelations({ farmerId }: Props) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "",
-    share_percentage: 50, valid_from: new Date().toISOString().slice(0, 10), note: "",
+    share_percentage: 50, area_decimal: "", valid_from: new Date().toISOString().slice(0, 10), note: "",
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { load(); }, [farmerId]);
 
   function resetForm() {
-    setForm({ land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "", share_percentage: 50, valid_from: new Date().toISOString().slice(0, 10), note: "" });
+    setForm({ land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "", share_percentage: 50, area_decimal: "", valid_from: new Date().toISOString().slice(0, 10), note: "" });
   }
+
+  // Owner remaining area for the land currently selected in the form
+  const selectedLand = lands.find((l) => l.id === form.land_id);
+  const allocatedForSelected = rows
+    .filter((r) => r.land_id === form.land_id && !r.valid_to && !r.deleted_at && r.area_decimal != null)
+    .reduce((s, r) => s + Number(r.area_decimal || 0), 0);
+  const ownerRemaining = selectedLand
+    ? Number(selectedLand.land_size || 0) - allocatedForSelected - Number(form.area_decimal || 0)
+    : null;
 
   async function load() {
     const [rels, ld] = await Promise.all([
