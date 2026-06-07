@@ -20,7 +20,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useBranding } from "@/lib/branding";
 import { usePermissions } from "@/lib/permissions";
 
-type SubItem = { url: string; icon: any; label: string; permKey?: string; superOnly?: boolean; developerOnly?: boolean };
+type SubItem = { url: string; icon: any; label: string; permKey?: string; superOnly?: boolean; developerOnly?: boolean; adminOnly?: boolean };
 type ParentItem = {
   key: string;
   icon: any;
