@@ -79,7 +79,7 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
 
   return (
     <div className="col-span-2">
-      <Label>{t("voterSavingsAccount")} <span className="text-xs text-muted-foreground">(Voter / Savings A/C No)</span></Label>
+      <Label>{t("voterSavingsAccount")} <span className="text-xs text-muted-foreground">(Savings Member A/C No)</span></Label>
       <div className="flex gap-2">
         <Input
           value={f.voter_number || ""}
