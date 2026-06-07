@@ -1182,64 +1182,8 @@ export default function FarmerDetail() {
           <SavingsStatement farmer={farmer} />
         </TabsContent>
 
-        <TabsContent value="loans">
-          <Card><Table>
-            <TableHeader><TableRow>
-              <TableHead>{t("issuedOn")}</TableHead><TableHead>{t("principal")}</TableHead>
-              <TableHead>{t("interestRate")}</TableHead><TableHead>{t("totalPayable")}</TableHead>
-              <TableHead className="text-right">পরিশোধিত</TableHead>
-              <TableHead className="text-right">বাকি</TableHead>
-              <TableHead>{t("nextDue")}</TableHead><TableHead>{t("status")}</TableHead>
-              <TableHead className="text-right">{t("actions")}</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>{(() => {
-              const totals = loans.reduce((acc, l) => {
-                const paid = (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0);
-                const due = Math.max(0, Number(l.total_payable) - paid);
-                acc.principal += Number(l.principal || 0);
-                acc.payable += Number(l.total_payable || 0);
-                acc.paid += paid; acc.due += due;
-                return acc;
-              }, { principal: 0, payable: 0, paid: 0, due: 0 });
-              return (<>
-                {loans.map(l => {
-                  const paid = (l.loan_payments ?? []).reduce((a: number, p: any) => a + Number(p.amount), 0);
-                  const due = Math.max(0, Number(l.total_payable) - paid);
-                  return (
-                    <TableRow key={l.id}>
-                      <TableCell>{fmtDate(l.issued_on)}</TableCell>
-                      <TableCell>{money(l.principal)}</TableCell>
-                      <TableCell>{l.interest_rate}%</TableCell>
-                      <TableCell>{money(l.total_payable)}</TableCell>
-                      <TableCell className="text-right text-success">{money(paid)}</TableCell>
-                      <TableCell className={`text-right ${due > 0 ? "text-destructive font-semibold" : ""}`}>{money(due)}</TableCell>
-                      <TableCell className={due > 0 ? "due-text" : ""}>{fmtDate(l.next_due_on)}</TableCell>
-                      <TableCell><Badge>{t(l.status as any)}</Badge></TableCell>
-                      <TableCell className="text-right">
-                        <Button size="icon" variant="ghost" onClick={() => nav(`/loans/${l.id}`)} title={t("view" as any)}><FileText className="h-4 w-4" /></Button>
-                        <ReceiptCopyMenu onSelect={(c) => printLoan(l, c)} title={t("print")} />
-                        {isSuper && <EditButton onClick={() => editLoanGoto(l)} title={t("edit")} />}
-                        {isSuper && <DeleteButton onConfirm={() => deleteLoan(l)} title={t("delete")} />}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {loans.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>}
-                {loans.length > 0 && (
-                  <TableRow className="bg-muted/70 font-bold border-t-2">
-                    <TableCell className="text-right">সর্বমোট ({loans.length})</TableCell>
-                    <TableCell>{money(totals.principal)}</TableCell>
-                    <TableCell></TableCell>
-                    <TableCell>{money(totals.payable)}</TableCell>
-                    <TableCell className="text-right text-success">{money(totals.paid)}</TableCell>
-                    <TableCell className="text-right text-destructive">{money(totals.due)}</TableCell>
-                    <TableCell colSpan={3}></TableCell>
-                  </TableRow>
-                )}
-              </>);
-            })()}</TableBody>
-          </Table></Card>
-        </TabsContent>
+
+
 
         <TabsContent value="irr_invoices">
           <IrrigationInvoicesTab farmerId={farmer.id} />
