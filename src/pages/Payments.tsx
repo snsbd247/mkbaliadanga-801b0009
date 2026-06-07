@@ -410,12 +410,6 @@ export default function Payments() {
           await supabase.from("irrigation_invoices").update({ paid_amount: newPaid, invoice_status: newStatus } as any).eq("id", a.reference_id);
         }
         await supabase.from("irrigation_invoice_payments").delete().eq("invoice_id", a.reference_id).eq("payment_id", p.id);
-      } else if (a.kind === "loan" && a.reference_id) {
-        // Reversal loan_payment entry (negative)
-        await supabase.from("loan_payments").insert({
-          loan_id: a.reference_id, amount: -amt, collected_by: user?.id,
-          note: `Void reversal of payment ${p.receipt_no ?? p.id} — ${reason.trim()}`,
-        } as any);
       } else if (a.kind === "savings") {
         await supabase.from("savings_transactions").insert({
           farmer_id: p.farmer_id, type: "withdraw" as any, amount: amt,
