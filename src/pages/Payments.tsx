@@ -241,7 +241,7 @@ export default function Payments() {
     if (totalAmount <= 0) return toast.error(t("totalMustBePositive"));
     for (const a of allocs) {
       if (Number(a.amount) <= 0) return toast.error(t("eachAllocationMustBePositive"));
-      if ((a.kind === "loan" || a.kind === "irrigation") && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
+      if (a.kind === "irrigation" && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
     }
 
     // Soft duplicate-payment guard: same farmer + same amount within 2 minutes.
@@ -257,40 +257,7 @@ export default function Payments() {
       if (!ok) return;
     }
 
-
-    // Strict installment enforcement for loan allocations (engine v2)
-    const loanContext: Record<string, { settings: any; next: any; breakdown: any; override?: string }> = {};
-    for (const a of allocs) {
-      if (a.kind !== "loan" || !a.reference_id) continue;
-      const { data: loanRow } = await supabase.from("loans").select("office_id").eq("id", a.reference_id).maybeSingle();
-      const officeId = (loanRow as any)?.office_id ?? null;
-      const [{ data: instList }, { data: settingsList }] = await Promise.all([
-        supabase.from("loan_installments").select("id,installment_no,amount,paid_amount,due_date,status").eq("loan_id", a.reference_id).order("installment_no"),
-        supabase.from("loan_delay_fee_settings").select("*").or(officeId ? `office_id.eq.${officeId},office_id.is.null` : "office_id.is.null"),
-      ]);
-      const engine = await import("@/lib/loanDelayFee");
-      const next = engine.nextDueInstallment((instList ?? []) as any);
-      if (!next) continue; // no schedule → fall through (legacy loans)
-      const settings = (settingsList && settingsList[0]) || engine.DEFAULT_DELAY_SETTINGS;
-      const v = engine.validateInstallmentPayment(next as any, settings as any, Number(a.amount));
-      const breakdown = engine.computePenaltyBreakdown(next as any, settings as any);
-      let overrideReason: string | undefined;
-      if (!v.ok || v.needsOverride) {
-        const enf = v.enforcement;
-        if (enf === "block") {
-          return toast.error(`${v.reason} (${tx("Required", "নির্ধারিত")}: ৳${v.required.toFixed(2)}, ${tx("Given", "প্রদত্ত")}: ৳${Number(a.amount).toFixed(2)})`);
-        }
-        if (enf === "warn") {
-          if (!window.confirm(`⚠ ${tx("Required", "নির্ধারিত")}: ৳${v.required.toFixed(2)} | ${tx("Given", "প্রদত্ত")}: ৳${Number(a.amount).toFixed(2)}\n${tx("Save anyway?", "তবুও সংরক্ষণ করবেন?")}`)) return;
-        }
-        if (enf === "allow") {
-          const reason = window.prompt(tx("Enter reason for partial payment override (saved in audit):", "আংশিক পেমেন্ট override কারণ লিখুন (অডিটে সংরক্ষিত হবে):"), "")?.trim();
-          if (!reason) return toast.error(tx("Override reason required", "Override কারণ আবশ্যক"));
-          overrideReason = reason;
-        }
-      }
-      loanContext[a.reference_id] = { settings, next, breakdown, override: overrideReason };
-    }
+    const loanContext: Record<string, any> = {};
 
     setSubmitting(true);
     try {
