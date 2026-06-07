@@ -19,22 +19,31 @@ import { exportLandRelationsPdf, exportLandRelationsExcel, type LandRelationExpo
 interface Props { farmerId: string; }
 
 export function LandRelations({ farmerId }: Props) {
-  const { t } = useLang();
+  const { t, tx } = useLang();
   const { user, isAdmin } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "",
-    share_percentage: 50, valid_from: new Date().toISOString().slice(0, 10), note: "",
+    share_percentage: 50, area_decimal: "", valid_from: new Date().toISOString().slice(0, 10), note: "",
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { load(); }, [farmerId]);
 
   function resetForm() {
-    setForm({ land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "", share_percentage: 50, valid_from: new Date().toISOString().slice(0, 10), note: "" });
+    setForm({ land_id: "", owner_farmer_id: farmerId, sharecropper_farmer_id: "", share_percentage: 50, area_decimal: "", valid_from: new Date().toISOString().slice(0, 10), note: "" });
   }
+
+  // Owner remaining area for the land currently selected in the form
+  const selectedLand = lands.find((l) => l.id === form.land_id);
+  const allocatedForSelected = rows
+    .filter((r) => r.land_id === form.land_id && !r.valid_to && !r.deleted_at && r.area_decimal != null)
+    .reduce((s, r) => s + Number(r.area_decimal || 0), 0);
+  const ownerRemaining = selectedLand
+    ? Number(selectedLand.land_size || 0) - allocatedForSelected - Number(form.area_decimal || 0)
+    : null;
 
   async function load() {
     const [rels, ld] = await Promise.all([
@@ -94,6 +103,7 @@ export function LandRelations({ farmerId }: Props) {
         owner_farmer_id: form.owner_farmer_id,
         sharecropper_farmer_id: form.sharecropper_farmer_id || null,
         share_percentage: Number(form.share_percentage),
+        area_decimal: form.area_decimal === "" ? null : Number(form.area_decimal),
         valid_from: form.valid_from,
         note: form.note,
         created_by: user?.id,
@@ -155,8 +165,15 @@ export function LandRelations({ farmerId }: Props) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>{t("sharePercent")}</Label><Input type="number" min={0} max={100} step="0.1" disabled={saving} value={form.share_percentage} onChange={e => setForm({ ...form, share_percentage: +e.target.value })} /></div>
-                <div><Label>{t("validFrom")}</Label><Input type="date" disabled={saving} value={form.valid_from} onChange={e => setForm({ ...form, valid_from: e.target.value })} /></div>
+                <div><Label>{tx("Borga area (shatak)", "বর্গা পরিমাণ (শতক)")}</Label><Input type="number" min={0} step="0.01" disabled={saving || !form.land_id} value={form.area_decimal} onChange={e => setForm({ ...form, area_decimal: e.target.value })} placeholder={selectedLand ? `≤ ${selectedLand.land_size}` : "—"} /></div>
               </div>
+              {selectedLand && (
+                <div className={`rounded-md border p-2 text-xs ${ownerRemaining != null && ownerRemaining < 0 ? "border-destructive text-destructive" : "text-muted-foreground"}`}>
+                  {tx("Parcel size", "জমির পরিমাণ")}: {selectedLand.land_size} · {tx("Already allocated", "ইতিমধ্যে বরাদ্দ")}: {allocatedForSelected} · {tx("Owner remaining", "মালিকের অবশিষ্ট")}: <strong>{ownerRemaining}</strong>
+                  {ownerRemaining != null && ownerRemaining < 0 && <> — {tx("exceeds parcel size!", "জমির পরিমাণ ছাড়িয়ে গেছে!")}</>}
+                </div>
+              )}
+              <div><Label>{t("validFrom")}</Label><Input type="date" disabled={saving} value={form.valid_from} onChange={e => setForm({ ...form, valid_from: e.target.value })} /></div>
               <div><Label>{t("note")}</Label><Input disabled={saving} value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
             </div>
             <DialogFooter><Button variant="outline" disabled={saving} onClick={() => setOpen(false)}>{t("cancel")}</Button><Button onClick={save} disabled={saving}>{saving ? "…" : t("save")}</Button></DialogFooter>
@@ -171,6 +188,7 @@ export function LandRelations({ farmerId }: Props) {
           <TableHead>{t("owner")}</TableHead>
           <TableHead>{t("tenant")}</TableHead>
           <TableHead>{t("sharePercent")}</TableHead>
+          <TableHead>{tx("Borga area", "বর্গা পরিমাণ")}</TableHead>
           <TableHead>{t("validFrom")}</TableHead>
           <TableHead>{t("validTo")}</TableHead>
           <TableHead>{t("status")}</TableHead>
@@ -185,6 +203,7 @@ export function LandRelations({ farmerId }: Props) {
                 <TableCell>{r.owner?.name_en} <span className="text-xs text-muted-foreground">({r.owner?.member_no ?? r.owner?.farmer_code})</span></TableCell>
                 <TableCell>{r.sc?.name_en ? <>{r.sc.name_en} <span className="text-xs text-muted-foreground">({r.sc.member_no ?? r.sc.farmer_code})</span></> : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell>{r.share_percentage}%</TableCell>
+                <TableCell>{r.area_decimal != null ? r.area_decimal : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell>{fmtDate(r.valid_from)}</TableCell>
                 <TableCell>{r.valid_to ? fmtDate(r.valid_to) : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell><Badge variant={active ? "default" : "secondary"}>{active ? t("activeRelation") : t("historic")}</Badge></TableCell>
@@ -198,7 +217,7 @@ export function LandRelations({ farmerId }: Props) {
               </TableRow>
             );
           })}
-          {rows.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
         </TableBody>
       </Table>
     </Card>

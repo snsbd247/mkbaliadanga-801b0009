@@ -3270,6 +3270,7 @@ export type Database = {
       }
       land_relations: {
         Row: {
+          area_decimal: number | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -3284,6 +3285,7 @@ export type Database = {
           valid_to: string | null
         }
         Insert: {
+          area_decimal?: number | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -3298,6 +3300,7 @@ export type Database = {
           valid_to?: string | null
         }
         Update: {
+          area_decimal?: number | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -3544,10 +3547,12 @@ export type Database = {
           land_type_id: string | null
           mouza: string | null
           mouza_id: string | null
+          notes: string | null
           office_id: string | null
           owner_farmer_id: string | null
           owner_type: Database["public"]["Enums"]["owner_type"]
           patwari_id: string | null
+          remarks: string | null
           upazila_id: string | null
         }
         Insert: {
@@ -3564,10 +3569,12 @@ export type Database = {
           land_type_id?: string | null
           mouza?: string | null
           mouza_id?: string | null
+          notes?: string | null
           office_id?: string | null
           owner_farmer_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
           patwari_id?: string | null
+          remarks?: string | null
           upazila_id?: string | null
         }
         Update: {
@@ -3584,10 +3591,12 @@ export type Database = {
           land_type_id?: string | null
           mouza?: string | null
           mouza_id?: string | null
+          notes?: string | null
           office_id?: string | null
           owner_farmer_id?: string | null
           owner_type?: Database["public"]["Enums"]["owner_type"]
           patwari_id?: string | null
+          remarks?: string | null
           upazila_id?: string | null
         }
         Relationships: [
