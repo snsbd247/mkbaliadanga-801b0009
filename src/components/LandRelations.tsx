@@ -203,6 +203,7 @@ export function LandRelations({ farmerId }: Props) {
                 <TableCell>{r.owner?.name_en} <span className="text-xs text-muted-foreground">({r.owner?.member_no ?? r.owner?.farmer_code})</span></TableCell>
                 <TableCell>{r.sc?.name_en ? <>{r.sc.name_en} <span className="text-xs text-muted-foreground">({r.sc.member_no ?? r.sc.farmer_code})</span></> : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell>{r.share_percentage}%</TableCell>
+                <TableCell>{r.area_decimal != null ? r.area_decimal : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell>{fmtDate(r.valid_from)}</TableCell>
                 <TableCell>{r.valid_to ? fmtDate(r.valid_to) : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell><Badge variant={active ? "default" : "secondary"}>{active ? t("activeRelation") : t("historic")}</Badge></TableCell>
