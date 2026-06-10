@@ -5772,6 +5772,7 @@ export type Database = {
           total_income: number
         }[]
       }
+      count_farmer_invoices: { Args: { _farmer_id: string }; Returns: number }
       current_user_office: { Args: never; Returns: string }
       data_integrity_scan: { Args: never; Returns: Json }
       email_for_username: { Args: { _username: string }; Returns: string }
