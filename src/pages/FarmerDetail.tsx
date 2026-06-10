@@ -1000,6 +1000,7 @@ export default function FarmerDetail() {
                 <TableHead className="text-right">{tx("Rate / Shotok", "রেট/শতক")}</TableHead>
                 <TableHead className="text-right">{tx("Total Amount", "মোট টাকা")}</TableHead>
                 <TableHead>{tx("Irrigation Charge", "সেচ চার্জ")}</TableHead>
+                <TableHead>{tx("Payment Status", "পেমেন্ট স্ট্যাটাস")}</TableHead>
                 <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
