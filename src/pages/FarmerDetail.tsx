@@ -1154,8 +1154,8 @@ export default function FarmerDetail() {
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>
                           {(() => {
-                            const m = landInvMap[l.id];
-                            if (!m || m.count === 0) return <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>;
+                            const m = landSeasonStatus(l.id);
+                            if (m.state === "none") return <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>;
                             const isDue = m.due > 0.005;
                             return (
                               <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => downloadLandInvoices(l.id)}>
