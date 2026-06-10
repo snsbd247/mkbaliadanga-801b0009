@@ -224,7 +224,10 @@ export default function FarmerDetail() {
         .limit(1)
         .maybeSingle();
       if (sn?.id) {
-        setActiveSeasonName(sn.name || `${sn.type} ${sn.year}`);
+        {
+          const baseName = sn.name || sn.type || "";
+          setActiveSeasonName(sn.year ? `${baseName}-${sn.year}` : baseName);
+        }
         const rows = await loadSeasonRateMap(sn.id, f.data?.office_id ?? null);
         setRateMap(rows);
       } else {
