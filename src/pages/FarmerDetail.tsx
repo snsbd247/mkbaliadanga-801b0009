@@ -260,26 +260,30 @@ export default function FarmerDetail() {
       }
     } catch { setLandPayMap({}); }
 
-    // Load active season + per-land rate map (for Rate/Total columns in Land tab)
+    // Load all seasons + active season + per-land rate map (for Rate/Total columns in Land tab)
     try {
-      const { data: sn } = await supabase
+      setFarmerOfficeId(f.data?.office_id ?? null);
+      const { data: allSeasons } = await supabase
         .from("seasons")
         .select("id,name,year,type,status")
-        .eq("status", "active")
-        .order("year", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("year", { ascending: false });
+      const opts = (allSeasons ?? []).map((s: any) => {
+        const baseName = s.name || s.type || "";
+        return { id: s.id, label: s.year ? `${baseName}-${s.year}` : baseName };
+      });
+      setSeasonOptions(opts);
+      const sn = (allSeasons ?? []).find((s: any) => s.status === "active") ?? null;
       if (sn?.id) {
         setActiveSeasonId(sn.id);
-        {
-          const baseName = sn.name || sn.type || "";
-          setActiveSeasonName(sn.year ? `${baseName}-${sn.year}` : baseName);
-        }
-        const rows = await loadSeasonRateMap(sn.id, f.data?.office_id ?? null);
+        const baseName = sn.name || sn.type || "";
+        setActiveSeasonName(sn.year ? `${baseName}-${sn.year}` : baseName);
+        setViewSeasonId((prev) => prev ?? sn.id);
+        const rows = await loadSeasonRateMap(viewSeasonId ?? sn.id, f.data?.office_id ?? null);
         setRateMap(rows);
       } else {
         setActiveSeasonId(null);
         setActiveSeasonName("");
+        if (!viewSeasonId && opts[0]) setViewSeasonId(opts[0].id);
         setRateMap([]);
       }
     } catch { /* non-fatal */ }
