@@ -334,6 +334,48 @@ export default function FarmerDetail() {
       outstanding: balanceAfter,
     }, copy, receiptArgs.options);
   }
+  function buildLandInvoicePayload(inv: any) {
+    return {
+      invoice_no: inv.invoice_no,
+      generated_at: inv.generated_at,
+      due_date: inv.due_date,
+      is_borga: inv.is_borga,
+      note: inv.note,
+      irrigation_amount: inv.irrigation_amount,
+      maintenance_amount: inv.maintenance_amount,
+      canal_amount: inv.canal_amount,
+      other_charge: inv.other_charge,
+      delay_fee: inv.delay_fee,
+      payable_amount: inv.payable_amount,
+      paid_amount: inv.paid_amount,
+      due_amount: inv.due_amount,
+      invoice_status: inv.invoice_status,
+      rate_source: inv.rate_source ?? (inv.is_manual_rate ? "MANUAL" : "STANDARD"),
+      applied_rate: inv.applied_rate ?? inv.season_rate ?? null,
+      original_standard_rate: inv.original_standard_rate ?? null,
+      irrigation_category_name: inv.irrigation_category_name ?? null,
+      farmer: {
+        name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
+        farmer_code: inv.farmers?.farmer_code,
+        mobile: inv.farmers?.mobile,
+        village: inv.farmers?.village ?? null,
+      },
+      land: { mouza: inv.lands?.mouza, dag_no: inv.lands?.dag_no, land_size: inv.lands?.land_size },
+      season: inv.seasons,
+    };
+  }
+  async function downloadLandInvoices(landId: string) {
+    const rows = (landInvoices[landId] ?? []);
+    if (!rows.length) { toast.error(tx("No invoice", "ইনভয়েস নেই")); return; }
+    try {
+      const settings = loadInvoiceSettings();
+      for (const inv of rows) {
+        await downloadIrrigationInvoicePdf(buildLandInvoicePayload(inv), "farmer", settings);
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Failed to generate PDF", "পিডিএফ তৈরি ব্যর্থ"));
+    }
+  }
   async function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id) as any;
     const pw = i.patwaris ?? null;
