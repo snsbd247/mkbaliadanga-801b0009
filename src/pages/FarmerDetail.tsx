@@ -44,6 +44,7 @@ import { formatId5 } from "@/lib/idFormat";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 import { PaidLandHistory } from "@/components/PaidLandHistory";
+import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
@@ -69,6 +70,7 @@ export default function FarmerDetail() {
   const [irr, setIrr] = useState<any[]>([]);
   const [invDue, setInvDue] = useState<number>(0);
   const [landInvMap, setLandInvMap] = useState<Record<string, { payable: number; paid: number; due: number; count: number }>>({});
+  const [landInvoices, setLandInvoices] = useState<Record<string, any[]>>({});
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
@@ -196,13 +198,14 @@ export default function FarmerDetail() {
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
       .from("irrigation_invoices")
-      .select("land_id,payable_amount,paid_amount,due_amount,invoice_status")
+      .select("*, farmers(name_bn,name_en,farmer_code,mobile,village), lands(mouza,dag_no,land_size), seasons(name,year,type)")
       .eq("farmer_id", id!)
       .is("deleted_at", null);
     const invRows = inv.data ?? [];
     setInvDue(invRows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
     // Per-land irrigation payment status (aggregate all invoices per land)
     const lim: Record<string, { payable: number; paid: number; due: number; count: number }> = {};
+    const liDocs: Record<string, any[]> = {};
     invRows.forEach((r: any) => {
       if (!r.land_id || r.invoice_status === "cancelled") return;
       const m = lim[r.land_id] ?? { payable: 0, paid: 0, due: 0, count: 0 };
@@ -211,8 +214,10 @@ export default function FarmerDetail() {
       m.due += Number(r.due_amount || 0);
       m.count += 1;
       lim[r.land_id] = m;
+      (liDocs[r.land_id] ??= []).push(r);
     });
     setLandInvMap(lim);
+    setLandInvoices(liDocs);
 
     // Load active season + per-land rate map (for Rate/Total columns in Land tab)
     try {
@@ -328,6 +333,48 @@ export default function FarmerDetail() {
       savings_deposit_total: depositTotal,
       outstanding: balanceAfter,
     }, copy, receiptArgs.options);
+  }
+  function buildLandInvoicePayload(inv: any) {
+    return {
+      invoice_no: inv.invoice_no,
+      generated_at: inv.generated_at,
+      due_date: inv.due_date,
+      is_borga: inv.is_borga,
+      note: inv.note,
+      irrigation_amount: inv.irrigation_amount,
+      maintenance_amount: inv.maintenance_amount,
+      canal_amount: inv.canal_amount,
+      other_charge: inv.other_charge,
+      delay_fee: inv.delay_fee,
+      payable_amount: inv.payable_amount,
+      paid_amount: inv.paid_amount,
+      due_amount: inv.due_amount,
+      invoice_status: inv.invoice_status,
+      rate_source: inv.rate_source ?? (inv.is_manual_rate ? "MANUAL" : "STANDARD"),
+      applied_rate: inv.applied_rate ?? inv.season_rate ?? null,
+      original_standard_rate: inv.original_standard_rate ?? null,
+      irrigation_category_name: inv.irrigation_category_name ?? null,
+      farmer: {
+        name: inv.farmers?.name_bn ?? inv.farmers?.name_en,
+        farmer_code: inv.farmers?.farmer_code,
+        mobile: inv.farmers?.mobile,
+        village: inv.farmers?.village ?? null,
+      },
+      land: { mouza: inv.lands?.mouza, dag_no: inv.lands?.dag_no, land_size: inv.lands?.land_size },
+      season: inv.seasons,
+    };
+  }
+  async function downloadLandInvoices(landId: string) {
+    const rows = (landInvoices[landId] ?? []);
+    if (!rows.length) { toast.error(tx("No invoice", "ইনভয়েস নেই")); return; }
+    try {
+      const settings = loadInvoiceSettings();
+      for (const inv of rows) {
+        await downloadIrrigationInvoicePdf(buildLandInvoicePayload(inv), "farmer", settings);
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Failed to generate PDF", "পিডিএফ তৈরি ব্যর্থ"));
+    }
   }
   async function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     const land = (lands || []).find((x: any) => x.id === i.land_id) as any;
@@ -983,11 +1030,21 @@ export default function FarmerDetail() {
                           {(() => {
                             const m = landInvMap[l.id];
                             if (!m || m.count === 0) return <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>;
-                            return m.due > 0.005
-                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
-                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
+                            const isDue = m.due > 0.005;
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                {isDue
+                                  ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
+                                  : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>}
+                                <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => downloadLandInvoices(l.id)}>
+                                  <FileDown className="h-3.5 w-3.5" />
+                                  {isDue ? tx("Invoice", "ইনভয়েস") : tx("Receipt", "রসিদ")}
+                                </Button>
+                              </div>
+                            );
                           })()}
                         </TableCell>
+
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
