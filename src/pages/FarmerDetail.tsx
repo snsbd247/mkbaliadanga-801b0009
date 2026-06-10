@@ -75,6 +75,7 @@ export default function FarmerDetail() {
   const [payments, setPayments] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
+  const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
   const [offices, setOffices] = useState<any[]>([]);
   const [editFarmerOpen, setEditFarmerOpen] = useState(false);
   const [editFarmerForm, setEditFarmerForm] = useState<any | null>(null);
@@ -229,6 +230,7 @@ export default function FarmerDetail() {
         .limit(1)
         .maybeSingle();
       if (sn?.id) {
+        setActiveSeasonId(sn.id);
         {
           const baseName = sn.name || sn.type || "";
           setActiveSeasonName(sn.year ? `${baseName}-${sn.year}` : baseName);
@@ -236,6 +238,7 @@ export default function FarmerDetail() {
         const rows = await loadSeasonRateMap(sn.id, f.data?.office_id ?? null);
         setRateMap(rows);
       } else {
+        setActiveSeasonId(null);
         setActiveSeasonName("");
         setRateMap([]);
       }
@@ -997,6 +1000,7 @@ export default function FarmerDetail() {
                 <TableHead className="text-right">{tx("Rate / Shotok", "রেট/শতক")}</TableHead>
                 <TableHead className="text-right">{tx("Total Amount", "মোট টাকা")}</TableHead>
                 <TableHead>{tx("Irrigation Charge", "সেচ চার্জ")}</TableHead>
+                <TableHead>{tx("Payment Status", "পেমেন্ট স্ট্যাটাস")}</TableHead>
                 <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
@@ -1045,6 +1049,19 @@ export default function FarmerDetail() {
                           })()}
                         </TableCell>
 
+                        <TableCell>
+                          {(() => {
+                            const rows = (landInvoices[l.id] ?? []).filter(
+                              (r: any) => r.invoice_status !== "cancelled" && activeSeasonId && r.season_id === activeSeasonId
+                            );
+                            if (!rows.length) return <span className="text-muted-foreground text-xs">—</span>;
+                            const seasonDue = rows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+                            return seasonDue > 0.005
+                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")}</Badge>
+                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
+                          })()}
+                        </TableCell>
+
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
@@ -1070,12 +1087,13 @@ export default function FarmerDetail() {
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
                         <TableCell />
+                        <TableCell />
                       </TableRow>
                     );
                   };
                   const sectionHeader = (label: string) => (
                     <TableRow className="bg-primary/10">
-                      <TableCell colSpan={11} className="font-bold text-sm py-2">{label}</TableCell>
+                      <TableCell colSpan={12} className="font-bold text-sm py-2">{label}</TableCell>
                     </TableRow>
                   );
                   const out: React.ReactNode[] = [];
@@ -1103,10 +1121,11 @@ export default function FarmerDetail() {
                         <TableCell className="text-right">{money(totalAmt)}</TableCell>
                         <TableCell />
                         <TableCell />
+                        <TableCell />
                       </TableRow>
                     );
                   } else {
-                    out.push(<TableRow key="empty"><TableCell colSpan={11} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
+                    out.push(<TableRow key="empty"><TableCell colSpan={12} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
                   }
                   return out;
                 })()}
