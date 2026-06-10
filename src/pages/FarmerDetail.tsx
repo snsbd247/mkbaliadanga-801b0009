@@ -1121,10 +1121,11 @@ export default function FarmerDetail() {
                         <TableCell className="text-right">{money(totalAmt)}</TableCell>
                         <TableCell />
                         <TableCell />
+                        <TableCell />
                       </TableRow>
                     );
                   } else {
-                    out.push(<TableRow key="empty"><TableCell colSpan={11} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
+                    out.push(<TableRow key="empty"><TableCell colSpan={12} className="text-center text-muted-foreground">{t("noData")}</TableCell></TableRow>);
                   }
                   return out;
                 })()}
