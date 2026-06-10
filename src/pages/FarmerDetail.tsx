@@ -208,7 +208,13 @@ export default function FarmerDetail() {
       .eq("farmer_id", id!)
       .is("deleted_at", null);
     const invRows = inv.data ?? [];
+    const visibleInvCount = invRows.filter((r: any) => r.invoice_status !== "cancelled").length;
     setInvDue(invRows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+    // Detect invoices hidden from the current user due to office permissions
+    try {
+      const { data: trueCount } = await supabase.rpc("count_farmer_invoices", { _farmer_id: id! });
+      setHiddenInvoiceCount(Math.max(0, Number(trueCount ?? 0) - visibleInvCount));
+    } catch { setHiddenInvoiceCount(0); }
     // Per-land irrigation payment status (aggregate all invoices per land)
     const lim: Record<string, { payable: number; paid: number; due: number; count: number }> = {};
     const liDocs: Record<string, any[]> = {};
