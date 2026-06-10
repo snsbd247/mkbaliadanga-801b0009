@@ -1030,11 +1030,21 @@ export default function FarmerDetail() {
                           {(() => {
                             const m = landInvMap[l.id];
                             if (!m || m.count === 0) return <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>;
-                            return m.due > 0.005
-                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
-                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
+                            const isDue = m.due > 0.005;
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                {isDue
+                                  ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
+                                  : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>}
+                                <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => downloadLandInvoices(l.id)}>
+                                  <FileDown className="h-3.5 w-3.5" />
+                                  {isDue ? tx("Invoice", "ইনভয়েস") : tx("Receipt", "রসিদ")}
+                                </Button>
+                              </div>
+                            );
                           })()}
                         </TableCell>
+
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
