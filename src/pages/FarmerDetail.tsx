@@ -75,6 +75,7 @@ export default function FarmerDetail() {
   const [payments, setPayments] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
+  const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
   const [offices, setOffices] = useState<any[]>([]);
   const [editFarmerOpen, setEditFarmerOpen] = useState(false);
   const [editFarmerForm, setEditFarmerForm] = useState<any | null>(null);
