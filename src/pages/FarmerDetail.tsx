@@ -1049,6 +1049,19 @@ export default function FarmerDetail() {
                           })()}
                         </TableCell>
 
+                        <TableCell>
+                          {(() => {
+                            const rows = (landInvoices[l.id] ?? []).filter(
+                              (r: any) => r.invoice_status !== "cancelled" && activeSeasonId && r.season_id === activeSeasonId
+                            );
+                            if (!rows.length) return <span className="text-muted-foreground text-xs">—</span>;
+                            const seasonDue = rows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+                            return seasonDue > 0.005
+                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")}</Badge>
+                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
+                          })()}
+                        </TableCell>
+
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
