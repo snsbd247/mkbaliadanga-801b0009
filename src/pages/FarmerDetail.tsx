@@ -273,6 +273,23 @@ export default function FarmerDetail() {
     } catch { /* non-fatal */ }
   }
 
+  function landSeasonStatus(landId: string): { state: "none" | "paid" | "partial" | "due"; payable: number; paid: number; due: number } {
+    const rows = (landInvoices[landId] ?? []).filter(
+      (r: any) => r.invoice_status !== "cancelled" && activeSeasonId && r.season_id === activeSeasonId
+    );
+    if (!rows.length) return { state: "none", payable: 0, paid: 0, due: 0 };
+    const payable = rows.reduce((a: number, r: any) => a + Number(r.payable_amount || 0), 0);
+    const paid = rows.reduce((a: number, r: any) => a + Number(r.paid_amount || 0), 0);
+    const due = rows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+    let state: "paid" | "partial" | "due";
+    if (due <= 0.005) state = "paid";
+    else if (paid > 0.005) state = "partial";
+    else state = "due";
+    return { state, payable, paid, due };
+  }
+
+
+
   function farmerLocationLine(fr: any): string {
     if (!fr) return "—";
     const pick = (n: any) => n?.name_bn || n?.name || null;
