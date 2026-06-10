@@ -1058,8 +1058,14 @@ export default function FarmerDetail() {
               </TableRow></TableHeader>
               <TableBody>
                 {(() => {
-                  const ownRows = lands.filter(l => l.owner_type === "owner");
-                  const borgaRows = lands.filter(l => l.owner_type !== "owner");
+                  const matchesFilter = (l: any) => {
+                    if (paymentFilter === "all") return true;
+                    const s = landSeasonStatus(l.id).state;
+                    if (paymentFilter === "paid") return s === "paid";
+                    return s === "due" || s === "partial";
+                  };
+                  const ownRows = lands.filter(l => l.owner_type === "owner" && matchesFilter(l));
+                  const borgaRows = lands.filter(l => l.owner_type !== "owner" && matchesFilter(l));
                   const renderRow = (l: any) => {
                     const matched = resolveRateForLand(rateMap, l);
                     const rate = matched ? Number(matched.rate_per_shotok) : 0;
