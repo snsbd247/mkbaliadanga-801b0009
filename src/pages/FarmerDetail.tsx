@@ -1158,29 +1158,22 @@ export default function FarmerDetail() {
                             if (!m || m.count === 0) return <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>;
                             const isDue = m.due > 0.005;
                             return (
-                              <div className="flex items-center gap-1.5">
-                                {isDue
-                                  ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
-                                  : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>}
-                                <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => downloadLandInvoices(l.id)}>
-                                  <FileDown className="h-3.5 w-3.5" />
-                                  {isDue ? tx("Invoice", "ইনভয়েস") : tx("Receipt", "রসিদ")}
-                                </Button>
-                              </div>
+                              <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => downloadLandInvoices(l.id)}>
+                                <FileDown className="h-3.5 w-3.5" />
+                                {isDue ? tx("Invoice", "ইনভয়েস") : tx("Receipt", "রসিদ")}
+                              </Button>
                             );
                           })()}
                         </TableCell>
 
                         <TableCell>
                           {(() => {
-                            const st = landSeasonStatus(l.id);
-                            if (st.state === "none") return <span className="text-muted-foreground text-xs">—</span>;
-                            const badge =
-                              st.state === "paid"
-                                ? <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>
-                                : st.state === "partial"
-                                ? <Badge variant="default" className="bg-amber-500 hover:bg-amber-500">{tx("Partially Paid", "আংশিক পরিশোধিত")}</Badge>
-                                : <Badge variant="destructive">{tx("Due", "বকেয়া")}</Badge>;
+                            const m = landInvMap[l.id];
+                            if (!m || m.count === 0) return <span className="text-muted-foreground text-xs">—</span>;
+                            const isDue = m.due > 0.005;
+                            const badge = isDue
+                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
+                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
                             const pay = landPayMap[l.id];
                             return (
                               <TooltipProvider>
@@ -1188,9 +1181,9 @@ export default function FarmerDetail() {
                                   <TooltipTrigger asChild><span className="cursor-help">{badge}</span></TooltipTrigger>
                                   <TooltipContent>
                                     <div className="text-xs space-y-0.5">
-                                      <div>{tx("Payable", "প্রদেয়")}: {money(st.payable)}</div>
-                                      <div>{tx("Paid", "পরিশোধিত")}: {money(st.paid)}</div>
-                                      <div>{tx("Due", "বকেয়া")}: {money(st.due)}</div>
+                                      <div>{tx("Payable", "প্রদেয়")}: {money(m.payable ?? 0)}</div>
+                                      <div>{tx("Paid", "পরিশোধিত")}: {money(m.paid ?? 0)}</div>
+                                      <div>{tx("Due", "বকেয়া")}: {money(m.due ?? 0)}</div>
                                       {pay?.lastDate && <div>{tx("Last payment", "সর্বশেষ পেমেন্ট")}: {fmtDate(pay.lastDate)}</div>}
                                     </div>
                                   </TooltipContent>
@@ -1199,6 +1192,7 @@ export default function FarmerDetail() {
                             );
                           })()}
                         </TableCell>
+
 
 
                         <TableCell className="text-right">
