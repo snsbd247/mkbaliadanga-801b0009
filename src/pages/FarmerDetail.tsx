@@ -1096,16 +1096,33 @@ export default function FarmerDetail() {
 
                         <TableCell>
                           {(() => {
-                            const rows = (landInvoices[l.id] ?? []).filter(
-                              (r: any) => r.invoice_status !== "cancelled" && activeSeasonId && r.season_id === activeSeasonId
+                            const st = landSeasonStatus(l.id);
+                            if (st.state === "none") return <span className="text-muted-foreground text-xs">—</span>;
+                            const badge =
+                              st.state === "paid"
+                                ? <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>
+                                : st.state === "partial"
+                                ? <Badge variant="default" className="bg-amber-500 hover:bg-amber-500">{tx("Partially Paid", "আংশিক পরিশোধিত")}</Badge>
+                                : <Badge variant="destructive">{tx("Due", "বকেয়া")}</Badge>;
+                            const pay = landPayMap[l.id];
+                            return (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild><span className="cursor-help">{badge}</span></TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="text-xs space-y-0.5">
+                                      <div>{tx("Payable", "প্রদেয়")}: {money(st.payable)}</div>
+                                      <div>{tx("Paid", "পরিশোধিত")}: {money(st.paid)}</div>
+                                      <div>{tx("Due", "বকেয়া")}: {money(st.due)}</div>
+                                      {pay?.lastDate && <div>{tx("Last payment", "সর্বশেষ পেমেন্ট")}: {fmtDate(pay.lastDate)}</div>}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             );
-                            if (!rows.length) return <span className="text-muted-foreground text-xs">—</span>;
-                            const seasonDue = rows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
-                            return seasonDue > 0.005
-                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")}</Badge>
-                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
                           })()}
                         </TableCell>
+
 
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
