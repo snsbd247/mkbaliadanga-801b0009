@@ -1093,7 +1093,7 @@ export default function FarmerDetail() {
                   };
                   const sectionHeader = (label: string) => (
                     <TableRow className="bg-primary/10">
-                      <TableCell colSpan={11} className="font-bold text-sm py-2">{label}</TableCell>
+                      <TableCell colSpan={12} className="font-bold text-sm py-2">{label}</TableCell>
                     </TableRow>
                   );
                   const out: React.ReactNode[] = [];
