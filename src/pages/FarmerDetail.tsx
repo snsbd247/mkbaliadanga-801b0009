@@ -1168,8 +1168,8 @@ export default function FarmerDetail() {
 
                         <TableCell>
                           {(() => {
-                            const m = landInvMap[l.id];
-                            if (!m || m.count === 0) return <span className="text-muted-foreground text-xs">—</span>;
+                            const m = landSeasonStatus(l.id);
+                            if (m.state === "none") return <span className="text-muted-foreground text-xs">—</span>;
                             const isDue = m.due > 0.005;
                             const badge = isDue
                               ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
