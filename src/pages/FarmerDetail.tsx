@@ -1087,6 +1087,7 @@ export default function FarmerDetail() {
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
                         <TableCell />
+                        <TableCell />
                       </TableRow>
                     );
                   };
