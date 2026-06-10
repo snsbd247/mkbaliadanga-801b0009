@@ -223,6 +223,31 @@ export default function FarmerDetail() {
     setLandInvMap(lim);
     setLandInvoices(liDocs);
 
+    // Load payment records per invoice → map to land (for tooltip date/amount)
+    try {
+      const invIds = invRows.map((r: any) => r.id).filter(Boolean);
+      const invToLand: Record<string, string> = {};
+      invRows.forEach((r: any) => { if (r.id && r.land_id) invToLand[r.id] = r.land_id; });
+      if (invIds.length) {
+        const { data: pays } = await supabase
+          .from("irrigation_invoice_payments")
+          .select("invoice_id,collected_amount,created_at")
+          .in("invoice_id", invIds);
+        const pm: Record<string, { lastDate: string | null; total: number }> = {};
+        (pays ?? []).forEach((p: any) => {
+          const landId = invToLand[p.invoice_id];
+          if (!landId) return;
+          const e = pm[landId] ?? { lastDate: null, total: 0 };
+          e.total += Number(p.collected_amount || 0);
+          if (!e.lastDate || new Date(p.created_at) > new Date(e.lastDate)) e.lastDate = p.created_at;
+          pm[landId] = e;
+        });
+        setLandPayMap(pm);
+      } else {
+        setLandPayMap({});
+      }
+    } catch { setLandPayMap({}); }
+
     // Load active season + per-land rate map (for Rate/Total columns in Land tab)
     try {
       const { data: sn } = await supabase
