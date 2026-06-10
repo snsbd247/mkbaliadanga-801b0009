@@ -229,6 +229,7 @@ export default function FarmerDetail() {
       lim[r.land_id] = m;
       (liDocs[r.land_id] ??= []).push(r);
     });
+    console.log("DEBUG invRows", invRows.map((r:any)=>({land:r.land_id,status:r.invoice_status,due:r.due_amount})), "limKeys", Object.keys(lim));
     setLandInvMap(lim);
     setLandInvoices(liDocs);
 
