@@ -204,9 +204,10 @@ export default function FarmerDetail() {
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
       .from("irrigation_invoices")
-      .select("*, farmers(name_bn,name_en,farmer_code,mobile,village), lands(mouza,dag_no,land_size), seasons(name,year,type)")
+      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_bn,name_en,farmer_code,mobile,village), lands(mouza,dag_no,land_size), seasons(name,year,type)")
       .eq("farmer_id", id!)
       .is("deleted_at", null);
+    if (inv.error) console.error("irrigation_invoices fetch error:", inv.error);
     const invRows = inv.data ?? [];
     const visibleInvCount = invRows.filter((r: any) => r.invoice_status !== "cancelled").length;
     setInvDue(invRows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
