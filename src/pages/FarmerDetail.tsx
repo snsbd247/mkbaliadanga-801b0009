@@ -77,6 +77,8 @@ export default function FarmerDetail() {
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
+  const [landPayMap, setLandPayMap] = useState<Record<string, { lastDate: string | null; total: number }>>({});
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "due">("all");
   const [offices, setOffices] = useState<any[]>([]);
   const [editFarmerOpen, setEditFarmerOpen] = useState(false);
   const [editFarmerForm, setEditFarmerForm] = useState<any | null>(null);
