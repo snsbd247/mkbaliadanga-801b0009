@@ -70,6 +70,7 @@ export default function FarmerDetail() {
   const [irr, setIrr] = useState<any[]>([]);
   const [invDue, setInvDue] = useState<number>(0);
   const [landInvMap, setLandInvMap] = useState<Record<string, { payable: number; paid: number; due: number; count: number }>>({});
+  const [landInvoices, setLandInvoices] = useState<Record<string, any[]>>({});
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
