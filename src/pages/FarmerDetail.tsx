@@ -527,7 +527,7 @@ export default function FarmerDetail() {
         canonicalDag = dv.values.join(", ");
         dagNumbers = dv.values;
       }
-      const { error } = await supabase.from("lands").update({
+      const { data, error } = await supabase.from("lands").update({
         mouza: (editLoc as any).mouza_name ?? "",
         division_id: (editLoc as any).division_id ?? null,
         district_id: (editLoc as any).district_id ?? null,
