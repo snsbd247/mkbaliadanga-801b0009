@@ -79,6 +79,8 @@ export default function FarmerDetail() {
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
   const [landPayMap, setLandPayMap] = useState<Record<string, { lastDate: string | null; total: number }>>({});
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "due">("all");
+  const [hiddenInvoiceCount, setHiddenInvoiceCount] = useState<number>(0);
+  const [backfilling, setBackfilling] = useState(false);
   const [offices, setOffices] = useState<any[]>([]);
   const [editFarmerOpen, setEditFarmerOpen] = useState(false);
   const [editFarmerForm, setEditFarmerForm] = useState<any | null>(null);
@@ -206,7 +208,13 @@ export default function FarmerDetail() {
       .eq("farmer_id", id!)
       .is("deleted_at", null);
     const invRows = inv.data ?? [];
+    const visibleInvCount = invRows.filter((r: any) => r.invoice_status !== "cancelled").length;
     setInvDue(invRows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
+    // Detect invoices hidden from the current user due to office permissions
+    try {
+      const { data: trueCount } = await supabase.rpc("count_farmer_invoices", { _farmer_id: id! });
+      setHiddenInvoiceCount(Math.max(0, Number(trueCount ?? 0) - visibleInvCount));
+    } catch { setHiddenInvoiceCount(0); }
     // Per-land irrigation payment status (aggregate all invoices per land)
     const lim: Record<string, { payable: number; paid: number; due: number; count: number }> = {};
     const liDocs: Record<string, any[]> = {};
@@ -287,6 +295,21 @@ export default function FarmerDetail() {
     else state = "due";
     return { state, payable, paid, due };
   }
+
+  async function handleBackfillInvoiceOffice() {
+    setBackfilling(true);
+    try {
+      const { data, error } = await supabase.rpc("backfill_irrigation_invoice_office");
+      if (error) throw error;
+      toast.success(tx(`Fixed ${data ?? 0} invoice(s)`, `${data ?? 0} টি ইনভয়েস ঠিক করা হয়েছে`));
+      await loadAll();
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Failed to backfill", "ঠিক করা যায়নি"));
+    } finally {
+      setBackfilling(false);
+    }
+  }
+
 
 
 
@@ -1041,6 +1064,21 @@ export default function FarmerDetail() {
                 </div>
               );
             })()}
+            {hiddenInvoiceCount > 0 && (
+              <div className="px-3 py-2 flex flex-wrap items-center gap-3 text-sm border-b bg-amber-50 text-amber-900">
+                <span>
+                  ⚠️ {tx(
+                    `${hiddenInvoiceCount} invoice(s) are hidden because they are assigned to another office (or no office). Their status may show as "No invoice".`,
+                    `${hiddenInvoiceCount} টি ইনভয়েস অন্য অফিসে (বা কোনো অফিস ছাড়া) থাকায় লুকানো আছে। এগুলোর স্ট্যাটাস "ইনভয়েস নেই" দেখাতে পারে।`
+                  )}
+                </span>
+                {isSuper && (
+                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs" disabled={backfilling} onClick={handleBackfillInvoiceOffice}>
+                    {backfilling ? tx("Fixing…", "ঠিক করা হচ্ছে…") : tx("Fix office assignment", "অফিস ঠিক করুন")}
+                  </Button>
+                )}
+              </div>
+            )}
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{t("pgLocation")}</TableHead>
