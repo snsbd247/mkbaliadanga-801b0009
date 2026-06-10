@@ -289,9 +289,15 @@ export default function FarmerDetail() {
     } catch { /* non-fatal */ }
   }
 
+  // Reload per-land rate map when the viewed season changes
+  useEffect(() => {
+    if (!viewSeasonId) return;
+    loadSeasonRateMap(viewSeasonId, farmerOfficeId).then(setRateMap).catch(() => {});
+  }, [viewSeasonId, farmerOfficeId]);
+
   function landSeasonStatus(landId: string): { state: "none" | "paid" | "partial" | "due"; payable: number; paid: number; due: number } {
     const rows = (landInvoices[landId] ?? []).filter(
-      (r: any) => r.invoice_status !== "cancelled" && activeSeasonId && r.season_id === activeSeasonId
+      (r: any) => r.invoice_status !== "cancelled" && viewSeasonId && r.season_id === viewSeasonId
     );
     if (!rows.length) return { state: "none", payable: 0, paid: 0, due: 0 };
     const payable = rows.reduce((a: number, r: any) => a + Number(r.payable_amount || 0), 0);
