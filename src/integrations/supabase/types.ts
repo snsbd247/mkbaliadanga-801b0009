@@ -5746,6 +5746,7 @@ export type Database = {
       _sms_savings_balance: { Args: { _farmer: string }; Returns: number }
       activate_sms_token: { Args: { _id: string }; Returns: undefined }
       apply_loan_installment_penalties: { Args: never; Returns: Json }
+      backfill_irrigation_invoice_office: { Args: never; Returns: number }
       cancel_voter_membership: {
         Args: { _farmer_id: string; _reason: string }
         Returns: Json
