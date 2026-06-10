@@ -44,6 +44,7 @@ import { formatId5 } from "@/lib/idFormat";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 import { PaidLandHistory } from "@/components/PaidLandHistory";
+import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
