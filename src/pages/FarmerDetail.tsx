@@ -77,6 +77,9 @@ export default function FarmerDetail() {
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
+  const [seasonOptions, setSeasonOptions] = useState<{ id: string; label: string }[]>([]);
+  const [viewSeasonId, setViewSeasonId] = useState<string | null>(null);
+  const [farmerOfficeId, setFarmerOfficeId] = useState<string | null>(null);
   const [landPayMap, setLandPayMap] = useState<Record<string, { lastDate: string | null; total: number }>>({});
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "due">("all");
   const [hiddenInvoiceCount, setHiddenInvoiceCount] = useState<number>(0);
@@ -257,34 +260,44 @@ export default function FarmerDetail() {
       }
     } catch { setLandPayMap({}); }
 
-    // Load active season + per-land rate map (for Rate/Total columns in Land tab)
+    // Load all seasons + active season + per-land rate map (for Rate/Total columns in Land tab)
     try {
-      const { data: sn } = await supabase
+      setFarmerOfficeId(f.data?.office_id ?? null);
+      const { data: allSeasons } = await supabase
         .from("seasons")
         .select("id,name,year,type,status")
-        .eq("status", "active")
-        .order("year", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("year", { ascending: false });
+      const opts = (allSeasons ?? []).map((s: any) => {
+        const baseName = s.name || s.type || "";
+        return { id: s.id, label: s.year ? `${baseName}-${s.year}` : baseName };
+      });
+      setSeasonOptions(opts);
+      const sn = (allSeasons ?? []).find((s: any) => s.status === "active") ?? null;
       if (sn?.id) {
         setActiveSeasonId(sn.id);
-        {
-          const baseName = sn.name || sn.type || "";
-          setActiveSeasonName(sn.year ? `${baseName}-${sn.year}` : baseName);
-        }
-        const rows = await loadSeasonRateMap(sn.id, f.data?.office_id ?? null);
+        const baseName = sn.name || sn.type || "";
+        setActiveSeasonName(sn.year ? `${baseName}-${sn.year}` : baseName);
+        setViewSeasonId((prev) => prev ?? sn.id);
+        const rows = await loadSeasonRateMap(viewSeasonId ?? sn.id, f.data?.office_id ?? null);
         setRateMap(rows);
       } else {
         setActiveSeasonId(null);
         setActiveSeasonName("");
+        if (!viewSeasonId && opts[0]) setViewSeasonId(opts[0].id);
         setRateMap([]);
       }
     } catch { /* non-fatal */ }
   }
 
+  // Reload per-land rate map when the viewed season changes
+  useEffect(() => {
+    if (!viewSeasonId) return;
+    loadSeasonRateMap(viewSeasonId, farmerOfficeId).then(setRateMap).catch(() => {});
+  }, [viewSeasonId, farmerOfficeId]);
+
   function landSeasonStatus(landId: string): { state: "none" | "paid" | "partial" | "due"; payable: number; paid: number; due: number } {
     const rows = (landInvoices[landId] ?? []).filter(
-      (r: any) => r.invoice_status !== "cancelled" && activeSeasonId && r.season_id === activeSeasonId
+      (r: any) => r.invoice_status !== "cancelled" && viewSeasonId && r.season_id === viewSeasonId
     );
     if (!rows.length) return { state: "none", payable: 0, paid: 0, due: 0 };
     const payable = rows.reduce((a: number, r: any) => a + Number(r.payable_amount || 0), 0);
@@ -1034,9 +1047,20 @@ export default function FarmerDetail() {
                 </DialogContent>
               </Dialog>
             </div>
-            {activeSeasonName && (
-              <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/30">
-                {tx("Current season:", "চলতি মৌসুম:")} <span className="font-medium text-foreground">{activeSeasonName}</span> — {tx("Rate & Total are based on this season's irrigation rate", "Rate ও Total এই মৌসুমের সেচ রেট অনুযায়ী")}
+            {seasonOptions.length > 0 && (
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/30 flex flex-wrap items-center gap-2">
+                <span>{tx("Season:", "মৌসুম:")}</span>
+                <Select value={viewSeasonId ?? undefined} onValueChange={(v) => setViewSeasonId(v)}>
+                  <SelectTrigger className="h-7 w-auto min-w-[140px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {seasonOptions.map((s) => (
+                      <SelectItem key={s.id} value={s.id} className="text-xs">
+                        {s.label}{s.id === activeSeasonId ? ` (${tx("current", "চলতি")})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span>— {tx("Rate, Total & Payment Status are based on this season", "Rate, Total ও Payment Status এই মৌসুম অনুযায়ী")}</span>
               </div>
             )}
             {(() => {
