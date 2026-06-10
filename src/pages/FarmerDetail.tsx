@@ -51,6 +51,21 @@ type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?:
 
 const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "" };
 
+function pickCurrentSeason(seasons: any[]) {
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const active = seasons.filter((s: any) => s.status === "active");
+
+  return active.find((s: any) => {
+    const start = s.start_date ? String(s.start_date).slice(0, 10) : null;
+    const end = s.end_date ? String(s.end_date).slice(0, 10) : null;
+    return (!start || start <= todayKey) && (!end || end >= todayKey);
+  }) ?? active.find((s: any) => {
+    const start = s.start_date ? String(s.start_date).slice(0, 10) : null;
+    return !start || start <= todayKey;
+  }) ?? active[0] ?? seasons[0] ?? null;
+}
+
 export default function FarmerDetail() {
   const { id } = useParams<{ id: string }>();
   const { t, lang, tx } = useLang();
@@ -265,14 +280,14 @@ export default function FarmerDetail() {
       setFarmerOfficeId(f.data?.office_id ?? null);
       const { data: allSeasons } = await supabase
         .from("seasons")
-        .select("id,name,year,type,status")
+        .select("id,name,year,type,status,start_date,end_date")
         .order("year", { ascending: false });
       const opts = (allSeasons ?? []).map((s: any) => {
         const baseName = s.name || s.type || "";
         return { id: s.id, label: s.year ? `${baseName}-${s.year}` : baseName };
       });
       setSeasonOptions(opts);
-      const sn = (allSeasons ?? []).find((s: any) => s.status === "active") ?? null;
+      const sn = pickCurrentSeason(allSeasons ?? []);
       if (sn?.id) {
         setActiveSeasonId(sn.id);
         const baseName = sn.name || sn.type || "";
