@@ -1016,20 +1016,28 @@ export default function FarmerDetail() {
               </div>
             )}
             {(() => {
-              const statuses = lands.map((l) => {
-                const m = landInvMap[l.id];
-                if (!m || m.count === 0) return "none";
-                return m.due > 0.005 ? "due" : "paid";
-              });
+              const statuses = lands.map((l) => landSeasonStatus(l.id).state);
               const paidCount = statuses.filter((s) => s === "paid").length;
+              const partialCount = statuses.filter((s) => s === "partial").length;
               const dueCount = statuses.filter((s) => s === "due").length;
               const noneCount = statuses.filter((s) => s === "none").length;
               return (
                 <div className="px-3 py-2 flex flex-wrap items-center gap-3 text-sm border-b">
                   <span className="font-medium">{tx("Total Lands", "মোট জমি")}: <strong>{lands.length}</strong></span>
                   <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}: {paidCount}</Badge>
+                  {partialCount > 0 && <Badge variant="default" className="bg-amber-500 hover:bg-amber-500">{tx("Partially Paid", "আংশিক পরিশোধিত")}: {partialCount}</Badge>}
                   <Badge variant="destructive">{tx("Due", "বকেয়া")}: {dueCount}</Badge>
                   {noneCount > 0 && <Badge variant="secondary">{tx("No invoice", "ইনভয়েস নেই")}: {noneCount}</Badge>}
+                  <div className="ml-auto">
+                    <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
+                      <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{tx("All", "সব")}</SelectItem>
+                        <SelectItem value="paid">{tx("Paid only", "শুধু পরিশোধিত")}</SelectItem>
+                        <SelectItem value="due">{tx("Due only", "শুধু বকেয়া")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               );
             })()}
