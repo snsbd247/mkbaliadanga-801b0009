@@ -296,6 +296,21 @@ export default function FarmerDetail() {
     return { state, payable, paid, due };
   }
 
+  async function handleBackfillInvoiceOffice() {
+    setBackfilling(true);
+    try {
+      const { data, error } = await supabase.rpc("backfill_irrigation_invoice_office");
+      if (error) throw error;
+      toast.success(tx(`Fixed ${data ?? 0} invoice(s)`, `${data ?? 0} টি ইনভয়েস ঠিক করা হয়েছে`));
+      await loadAll();
+    } catch (e: any) {
+      toast.error(e?.message ?? tx("Failed to backfill", "ঠিক করা যায়নি"));
+    } finally {
+      setBackfilling(false);
+    }
+  }
+
+
 
 
   function farmerLocationLine(fr: any): string {
