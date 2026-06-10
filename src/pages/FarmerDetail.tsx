@@ -520,10 +520,12 @@ export default function FarmerDetail() {
       if (!el.upazila_id)  { setEditLocErr({ level: "upazila",  message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
       if (!el.mouza_id)    { setEditLocErr({ level: "mouza",    message: t("mouzaRequired" as any) || "Mouza required" }); return; }
       let canonicalDag = editForm.dag_no.trim();
+      let dagNumbers: string[] = canonicalDag ? [canonicalDag] : [];
       if (editForm.owner_type === "owner") {
         const dv = validateDagNumbers(editForm.dag_no);
         if (dv.ok === false) { toast.error(dv.error); return; }
         canonicalDag = dv.values.join(", ");
+        dagNumbers = dv.values;
       }
       const { error } = await supabase.from("lands").update({
         mouza: (editLoc as any).mouza_name ?? "",
@@ -532,6 +534,7 @@ export default function FarmerDetail() {
         upazila_id: (editLoc as any).upazila_id ?? null,
         mouza_id: (editLoc as any).mouza_id ?? null,
         dag_no: canonicalDag,
+        dag_numbers: dagNumbers,
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
         field_type: editForm.field_type as any,
