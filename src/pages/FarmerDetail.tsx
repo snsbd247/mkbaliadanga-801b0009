@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Printer, FileDown, Receipt, Pencil, Trash2, FileSpreadsheet, FileText, IdCard } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
@@ -76,6 +77,8 @@ export default function FarmerDetail() {
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
+  const [landPayMap, setLandPayMap] = useState<Record<string, { lastDate: string | null; total: number }>>({});
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "due">("all");
   const [offices, setOffices] = useState<any[]>([]);
   const [editFarmerOpen, setEditFarmerOpen] = useState(false);
   const [editFarmerForm, setEditFarmerForm] = useState<any | null>(null);
@@ -220,6 +223,31 @@ export default function FarmerDetail() {
     setLandInvMap(lim);
     setLandInvoices(liDocs);
 
+    // Load payment records per invoice → map to land (for tooltip date/amount)
+    try {
+      const invIds = invRows.map((r: any) => r.id).filter(Boolean);
+      const invToLand: Record<string, string> = {};
+      invRows.forEach((r: any) => { if (r.id && r.land_id) invToLand[r.id] = r.land_id; });
+      if (invIds.length) {
+        const { data: pays } = await supabase
+          .from("irrigation_invoice_payments")
+          .select("invoice_id,collected_amount,created_at")
+          .in("invoice_id", invIds);
+        const pm: Record<string, { lastDate: string | null; total: number }> = {};
+        (pays ?? []).forEach((p: any) => {
+          const landId = invToLand[p.invoice_id];
+          if (!landId) return;
+          const e = pm[landId] ?? { lastDate: null, total: 0 };
+          e.total += Number(p.collected_amount || 0);
+          if (!e.lastDate || new Date(p.created_at) > new Date(e.lastDate)) e.lastDate = p.created_at;
+          pm[landId] = e;
+        });
+        setLandPayMap(pm);
+      } else {
+        setLandPayMap({});
+      }
+    } catch { setLandPayMap({}); }
+
     // Load active season + per-land rate map (for Rate/Total columns in Land tab)
     try {
       const { data: sn } = await supabase
@@ -244,6 +272,23 @@ export default function FarmerDetail() {
       }
     } catch { /* non-fatal */ }
   }
+
+  function landSeasonStatus(landId: string): { state: "none" | "paid" | "partial" | "due"; payable: number; paid: number; due: number } {
+    const rows = (landInvoices[landId] ?? []).filter(
+      (r: any) => r.invoice_status !== "cancelled" && activeSeasonId && r.season_id === activeSeasonId
+    );
+    if (!rows.length) return { state: "none", payable: 0, paid: 0, due: 0 };
+    const payable = rows.reduce((a: number, r: any) => a + Number(r.payable_amount || 0), 0);
+    const paid = rows.reduce((a: number, r: any) => a + Number(r.paid_amount || 0), 0);
+    const due = rows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
+    let state: "paid" | "partial" | "due";
+    if (due <= 0.005) state = "paid";
+    else if (paid > 0.005) state = "partial";
+    else state = "due";
+    return { state, payable, paid, due };
+  }
+
+
 
   function farmerLocationLine(fr: any): string {
     if (!fr) return "—";
@@ -971,20 +1016,28 @@ export default function FarmerDetail() {
               </div>
             )}
             {(() => {
-              const statuses = lands.map((l) => {
-                const m = landInvMap[l.id];
-                if (!m || m.count === 0) return "none";
-                return m.due > 0.005 ? "due" : "paid";
-              });
+              const statuses = lands.map((l) => landSeasonStatus(l.id).state);
               const paidCount = statuses.filter((s) => s === "paid").length;
+              const partialCount = statuses.filter((s) => s === "partial").length;
               const dueCount = statuses.filter((s) => s === "due").length;
               const noneCount = statuses.filter((s) => s === "none").length;
               return (
                 <div className="px-3 py-2 flex flex-wrap items-center gap-3 text-sm border-b">
                   <span className="font-medium">{tx("Total Lands", "মোট জমি")}: <strong>{lands.length}</strong></span>
                   <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}: {paidCount}</Badge>
+                  {partialCount > 0 && <Badge variant="default" className="bg-amber-500 hover:bg-amber-500">{tx("Partially Paid", "আংশিক পরিশোধিত")}: {partialCount}</Badge>}
                   <Badge variant="destructive">{tx("Due", "বকেয়া")}: {dueCount}</Badge>
                   {noneCount > 0 && <Badge variant="secondary">{tx("No invoice", "ইনভয়েস নেই")}: {noneCount}</Badge>}
+                  <div className="ml-auto">
+                    <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
+                      <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{tx("All", "সব")}</SelectItem>
+                        <SelectItem value="paid">{tx("Paid only", "শুধু পরিশোধিত")}</SelectItem>
+                        <SelectItem value="due">{tx("Due only", "শুধু বকেয়া")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               );
             })()}
@@ -1005,8 +1058,14 @@ export default function FarmerDetail() {
               </TableRow></TableHeader>
               <TableBody>
                 {(() => {
-                  const ownRows = lands.filter(l => l.owner_type === "owner");
-                  const borgaRows = lands.filter(l => l.owner_type !== "owner");
+                  const matchesFilter = (l: any) => {
+                    if (paymentFilter === "all") return true;
+                    const s = landSeasonStatus(l.id).state;
+                    if (paymentFilter === "paid") return s === "paid";
+                    return s === "due" || s === "partial";
+                  };
+                  const ownRows = lands.filter(l => l.owner_type === "owner" && matchesFilter(l));
+                  const borgaRows = lands.filter(l => l.owner_type !== "owner" && matchesFilter(l));
                   const renderRow = (l: any) => {
                     const matched = resolveRateForLand(rateMap, l);
                     const rate = matched ? Number(matched.rate_per_shotok) : 0;
@@ -1051,16 +1110,33 @@ export default function FarmerDetail() {
 
                         <TableCell>
                           {(() => {
-                            const rows = (landInvoices[l.id] ?? []).filter(
-                              (r: any) => r.invoice_status !== "cancelled" && activeSeasonId && r.season_id === activeSeasonId
+                            const st = landSeasonStatus(l.id);
+                            if (st.state === "none") return <span className="text-muted-foreground text-xs">—</span>;
+                            const badge =
+                              st.state === "paid"
+                                ? <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>
+                                : st.state === "partial"
+                                ? <Badge variant="default" className="bg-amber-500 hover:bg-amber-500">{tx("Partially Paid", "আংশিক পরিশোধিত")}</Badge>
+                                : <Badge variant="destructive">{tx("Due", "বকেয়া")}</Badge>;
+                            const pay = landPayMap[l.id];
+                            return (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild><span className="cursor-help">{badge}</span></TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="text-xs space-y-0.5">
+                                      <div>{tx("Payable", "প্রদেয়")}: {money(st.payable)}</div>
+                                      <div>{tx("Paid", "পরিশোধিত")}: {money(st.paid)}</div>
+                                      <div>{tx("Due", "বকেয়া")}: {money(st.due)}</div>
+                                      {pay?.lastDate && <div>{tx("Last payment", "সর্বশেষ পেমেন্ট")}: {fmtDate(pay.lastDate)}</div>}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             );
-                            if (!rows.length) return <span className="text-muted-foreground text-xs">—</span>;
-                            const seasonDue = rows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0);
-                            return seasonDue > 0.005
-                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")}</Badge>
-                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>;
                           })()}
                         </TableCell>
+
 
                         <TableCell className="text-right">
                           <EditButton onClick={() => openEdit(l)} title={t("edit")} />
