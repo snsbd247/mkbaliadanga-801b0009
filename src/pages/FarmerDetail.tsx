@@ -1064,6 +1064,21 @@ export default function FarmerDetail() {
                 </div>
               );
             })()}
+            {hiddenInvoiceCount > 0 && (
+              <div className="px-3 py-2 flex flex-wrap items-center gap-3 text-sm border-b bg-amber-50 text-amber-900">
+                <span>
+                  ⚠️ {tx(
+                    `${hiddenInvoiceCount} invoice(s) are hidden because they are assigned to another office (or no office). Their status may show as "No invoice".`,
+                    `${hiddenInvoiceCount} টি ইনভয়েস অন্য অফিসে (বা কোনো অফিস ছাড়া) থাকায় লুকানো আছে। এগুলোর স্ট্যাটাস "ইনভয়েস নেই" দেখাতে পারে।`
+                  )}
+                </span>
+                {isSuper && (
+                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs" disabled={backfilling} onClick={handleBackfillInvoiceOffice}>
+                    {backfilling ? tx("Fixing…", "ঠিক করা হচ্ছে…") : tx("Fix office assignment", "অফিস ঠিক করুন")}
+                  </Button>
+                )}
+              </div>
+            )}
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{t("pgLocation")}</TableHead>
