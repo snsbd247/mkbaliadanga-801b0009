@@ -26,6 +26,7 @@ import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seaso
 import { resolveIrrigationRate, type CategoryRateInput } from "@/lib/irrigationRateResolver";
 import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
+import { logAudit } from "@/lib/audit";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
   downloadIrrigationInvoicesBulkPdf, previewIrrigationInvoicesBulkPdf,
