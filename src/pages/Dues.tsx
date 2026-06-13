@@ -243,7 +243,7 @@ export default function Dues() {
                 const farmerTotal = filtered.filter(x => x.farmer_id === r.farmer_id).reduce((a, x) => a + x.due, 0);
                 const farmerCount = filtered.filter(x => x.farmer_id === r.farmer_id).length;
                 return (
-                  <>
+                  <Fragment key={i}>
                     {isNewFarmer && farmerCount > 1 && (
                       <TableRow key={`grp-${r.farmer_id}`} className="bg-muted/50">
                         <TableCell colSpan={9} className="font-semibold text-sm">
