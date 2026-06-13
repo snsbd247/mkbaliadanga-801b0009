@@ -83,17 +83,22 @@ export default function CombinedPayment() {
     if (!form.farmer_id) { setFarmer(null); setLoans([]); setDues(null); return; }
     (async () => {
       const [f, lq] = await Promise.all([
-        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").eq("id", form.farmer_id).maybeSingle(),
-        supabase.from("loans").select("id,principal,total_payable,issued_on,loan_payments(amount)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
+        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter").eq("id", form.farmer_id).maybeSingle(),
+        supabase.from("loans").select("id,principal,total_payable,issued_on,interest_rate,loan_plans(interest_rate,duration_months),loan_payments(amount,paid_on)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
       ]);
       setFarmer(f.data ?? null);
       const rows: LoanRow[] = (lq.data ?? []).map((l: any) => {
-        const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        const pays = l.loan_payments ?? [];
+        const paid = pays.reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        const lastPay = pays.map((p: any) => p.paid_on).filter(Boolean).sort().pop() ?? null;
         return {
           id: l.id, principal: Number(l.principal || 0),
           total_payable: Number(l.total_payable || l.principal || 0),
           issued_on: l.issued_on,
           remaining: Math.max(0, Number(l.total_payable || l.principal || 0) - paid),
+          interest_rate: Number(l.interest_rate || l.loan_plans?.interest_rate || 0),
+          duration_months: Number(l.loan_plans?.duration_months || 0),
+          last_payment_on: lastPay,
         };
       }).filter(r => r.remaining > 0);
       setLoans(rows);
@@ -102,8 +107,8 @@ export default function CombinedPayment() {
   }, [form.farmer_id]);
 
   const total = useMemo(
-    () => Number(form.savings || 0) + Number(form.share || 0) + Number(form.loan_amt || 0),
-    [form.savings, form.share, form.loan_amt],
+    () => Number(form.savings || 0) + Number(form.share || 0) + Number(form.loan_principal || 0) + Number(form.loan_interest || 0),
+    [form.savings, form.share, form.loan_principal, form.loan_interest],
   );
 
   function reset() { setForm({ ...EMPTY }); setLastReceipt(null); guard.clear(); }
