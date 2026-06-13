@@ -16,6 +16,7 @@ import { toast } from "sonner";
 type Row = {
   farmer_id: string;
   name: string;
+  father: string | null;
   code: string;
   mobile: string | null;
   source: "irrigation" | "loan";
@@ -23,6 +24,7 @@ type Row = {
   due: number;
   oldest: string;
   ageDays: number;
+  arrear: boolean;
 };
 
 function bucket(days: number) {
