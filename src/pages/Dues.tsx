@@ -134,6 +134,8 @@ export default function Dues() {
   }, [filtered]);
 
   const total = filtered.reduce((a, r) => a + r.due, 0);
+  const arrearsTotal = filtered.filter(r => r.arrear).reduce((a, r) => a + r.due, 0);
+  const halTotal = total - arrearsTotal;
 
   function copyPhones() {
     const phones = Array.from(new Set(filtered.map(r => r.mobile).filter(Boolean))).join(", ");
