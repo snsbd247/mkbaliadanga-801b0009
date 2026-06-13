@@ -329,7 +329,36 @@ export default function Cashbook() {
                 <DialogFooter><Button variant="outline" onClick={() => setOpenE(false)}>{t("cancel")}</Button><Button onClick={saveExpense}>{t("save")}</Button></DialogFooter>
               </DialogContent>
             </Dialog>
+
+            <Dialog open={openOI} onOpenChange={setOpenOI}>
+              <DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />{tx("Office income", "অফিস আয়")}</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>{tx("Office income (no farmer)", "অফিস আয় (কৃষক ছাড়া)")}</DialogTitle></DialogHeader>
+                <div className="grid gap-3">
+                  <div><Label>{tx("Category", "খাত")}</Label>
+                    <Select value={oi.kind} onValueChange={(v: any) => setOI({ ...oi, kind: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{OFFICE_INCOME_KINDS.map(k => <SelectItem key={k} value={k}>{getKindLabel(t, k)}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>{tx("Remark / description", "রিমার্ক / বিবরণ")}</Label>
+                    <Input value={oi.remark} onChange={ev => setOI({ ...oi, remark: ev.target.value })} placeholder={tx("e.g. Scrap sale, Hawlat from …", "যেমন: ভাঙারি বিক্রি, … থেকে হাওলাত")} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>{t("amount")}</Label><Input type="number" value={oi.amount || ""} onChange={ev => setOI({ ...oi, amount: +ev.target.value })} /></div>
+                    <div><Label>{t("date")}</Label><Input type="date" value={oi.receipt_date} onChange={ev => setOI({ ...oi, receipt_date: ev.target.value })} /></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{tx("Receipt uses the irrigation serial and prints A5 landscape with only the remark.", "রশিদ সেচ সিরিয়ালে হবে এবং A5 ল্যান্ডস্কেপে শুধু রিমার্ক সহ প্রিন্ট হবে।")}</p>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenOI(false)}>{t("cancel")}</Button>
+                  <Button variant="outline" onClick={() => saveOfficeIncome(false)}>{t("save")}</Button>
+                  <Button onClick={() => saveOfficeIncome(true)}><Printer className="h-4 w-4 mr-1" />{tx("Save & print", "সেভ ও প্রিন্ট")}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </>
+
         }
       />
 
