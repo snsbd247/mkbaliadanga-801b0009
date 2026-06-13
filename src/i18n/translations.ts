@@ -1744,6 +1744,7 @@ export const translations = {
     dashboard: "ড্যাশবোর্ড",
     offices: "অফিস",
     farmers: "কৃষক",
+    farmerMerge: "কৃষক একত্রীকরণ",
     lands: "জমি",
     seasons: "মৌসুম",
     savings: "সঞ্চয়",
