@@ -589,7 +589,69 @@ export default function Savings() {
             </TableBody>
           </Table></Card>
         </TabsContent>
+        {isCommittee && (
+        <TabsContent value="members">
+          <Card className="p-3 mb-3">
+            <Input className="h-9 max-w-sm" placeholder={tx("Search by name or code…", "নাম বা কোড দিয়ে খুঁজুন…")}
+              value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+          </Card>
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>{t("farmerName")}</TableHead>
+              <TableHead>{tx("Code", "কোড")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {farmers.filter((f: any) => f.is_voter).filter((f: any) => {
+                const q = memberSearch.trim().toLowerCase();
+                if (!q) return true;
+                return [f.name_en, f.name_bn, f.farmer_code, f.member_no].some((v: any) => String(v ?? "").toLowerCase().includes(q));
+              }).slice(0, 200).map((f: any) => (
+                <TableRow key={f.id}>
+                  <TableCell className="max-w-[220px]"><TruncateText>{(lang === "bn" && f.name_bn) || f.name_en}</TruncateText></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{f.farmer_code}</TableCell>
+                  <TableCell>
+                    {f.savings_inactive
+                      ? <Badge variant="destructive">{tx("Inactive", "ইনঅ্যাক্টিভ")}</Badge>
+                      : <Badge variant="default">{tx("Active", "অ্যাক্টিভ")}</Badge>}
+                  </TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button size="sm" variant="outline" onClick={() => setTransfer({ from: f, toId: "" })}>{tx("Transfer", "স্থানান্তর")}</Button>
+                    <Button size="sm" variant={f.savings_inactive ? "default" : "outline"} onClick={() => toggleSavingsActive(f)}>
+                      {f.savings_inactive ? tx("Activate", "অ্যাক্টিভ") : tx("Deactivate", "ইনঅ্যাক্টিভ")}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {farmers.filter((f: any) => f.is_voter).length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            </TableBody>
+          </Table></Card>
+        </TabsContent>
+        )}
       </Tabs>
+
+      <Dialog open={!!transfer} onOpenChange={(v) => !v && setTransfer(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{tx("Transfer Savings A/C", "সেভিং A/C স্থানান্তর")}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {tx("All savings transactions, payments and plan enrollments of", "এর সব সেভিং লেনদেন, পেমেন্ট ও প্ল্যান এনরোলমেন্ট")}{" "}
+              <b className="text-foreground">{transfer && ((lang === "bn" && transfer.from.name_bn) || transfer.from.name_en)} ({transfer?.from.farmer_code})</b>{" "}
+              {tx("will be moved to the selected member and removed from the source.", "নির্বাচিত সদস্যে নেওয়া হবে এবং উৎস থেকে বাদ যাবে।")}
+            </p>
+            <div>
+              <Label>{tx("Destination member", "গন্তব্য সদস্য")}</Label>
+              <FarmerSearchSelect value={transfer?.toId || null}
+                onChange={(id) => setTransfer(transfer ? { ...transfer, toId: id ?? "" } : null)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransfer(null)}>{t("cancel")}</Button>
+            <Button onClick={doTransfer} disabled={!transfer?.toId}>{tx("Transfer", "স্থানান্তর")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!decision} onOpenChange={(v) => !v && setDecision(null)}>
         <DialogContent>
