@@ -212,8 +212,8 @@ export default function Dues() {
           <Button variant="outline" size="sm" onClick={copyPhones}><MessageSquare className="h-4 w-4 mr-1" />{t("dues_copyPhones" as any)}</Button>
           <Button variant="outline" size="sm" onClick={exportSmsCsv}><Download className="h-4 w-4 mr-1" />{t("dues_smsList" as any)}</Button>
           <Button variant="outline" size="sm" onClick={() => exportTablePDF(t("dues_pdfTitle" as any),
-            [t("dues_colCode" as any), t("dues_colName" as any), t("dues_colMobile" as any), t("dues_colSource" as any), t("dues_colReference" as any), t("dues_colAge" as any), t("dues_colDue" as any)],
-            filtered.map(r => [r.code, r.name, r.mobile ?? "—", r.source, r.reference, `${r.ageDays}d`, money(r.due)]))}>
+            [t("dues_colCode" as any), t("dues_colName" as any), "পিতার নাম", t("dues_colMobile" as any), t("dues_colSource" as any), t("dues_colReference" as any), "ধরন", t("dues_colAge" as any), t("dues_colDue" as any)],
+            filtered.map(r => [r.code, r.name, r.father ?? "—", r.mobile ?? "—", r.source, r.reference, r.arrear ? "বকেয়া" : "হাল", `${r.ageDays}d`, money(r.due)]))}>
             <FileText className="h-4 w-4 mr-1" />{t("dues_pdf" as any)}
           </Button>
         </div>
@@ -224,9 +224,11 @@ export default function Dues() {
               <TableRow>
                 <TableHead>{t("farmerCode")}</TableHead>
                 <TableHead>{t("farmerName")}</TableHead>
+                <TableHead>পিতার নাম</TableHead>
                 <TableHead>{t("mobile")}</TableHead>
                 <TableHead>{t("dues_source" as any)}</TableHead>
                 <TableHead>{t("dues_reference" as any)}</TableHead>
+                <TableHead>ধরন</TableHead>
                 <TableHead>{t("dues_oldest" as any)}</TableHead>
                 <TableHead>{t("dues_bucket" as any)}</TableHead>
                 <TableHead className="text-right">{t("dueAmount")}</TableHead>
@@ -234,14 +236,16 @@ export default function Dues() {
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
               ) : filtered.map((r, i) => (
                 <TableRow key={i}>
                   <TableCell className="font-mono text-xs">{r.code}</TableCell>
                   <TableCell>{r.name}</TableCell>
+                  <TableCell className="text-xs">{r.father ?? "—"}</TableCell>
                   <TableCell>{r.mobile ?? "—"}</TableCell>
                   <TableCell><Badge variant="outline">{r.source === "irrigation" ? t("dues_srcIrrigation" as any) : t("dues_srcLoan" as any)}</Badge></TableCell>
                   <TableCell className="text-xs">{r.reference}</TableCell>
+                  <TableCell><Badge variant={r.arrear ? "secondary" : "outline"}>{r.arrear ? "বকেয়া" : "হাল"}</Badge></TableCell>
                   <TableCell className="text-xs">{fmtDate(r.oldest)}</TableCell>
                   <TableCell>
                     <Badge variant={r.ageDays > 90 ? "destructive" : r.ageDays > 60 ? "secondary" : "outline"}>
@@ -254,6 +258,7 @@ export default function Dues() {
             </TableBody>
           </Table>
         </div>
+
       </Card>
     </>
   );
