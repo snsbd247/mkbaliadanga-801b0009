@@ -98,6 +98,20 @@ wait_for_supabase_db() {
   die "Database did not become ready in time. Check: docker logs supabase-db"
 }
 
+wait_for_supabase_platform_schemas() {
+  local tries="${1:-90}"
+  log "Waiting for auth/storage platform schemas…"
+  for _ in $(seq 1 "$tries"); do
+    if docker exec supabase-db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" -tAc \
+      "SELECT to_regclass('auth.users') IS NOT NULL AND to_regclass('storage.objects') IS NOT NULL" 2>/dev/null | grep -q t; then
+      ok "Platform schemas are ready."
+      return 0
+    fi
+    sleep 2
+  done
+  die "Auth/storage schemas did not become ready. Check: docker logs supabase-auth supabase-storage supabase-rest"
+}
+
 ensure_supabase_core_roles() {
   log "Ensuring self-hosted database roles exist…"
   docker exec -i supabase-db psql -v ON_ERROR_STOP=1 \
