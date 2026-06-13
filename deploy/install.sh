@@ -211,6 +211,7 @@ generate_env
 start_supabase    && ok "Supabase stack up"
 run_migrations
 seed_admin
+sync_laravel
 start_app         && ok "Application + Caddy up"
 schedule_backups
 
