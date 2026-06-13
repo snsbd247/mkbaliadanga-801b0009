@@ -237,22 +237,24 @@ export default function BankAccounts() {
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
           <TabsTrigger value="deposits">Statement (জমা/উত্তোলন)</TabsTrigger>
+          <TabsTrigger value="streams">৪ একাউন্ট (স্ট্রিম)</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
               <TableHead>Bank</TableHead><TableHead>Branch</TableHead><TableHead>Account No</TableHead>
-              <TableHead>Type</TableHead><TableHead className="text-right">Opening</TableHead>
+              <TableHead>Type</TableHead><TableHead>স্ট্রিম</TableHead><TableHead className="text-right">Opening</TableHead>
               <TableHead className="text-right">Current Balance</TableHead><TableHead>Status</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {accounts.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No bank accounts yet</TableCell></TableRow>}
+              {accounts.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No bank accounts yet</TableCell></TableRow>}
               {accounts.map(ac => (
                 <TableRow key={ac.id}>
                   <TableCell className="font-medium">{ac.bank_name}</TableCell>
                   <TableCell>{ac.branch}</TableCell>
                   <TableCell className="font-mono text-xs">{ac.account_no}</TableCell>
                   <TableCell>{ac.account_type}</TableCell>
+                  <TableCell><Badge variant="outline">{streamLabel(ac.stream)}</Badge></TableCell>
                   <TableCell className="text-right">{money(ac.opening_balance)}</TableCell>
                   <TableCell className="text-right font-bold">{money(balances.get(ac.id) ?? 0)}</TableCell>
                   <TableCell><Badge variant={ac.is_active ? "default" : "outline"}>{ac.is_active ? "Active" : "Inactive"}</Badge></TableCell>
