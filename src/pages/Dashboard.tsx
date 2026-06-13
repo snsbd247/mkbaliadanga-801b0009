@@ -124,6 +124,7 @@ export default function Dashboard() {
       
       { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
       { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
+      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মোট)" : "Hand Cash (Total)", value: money(irrCashBal + savCashBal), icon: Banknote, tone: "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
