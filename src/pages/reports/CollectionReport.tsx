@@ -173,7 +173,7 @@ export default function CollectionReport() {
       // 3) Savings deposits (savings_transactions.created_by)
       let svQ: any = supabase
         .from("savings_transactions")
-        .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,farmers(name_en,farmer_code,member_no)")
+        .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,category,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .eq("type", "deposit")
         .eq("status", "approved")
@@ -185,10 +185,12 @@ export default function CollectionReport() {
       const { data: sv } = await svQ;
       for (const r of sv ?? []) {
         const fn = nameForFarmer(r.farmers);
+        const amt = Number(r.amount || 0);
+        const cat = (r as any).category as string | null;
         out.push({
           source: "savings",
           date: r.txn_date,
-          amount: Number(r.amount || 0),
+          amount: amt,
           farmer_id: r.farmer_id,
           farmer_code: fn.code,
           farmer_name: fn.name,
@@ -196,6 +198,12 @@ export default function CollectionReport() {
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
           receipt_no: (r as any).receipt_no ?? null,
+          sech: 0, jorimana: 0, hal: 0, bokeya: 0,
+          hawlat: cat === "hawlat" ? amt : 0,
+          anudan: cat === "donation" ? amt : 0,
+          rin: 0,
+          soncoy: (!cat || cat === "general") ? amt : 0,
+          bibidh: (cat === "misc" || cat === "bank") ? amt : 0,
         });
       }
 
