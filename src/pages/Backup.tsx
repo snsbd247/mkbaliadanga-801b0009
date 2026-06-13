@@ -104,7 +104,7 @@ export default function Backup() {
     setSqlResult(null);
     try {
       const sqlText = await sqlRestoreFile.text();
-      const url = `https://jcdonpeftfrnzblhtsqo.supabase.co/functions/v1/db-restore`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-restore`;
       const res = await fetch(url, {
         method: "POST",
         headers: {
