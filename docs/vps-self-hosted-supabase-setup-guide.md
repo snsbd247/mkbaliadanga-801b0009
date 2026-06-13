@@ -225,3 +225,35 @@ Run this final check before going live:
 cd /home/mkadmin/mkbaliadanga-801b0009
 sudo bash deploy/health-check.sh
 ```
+
+## Keeping the Laravel Backend In Sync (Dual Backend)
+
+This repo ships **two backends that share one PostgreSQL database**:
+
+1. **Self-hosted Supabase** — the primary backend the React app talks to. Schema
+   lives in `supabase/migrations/*.sql` and is applied by `deploy/migrate.sh`
+   during `install.sh` / `bootstrap.sh`.
+2. **Laravel API** (`backend/`) — a parallel API kept structurally in sync with
+   the same tables. Its schema lives in `backend/database/migrations/`.
+
+The migration `backend/database/migrations/2026_06_13_000002_sync_supabase_schema.php`
+mirrors every public table from Supabase (105 tables) into the Laravel schema and
+is **idempotent** — each table is guarded by `Schema::hasTable()`, so it is safe to
+run against a database that Supabase migrations already created.
+
+### Run / re-sync the Laravel backend
+
+```bash
+cd backend
+composer install --no-dev --optimize-autoloader
+cp .env.production.example .env        # set DB_* to the self-hosted Postgres
+php artisan key:generate
+php artisan migrate --force            # applies only missing tables
+php artisan db:seed --force            # roles, geo, chart of accounts, admin
+```
+
+> Because both backends point at the same database, run only **one** set of
+> structural migrations as the source of truth (Supabase via `deploy/migrate.sh`).
+> The Laravel `migrate` then becomes a no-op for existing tables and only fills
+> any gap, keeping Eloquent models (`backend/app/Models/`) aligned with the live
+> schema.
