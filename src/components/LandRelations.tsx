@@ -48,7 +48,7 @@ export function LandRelations({ farmerId }: Props) {
   async function load() {
     const [rels, ld] = await Promise.all([
       supabase.from("land_relations")
-        .select("*, lands(dag_no,mouza,land_size,mouza_id), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,member_no), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,member_no)")
+        .select("*, lands(dag_no,dag_numbers,mouza,land_size,mouza_id), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,member_no), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .or(`owner_farmer_id.eq.${farmerId},sharecropper_farmer_id.eq.${farmerId}`)
         .order("valid_from", { ascending: false }),
