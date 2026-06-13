@@ -21,6 +21,14 @@ import { useLang } from "@/i18n/LanguageProvider";
 const sb = supabase as any;
 const TXN_TYPES = ["deposit", "withdraw", "charge", "interest"] as const;
 
+const STREAMS: Array<{ value: string; label: string }> = [
+  { value: "sech", label: "সেচ (মেইন)" },
+  { value: "sech_small", label: "ছোট সেচ" },
+  { value: "saving", label: "সেভিং" },
+  { value: "other", label: "অন্যান্য" },
+];
+const streamLabel = (v?: string) => STREAMS.find(s => s.value === v)?.label ?? "অন্যান্য";
+
 export default function BankAccounts() {
   const { user } = useAuth();
   const { t } = useLang();
