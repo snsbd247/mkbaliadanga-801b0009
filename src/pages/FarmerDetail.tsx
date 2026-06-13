@@ -74,6 +74,7 @@ export default function FarmerDetail() {
   const [farmer, setFarmer] = useState<any>(null);
   const [lands, setLands] = useState<LandRow[]>([]);
   const [ownerNames, setOwnerNames] = useState<Record<string, string>>({});
+  const [landNotes, setLandNotes] = useState<Record<string, string[]>>({});
   const [savings, setSavings] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [viewLoan, setViewLoan] = useState<any | null>(null);
@@ -190,6 +191,22 @@ export default function FarmerDetail() {
       (owners ?? []).forEach((o: any) => { map[o.id] = o.name_bn || o.name_en || o.farmer_code || "—"; });
       setOwnerNames(map);
     } else setOwnerNames({});
+
+    // Per-land notes from active land relations (Phase 4 — show in lands list)
+    const landIdsForNotes = Array.from(new Set(((l.data as any) ?? []).map((x: any) => x.id).filter(Boolean)));
+    if (landIdsForNotes.length) {
+      const { data: rels } = await supabase.from("land_relations")
+        .select("land_id,note")
+        .in("land_id", landIdsForNotes as string[])
+        .is("deleted_at", null)
+        .is("valid_to", null);
+      const nmap: Record<string, string[]> = {};
+      (rels ?? []).forEach((r: any) => {
+        const txt = (r.note ?? "").trim();
+        if (txt) (nmap[r.land_id] ||= []).push(txt);
+      });
+      setLandNotes(nmap);
+    } else setLandNotes({});
 
     // Load borga lands where THIS farmer is the owner (given out to sharecroppers)
     try {
@@ -1153,7 +1170,13 @@ export default function FarmerDetail() {
                     return (
                       <TableRow key={l.id}>
                         <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
-                        <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
+                        <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link>
+                          {(landNotes[l.id]?.length) ? (
+                            <div className="text-[11px] text-muted-foreground mt-0.5 whitespace-normal max-w-[160px]" title={landNotes[l.id].join(" • ")}>
+                              📝 {landNotes[l.id].join(" • ")}
+                            </div>
+                          ) : null}
+                        </TableCell>
                         <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                         <TableCell className="text-xs">

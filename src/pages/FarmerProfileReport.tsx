@@ -50,7 +50,7 @@ export default function FarmerProfileReport() {
         supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
         supabase
           .from("irrigation_invoices")
-          .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type, patwari_id, patwaris(name,name_bn))")
+          .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, is_borga, calculation_snapshot, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type, patwari_id, patwaris(name,name_bn))")
           .eq("farmer_id", id)
           .is("deleted_at", null)
           .order("generated_at", { ascending: false }),
@@ -90,13 +90,16 @@ export default function FarmerProfileReport() {
       const ownerInformation = (ir.data ?? []).map((row: any) => {
         const relation = activeRelationByLand.get(row.land_id);
         const sc = relation?.sc;
-        const isBorga = row.lands?.owner_type === "borgadar";
+        const isBorga = !!row.is_borga || row.lands?.owner_type === "borgadar";
         const ownerTypeText = isBorga ? tx("Sharecropper", "বর্গাদার") : tx("Owner", "মালিক");
         const ownerNameFid = isBorga && sc?.name_en
           ? `${safeText(sc.name_en)} - ${safeText(sc.farmer_code)}`
           : "";
 
         const pw = row.lands?.patwaris;
+        // Phase 4: prefer the billed (split) area over the full parcel size
+        const snap = row.calculation_snapshot as any;
+        const billedArea = Number(snap?.billed_area_shotok ?? snap?.land_size_shotok ?? row.lands?.land_size ?? 0);
         return {
           id: row.id,
           mouza: safeText(row.lands?.mouza),
@@ -105,7 +108,7 @@ export default function FarmerProfileReport() {
           owner_type: ownerTypeText,
           owner_name_fid: ownerNameFid,
           patwari: pw ? safeText(pw.name_bn || pw.name) : "",
-          land_size: row.lands?.land_size !== null && row.lands?.land_size !== undefined ? Number(row.lands.land_size).toFixed(6) : "",
+          land_size: billedArea ? billedArea.toFixed(6) : "",
           field_type: fieldTypeLabel(row.lands?.field_type),
           charge_rate: String(Math.round(Number(row.irrigation_amount || 0))),
           canal_charge: String(Math.round(Number(row.canal_amount || 0))),
@@ -114,7 +117,7 @@ export default function FarmerProfileReport() {
           charge: String(Math.round(Number(row.payable_amount || 0))),
           paid: String(Math.round(Number(row.paid_amount || 0))),
           due: String(Math.round(Number(row.due_amount || 0))),
-          land_size_num: Number(row.lands?.land_size || 0),
+          land_size_num: billedArea,
           canal_num: Number(row.canal_amount || 0),
           maintenance_num: Number(row.maintenance_amount || 0),
           other_num: Number(row.other_charge || 0),
