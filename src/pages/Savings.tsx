@@ -458,6 +458,7 @@ export default function Savings() {
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
           <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
           <TabsTrigger value="plans">{t("plansTab")} {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
+          {isCommittee && <TabsTrigger value="members">{tx("Members", "সদস্য")}</TabsTrigger>}
         </TabsList>
         <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
         <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
