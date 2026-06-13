@@ -116,9 +116,11 @@ export default function CombinedPayment() {
   async function submit() {
     if (!form.farmer_id) return toast.error(lang === "bn" ? "কৃষক নির্বাচন করুন" : "Select a farmer");
     if (total <= 0) return toast.error(lang === "bn" ? "অন্তত একটি amount দিন" : "Enter at least one amount");
-    if (form.loan_amt > 0 && !form.loan_id) return toast.error(lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan");
+    if (loanAmt > 0 && !form.loan_id) return toast.error(lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan");
+    if (loanAmt > 0 && Number(form.loan_principal || 0) <= 0) return toast.error(lang === "bn" ? "আসল টাকা বাধ্যতামূলক" : "Principal amount is required");
+    if (loanAmt > 0 && !farmer?.is_voter) return toast.error(lang === "bn" ? "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে" : "Loans are only allowed for savings members");
     if (loanExceeds) return toast.error(lang === "bn" ? "ঋণের বাকির চেয়ে বেশি দেওয়া যাবে না" : "Loan repayment cannot exceed remaining balance");
-    if (Number(form.savings) < 0 || Number(form.share) < 0 || Number(form.loan_amt) < 0) return toast.error(lang === "bn" ? "ঋণাত্মক পরিমাণ অনুমোদিত নয়" : "Negative amounts are not allowed");
+    if (Number(form.savings) < 0 || Number(form.share) < 0 || Number(form.loan_principal) < 0 || Number(form.loan_interest) < 0) return toast.error(lang === "bn" ? "ঋণাত্মক পরিমাণ অনুমোদিত নয়" : "Negative amounts are not allowed");
     setSaving(true);
     try {
       const receiptNo = await nextMonthlyReceiptNo("COMBO", officeId, form.farmer_id);
