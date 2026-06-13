@@ -1,0 +1,1 @@
+ALTER FUNCTION public.tg_irrigation_invoice_recalc() SET search_path = public;
