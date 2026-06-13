@@ -140,7 +140,7 @@ export default function DemoManager() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/demo-reset`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/demo-reset`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {
