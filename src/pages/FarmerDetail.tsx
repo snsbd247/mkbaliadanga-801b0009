@@ -393,7 +393,9 @@ export default function FarmerDetail() {
       collected_amount: Number(p.amount),
       description,
       verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
-    }, copy, receiptArgs.options);
+    }, copy, (kind === "loan" || kind === "savings")
+      ? { ...receiptArgs.options, paper: "a5", orientation: "l" }
+      : receiptArgs.options);
   }
 
   function printSavings(s: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
