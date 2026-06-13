@@ -22,7 +22,7 @@ import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/expo
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
 import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
-import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
+
 
 export default function Savings() {
   const { t, lang, tx } = useLang();
