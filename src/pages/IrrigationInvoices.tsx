@@ -88,11 +88,13 @@ export default function IrrigationInvoices() {
           <TabsTrigger value="list">{tx("Invoice list", "ইনভয়েস তালিকা")}</TabsTrigger>
           <TabsTrigger value="generate">{tx("Create invoice", "ইনভয়েস তৈরি")}</TabsTrigger>
           <TabsTrigger value="settings">{tx("Settings", "সেটিংস")}</TabsTrigger>
+          <TabsTrigger value="office_income">{tx("Office income", "অফিস আয়")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list"><InvoiceListTab seasons={seasons} offices={offices} isSuper={isSuper} /></TabsContent>
         <TabsContent value="generate"><GenerateTab seasons={seasons} offices={offices} userId={user?.id} isSuper={isSuper} /></TabsContent>
         <TabsContent value="settings"><SettingsTab offices={offices} userId={user?.id} isSuper={isSuper} /></TabsContent>
+        <TabsContent value="office_income"><OfficeIncomeTab offices={offices} userId={user?.id} /></TabsContent>
       </Tabs>
       {confirmDialog}
     </>
