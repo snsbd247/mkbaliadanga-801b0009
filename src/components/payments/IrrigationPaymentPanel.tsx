@@ -26,6 +26,9 @@ type Invoice = {
   invoice_no: string;
   season_id: string;
   office_id: string | null;
+  land_id: string | null;
+  owner_farmer_id: string | null;
+  is_borga: boolean | null;
   due_date: string;
   due_amount: number;
   paid_amount: number;
@@ -36,7 +39,12 @@ type Invoice = {
   canal_amount: number;
   other_charge: number;
   seasons?: { name: string | null; year: number | null; status: string | null } | null;
+  lands?: { mouza: string | null; land_size: number | null } | null;
+  owner?: { name_bn: string | null; name_en: string | null } | null;
 };
+
+// All money values are whole-taka (round figure). Land sizes keep decimals.
+const roundTk = (n: number) => Math.round(Number(n) || 0);
 
 export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFarmerId?: string; onPaid?: () => void }) {
   const { t, tx, lang } = useLang();
@@ -73,7 +81,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const [{ data: act }, { data: invs }] = await Promise.all([
         supabase.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("irrigation_invoices")
-          .select("id,invoice_no,season_id,office_id,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,seasons(name,year,status)")
+          .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,seasons(name,year,status),lands(mouza,land_size),owner:farmers!owner_farmer_id(name_bn,name_en)")
           .eq("farmer_id", farmerId)
           .is("deleted_at", null)
           .neq("invoice_status", "cancelled")
@@ -120,6 +128,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       return s + Math.max(0, adjusted);
     }, 0);
   }, [selectedCurrentInvoices, delayFee]);
+
+  // Auto-fill the "current received" box with the rounded selected payable.
+  // Operator can still edit it manually for partial payments.
+  useEffect(() => {
+    setCurrentCollected(roundTk(currentPayable));
+  }, [currentPayable]);
 
   const previousRemainingAfter = previousDueTotal - Number(previousCollected || 0);
   const blockedByPreviousDue = previousDueTotal > 0 && previousRemainingAfter > 0 && !specialPermission;
@@ -415,7 +429,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       onPaid?.();
       // re-trigger load
       const { data: invs } = await supabase.from("irrigation_invoices")
-        .select("id,invoice_no,season_id,office_id,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,seasons(name,year,status)")
+        .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,seasons(name,year,status),lands(mouza,land_size),owner:farmers!owner_farmer_id(name_bn,name_en)")
         .eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled").gt("due_amount", 0)
         .order("due_date", { ascending: true });
       setInvoices((invs ?? []) as any);
@@ -449,9 +463,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <TableRow>
                 <TableHead className="w-8"></TableHead>
                 <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
+                <TableHead>{tx("Owner", "মালিক")}</TableHead>
+                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead className="text-right">{tx("Land", "জমি")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead className="text-right">{tx("Irrigation", "সেচ")}</TableHead>
-                <TableHead className="text-right">{tx("Delay Fee", "বিলম্ব ফি")}</TableHead>
+                <TableHead className="text-right">{tx("Delay Fee", "জরিমানা")}</TableHead>
                 <TableHead className="text-right">{tx("Maintenance", "রক্ষণাবেক্ষণ")}</TableHead>
                 <TableHead className="text-right">{tx("Canal", "ক্যানেল")}</TableHead>
                 <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
@@ -468,15 +485,20 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                     <TableRow key={inv.id} className={checked ? "bg-muted/30" : ""}>
                       <TableCell><input type="checkbox" checked={checked} onChange={() => toggleInvoice(inv.id)} /></TableCell>
                       <TableCell className="font-mono text-xs">{inv.invoice_no}</TableCell>
+                      <TableCell className="text-xs">
+                        {(inv.owner?.name_bn || inv.owner?.name_en || "—")}
+                        {inv.is_borga && <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0">{tx("Borga", "বর্গা")}</Badge>}
+                      </TableCell>
+                      <TableCell className="text-xs">{inv.lands?.mouza || "—"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{inv.lands?.land_size ?? "—"}</TableCell>
                       <TableCell className="text-xs">{inv.seasons?.name} {inv.seasons?.year}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{money(inv.irrigation_amount)}</TableCell>
                       <TableCell className="text-right">
                         <Input
-                          type="number" className="h-7 text-xs text-right w-24 ml-auto font-mono"
+                          type="number" step={1} className="h-7 text-xs text-right w-24 ml-auto font-mono"
                           value={fee}
-                          disabled={!isAdmin}
-                          title={!isAdmin ? tx("Only admin can edit delay fee", "শুধু অ্যাডমিন বিলম্ব ফি সম্পাদনা করতে পারেন") : undefined}
-                          onChange={(e) => setDelayFee(p => ({ ...p, [inv.id]: Number(e.target.value || 0) }))}
+                          title={tx("Enter delay fee / penalty", "জরিমানা লিখুন")}
+                          onChange={(e) => setDelayFee(p => ({ ...p, [inv.id]: roundTk(Number(e.target.value || 0)) }))}
                         />
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs">{money(inv.maintenance_amount)}</TableCell>
@@ -485,7 +507,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                     </TableRow>
                     {overridden && (
                       <TableRow key={inv.id + "-r"}>
-                        <TableCell colSpan={8} className="bg-amber-50/40 dark:bg-amber-950/20">
+                        <TableCell colSpan={11} className="bg-amber-50/40 dark:bg-amber-950/20">
                           <div className="flex items-center gap-2 text-xs">
                             <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
                             <span>{tx("Delay fee overridden — reason required", "বিলম্ব ফি পরিবর্তিত — কারণ আবশ্যক")}:</span>
@@ -511,9 +533,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             <div className="flex items-center gap-2">
               <Label className="text-sm">{tx("Current invoice received (বকেয়া)", "বকেয়া হতে গৃহীত")}</Label>
               <Input
-                type="number" className="w-32 font-mono"
+                type="number" step={1} className="w-32 font-mono"
                 value={currentCollected || ""}
-                onChange={(e) => setCurrentCollected(Number(e.target.value || 0))}
+                onChange={(e) => setCurrentCollected(roundTk(Number(e.target.value || 0)))}
               />
             </div>
           </div>
@@ -560,9 +582,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             <div className="flex items-center gap-2">
               <Label className="text-sm">{tx("Previous due received (পূর্বের বকেয়া হতে)", "পূর্বের বকেয়া হতে গৃহীত")}</Label>
               <Input
-                type="number" className="w-32 font-mono"
+                type="number" step={1} className="w-32 font-mono"
                 value={previousCollected || ""}
-                onChange={(e) => setPreviousCollected(Number(e.target.value || 0))}
+                onChange={(e) => setPreviousCollected(roundTk(Number(e.target.value || 0)))}
               />
             </div>
           </div>

@@ -30,7 +30,7 @@ type LoanRow = {
   interest_rate: number; duration_months: number; last_payment_on: string | null;
 };
 
-const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "" };
+const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "", receipt_no: "" };
 
 export default function CombinedPayment() {
   const { user, officeId } = useAuth();
@@ -123,7 +123,16 @@ export default function CombinedPayment() {
     if (Number(form.savings) < 0 || Number(form.share) < 0 || Number(form.loan_principal) < 0 || Number(form.loan_interest) < 0) return toast.error(lang === "bn" ? "ঋণাত্মক পরিমাণ অনুমোদিত নয়" : "Negative amounts are not allowed");
     setSaving(true);
     try {
-      const receiptNo = await nextMonthlyReceiptNo("COMBO", officeId, form.farmer_id);
+      // Use the operator-supplied receipt number if given, else auto-generate.
+      let receiptNo: string;
+      const manualNo = form.receipt_no.trim();
+      if (manualNo) {
+        const { data: dup } = await supabase.from("payments").select("id").eq("receipt_no", manualNo).is("deleted_at", null).limit(1);
+        if (dup && dup.length) { setSaving(false); return toast.error(lang === "bn" ? "এই রসিদ নম্বর আগে থেকেই আছে" : "Receipt number already exists"); }
+        receiptNo = manualNo;
+      } else {
+        receiptNo = await nextMonthlyReceiptNo("COMBO", officeId, form.farmer_id);
+      }
       const rows: { kind: string; label_bn: string; label_en: string; amount: number }[] = [];
       let verifyToken: string | null = null;
 
@@ -339,6 +348,11 @@ export default function CombinedPayment() {
                 </div>
               )}
             </div>
+          </div>
+          <div>
+            <Label>{lang === "bn" ? "রসিদ নম্বর" : "Receipt #"} <span className="text-xs text-muted-foreground">{lang === "bn" ? "(খালি রাখলে অটো)" : "(auto if blank)"}</span></Label>
+            <Input value={form.receipt_no} onChange={(e) => setForm({ ...form, receipt_no: e.target.value })}
+                   placeholder={lang === "bn" ? "যেমন: 4500" : "e.g. 4500"} />
           </div>
           <div>
             <Label>{lang === "bn" ? "মন্তব্য" : "Note"}</Label>
