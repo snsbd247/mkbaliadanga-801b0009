@@ -164,18 +164,27 @@ export default function Dues() {
     <>
       <PageHeader title={t("dues_title" as any)} description={t("dues_desc" as any)} />
 
-      <div className="grid gap-3 md:grid-cols-5 mb-4">
+      <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-7 mb-4">
         {(["0-30", "30-60", "60-90", "90+"] as const).map(k => (
           <Card key={k} className="p-4">
             <div className="text-xs uppercase text-muted-foreground">{k} {t("dues_days" as any)}</div>
             <div className="mt-1 text-xl font-bold">{money((buckets as any)[k])}</div>
           </Card>
         ))}
+        <Card className="p-4">
+          <div className="text-xs uppercase text-muted-foreground">হাল</div>
+          <div className="mt-1 text-xl font-bold">{money(halTotal)}</div>
+        </Card>
+        <Card className="p-4 bg-amber-500/5 border-amber-500/30">
+          <div className="text-xs uppercase text-amber-600">বকেয়া</div>
+          <div className="mt-1 text-xl font-bold text-amber-600">{money(arrearsTotal)}</div>
+        </Card>
         <Card className="p-4 bg-destructive/5 border-destructive/30">
           <div className="text-xs uppercase text-destructive">{t("dues_totalDue" as any)}</div>
           <div className="mt-1 text-xl font-bold text-destructive">{money(total)}</div>
         </Card>
       </div>
+
 
       <Card className="p-4">
         <div className="flex flex-wrap items-end gap-2 mb-3">
