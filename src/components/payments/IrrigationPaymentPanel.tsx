@@ -507,7 +507,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                     </TableRow>
                     {overridden && (
                       <TableRow key={inv.id + "-r"}>
-                        <TableCell colSpan={8} className="bg-amber-50/40 dark:bg-amber-950/20">
+                        <TableCell colSpan={11} className="bg-amber-50/40 dark:bg-amber-950/20">
                           <div className="flex items-center gap-2 text-xs">
                             <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
                             <span>{tx("Delay fee overridden — reason required", "বিলম্ব ফি পরিবর্তিত — কারণ আবশ্যক")}:</span>
