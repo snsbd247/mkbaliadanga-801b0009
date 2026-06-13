@@ -160,6 +160,12 @@ export default function BankAccounts() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="col-span-2"><Label>স্ট্রিম (খাত)</Label>
+                    <Select value={a.stream} onValueChange={v => setA({ ...a, stream: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{STREAMS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                   <div className="col-span-2"><Label>Opening Balance</Label><Input type="number" value={a.opening_balance || ""} onChange={e => setA({ ...a, opening_balance: +e.target.value })} /></div>
                 </div>
                 <DialogFooter><Button variant="outline" onClick={() => setOpenA(false)}>Cancel</Button><Button onClick={saveAccount}>Save</Button></DialogFooter>
