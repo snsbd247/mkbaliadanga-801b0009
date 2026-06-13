@@ -30,6 +30,16 @@ type CollectionRow = {
   user_name: string;
   ref_id: string;
   receipt_no: string | null;
+  // breakdown columns
+  sech: number;
+  jorimana: number;
+  hal: number;
+  bokeya: number;
+  hawlat: number;
+  anudan: number;
+  rin: number;
+  soncoy: number;
+  bibidh: number;
 };
 
 type ProfileLite = { id: string; full_name: string | null; email: string | null; office_id: string | null };
@@ -100,7 +110,7 @@ export default function CollectionReport() {
       // 1) Irrigation collections (from irrigation_invoice_payments)
       let irrQ: any = supabase
         .from("irrigation_invoice_payments")
-        .select("id,created_at,collected_amount,created_by,invoice_id,irrigation_invoices!inner(farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
+        .select("id,created_at,collected_amount,delay_fee_collected,maintenance_collected,canal_collected,irrigation_collected,current_invoice_collected,previous_due_collected,created_by,invoice_id,payments(receipt_no),irrigation_invoices!inner(farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
         .gt("collected_amount", 0)
         .order("created_at", { ascending: false });
       if (from) irrQ = irrQ.gte("created_at", from);
@@ -121,7 +131,12 @@ export default function CollectionReport() {
           user_id: r.created_by,
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
-          receipt_no: null,
+          receipt_no: (r as any).payments?.receipt_no ?? null,
+          sech: Number(r.irrigation_collected || 0) + Number(r.maintenance_collected || 0) + Number(r.canal_collected || 0),
+          jorimana: Number(r.delay_fee_collected || 0),
+          hal: Number(r.current_invoice_collected || 0),
+          bokeya: Number(r.previous_due_collected || 0),
+          hawlat: 0, anudan: 0, rin: 0, soncoy: 0, bibidh: 0,
         });
       }
 
@@ -150,13 +165,15 @@ export default function CollectionReport() {
           user_name: nameForUser(r.collected_by),
           ref_id: r.id,
           receipt_no: null,
+          sech: 0, jorimana: 0, hal: 0, bokeya: 0,
+          hawlat: 0, anudan: 0, rin: Number(r.amount || 0), soncoy: 0, bibidh: 0,
         });
       }
 
       // 3) Savings deposits (savings_transactions.created_by)
       let svQ: any = supabase
         .from("savings_transactions")
-        .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,farmers(name_en,farmer_code,member_no)")
+        .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,category,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .eq("type", "deposit")
         .eq("status", "approved")
@@ -168,10 +185,12 @@ export default function CollectionReport() {
       const { data: sv } = await svQ;
       for (const r of sv ?? []) {
         const fn = nameForFarmer(r.farmers);
+        const amt = Number(r.amount || 0);
+        const cat = (r as any).category as string | null;
         out.push({
           source: "savings",
           date: r.txn_date,
-          amount: Number(r.amount || 0),
+          amount: amt,
           farmer_id: r.farmer_id,
           farmer_code: fn.code,
           farmer_name: fn.name,
@@ -179,6 +198,12 @@ export default function CollectionReport() {
           user_name: nameForUser(r.created_by),
           ref_id: r.id,
           receipt_no: (r as any).receipt_no ?? null,
+          sech: 0, jorimana: 0, hal: 0, bokeya: 0,
+          hawlat: cat === "hawlat" ? amt : 0,
+          anudan: cat === "donation" ? amt : 0,
+          rin: 0,
+          soncoy: (!cat || cat === "general") ? amt : 0,
+          bibidh: (cat === "misc" || cat === "bank") ? amt : 0,
         });
       }
 
@@ -315,14 +340,10 @@ export default function CollectionReport() {
             onPdf={() =>
               exportTablePDF(
                 `Collection Report${filterSuffix()}`,
-                ["Date", "Receipt #", "Type", "Farmer", "Amount", "Created By"],
+                ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Loan", "Savings", "Misc", "Total", "User"],
                 rows.map((r) => [
-                  fmtDate(r.date),
-                  r.receipt_no ?? "—",
-                  sourceLabel(r.source),
-                  `${r.farmer_code} — ${r.farmer_name}`,
-                  r.amount,
-                  r.user_name,
+                  fmtDate(r.date), r.receipt_no ?? "—", `${r.farmer_code} — ${r.farmer_name}`,
+                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.rin, r.soncoy, r.bibidh, r.amount, r.user_name,
                 ]),
               )
             }
@@ -333,11 +354,12 @@ export default function CollectionReport() {
                 rows.map((r) => ({
                   Date: r.date,
                   "Receipt #": r.receipt_no ?? "",
-                  Type: sourceLabel(r.source),
                   "Farmer ID": r.farmer_code,
                   "Farmer Name": r.farmer_name,
-                  Amount: r.amount,
-                  "Created By": r.user_name,
+                  "সেচ": r.sech, "জরিমানা": r.jorimana, "হাল": r.hal, "বকেয়া": r.bokeya,
+                  "হাওলাত": r.hawlat, "অনুদান": r.anudan, "ঋণ": r.rin, "সঞ্চয়": r.soncoy, "বিবিধ": r.bibidh,
+                  "মোট": r.amount,
+                  "User": r.user_name,
                 })),
               )
             }
@@ -348,9 +370,17 @@ export default function CollectionReport() {
                 <TableRow>
                   <TableHead>{t("date")}</TableHead>
                   <TableHead>{t("receiptHash")}</TableHead>
-                  <TableHead>{t("typeCol")}</TableHead>
                   <TableHead>{t("farmer")}</TableHead>
-                  <TableHead className="text-right">{t("amount")}</TableHead>
+                  <TableHead className="text-right">সেচ</TableHead>
+                  <TableHead className="text-right">জরিমানা</TableHead>
+                  <TableHead className="text-right">হাল</TableHead>
+                  <TableHead className="text-right">বকেয়া</TableHead>
+                  <TableHead className="text-right">হাওলাত</TableHead>
+                  <TableHead className="text-right">অনুদান</TableHead>
+                  <TableHead className="text-right">ঋণ</TableHead>
+                  <TableHead className="text-right">সঞ্চয়</TableHead>
+                  <TableHead className="text-right">বিবিধ</TableHead>
+                  <TableHead className="text-right">মোট</TableHead>
                   <TableHead>{t("createdBy")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -359,20 +389,29 @@ export default function CollectionReport() {
                   <TableRow key={`${r.source}-${r.ref_id}`}>
                     <TableCell>{fmtDate(r.date)}</TableCell>
                     <TableCell className="font-mono text-xs">{r.receipt_no ?? "—"}</TableCell>
-                    <TableCell>{sourceLabel(r.source)}</TableCell>
-                    <TableCell>{r.farmer_code} — {r.farmer_name}</TableCell>
-                    <TableCell className="text-right">{money(r.amount)}</TableCell>
-                    <TableCell>{r.user_name}</TableCell>
+                    <TableCell className="text-xs">{r.farmer_code} — {r.farmer_name}</TableCell>
+                    <TableCell className="text-right">{r.sech ? money(r.sech) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.jorimana ? money(r.jorimana) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.hal ? money(r.hal) : "—"}</TableCell>
+                    <TableCell className="text-right text-amber-600">{r.bokeya ? money(r.bokeya) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.hawlat ? money(r.hawlat) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.anudan ? money(r.anudan) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.rin ? money(r.rin) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.soncoy ? money(r.soncoy) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.bibidh ? money(r.bibidh) : "—"}</TableCell>
+                    <TableCell className="text-right font-semibold">{money(r.amount)}</TableCell>
+                    <TableCell className="text-xs">{r.user_name}</TableCell>
                   </TableRow>
                 ))}
                 {rows.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={14} className="text-center text-muted-foreground py-6">
                       {t("noCollectionsFiltered")}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
+
             </Table>
           </Card>
         </TabsContent>
