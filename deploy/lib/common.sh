@@ -50,12 +50,10 @@ step() { # step <name> <description> <command...>
 quote_env_values_with_spaces() {
   local file="${1:-$ENV_FILE}"
   [[ -f "$file" ]] || return 0
-  # Old generated env files may contain unquoted values like MK Baliadanga.
-  # Quote the known human-readable fields before any script sources the file.
-  local k
-  for k in STUDIO_DEFAULT_ORGANIZATION STUDIO_DEFAULT_PROJECT SMTP_SENDER_NAME; do
-    sed -i -E "s|^($k)=([^\"'].*[[:space:]].*)$|\1=\"\2\"|" "$file"
-  done
+  # Old generated env files may contain unquoted values like MK Baliadanga,
+  # which break `source`/`. file` with "command not found". Quote ANY KEY=VALUE
+  # line whose value is unquoted and contains whitespace.
+  sed -i -E "s|^([A-Za-z_][A-Za-z0-9_]*)=([^\"'#[:space:]][^\"'#]*[[:space:]][^\"'#]*)$|\1=\"\2\"|" "$file"
 }
 
 load_env() {
