@@ -85,6 +85,9 @@ The installer is **safe to re-run**. Completed steps are tracked in
 ## 4. Common operations
 
 ```bash
+# Enter the repo first if needed
+cd /home/mkadmin/mkbaliadanga-801b0009
+
 # Health check
 sudo bash deploy/health-check.sh
 
@@ -97,6 +100,14 @@ sudo bash deploy/restore.sh /opt/mkbaliadanga-backups/20260613-020000
 
 # Update to newest code + images
 sudo bash deploy/update.sh
+
+# Run/re-run database migrations only
+sudo bash deploy/migrate.sh
+
+# Export from a source backend before VPS restore
+export SUPABASE_URL="https://supabase.mohammadkhani.com"
+export CRON_SECRET="<configured-export-secret>"
+sudo bash scripts/restore-vps.sh --mode full
 
 # Tail logs
 tail -f /var/log/mkbaliadanga/deploy.log
