@@ -14,6 +14,8 @@ ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
 COPY package.json package-lock.json* bun.lockb* ./
 RUN npm install
 COPY . .
+# Remove committed Cloud dotenv files so only the self-hosted build args apply.
+RUN rm -f .env .env.local .env.production .env.development .env.production.local
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
