@@ -364,6 +364,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const totalDelay = sorted.reduce((s, inv) => s + (delayFee[inv.id] ?? Number(inv.delay_fee || 0)), 0);
       const totalMaint = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
       const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
+      const receiptMouza = sorted.find((inv: any) => inv.lands?.mouza)?.lands?.mouza ?? null;
+      const receiptLandSize = sorted.reduce((s, inv: any) => s + Number(inv.lands?.land_size || 0), 0) || null;
 
       // Receipt — never blocks payment; failure → retry queue
       const receiptResult = await safeWithRetry(
