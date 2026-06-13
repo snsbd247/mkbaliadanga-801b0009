@@ -268,7 +268,7 @@ export default function CombinedPayment() {
             <Label>{lang === "bn" ? "কৃষক" : "Farmer"} *</Label>
             <FarmerSearchSelect
               value={form.farmer_id}
-              onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_amt: 0 })}
+              onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_principal: 0, loan_interest: 0 })}
             />
           </div>
           {form.farmer_id && dues && (
