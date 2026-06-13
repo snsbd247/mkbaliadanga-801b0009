@@ -679,6 +679,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
 function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const { tx } = useLang();
+  const { user } = useAuth();
   const [dueDate, setDueDate] = useState("");
   const [otherCharge, setOtherCharge] = useState("0");
   const [delayFee, setDelayFee] = useState("0");
