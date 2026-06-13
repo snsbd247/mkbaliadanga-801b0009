@@ -350,6 +350,11 @@ export default function CombinedPayment() {
             </div>
           </div>
           <div>
+            <Label>{lang === "bn" ? "রসিদ নম্বর" : "Receipt #"} <span className="text-xs text-muted-foreground">{lang === "bn" ? "(খালি রাখলে অটো)" : "(auto if blank)"}</span></Label>
+            <Input value={form.receipt_no} onChange={(e) => setForm({ ...form, receipt_no: e.target.value })}
+                   placeholder={lang === "bn" ? "যেমন: 4500" : "e.g. 4500"} />
+          </div>
+          <div>
             <Label>{lang === "bn" ? "মন্তব্য" : "Note"}</Label>
             <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
           </div>
