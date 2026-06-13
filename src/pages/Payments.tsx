@@ -73,6 +73,104 @@ export default function Payments() {
   });
   const [pendingAutoId, setPendingAutoId] = useState<string | null>(null);
 
+  // Admin: edit an irrigation receipt after payment (mouza, owner, land size, delay fee, amount)
+  const [editOpen, setEditOpen] = useState(false);
+  const [editPayment, setEditPayment] = useState<any>(null);
+  const [editInvoiceId, setEditInvoiceId] = useState<string | null>(null);
+  const [editLandId, setEditLandId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, reason: "" });
+  const [editLoading, setEditLoading] = useState(false);
+
+  async function openEditReceipt(p: any) {
+    setEditPayment(p);
+    setEditOpen(true);
+    setEditLoading(true);
+    const irrAlloc = (p.payment_allocations ?? []).find((a: any) => a.kind === "irrigation" && a.reference_id)
+      ?? (p.kind === "irrigation" && p.reference_id ? { reference_id: p.reference_id, amount: p.amount } : null);
+    const invId = irrAlloc?.reference_id ?? null;
+    setEditInvoiceId(invId);
+    let mouza = "", land_size = 0, owner = "", delay = 0, landId: string | null = null;
+    if (invId) {
+      const { data: inv } = await supabase.from("irrigation_invoices")
+        .select("land_id,owner_farmer_id,delay_fee,lands(mouza,land_size)").eq("id", invId).maybeSingle();
+      if (inv) {
+        landId = (inv as any).land_id ?? null;
+        owner = (inv as any).owner_farmer_id ?? "";
+        delay = Number((inv as any).delay_fee || 0);
+        mouza = (inv as any).lands?.mouza ?? "";
+        land_size = Number((inv as any).lands?.land_size || 0);
+      }
+    }
+    setEditLandId(landId);
+    setEditForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(p.amount || 0), reason: "" });
+    setEditLoading(false);
+  }
+
+  async function saveEditReceipt() {
+    if (!editPayment) return;
+    if (!editForm.reason.trim()) return toast.error(tx("Reason is required", "কারণ আবশ্যক"));
+    const p = editPayment;
+    const before: any = {};
+    const after: any = {};
+    // 1) Land fields (mouza, land size)
+    if (editLandId) {
+      const { data: land } = await supabase.from("lands").select("mouza,land_size").eq("id", editLandId).maybeSingle();
+      const newMouza = editForm.mouza.trim();
+      const newSize = Number(editForm.land_size) || 0;
+      if (land && (land.mouza !== newMouza || Number(land.land_size || 0) !== newSize)) {
+        before.land = { mouza: land.mouza, land_size: land.land_size };
+        after.land = { mouza: newMouza, land_size: newSize };
+        await supabase.from("lands").update({ mouza: newMouza, land_size: newSize } as any).eq("id", editLandId);
+      }
+    }
+    // 2) Invoice: owner + delay fee (recompute payable/due)
+    if (editInvoiceId) {
+      const { data: inv } = await supabase.from("irrigation_invoices")
+        .select("owner_farmer_id,delay_fee,payable_amount,due_amount,paid_amount").eq("id", editInvoiceId).maybeSingle();
+      if (inv) {
+        const oldFee = Number((inv as any).delay_fee || 0);
+        const newFee = Math.round(Number(editForm.delay_fee) || 0);
+        const newOwner = editForm.owner_farmer_id || null;
+        const patch: any = {};
+        if ((inv as any).owner_farmer_id !== newOwner) { before.owner = (inv as any).owner_farmer_id; after.owner = newOwner; patch.owner_farmer_id = newOwner; }
+        if (oldFee !== newFee) {
+          before.delay_fee = oldFee; after.delay_fee = newFee;
+          patch.delay_fee = newFee;
+          patch.payable_amount = Number((inv as any).payable_amount || 0) + (newFee - oldFee);
+          patch.due_amount = Math.max(0, Number((inv as any).due_amount || 0) + (newFee - oldFee));
+        }
+        if (Object.keys(patch).length) await supabase.from("irrigation_invoices").update(patch).eq("id", editInvoiceId);
+      }
+    }
+    // 3) Payment amount adjustment (reflect in invoice paid_amount + allocation row)
+    const newAmount = Math.round(Number(editForm.amount) || 0);
+    if (newAmount !== Number(p.amount || 0)) {
+      before.amount = Number(p.amount || 0); after.amount = newAmount;
+      const diff = newAmount - Number(p.amount || 0);
+      await supabase.from("payments").update({ amount: newAmount } as any).eq("id", p.id);
+      if (editInvoiceId) {
+        const { data: inv2 } = await supabase.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", editInvoiceId).maybeSingle();
+        if (inv2) {
+          const newPaid = Math.max(0, Number((inv2 as any).paid_amount || 0) + diff);
+          const newStatus = newPaid <= 0 ? "unpaid" : newPaid >= Number((inv2 as any).payable_amount || 0) ? "paid" : "partial";
+          await supabase.from("irrigation_invoices").update({ paid_amount: newPaid, invoice_status: newStatus } as any).eq("id", editInvoiceId);
+        }
+        const { data: iip } = await supabase.from("irrigation_invoice_payments").select("id,collected_amount").eq("payment_id", p.id).eq("invoice_id", editInvoiceId).maybeSingle();
+        if (iip) await supabase.from("irrigation_invoice_payments").update({ collected_amount: Math.max(0, Number((iip as any).collected_amount || 0) + diff), irrigation_collected: Math.max(0, Number((iip as any).collected_amount || 0) + diff) } as any).eq("id", (iip as any).id);
+      }
+      const { data: pa } = await supabase.from("payment_allocations").select("id").eq("payment_id", p.id).eq("kind", "irrigation").maybeSingle();
+      if (pa) await supabase.from("payment_allocations").update({ amount: newAmount } as any).eq("id", (pa as any).id);
+    }
+    await supabase.from("audit_logs").insert({
+      user_id: user?.id, action: "edit", entity: "payments", entity_id: p.id, office_id: p.office_id ?? null,
+      old_values: before, new_values: { ...after, reason: editForm.reason.trim() }, meta: { receipt_no: p.receipt_no },
+    } as any);
+    toast.success(tx("Receipt updated", "রসিদ হালনাগাদ হয়েছে"));
+    setEditOpen(false); setEditPayment(null);
+    load();
+  }
+
+
   async function loadSavingsBalance(fid: string) {
     const { data } = await supabase
       .from("savings_transactions")
