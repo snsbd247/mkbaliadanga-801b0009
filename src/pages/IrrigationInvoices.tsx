@@ -19,7 +19,7 @@ import { money, fmtDate } from "@/lib/format";
 import { formatLandSize } from "@/lib/irrigationCalc";
 import { matchesDagSearch, formatDagNumbers } from "@/lib/dagNumbers";
 import {
-  calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer,
+  calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer, resolveBillingSplits,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
@@ -1030,16 +1030,26 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           categoryRate: categoryInput ?? undefined,
         });
         if (!(resolved.rate > 0)) { noRate++; continue; }
-        const billed = await resolveBilledFarmer(l.id, dueDate);
-        const calc = calcInvoice({
-          land_size_shotok: Number(l.land_size),
-          rate_per_shotok: resolved.rate,
-          settings,
-          due_date: dueDate,
-          as_of: new Date().toISOString().slice(0, 10),
-        });
-        previewArr.push({ land: l, billed, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
+        // Phase 4: split billable area between owner and active sharecroppers
+        const splits = await resolveBillingSplits(l.id, dueDate);
+        for (const split of splits) {
+          const billedArea = split.billed_area > 0 ? split.billed_area : Number(l.land_size);
+          const calc = calcInvoice({
+            land_size_shotok: billedArea,
+            rate_per_shotok: resolved.rate,
+            settings,
+            due_date: dueDate,
+            as_of: new Date().toISOString().slice(0, 10),
+          });
+          const billed = {
+            billed_farmer_id: split.billed_farmer_id,
+            owner_farmer_id: split.owner_farmer_id,
+            is_borga: split.is_borga,
+          };
+          previewArr.push({ land: l, billed, billedArea, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
+        }
       }
+
       setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
       setSkippedNoRate(noRate);
       // Fetch previous outstanding for the farmers in this preview
@@ -1077,11 +1087,12 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           let appliedRate = row.rate;
           let source: string = row.resolved?.source ?? "STANDARD";
           let calc = row.calc;
+          const billedArea = row.billedArea > 0 ? row.billedArea : Number(row.land.land_size);
           if (hasManual) {
             appliedRate = manualRateNum;
             source = "MANUAL";
             calc = calcInvoice({
-              land_size_shotok: Number(row.land.land_size),
+              land_size_shotok: billedArea,
               rate_per_shotok: appliedRate,
               settings: row.settings,
               due_date: dueDate,
@@ -1121,7 +1132,10 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             override_reason: hasManual ? row.manualReason.trim() : null,
             calculation_snapshot: {
               rate_per_shotok: appliedRate,
-              land_size_shotok: Number(row.land.land_size),
+              land_size_shotok: billedArea,
+              parcel_size_shotok: Number(row.land.land_size),
+              billed_area_shotok: billedArea,
+              is_borga_split: !!row.billed.is_borga,
               land_type_code: row.rateRow?.land_type_code ?? row.land.field_type ?? null,
               land_type_name: row.rateRow?.land_type_name ?? null,
               settings: row.settings,
@@ -1268,8 +1282,9 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                     const src = r.resolved?.source ?? "STANDARD";
                     return (
                       <TableRow key={i}>
-                        <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
+                        <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.billedArea > 0 ? r.billedArea : r.land.land_size, "short")}{r.billedArea > 0 && r.billedArea !== Number(r.land.land_size) ? ` / ${formatLandSize(r.land.land_size, "short")}` : ""}</TableCell>
                         <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
+
                         <TableCell>
                           {Number(r.manualRate) > 0 && r.manualReason?.trim()
                             ? <Badge variant="outline" className="text-xs">{tx("Manual", "ম্যানুয়াল")}</Badge>

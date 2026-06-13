@@ -120,6 +120,39 @@ export async function resolveBilledFarmer(land_id: string, as_of: string = new D
   };
 }
 
+export interface BillingSplit {
+  billed_farmer_id: string;
+  owner_farmer_id: string;
+  is_borga: boolean;
+  billed_area: number;
+}
+
+/**
+ * Split a land's billable area between owner and active sharecroppers (Phase 4).
+ * Sharecroppers are billed for their borga area; the owner is billed for the remainder.
+ * Falls back to a single owner/sharecropper row if the RPC returns nothing.
+ */
+export async function resolveBillingSplits(
+  land_id: string,
+  as_of: string = new Date().toISOString().slice(0, 10),
+): Promise<BillingSplit[]> {
+  const { data, error } = await supabase.rpc("get_land_billing_split" as any, { _land_id: land_id, _as_of: as_of });
+  if (error) throw error;
+  const rows = (Array.isArray(data) ? data : []) as any[];
+  const splits = rows
+    .map((r) => ({
+      billed_farmer_id: r.farmer_id as string,
+      owner_farmer_id: r.owner_farmer_id as string,
+      is_borga: !!r.is_borga,
+      billed_area: Number(r.billed_area) || 0,
+    }))
+    .filter((s) => s.billed_farmer_id && s.billed_area > 0);
+  if (splits.length) return splits;
+  const fallback = await resolveBilledFarmer(land_id, as_of);
+  return [{ ...fallback, billed_area: 0 }];
+}
+
+
 export async function getChargeSettings(office_id: string | null): Promise<ChargeSettings> {
   if (!office_id) return DEFAULT_SETTINGS;
   const { data } = await supabase

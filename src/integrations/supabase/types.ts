@@ -5880,6 +5880,15 @@ export type Database = {
           owner_farmer_id: string
         }[]
       }
+      get_land_billing_split: {
+        Args: { _as_of?: string; _land_id: string }
+        Returns: {
+          billed_area: number
+          farmer_id: string
+          is_borga: boolean
+          owner_farmer_id: string
+        }[]
+      }
       get_previous_due: {
         Args: { _exclude_season: string; _farmer: string; _land: string }
         Returns: number
