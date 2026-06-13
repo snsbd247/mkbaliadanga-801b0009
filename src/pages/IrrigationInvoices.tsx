@@ -40,6 +40,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Link } from "react-router-dom";
+import { OfficeIncomeTab } from "@/pages/irrigation/OfficeIncomeTab";
 
 type Invoice = any;
 
