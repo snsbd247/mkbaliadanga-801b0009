@@ -28,6 +28,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGPORT: ${POSTGRES_PORT:-5432}
       JWT_SECRET: ${JWT_SECRET}
     volumes:
       - supabase-db-data:/var/lib/postgresql/data
@@ -36,7 +39,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 30s
     networks: [mk_net]
 
   # ---------------------------------------------------------------- Kong (API gateway)

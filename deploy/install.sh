@@ -114,11 +114,7 @@ generate_env() {
     cp "$DEPLOY_DIR/.env.example" "$ENV_FILE"
     ok "Created $ENV_FILE from template."
   fi
-  # Repair any unquoted values containing spaces (e.g. "MK Baliadanga"),
-  # which break `. .env.production` sourcing. Quote known multi-word keys.
-  for k in STUDIO_DEFAULT_ORGANIZATION STUDIO_DEFAULT_PROJECT SMTP_SENDER_NAME; do
-    sed -i -E "s|^($k)=([^\"'].*[[:space:]].*)$|\1=\"\2\"|" "$ENV_FILE"
-  done
+  quote_env_values_with_spaces "$ENV_FILE"
   load_env
 
 
@@ -165,6 +161,9 @@ start_supabase() {
   if [[ -d "$ROOT_DIR/supabase/functions" ]]; then
     rsync -a "$ROOT_DIR/supabase/functions/" "$DEPLOY_DIR/supabase/functions/" 2>/dev/null || true
   fi
+  docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supabase-db
+  wait_for_supabase_db
+  ensure_supabase_core_roles
   docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d
 }
 

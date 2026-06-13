@@ -47,7 +47,25 @@ step() { # step <name> <description> <command...>
 }
 
 # ---- .env helpers -----------------------------------------------------------
-load_env() { [[ -f "$ENV_FILE" ]] && set -a && . "$ENV_FILE" && set +a || true; }
+quote_env_values_with_spaces() {
+  local file="${1:-$ENV_FILE}"
+  [[ -f "$file" ]] || return 0
+  # Old generated env files may contain unquoted values like MK Baliadanga.
+  # Quote the known human-readable fields before any script sources the file.
+  local k
+  for k in STUDIO_DEFAULT_ORGANIZATION STUDIO_DEFAULT_PROJECT SMTP_SENDER_NAME; do
+    sed -i -E "s|^($k)=([^\"'].*[[:space:]].*)$|\1=\"\2\"|" "$file"
+  done
+}
+
+load_env() {
+  if [[ -f "$ENV_FILE" ]]; then
+    quote_env_values_with_spaces "$ENV_FILE"
+    set -a
+    . "$ENV_FILE"
+    set +a
+  fi
+}
 gen_secret() { openssl rand -hex "${1:-32}"; }
 gen_password() { openssl rand -base64 24 | tr -d '/+=' | head -c 24; }
 
@@ -64,4 +82,74 @@ make_jwt() {
   sig=$(printf '%s.%s' "$header" "$payload" \
         | openssl dgst -binary -sha256 -hmac "$secret" | b64url)
   printf '%s.%s.%s' "$header" "$payload" "$sig"
+}
+
+# ---- Self-hosted Supabase DB bootstrap --------------------------------------
+wait_for_supabase_db() {
+  local tries="${1:-90}"
+  log "Waiting for supabase-db…"
+  for _ in $(seq 1 "$tries"); do
+    if docker exec supabase-db pg_isready -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" >/dev/null 2>&1; then
+      ok "Database is ready."
+      return 0
+    fi
+    sleep 2
+  done
+  die "Database did not become ready in time. Check: docker logs supabase-db"
+}
+
+ensure_supabase_core_roles() {
+  log "Ensuring self-hosted database roles exist…"
+  docker exec -i supabase-db psql -v ON_ERROR_STOP=1 \
+    -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" \
+    -v db="${POSTGRES_DB:-postgres}" -v pgpass="${POSTGRES_PASSWORD}" <<'SQL'
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    CREATE ROLE anon NOLOGIN NOINHERIT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    CREATE ROLE authenticated NOLOGIN NOINHERIT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE ROLE service_role NOLOGIN NOINHERIT BYPASSRLS;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
+    CREATE ROLE authenticator LOGIN NOINHERIT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin') THEN
+    CREATE ROLE supabase_admin LOGIN CREATEROLE CREATEDB REPLICATION BYPASSRLS;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN
+    CREATE ROLE supabase_auth_admin LOGIN NOINHERIT CREATEROLE BYPASSRLS;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_storage_admin') THEN
+    CREATE ROLE supabase_storage_admin LOGIN NOINHERIT CREATEROLE BYPASSRLS;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_functions_admin') THEN
+    CREATE ROLE supabase_functions_admin LOGIN NOINHERIT CREATEROLE BYPASSRLS;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_realtime_admin') THEN
+    CREATE ROLE supabase_realtime_admin LOGIN NOINHERIT CREATEROLE BYPASSRLS;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pgbouncer') THEN
+    CREATE ROLE pgbouncer LOGIN NOINHERIT;
+  END IF;
+END$$;
+
+ALTER ROLE service_role BYPASSRLS;
+ALTER ROLE authenticator WITH LOGIN NOINHERIT PASSWORD :'pgpass';
+ALTER ROLE supabase_admin WITH LOGIN CREATEROLE CREATEDB REPLICATION BYPASSRLS PASSWORD :'pgpass';
+ALTER ROLE supabase_auth_admin WITH LOGIN NOINHERIT CREATEROLE BYPASSRLS PASSWORD :'pgpass';
+ALTER ROLE supabase_storage_admin WITH LOGIN NOINHERIT CREATEROLE BYPASSRLS PASSWORD :'pgpass';
+ALTER ROLE supabase_functions_admin WITH LOGIN NOINHERIT CREATEROLE BYPASSRLS PASSWORD :'pgpass';
+ALTER ROLE supabase_realtime_admin WITH LOGIN NOINHERIT CREATEROLE BYPASSRLS PASSWORD :'pgpass';
+ALTER ROLE pgbouncer WITH LOGIN NOINHERIT PASSWORD :'pgpass';
+
+GRANT anon, authenticated, service_role TO authenticator;
+GRANT ALL PRIVILEGES ON DATABASE :"db" TO supabase_admin;
+GRANT CREATE ON DATABASE :"db" TO supabase_auth_admin, supabase_storage_admin, supabase_functions_admin, supabase_realtime_admin;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+SQL
+  ok "Self-hosted database roles are ready."
 }
