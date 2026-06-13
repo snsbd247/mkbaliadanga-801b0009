@@ -15,16 +15,6 @@ SEED_FILE="$ROOT_DIR/supabase/seed.sql"
 
 psql_db() { docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" "$@"; }
 
-wait_for_db() {
-  log "Waiting for supabase-db…"
-  for _ in $(seq 1 60); do
-    if docker exec supabase-db pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" >/dev/null 2>&1; then
-      ok "Database is ready."; return 0
-    fi; sleep 2
-  done
-  die "Database did not become ready in time."
-}
-
 sync_migrations() {
   mkdir -p "$LOCAL_MIGRATIONS"
   if [[ -d "$REPO_MIGRATIONS" ]]; then
@@ -48,19 +38,11 @@ SQL
 
 configure_runtime_settings() {
   log "Configuring environment-specific database runtime settings…"
-  # Ensure the PostgREST 'authenticator' role exists before altering it.
-  # On a freshly-initialised self-hosted Supabase the bundled roles are created
-  # by the image's init scripts, but guard here so re-runs/edge cases never fail.
-  psql_db -q -v db="${POSTGRES_DB}" -v supabase_url="${VITE_SUPABASE_URL}" -v anon_key="${ANON_KEY}" <<'SQL'
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
-    CREATE ROLE authenticator NOINHERIT LOGIN;
-  END IF;
-END$$;
-
+  psql_db -q -v db="${POSTGRES_DB}" -v supabase_url="${VITE_SUPABASE_URL}" -v anon_key="${ANON_KEY}" -v jwt_secret="${JWT_SECRET}" <<'SQL'
 ALTER DATABASE :"db" SET app.supabase_url = :'supabase_url';
 ALTER DATABASE :"db" SET app.supabase_anon_key = :'anon_key';
+ALTER DATABASE :"db" SET app.settings.jwt_secret = :'jwt_secret';
+ALTER DATABASE :"db" SET app.settings.jwt_exp = '3600';
 ALTER ROLE authenticator IN DATABASE :"db" SET app.supabase_url = :'supabase_url';
 ALTER ROLE authenticator IN DATABASE :"db" SET app.supabase_anon_key = :'anon_key';
 SQL
@@ -97,7 +79,10 @@ apply_seed() {
 }
 
 main() {
-  wait_for_db
+  wait_for_supabase_db
+  ensure_supabase_core_roles
+  ( cd "$DEPLOY_DIR" && docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supabase-auth supabase-rest supabase-storage >/dev/null )
+  wait_for_supabase_platform_schemas
   sync_migrations
   ensure_tracking
   configure_runtime_settings

@@ -29,7 +29,8 @@ load_env
 # Ensure DB container is up
 cd "$DEPLOY_DIR"
 docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supabase-db
-log "Waiting for DB…"; for _ in $(seq 1 60); do docker exec supabase-db pg_isready -U "${POSTGRES_USER}" >/dev/null 2>&1 && break; sleep 2; done
+wait_for_supabase_db
+ensure_supabase_core_roles
 
 # 2) PostgreSQL
 if [[ -f "$SRC/postgres-all.sql.gz" ]]; then
@@ -46,5 +47,6 @@ fi
 
 # Bring everything back up
 docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d
+wait_for_supabase_platform_schemas
 docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d
 ok "Restore complete. Run health-check.sh to verify."

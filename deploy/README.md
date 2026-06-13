@@ -36,13 +36,18 @@ SSL is issued automatically by Caddy (Let's Encrypt) once DNS resolves.
 ## 2. One-command install
 
 ```bash
-git clone https://github.com/snsbd247/mkbaliadanga-801b0009.git
-cd mkbaliadanga-801b0009/deploy
-sudo bash install.sh
+curl -fsSL https://raw.githubusercontent.com/snsbd247/mkbaliadanga-801b0009/main/deploy/bootstrap.sh | sudo bash
 ```
 
 The installer is **safe to re-run**. Completed steps are tracked in
 `/var/lib/mkbaliadanga/` and skipped on subsequent runs.
+
+If the repository is already cloned on the VPS, run it from the deploy folder:
+
+```bash
+cd /opt/mkbaliadanga/deploy
+sudo bash install.sh
+```
 
 ### What `install.sh` does
 1. Analyzes the repo (Vite, React, TypeScript, Supabase client, Edge Functions, env).

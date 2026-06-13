@@ -26,7 +26,11 @@ fi
 # 3) Update Supabase stack (pull newer images if any)
 cd "$DEPLOY_DIR"
 docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml pull || true
+docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supabase-db
+wait_for_supabase_db
+ensure_supabase_core_roles
 docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d
+wait_for_supabase_platform_schemas
 
 # 4) Apply any new migrations
 bash "$DEPLOY_DIR/migrate.sh"
