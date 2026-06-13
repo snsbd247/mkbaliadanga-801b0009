@@ -9,7 +9,7 @@
 #   ./scripts/restore-vps.sh [--mode data|schema|full] [--file backup.sql]
 #
 # Required env vars (or pass on command line):
-#   SUPABASE_URL      e.g. https://jcdonpeftfrnzblhtsqo.supabase.co
+#   SUPABASE_URL      source backend URL, e.g. https://supabase.yourdomain.com
 #   CRON_SECRET       same value stored as Edge Function secret in Lovable Cloud
 #
 # Options:
@@ -31,7 +31,7 @@ CONTAINER="supabase-db"
 DB_NAME="postgres"
 DB_USER="postgres"
 NO_TRUNCATE=0
-SUPABASE_URL="${SUPABASE_URL:-https://jcdonpeftfrnzblhtsqo.supabase.co}"
+SUPABASE_URL="${SUPABASE_URL:-}"
 CRON_SECRET="${CRON_SECRET:-}"
 
 # Colors
@@ -62,6 +62,11 @@ if [[ -z "$FILE" ]]; then
   if [[ -z "$CRON_SECRET" ]]; then
     err "CRON_SECRET env var is required to download backup."
     err "Either: export CRON_SECRET=... OR pass --file backup.sql"
+    exit 1
+  fi
+  if [[ -z "$SUPABASE_URL" ]]; then
+    err "SUPABASE_URL env var is required to download backup."
+    err "Example: export SUPABASE_URL=https://supabase.yourdomain.com"
     exit 1
   fi
   if [[ ! "$MODE" =~ ^(data|schema|full)$ ]]; then

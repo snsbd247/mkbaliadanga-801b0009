@@ -53,9 +53,13 @@ BEGIN
   VALUES (trim(_mobile), _message, 'queued', _event, _farmer, _ref_type, _ref_id, _office, auth.uid())
   RETURNING id INTO v_id;
 
-  v_url := coalesce(current_setting('app.supabase_url', true), 'https://jcdonpeftfrnzblhtsqo.supabase.co');
-  v_anon := coalesce(current_setting('app.supabase_anon_key', true),
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjZG9ucGVmdGZybnpibGh0c3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NzI1MTcsImV4cCI6MjA5MzI0ODUxN30.VGQQ5DOROqKG4qat-Zriern5Kmweql62HxiaVB5vxHY');
+  -- Runtime values are injected per environment; never fall back to a fixed cloud project.
+  v_url := nullif(current_setting('app.supabase_url', true), '');
+  v_anon := nullif(current_setting('app.supabase_anon_key', true), '');
+
+  IF v_url IS NULL OR v_anon IS NULL THEN
+    RETURN v_id;
+  END IF;
 
   BEGIN
     PERFORM net.http_post(
