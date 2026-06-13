@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# =============================================================================
+# deploy/migrate.sh — import existing Supabase schema/RLS/triggers/functions/
+# indexes/seed into the self-hosted PostgreSQL. Idempotent + tracked.
+#
+# Source of truth: <repo>/supabase/migrations/*.sql  (and optional seed.sql)
+# Applied migrations are tracked in public.schema_migrations so re-runs are safe.
+# =============================================================================
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+load_env
+
+REPO_MIGRATIONS="$ROOT_DIR/supabase/migrations"
+LOCAL_MIGRATIONS="$DEPLOY_DIR/supabase/migrations"
+SEED_FILE="$ROOT_DIR/supabase/seed.sql"
+
+psql_db() { docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" "$@"; }
+
+wait_for_db() {
+  log "Waiting for supabase-db…"
+  for _ in $(seq 1 60); do
+    if docker exec supabase-db pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" >/dev/null 2>&1; then
+      ok "Database is ready."; return 0
+    fi; sleep 2
+  done
+  die "Database did not become ready in time."
+}
+
+sync_migrations() {
+  mkdir -p "$LOCAL_MIGRATIONS"
+  if [[ -d "$REPO_MIGRATIONS" ]]; then
+    log "Detecting repo migrations in $REPO_MIGRATIONS"
+    rsync -a --delete "$REPO_MIGRATIONS/" "$LOCAL_MIGRATIONS/" 2>/dev/null \
+      || cp -f "$REPO_MIGRATIONS"/*.sql "$LOCAL_MIGRATIONS/" 2>/dev/null || true
+    ok "Found $(ls -1 "$LOCAL_MIGRATIONS"/*.sql 2>/dev/null | wc -l) migration file(s)."
+  else
+    warn "No repo migrations directory found ($REPO_MIGRATIONS)."
+  fi
+}
+
+ensure_tracking() {
+  psql_db -q <<'SQL'
+CREATE TABLE IF NOT EXISTS public.schema_migrations (
+  version    text PRIMARY KEY,
+  applied_at timestamptz NOT NULL DEFAULT now()
+);
+SQL
+}
+
+apply_all() {
+  local applied=0 skipped=0
+  shopt -s nullglob
+  for f in $(ls -1 "$LOCAL_MIGRATIONS"/*.sql 2>/dev/null | sort); do
+    local ver; ver="$(basename "$f")"
+    if psql_db -tAc "SELECT 1 FROM public.schema_migrations WHERE version='${ver}'" | grep -q 1; then
+      skipped=$((skipped+1)); continue
+    fi
+    log "Applying migration: $ver (schema, RLS, triggers, functions, indexes)…"
+    # Each migration runs inside a single transaction; tracked on success.
+    docker exec -i supabase-db psql -v ON_ERROR_STOP=1 --single-transaction \
+      -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < "$f"
+    psql_db -q -c "INSERT INTO public.schema_migrations(version) VALUES ('${ver}') ON CONFLICT DO NOTHING;"
+    applied=$((applied+1)); ok "Applied $ver"
+  done
+  ok "Migrations complete: $applied applied, $skipped already present."
+}
+
+apply_seed() {
+  if [[ -f "$SEED_FILE" ]]; then
+    log "Importing seed data ($SEED_FILE)…"
+    docker exec -i supabase-db psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" < "$SEED_FILE" || warn "Seed import had warnings."
+    ok "Seed data imported."
+  else
+    log "No seed.sql found — skipping seed import."
+  fi
+}
+
+main() {
+  wait_for_db
+  sync_migrations
+  ensure_tracking
+  apply_all
+  apply_seed
+  ok "Database migration finished."
+}
+main "$@"
