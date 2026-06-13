@@ -45,6 +45,7 @@ import Approvals from "./pages/Approvals";
 import PeriodClose from "./pages/PeriodClose";
 import FinanceSummary from "./pages/FinanceSummary";
 import LandHistory from "./pages/LandHistory";
+import LoanPlans from "./pages/LoanPlans";
 
 import BankAccounts from "./pages/BankAccounts";
 import Vouchers from "./pages/Vouchers";
