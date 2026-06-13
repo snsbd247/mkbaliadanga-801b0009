@@ -345,6 +345,11 @@ export default function CombinedPayment() {
                   {lang === "bn" ? `সাজেস্ট লাভ: ${money(suggestedInterest)} — প্রয়োগ` : `Suggested interest: ${money(suggestedInterest)} — apply`}
                 </button>
               )}
+              {selectedLoan && profitDue > 0 && (
+                <div className="text-xs mt-1 text-amber-600">
+                  {lang === "bn" ? `বাকি লাভ (ডিউ): ${money(profitDue)}` : `Profit due: ${money(profitDue)}`}
+                </div>
+              )}
             </div>
             <div>
               {selectedLoan && (
