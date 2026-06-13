@@ -79,6 +79,15 @@ export default function Cashbook() {
     head: "", payee: "", amount: 0, method: "cash", note: "",
     expense_date: new Date().toISOString().slice(0, 10),
   });
+  // Office income (no farmer) — printed on irrigation-style A5 landscape receipt with irrigation serial.
+  const [openOI, setOpenOI] = useState(false);
+  const [oi, setOI] = useState({
+    kind: "scrap" as Kind, remark: "", amount: 0,
+    receipt_date: new Date().toISOString().slice(0, 10),
+  });
+  const OFFICE_INCOME_KINDS: Kind[] = ["scrap", "loan_taken", "donation", "other"];
+
+
 
   useEffect(() => {
     document.title = `${t("cashbook")} — ${t("appName")}`;
