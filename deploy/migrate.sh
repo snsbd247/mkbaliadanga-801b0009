@@ -43,6 +43,13 @@ ALTER DATABASE :"db" SET app.supabase_url = :'supabase_url';
 ALTER DATABASE :"db" SET app.supabase_anon_key = :'anon_key';
 ALTER DATABASE :"db" SET app.settings.jwt_secret = :'jwt_secret';
 ALTER DATABASE :"db" SET app.settings.jwt_exp = '3600';
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
+    CREATE ROLE authenticator NOINHERIT LOGIN;
+  END IF;
+END
+$$;
 ALTER ROLE authenticator IN DATABASE :"db" SET app.supabase_url = :'supabase_url';
 ALTER ROLE authenticator IN DATABASE :"db" SET app.supabase_anon_key = :'anon_key';
 SQL
