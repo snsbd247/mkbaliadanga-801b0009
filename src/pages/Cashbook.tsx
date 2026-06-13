@@ -684,7 +684,7 @@ function ExpenseHeadsManager({ heads, canManage, officeId, reload }: { heads: an
         <div className="flex flex-wrap items-end gap-2">
           <div><Label>{tx("Head (Bangla)", "খাত (বাংলা)")}</Label><Input value={name} onChange={e => setName(e.target.value)} className="w-48" /></div>
           <div><Label>{tx("Head (English)", "খাত (ইংরেজি)")}</Label><Input value={nameEn} onChange={e => setNameEn(e.target.value)} className="w-48" /></div>
-          <Button size="sm" onClick={add}><Plus className="h-4 w-4 mr-1" />{t("add")}</Button>
+          <Button size="sm" onClick={add}><Plus className="h-4 w-4 mr-1" />{tx("Add", "যোগ")}</Button>
         </div>
       )}
 
