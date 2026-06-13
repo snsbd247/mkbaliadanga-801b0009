@@ -64,6 +64,10 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
 
     setSaving(true);
     try {
+      // Snapshot source owner details so history survives later land changes
+      const { data: srcFarmer } = await supabase.from("farmers")
+        .select("name_en,name_bn,farmer_code,member_no").eq("id", sourceFarmerId).maybeSingle();
+
       const { data: tr, error: trErr } = await supabase.from("land_transfers").insert({
         source_land_id: sourceLand.id,
         source_farmer_id: sourceFarmerId,
@@ -72,6 +76,11 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         transferred_at: transferredOn,
         office_id: sourceLand.office_id ?? officeId ?? null,
         created_by: user?.id ?? null,
+        source_dag_no: sourceLand.dag_no ?? null,
+        source_mouza: sourceLand.mouza ?? null,
+        source_land_size: totalLand || null,
+        source_owner_name: srcFarmer?.name_bn || srcFarmer?.name_en || null,
+        source_owner_code: (srcFarmer as any)?.member_no ?? srcFarmer?.farmer_code ?? null,
       } as any).select("id").single();
       if (trErr) throw trErr;
 

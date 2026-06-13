@@ -48,7 +48,7 @@ export function LandRelations({ farmerId }: Props) {
   async function load() {
     const [rels, ld] = await Promise.all([
       supabase.from("land_relations")
-        .select("*, lands(dag_no,mouza,land_size,mouza_id), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,member_no), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,member_no)")
+        .select("*, lands(dag_no,dag_numbers,mouza,land_size,mouza_id), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,member_no), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .or(`owner_farmer_id.eq.${farmerId},sharecropper_farmer_id.eq.${farmerId}`)
         .order("valid_from", { ascending: false }),
@@ -181,6 +181,42 @@ export function LandRelations({ farmerId }: Props) {
         </Dialog>
         </div>
       </div>
+
+      {/* Grouped summary: per land/dag who is sharecropping */}
+      {(() => {
+        const active = rows.filter(r => !r.valid_to && !r.deleted_at);
+        if (active.length === 0) return null;
+        const byLand: Record<string, any[]> = {};
+        active.forEach(r => { (byLand[r.land_id] ||= []).push(r); });
+        return (
+          <div className="p-3 border-b space-y-3">
+            <div className="text-sm font-medium">{tx("By parcel — sharecroppers", "জমি অনুযায়ী — বর্গাদার")}</div>
+            {Object.entries(byLand).map(([landId, list]) => {
+              const ld = list[0]?.lands;
+              const dags = ld?.dag_numbers?.length ? ld.dag_numbers.join(", ") : ld?.dag_no;
+              const size = Number(ld?.land_size || 0);
+              const allocated = list.reduce((s, r) => s + Number(r.area_decimal || 0), 0);
+              const owner = list[0]?.owner;
+              return (
+                <div key={landId} className="rounded-md border p-2 text-xs space-y-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span><b>{tx("Dag", "দাগ")}:</b> {dags ?? "—"} · <b>{tx("Mouza", "মৌজা")}:</b> {ld?.mouza ?? "—"} · <b>{tx("Size", "পরিমাণ")}:</b> {size}</span>
+                    <span className="text-muted-foreground">{tx("Owner", "মালিক")}: {owner?.name_en} · {tx("Remaining", "অবশিষ্ট")}: <b>{(size - allocated).toFixed(2)}</b></span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {list.filter(r => r.sc).map(r => (
+                      <Badge key={r.id} variant="secondary">
+                        {r.sc?.name_en} — {r.area_decimal != null ? `${r.area_decimal} ${tx("shatak", "শতক")}` : `${r.share_percentage}%`}
+                      </Badge>
+                    ))}
+                    {list.every(r => !r.sc) && <span className="text-muted-foreground">{tx("No sharecropper", "কোনো বর্গাদার নেই")}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <Table>
         <TableHeader><TableRow>

@@ -3429,8 +3429,13 @@ export type Database = {
           id: string
           office_id: string | null
           remark: string | null
+          source_dag_no: string | null
           source_farmer_id: string
           source_land_id: string
+          source_land_size: number | null
+          source_mouza: string | null
+          source_owner_code: string | null
+          source_owner_name: string | null
           transfer_type: string
           transferred_at: string
         }
@@ -3440,8 +3445,13 @@ export type Database = {
           id?: string
           office_id?: string | null
           remark?: string | null
+          source_dag_no?: string | null
           source_farmer_id: string
           source_land_id: string
+          source_land_size?: number | null
+          source_mouza?: string | null
+          source_owner_code?: string | null
+          source_owner_name?: string | null
           transfer_type: string
           transferred_at?: string
         }
@@ -3451,8 +3461,13 @@ export type Database = {
           id?: string
           office_id?: string | null
           remark?: string | null
+          source_dag_no?: string | null
           source_farmer_id?: string
           source_land_id?: string
+          source_land_size?: number | null
+          source_mouza?: string | null
+          source_owner_code?: string | null
+          source_owner_name?: string | null
           transfer_type?: string
           transferred_at?: string
         }

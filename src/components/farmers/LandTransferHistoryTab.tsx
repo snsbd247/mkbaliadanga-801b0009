@@ -61,6 +61,12 @@ export default function LandTransferHistoryTab({ farmerId }: { farmerId: string 
       {rows.map(r => {
         const isSource = r.source_farmer_id === farmerId;
         const lbl = TYPE_LABEL[r.transfer_type] ?? [r.transfer_type, r.transfer_type];
+        // Snapshot-first (preserved at transfer time), fallback to live joined data for old records
+        const dag = r.source_dag_no ?? r.source_land?.dag_no ?? "—";
+        const mouza = r.source_mouza ?? r.source_land?.mouza ?? "—";
+        const size = r.source_land_size ?? r.source_land?.land_size ?? 0;
+        const ownerName = r.source_owner_name ?? r.source_farmer?.name_bn ?? r.source_farmer?.name_en ?? "—";
+        const ownerCode = r.source_owner_code ?? r.source_farmer?.farmer_code;
         return (
           <div key={r.id} className="rounded-md border p-3">
             <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
@@ -70,12 +76,12 @@ export default function LandTransferHistoryTab({ farmerId }: { farmerId: string 
                 <span className="text-xs text-muted-foreground">{fmtDate(r.transferred_at)}</span>
               </div>
               <div className="text-xs text-muted-foreground">
-                {tx("Source dag:", "মূল দাগ:")} <b>{r.source_land?.dag_no ?? "—"}</b> ({r.source_land?.mouza ?? "—"}) — {Number(r.source_land?.land_size ?? 0).toFixed(2)} {tx("decimal", "শতক")}
+                {tx("Source dag:", "মূল দাগ:")} <b>{dag}</b> ({mouza}) — {Number(size).toFixed(2)} {tx("decimal", "শতক")}
               </div>
             </div>
             <div className="text-xs mb-2">
-              {tx("From:", "থেকে:")} <Link to={`/farmers/${r.source_farmer_id}`} className="underline text-primary">{r.source_farmer?.name_bn || r.source_farmer?.name_en || "—"}</Link>
-              {r.source_farmer?.farmer_code && <span className="text-muted-foreground"> ({r.source_farmer.farmer_code})</span>}
+              {tx("From:", "থেকে:")} <Link to={`/farmers/${r.source_farmer_id}`} className="underline text-primary">{ownerName}</Link>
+              {ownerCode && <span className="text-muted-foreground"> ({ownerCode})</span>}
             </div>
             <Table>
               <TableHeader>
