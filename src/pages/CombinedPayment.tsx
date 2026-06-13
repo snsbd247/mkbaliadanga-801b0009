@@ -20,14 +20,17 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
 import { money } from "@/lib/format";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
-import { getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
+
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFarmerDues, type FarmerDuesBreakdown } from "@/lib/farmerDues";
 
-type LoanRow = { id: string; principal: number; total_payable: number; issued_on: string; remaining: number };
+type LoanRow = {
+  id: string; principal: number; total_payable: number; issued_on: string; remaining: number;
+  interest_rate: number; duration_months: number; last_payment_on: string | null;
+};
 
-const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_amt: 0, note: "" };
+const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "" };
 
 export default function CombinedPayment() {
   const { user, officeId } = useAuth();
@@ -46,7 +49,20 @@ export default function CombinedPayment() {
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
-  const loanExceeds = !!selectedLoan && Number(form.loan_amt || 0) > selectedLoan.remaining;
+  const loanAmt = Number(form.loan_principal || 0) + Number(form.loan_interest || 0);
+  const loanExceeds = !!selectedLoan && loanAmt > selectedLoan.remaining;
+  // Suggested accrued interest = remaining principal × (rate%/duration) × months elapsed since last payment/issue
+  const suggestedInterest = useMemo(() => {
+    if (!selectedLoan) return 0;
+    const rate = Number(selectedLoan.interest_rate || 0);
+    const dur = Number(selectedLoan.duration_months || 0);
+    if (rate <= 0 || dur <= 0) return 0;
+    const since = selectedLoan.last_payment_on || selectedLoan.issued_on;
+    if (!since) return 0;
+    const months = Math.max(0, Math.round((Date.now() - new Date(since).getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    const principalRemaining = Math.min(selectedLoan.principal, selectedLoan.remaining);
+    return Math.round(principalRemaining * (rate / 100 / dur) * months);
+  }, [selectedLoan]);
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
@@ -67,17 +83,22 @@ export default function CombinedPayment() {
     if (!form.farmer_id) { setFarmer(null); setLoans([]); setDues(null); return; }
     (async () => {
       const [f, lq] = await Promise.all([
-        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").eq("id", form.farmer_id).maybeSingle(),
-        supabase.from("loans").select("id,principal,total_payable,issued_on,loan_payments(amount)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
+        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter").eq("id", form.farmer_id).maybeSingle(),
+        supabase.from("loans").select("id,principal,total_payable,issued_on,interest_rate,loan_plans(interest_rate,duration_months),loan_payments(amount,paid_on)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
       ]);
       setFarmer(f.data ?? null);
       const rows: LoanRow[] = (lq.data ?? []).map((l: any) => {
-        const paid = (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        const pays = l.loan_payments ?? [];
+        const paid = pays.reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        const lastPay = pays.map((p: any) => p.paid_on).filter(Boolean).sort().pop() ?? null;
         return {
           id: l.id, principal: Number(l.principal || 0),
           total_payable: Number(l.total_payable || l.principal || 0),
           issued_on: l.issued_on,
           remaining: Math.max(0, Number(l.total_payable || l.principal || 0) - paid),
+          interest_rate: Number(l.interest_rate || l.loan_plans?.interest_rate || 0),
+          duration_months: Number(l.loan_plans?.duration_months || 0),
+          last_payment_on: lastPay,
         };
       }).filter(r => r.remaining > 0);
       setLoans(rows);
@@ -86,8 +107,8 @@ export default function CombinedPayment() {
   }, [form.farmer_id]);
 
   const total = useMemo(
-    () => Number(form.savings || 0) + Number(form.share || 0) + Number(form.loan_amt || 0),
-    [form.savings, form.share, form.loan_amt],
+    () => Number(form.savings || 0) + Number(form.share || 0) + Number(form.loan_principal || 0) + Number(form.loan_interest || 0),
+    [form.savings, form.share, form.loan_principal, form.loan_interest],
   );
 
   function reset() { setForm({ ...EMPTY }); setLastReceipt(null); guard.clear(); }
@@ -95,9 +116,11 @@ export default function CombinedPayment() {
   async function submit() {
     if (!form.farmer_id) return toast.error(lang === "bn" ? "কৃষক নির্বাচন করুন" : "Select a farmer");
     if (total <= 0) return toast.error(lang === "bn" ? "অন্তত একটি amount দিন" : "Enter at least one amount");
-    if (form.loan_amt > 0 && !form.loan_id) return toast.error(lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan");
+    if (loanAmt > 0 && !form.loan_id) return toast.error(lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan");
+    if (loanAmt > 0 && Number(form.loan_principal || 0) <= 0) return toast.error(lang === "bn" ? "আসল টাকা বাধ্যতামূলক" : "Principal amount is required");
+    if (loanAmt > 0 && !farmer?.is_voter) return toast.error(lang === "bn" ? "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে" : "Loans are only allowed for savings members");
     if (loanExceeds) return toast.error(lang === "bn" ? "ঋণের বাকির চেয়ে বেশি দেওয়া যাবে না" : "Loan repayment cannot exceed remaining balance");
-    if (Number(form.savings) < 0 || Number(form.share) < 0 || Number(form.loan_amt) < 0) return toast.error(lang === "bn" ? "ঋণাত্মক পরিমাণ অনুমোদিত নয়" : "Negative amounts are not allowed");
+    if (Number(form.savings) < 0 || Number(form.share) < 0 || Number(form.loan_principal) < 0 || Number(form.loan_interest) < 0) return toast.error(lang === "bn" ? "ঋণাত্মক পরিমাণ অনুমোদিত নয়" : "Negative amounts are not allowed");
     setSaving(true);
     try {
       const receiptNo = await nextMonthlyReceiptNo("COMBO", officeId, form.farmer_id);
@@ -131,23 +154,26 @@ export default function CombinedPayment() {
         rows.push({ kind: "share", label_bn: "শেয়ার", label_en: "Share", amount: Number(form.share) });
       }
 
-      // 3) Loan repayment (via payments + payment_allocations)
-      if (Number(form.loan_amt) > 0 && form.loan_id) {
+      // 3) Loan repayment (principal + optional interest) via payments + payment_allocations
+      if (loanAmt > 0 && form.loan_id) {
+        const principal = Number(form.loan_principal || 0);
+        const interest = Number(form.loan_interest || 0);
         const { data: pay, error: payErr } = await supabase.from("payments").insert({
-          farmer_id: form.farmer_id, kind: "loan", amount: Number(form.loan_amt),
+          farmer_id: form.farmer_id, kind: "loan", amount: loanAmt,
           reference_id: form.loan_id, collected_by: user?.id, receipt_no: receiptNo, status: "approved",
         } as any).select("id,verify_token").single();
         if (payErr) throw payErr;
         if (pay?.verify_token && !verifyToken) verifyToken = pay.verify_token;
         await supabase.from("payment_allocations").insert({
-          payment_id: pay!.id, kind: "loan", reference_id: form.loan_id, amount: Number(form.loan_amt),
+          payment_id: pay!.id, kind: "loan", reference_id: form.loan_id, amount: loanAmt,
         } as any);
         await supabase.from("loan_payments").insert({
-          loan_id: form.loan_id, amount: Number(form.loan_amt),
+          loan_id: form.loan_id, amount: loanAmt, principal_amount: principal, interest_amount: interest,
           paid_on: new Date().toISOString().slice(0, 10), collected_by: user?.id,
           receipt_no: receiptNo,
         } as any);
-        rows.push({ kind: "loan", label_bn: "ঋণ পরিশোধ", label_en: "Loan Repayment", amount: Number(form.loan_amt) });
+        rows.push({ kind: "loan", label_bn: "ঋণ আসল", label_en: "Loan Principal", amount: principal });
+        if (interest > 0) rows.push({ kind: "loan_interest", label_bn: "ঋণ লাভ", label_en: "Loan Interest", amount: interest });
       }
 
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
@@ -178,8 +204,8 @@ export default function CombinedPayment() {
 
   async function printReceipt() {
     if (!lastReceipt) return;
-    const paper = getDefaultPaperSize();
-    const doc = new jsPDF({ unit: "mm", format: paper });
+    // Loan & savings receipts print on A5 landscape per requirement
+    const doc = new jsPDF({ unit: "mm", format: "a5", orientation: "l" });
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 12;
     doc.setFont("helvetica", "bold"); doc.setFontSize(13);
@@ -242,7 +268,7 @@ export default function CombinedPayment() {
             <Label>{lang === "bn" ? "কৃষক" : "Farmer"} *</Label>
             <FarmerSearchSelect
               value={form.farmer_id}
-              onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_amt: 0 })}
+              onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_principal: 0, loan_interest: 0 })}
             />
           </div>
           {form.farmer_id && dues && (
@@ -286,14 +312,30 @@ export default function CombinedPayment() {
               </Select>
             </div>
             <div>
-              <Label>{lang === "bn" ? "ঋণ পরিশোধ (৳)" : "Loan Repayment (৳)"}</Label>
-              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_amt}
+              <Label>{lang === "bn" ? "ঋণ আসল (৳) *" : "Loan Principal (৳) *"}</Label>
+              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_principal}
                      aria-invalid={loanExceeds || undefined}
-                     onChange={(e) => setForm({ ...form, loan_amt: Number(e.target.value) || 0 })} />
+                     onChange={(e) => setForm({ ...form, loan_principal: Number(e.target.value) || 0 })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{lang === "bn" ? "ঋণ লাভ (৳) — অপশনাল" : "Loan Interest (৳) — optional"}</Label>
+              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_interest}
+                     onChange={(e) => setForm({ ...form, loan_interest: Number(e.target.value) || 0 })} />
+              {selectedLoan && suggestedInterest > 0 && (
+                <button type="button" className="text-xs mt-1 text-primary underline"
+                        onClick={() => setForm({ ...form, loan_interest: suggestedInterest })}>
+                  {lang === "bn" ? `সাজেস্ট লাভ: ${money(suggestedInterest)} — প্রয়োগ` : `Suggested interest: ${money(suggestedInterest)} — apply`}
+                </button>
+              )}
+            </div>
+            <div>
               {selectedLoan && (
-                <div className={`text-xs mt-1 ${loanExceeds ? "text-destructive" : "text-muted-foreground"}`}>
+                <div className={`text-xs mt-6 ${loanExceeds ? "text-destructive" : "text-muted-foreground"}`}>
                   {lang === "bn" ? "বাকি" : "Remaining"}: {money(selectedLoan.remaining)}
                   {loanExceeds && (lang === "bn" ? " — বাকির চেয়ে বেশি" : " — exceeds remaining")}
+                  {!farmer?.is_voter && <div className="text-destructive">{lang === "bn" ? "এই কৃষক সঞ্চয় সদস্য নন" : "Not a savings member"}</div>}
                 </div>
               )}
             </div>

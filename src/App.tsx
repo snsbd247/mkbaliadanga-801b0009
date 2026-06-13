@@ -45,6 +45,7 @@ import Approvals from "./pages/Approvals";
 import PeriodClose from "./pages/PeriodClose";
 import FinanceSummary from "./pages/FinanceSummary";
 import LandHistory from "./pages/LandHistory";
+import LoanPlans from "./pages/LoanPlans";
 
 import BankAccounts from "./pages/BankAccounts";
 import Vouchers from "./pages/Vouchers";
@@ -302,6 +303,7 @@ const App = () => (
                 <Route path="/admin/patwaris/:id" element={<RequireRole roles={["admin","super_admin"]}><PatwariDetail /></RequireRole>} />
                 <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />
                 <Route path="/admin/lookups" element={<RequireRole roles={["admin","super_admin"]}><AdminLookups /></RequireRole>} />
+                <Route path="/admin/loan-plans" element={<RequireRole roles={["admin","super_admin"]}><LoanPlans /></RequireRole>} />
                 <Route path="/admin/rate-audit" element={<RequireRole roles={["admin","super_admin"]}><RateAuditLog /></RequireRole>} />
                 <Route path="/admin/irrigation-categories" element={<RequireRole roles={["admin","super_admin"]}><IrrigationCategories /></RequireRole>} />
                 <Route path="/admin/irrigation-category-rates" element={<RequireRole roles={["admin","super_admin"]}><IrrigationCategoryRates /></RequireRole>} />

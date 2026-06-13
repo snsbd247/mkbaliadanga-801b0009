@@ -393,7 +393,9 @@ export default function FarmerDetail() {
       collected_amount: Number(p.amount),
       description,
       verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
-    }, copy, receiptArgs.options);
+    }, copy, (kind === "loan" || kind === "savings")
+      ? { ...receiptArgs.options, paper: "a5", orientation: "l" }
+      : receiptArgs.options);
   }
 
   function printSavings(s: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
@@ -432,7 +434,7 @@ export default function FarmerDetail() {
       savings_balance_after: balanceAfter,
       savings_deposit_total: depositTotal,
       outstanding: balanceAfter,
-    }, copy, receiptArgs.options);
+    }, copy, { ...receiptArgs.options, paper: "a5", orientation: "l" });
   }
   function buildLandInvoicePayload(inv: any) {
     return {
