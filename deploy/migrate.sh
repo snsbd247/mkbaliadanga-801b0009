@@ -48,13 +48,24 @@ SQL
 
 configure_runtime_settings() {
   log "Configuring environment-specific database runtime settings…"
-  psql_db -q -v supabase_url="${VITE_SUPABASE_URL}" -v anon_key="${ANON_KEY}" <<'SQL'
-ALTER DATABASE postgres SET app.supabase_url = :'supabase_url';
-ALTER DATABASE postgres SET app.supabase_anon_key = :'anon_key';
-ALTER ROLE authenticator IN DATABASE postgres SET app.supabase_url = :'supabase_url';
-ALTER ROLE authenticator IN DATABASE postgres SET app.supabase_anon_key = :'anon_key';
+  # Ensure the PostgREST 'authenticator' role exists before altering it.
+  # On a freshly-initialised self-hosted Supabase the bundled roles are created
+  # by the image's init scripts, but guard here so re-runs/edge cases never fail.
+  psql_db -q -v db="${POSTGRES_DB}" -v supabase_url="${VITE_SUPABASE_URL}" -v anon_key="${ANON_KEY}" <<'SQL'
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
+    CREATE ROLE authenticator NOINHERIT LOGIN;
+  END IF;
+END$$;
+
+ALTER DATABASE :"db" SET app.supabase_url = :'supabase_url';
+ALTER DATABASE :"db" SET app.supabase_anon_key = :'anon_key';
+ALTER ROLE authenticator IN DATABASE :"db" SET app.supabase_url = :'supabase_url';
+ALTER ROLE authenticator IN DATABASE :"db" SET app.supabase_anon_key = :'anon_key';
 SQL
   ok "Database runtime settings now point to this environment."
+
 }
 
 apply_all() {
