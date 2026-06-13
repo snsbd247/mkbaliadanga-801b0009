@@ -814,6 +814,9 @@ export default function Payments() {
                         <Button size="icon" variant="ghost" onClick={() => rejectPayment(p)} title={t("reject")}><X className="h-4 w-4 text-destructive" /></Button>
                       </>)}
                       {!showDeleted && isAdmin && p.status === "approved" && !p.voided_at && (
+                        <Button size="sm" variant="outline" onClick={() => openEditReceipt(p)} title={tx("Edit receipt", "রসিদ এডিট")}>{tx("Edit", "এডিট")}</Button>
+                      )}
+                      {!showDeleted && isAdmin && p.status === "approved" && !p.voided_at && (
                         <Button size="sm" variant="outline" onClick={() => voidPayment(p)} title="Void receipt" className="text-destructive">Void</Button>
                       )}
                       {!showDeleted && (() => {
