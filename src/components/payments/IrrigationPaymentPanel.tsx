@@ -533,9 +533,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             <div className="flex items-center gap-2">
               <Label className="text-sm">{tx("Current invoice received (বকেয়া)", "বকেয়া হতে গৃহীত")}</Label>
               <Input
-                type="number" className="w-32 font-mono"
+                type="number" step={1} className="w-32 font-mono"
                 value={currentCollected || ""}
-                onChange={(e) => setCurrentCollected(Number(e.target.value || 0))}
+                onChange={(e) => setCurrentCollected(roundTk(Number(e.target.value || 0)))}
               />
             </div>
           </div>
