@@ -1030,16 +1030,26 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           categoryRate: categoryInput ?? undefined,
         });
         if (!(resolved.rate > 0)) { noRate++; continue; }
-        const billed = await resolveBilledFarmer(l.id, dueDate);
-        const calc = calcInvoice({
-          land_size_shotok: Number(l.land_size),
-          rate_per_shotok: resolved.rate,
-          settings,
-          due_date: dueDate,
-          as_of: new Date().toISOString().slice(0, 10),
-        });
-        previewArr.push({ land: l, billed, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
+        // Phase 4: split billable area between owner and active sharecroppers
+        const splits = await resolveBillingSplits(l.id, dueDate);
+        for (const split of splits) {
+          const billedArea = split.billed_area > 0 ? split.billed_area : Number(l.land_size);
+          const calc = calcInvoice({
+            land_size_shotok: billedArea,
+            rate_per_shotok: resolved.rate,
+            settings,
+            due_date: dueDate,
+            as_of: new Date().toISOString().slice(0, 10),
+          });
+          const billed = {
+            billed_farmer_id: split.billed_farmer_id,
+            owner_farmer_id: split.owner_farmer_id,
+            is_borga: split.is_borga,
+          };
+          previewArr.push({ land: l, billed, billedArea, calc, settings, rate: resolved.rate, rateRow: matched, resolved });
+        }
       }
+
       setPreviewRows(previewArr.map((r) => ({ ...r, manualRate: "", manualReason: "" })));
       setSkippedNoRate(noRate);
       // Fetch previous outstanding for the farmers in this preview
