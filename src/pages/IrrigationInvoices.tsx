@@ -1087,11 +1087,12 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           let appliedRate = row.rate;
           let source: string = row.resolved?.source ?? "STANDARD";
           let calc = row.calc;
+          const billedArea = row.billedArea > 0 ? row.billedArea : Number(row.land.land_size);
           if (hasManual) {
             appliedRate = manualRateNum;
             source = "MANUAL";
             calc = calcInvoice({
-              land_size_shotok: Number(row.land.land_size),
+              land_size_shotok: billedArea,
               rate_per_shotok: appliedRate,
               settings: row.settings,
               due_date: dueDate,
