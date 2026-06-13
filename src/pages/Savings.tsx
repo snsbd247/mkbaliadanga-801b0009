@@ -387,8 +387,8 @@ export default function Savings() {
                 </Select>
               </div>
               <div>
-                <Label>{tx("System Receipt #", "সিস্টেম রশিদ #")} <span className="text-xs text-muted-foreground">({tx("optional — auto-generate if blank", "ঐচ্ছিক — খালি রাখলে অটো জেনারেট হবে")})</span></Label>
-                <Input value={form.receipt_no} placeholder="auto" onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
+                <Label>{tx("System Receipt #", "সিস্টেম রশিদ #")} <span className="text-xs text-muted-foreground">({tx("optional — left blank stays blank", "ঐচ্ছিক — খালি রাখলে খালিই থাকবে")})</span></Label>
+                <Input value={form.receipt_no} placeholder={tx("blank", "খালি")} onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
               </div>
               <div>
                 <Label>{tx("Field Receipt #", "ফিল্ড রশিদ #")} <span className="text-xs text-muted-foreground">({tx("paper receipt from field collection", "ফিল্ড থেকে পেপার রশিদ নাম্বার")})</span></Label>
