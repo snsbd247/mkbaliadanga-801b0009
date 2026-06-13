@@ -168,6 +168,24 @@ run_migrations() { bash "$DEPLOY_DIR/migrate.sh"; }
 # ----------------------------------------------------------------------------- 9b. Admin user
 seed_admin() { bash "$DEPLOY_DIR/seed-admin.sh"; }
 
+# ----------------------------------------------------------------------------- 9c. Laravel backend sync (optional, same DB)
+sync_laravel() {
+  local be="$ROOT_DIR/backend"
+  [[ -d "$be" ]] || { log "No Laravel backend dir — skipping."; return 0; }
+  if ! have php || ! have composer; then
+    warn "php/composer not installed — skipping Laravel sync (Supabase schema is source of truth)."
+    return 0
+  fi
+  ( cd "$be"
+    composer install --no-dev --optimize-autoloader --no-interaction || true
+    [[ -f .env ]] || { [[ -f .env.production.example ]] && cp .env.production.example .env; }
+    grep -q '^APP_KEY=base64' .env 2>/dev/null || php artisan key:generate --force || true
+    php artisan migrate --force || warn "Laravel migrate reported issues."
+    php artisan db:seed --force || warn "Laravel seed reported issues."
+  )
+  ok "Laravel backend synced with database."
+}
+
 # ----------------------------------------------------------------------------- 10. App + proxy
 start_app() {
   cd "$DEPLOY_DIR"
@@ -193,6 +211,7 @@ generate_env
 start_supabase    && ok "Supabase stack up"
 run_migrations
 seed_admin
+sync_laravel
 start_app         && ok "Application + Caddy up"
 schedule_backups
 
