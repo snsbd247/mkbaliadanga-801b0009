@@ -63,6 +63,13 @@ export default function CombinedPayment() {
     const principalRemaining = Math.min(selectedLoan.principal, selectedLoan.remaining);
     return Math.round(principalRemaining * (rate / 100 / dur) * months);
   }, [selectedLoan]);
+  // Remaining (unpaid) profit after the amount entered in this transaction —
+  // shown as a profit due so partial profit payments leave a visible balance.
+  const profitDue = useMemo(
+    () => (!selectedLoan ? 0 : Math.max(0, suggestedInterest - Number(form.loan_interest || 0))),
+    [selectedLoan, suggestedInterest, form.loan_interest],
+  );
+
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
@@ -337,6 +344,11 @@ export default function CombinedPayment() {
                         onClick={() => setForm({ ...form, loan_interest: suggestedInterest })}>
                   {lang === "bn" ? `সাজেস্ট লাভ: ${money(suggestedInterest)} — প্রয়োগ` : `Suggested interest: ${money(suggestedInterest)} — apply`}
                 </button>
+              )}
+              {selectedLoan && profitDue > 0 && (
+                <div className="text-xs mt-1 text-amber-600">
+                  {lang === "bn" ? `বাকি লাভ (ডিউ): ${money(profitDue)}` : `Profit due: ${money(profitDue)}`}
+                </div>
               )}
             </div>
             <div>

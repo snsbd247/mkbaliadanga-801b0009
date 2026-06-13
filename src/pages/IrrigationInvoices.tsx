@@ -601,11 +601,12 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
               <p className="text-xs text-muted-foreground">{tx("Adjust paper, margins and the cut-line position so the office and farmer copies fit your printer.", "পেজ, মার্জিন ও কাট-লাইন এর পজিশন এডজাস্ট করুন যাতে অফিস ও কৃষক কপি আপনার প্রিন্টারে ঠিকমতো ফিট করে।")}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2"><Label>{tx("Paper size", "পেজ সাইজ")}</Label>
-                  <Select value={pdfSettings.paperFormat} onValueChange={(v) => setPdfSettings({ ...pdfSettings, paperFormat: v as any, cutLineMm: v === "letter" ? 139.7 : v === "a5" ? 105 : 148.5 })}>
+                  <Select value={pdfSettings.paperFormat} onValueChange={(v) => setPdfSettings({ ...pdfSettings, paperFormat: v as any, cutLineMm: v === "letter" ? 139.7 : v === "a5" ? 105 : v === "a5-landscape" ? 74 : 148.5 })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="a4">A4 (210 × 297 mm)</SelectItem>
                       <SelectItem value="a5">A5 (148 × 210 mm)</SelectItem>
+                      <SelectItem value="a5-landscape">A5 {tx("Landscape", "ল্যান্ডস্কেপ")} (210 × 148 mm)</SelectItem>
                       <SelectItem value="letter">Letter (216 × 279 mm)</SelectItem>
                     </SelectContent>
                   </Select>

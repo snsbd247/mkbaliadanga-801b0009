@@ -10,7 +10,7 @@ import { parseDagNumbers } from "@/lib/dagNumbers";
 import { getReceiptLayoutSettings, dagSeparatorString, getIrrigationLabels } from "@/lib/receiptLayoutSettings";
 
 export type InvoiceCopy = "both" | "office" | "farmer";
-export type PaperFormat = "a4" | "letter" | "a5";
+export type PaperFormat = "a4" | "letter" | "a5" | "a5-landscape";
 
 export interface InvoicePdfSettings {
   /** Paper size. */
@@ -315,6 +315,9 @@ async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBrandi
 }
 
 function makePdf(settings: InvoicePdfSettings): jsPDF {
+  if (settings.paperFormat === "a5-landscape") {
+    return new jsPDF({ unit: "mm", format: "a5", orientation: "l" });
+  }
   const fmt = settings.paperFormat === "letter" ? "letter" : settings.paperFormat === "a5" ? "a5" : "a4";
   return new jsPDF({ unit: "mm", format: fmt, orientation: "p" });
 }
