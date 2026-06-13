@@ -127,6 +127,7 @@ generate_env() {
   [[ -z "${REALTIME_DB_ENC_KEY:-}" ]] && { _set REALTIME_DB_ENC_KEY "$(gen_secret 16)"; }
   [[ -z "${VAULT_ENC_KEY:-}"     ]] && { _set VAULT_ENC_KEY "$(gen_secret 16)"; }
   [[ -z "${DASHBOARD_PASSWORD:-}" ]] && { _set DASHBOARD_PASSWORD "$(gen_password)"; }
+  [[ -z "${ADMIN_PASSWORD:-}" ]] && { ADMIN_PASSWORD=$(gen_password); _set ADMIN_PASSWORD "$ADMIN_PASSWORD"; }
   if [[ -z "${ANON_KEY:-}" ]]; then
     ANON_KEY=$(make_jwt "$JWT_SECRET" anon "$now" "$exp"); _set ANON_KEY "$ANON_KEY"
   fi
