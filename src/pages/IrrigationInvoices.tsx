@@ -1282,8 +1282,9 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                     const src = r.resolved?.source ?? "STANDARD";
                     return (
                       <TableRow key={i}>
-                        <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.land.land_size, "short")}</TableCell>
+                        <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.billedArea > 0 ? r.billedArea : r.land.land_size, "short")}{r.billedArea > 0 && r.billedArea !== Number(r.land.land_size) ? ` / ${formatLandSize(r.land.land_size, "short")}` : ""}</TableCell>
                         <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
+
                         <TableCell>
                           {Number(r.manualRate) > 0 && r.manualReason?.trim()
                             ? <Badge variant="outline" className="text-xs">{tx("Manual", "ম্যানুয়াল")}</Badge>
