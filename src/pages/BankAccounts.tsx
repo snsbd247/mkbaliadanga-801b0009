@@ -376,6 +376,46 @@ export default function BankAccounts() {
           })()}
         </TabsContent>
 
+        <TabsContent value="streams">
+          {(() => {
+            const byStream = STREAMS.map(s => {
+              const accs = accounts.filter(a => (a.stream ?? "other") === s.value);
+              const opening = accs.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0);
+              const balance = accs.reduce((sum, a) => sum + (balances.get(a.id) ?? 0), 0);
+              return { ...s, accs, opening, balance };
+            });
+            return (
+              <Card className="overflow-x-auto p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {byStream.map(col => (
+                    <div key={col.value} className="rounded-lg border p-3">
+                      <div className="font-semibold mb-2">{col.label}</div>
+                      <div className="space-y-1 text-sm">
+                        {col.accs.length === 0 && <div className="text-muted-foreground">কোনো একাউন্ট নেই</div>}
+                        {col.accs.map(ac => (
+                          <div key={ac.id} className="flex justify-between gap-2">
+                            <span className="truncate">{ac.bank_name} <span className="text-xs text-muted-foreground">{ac.account_no}</span></span>
+                            <span className="font-medium whitespace-nowrap">{money(balances.get(ac.id) ?? 0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 pt-2 border-t flex justify-between text-sm">
+                        <span className="text-muted-foreground">প্রারম্ভিক</span><span>{money(col.opening)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-primary">
+                        <span>বর্তমান</span><span>{money(col.balance)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button size="sm" variant="outline" onClick={() => exportTablePDF("Bank Stream Summary", ["স্ট্রিম", "প্রারম্ভিক", "বর্তমান ব্যালেন্স"], byStream.map(c => [c.label, c.opening, c.balance]))}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
+                </div>
+              </Card>
+            );
+          })()}
+        </TabsContent>
+
       </Tabs>
     </>
   );
