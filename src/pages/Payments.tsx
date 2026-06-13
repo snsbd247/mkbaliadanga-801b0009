@@ -944,6 +944,55 @@ export default function Payments() {
       </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tx("Edit receipt", "রসিদ এডিট")} {editPayment?.receipt_no ? `— ${editPayment.receipt_no}` : ""}</DialogTitle>
+          </DialogHeader>
+          {editLoading ? (
+            <div className="py-6 text-center text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</div>
+          ) : (
+            <div className="space-y-3">
+              {!editInvoiceId && (
+                <p className="text-xs text-muted-foreground">{tx("This receipt has no linked irrigation invoice; only amount can be edited.", "এই রসিদে কোনো সেচ ইনভয়েস যুক্ত নেই; শুধু টাকা এডিট করা যাবে।")}</p>
+              )}
+              {editInvoiceId && (<>
+                <div>
+                  <Label>{tx("Owner", "মালিক")}</Label>
+                  <FarmerSearchSelect value={editForm.owner_farmer_id || null} onChange={(id) => setEditForm(f => ({ ...f, owner_farmer_id: id ?? "" }))} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>{tx("Mouza", "মৌজা")}</Label>
+                    <Input value={editForm.mouza} onChange={(e) => setEditForm(f => ({ ...f, mouza: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>{tx("Land size", "জমির পরিমাণ")}</Label>
+                    <Input type="number" step="0.01" value={editForm.land_size || ""} onChange={(e) => setEditForm(f => ({ ...f, land_size: Number(e.target.value || 0) }))} />
+                  </div>
+                </div>
+                <div>
+                  <Label>{tx("Delay fee / penalty", "জরিমানা")}</Label>
+                  <Input type="number" step={1} value={editForm.delay_fee || ""} onChange={(e) => setEditForm(f => ({ ...f, delay_fee: Math.round(Number(e.target.value || 0)) }))} />
+                </div>
+              </>)}
+              <div>
+                <Label>{tx("Amount (৳)", "টাকা (৳)")}</Label>
+                <Input type="number" step={1} value={editForm.amount || ""} onChange={(e) => setEditForm(f => ({ ...f, amount: Math.round(Number(e.target.value || 0)) }))} />
+              </div>
+              <div>
+                <Label>{tx("Reason for change", "পরিবর্তনের কারণ")} *</Label>
+                <Input value={editForm.reason} onChange={(e) => setEditForm(f => ({ ...f, reason: e.target.value }))} placeholder={tx("Why are you editing this receipt?", "কেন এই রসিদ এডিট করছেন?")} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={saveEditReceipt} disabled={editLoading}>{tx("Save changes", "সংরক্ষণ")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
