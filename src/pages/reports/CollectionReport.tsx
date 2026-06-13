@@ -30,6 +30,16 @@ type CollectionRow = {
   user_name: string;
   ref_id: string;
   receipt_no: string | null;
+  // breakdown columns
+  sech: number;
+  jorimana: number;
+  hal: number;
+  bokeya: number;
+  hawlat: number;
+  anudan: number;
+  rin: number;
+  soncoy: number;
+  bibidh: number;
 };
 
 type ProfileLite = { id: string; full_name: string | null; email: string | null; office_id: string | null };
