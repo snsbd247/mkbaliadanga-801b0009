@@ -35,6 +35,7 @@ export default function Reports() {
   const [loanPayments, setLoanPayments] = useState<any[]>([]);
   const [savings, setSavings] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   const [landSummary, setLandSummary] = useState<{ totalLands: number; totalSize: number; mouzaCount: number; farmerCount: number } | null>(null);
 
