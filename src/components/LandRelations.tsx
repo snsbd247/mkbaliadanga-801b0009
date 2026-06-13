@@ -98,6 +98,24 @@ export function LandRelations({ farmerId }: Props) {
     }
     setSaving(true);
     try {
+      // Phase 4: block re-transferring a parcel back to a previous (ended) sharecropper
+      if (form.sharecropper_farmer_id) {
+        const { data: prior } = await supabase.from("land_relations")
+          .select("id")
+          .eq("land_id", form.land_id)
+          .eq("sharecropper_farmer_id", form.sharecropper_farmer_id)
+          .not("valid_to", "is", null)
+          .is("deleted_at", null)
+          .limit(1);
+        if (prior && prior.length) {
+          toast.error(tx(
+            "This farmer was previously a sharecropper on this parcel — re-transfer is not allowed.",
+            "এই কৃষক আগে এই জমির বর্গাদার ছিলেন — পুনরায় ফেরত হস্তান্তর করা যাবে না।",
+          ));
+          setSaving(false);
+          return;
+        }
+      }
       const { error } = await supabase.from("land_relations").insert({
         land_id: form.land_id,
         owner_farmer_id: form.owner_farmer_id,
