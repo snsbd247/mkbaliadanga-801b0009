@@ -579,14 +579,38 @@ export default function Reports() {
 
         <TabsContent value="payments">
           <ExportBar
-            onPdf={() => exportTablePDF(`Payments${filterTitleSuffix()}`, ["Date", "Farmer", "Kind", "Amount", "Method", "Status"], payments.map(r => [fmtDate(r.created_at), r.farmers?.name_en, r.kind, r.amount, r.method, r.status]))}
-            onXlsx={() => exportExcel("payments", "Payments", payments.map(r => ({ Date: r.created_at, Farmer: r.farmers?.name_en, Kind: r.kind, Amount: r.amount, Method: r.method, Status: r.status })))}
+            onPdf={() => exportTablePDF(`Collection${filterTitleSuffix()}`,
+              ["তারিখ", "রশিদ নং", "কৃষক", "হাওলাত", "সেচ", "সঞ্চয়", "বিবিধ", "মোট", "ইউজার", "মাধ্যম", "অবস্থা"],
+              collectionRows.map(r => [r.date, r.receipt, r.farmer, money(r.loan), money(r.irrigation), money(r.savings), r.category, money(r.amount), r.user, r.method, r.status]))}
+            onXlsx={() => exportExcel("collection-report", "Collection",
+              collectionRows.map(r => ({ "তারিখ": r.date, "রশিদ নং": r.receipt, "কৃষক": r.farmer, "হাওলাত": r.loan, "সেচ": r.irrigation, "সঞ্চয়": r.savings, "বিবিধ": r.category, "মোট": r.amount, "ইউজার": r.user, "মাধ্যম": r.method, "অবস্থা": r.status })))}
           />
-          <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("rpKind" as any)}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
-            <TableBody>{payments.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.created_at)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.kind}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.method}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>তারিখ</TableHead><TableHead>রশিদ নং</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead className="text-right">হাওলাত</TableHead><TableHead className="text-right">সেচ</TableHead>
+              <TableHead className="text-right">সঞ্চয়</TableHead><TableHead>বিবিধ</TableHead>
+              <TableHead className="text-right">{t("amount")}</TableHead><TableHead>ইউজার</TableHead>
+              <TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>{collectionRows.map((r, i) => <TableRow key={i}>
+              <TableCell className="text-xs">{r.date}</TableCell>
+              <TableCell className="font-mono text-xs">{r.receipt}</TableCell>
+              <TableCell>{r.farmer}</TableCell>
+              <TableCell className="text-right">{r.loan ? money(r.loan) : "—"}</TableCell>
+              <TableCell className="text-right">{r.irrigation ? money(r.irrigation) : "—"}</TableCell>
+              <TableCell className="text-right">{r.savings ? money(r.savings) : "—"}</TableCell>
+              <TableCell className="text-xs">{r.category}</TableCell>
+              <TableCell className="text-right font-semibold">{money(r.amount)}</TableCell>
+              <TableCell className="text-xs">{r.user}</TableCell>
+              <TableCell>{r.method}</TableCell>
+              <TableCell>{r.status}</TableCell>
+            </TableRow>)}
+            {collectionRows.length === 0 && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
+
 
         <TabsContent value="audit">
           <div className="flex justify-end gap-2 mb-3">
