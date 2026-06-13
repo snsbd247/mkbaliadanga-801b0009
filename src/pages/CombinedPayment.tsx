@@ -30,7 +30,7 @@ type LoanRow = {
   interest_rate: number; duration_months: number; last_payment_on: string | null;
 };
 
-const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "" };
+const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "", receipt_no: "" };
 
 export default function CombinedPayment() {
   const { user, officeId } = useAuth();
