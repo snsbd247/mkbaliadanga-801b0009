@@ -1170,7 +1170,13 @@ export default function FarmerDetail() {
                     return (
                       <TableRow key={l.id}>
                         <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
-                        <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
+                        <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link>
+                          {(landNotes[l.id]?.length) ? (
+                            <div className="text-[11px] text-muted-foreground mt-0.5 whitespace-normal max-w-[160px]" title={landNotes[l.id].join(" • ")}>
+                              📝 {landNotes[l.id].join(" • ")}
+                            </div>
+                          ) : null}
+                        </TableCell>
                         <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                         <TableCell className="text-xs">
