@@ -49,7 +49,20 @@ export default function CombinedPayment() {
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
-  const loanExceeds = !!selectedLoan && Number(form.loan_amt || 0) > selectedLoan.remaining;
+  const loanAmt = Number(form.loan_principal || 0) + Number(form.loan_interest || 0);
+  const loanExceeds = !!selectedLoan && loanAmt > selectedLoan.remaining;
+  // Suggested accrued interest = remaining principal × (rate%/duration) × months elapsed since last payment/issue
+  const suggestedInterest = useMemo(() => {
+    if (!selectedLoan) return 0;
+    const rate = Number(selectedLoan.interest_rate || 0);
+    const dur = Number(selectedLoan.duration_months || 0);
+    if (rate <= 0 || dur <= 0) return 0;
+    const since = selectedLoan.last_payment_on || selectedLoan.issued_on;
+    if (!since) return 0;
+    const months = Math.max(0, Math.round((Date.now() - new Date(since).getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    const principalRemaining = Math.min(selectedLoan.principal, selectedLoan.remaining);
+    return Math.round(principalRemaining * (rate / 100 / dur) * months);
+  }, [selectedLoan]);
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
