@@ -127,6 +127,7 @@ generate_env() {
   [[ -z "${REALTIME_DB_ENC_KEY:-}" ]] && { _set REALTIME_DB_ENC_KEY "$(gen_secret 16)"; }
   [[ -z "${VAULT_ENC_KEY:-}"     ]] && { _set VAULT_ENC_KEY "$(gen_secret 16)"; }
   [[ -z "${DASHBOARD_PASSWORD:-}" ]] && { _set DASHBOARD_PASSWORD "$(gen_password)"; }
+  [[ -z "${ADMIN_PASSWORD:-}" ]] && { ADMIN_PASSWORD=$(gen_password); _set ADMIN_PASSWORD "$ADMIN_PASSWORD"; }
   if [[ -z "${ANON_KEY:-}" ]]; then
     ANON_KEY=$(make_jwt "$JWT_SECRET" anon "$now" "$exp"); _set ANON_KEY "$ANON_KEY"
   fi
@@ -164,6 +165,9 @@ start_supabase() {
 # ----------------------------------------------------------------------------- 9. Migrations
 run_migrations() { bash "$DEPLOY_DIR/migrate.sh"; }
 
+# ----------------------------------------------------------------------------- 9b. Admin user
+seed_admin() { bash "$DEPLOY_DIR/seed-admin.sh"; }
+
 # ----------------------------------------------------------------------------- 10. App + proxy
 start_app() {
   cd "$DEPLOY_DIR"
@@ -188,6 +192,7 @@ step harden          "Hardening server (Fail2ban/SSH/Docker)" harden_server
 generate_env
 start_supabase    && ok "Supabase stack up"
 run_migrations
+seed_admin
 start_app         && ok "Application + Caddy up"
 schedule_backups
 
@@ -200,6 +205,7 @@ ${C_GRN}========================================================${C_RST}
    Supabase   ->  https://${SUPABASE_DOMAIN}
    Coolify    ->  https://${COOLIFY_DOMAIN}
 
+ App login    : ${ADMIN_EMAIL} / (see ADMIN_PASSWORD in $ENV_FILE)
  Studio login : ${DASHBOARD_USERNAME} / (see DASHBOARD_PASSWORD in $ENV_FILE)
  Secrets file : $ENV_FILE  (chmod 600)
  Logs         : $LOG_DIR/deploy.log
