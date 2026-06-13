@@ -202,6 +202,37 @@ export default function Reports() {
     ];
   }, [irr, loanPayments, savings, payments]);
 
+  // --- Collection report (per-payment breakdown by kind) ---
+  const collectionRows = useMemo(() => {
+    return payments.map((p: any) => {
+      let loan = 0, irrigation = 0, sav = 0;
+      const list = p.payment_allocations ?? [];
+      if (list.length === 0) {
+        if (p.kind === "loan") loan = Number(p.amount);
+        else if (p.kind === "irrigation") irrigation = Number(p.amount);
+        else if (p.kind === "savings") sav = Number(p.amount);
+      } else {
+        for (const a of list) {
+          if (a.kind === "loan") loan += Number(a.amount);
+          else if (a.kind === "irrigation") irrigation += Number(a.amount);
+          else if (a.kind === "savings") sav += Number(a.amount);
+        }
+      }
+      return {
+        date: fmtDate(p.created_at),
+        receipt: p.receipt_no ?? "—",
+        farmer: p.farmers?.name_en ?? "—",
+        loan, irrigation, savings: sav,
+        category: p.category ?? "—",
+        amount: Number(p.amount),
+        user: p.collected_by ? (userMap[p.collected_by] ?? "—") : "—",
+        method: p.method ?? "—",
+        status: p.status,
+      };
+    });
+  }, [payments, userMap]);
+
+
   // --- Irrigation Arrears (per charge with due > 0, aged) ---
   // Age is computed as the difference (in whole days) between today and entry_date,
   // using UTC date-only arithmetic so the bucket does not flip with the user's
