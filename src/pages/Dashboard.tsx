@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown } from "lucide-react";
+import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -124,6 +124,7 @@ export default function Dashboard() {
       
       { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
       { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
+      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মোট)" : "Hand Cash (Total)", value: money(irrCashBal + savCashBal), icon: Banknote, tone: "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 

@@ -70,8 +70,16 @@ export default function BankAccounts() {
     setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", opening_balance: 0, is_active: true });
   }
 
+  async function isCashbookLocked(dateStr: string): Promise<boolean> {
+    const d = new Date(dateStr);
+    const year = d.getFullYear(), month = d.getMonth() + 1;
+    const { data } = await sb.from("cashbook_submissions").select("id").eq("year", year).eq("month", month).eq("locked", true).limit(1);
+    return (data?.length ?? 0) > 0;
+  }
+
   async function saveTxn() {
     if (!tx.bank_account_id || tx.amount <= 0) return toast.error("Account and amount required");
+    if (await isCashbookLocked(tx.txn_date)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
     const { post_cashbook, ...txnRow } = tx;
     const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id });
     if (error) return toast.error(error.message);
@@ -106,6 +114,7 @@ export default function BankAccounts() {
   async function saveTransfer() {
     if (!xf.from_id || !xf.to_id || xf.from_id === xf.to_id) return toast.error("Pick two different accounts");
     if (xf.amount <= 0) return toast.error("Amount required");
+    if (await isCashbookLocked(xf.txn_date)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
     const group = crypto.randomUUID();
     const common = { amount: xf.amount, txn_date: xf.txn_date, note: xf.note, transfer_group: group, created_by: user?.id };
     const { error } = await sb.from("bank_transactions").insert([
@@ -213,7 +222,7 @@ export default function BankAccounts() {
         <TabsList>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
-          <TabsTrigger value="deposits">Deposits Report</TabsTrigger>
+          <TabsTrigger value="deposits">Statement (জমা/উত্তোলন)</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
           <Card className="overflow-x-auto"><Table>
@@ -261,15 +270,32 @@ export default function BankAccounts() {
         </TabsContent>
         <TabsContent value="deposits">
           {(() => {
-            const deposits = txns.filter((t: any) => t.txn_type === "deposit"
-              && (!dFrom || t.txn_date >= dFrom)
-              && (!dTo || t.txn_date <= dTo)
-              && (dAccount === "__all__" || t.bank_account_id === dAccount));
-            const total = deposits.reduce((s, t) => s + Number(t.amount || 0), 0);
-            const headers = ["Date", "Bank", "Account No", "Amount", "Reference", "Note"];
-            const rows = deposits.map((t: any) => [
-              fmtDate(t.txn_date), t.account?.bank_name ?? "", t.account?.account_no ?? "",
-              Number(t.amount || 0), t.reference_no ?? "", t.note ?? "",
+            const inRange = (t: any) => (!dFrom || t.txn_date >= dFrom) && (!dTo || t.txn_date <= dTo)
+              && (dAccount === "__all__" || t.bank_account_id === dAccount);
+            const isIn = (ty: string) => ["deposit", "transfer_in", "interest"].includes(ty);
+            // opening balance = account openings + all transactions strictly before dFrom
+            const accSubset = dAccount === "__all__" ? accounts : accounts.filter(a => a.id === dAccount);
+            let opening = accSubset.reduce((s, a) => s + Number(a.opening_balance || 0), 0);
+            txns.forEach((t: any) => {
+              if (dAccount !== "__all__" && t.bank_account_id !== dAccount) return;
+              if (dFrom && t.txn_date >= dFrom) return;
+              opening += (isIn(t.txn_type) ? 1 : -1) * Number(t.amount || 0);
+            });
+            const rowsTxn = txns.filter(inRange).sort((a, b) => a.txn_date.localeCompare(b.txn_date));
+            const totalIn = rowsTxn.filter(t => isIn(t.txn_type)).reduce((s, t) => s + Number(t.amount || 0), 0);
+            const totalOut = rowsTxn.filter(t => !isIn(t.txn_type)).reduce((s, t) => s + Number(t.amount || 0), 0);
+            const closing = opening + totalIn - totalOut;
+            let run = opening;
+            const display = rowsTxn.map((t: any) => {
+              const inAmt = isIn(t.txn_type) ? Number(t.amount || 0) : 0;
+              const outAmt = isIn(t.txn_type) ? 0 : Number(t.amount || 0);
+              run += inAmt - outAmt;
+              return { ...t, inAmt, outAmt, balance: run };
+            });
+            const headers = ["Date", "Bank", "Type", "জমা", "উত্তোলন", "Balance", "Note"];
+            const pdfRows = display.map((t: any) => [
+              fmtDate(t.txn_date), t.account?.bank_name ?? "", t.txn_type,
+              t.inAmt || "", t.outAmt || "", t.balance, t.note ?? "",
             ]);
             return (
               <>
@@ -286,44 +312,54 @@ export default function BankAccounts() {
                   <div><Label>From</Label><Input type="date" value={dFrom} onChange={e => setDFrom(e.target.value)} /></div>
                   <div><Label>To</Label><Input type="date" value={dTo} onChange={e => setDTo(e.target.value)} /></div>
                   <div className="ml-auto flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => exportTablePDF("Bank Deposits Report", headers, rows, { from: dFrom, to: dTo })}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
-                    <Button size="sm" variant="outline" onClick={() => exportExcel("bank-deposits", "Deposits", deposits.map((t: any) => ({ Date: t.txn_date, Bank: t.account?.bank_name, Account: t.account?.account_no, Amount: t.amount, Reference: t.reference_no, Note: t.note })), { from: dFrom, to: dTo })}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
+                    <Button size="sm" variant="outline" onClick={() => exportTablePDF("Bank Statement", headers, pdfRows, { from: dFrom, to: dTo })}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
+                    <Button size="sm" variant="outline" onClick={() => exportExcel("bank-statement", "Statement", display.map((t: any) => ({ Date: t.txn_date, Bank: t.account?.bank_name, Type: t.txn_type, "জমা": t.inAmt, "উত্তোলন": t.outAmt, Balance: t.balance, Note: t.note })), { from: dFrom, to: dTo })}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
                   </div>
                 </Card>
                 <Card className="p-3 mb-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div><div className="text-xs text-muted-foreground">Deposits</div><div className="text-lg font-bold">{deposits.length}</div></div>
-                  <div><div className="text-xs text-muted-foreground">Total Amount</div><div className="text-lg font-bold text-success">{money(total)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">প্রারম্ভিক ব্যালেন্স</div><div className="text-lg font-bold">{money(opening)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">মোট জমা</div><div className="text-lg font-bold text-success">{money(totalIn)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">মোট উত্তোলন</div><div className="text-lg font-bold text-destructive">{money(totalOut)}</div></div>
+                  <div><div className="text-xs text-muted-foreground">সমাপনী ব্যালেন্স</div><div className="text-lg font-bold text-primary">{money(closing)}</div></div>
                 </Card>
                 <Card className="overflow-x-auto"><Table>
                   <TableHeader><TableRow>
-                    <TableHead>Date</TableHead><TableHead>Bank</TableHead><TableHead>Account No</TableHead>
-                    <TableHead className="text-right">Amount</TableHead><TableHead>Reference</TableHead><TableHead>Note</TableHead>
+                    <TableHead>Date</TableHead><TableHead>Bank</TableHead><TableHead>Type</TableHead>
+                    <TableHead className="text-right">জমা</TableHead><TableHead className="text-right">উত্তোলন</TableHead>
+                    <TableHead className="text-right">Balance</TableHead><TableHead>Note</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {deposits.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No deposits in selected range</TableCell></TableRow>}
-                    {deposits.map((t: any) => (
+                    <TableRow className="bg-muted/40">
+                      <TableCell colSpan={5} className="text-right font-medium">প্রারম্ভিক ব্যালেন্স</TableCell>
+                      <TableCell className="text-right font-bold">{money(opening)}</TableCell>
+                      <TableCell />
+                    </TableRow>
+                    {display.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No transactions in selected range</TableCell></TableRow>}
+                    {display.map((t: any) => (
                       <TableRow key={t.id}>
                         <TableCell>{fmtDate(t.txn_date)}</TableCell>
                         <TableCell>{t.account?.bank_name}</TableCell>
-                        <TableCell className="font-mono text-xs">{t.account?.account_no}</TableCell>
-                        <TableCell className="text-right font-semibold text-success">{money(t.amount)}</TableCell>
-                        <TableCell className="font-mono text-xs">{t.reference_no}</TableCell>
+                        <TableCell><Badge variant={t.inAmt ? "default" : "destructive"}>{t.txn_type}</Badge></TableCell>
+                        <TableCell className="text-right text-success">{t.inAmt ? money(t.inAmt) : "—"}</TableCell>
+                        <TableCell className="text-right text-destructive">{t.outAmt ? money(t.outAmt) : "—"}</TableCell>
+                        <TableCell className="text-right font-semibold">{money(t.balance)}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{t.note}</TableCell>
                       </TableRow>
                     ))}
-                    {deposits.length > 0 && (
-                      <TableRow className="bg-muted/60 font-bold">
-                        <TableCell colSpan={3} className="text-right">Total</TableCell>
-                        <TableCell className="text-right">{money(total)}</TableCell>
-                        <TableCell colSpan={2} />
-                      </TableRow>
-                    )}
+                    <TableRow className="bg-muted/60 font-bold">
+                      <TableCell colSpan={3} className="text-right">মোট</TableCell>
+                      <TableCell className="text-right text-success">{money(totalIn)}</TableCell>
+                      <TableCell className="text-right text-destructive">{money(totalOut)}</TableCell>
+                      <TableCell className="text-right text-primary">{money(closing)}</TableCell>
+                      <TableCell />
+                    </TableRow>
                   </TableBody>
                 </Table></Card>
               </>
             );
           })()}
         </TabsContent>
+
       </Tabs>
     </>
   );

@@ -100,6 +100,7 @@ export function AppSidebar() {
         { url: "/payments/combined", icon: Receipt, label: (t("combinedPayment" as any) as string) || "Combined Payment", permKey: "payments" },
         { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
         { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
+        { url: "/hand-cash", icon: Banknote, label: "হ্যান্ড ক্যাশ", permKey: "cashbook" },
         { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
       ],
     },
