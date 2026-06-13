@@ -26,6 +26,9 @@ type Invoice = {
   invoice_no: string;
   season_id: string;
   office_id: string | null;
+  land_id: string | null;
+  owner_farmer_id: string | null;
+  is_borga: boolean | null;
   due_date: string;
   due_amount: number;
   paid_amount: number;
@@ -36,7 +39,12 @@ type Invoice = {
   canal_amount: number;
   other_charge: number;
   seasons?: { name: string | null; year: number | null; status: string | null } | null;
+  lands?: { mouza: string | null; land_size: number | null } | null;
+  owner?: { name_bn: string | null; name_en: string | null } | null;
 };
+
+// All money values are whole-taka (round figure). Land sizes keep decimals.
+const roundTk = (n: number) => Math.round(Number(n) || 0);
 
 export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFarmerId?: string; onPaid?: () => void }) {
   const { t, tx, lang } = useLang();
