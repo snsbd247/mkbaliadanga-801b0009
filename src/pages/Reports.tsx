@@ -524,14 +524,33 @@ export default function Reports() {
 
         <TabsContent value="savings">
           <ExportBar
-            onPdf={() => exportTablePDF(`Savings Report${filterTitleSuffix()}`, ["Date", "Farmer", "Type", "Amount", "Status"], savings.map(r => [fmtDate(r.txn_date), r.farmers?.name_en, r.type, r.amount, r.status]))}
-            onXlsx={() => exportExcel("savings-report", "Savings", savings.map(r => ({ Date: r.txn_date, Farmer: r.farmers?.name_en, Type: r.type, Amount: r.amount, Status: r.status })))}
+            onPdf={() => exportTablePDF(`Savings Report${filterTitleSuffix()}`,
+              ["তারিখ", "কৃষক", "সঞ্চয়", "শেয়ার", "লাভ", "উত্তোলন", "অবস্থা"],
+              savingsRows.map(r => [r.date, r.farmer, money(r.deposit), money(r.share), money(r.profit), money(r.withdraw), r.status]))}
+            onXlsx={() => exportExcel("savings-report", "Savings",
+              savingsRows.map(r => ({ "তারিখ": r.date, "কৃষক": r.farmer, "সঞ্চয়": r.deposit, "শেয়ার": r.share, "লাভ": r.profit, "উত্তোলন": r.withdraw, "অবস্থা": r.status })))}
           />
-          <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("type")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
-            <TableBody>{savings.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.txn_date)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.type}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>তারিখ</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead className="text-right">সঞ্চয়</TableHead><TableHead className="text-right">শেয়ার</TableHead>
+              <TableHead className="text-right">লাভ</TableHead><TableHead className="text-right">উত্তোলন</TableHead>
+              <TableHead>{t("status")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>{savingsRows.map((r, i) => <TableRow key={i}>
+              <TableCell className="text-xs">{r.date}</TableCell>
+              <TableCell>{r.farmer}</TableCell>
+              <TableCell className="text-right">{r.deposit ? money(r.deposit) : "—"}</TableCell>
+              <TableCell className="text-right">{r.share ? money(r.share) : "—"}</TableCell>
+              <TableCell className="text-right">{r.profit ? money(r.profit) : "—"}</TableCell>
+              <TableCell className="text-right">{r.withdraw ? money(r.withdraw) : "—"}</TableCell>
+              <TableCell>{r.status}</TableCell>
+            </TableRow>)}
+            {savingsRows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
+
 
         <TabsContent value="arrears">
           <ExportBar
