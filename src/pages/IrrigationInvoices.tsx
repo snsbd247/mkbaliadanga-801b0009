@@ -1132,7 +1132,10 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             override_reason: hasManual ? row.manualReason.trim() : null,
             calculation_snapshot: {
               rate_per_shotok: appliedRate,
-              land_size_shotok: Number(row.land.land_size),
+              land_size_shotok: billedArea,
+              parcel_size_shotok: Number(row.land.land_size),
+              billed_area_shotok: billedArea,
+              is_borga_split: !!row.billed.is_borga,
               land_type_code: row.rateRow?.land_type_code ?? row.land.field_type ?? null,
               land_type_name: row.rateRow?.land_type_name ?? null,
               settings: row.settings,
