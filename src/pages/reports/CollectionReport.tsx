@@ -165,6 +165,8 @@ export default function CollectionReport() {
           user_name: nameForUser(r.collected_by),
           ref_id: r.id,
           receipt_no: null,
+          sech: 0, jorimana: 0, hal: 0, bokeya: 0,
+          hawlat: 0, anudan: 0, rin: Number(r.amount || 0), soncoy: 0, bibidh: 0,
         });
       }
 
