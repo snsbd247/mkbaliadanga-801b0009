@@ -378,7 +378,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           company_name_bn: company?.company_name_bn ?? undefined,
           logo_url: company?.logo_url ?? null,
           org: company ?? null,
-          farmer: { name: farmerName, member_no: farmer?.member_no ?? null, village: farmer?.village ?? null, mobile: farmer?.mobile ?? null },
+          farmer: { name: farmerName, member_no: farmer?.member_no ?? null, village: farmer?.village ?? null, mobile: farmer?.mobile ?? null, mouza: receiptMouza, land_size: receiptLandSize },
           current_season_charge: simplifiedReceipt ? null : Number(currentCollected || 0),
           collected_from_outstanding: simplifiedReceipt ? null : Number(previousCollected || 0),
           total_outstanding: simplifiedReceipt ? null : previousDueTotal,
