@@ -26,7 +26,7 @@ import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-ic
 
 export default function Savings() {
   const { t, lang, tx } = useLang();
-  const { isCommittee, isSuper, user, officeId } = useAuth();
+  const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [farmers, setFarmers] = useState<any[]>([]);
