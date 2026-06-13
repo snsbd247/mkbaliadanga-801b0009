@@ -52,6 +52,8 @@ export default function Savings() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [editTxn, setEditTxn] = useState<any | null>(null);
   const [editTxnForm, setEditTxnForm] = useState({ amount: 0, note: "" });
+  const [memberSearch, setMemberSearch] = useState("");
+  const [transfer, setTransfer] = useState<{ from: any; toId: string } | null>(null);
   
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, [showDeleted]);
