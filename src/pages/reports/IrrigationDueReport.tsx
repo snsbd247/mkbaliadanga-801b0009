@@ -281,11 +281,13 @@ export default function IrrigationDueReport() {
                 "Irrigation-Due", "Due",
                 filtered.map((r) => ({
                   "Farmer Code": r.farmer_code, "Farmer": r.farmer_name,
-                  "Land": r.land_label, "Patwari": r.patwari_name,
+                  "Father": r.father_name, "Village": r.village, "Mobile": r.mobile,
+                  "Mouza": r.mouza, "Dag": r.dag, "Type": r.season_type, "Season": r.season_label,
                   "Bigha": Number(r.land_size_bigha.toFixed(2)),
                   "Shatak": Number(r.land_size_shatak.toFixed(2)),
-                  "Season": r.season_label,
                   "Total": r.total, "Paid": r.paid, "Due": r.due,
+                  "Owner": r.owner_name, "Owner ID": r.owner_code, "Owner Father": r.owner_father,
+                  "Owner Village": r.owner_village, "Owner Mobile": r.owner_mobile, "Patwari": r.patwari_name,
                 })),
               )}>
                 <FileSpreadsheet className="mr-1 h-4 w-4" /> Excel
