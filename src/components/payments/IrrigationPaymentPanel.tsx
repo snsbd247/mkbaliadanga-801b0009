@@ -485,15 +485,20 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                     <TableRow key={inv.id} className={checked ? "bg-muted/30" : ""}>
                       <TableCell><input type="checkbox" checked={checked} onChange={() => toggleInvoice(inv.id)} /></TableCell>
                       <TableCell className="font-mono text-xs">{inv.invoice_no}</TableCell>
+                      <TableCell className="text-xs">
+                        {(inv.owner?.name_bn || inv.owner?.name_en || "—")}
+                        {inv.is_borga && <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0">{tx("Borga", "বর্গা")}</Badge>}
+                      </TableCell>
+                      <TableCell className="text-xs">{inv.lands?.mouza || "—"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">{inv.lands?.land_size ?? "—"}</TableCell>
                       <TableCell className="text-xs">{inv.seasons?.name} {inv.seasons?.year}</TableCell>
                       <TableCell className="text-right font-mono text-xs">{money(inv.irrigation_amount)}</TableCell>
                       <TableCell className="text-right">
                         <Input
-                          type="number" className="h-7 text-xs text-right w-24 ml-auto font-mono"
+                          type="number" step={1} className="h-7 text-xs text-right w-24 ml-auto font-mono"
                           value={fee}
-                          disabled={!isAdmin}
-                          title={!isAdmin ? tx("Only admin can edit delay fee", "শুধু অ্যাডমিন বিলম্ব ফি সম্পাদনা করতে পারেন") : undefined}
-                          onChange={(e) => setDelayFee(p => ({ ...p, [inv.id]: Number(e.target.value || 0) }))}
+                          title={tx("Enter delay fee / penalty", "জরিমানা লিখুন")}
+                          onChange={(e) => setDelayFee(p => ({ ...p, [inv.id]: roundTk(Number(e.target.value || 0)) }))}
                         />
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs">{money(inv.maintenance_amount)}</TableCell>
