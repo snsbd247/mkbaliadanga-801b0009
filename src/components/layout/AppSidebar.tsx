@@ -72,6 +72,7 @@ export function AppSidebar() {
       children: [
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
         { url: "/share-collection", icon: Wallet, label: t("shareCollection"), permKey: "savings" },
+        { url: "/admin/loan-plans", icon: Wallet, label: t("loanPlans" as any) || "ঋণ প্ল্যান", adminOnly: true },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
