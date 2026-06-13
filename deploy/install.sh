@@ -205,6 +205,7 @@ ${C_GRN}========================================================${C_RST}
    Supabase   ->  https://${SUPABASE_DOMAIN}
    Coolify    ->  https://${COOLIFY_DOMAIN}
 
+ App login    : ${ADMIN_EMAIL} / (see ADMIN_PASSWORD in $ENV_FILE)
  Studio login : ${DASHBOARD_USERNAME} / (see DASHBOARD_PASSWORD in $ENV_FILE)
  Secrets file : $ENV_FILE  (chmod 600)
  Logs         : $LOG_DIR/deploy.log
