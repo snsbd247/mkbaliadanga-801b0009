@@ -299,7 +299,9 @@ export default function IrrigationDueReport() {
               <TableRow>
                 <TableHead>{t("code")}</TableHead>
                 <TableHead>{t("farmer")}</TableHead>
+                <TableHead>{tx("Father", "পিতার নাম")}</TableHead>
                 <TableHead>{t("land")}</TableHead>
+                <TableHead>{tx("Owner", "মালিক")}</TableHead>
                 <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
                 <TableHead>{t("season")}</TableHead>
                 <TableHead className="text-right">{t("total")}</TableHead>
@@ -312,7 +314,9 @@ export default function IrrigationDueReport() {
                 <TableRow key={i}>
                   <TableCell className="text-xs">{r.farmer_code}</TableCell>
                   <TableCell>{r.farmer_name}</TableCell>
+                  <TableCell className="text-xs">{r.father_name || "—"}</TableCell>
                   <TableCell className="text-xs">{r.land_label}</TableCell>
+                  <TableCell className="text-xs">{r.owner_name || "—"}</TableCell>
                   <TableCell className="text-xs">{r.patwari_name}</TableCell>
                   <TableCell className="text-xs">{r.season_label}</TableCell>
                   <TableCell className="text-right">{money(r.total)}</TableCell>
@@ -321,9 +325,10 @@ export default function IrrigationDueReport() {
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
               )}
             </TableBody>
+
           </Table>
           {filtered.length > 0 && (
             <div className="mt-3 flex justify-end gap-6 text-sm">
