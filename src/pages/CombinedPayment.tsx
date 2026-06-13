@@ -52,13 +52,6 @@ export default function CombinedPayment() {
   const loanAmt = Number(form.loan_principal || 0) + Number(form.loan_interest || 0);
   const loanExceeds = !!selectedLoan && loanAmt > selectedLoan.remaining;
   // Suggested accrued interest = remaining principal × (rate%/duration) × months elapsed since last payment/issue
-  // Remaining (unpaid) profit after the amount entered in this transaction —
-  // shown as a profit due so partial profit payments leave a visible balance.
-  const profitDue = useMemo(() => {
-    if (!selectedLoan) return 0;
-    return Math.max(0, suggestedInterestValue() - Number(form.loan_interest || 0));
-  }, [selectedLoan, form.loan_interest]);
-  function suggestedInterestValue() { return suggestedInterest; }
   const suggestedInterest = useMemo(() => {
     if (!selectedLoan) return 0;
     const rate = Number(selectedLoan.interest_rate || 0);
@@ -70,6 +63,13 @@ export default function CombinedPayment() {
     const principalRemaining = Math.min(selectedLoan.principal, selectedLoan.remaining);
     return Math.round(principalRemaining * (rate / 100 / dur) * months);
   }, [selectedLoan]);
+  // Remaining (unpaid) profit after the amount entered in this transaction —
+  // shown as a profit due so partial profit payments leave a visible balance.
+  const profitDue = useMemo(
+    () => (!selectedLoan ? 0 : Math.max(0, suggestedInterest - Number(form.loan_interest || 0))),
+    [selectedLoan, suggestedInterest, form.loan_interest],
+  );
+
 
   useEffect(() => {
     document.title = `${lang === "bn" ? "সম্মিলিত পেমেন্ট" : "Combined Payment"} — ${t("appName")}`;
