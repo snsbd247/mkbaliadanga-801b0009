@@ -198,8 +198,9 @@ export default function Savings() {
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
     // Voter guard: farmer must be is_voter=true to record savings/share txns
-    const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
+    const { data: vchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
     if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? tx("This farmer", "এই ফার্মার")} ${tx("does not have Voter / Savings A/C enabled — savings/share entry not allowed.", "এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।")}`);
+    if (vchk?.savings_inactive) return toast.error(`${vchk?.name_en ?? tx("This member", "এই সদস্য")} ${tx("is inactive — new savings transactions are not allowed.", "ইনঅ্যাক্টিভ — নতুন সেভিং লেনদেন করা যাবে না।")}`);
     const isWithdraw = form.type === "withdraw";
     const isShare = form.type === "share_deposit" || form.type === "share_collection";
     const isProfit = form.type === "profit";
