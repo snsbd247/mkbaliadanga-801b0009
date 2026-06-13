@@ -59,7 +59,7 @@ export default function Savings() {
     let tq = supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200);
     tq = showDeleted ? tq.not("deleted_at", "is", null) : tq.is("deleted_at", null);
     const [f, ts, pr, sp, fsp] = await Promise.all([
-      supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").order("name_en"),
+      supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive").order("name_en"),
       tq,
       supabase.from("profiles").select("id,full_name,username"),
       supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
