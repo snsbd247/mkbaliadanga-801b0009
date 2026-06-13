@@ -463,9 +463,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <TableRow>
                 <TableHead className="w-8"></TableHead>
                 <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
+                <TableHead>{tx("Owner", "মালিক")}</TableHead>
+                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead className="text-right">{tx("Land", "জমি")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead className="text-right">{tx("Irrigation", "সেচ")}</TableHead>
-                <TableHead className="text-right">{tx("Delay Fee", "বিলম্ব ফি")}</TableHead>
+                <TableHead className="text-right">{tx("Delay Fee", "জরিমানা")}</TableHead>
                 <TableHead className="text-right">{tx("Maintenance", "রক্ষণাবেক্ষণ")}</TableHead>
                 <TableHead className="text-right">{tx("Canal", "ক্যানেল")}</TableHead>
                 <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
