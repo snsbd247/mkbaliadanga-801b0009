@@ -114,7 +114,13 @@ generate_env() {
     cp "$DEPLOY_DIR/.env.example" "$ENV_FILE"
     ok "Created $ENV_FILE from template."
   fi
+  # Repair any unquoted values containing spaces (e.g. "MK Baliadanga"),
+  # which break `. .env.production` sourcing. Quote known multi-word keys.
+  for k in STUDIO_DEFAULT_ORGANIZATION STUDIO_DEFAULT_PROJECT SMTP_SENDER_NAME; do
+    sed -i -E "s|^($k)=([^\"'].*[[:space:]].*)$|\1=\"\2\"|" "$ENV_FILE"
+  done
   load_env
+
 
   local now exp
   now=$(date +%s); exp=$((now + 5*365*24*3600))  # ~5 years
