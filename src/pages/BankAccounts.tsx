@@ -70,8 +70,16 @@ export default function BankAccounts() {
     setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", opening_balance: 0, is_active: true });
   }
 
+  async function isCashbookLocked(dateStr: string): Promise<boolean> {
+    const d = new Date(dateStr);
+    const year = d.getFullYear(), month = d.getMonth() + 1;
+    const { data } = await sb.from("cashbook_submissions").select("id").eq("year", year).eq("month", month).eq("locked", true).limit(1);
+    return (data?.length ?? 0) > 0;
+  }
+
   async function saveTxn() {
     if (!tx.bank_account_id || tx.amount <= 0) return toast.error("Account and amount required");
+    if (await isCashbookLocked(tx.txn_date)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
     const { post_cashbook, ...txnRow } = tx;
     const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id });
     if (error) return toast.error(error.message);
