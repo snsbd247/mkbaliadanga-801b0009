@@ -1,0 +1,1 @@
+ALTER TABLE public.farmers ADD COLUMN IF NOT EXISTS savings_inactive boolean NOT NULL DEFAULT false;

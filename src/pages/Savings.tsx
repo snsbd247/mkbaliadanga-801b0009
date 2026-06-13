@@ -22,11 +22,11 @@ import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/expo
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
 import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
-import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
+
 
 export default function Savings() {
   const { t, lang, tx } = useLang();
-  const { isCommittee, isSuper, user, officeId } = useAuth();
+  const { isCommittee, isSuper, user } = useAuth();
   const brand = useBranding();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [farmers, setFarmers] = useState<any[]>([]);
@@ -52,6 +52,8 @@ export default function Savings() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [editTxn, setEditTxn] = useState<any | null>(null);
   const [editTxnForm, setEditTxnForm] = useState({ amount: 0, note: "" });
+  const [memberSearch, setMemberSearch] = useState("");
+  const [transfer, setTransfer] = useState<{ from: any; toId: string } | null>(null);
   
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, [showDeleted]);
@@ -59,7 +61,7 @@ export default function Savings() {
     let tq = supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200);
     tq = showDeleted ? tq.not("deleted_at", "is", null) : tq.is("deleted_at", null);
     const [f, ts, pr, sp, fsp] = await Promise.all([
-      supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village").order("name_en"),
+      supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive").order("name_en"),
       tq,
       supabase.from("profiles").select("id,full_name,username"),
       supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
@@ -198,8 +200,9 @@ export default function Savings() {
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
     // Voter guard: farmer must be is_voter=true to record savings/share txns
-    const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
+    const { data: vchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
     if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? tx("This farmer", "এই ফার্মার")} ${tx("does not have Voter / Savings A/C enabled — savings/share entry not allowed.", "এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।")}`);
+    if (vchk?.savings_inactive) return toast.error(`${vchk?.name_en ?? tx("This member", "এই সদস্য")} ${tx("is inactive — new savings transactions are not allowed.", "ইনঅ্যাক্টিভ — নতুন সেভিং লেনদেন করা যাবে না।")}`);
     const isWithdraw = form.type === "withdraw";
     const isShare = form.type === "share_deposit" || form.type === "share_collection";
     const isProfit = form.type === "profit";
@@ -231,14 +234,8 @@ export default function Savings() {
 
     const status = isWithdraw ? "pending" : "approved";
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
-    // Auto-generate SAV monthly receipt no when user did not enter one.
-    let finalReceiptNo = form.receipt_no?.trim() || "";
-    if (!finalReceiptNo) {
-      // Unique seed so the offline fallback (PREFIX-YYYYMMDD-XXXXXX) never collides
-      // when the same farmer makes more than one entry on the same day.
-      const uniqueSeed = `${form.farmer_id}-${Date.now()}-${crypto.randomUUID()}`;
-      finalReceiptNo = await nextMonthlyReceiptNo("SAV", officeId, uniqueSeed);
-    }
+    // Receipt no: keep exactly what the user typed. Blank stays blank (no auto-generation).
+    const finalReceiptNo = form.receipt_no?.trim() || null;
     const payload: any = {
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
@@ -332,6 +329,36 @@ export default function Savings() {
     if (error) return toast.error(error.message);
     toast.success(t("deleted")); await load();
   }
+  async function toggleSavingsActive(f: any) {
+    const next = !f.savings_inactive;
+    const ok = await confirm({
+      title: next ? tx("Make member inactive?", "সদস্যকে ইনঅ্যাক্টিভ করবেন?") : tx("Make member active?", "সদস্যকে অ্যাক্টিভ করবেন?"),
+      description: next
+        ? tx("New savings transactions will be blocked. Existing balance stays counted in cash/accounts.", "নতুন সেভিং লেনদেন বন্ধ হবে। আগের জমা টাকা ক্যাশ/হিসাবে গণনায় থাকবে।")
+        : tx("Member will be able to transact again.", "সদস্য আবার লেনদেন করতে পারবে।"),
+      confirmText: next ? tx("Make inactive", "ইনঅ্যাক্টিভ") : tx("Make active", "অ্যাক্টিভ"),
+    });
+    if (!ok) return;
+    const { error } = await supabase.from("farmers").update({ savings_inactive: next } as any).eq("id", f.id);
+    if (error) return toast.error(error.message);
+    toast.success(t("updated")); await load();
+  }
+  async function doTransfer() {
+    if (!transfer || !transfer.toId) return toast.error(tx("Select destination member", "গন্তব্য সদস্য নির্বাচন করুন"));
+    if (transfer.toId === transfer.from.id) return toast.error(tx("Source and destination are the same", "উৎস ও গন্তব্য একই"));
+    const fromId = transfer.from.id, toId = transfer.toId;
+    // Move all savings transactions, savings payments and plan enrollments to the destination farmer.
+    const r1 = await supabase.from("savings_transactions").update({ farmer_id: toId } as any).eq("farmer_id", fromId);
+    if (r1.error) return toast.error(r1.error.message);
+    const r2 = await supabase.from("payments").update({ farmer_id: toId } as any).eq("farmer_id", fromId).eq("kind", "savings");
+    if (r2.error) return toast.error(r2.error.message);
+    const r3 = await supabase.from("farmer_savings_plans").update({ farmer_id: toId } as any).eq("farmer_id", fromId);
+    if (r3.error) return toast.error(r3.error.message);
+    // Ensure destination has a savings account enabled.
+    await supabase.from("farmers").update({ is_voter: true } as any).eq("id", toId);
+    toast.success(tx("Savings account transferred", "সেভিং অ্যাকাউন্ট স্থানান্তর হয়েছে"));
+    setTransfer(null); await load();
+  }
   function printReceipt(r: any) {
     const receiptNo = `SAV-${r.id.slice(0, 8).toUpperCase()}`;
     exportPaymentReceiptPDF({
@@ -392,8 +419,8 @@ export default function Savings() {
                 </Select>
               </div>
               <div>
-                <Label>{tx("System Receipt #", "সিস্টেম রশিদ #")} <span className="text-xs text-muted-foreground">({tx("optional — auto-generate if blank", "ঐচ্ছিক — খালি রাখলে অটো জেনারেট হবে")})</span></Label>
-                <Input value={form.receipt_no} placeholder="auto" onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
+                <Label>{tx("System Receipt #", "সিস্টেম রশিদ #")} <span className="text-xs text-muted-foreground">({tx("optional — left blank stays blank", "ঐচ্ছিক — খালি রাখলে খালিই থাকবে")})</span></Label>
+                <Input value={form.receipt_no} placeholder={tx("blank", "খালি")} onChange={e => setForm({ ...form, receipt_no: e.target.value })} />
               </div>
               <div>
                 <Label>{tx("Field Receipt #", "ফিল্ড রশিদ #")} <span className="text-xs text-muted-foreground">({tx("paper receipt from field collection", "ফিল্ড থেকে পেপার রশিদ নাম্বার")})</span></Label>
@@ -431,6 +458,7 @@ export default function Savings() {
           <TabsTrigger value="pending">{t("pending")} {pending.length > 0 && <Badge variant="destructive" className="ml-2">{pending.length}</Badge>}</TabsTrigger>
           <TabsTrigger value="history">{t("approvalHistory")}</TabsTrigger>
           <TabsTrigger value="plans">{t("plansTab")} {farmerPlans.length > 0 && <Badge variant="secondary" className="ml-2">{farmerPlans.length}</Badge>}</TabsTrigger>
+          {isCommittee && <TabsTrigger value="members">{tx("Members", "সদস্য")}</TabsTrigger>}
         </TabsList>
         <TabsContent value="all"><TxnTable rows={all} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
         <TabsContent value="pending"><TxnTable rows={pending} t={t} isAdmin={isCommittee} isSuper={isSuper} showDeleted={showDeleted} onDecide={decide} onRestore={restoreTxn} onPrint={printReceipt} onEdit={startEditTxn} onDelete={deleteTxn} profiles={profiles} /></TabsContent>
@@ -561,7 +589,69 @@ export default function Savings() {
             </TableBody>
           </Table></Card>
         </TabsContent>
+        {isCommittee && (
+        <TabsContent value="members">
+          <Card className="p-3 mb-3">
+            <Input className="h-9 max-w-sm" placeholder={tx("Search by name or code…", "নাম বা কোড দিয়ে খুঁজুন…")}
+              value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+          </Card>
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>{t("farmerName")}</TableHead>
+              <TableHead>{tx("Code", "কোড")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {farmers.filter((f: any) => f.is_voter).filter((f: any) => {
+                const q = memberSearch.trim().toLowerCase();
+                if (!q) return true;
+                return [f.name_en, f.name_bn, f.farmer_code, f.member_no].some((v: any) => String(v ?? "").toLowerCase().includes(q));
+              }).slice(0, 200).map((f: any) => (
+                <TableRow key={f.id}>
+                  <TableCell className="max-w-[220px]"><TruncateText>{(lang === "bn" && f.name_bn) || f.name_en}</TruncateText></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{f.farmer_code}</TableCell>
+                  <TableCell>
+                    {f.savings_inactive
+                      ? <Badge variant="destructive">{tx("Inactive", "ইনঅ্যাক্টিভ")}</Badge>
+                      : <Badge variant="default">{tx("Active", "অ্যাক্টিভ")}</Badge>}
+                  </TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button size="sm" variant="outline" onClick={() => setTransfer({ from: f, toId: "" })}>{tx("Transfer", "স্থানান্তর")}</Button>
+                    <Button size="sm" variant={f.savings_inactive ? "default" : "outline"} onClick={() => toggleSavingsActive(f)}>
+                      {f.savings_inactive ? tx("Activate", "অ্যাক্টিভ") : tx("Deactivate", "ইনঅ্যাক্টিভ")}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {farmers.filter((f: any) => f.is_voter).length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+            </TableBody>
+          </Table></Card>
+        </TabsContent>
+        )}
       </Tabs>
+
+      <Dialog open={!!transfer} onOpenChange={(v) => !v && setTransfer(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{tx("Transfer Savings A/C", "সেভিং A/C স্থানান্তর")}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {tx("All savings transactions, payments and plan enrollments of", "এর সব সেভিং লেনদেন, পেমেন্ট ও প্ল্যান এনরোলমেন্ট")}{" "}
+              <b className="text-foreground">{transfer && ((lang === "bn" && transfer.from.name_bn) || transfer.from.name_en)} ({transfer?.from.farmer_code})</b>{" "}
+              {tx("will be moved to the selected member and removed from the source.", "নির্বাচিত সদস্যে নেওয়া হবে এবং উৎস থেকে বাদ যাবে।")}
+            </p>
+            <div>
+              <Label>{tx("Destination member", "গন্তব্য সদস্য")}</Label>
+              <FarmerSearchSelect value={transfer?.toId || null}
+                onChange={(id) => setTransfer(transfer ? { ...transfer, toId: id ?? "" } : null)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransfer(null)}>{t("cancel")}</Button>
+            <Button onClick={doTransfer} disabled={!transfer?.toId}>{tx("Transfer", "স্থানান্তর")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!decision} onOpenChange={(v) => !v && setDecision(null)}>
         <DialogContent>

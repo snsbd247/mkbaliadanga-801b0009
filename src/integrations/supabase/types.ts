@@ -1856,6 +1856,7 @@ export type Database = {
           office_id: string | null
           photo_url: string | null
           post_office: string | null
+          savings_inactive: boolean
           status: string
           union_id: string | null
           upazila: string | null
@@ -1904,6 +1905,7 @@ export type Database = {
           office_id?: string | null
           photo_url?: string | null
           post_office?: string | null
+          savings_inactive?: boolean
           status?: string
           union_id?: string | null
           upazila?: string | null
@@ -1952,6 +1954,7 @@ export type Database = {
           office_id?: string | null
           photo_url?: string | null
           post_office?: string | null
+          savings_inactive?: boolean
           status?: string
           union_id?: string | null
           upazila?: string | null
