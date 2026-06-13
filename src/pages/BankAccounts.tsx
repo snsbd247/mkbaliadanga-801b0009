@@ -75,7 +75,7 @@ export default function BankAccounts() {
     const { error } = await sb.from("bank_accounts").insert(a);
     if (error) return toast.error(error.message);
     toast.success("Account added"); setOpenA(false); load();
-    setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", opening_balance: 0, is_active: true });
+    setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
   }
 
   async function isCashbookLocked(dateStr: string): Promise<boolean> {
