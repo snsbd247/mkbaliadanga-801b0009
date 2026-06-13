@@ -47,8 +47,8 @@ function getKindLabel(t: (k: any) => string, k: Kind): string {
 const ALL = "__all__";
 
 export default function Cashbook() {
-  const { t } = useLang();
-  const { user, isAdmin, isCommittee, isSuper } = useAuth();
+  const { t, tx } = useLang();
+  const { user, isAdmin, isCommittee, isSuper, officeId } = useAuth();
   const brand = useBranding();
   const today = new Date();
   const [submitYear, setSubmitYear] = useState<number>(today.getFullYear());
