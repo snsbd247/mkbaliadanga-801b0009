@@ -46,6 +46,17 @@ CREATE TABLE IF NOT EXISTS public.schema_migrations (
 SQL
 }
 
+configure_runtime_settings() {
+  log "Configuring environment-specific database runtime settings…"
+  psql_db -q -v supabase_url="${VITE_SUPABASE_URL}" -v anon_key="${ANON_KEY}" <<'SQL'
+ALTER DATABASE postgres SET app.supabase_url = :'supabase_url';
+ALTER DATABASE postgres SET app.supabase_anon_key = :'anon_key';
+ALTER ROLE authenticator IN DATABASE postgres SET app.supabase_url = :'supabase_url';
+ALTER ROLE authenticator IN DATABASE postgres SET app.supabase_anon_key = :'anon_key';
+SQL
+  ok "Database runtime settings now point to this environment."
+}
+
 apply_all() {
   local applied=0 skipped=0
   shopt -s nullglob
@@ -78,6 +89,7 @@ main() {
   wait_for_db
   sync_migrations
   ensure_tracking
+  configure_runtime_settings
   apply_all
   apply_seed
   ok "Database migration finished."
