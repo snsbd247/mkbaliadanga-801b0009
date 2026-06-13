@@ -74,6 +74,7 @@ export default function FarmerDetail() {
   const [farmer, setFarmer] = useState<any>(null);
   const [lands, setLands] = useState<LandRow[]>([]);
   const [ownerNames, setOwnerNames] = useState<Record<string, string>>({});
+  const [landNotes, setLandNotes] = useState<Record<string, string[]>>({});
   const [savings, setSavings] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [viewLoan, setViewLoan] = useState<any | null>(null);
