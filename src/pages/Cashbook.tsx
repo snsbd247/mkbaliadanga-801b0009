@@ -178,6 +178,49 @@ export default function Cashbook() {
     load();
   }
 
+  /** Print an irrigation-style A5 landscape receipt that shows ONLY a remark (other fields N/A). */
+  async function printOfficeIncomeReceipt(rcpt: { receipt_no: string; receipt_date: string; amount: number; note: string }) {
+    await downloadBnReceiptPdf(
+      {
+        kind: "irrigation",
+        receipt_no: rcpt.receipt_no,
+        date: rcpt.receipt_date,
+        company_name: brand.company_name,
+        company_name_bn: brand.company_name_bn,
+        logo_url: brand.logo_url,
+        farmer: { name: "N/A" },
+        total_outstanding: 0,
+        collected_amount: Number(rcpt.amount),
+        remark: rcpt.note,
+      },
+      "both",
+      { paper: "a5", orientation: "l", lang: "bn" },
+    );
+  }
+
+  async function saveOfficeIncome(print: boolean) {
+    if (oi.amount <= 0) return toast.error(t("amountMustBePositive"));
+    if (!oi.remark.trim()) return toast.error(tx("Write a remark / description", "একটি রিমার্ক / বিবরণ লিখুন"));
+    // Use the irrigation receipt serial (IRR-YYYY-MM-NNNN) so office income shares the irrigation sequence.
+    const receipt_no = await nextMonthlyReceiptNo("IRR", officeId, `OI-${Date.now()}-${crypto.randomUUID()}`)
+      .catch(() => autoReceiptNo("IRR", `${Date.now()}`));
+    const { error } = await supabase.from("receipts").insert({
+      kind: oi.kind, farmer_id: null,
+      amount: oi.amount, method: "cash", note: oi.remark.trim(),
+      receipt_date: oi.receipt_date, collected_by: user?.id,
+      receipt_no,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(t("saved"));
+    if (print) {
+      await printOfficeIncomeReceipt({ receipt_no, receipt_date: oi.receipt_date, amount: oi.amount, note: oi.remark.trim() });
+    }
+    setOpenOI(false);
+    setOI({ kind: "scrap", remark: "", amount: 0, receipt_date: new Date().toISOString().slice(0, 10) });
+    load();
+  }
+
+
   // Stream filter — Irrigation vs Savings/Loan/Share (PDF requirement: আলাদা cashbook)
   const irrKinds = new Set(["irrigation"]);
   const slsKinds = new Set(["savings_deposit", "loan_taken", "share", "donation", "hawlat", "bank", "miscellaneous"]);
