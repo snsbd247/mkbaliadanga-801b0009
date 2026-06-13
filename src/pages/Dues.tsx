@@ -269,7 +269,7 @@ export default function Dues() {
                       </TableCell>
                       <TableCell className="text-right font-semibold">{money(r.due)}</TableCell>
                     </TableRow>
-                  </>
+                  </Fragment>
                 );
               })}
             </TableBody>
