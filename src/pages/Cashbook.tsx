@@ -18,6 +18,9 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel, exportAuditReportPDF } from "@/lib/exports";
 import { exportTableDoc } from "@/lib/wordExports";
 import { useBranding } from "@/lib/branding";
+import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
+import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
+import { autoReceiptNo } from "@/lib/receiptNo";
 
 const RECEIPT_KINDS = [
   "irrigation", "bigha_rent", "pond", "crop_sale", "scrap",
@@ -44,8 +47,8 @@ function getKindLabel(t: (k: any) => string, k: Kind): string {
 const ALL = "__all__";
 
 export default function Cashbook() {
-  const { t } = useLang();
-  const { user, isAdmin, isCommittee, isSuper } = useAuth();
+  const { t, tx } = useLang();
+  const { user, isAdmin, isCommittee, isSuper, officeId } = useAuth();
   const brand = useBranding();
   const today = new Date();
   const [submitYear, setSubmitYear] = useState<number>(today.getFullYear());
@@ -76,6 +79,15 @@ export default function Cashbook() {
     head: "", payee: "", amount: 0, method: "cash", note: "",
     expense_date: new Date().toISOString().slice(0, 10),
   });
+  // Office income (no farmer) — printed on irrigation-style A5 landscape receipt with irrigation serial.
+  const [openOI, setOpenOI] = useState(false);
+  const [oi, setOI] = useState({
+    kind: "scrap" as Kind, remark: "", amount: 0,
+    receipt_date: new Date().toISOString().slice(0, 10),
+  });
+  const OFFICE_INCOME_KINDS: Kind[] = ["scrap", "loan_taken", "donation", "other"];
+
+
 
   useEffect(() => {
     document.title = `${t("cashbook")} — ${t("appName")}`;
@@ -165,6 +177,49 @@ export default function Cashbook() {
     setE({ head: "", payee: "", amount: 0, method: "cash", note: "", expense_date: new Date().toISOString().slice(0, 10) });
     load();
   }
+
+  /** Print an irrigation-style A5 landscape receipt that shows ONLY a remark (other fields N/A). */
+  async function printOfficeIncomeReceipt(rcpt: { receipt_no: string; receipt_date: string; amount: number; note: string }) {
+    await downloadBnReceiptPdf(
+      {
+        kind: "irrigation",
+        receipt_no: rcpt.receipt_no,
+        date: rcpt.receipt_date,
+        company_name: brand.company_name,
+        company_name_bn: brand.company_name_bn,
+        logo_url: brand.logo_url,
+        farmer: { name: "N/A" },
+        total_outstanding: 0,
+        collected_amount: Number(rcpt.amount),
+        remark: rcpt.note,
+      },
+      "both",
+      { paper: "a5", orientation: "l", lang: "bn" },
+    );
+  }
+
+  async function saveOfficeIncome(print: boolean) {
+    if (oi.amount <= 0) return toast.error(t("amountMustBePositive"));
+    if (!oi.remark.trim()) return toast.error(tx("Write a remark / description", "একটি রিমার্ক / বিবরণ লিখুন"));
+    // Use the irrigation receipt serial (IRR-YYYY-MM-NNNN) so office income shares the irrigation sequence.
+    const receipt_no = await nextMonthlyReceiptNo("IRR", officeId, `OI-${Date.now()}-${crypto.randomUUID()}`)
+      .catch(() => autoReceiptNo("IRR", `${Date.now()}`));
+    const { error } = await supabase.from("receipts").insert({
+      kind: oi.kind, farmer_id: null,
+      amount: oi.amount, method: "cash", note: oi.remark.trim(),
+      receipt_date: oi.receipt_date, collected_by: user?.id,
+      receipt_no,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(t("saved"));
+    if (print) {
+      await printOfficeIncomeReceipt({ receipt_no, receipt_date: oi.receipt_date, amount: oi.amount, note: oi.remark.trim() });
+    }
+    setOpenOI(false);
+    setOI({ kind: "scrap", remark: "", amount: 0, receipt_date: new Date().toISOString().slice(0, 10) });
+    load();
+  }
+
 
   // Stream filter — Irrigation vs Savings/Loan/Share (PDF requirement: আলাদা cashbook)
   const irrKinds = new Set(["irrigation"]);
@@ -274,7 +329,36 @@ export default function Cashbook() {
                 <DialogFooter><Button variant="outline" onClick={() => setOpenE(false)}>{t("cancel")}</Button><Button onClick={saveExpense}>{t("save")}</Button></DialogFooter>
               </DialogContent>
             </Dialog>
+
+            <Dialog open={openOI} onOpenChange={setOpenOI}>
+              <DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-1" />{tx("Office income", "অফিস আয়")}</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>{tx("Office income (no farmer)", "অফিস আয় (কৃষক ছাড়া)")}</DialogTitle></DialogHeader>
+                <div className="grid gap-3">
+                  <div><Label>{tx("Category", "খাত")}</Label>
+                    <Select value={oi.kind} onValueChange={(v: any) => setOI({ ...oi, kind: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{OFFICE_INCOME_KINDS.map(k => <SelectItem key={k} value={k}>{getKindLabel(t, k)}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>{tx("Remark / description", "রিমার্ক / বিবরণ")}</Label>
+                    <Input value={oi.remark} onChange={ev => setOI({ ...oi, remark: ev.target.value })} placeholder={tx("e.g. Scrap sale, Hawlat from …", "যেমন: ভাঙারি বিক্রি, … থেকে হাওলাত")} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>{t("amount")}</Label><Input type="number" value={oi.amount || ""} onChange={ev => setOI({ ...oi, amount: +ev.target.value })} /></div>
+                    <div><Label>{t("date")}</Label><Input type="date" value={oi.receipt_date} onChange={ev => setOI({ ...oi, receipt_date: ev.target.value })} /></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{tx("Receipt uses the irrigation serial and prints A5 landscape with only the remark.", "রশিদ সেচ সিরিয়ালে হবে এবং A5 ল্যান্ডস্কেপে শুধু রিমার্ক সহ প্রিন্ট হবে।")}</p>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenOI(false)}>{t("cancel")}</Button>
+                  <Button variant="outline" onClick={() => saveOfficeIncome(false)}>{t("save")}</Button>
+                  <Button onClick={() => saveOfficeIncome(true)}><Printer className="h-4 w-4 mr-1" />{tx("Save & print", "সেভ ও প্রিন্ট")}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </>
+
         }
       />
 
@@ -447,6 +531,7 @@ export default function Cashbook() {
               <TableHead>{t("receiptNo")}</TableHead><TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead><TableHead>{t("farmerName")}</TableHead>
               <TableHead className="text-right">{t("amount")}</TableHead><TableHead>{t("method")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {filteredReceipts.map(x => (
@@ -454,13 +539,22 @@ export default function Cashbook() {
                   <TableCell className="font-mono text-xs">{x.receipt_no}</TableCell>
                   <TableCell>{fmtDate(x.receipt_date)}</TableCell>
                   <TableCell><Badge variant="outline">{getKindLabel(t, x.kind as Kind)}</Badge></TableCell>
-                  <TableCell>{x.farmers?.name_en ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell>{x.farmers?.name_en ?? <span className="text-muted-foreground">{x.note || "—"}</span>}</TableCell>
                   <TableCell className="text-right font-semibold text-success">{money(x.amount)}</TableCell>
                   <TableCell>{x.method}</TableCell>
+                  <TableCell className="text-right">
+                    {!x.farmer_id && (
+                      <Button size="icon" variant="ghost" title={t("print")}
+                        onClick={() => printOfficeIncomeReceipt({ receipt_no: x.receipt_no, receipt_date: x.receipt_date, amount: x.amount, note: x.note ?? "" })}>
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
-              {filteredReceipts.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+              {filteredReceipts.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
+
           </Table></Card>
         </TabsContent>
 
