@@ -25,9 +25,12 @@ import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFarmerDues, type FarmerDuesBreakdown } from "@/lib/farmerDues";
 
-type LoanRow = { id: string; principal: number; total_payable: number; issued_on: string; remaining: number };
+type LoanRow = {
+  id: string; principal: number; total_payable: number; issued_on: string; remaining: number;
+  interest_rate: number; duration_months: number; last_payment_on: string | null;
+};
 
-const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_amt: 0, note: "" };
+const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "" };
 
 export default function CombinedPayment() {
   const { user, officeId } = useAuth();
