@@ -72,7 +72,7 @@ export default function Backup() {
     if (!session?.access_token) return toast.error("Not authenticated");
     setBusy("__sql_export__");
     try {
-      const url = `https://jcdonpeftfrnzblhtsqo.supabase.co/functions/v1/db-export?mode=data`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-export?mode=data`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -104,7 +104,7 @@ export default function Backup() {
     setSqlResult(null);
     try {
       const sqlText = await sqlRestoreFile.text();
-      const url = `https://jcdonpeftfrnzblhtsqo.supabase.co/functions/v1/db-restore`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/db-restore`;
       const res = await fetch(url, {
         method: "POST",
         headers: {
