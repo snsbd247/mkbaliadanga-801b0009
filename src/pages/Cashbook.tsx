@@ -531,6 +531,7 @@ export default function Cashbook() {
               <TableHead>{t("receiptNo")}</TableHead><TableHead>{t("date")}</TableHead>
               <TableHead>{t("type")}</TableHead><TableHead>{t("farmerName")}</TableHead>
               <TableHead className="text-right">{t("amount")}</TableHead><TableHead>{t("method")}</TableHead>
+              <TableHead className="text-right">{t("actions")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {filteredReceipts.map(x => (
@@ -538,13 +539,22 @@ export default function Cashbook() {
                   <TableCell className="font-mono text-xs">{x.receipt_no}</TableCell>
                   <TableCell>{fmtDate(x.receipt_date)}</TableCell>
                   <TableCell><Badge variant="outline">{getKindLabel(t, x.kind as Kind)}</Badge></TableCell>
-                  <TableCell>{x.farmers?.name_en ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell>{x.farmers?.name_en ?? <span className="text-muted-foreground">{x.note || "—"}</span>}</TableCell>
                   <TableCell className="text-right font-semibold text-success">{money(x.amount)}</TableCell>
                   <TableCell>{x.method}</TableCell>
+                  <TableCell className="text-right">
+                    {!x.farmer_id && (
+                      <Button size="icon" variant="ghost" title={t("print")}
+                        onClick={() => printOfficeIncomeReceipt({ receipt_no: x.receipt_no, receipt_date: x.receipt_date, amount: x.amount, note: x.note ?? "" })}>
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
-              {filteredReceipts.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+              {filteredReceipts.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
+
           </Table></Card>
         </TabsContent>
 
