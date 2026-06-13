@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -237,24 +237,41 @@ export default function Dues() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
-              ) : filtered.map((r, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-mono text-xs">{r.code}</TableCell>
-                  <TableCell>{r.name}</TableCell>
-                  <TableCell className="text-xs">{r.father ?? "—"}</TableCell>
-                  <TableCell>{r.mobile ?? "—"}</TableCell>
-                  <TableCell><Badge variant="outline">{r.source === "irrigation" ? t("dues_srcIrrigation" as any) : t("dues_srcLoan" as any)}</Badge></TableCell>
-                  <TableCell className="text-xs">{r.reference}</TableCell>
-                  <TableCell><Badge variant={r.arrear ? "secondary" : "outline"}>{r.arrear ? "বকেয়া" : "হাল"}</Badge></TableCell>
-                  <TableCell className="text-xs">{fmtDate(r.oldest)}</TableCell>
-                  <TableCell>
-                    <Badge variant={r.ageDays > 90 ? "destructive" : r.ageDays > 60 ? "secondary" : "outline"}>
-                      {bucket(r.ageDays)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">{money(r.due)}</TableCell>
-                </TableRow>
-              ))}
+              ) : filtered.map((r, i) => {
+                const prev = filtered[i - 1];
+                const isNewFarmer = !prev || prev.farmer_id !== r.farmer_id;
+                const farmerTotal = filtered.filter(x => x.farmer_id === r.farmer_id).reduce((a, x) => a + x.due, 0);
+                const farmerCount = filtered.filter(x => x.farmer_id === r.farmer_id).length;
+                return (
+                  <Fragment key={i}>
+                    {isNewFarmer && farmerCount > 1 && (
+                      <TableRow key={`grp-${r.farmer_id}`} className="bg-muted/50">
+                        <TableCell colSpan={9} className="font-semibold text-sm">
+                          {r.name}{r.father ? ` (পিতা: ${r.father})` : ""} · {r.code}
+                          <span className="ml-2 text-xs text-muted-foreground">{farmerCount}টি ডিউ</span>
+                        </TableCell>
+                        <TableCell className="text-right font-bold">{money(farmerTotal)}</TableCell>
+                      </TableRow>
+                    )}
+                    <TableRow key={i}>
+                      <TableCell className="font-mono text-xs">{r.code}</TableCell>
+                      <TableCell>{r.name}</TableCell>
+                      <TableCell className="text-xs">{r.father ?? "—"}</TableCell>
+                      <TableCell>{r.mobile ?? "—"}</TableCell>
+                      <TableCell><Badge variant="outline">{r.source === "irrigation" ? t("dues_srcIrrigation" as any) : t("dues_srcLoan" as any)}</Badge></TableCell>
+                      <TableCell className="text-xs">{r.reference}</TableCell>
+                      <TableCell><Badge variant={r.arrear ? "secondary" : "outline"}>{r.arrear ? "বকেয়া" : "হাল"}</Badge></TableCell>
+                      <TableCell className="text-xs">{fmtDate(r.oldest)}</TableCell>
+                      <TableCell>
+                        <Badge variant={r.ageDays > 90 ? "destructive" : r.ageDays > 60 ? "secondary" : "outline"}>
+                          {bucket(r.ageDays)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{money(r.due)}</TableCell>
+                    </TableRow>
+                  </Fragment>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
