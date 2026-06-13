@@ -35,6 +35,7 @@ export default function Reports() {
   const [loanPayments, setLoanPayments] = useState<any[]>([]);
   const [savings, setSavings] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   const [landSummary, setLandSummary] = useState<{ totalLands: number; totalSize: number; mouzaCount: number; farmerCount: number } | null>(null);
 
@@ -101,12 +102,20 @@ export default function Reports() {
     svQ = applyCommon(svQ, "txn_date");
     setSavings((await svQ).data ?? []);
 
-    let pQ: any = supabase.from("payments").select("created_at,amount,kind,status,method,office_id,farmer_id,farmers(name_en,farmer_code),payment_allocations(kind,amount)").is("deleted_at", null).is("voided_at", null).order("created_at", { ascending: false });
+    let pQ: any = supabase.from("payments").select("created_at,amount,kind,category,status,method,receipt_no,collected_by,office_id,farmer_id,farmers(name_en,farmer_code),payment_allocations(kind,amount)").is("deleted_at", null).is("voided_at", null).order("created_at", { ascending: false });
     if (from) pQ = pQ.gte("created_at", from);
     if (to) pQ = pQ.lte("created_at", to);
     if (officeId !== ALL) pQ = pQ.eq("office_id", officeId);
     if (farmerId !== ALL) pQ = pQ.eq("farmer_id", farmerId);
-    setPayments((await pQ).data ?? []);
+    const payRows = (await pQ).data ?? [];
+    setPayments(payRows);
+    const userIds = Array.from(new Set(payRows.map((p: any) => p.collected_by).filter(Boolean)));
+    if (userIds.length) {
+      const { data: profs } = await supabase.from("profiles").select("id,full_name").in("id", userIds as string[]);
+      const map: Record<string, string> = {};
+      (profs ?? []).forEach((p: any) => { map[p.id] = p.full_name; });
+      setUserMap(map);
+    } else setUserMap({});
   }
 
   // --- Monthly financial summary ---
@@ -192,6 +201,51 @@ export default function Reports() {
       { metric: t("rpMetricTotalPayments" as any), expected: totalPayments, actual: allocLoan + allocIrr + allocSav, diff: (allocLoan + allocIrr + allocSav) - totalPayments },
     ];
   }, [irr, loanPayments, savings, payments]);
+
+  // --- Collection report (per-payment breakdown by kind) ---
+  const collectionRows = useMemo(() => {
+    return payments.map((p: any) => {
+      let loan = 0, irrigation = 0, sav = 0;
+      const list = p.payment_allocations ?? [];
+      if (list.length === 0) {
+        if (p.kind === "loan") loan = Number(p.amount);
+        else if (p.kind === "irrigation") irrigation = Number(p.amount);
+        else if (p.kind === "savings") sav = Number(p.amount);
+      } else {
+        for (const a of list) {
+          if (a.kind === "loan") loan += Number(a.amount);
+          else if (a.kind === "irrigation") irrigation += Number(a.amount);
+          else if (a.kind === "savings") sav += Number(a.amount);
+        }
+      }
+      return {
+        date: fmtDate(p.created_at),
+        receipt: p.receipt_no ?? "—",
+        farmer: p.farmers?.name_en ?? "—",
+        loan, irrigation, savings: sav,
+        category: p.category ?? "—",
+        amount: Number(p.amount),
+        user: p.collected_by ? (userMap[p.collected_by] ?? "—") : "—",
+        method: p.method ?? "—",
+        status: p.status,
+      };
+    });
+  }, [payments, userMap]);
+
+  // --- Savings collection report (per-transaction split by type) ---
+  const savingsRows = useMemo(() => {
+    return savings.map((r: any) => ({
+      date: fmtDate(r.txn_date),
+      farmer: r.farmers?.name_en ?? "—",
+      deposit: r.type === "deposit" ? Number(r.amount) : 0,
+      share: r.type === "share_collection" ? Number(r.amount) : 0,
+      profit: r.type === "profit" ? Number(r.amount) : 0,
+      withdraw: r.type === "withdraw" ? Number(r.amount) : 0,
+      status: r.status,
+    }));
+  }, [savings]);
+
+
 
   // --- Irrigation Arrears (per charge with due > 0, aged) ---
   // Age is computed as the difference (in whole days) between today and entry_date,
@@ -484,14 +538,33 @@ export default function Reports() {
 
         <TabsContent value="savings">
           <ExportBar
-            onPdf={() => exportTablePDF(`Savings Report${filterTitleSuffix()}`, ["Date", "Farmer", "Type", "Amount", "Status"], savings.map(r => [fmtDate(r.txn_date), r.farmers?.name_en, r.type, r.amount, r.status]))}
-            onXlsx={() => exportExcel("savings-report", "Savings", savings.map(r => ({ Date: r.txn_date, Farmer: r.farmers?.name_en, Type: r.type, Amount: r.amount, Status: r.status })))}
+            onPdf={() => exportTablePDF(`Savings Report${filterTitleSuffix()}`,
+              ["তারিখ", "কৃষক", "সঞ্চয়", "শেয়ার", "লাভ", "উত্তোলন", "অবস্থা"],
+              savingsRows.map(r => [r.date, r.farmer, money(r.deposit), money(r.share), money(r.profit), money(r.withdraw), r.status]))}
+            onXlsx={() => exportExcel("savings-report", "Savings",
+              savingsRows.map(r => ({ "তারিখ": r.date, "কৃষক": r.farmer, "সঞ্চয়": r.deposit, "শেয়ার": r.share, "লাভ": r.profit, "উত্তোলন": r.withdraw, "অবস্থা": r.status })))}
           />
-          <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("type")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
-            <TableBody>{savings.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.txn_date)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.type}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>তারিখ</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead className="text-right">সঞ্চয়</TableHead><TableHead className="text-right">শেয়ার</TableHead>
+              <TableHead className="text-right">লাভ</TableHead><TableHead className="text-right">উত্তোলন</TableHead>
+              <TableHead>{t("status")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>{savingsRows.map((r, i) => <TableRow key={i}>
+              <TableCell className="text-xs">{r.date}</TableCell>
+              <TableCell>{r.farmer}</TableCell>
+              <TableCell className="text-right">{r.deposit ? money(r.deposit) : "—"}</TableCell>
+              <TableCell className="text-right">{r.share ? money(r.share) : "—"}</TableCell>
+              <TableCell className="text-right">{r.profit ? money(r.profit) : "—"}</TableCell>
+              <TableCell className="text-right">{r.withdraw ? money(r.withdraw) : "—"}</TableCell>
+              <TableCell>{r.status}</TableCell>
+            </TableRow>)}
+            {savingsRows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
+
 
         <TabsContent value="arrears">
           <ExportBar
@@ -570,14 +643,38 @@ export default function Reports() {
 
         <TabsContent value="payments">
           <ExportBar
-            onPdf={() => exportTablePDF(`Payments${filterTitleSuffix()}`, ["Date", "Farmer", "Kind", "Amount", "Method", "Status"], payments.map(r => [fmtDate(r.created_at), r.farmers?.name_en, r.kind, r.amount, r.method, r.status]))}
-            onXlsx={() => exportExcel("payments", "Payments", payments.map(r => ({ Date: r.created_at, Farmer: r.farmers?.name_en, Kind: r.kind, Amount: r.amount, Method: r.method, Status: r.status })))}
+            onPdf={() => exportTablePDF(`Collection${filterTitleSuffix()}`,
+              ["তারিখ", "রশিদ নং", "কৃষক", "হাওলাত", "সেচ", "সঞ্চয়", "বিবিধ", "মোট", "ইউজার", "মাধ্যম", "অবস্থা"],
+              collectionRows.map(r => [r.date, r.receipt, r.farmer, money(r.loan), money(r.irrigation), money(r.savings), r.category, money(r.amount), r.user, r.method, r.status]))}
+            onXlsx={() => exportExcel("collection-report", "Collection",
+              collectionRows.map(r => ({ "তারিখ": r.date, "রশিদ নং": r.receipt, "কৃষক": r.farmer, "হাওলাত": r.loan, "সেচ": r.irrigation, "সঞ্চয়": r.savings, "বিবিধ": r.category, "মোট": r.amount, "ইউজার": r.user, "মাধ্যম": r.method, "অবস্থা": r.status })))}
           />
-          <Card><Table>
-            <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("rpKind" as any)}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead></TableRow></TableHeader>
-            <TableBody>{payments.map((r, i) => <TableRow key={i}><TableCell>{fmtDate(r.created_at)}</TableCell><TableCell>{r.farmers?.name_en}</TableCell><TableCell>{r.kind}</TableCell><TableCell>{money(r.amount)}</TableCell><TableCell>{r.method}</TableCell><TableCell>{r.status}</TableCell></TableRow>)}</TableBody>
+          <Card className="overflow-x-auto"><Table>
+            <TableHeader><TableRow>
+              <TableHead>তারিখ</TableHead><TableHead>রশিদ নং</TableHead><TableHead>{t("farmerName")}</TableHead>
+              <TableHead className="text-right">হাওলাত</TableHead><TableHead className="text-right">সেচ</TableHead>
+              <TableHead className="text-right">সঞ্চয়</TableHead><TableHead>বিবিধ</TableHead>
+              <TableHead className="text-right">{t("amount")}</TableHead><TableHead>ইউজার</TableHead>
+              <TableHead>{t("method")}</TableHead><TableHead>{t("status")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>{collectionRows.map((r, i) => <TableRow key={i}>
+              <TableCell className="text-xs">{r.date}</TableCell>
+              <TableCell className="font-mono text-xs">{r.receipt}</TableCell>
+              <TableCell>{r.farmer}</TableCell>
+              <TableCell className="text-right">{r.loan ? money(r.loan) : "—"}</TableCell>
+              <TableCell className="text-right">{r.irrigation ? money(r.irrigation) : "—"}</TableCell>
+              <TableCell className="text-right">{r.savings ? money(r.savings) : "—"}</TableCell>
+              <TableCell className="text-xs">{r.category}</TableCell>
+              <TableCell className="text-right font-semibold">{money(r.amount)}</TableCell>
+              <TableCell className="text-xs">{r.user}</TableCell>
+              <TableCell>{r.method}</TableCell>
+              <TableCell>{r.status}</TableCell>
+            </TableRow>)}
+            {collectionRows.length === 0 && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
+            </TableBody>
           </Table></Card>
         </TabsContent>
+
 
         <TabsContent value="audit">
           <div className="flex justify-end gap-2 mb-3">

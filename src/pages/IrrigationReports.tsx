@@ -43,7 +43,7 @@ export default function IrrigationReports() {
     setLoading(true);
     let q = supabase
       .from("irrigation_invoices" as any)
-      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza), seasons(name,year,type)")
+      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,father_name,village), owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,father_name,village), lands(dag_no,land_size,mouza,patwaris(name,name_bn)), seasons(name,year,type)")
       .is("deleted_at", null)
       .neq("invoice_status", "cancelled")
       .limit(2000);
@@ -230,15 +230,24 @@ export default function IrrigationReports() {
         range={{ from: fromDate || null, to: toDate || null }}
         columns={[
           { key: "date", label: t("irr_colDate" as any), accessor: (r: any) => fmtDate(r.entry_date) },
-          { key: "season", label: t("irr_colSeason" as any), accessor: (r: any) => r.seasons?.name ?? "" },
+          { key: "season", label: t("irr_colSeason" as any), accessor: (r: any) => `${r.seasons?.name ?? ""} ${r.seasons?.year ?? ""}`.trim() },
+          { key: "type", label: "টাইপ", accessor: (r: any) => r.irrigation_category_name || r.land_type_name || "" },
           { key: "farmer_code", label: t("irr_colFarmerCode" as any), accessor: (r: any) => r.farmers?.farmer_code ?? "" },
           { key: "farmer_name", label: t("irr_colFarmerName" as any), accessor: (r: any) => r.farmers?.name_bn || r.farmers?.name_en || "" },
+          { key: "farmer_father", label: "পিতার নাম", accessor: (r: any) => r.farmers?.father_name ?? "" },
+          { key: "farmer_village", label: "গ্রাম", accessor: (r: any) => r.farmers?.village ?? "" },
           { key: "mobile", label: t("irr_colMobile" as any), accessor: (r: any) => r.farmers?.mobile ?? "" },
-          { key: "dag_no", label: t("irr_colDagNo" as any), accessor: (r: any) => formatDagNumbers(r.lands?.dag_no) },
           { key: "mouza", label: t("irr_colMouza" as any), accessor: (r: any) => r.lands?.mouza ?? "" },
+          { key: "dag_no", label: t("irr_colDagNo" as any), accessor: (r: any) => formatDagNumbers(r.lands?.dag_no) },
           { key: "land_size", label: t("irr_colLandSize" as any), accessor: (r: any) => r.lands?.land_size ?? "" },
           { key: "rate", label: t("irr_colRate" as any), accessor: (r: any) => r.rate ?? "" },
-          { key: "total", label: t("irr_colTotal" as any), accessor: (r: any) => r.total ?? 0 },
+          { key: "total", label: t("irr_colTotal" as any), accessor: (r: any) => r.total ?? r.payable_amount ?? 0 },
+          { key: "owner_name", label: "মালিকের নাম", accessor: (r: any) => r.owner?.name_bn || r.owner?.name_en || "" },
+          { key: "owner_code", label: "মালিক আইডি", accessor: (r: any) => r.owner?.farmer_code ?? "" },
+          { key: "owner_father", label: "মালিকের পিতা", accessor: (r: any) => r.owner?.father_name ?? "" },
+          { key: "owner_village", label: "মালিকের গ্রাম", accessor: (r: any) => r.owner?.village ?? "" },
+          { key: "owner_mobile", label: "মালিকের মোবাইল", accessor: (r: any) => r.owner?.mobile ?? "" },
+          { key: "patwari", label: "পাটুয়ারী", accessor: (r: any) => r.lands?.patwaris?.name_bn || r.lands?.patwaris?.name || "" },
           { key: "paid_amount", label: t("irr_colPaid" as any), accessor: (r: any) => r.paid_amount ?? 0 },
           { key: "due_amount", label: t("irr_colDue" as any), accessor: (r: any) => r.due_amount ?? 0, defaultSelected: true },
           { key: "status", label: t("irr_colStatus" as any), accessor: (r: any) => r.status ?? "" },

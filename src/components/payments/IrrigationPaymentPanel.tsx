@@ -364,6 +364,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const totalDelay = sorted.reduce((s, inv) => s + (delayFee[inv.id] ?? Number(inv.delay_fee || 0)), 0);
       const totalMaint = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
       const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
+      const receiptMouza = sorted.find((inv: any) => inv.lands?.mouza)?.lands?.mouza ?? null;
+      const receiptLandSize = sorted.reduce((s, inv: any) => s + Number(inv.lands?.land_size || 0), 0) || null;
 
       // Receipt — never blocks payment; failure → retry queue
       const receiptResult = await safeWithRetry(
@@ -376,7 +378,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           company_name_bn: company?.company_name_bn ?? undefined,
           logo_url: company?.logo_url ?? null,
           org: company ?? null,
-          farmer: { name: farmerName, member_no: farmer?.member_no ?? null, village: farmer?.village ?? null, mobile: farmer?.mobile ?? null },
+          farmer: { name: farmerName, member_no: farmer?.member_no ?? null, village: farmer?.village ?? null, mobile: farmer?.mobile ?? null, mouza: receiptMouza, land_size: receiptLandSize },
           current_season_charge: simplifiedReceipt ? null : Number(currentCollected || 0),
           collected_from_outstanding: simplifiedReceipt ? null : Number(previousCollected || 0),
           total_outstanding: simplifiedReceipt ? null : previousDueTotal,

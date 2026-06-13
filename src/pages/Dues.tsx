@@ -16,6 +16,7 @@ import { toast } from "sonner";
 type Row = {
   farmer_id: string;
   name: string;
+  father: string | null;
   code: string;
   mobile: string | null;
   source: "irrigation" | "loan";
@@ -23,6 +24,7 @@ type Row = {
   due: number;
   oldest: string;
   ageDays: number;
+  arrear: boolean;
 };
 
 function bucket(days: number) {
@@ -47,16 +49,22 @@ export default function Dues() {
 
     const { data: irr } = await supabase
       .from("irrigation_invoices")
-      .select("farmer_id,due_amount,due_date,generated_at,invoice_no,seasons(name,year),farmers(name_en,farmer_code,mobile)")
+      .select("farmer_id,due_amount,due_date,generated_at,invoice_no,seasons(name,year,status),farmers(name_en,father_name,farmer_code,mobile)")
       .is("deleted_at", null)
       .neq("invoice_status", "cancelled")
       .gt("due_amount", 0);
+    // current ("hal") = highest season year present; older years = arrears (বকেয়া)
+    const irrYears = (irr ?? []).map((r: any) => r.seasons?.year).filter((y: any) => y != null) as number[];
+    const halYear = irrYears.length ? Math.max(...irrYears) : null;
     (irr ?? []).forEach((r: any) => {
       const refDate = r.due_date ?? String(r.generated_at ?? "").slice(0, 10);
       const days = Math.max(0, Math.floor((today - new Date(refDate).getTime()) / 86400000));
+      const sy = r.seasons?.year ?? null;
+      const arrear = halYear != null && sy != null ? sy < halYear : false;
       out.push({
         farmer_id: r.farmer_id,
         name: r.farmers?.name_en ?? "—",
+        father: r.farmers?.father_name ?? null,
         code: r.farmers?.farmer_code ?? "—",
         mobile: r.farmers?.mobile ?? null,
         source: "irrigation",
@@ -64,12 +72,13 @@ export default function Dues() {
         due: Number(r.due_amount),
         oldest: refDate,
         ageDays: days,
+        arrear,
       });
     });
 
     const { data: loans } = await supabase
       .from("loans")
-      .select("id,farmer_id,total_payable,issued_on,farmers(name_en,farmer_code,mobile)")
+      .select("id,farmer_id,total_payable,issued_on,farmers(name_en,father_name,farmer_code,mobile)")
       .is("deleted_at", null)
       .eq("status", "approved");
     const loanIds = (loans ?? []).map((l: any) => l.id);
@@ -85,6 +94,7 @@ export default function Dues() {
       out.push({
         farmer_id: l.farmer_id,
         name: l.farmers?.name_en ?? "—",
+        father: l.farmers?.father_name ?? null,
         code: l.farmers?.farmer_code ?? "—",
         mobile: l.farmers?.mobile ?? null,
         source: "loan",
@@ -92,10 +102,21 @@ export default function Dues() {
         due,
         oldest: l.issued_on,
         ageDays: days,
+        arrear: false,
       });
     });
 
-    out.sort((a, b) => b.due - a.due);
+    // group dues per farmer (all rows of one farmer together), farmers ordered by total due
+    const totalByFarmer = new Map<string, number>();
+    out.forEach(r => totalByFarmer.set(r.farmer_id, (totalByFarmer.get(r.farmer_id) ?? 0) + r.due));
+    out.sort((a, b) => {
+      const ta = totalByFarmer.get(a.farmer_id) ?? 0, tb = totalByFarmer.get(b.farmer_id) ?? 0;
+      if (tb !== ta) return tb - ta;
+      if (a.farmer_id !== b.farmer_id) return a.farmer_id < b.farmer_id ? -1 : 1;
+      // within a farmer: arrears first, then current
+      if (a.arrear !== b.arrear) return a.arrear ? -1 : 1;
+      return b.due - a.due;
+    });
     setRows(out);
   }
 
@@ -113,6 +134,8 @@ export default function Dues() {
   }, [filtered]);
 
   const total = filtered.reduce((a, r) => a + r.due, 0);
+  const arrearsTotal = filtered.filter(r => r.arrear).reduce((a, r) => a + r.due, 0);
+  const halTotal = total - arrearsTotal;
 
   function copyPhones() {
     const phones = Array.from(new Set(filtered.map(r => r.mobile).filter(Boolean))).join(", ");
@@ -141,18 +164,27 @@ export default function Dues() {
     <>
       <PageHeader title={t("dues_title" as any)} description={t("dues_desc" as any)} />
 
-      <div className="grid gap-3 md:grid-cols-5 mb-4">
+      <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-7 mb-4">
         {(["0-30", "30-60", "60-90", "90+"] as const).map(k => (
           <Card key={k} className="p-4">
             <div className="text-xs uppercase text-muted-foreground">{k} {t("dues_days" as any)}</div>
             <div className="mt-1 text-xl font-bold">{money((buckets as any)[k])}</div>
           </Card>
         ))}
+        <Card className="p-4">
+          <div className="text-xs uppercase text-muted-foreground">হাল</div>
+          <div className="mt-1 text-xl font-bold">{money(halTotal)}</div>
+        </Card>
+        <Card className="p-4 bg-amber-500/5 border-amber-500/30">
+          <div className="text-xs uppercase text-amber-600">বকেয়া</div>
+          <div className="mt-1 text-xl font-bold text-amber-600">{money(arrearsTotal)}</div>
+        </Card>
         <Card className="p-4 bg-destructive/5 border-destructive/30">
           <div className="text-xs uppercase text-destructive">{t("dues_totalDue" as any)}</div>
           <div className="mt-1 text-xl font-bold text-destructive">{money(total)}</div>
         </Card>
       </div>
+
 
       <Card className="p-4">
         <div className="flex flex-wrap items-end gap-2 mb-3">
@@ -180,8 +212,8 @@ export default function Dues() {
           <Button variant="outline" size="sm" onClick={copyPhones}><MessageSquare className="h-4 w-4 mr-1" />{t("dues_copyPhones" as any)}</Button>
           <Button variant="outline" size="sm" onClick={exportSmsCsv}><Download className="h-4 w-4 mr-1" />{t("dues_smsList" as any)}</Button>
           <Button variant="outline" size="sm" onClick={() => exportTablePDF(t("dues_pdfTitle" as any),
-            [t("dues_colCode" as any), t("dues_colName" as any), t("dues_colMobile" as any), t("dues_colSource" as any), t("dues_colReference" as any), t("dues_colAge" as any), t("dues_colDue" as any)],
-            filtered.map(r => [r.code, r.name, r.mobile ?? "—", r.source, r.reference, `${r.ageDays}d`, money(r.due)]))}>
+            [t("dues_colCode" as any), t("dues_colName" as any), "পিতার নাম", t("dues_colMobile" as any), t("dues_colSource" as any), t("dues_colReference" as any), "ধরন", t("dues_colAge" as any), t("dues_colDue" as any)],
+            filtered.map(r => [r.code, r.name, r.father ?? "—", r.mobile ?? "—", r.source, r.reference, r.arrear ? "বকেয়া" : "হাল", `${r.ageDays}d`, money(r.due)]))}>
             <FileText className="h-4 w-4 mr-1" />{t("dues_pdf" as any)}
           </Button>
         </div>
@@ -192,9 +224,11 @@ export default function Dues() {
               <TableRow>
                 <TableHead>{t("farmerCode")}</TableHead>
                 <TableHead>{t("farmerName")}</TableHead>
+                <TableHead>পিতার নাম</TableHead>
                 <TableHead>{t("mobile")}</TableHead>
                 <TableHead>{t("dues_source" as any)}</TableHead>
                 <TableHead>{t("dues_reference" as any)}</TableHead>
+                <TableHead>ধরন</TableHead>
                 <TableHead>{t("dues_oldest" as any)}</TableHead>
                 <TableHead>{t("dues_bucket" as any)}</TableHead>
                 <TableHead className="text-right">{t("dueAmount")}</TableHead>
@@ -202,14 +236,16 @@ export default function Dues() {
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
               ) : filtered.map((r, i) => (
                 <TableRow key={i}>
                   <TableCell className="font-mono text-xs">{r.code}</TableCell>
                   <TableCell>{r.name}</TableCell>
+                  <TableCell className="text-xs">{r.father ?? "—"}</TableCell>
                   <TableCell>{r.mobile ?? "—"}</TableCell>
                   <TableCell><Badge variant="outline">{r.source === "irrigation" ? t("dues_srcIrrigation" as any) : t("dues_srcLoan" as any)}</Badge></TableCell>
                   <TableCell className="text-xs">{r.reference}</TableCell>
+                  <TableCell><Badge variant={r.arrear ? "secondary" : "outline"}>{r.arrear ? "বকেয়া" : "হাল"}</Badge></TableCell>
                   <TableCell className="text-xs">{fmtDate(r.oldest)}</TableCell>
                   <TableCell>
                     <Badge variant={r.ageDays > 90 ? "destructive" : r.ageDays > 60 ? "secondary" : "outline"}>
@@ -222,6 +258,7 @@ export default function Dues() {
             </TableBody>
           </Table>
         </div>
+
       </Card>
     </>
   );
