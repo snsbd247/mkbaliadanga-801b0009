@@ -192,6 +192,7 @@ step harden          "Hardening server (Fail2ban/SSH/Docker)" harden_server
 generate_env
 start_supabase    && ok "Supabase stack up"
 run_migrations
+seed_admin
 start_app         && ok "Application + Caddy up"
 schedule_backups
 
