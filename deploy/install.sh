@@ -165,6 +165,7 @@ start_supabase() {
   wait_for_supabase_db
   ensure_supabase_core_roles
   docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d
+  wait_for_supabase_platform_schemas
 }
 
 # ----------------------------------------------------------------------------- 9. Migrations
