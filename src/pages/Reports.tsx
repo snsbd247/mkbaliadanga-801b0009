@@ -232,6 +232,20 @@ export default function Reports() {
     });
   }, [payments, userMap]);
 
+  // --- Savings collection report (per-transaction split by type) ---
+  const savingsRows = useMemo(() => {
+    return savings.map((r: any) => ({
+      date: fmtDate(r.txn_date),
+      farmer: r.farmers?.name_en ?? "—",
+      deposit: r.type === "deposit" ? Number(r.amount) : 0,
+      share: r.type === "share_collection" ? Number(r.amount) : 0,
+      profit: r.type === "profit" ? Number(r.amount) : 0,
+      withdraw: r.type === "withdraw" ? Number(r.amount) : 0,
+      status: r.status,
+    }));
+  }, [savings]);
+
+
 
   // --- Irrigation Arrears (per charge with due > 0, aged) ---
   // Age is computed as the difference (in whole days) between today and entry_date,
