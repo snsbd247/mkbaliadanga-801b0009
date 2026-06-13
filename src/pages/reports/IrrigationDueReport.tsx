@@ -85,8 +85,8 @@ export default function IrrigationDueReport() {
     (async () => {
       let q = supabase.from("irrigation_invoices").select(
         "farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,due_date," +
-        "farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,father_name)," +
-        "lands(mouza,dag_no,land_size,patwari_id,patwaris(name,name_bn))," +
+        "farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile)," +
+        "lands(mouza,dag_no,dag_numbers,land_size,patwari_id,patwaris(name,name_bn),owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile))," +
         "seasons(name,year,type)"
       ).is("deleted_at", null).neq("invoice_status", "cancelled").limit(10000);
       if (officeId !== "all") q = q.eq("office_id", officeId);
@@ -106,19 +106,31 @@ export default function IrrigationDueReport() {
         const key = `${r.farmer_id}|${r.land_id}|${r.season_id}`;
         const shatak = Number(r.lands?.land_size ?? 0);
         const pw = r.lands?.patwaris;
+        const own = r.lands?.owner;
+        const dag = r.lands?.dag_no ? formatDagNumbers(r.lands.dag_no) : (r.lands?.dag_numbers ? formatDagNumbers(r.lands.dag_numbers) : "");
         const cur = grouped.get(key) ?? {
           farmer_id: r.farmer_id,
           farmer_name: r.farmers?.name_bn || r.farmers?.name_en || "—",
           farmer_code: r.farmers?.farmer_code ?? "—",
           father_name: r.farmers?.father_name ?? "",
+          village: r.farmers?.village ?? "",
+          mobile: r.farmers?.mobile ?? "",
           land_id: r.land_id,
-          land_label: [r.lands?.mouza, r.lands?.dag_no ? `Dag ${formatDagNumbers(r.lands.dag_no)}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
+          land_label: [r.lands?.mouza, dag ? `Dag ${dag}` : null, r.lands?.land_size != null ? formatLandSize(r.lands.land_size, "short") : null].filter(Boolean).join(" • ") || "—",
+          mouza: r.lands?.mouza ?? "",
+          dag,
           patwari_id: r.lands?.patwari_id ?? null,
           patwari_name: pw ? (pw.name_bn || pw.name) : "—",
+          owner_name: own ? (own.name_bn || own.name_en || "") : "",
+          owner_code: own?.farmer_code ?? "",
+          owner_father: own?.father_name ?? "",
+          owner_village: own?.village ?? "",
+          owner_mobile: own?.mobile ?? "",
           land_size_shatak: shatak,
           land_size_bigha: shatakToBigha(shatak),
           season_id: r.season_id,
           season_label: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
+          season_type: r.seasons?.type ?? "",
           total: 0, paid: 0, due: 0,
         };
         cur.total += Number(r.payable_amount || 0);
