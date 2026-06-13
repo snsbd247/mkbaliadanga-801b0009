@@ -3,8 +3,8 @@
 	email {$ADMIN_EMAIL}
 }
 
-# ---- Frontend application ----
-{$APP_DOMAIN} {
+# ---- Frontend application (main domain + www) ----
+{$APP_DOMAIN}, www.{$APP_DOMAIN} {
 	encode gzip zstd
 	reverse_proxy mk_app:80
 	header {
