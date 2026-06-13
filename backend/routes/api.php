@@ -96,6 +96,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Assets
         Route::apiResource('assets', AssetController::class)->except(['show','destroy']);
 
+        // Bank accounts & transactions (4-account stream mapping)
+        Route::get('bank/accounts',          [BankController::class, 'index']);
+        Route::post('bank/accounts',         [BankController::class, 'store']);
+        Route::put('bank/accounts/{id}',     [BankController::class, 'update']);
+        Route::get('bank/streams',           [BankController::class, 'streams']);
+        Route::get('bank/transactions',      [BankController::class, 'transactions']);
+        Route::post('bank/transactions',     [BankController::class, 'storeTransaction']);
+        Route::post('bank/transfer',         [BankController::class, 'transfer']);
+
+        // Office income (farmer-less receipts on the irrigation serial)
+        Route::get('office-incomes',         [OfficeIncomeController::class, 'index']);
+        Route::post('office-incomes',        [OfficeIncomeController::class, 'store']);
+        Route::put('office-incomes/{id}',    [OfficeIncomeController::class, 'update']);
+        Route::delete('office-incomes/{id}', [OfficeIncomeController::class, 'destroy']);
+
         // SMS
         Route::get('sms/logs',  [SmsController::class, 'logs']);
         Route::post('sms/send', [SmsController::class, 'send']);
