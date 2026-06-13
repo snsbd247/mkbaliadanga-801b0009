@@ -4316,6 +4316,51 @@ export type Database = {
         }
         Relationships: []
       }
+      office_incomes: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          income_type: string
+          note: string | null
+          office_id: string | null
+          payer_name: string
+          receipt_no: string
+          received_on: string
+          stream: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          income_type?: string
+          note?: string | null
+          office_id?: string | null
+          payer_name: string
+          receipt_no: string
+          received_on?: string
+          stream?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          income_type?: string
+          note?: string | null
+          office_id?: string | null
+          payer_name?: string
+          receipt_no?: string
+          received_on?: string
+          stream?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       offices: {
         Row: {
           address: string | null

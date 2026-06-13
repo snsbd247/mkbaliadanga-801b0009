@@ -40,6 +40,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Link } from "react-router-dom";
+import { OfficeIncomeTab } from "@/pages/irrigation/OfficeIncomeTab";
 
 type Invoice = any;
 
@@ -68,7 +69,7 @@ export default function IrrigationInvoices() {
   const { user, isSuper } = useAuth();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  const [tab, setTab] = useState<"generate" | "list" | "settings">("list");
+  const [tab, setTab] = useState<"generate" | "list" | "settings" | "office_income">("list");
   const [seasons, setSeasons] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
 
@@ -88,11 +89,13 @@ export default function IrrigationInvoices() {
           <TabsTrigger value="list">{tx("Invoice list", "ইনভয়েস তালিকা")}</TabsTrigger>
           <TabsTrigger value="generate">{tx("Create invoice", "ইনভয়েস তৈরি")}</TabsTrigger>
           <TabsTrigger value="settings">{tx("Settings", "সেটিংস")}</TabsTrigger>
+          <TabsTrigger value="office_income">{tx("Office income", "অফিস আয়")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list"><InvoiceListTab seasons={seasons} offices={offices} isSuper={isSuper} /></TabsContent>
         <TabsContent value="generate"><GenerateTab seasons={seasons} offices={offices} userId={user?.id} isSuper={isSuper} /></TabsContent>
         <TabsContent value="settings"><SettingsTab offices={offices} userId={user?.id} isSuper={isSuper} /></TabsContent>
+        <TabsContent value="office_income"><OfficeIncomeTab offices={offices} userId={user?.id} /></TabsContent>
       </Tabs>
       {confirmDialog}
     </>
