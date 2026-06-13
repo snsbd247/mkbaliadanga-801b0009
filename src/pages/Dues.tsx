@@ -49,16 +49,22 @@ export default function Dues() {
 
     const { data: irr } = await supabase
       .from("irrigation_invoices")
-      .select("farmer_id,due_amount,due_date,generated_at,invoice_no,seasons(name,year),farmers(name_en,farmer_code,mobile)")
+      .select("farmer_id,due_amount,due_date,generated_at,invoice_no,seasons(name,year,status),farmers(name_en,father_name,farmer_code,mobile)")
       .is("deleted_at", null)
       .neq("invoice_status", "cancelled")
       .gt("due_amount", 0);
+    // current ("hal") = highest season year present; older years = arrears (বকেয়া)
+    const irrYears = (irr ?? []).map((r: any) => r.seasons?.year).filter((y: any) => y != null) as number[];
+    const halYear = irrYears.length ? Math.max(...irrYears) : null;
     (irr ?? []).forEach((r: any) => {
       const refDate = r.due_date ?? String(r.generated_at ?? "").slice(0, 10);
       const days = Math.max(0, Math.floor((today - new Date(refDate).getTime()) / 86400000));
+      const sy = r.seasons?.year ?? null;
+      const arrear = halYear != null && sy != null ? sy < halYear : false;
       out.push({
         farmer_id: r.farmer_id,
         name: r.farmers?.name_en ?? "—",
+        father: r.farmers?.father_name ?? null,
         code: r.farmers?.farmer_code ?? "—",
         mobile: r.farmers?.mobile ?? null,
         source: "irrigation",
@@ -66,12 +72,13 @@ export default function Dues() {
         due: Number(r.due_amount),
         oldest: refDate,
         ageDays: days,
+        arrear,
       });
     });
 
     const { data: loans } = await supabase
       .from("loans")
-      .select("id,farmer_id,total_payable,issued_on,farmers(name_en,farmer_code,mobile)")
+      .select("id,farmer_id,total_payable,issued_on,farmers(name_en,father_name,farmer_code,mobile)")
       .is("deleted_at", null)
       .eq("status", "approved");
     const loanIds = (loans ?? []).map((l: any) => l.id);
@@ -87,6 +94,7 @@ export default function Dues() {
       out.push({
         farmer_id: l.farmer_id,
         name: l.farmers?.name_en ?? "—",
+        father: l.farmers?.father_name ?? null,
         code: l.farmers?.farmer_code ?? "—",
         mobile: l.farmers?.mobile ?? null,
         source: "loan",
@@ -94,10 +102,21 @@ export default function Dues() {
         due,
         oldest: l.issued_on,
         ageDays: days,
+        arrear: false,
       });
     });
 
-    out.sort((a, b) => b.due - a.due);
+    // group dues per farmer (all rows of one farmer together), farmers ordered by total due
+    const totalByFarmer = new Map<string, number>();
+    out.forEach(r => totalByFarmer.set(r.farmer_id, (totalByFarmer.get(r.farmer_id) ?? 0) + r.due));
+    out.sort((a, b) => {
+      const ta = totalByFarmer.get(a.farmer_id) ?? 0, tb = totalByFarmer.get(b.farmer_id) ?? 0;
+      if (tb !== ta) return tb - ta;
+      if (a.farmer_id !== b.farmer_id) return a.farmer_id < b.farmer_id ? -1 : 1;
+      // within a farmer: arrears first, then current
+      if (a.arrear !== b.arrear) return a.arrear ? -1 : 1;
+      return b.due - a.due;
+    });
     setRows(out);
   }
 
