@@ -1,0 +1,4 @@
+.env.production
+supabase/kong.rendered.yml
+supabase/migrations/
+supabase/functions/
