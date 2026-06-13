@@ -68,7 +68,7 @@ export default function IrrigationInvoices() {
   const { user, isSuper } = useAuth();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  const [tab, setTab] = useState<"generate" | "list" | "settings">("list");
+  const [tab, setTab] = useState<"generate" | "list" | "settings" | "office_income">("list");
   const [seasons, setSeasons] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
 
