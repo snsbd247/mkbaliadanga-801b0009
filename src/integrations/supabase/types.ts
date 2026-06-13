@@ -3931,6 +3931,7 @@ export type Database = {
           collected_by: string | null
           created_at: string
           id: string
+          interest_amount: number | null
           loan_id: string
           note: string | null
           office_id: string | null
@@ -3938,6 +3939,7 @@ export type Database = {
           override_reason: string | null
           paid_on: string
           penalty_collected: number
+          principal_amount: number | null
           receipt_no: string | null
           status: Database["public"]["Enums"]["loan_payment_status"]
         }
@@ -3949,6 +3951,7 @@ export type Database = {
           collected_by?: string | null
           created_at?: string
           id?: string
+          interest_amount?: number | null
           loan_id: string
           note?: string | null
           office_id?: string | null
@@ -3956,6 +3959,7 @@ export type Database = {
           override_reason?: string | null
           paid_on?: string
           penalty_collected?: number
+          principal_amount?: number | null
           receipt_no?: string | null
           status?: Database["public"]["Enums"]["loan_payment_status"]
         }
@@ -3967,6 +3971,7 @@ export type Database = {
           collected_by?: string | null
           created_at?: string
           id?: string
+          interest_amount?: number | null
           loan_id?: string
           note?: string | null
           office_id?: string | null
@@ -3974,6 +3979,7 @@ export type Database = {
           override_reason?: string | null
           paid_on?: string
           penalty_collected?: number
+          principal_amount?: number | null
           receipt_no?: string | null
           status?: Database["public"]["Enums"]["loan_payment_status"]
         }

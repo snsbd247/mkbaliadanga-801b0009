@@ -1,38 +1,35 @@
-## লক্ষ্য
+## বর্তমান অবস্থা (যা পাওয়া গেছে)
 
-দুইটা জিনিস ঠিক করা হবে, অন্য কোনো মডিউলে প্রভাব না ফেলে:
+- লোন পরিশোধ হয় `src/pages/CombinedPayment.tsx`-এ — একটিমাত্র "ঋণ পরিশোধ" অঙ্ক, আসল/লাভ আলাদা নেই। বাকি = `total_payable − মোট পরিশোধ`।
+- `loan_payments` টেবিলে শুধু `amount`/`penalty_collected` আছে — আসল ও লাভ আলাদা সংরক্ষণের কলাম নেই।
+- `loan_plans`-এ `interest_rate`, `duration_months` আছে; কোনো ডেডিকেটেড UI নেই (FarmerDetail/Diagnostics-এ ব্যবহার হয়)।
+- সেভিং সদস্যতা = farmer.`is_voter` ফ্ল্যাগ (Savings A/C)। CombinedPayment-এ লোন দেওয়ার সময় এই চেক নেই।
+- রসিদ: লোন/সঞ্চয় রসিদ `src/lib/bnReceipts.ts` (orientation `p|l`, paper `a4|letter` সাপোর্ট করে)। ডিফল্ট portrait/a4। A5 নেই bnReceipts-এ।
 
-### ১. Transfer History-তে সম্পূর্ণ তথ্য সংরক্ষণ
-এখন transfer history লাইভ `lands` রো থেকে দাগ/মৌজা/পরিমাণ টানে। জমি পরে বদলালে বা মুছলে পুরোনো হস্তান্তরের তথ্য হারিয়ে যায়/ভুল দেখায়। তাই হস্তান্তরের মুহূর্তের একটা snapshot সংরক্ষণ করব।
+## পরিবর্তন পরিকল্পনা
 
-- `land_transfers` টেবিলে স্ন্যাপশট কলাম যোগ: `source_dag_no`, `source_mouza`, `source_land_size`, `source_owner_name`, `source_owner_code`।
-- জমি হস্তান্তর তৈরির কোডে (যেখানে `land_transfers` insert হয়) এই snapshot ভ্যালু সেভ করা হবে।
-- `LandTransferHistoryTab.tsx`-এ আগে snapshot দেখানো হবে; না থাকলে (পুরোনো রেকর্ড) লাইভ সম্পর্কিত জমি থেকে fallback — যাতে আগের সব তথ্য (কোন মালিক, কত জমি, কোন দাগ, কোন মৌজা) দেখা যায়।
+### ১. লোন পরিশোধে আসল (বাধ্যতামূলক) + লাভ (অপশনাল, সাজেশনসহ)
+- `CombinedPayment.tsx`-এ লোন সেকশনে দুটি ইনপুট: **আসল (৳)** বাধ্যতামূলক, **লাভ (৳)** অপশনাল।
+- লাভের ঘরে placeholder/সাজেশন: লোন প্ল্যানের রেট অনুযায়ী এ পর্যন্ত জমা হওয়া মাসিক লাভ গণনা করে দেখাবে — `সাজেস্ট লাভ = বকেয়া আসল × (plan.interest_rate% ÷ duration_months) × অতিবাহিত মাস`। একটি "সাজেশন প্রয়োগ" বোতাম থাকবে।
+- সংরক্ষণ: `loan_payments`-এ নতুন `principal_amount` ও `interest_amount` কলাম; `amount = principal + interest`।
 
-### ২. এক জমি একাধিক দাগ + একাধিক বর্গাদার
-বর্তমানে `land_relations` ইতিমধ্যেই প্রতি জমির জন্য একাধিক বর্গাদার (আলাদা `area_decimal` সহ) সমর্থন করে। মূলত প্রদর্শন উন্নত করা হবে যাতে একটা জমি/দাগে কে কে বর্গা করছে স্পষ্ট দেখা যায়।
+### ২. লোন প্ল্যান ৬ মাস / ৯% — সম্পাদনযোগ্য
+- নতুন ছোট অ্যাডমিন পেজ `/admin/loan-plans` (নাম, মেয়াদ মাস, সুদের হার, সক্রিয়) যাতে প্ল্যান যোগ/সম্পাদনা করা যায়। সাইডবারে Savings গ্রুপে লিংক।
 
-- `LandRelations.tsx`-এ active সম্পর্কগুলো জমি/দাগ অনুযায়ী গ্রুপ করে দেখানো হবে: প্রতি জমির মোট পরিমাণ, মালিকের অবশিষ্ট অংশ, এবং প্রতিটি বর্গাদারের অংশ ও পরিমাণ একসাথে।
-- একাধিক দাগ থাকলে (`dag_numbers` array) সেটাও দাগের তালিকায় দেখানো হবে।
-- বিদ্যমান টেবিল ভিউ ও add-form অপরিবর্তিত থাকবে; শুধু একটা সারাংশ/গ্রুপড সেকশন যোগ হবে।
+### ৩. লোন দেওয়ার সময় সেভিং সদস্য বাধ্যতামূলক
+- লোন ইস্যু/পরিশোধ ফর্মে farmer `is_voter` না হলে error: "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে"। CombinedPayment-এ লোন সিলেক্ট/পরিশোধ ব্লক হবে non-member হলে।
+
+### ৪. লোন ও সঞ্চয় রসিদ A5 ল্যান্ডস্কেপ
+- `bnReceipts.ts`-এ `paper` টাইপে `"a5"` যোগ; লোন/সঞ্চয় রসিদ কলে `paper:"a5", orientation:"l"` সেট করা হবে (`FarmerDetail`/`CombinedPayment`-এর প্রিন্ট কল)। লেআউট A5-ল্যান্ডস্কেপে ফিট করার সমন্বয়।
+
+### ৫. আংশিক পরিশোধে জোরপূর্বক ডিউ নয়
+- বাকি সবসময় `total_payable − মোট পরিশোধ` হিসেবে গণনা হবে (ইনস্টলমেন্ট-ভিত্তিক ৫০০ ফিক্সড ডিউ নয়)। ১০০ দিলে বাকি ১০০ কমবে, ৪০০ "due" দেখাবে না। কোনো ডিসকাউন্ট অপশন যোগ করা হবে না (ব্যবহারকারীর পছন্দ অনুযায়ী)।
 
 ## টেকনিক্যাল বিবরণ
+- মাইগ্রেশন: `ALTER TABLE loan_payments ADD COLUMN principal_amount numeric, ADD COLUMN interest_amount numeric;` (RLS অপরিবর্তিত)।
+- নতুন ফাইল: `src/pages/LoanPlans.tsx` + App.tsx রুট + AppSidebar লিংক।
+- সম্পাদনা: `CombinedPayment.tsx` (আসল/লাভ ইনপুট, সাজেশন, সদস্য চেক, A5 রসিদ), `bnReceipts.ts` (a5)।
+- পুরোনো রেকর্ডে `principal_amount` null হলে আগের মতো `amount` ব্যবহৃত হবে — অন্য মডিউল অপরিবর্তিত।
 
-ডাটাবেজ মাইগ্রেশন:
-```sql
-ALTER TABLE public.land_transfers
-  ADD COLUMN IF NOT EXISTS source_dag_no text,
-  ADD COLUMN IF NOT EXISTS source_mouza text,
-  ADD COLUMN IF NOT EXISTS source_land_size numeric,
-  ADD COLUMN IF NOT EXISTS source_owner_name text,
-  ADD COLUMN IF NOT EXISTS source_owner_code text;
-```
-নতুন কলাম; RLS/grant অপরিবর্তিত (existing policy যথেষ্ট)।
-
-কোড পরিবর্তন:
-- transfer insert স্থান (যেখানে `land_transfers` insert হয়) — snapshot ফিল্ড যোগ।
-- `src/components/farmers/LandTransferHistoryTab.tsx` — snapshot-first রেন্ডার + fallback।
-- `src/components/LandRelations.tsx` — দাগ/জমি অনুযায়ী গ্রুপড সারাংশ সেকশন।
-
-পুরোনো রেকর্ডে snapshot null থাকলে আগের আচরণ (লাইভ join) বহাল থাকবে, তাই অন্য মডিউলে সমস্যা হবে না।</parameter>
-<parameter name="summary">Snapshot land details into transfer history and improve multi-dag/multi-borgadar land relation display
+নিশ্চিত করতে একটি প্রশ্ন: লাভ গণনা কি "৬ মাসে একবারে ৯%" (পুরো মেয়াদে ৯%) ধরে অতিবাহিত মাস অনুযায়ী আনুপাতিক হবে, নাকি প্রতি মাসে ৯%? উপরে আমি আনুপাতিক (৯%÷৬ প্রতি মাস) ধরেছি।</parameter>
+<parameter name="summary">Loan repayment principal/interest split with monthly interest suggestion, editable loan plans, savings-member requirement, A5 landscape receipts, flexible partial payments
