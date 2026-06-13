@@ -329,6 +329,36 @@ export default function Savings() {
     if (error) return toast.error(error.message);
     toast.success(t("deleted")); await load();
   }
+  async function toggleSavingsActive(f: any) {
+    const next = !f.savings_inactive;
+    const ok = await confirm({
+      title: next ? tx("Make member inactive?", "সদস্যকে ইনঅ্যাক্টিভ করবেন?") : tx("Make member active?", "সদস্যকে অ্যাক্টিভ করবেন?"),
+      description: next
+        ? tx("New savings transactions will be blocked. Existing balance stays counted in cash/accounts.", "নতুন সেভিং লেনদেন বন্ধ হবে। আগের জমা টাকা ক্যাশ/হিসাবে গণনায় থাকবে।")
+        : tx("Member will be able to transact again.", "সদস্য আবার লেনদেন করতে পারবে।"),
+      confirmText: next ? tx("Make inactive", "ইনঅ্যাক্টিভ") : tx("Make active", "অ্যাক্টিভ"),
+    });
+    if (!ok) return;
+    const { error } = await supabase.from("farmers").update({ savings_inactive: next } as any).eq("id", f.id);
+    if (error) return toast.error(error.message);
+    toast.success(t("updated")); await load();
+  }
+  async function doTransfer() {
+    if (!transfer || !transfer.toId) return toast.error(tx("Select destination member", "গন্তব্য সদস্য নির্বাচন করুন"));
+    if (transfer.toId === transfer.from.id) return toast.error(tx("Source and destination are the same", "উৎস ও গন্তব্য একই"));
+    const fromId = transfer.from.id, toId = transfer.toId;
+    // Move all savings transactions, savings payments and plan enrollments to the destination farmer.
+    const r1 = await supabase.from("savings_transactions").update({ farmer_id: toId } as any).eq("farmer_id", fromId);
+    if (r1.error) return toast.error(r1.error.message);
+    const r2 = await supabase.from("payments").update({ farmer_id: toId } as any).eq("farmer_id", fromId).eq("kind", "savings");
+    if (r2.error) return toast.error(r2.error.message);
+    const r3 = await supabase.from("farmer_savings_plans").update({ farmer_id: toId } as any).eq("farmer_id", fromId);
+    if (r3.error) return toast.error(r3.error.message);
+    // Ensure destination has a savings account enabled.
+    await supabase.from("farmers").update({ is_voter: true } as any).eq("id", toId);
+    toast.success(tx("Savings account transferred", "সেভিং অ্যাকাউন্ট স্থানান্তর হয়েছে"));
+    setTransfer(null); await load();
+  }
   function printReceipt(r: any) {
     const receiptNo = `SAV-${r.id.slice(0, 8).toUpperCase()}`;
     exportPaymentReceiptPDF({
