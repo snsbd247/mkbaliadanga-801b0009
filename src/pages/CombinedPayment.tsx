@@ -154,23 +154,26 @@ export default function CombinedPayment() {
         rows.push({ kind: "share", label_bn: "শেয়ার", label_en: "Share", amount: Number(form.share) });
       }
 
-      // 3) Loan repayment (via payments + payment_allocations)
-      if (Number(form.loan_amt) > 0 && form.loan_id) {
+      // 3) Loan repayment (principal + optional interest) via payments + payment_allocations
+      if (loanAmt > 0 && form.loan_id) {
+        const principal = Number(form.loan_principal || 0);
+        const interest = Number(form.loan_interest || 0);
         const { data: pay, error: payErr } = await supabase.from("payments").insert({
-          farmer_id: form.farmer_id, kind: "loan", amount: Number(form.loan_amt),
+          farmer_id: form.farmer_id, kind: "loan", amount: loanAmt,
           reference_id: form.loan_id, collected_by: user?.id, receipt_no: receiptNo, status: "approved",
         } as any).select("id,verify_token").single();
         if (payErr) throw payErr;
         if (pay?.verify_token && !verifyToken) verifyToken = pay.verify_token;
         await supabase.from("payment_allocations").insert({
-          payment_id: pay!.id, kind: "loan", reference_id: form.loan_id, amount: Number(form.loan_amt),
+          payment_id: pay!.id, kind: "loan", reference_id: form.loan_id, amount: loanAmt,
         } as any);
         await supabase.from("loan_payments").insert({
-          loan_id: form.loan_id, amount: Number(form.loan_amt),
+          loan_id: form.loan_id, amount: loanAmt, principal_amount: principal, interest_amount: interest,
           paid_on: new Date().toISOString().slice(0, 10), collected_by: user?.id,
           receipt_no: receiptNo,
         } as any);
-        rows.push({ kind: "loan", label_bn: "ঋণ পরিশোধ", label_en: "Loan Repayment", amount: Number(form.loan_amt) });
+        rows.push({ kind: "loan", label_bn: "ঋণ আসল", label_en: "Loan Principal", amount: principal });
+        if (interest > 0) rows.push({ kind: "loan_interest", label_bn: "ঋণ লাভ", label_en: "Loan Interest", amount: interest });
       }
 
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
