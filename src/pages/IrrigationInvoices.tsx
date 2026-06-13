@@ -26,6 +26,7 @@ import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seaso
 import { resolveIrrigationRate, type CategoryRateInput } from "@/lib/irrigationRateResolver";
 import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
+import { logAudit } from "@/lib/audit";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
   downloadIrrigationInvoicesBulkPdf, previewIrrigationInvoicesBulkPdf,
@@ -678,6 +679,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
 function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const { tx } = useLang();
+  const { user } = useAuth();
   const [dueDate, setDueDate] = useState("");
   const [otherCharge, setOtherCharge] = useState("0");
   const [delayFee, setDelayFee] = useState("0");
@@ -721,6 +723,23 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
       .eq("id", inv.id);
     setBusy(false);
     if (error) return toast.error(error.message);
+    const originalFee = Number(inv.delay_fee ?? 0);
+    if (df !== originalFee) {
+      await supabase.from("irrigation_delay_fee_audit").insert({
+        invoice_id: inv.id, payment_id: null,
+        original_amount: originalFee, modified_amount: df,
+        reason: note || null,
+        changed_by: user?.id, office_id: inv.office_id ?? null,
+      }).then(() => {}, () => {});
+      logAudit({
+        module: "delay_fee_override",
+        action_type: "override",
+        office_id: inv.office_id ?? null,
+        reference_id: inv.id,
+        old_data: { delay_fee: originalFee },
+        new_data: { delay_fee: df, source: "invoice_edit", reason: note || null },
+      });
+    }
     toast.success(tx("Invoice updated", "ইনভয়েস হালনাগাদ হয়েছে"));
     onSaved?.(); onClose();
   }
