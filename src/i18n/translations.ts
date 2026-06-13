@@ -10,6 +10,7 @@ export const translations = {
     dashboard: "Dashboard",
     offices: "Offices",
     farmers: "Farmers",
+    farmerMerge: "Farmer Merge",
     lands: "Lands",
     seasons: "Seasons",
     savings: "Savings",
