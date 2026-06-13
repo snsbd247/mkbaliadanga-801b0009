@@ -20,7 +20,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
 import { money } from "@/lib/format";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
-import { getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
+
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFarmerDues, type FarmerDuesBreakdown } from "@/lib/farmerDues";
