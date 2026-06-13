@@ -163,8 +163,19 @@ export default function IrrigationDueReport() {
     { total: 0, paid: 0, due: 0 },
   ), [filtered]);
 
-  const head = [t("farmerCode"), t("farmer"), "Land", tx("Patwari", "পাটুয়ারি"), "Bigha", "Shatak", t("season"), t("total"), t("paid"), t("dueAmount")];
-  const body = filtered.map((r) => [r.farmer_code, r.farmer_name, r.land_label, r.patwari_name, r.land_size_bigha.toFixed(2), r.land_size_shatak.toFixed(2), r.season_label, money(r.total), money(r.paid), money(r.due)]);
+  const head = [
+    t("farmerCode"), t("farmer"), tx("Father", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
+    tx("Mouza", "মৌজা"), tx("Dag", "দাগ"), tx("Type", "টাইপ"), t("season"), "Bigha", "Shatak",
+    t("total"), t("paid"), t("dueAmount"),
+    tx("Owner", "মালিক"), tx("Owner ID", "মালিক আইডি"), tx("Owner father", "মালিকের পিতা"),
+    tx("Owner village", "মালিকের গ্রাম"), tx("Owner mobile", "মালিকের মোবাইল"), tx("Patwari", "পাটুয়ারি"),
+  ];
+  const body = filtered.map((r) => [
+    r.farmer_code, r.farmer_name, r.father_name || "—", r.village || "—", r.mobile || "—",
+    r.mouza || "—", r.dag || "—", r.season_type || "—", r.season_label, r.land_size_bigha.toFixed(2), r.land_size_shatak.toFixed(2),
+    money(r.total), money(r.paid), money(r.due),
+    r.owner_name || "—", r.owner_code || "—", r.owner_father || "—", r.owner_village || "—", r.owner_mobile || "—", r.patwari_name,
+  ]);
 
   return (
     <div className="container mx-auto p-4 space-y-4">
