@@ -1,0 +1,59 @@
+# =============================================================================
+# deploy/docker-compose.yml — application + unified reverse proxy (Caddy)
+# Caddy terminates SSL (auto Let's Encrypt + auto-renew) for all 3 subdomains:
+#   app.*       -> mk_app (Vite static build, nginx)
+#   supabase.*  -> supabase-kong:8000
+#   coolify.*   -> host Coolify dashboard (host.docker.internal:8000)
+# Start: docker compose --env-file .env.production up -d --build
+# =============================================================================
+
+networks:
+  mk_net:
+    name: mk_net
+    external: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+services:
+  # ---------------------------------------------------------------- App (built from repo)
+  mk_app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.app
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${ANON_KEY}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${ANON_KEY}
+    image: ${PROJECT_NAME}-app:latest
+    container_name: mk_app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks: [mk_net]
+
+  # ---------------------------------------------------------------- Caddy (edge + SSL)
+  mk_caddy:
+    image: caddy:2-alpine
+    container_name: mk_caddy
+    restart: unless-stopped
+    depends_on: [mk_app]
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      SUPABASE_DOMAIN: ${SUPABASE_DOMAIN}
+      COOLIFY_DOMAIN: ${COOLIFY_DOMAIN}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [mk_net]
