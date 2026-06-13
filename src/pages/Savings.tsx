@@ -232,14 +232,8 @@ export default function Savings() {
 
     const status = isWithdraw ? "pending" : "approved";
     const farmer = farmers.find((x: any) => x.id === form.farmer_id);
-    // Auto-generate SAV monthly receipt no when user did not enter one.
-    let finalReceiptNo = form.receipt_no?.trim() || "";
-    if (!finalReceiptNo) {
-      // Unique seed so the offline fallback (PREFIX-YYYYMMDD-XXXXXX) never collides
-      // when the same farmer makes more than one entry on the same day.
-      const uniqueSeed = `${form.farmer_id}-${Date.now()}-${crypto.randomUUID()}`;
-      finalReceiptNo = await nextMonthlyReceiptNo("SAV", officeId, uniqueSeed);
-    }
+    // Receipt no: keep exactly what the user typed. Blank stays blank (no auto-generation).
+    const finalReceiptNo = form.receipt_no?.trim() || null;
     const payload: any = {
       farmer_id: form.farmer_id, type: form.type as any, amount: form.amount, note: form.note,
       status: status as any, created_by: user?.id,
