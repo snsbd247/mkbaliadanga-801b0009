@@ -1064,6 +1064,7 @@ export type Database = {
           is_active: boolean
           office_id: string | null
           opening_balance: number
+          stream: string
           updated_at: string
         }
         Insert: {
@@ -1077,6 +1078,7 @@ export type Database = {
           is_active?: boolean
           office_id?: string | null
           opening_balance?: number
+          stream?: string
           updated_at?: string
         }
         Update: {
@@ -1090,6 +1092,7 @@ export type Database = {
           is_active?: boolean
           office_id?: string | null
           opening_balance?: number
+          stream?: string
           updated_at?: string
         }
         Relationships: [

@@ -1,0 +1,1 @@
+ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS stream text NOT NULL DEFAULT 'other';

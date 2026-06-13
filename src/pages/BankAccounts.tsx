@@ -21,6 +21,14 @@ import { useLang } from "@/i18n/LanguageProvider";
 const sb = supabase as any;
 const TXN_TYPES = ["deposit", "withdraw", "charge", "interest"] as const;
 
+const STREAMS: Array<{ value: string; label: string }> = [
+  { value: "sech", label: "সেচ (মেইন)" },
+  { value: "sech_small", label: "ছোট সেচ" },
+  { value: "saving", label: "সেভিং" },
+  { value: "other", label: "অন্যান্য" },
+];
+const streamLabel = (v?: string) => STREAMS.find(s => s.value === v)?.label ?? "অন্যান্য";
+
 export default function BankAccounts() {
   const { user } = useAuth();
   const { t } = useLang();
@@ -31,7 +39,7 @@ export default function BankAccounts() {
   const [openT, setOpenT] = useState(false);
   const [openX, setOpenX] = useState(false); // transfer
 
-  const [a, setA] = useState<any>({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", opening_balance: 0, is_active: true });
+  const [a, setA] = useState<any>({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
   const [tx, setTx] = useState<any>({ bank_account_id: "", txn_type: "deposit", amount: 0, txn_date: new Date().toISOString().slice(0, 10), reference_no: "", note: "", post_cashbook: true });
   const [xf, setXf] = useState<any>({ from_id: "", to_id: "", amount: 0, txn_date: new Date().toISOString().slice(0, 10), note: "" });
 
@@ -67,7 +75,7 @@ export default function BankAccounts() {
     const { error } = await sb.from("bank_accounts").insert(a);
     if (error) return toast.error(error.message);
     toast.success("Account added"); setOpenA(false); load();
-    setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", opening_balance: 0, is_active: true });
+    setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
   }
 
   async function isCashbookLocked(dateStr: string): Promise<boolean> {
@@ -152,6 +160,12 @@ export default function BankAccounts() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="col-span-2"><Label>স্ট্রিম (খাত)</Label>
+                    <Select value={a.stream} onValueChange={v => setA({ ...a, stream: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{STREAMS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                   <div className="col-span-2"><Label>Opening Balance</Label><Input type="number" value={a.opening_balance || ""} onChange={e => setA({ ...a, opening_balance: +e.target.value })} /></div>
                 </div>
                 <DialogFooter><Button variant="outline" onClick={() => setOpenA(false)}>Cancel</Button><Button onClick={saveAccount}>Save</Button></DialogFooter>
@@ -223,22 +237,24 @@ export default function BankAccounts() {
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="ledger">Ledger</TabsTrigger>
           <TabsTrigger value="deposits">Statement (জমা/উত্তোলন)</TabsTrigger>
+          <TabsTrigger value="streams">৪ একাউন্ট (স্ট্রিম)</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts">
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
               <TableHead>Bank</TableHead><TableHead>Branch</TableHead><TableHead>Account No</TableHead>
-              <TableHead>Type</TableHead><TableHead className="text-right">Opening</TableHead>
+              <TableHead>Type</TableHead><TableHead>স্ট্রিম</TableHead><TableHead className="text-right">Opening</TableHead>
               <TableHead className="text-right">Current Balance</TableHead><TableHead>Status</TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {accounts.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No bank accounts yet</TableCell></TableRow>}
+              {accounts.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No bank accounts yet</TableCell></TableRow>}
               {accounts.map(ac => (
                 <TableRow key={ac.id}>
                   <TableCell className="font-medium">{ac.bank_name}</TableCell>
                   <TableCell>{ac.branch}</TableCell>
                   <TableCell className="font-mono text-xs">{ac.account_no}</TableCell>
                   <TableCell>{ac.account_type}</TableCell>
+                  <TableCell><Badge variant="outline">{streamLabel(ac.stream)}</Badge></TableCell>
                   <TableCell className="text-right">{money(ac.opening_balance)}</TableCell>
                   <TableCell className="text-right font-bold">{money(balances.get(ac.id) ?? 0)}</TableCell>
                   <TableCell><Badge variant={ac.is_active ? "default" : "outline"}>{ac.is_active ? "Active" : "Inactive"}</Badge></TableCell>
@@ -356,6 +372,46 @@ export default function BankAccounts() {
                   </TableBody>
                 </Table></Card>
               </>
+            );
+          })()}
+        </TabsContent>
+
+        <TabsContent value="streams">
+          {(() => {
+            const byStream = STREAMS.map(s => {
+              const accs = accounts.filter(a => (a.stream ?? "other") === s.value);
+              const opening = accs.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0);
+              const balance = accs.reduce((sum, a) => sum + (balances.get(a.id) ?? 0), 0);
+              return { ...s, accs, opening, balance };
+            });
+            return (
+              <Card className="overflow-x-auto p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {byStream.map(col => (
+                    <div key={col.value} className="rounded-lg border p-3">
+                      <div className="font-semibold mb-2">{col.label}</div>
+                      <div className="space-y-1 text-sm">
+                        {col.accs.length === 0 && <div className="text-muted-foreground">কোনো একাউন্ট নেই</div>}
+                        {col.accs.map(ac => (
+                          <div key={ac.id} className="flex justify-between gap-2">
+                            <span className="truncate">{ac.bank_name} <span className="text-xs text-muted-foreground">{ac.account_no}</span></span>
+                            <span className="font-medium whitespace-nowrap">{money(balances.get(ac.id) ?? 0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 pt-2 border-t flex justify-between text-sm">
+                        <span className="text-muted-foreground">প্রারম্ভিক</span><span>{money(col.opening)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-primary">
+                        <span>বর্তমান</span><span>{money(col.balance)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button size="sm" variant="outline" onClick={() => exportTablePDF("Bank Stream Summary", ["স্ট্রিম", "প্রারম্ভিক", "বর্তমান ব্যালেন্স"], byStream.map(c => [c.label, c.opening, c.balance]))}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
+                </div>
+              </Card>
             );
           })()}
         </TabsContent>
