@@ -204,8 +204,8 @@ export default function CombinedPayment() {
 
   async function printReceipt() {
     if (!lastReceipt) return;
-    const paper = getDefaultPaperSize();
-    const doc = new jsPDF({ unit: "mm", format: paper });
+    // Loan & savings receipts print on A5 landscape per requirement
+    const doc = new jsPDF({ unit: "mm", format: "a5", orientation: "l" });
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 12;
     doc.setFont("helvetica", "bold"); doc.setFontSize(13);
