@@ -211,7 +211,9 @@ generate_env
 start_supabase    && ok "Supabase stack up"
 run_migrations
 seed_admin
-sync_laravel
+# Laravel API is NOT deployed now (Coolify + self-hosted Supabase only).
+# To sync the Laravel backend later, run manually: SYNC_LARAVEL=1 bash install.sh
+[[ "${SYNC_LARAVEL:-0}" == "1" ]] && sync_laravel
 start_app         && ok "Application + Caddy up"
 schedule_backups
 
