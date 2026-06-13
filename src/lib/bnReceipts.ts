@@ -23,7 +23,7 @@ export interface ReceiptOptions {
   /** Page margins in mm. Default { t: 10, r: 10, b: 10, l: 10 } */
   margins?: { t?: number; r?: number; b?: number; l?: number };
   /** Page format. Default "a4". */
-  paper?: "a4" | "letter";
+  paper?: "a4" | "a5" | "letter";
   /** Orientation. Default "p" (portrait). */
   orientation?: "p" | "l";
   /** Company block layout: stacked ("two-line") or compact inline ("one-line"). */
