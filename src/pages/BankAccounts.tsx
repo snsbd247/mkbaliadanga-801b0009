@@ -114,6 +114,7 @@ export default function BankAccounts() {
   async function saveTransfer() {
     if (!xf.from_id || !xf.to_id || xf.from_id === xf.to_id) return toast.error("Pick two different accounts");
     if (xf.amount <= 0) return toast.error("Amount required");
+    if (await isCashbookLocked(xf.txn_date)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
     const group = crypto.randomUUID();
     const common = { amount: xf.amount, txn_date: xf.txn_date, note: xf.note, transfer_group: group, created_by: user?.id };
     const { error } = await sb.from("bank_transactions").insert([
