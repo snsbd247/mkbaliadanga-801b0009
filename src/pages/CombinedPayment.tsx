@@ -312,14 +312,30 @@ export default function CombinedPayment() {
               </Select>
             </div>
             <div>
-              <Label>{lang === "bn" ? "ঋণ পরিশোধ (৳)" : "Loan Repayment (৳)"}</Label>
-              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_amt}
+              <Label>{lang === "bn" ? "ঋণ আসল (৳) *" : "Loan Principal (৳) *"}</Label>
+              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_principal}
                      aria-invalid={loanExceeds || undefined}
-                     onChange={(e) => setForm({ ...form, loan_amt: Number(e.target.value) || 0 })} />
+                     onChange={(e) => setForm({ ...form, loan_principal: Number(e.target.value) || 0 })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{lang === "bn" ? "ঋণ লাভ (৳) — অপশনাল" : "Loan Interest (৳) — optional"}</Label>
+              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_interest}
+                     onChange={(e) => setForm({ ...form, loan_interest: Number(e.target.value) || 0 })} />
+              {selectedLoan && suggestedInterest > 0 && (
+                <button type="button" className="text-xs mt-1 text-primary underline"
+                        onClick={() => setForm({ ...form, loan_interest: suggestedInterest })}>
+                  {lang === "bn" ? `সাজেস্ট লাভ: ${money(suggestedInterest)} — প্রয়োগ` : `Suggested interest: ${money(suggestedInterest)} — apply`}
+                </button>
+              )}
+            </div>
+            <div>
               {selectedLoan && (
-                <div className={`text-xs mt-1 ${loanExceeds ? "text-destructive" : "text-muted-foreground"}`}>
+                <div className={`text-xs mt-6 ${loanExceeds ? "text-destructive" : "text-muted-foreground"}`}>
                   {lang === "bn" ? "বাকি" : "Remaining"}: {money(selectedLoan.remaining)}
                   {loanExceeds && (lang === "bn" ? " — বাকির চেয়ে বেশি" : " — exceeds remaining")}
+                  {!farmer?.is_voter && <div className="text-destructive">{lang === "bn" ? "এই কৃষক সঞ্চয় সদস্য নন" : "Not a savings member"}</div>}
                 </div>
               )}
             </div>
