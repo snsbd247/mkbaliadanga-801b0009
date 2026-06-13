@@ -10,7 +10,7 @@ import { parseDagNumbers } from "@/lib/dagNumbers";
 import { getReceiptLayoutSettings, dagSeparatorString, getIrrigationLabels } from "@/lib/receiptLayoutSettings";
 
 export type InvoiceCopy = "both" | "office" | "farmer";
-export type PaperFormat = "a4" | "letter" | "a5";
+export type PaperFormat = "a4" | "letter" | "a5" | "a5-landscape";
 
 export interface InvoicePdfSettings {
   /** Paper size. */
