@@ -192,6 +192,22 @@ export default function FarmerDetail() {
       setOwnerNames(map);
     } else setOwnerNames({});
 
+    // Per-land notes from active land relations (Phase 4 — show in lands list)
+    const landIdsForNotes = Array.from(new Set(((l.data as any) ?? []).map((x: any) => x.id).filter(Boolean)));
+    if (landIdsForNotes.length) {
+      const { data: rels } = await supabase.from("land_relations")
+        .select("land_id,note")
+        .in("land_id", landIdsForNotes as string[])
+        .is("deleted_at", null)
+        .is("valid_to", null);
+      const nmap: Record<string, string[]> = {};
+      (rels ?? []).forEach((r: any) => {
+        const txt = (r.note ?? "").trim();
+        if (txt) (nmap[r.land_id] ||= []).push(txt);
+      });
+      setLandNotes(nmap);
+    } else setLandNotes({});
+
     // Load borga lands where THIS farmer is the owner (given out to sharecroppers)
     try {
       const { data: bout } = await (supabase.from as any)("lands_with_location")
