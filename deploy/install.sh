@@ -124,6 +124,7 @@ generate_env() {
   [[ -z "${POSTGRES_PASSWORD:-}" ]] && { POSTGRES_PASSWORD=$(gen_password); _set POSTGRES_PASSWORD "$POSTGRES_PASSWORD"; }
   [[ -z "${JWT_SECRET:-}"        ]] && { JWT_SECRET=$(gen_secret 32);       _set JWT_SECRET "$JWT_SECRET"; }
   [[ -z "${SECRET_KEY_BASE:-}"   ]] && { _set SECRET_KEY_BASE "$(gen_secret 32)"; }
+  [[ -z "${REALTIME_DB_ENC_KEY:-}" ]] && { _set REALTIME_DB_ENC_KEY "$(gen_secret 16)"; }
   [[ -z "${VAULT_ENC_KEY:-}"     ]] && { _set VAULT_ENC_KEY "$(gen_secret 16)"; }
   [[ -z "${DASHBOARD_PASSWORD:-}" ]] && { _set DASHBOARD_PASSWORD "$(gen_password)"; }
   if [[ -z "${ANON_KEY:-}" ]]; then
