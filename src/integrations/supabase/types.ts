@@ -1232,6 +1232,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cashbook_expense_heads: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name_bn: string
+          name_en: string | null
+          office_id: string | null
+          sort_order: number
+          stream: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_bn: string
+          name_en?: string | null
+          office_id?: string | null
+          sort_order?: number
+          stream: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_bn?: string
+          name_en?: string | null
+          office_id?: string | null
+          sort_order?: number
+          stream?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cashbook_submissions: {
         Row: {
           closing_cash: number
@@ -1241,6 +1277,7 @@ export type Database = {
           month: number
           note: string | null
           opening_cash: number
+          stream: string
           submitted_at: string
           submitted_by: string | null
           total_expense: number
@@ -1255,6 +1292,7 @@ export type Database = {
           month: number
           note?: string | null
           opening_cash?: number
+          stream?: string
           submitted_at?: string
           submitted_by?: string | null
           total_expense?: number
@@ -1269,11 +1307,30 @@ export type Database = {
           month?: number
           note?: string | null
           opening_cash?: number
+          stream?: string
           submitted_at?: string
           submitted_by?: string | null
           total_expense?: number
           total_income?: number
           year?: number
+        }
+        Relationships: []
+      }
+      cashbook_voucher_seq: {
+        Row: {
+          last_no: number
+          office_id: string
+          stream: string
+        }
+        Insert: {
+          last_no?: number
+          office_id: string
+          stream: string
+        }
+        Update: {
+          last_no?: number
+          office_id?: string
+          stream?: string
         }
         Relationships: []
       }
@@ -1510,47 +1567,76 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          attachment_mime: string | null
+          attachment_path: string | null
+          bank_account_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
           expense_date: string
           head: string
+          head_id: string | null
           id: string
+          is_bank_deposit: boolean
           method: string | null
           note: string | null
           office_id: string | null
           payee: string | null
+          stream: string
           updated_at: string
+          voucher_no: string | null
         }
         Insert: {
           amount: number
+          attachment_mime?: string | null
+          attachment_path?: string | null
+          bank_account_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           expense_date?: string
           head: string
+          head_id?: string | null
           id?: string
+          is_bank_deposit?: boolean
           method?: string | null
           note?: string | null
           office_id?: string | null
           payee?: string | null
+          stream?: string
           updated_at?: string
+          voucher_no?: string | null
         }
         Update: {
           amount?: number
+          attachment_mime?: string | null
+          attachment_path?: string | null
+          bank_account_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           expense_date?: string
           head?: string
+          head_id?: string | null
           id?: string
+          is_bank_deposit?: boolean
           method?: string | null
           note?: string | null
           office_id?: string | null
           payee?: string | null
+          stream?: string
           updated_at?: string
+          voucher_no?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       farmer_login_attempts: {
         Row: {
@@ -5966,6 +6052,10 @@ export type Database = {
       merge_farmers: {
         Args: { _source: string; _target: string }
         Returns: undefined
+      }
+      next_cashbook_voucher_no: {
+        Args: { _office: string; _stream: string }
+        Returns: number
       }
       next_monthly_receipt_no: {
         Args: { p_kind: string; p_office_id: string }
