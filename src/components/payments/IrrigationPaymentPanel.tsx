@@ -129,6 +129,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     }, 0);
   }, [selectedCurrentInvoices, delayFee]);
 
+  // Auto-fill the "current received" box with the rounded selected payable.
+  // Operator can still edit it manually for partial payments.
+  useEffect(() => {
+    setCurrentCollected(roundTk(currentPayable));
+  }, [currentPayable]);
+
   const previousRemainingAfter = previousDueTotal - Number(previousCollected || 0);
   const blockedByPreviousDue = previousDueTotal > 0 && previousRemainingAfter > 0 && !specialPermission;
 
