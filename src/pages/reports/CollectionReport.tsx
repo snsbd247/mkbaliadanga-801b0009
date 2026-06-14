@@ -400,12 +400,12 @@ export default function CollectionReport() {
                 "Collections",
                 rows.map((r) => ({
                   Date: r.date,
-                  "Receipt #": r.receipt_no ?? "",
+                  "Receipt #": `${r.receipt_no ?? ""}${r.voided ? " (বাতিল)" : ""}`,
                   "Farmer ID": r.farmer_code,
                   "Farmer Name": r.farmer_name,
                   "সেচ": r.sech, "জরিমানা": r.jorimana, "হাল": r.hal, "বকেয়া": r.bokeya,
                   "হাওলাত": r.hawlat, "অনুদান": r.anudan, "ভাঙারি": r.vangari, "পুকুর": r.pukur, "বিঘাত": r.bighat, "ভর্তি ফি": r.bhortifi, "ঋণ": r.rin, "সঞ্চয়": r.soncoy, "বিবিধ": r.bibidh,
-                  "মোট": r.amount,
+                  "মোট": r.voided ? "বাতিল" : r.amount,
                   "User": r.user_name,
                 })),
               )
