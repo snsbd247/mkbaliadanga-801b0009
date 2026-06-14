@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Check, X, FileText, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,7 +22,6 @@ export default function Loans() {
   const canApprove = usePermission("loans", "can_edit");
   const [rows, setRows] = useState<any[]>([]);
   const [tab, setTab] = useState("pending");
-  const [delId, setDelId] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${tx("Loans", "ঋণ")} — MK Baliadanga`; load(); }, []);
 
@@ -35,7 +34,15 @@ export default function Loans() {
     const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(tx("Loan deleted", "ঋণ মুছে ফেলা হয়েছে"));
-    setDelId(null); load();
+    load();
+  }
+
+  function confirmRemove(id: string) {
+    toast(tx("Delete this loan?", "এই ঋণ মুছবেন?"), {
+      description: tx("This action cannot be undone.", "এই কাজটি ফেরানো যাবে না।"),
+      action: { label: tx("Delete", "মুছুন"), onClick: () => remove(id) },
+      cancel: { label: tx("Cancel", "বাতিল"), onClick: () => {} },
+    });
   }
 
   async function decide(id: string, status: "approved" | "rejected") {
@@ -119,7 +126,7 @@ export default function Loans() {
                         {canApprove && (
                           <>
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/loans/${r.id}/edit`)}><Pencil className="h-4 w-4" /></Button>
-                            <Button size="sm" variant="ghost" onClick={() => setDelId(r.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => confirmRemove(r.id)}><Trash2 className="h-4 w-4" /></Button>
                           </>
                         )}
                       </TableCell>
@@ -132,19 +139,6 @@ export default function Loans() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      <AlertDialog open={!!delId} onOpenChange={(o) => { if (!o) setDelId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{tx("Delete loan?", "ঋণ মুছবেন?")}</AlertDialogTitle>
-            <AlertDialogDescription>{tx("This action cannot be undone.", "এই কাজটি ফেরানো যাবে না।")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{tx("Cancel", "বাতিল")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => delId && remove(delId)}>{tx("Delete", "মুছুন")}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

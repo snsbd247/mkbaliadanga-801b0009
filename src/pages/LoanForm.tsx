@@ -31,6 +31,7 @@ export default function LoanForm() {
   const [, setFarmer] = useState<FarmerLite | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string>("pending");
+  const [errors, setErrors] = useState<{ farmer_id?: string; principal?: string }>({});
 
   useEffect(() => {
     document.title = `${isEdit ? tx("Edit Loan", "ঋণ এডিট") : tx("Issue Loan", "ঋণ ইস্যু")} — MK Baliadanga`;
@@ -62,11 +63,14 @@ export default function LoanForm() {
   }
 
   async function save() {
-    if (!form.farmer_id) return toast.error(tx("Select a farmer", "ফার্মার নির্বাচন করুন"));
-    if (!(Number(form.principal) > 0)) return toast.error(tx("Principal must be greater than 0", "আসল টাকা ০ এর বেশি হতে হবে"));
+    const errs: { farmer_id?: string; principal?: string } = {};
+    if (!form.farmer_id) errs.farmer_id = tx("Select a farmer", "ফার্মার নির্বাচন করুন");
+    if (!(Number(form.principal) > 0)) errs.principal = tx("Principal must be greater than 0", "আসল টাকা ০ এর বেশি হতে হবে");
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     const { data: mchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
-    if (!mchk?.is_voter) return toast.error(tx("Loans are only allowed for savings members", "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে"));
-    if (mchk?.savings_inactive) return toast.error(`${mchk?.name_en ?? tx("This member", "এই সদস্য")} ${tx("is inactive — loans cannot be issued.", "ইনঅ্যাক্টিভ — ঋণ ইস্যু করা যাবে না।")}`);
+    if (!mchk?.is_voter) { setErrors({ farmer_id: tx("Loans are only allowed for savings members", "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে") }); return; }
+    if (mchk?.savings_inactive) { setErrors({ farmer_id: `${mchk?.name_en ?? tx("This member", "এই সদস্য")} ${tx("is inactive — loans cannot be issued.", "ইনঅ্যাক্টিভ — ঋণ ইস্যু করা যাবে না।")}` }); return; }
     setSaving(true);
     try {
       const payload = {
@@ -114,7 +118,8 @@ export default function LoanForm() {
           <div>
             <Label>{tx("Member", "সদস্য")} *</Label>
             <FarmerSearchSelect value={form.farmer_id} votersOnly
-              onChange={(id, f) => { setForm({ ...form, farmer_id: id ?? "" }); setFarmer(f); }} />
+              onChange={(id, f) => { setForm({ ...form, farmer_id: id ?? "" }); setFarmer(f); setErrors(e => ({ ...e, farmer_id: undefined })); }} />
+            {errors.farmer_id && <p className="text-sm text-destructive mt-1">{errors.farmer_id}</p>}
           </div>
           <div>
             <Label>{tx("Loan Plan", "ঋণ প্ল্যান")}</Label>
@@ -127,7 +132,7 @@ export default function LoanForm() {
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>{tx("Principal (৳)", "আসল (৳)")} *</Label><Input type="number" min={0} value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
+            <div><Label>{tx("Principal (৳)", "আসল (৳)")} *</Label><Input type="number" min={0} value={form.principal} onChange={e => { setForm({ ...form, principal: +e.target.value }); setErrors(er => ({ ...er, principal: undefined })); }} aria-invalid={!!errors.principal} />{errors.principal && <p className="text-sm text-destructive mt-1">{errors.principal}</p>}</div>
             <div><Label>{tx("Interest Rate (%)", "সুদের হার (%)")}</Label><Input type="number" min={0} step="0.01" disabled={!form.interest_enabled} value={form.interest_rate} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
           </div>
           <div className="flex items-center justify-between rounded-md border p-3">
