@@ -36,8 +36,8 @@ export function LoanStatement({ loanId }: { loanId: string }) {
   const principalRemaining = Math.max(0, Number(loan.principal ?? 0) - principalPaid);
 
   return (
-    <div className="space-y-4">
-      <Card className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+    <div className="space-y-4" id="loan-statement-root">
+      <Card className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" data-pdf-section>
         <div><div className="text-muted-foreground">{tx("Loan No", "ঋণ নং")}</div><div className="font-medium">{loan.loan_no || loan.id.slice(0, 8)}</div></div>
         <div><div className="text-muted-foreground">{tx("Plan", "প্ল্যান")}</div><div className="font-medium">{loan.loan_plans?.name_bn || loan.loan_plans?.name || "—"}</div></div>
         <div><div className="text-muted-foreground">{tx("Issued On", "ইস্যু তারিখ")}</div><div className="font-medium">{fmtDate(loan.issued_on)}</div></div>
@@ -49,7 +49,7 @@ export function LoanStatement({ loanId }: { loanId: string }) {
         <div><div className="text-muted-foreground">{tx("Interest Paid", "লাভ পরিশোধ")}</div><div className="font-mono">{money(interestPaid)}</div></div>
       </Card>
 
-      <Card className="overflow-x-auto">
+      <Card className="overflow-x-auto" data-pdf-section>
         <Table>
           <TableHeader><TableRow>
             <TableHead>{tx("Date", "তারিখ")}</TableHead>
