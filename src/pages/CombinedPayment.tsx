@@ -345,9 +345,11 @@ export default function CombinedPayment() {
                   {lang === "bn" ? `সাজেস্ট লাভ: ${money(suggestedInterest)} — প্রয়োগ` : `Suggested interest: ${money(suggestedInterest)} — apply`}
                 </button>
               )}
-              {selectedLoan && profitDue > 0 && (
-                <div className="text-xs mt-1 text-amber-600">
-                  {lang === "bn" ? `বাকি লাভ (ডিউ): ${money(profitDue)}` : `Profit due: ${money(profitDue)}`}
+              {/* Profit is optional; partial profit must NOT be shown as a due (client requirement).
+                  Only an informational note is shown, never a "due" balance. */}
+              {selectedLoan && profitDue > 0 && Number(form.loan_interest || 0) === 0 && (
+                <div className="text-xs mt-1 text-muted-foreground">
+                  {lang === "bn" ? `লাভ অপশনাল — চাইলে যোগ করুন` : `Interest is optional`}
                 </div>
               )}
             </div>
