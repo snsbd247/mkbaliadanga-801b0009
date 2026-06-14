@@ -785,6 +785,10 @@ export default function Farmers() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder={t("search") + tx(" / Dag (123, 124/A)…", " / দাগ (123, 124/A)…")} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
           </div>
+          <div className="relative max-w-xs flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={tx("Search by father's name…", "পিতার নাম দিয়ে খুঁজুন…")} value={fatherQ} onChange={e => { setFatherQ(e.target.value); setPage(0); }} className="pl-9" />
+          </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Select value={statusFilter} onValueChange={(v: any) => { setStatusFilter(v); setPage(0); const n = new URLSearchParams(searchParams); if (v === "all") n.delete("status"); else n.set("status", v); setSearchParams(n, { replace: true }); }}>
               <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
