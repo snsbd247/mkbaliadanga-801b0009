@@ -32,4 +32,35 @@ test.describe("loan reliability", () => {
     await page.goto("/reports/loan-penalty");
     await expect(page.getByText("ঋণ জরিমানা রিপোর্ট")).toBeVisible();
   });
+
+  test("loan edit/statement routes stay inside the loans module (no cross-module nav, no stray dialog)", async ({ page }) => {
+    await page.goto("/loans");
+    const editBtn = page.locator('button:has(svg.lucide-pencil)').first();
+    if (await editBtn.count()) {
+      await editBtn.click();
+      await expect(page).toHaveURL(/\/loans\/[0-9a-f-]+\/edit/);
+      // Edit opens a full page, not a modal dialog
+      await expect(page.locator('[role="dialog"]')).toHaveCount(0);
+    }
+    const stmtBtn = page.getByRole("button", { name: /স্টেটমেন্ট|Statement/ }).first();
+    await page.goto("/loans");
+    if (await stmtBtn.count()) {
+      await stmtBtn.click();
+      await expect(page).toHaveURL(/\/loans\/[0-9a-f-]+\/statement/);
+      await expect(page.locator('[role="dialog"]')).toHaveCount(0);
+    }
+  });
+
+  test("loan delete uses a non-popup (toast) confirmation, not an AlertDialog", async ({ page }) => {
+    await page.goto("/loans");
+    const delBtn = page.locator('button:has(svg.lucide-trash-2)').first();
+    if (await delBtn.count()) {
+      await delBtn.click();
+      // No blocking AlertDialog should appear
+      await expect(page.locator('[role="alertdialog"]')).toHaveCount(0);
+      // A toast confirmation with a Delete action should be present
+      await expect(page.getByText(/মুছবেন|Delete loan/)).toBeVisible();
+    }
+  });
 });
+
