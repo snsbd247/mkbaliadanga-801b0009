@@ -1043,6 +1043,13 @@ export default function Payments() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+
+      <IrrigationReceiptPreviewDialog
+        open={!!preview}
+        onOpenChange={(o) => { if (!o) setPreview(null); }}
+        data={preview?.data ?? null}
+        copy={preview?.copy ?? "both"}
+      />
+    </>physicians
   );
 }
