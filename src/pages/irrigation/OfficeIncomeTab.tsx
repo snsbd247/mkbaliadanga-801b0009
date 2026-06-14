@@ -16,6 +16,10 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { Plus, Trash2, Printer, FileDown, FileSpreadsheet, Eye, FileText } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { officeIncomeHeaders } from "@/lib/officeIncomeColumns";
+import { canExportOfficeIncome, canCreateOfficeIncome } from "@/lib/officeIncomePermissions";
+import { logAudit } from "@/lib/audit";
+import { useAuth } from "@/auth/AuthProvider";
 
 const INCOME_TYPES = [
   { value: "vangari", en: "Scrap (Vangari)", bn: "ভাঙারি" },
@@ -30,12 +34,20 @@ const STREAMS = [
 
 export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: string }) {
   const { tx } = useLang();
+  const { roles } = useAuth();
+  const role = roles?.includes("super_admin") || roles?.includes("developer")
+    ? "super_admin"
+    : roles?.includes("admin") ? "admin"
+    : roles?.includes("staff") ? "staff" : null;
+  const canExport = canExportOfficeIncome(role as any);
+  const canCreate = canCreateOfficeIncome(role as any);
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState<any>({
     office_id: offices[0]?.id ?? "",
     income_type: "vangari",
@@ -68,13 +80,16 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
   const total = useMemo(() => rows.reduce((s, r) => s + Number(r.amount || 0), 0), [rows]);
 
   const save = async () => {
-    if (!form.payer_name.trim()) { toast.error(tx("Payer name required", "প্রদানকারীর নাম দিন")); return; }
-    if (form.payer_name.trim().length > 100) { toast.error(tx("Name too long", "নাম খুব বড়")); return; }
-    if (form.father_name?.trim().length > 100) { toast.error(tx("Father's name too long", "পিতার নাম খুব বড়")); return; }
-    if (form.village?.trim().length > 100) { toast.error(tx("Village too long", "গ্রাম খুব বড়")); return; }
+    const errs: Record<string, string> = {};
+    if (!form.payer_name.trim()) errs.payer_name = tx("Payer name required", "প্রদানকারীর নাম দিন");
+    else if (form.payer_name.trim().length > 100) errs.payer_name = tx("Name too long (max 100)", "নাম খুব বড় (সর্বোচ্চ ১০০)");
+    if (form.father_name?.trim().length > 100) errs.father_name = tx("Father's name too long (max 100)", "পিতার নাম খুব বড় (সর্বোচ্চ ১০০)");
+    if (form.village?.trim().length > 100) errs.village = tx("Village too long (max 100)", "গ্রাম খুব বড় (সর্বোচ্চ ১০০)");
     const mob = form.mobile?.trim();
-    if (mob && !/^[0-9+\-\s]{6,20}$/.test(mob)) { toast.error(tx("Invalid mobile number", "সঠিক মোবাইল নম্বর দিন")); return; }
-    if (!(Number(form.amount) > 0)) { toast.error(tx("Amount must be greater than 0", "টাকা ০-এর বেশি দিন")); return; }
+    if (mob && !/^[0-9+\-\s]{6,20}$/.test(mob)) errs.mobile = tx("Invalid mobile number", "সঠিক মোবাইল নম্বর দিন");
+    if (!(Number(form.amount) > 0)) errs.amount = tx("Amount must be greater than 0", "টাকা ০-এর বেশি দিন");
+    setFieldErrors(errs);
+    if (Object.keys(errs).length) { toast.error(tx("Please fix the highlighted fields", "চিহ্নিত ঘরগুলো ঠিক করুন")); return; }
     setSaving(true);
     try {
       let receiptNo = form.receipt_no.trim();
@@ -97,10 +112,26 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
       if (error) throw error;
       toast.success(tx("Income recorded", "আয় সংরক্ষিত হয়েছে"));
       setOpen(false);
+      setFieldErrors({});
       setForm({ ...form, payer_name: "", father_name: "", village: "", mobile: "", amount: "", receipt_no: "", note: "" });
       load();
     } catch (e: any) {
-      toast.error(e.message ?? tx("Failed to save", "সংরক্ষণ ব্যর্থ"));
+      // Map server-side validation messages to friendly field errors.
+      const msg: string = e?.message ?? "";
+      const map: Record<string, { key: string; en: string; bn: string }> = {
+        father_name: { key: "father_name", en: "Father's name is invalid (max 100 chars)", bn: "পিতার নাম সঠিক নয় (সর্বোচ্চ ১০০ অক্ষর)" },
+        village: { key: "village", en: "Village is invalid (max 100 chars)", bn: "গ্রাম সঠিক নয় (সর্বোচ্চ ১০০ অক্ষর)" },
+        mobile: { key: "mobile", en: "Mobile number format is invalid", bn: "মোবাইল নম্বরের ফরম্যাট সঠিক নয়" },
+        payer_name: { key: "payer_name", en: "Payer name is invalid", bn: "প্রদানকারীর নাম সঠিক নয়" },
+        amount: { key: "amount", en: "Amount must be greater than 0", bn: "টাকা ০-এর বেশি দিন" },
+      };
+      const hit = Object.values(map).find((m) => msg.includes(m.key));
+      if (hit) {
+        setFieldErrors({ [hit.key]: tx(hit.en, hit.bn) });
+        toast.error(tx(hit.en, hit.bn));
+      } else {
+        toast.error(msg || tx("Failed to save", "সংরক্ষণ ব্যর্থ"));
+      }
     } finally {
       setSaving(false);
     }
@@ -119,9 +150,11 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
   };
 
   const printReceipt = (r: any) => {
+    if (!canExport) { toast.error(tx("You don't have permission to print", "প্রিন্টের অনুমতি নেই")); return; }
     const officeName = offices.find((o) => o.id === r.office_id)?.name ?? "";
     const w = window.open("", "_blank", "width=820,height=1000");
     if (!w) return;
+    logAudit({ office_id: r.office_id ?? null, module: "receipt", action_type: "export", reference_id: r.id, new_data: { action: "print", receipt_no: r.receipt_no } });
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${r.receipt_no}</title>
       <style>
         @page{size:A4 portrait;margin:18mm}
@@ -173,14 +206,31 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     w.focus();
   };
 
+  const downloadReceiptPdf = (r: any) => {
+    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
+    const body: any[][] = [
+      [tx("Receipt No", "রশিদ নং"), r.receipt_no],
+      [tx("Date", "তারিখ"), fmtDate(r.received_on)],
+      [tx("Name", "নাম"), r.payer_name || "N/A"],
+      [tx("Father's name", "পিতার নাম"), r.father_name || "N/A"],
+      [tx("Village", "গ্রাম"), r.village || "N/A"],
+      [tx("Mobile", "মোবাইল"), r.mobile || "N/A"],
+      [tx("Mouza", "মৌজা"), "N/A"],
+      [tx("Land", "জমি"), "N/A"],
+      [tx("Income Type", "আয়ের ধরন"), typeLabel(r.income_type)],
+      [tx("Stream", "স্ট্রিম"), streamLabel(r.stream)],
+      [tx("Remark", "রিমার্ক"), r.note || "N/A"],
+      [tx("Amount Received", "প্রাপ্ত টাকা"), money(Number(r.amount))],
+    ];
+    exportTablePDF(tx("Office Income Receipt", "অফিস আয় রশিদ"),
+      [tx("Field", "ফিল্ড"), tx("Value", "মান")], body, undefined,
+      { signatures: [tx("Payer Signature", "প্রদানকারীর স্বাক্ষর"), tx("Authorised Signature", "অনুমোদিত স্বাক্ষর")] });
+    logAudit({ office_id: r.office_id ?? null, module: "receipt", action_type: "export", reference_id: r.id, new_data: { action: "pdf_download", receipt_no: r.receipt_no } });
+  };
+
 
   const NA = "N/A";
-  const exportHead = () => [
-    tx("Receipt No", "রশিদ নং"), tx("Date", "তারিখ"), tx("Name", "নাম"),
-    tx("Father's name", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
-    tx("Mouza", "মৌজা"), tx("Land", "জমি"), tx("Type", "ধরন"), tx("Stream", "স্ট্রিম"),
-    tx("Remark", "রিমার্ক"), tx("Amount", "টাকা"),
-  ];
+  const exportHead = () => officeIncomeHeaders(tx);
   const exportRow = (r: any) => [
     r.receipt_no, fmtDate(r.received_on), r.payer_name || NA,
     r.father_name || NA, r.village || NA, r.mobile || NA,
@@ -188,7 +238,11 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     r.note || NA, money(Number(r.amount)),
   ];
 
+  const auditExport = (action: string) =>
+    logAudit({ office_id: offices[0]?.id ?? null, module: "receipt", action_type: "export", new_data: { action, count: rows.length } });
+
   const exportList = () => {
+    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
     const head = exportHead();
     exportTablePDF(
       tx("Office Income Statement", "অফিস আয় বিবরণী"),
@@ -200,22 +254,27 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
       undefined,
       { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")], landscape: true },
     );
+    auditExport("pdf");
   };
 
   const exportXlsx = () => {
+    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
     const head = exportHead();
     const data = rows.map((r) => {
       const cells = exportRow(r);
       return head.reduce((o: any, h, i) => { o[h] = cells[i]; return o; }, {});
     });
     exportExcel("office-income", tx("Office Income", "অফিস আয়"), data);
+    auditExport("excel");
   };
 
   // Blank A4-style Excel template with the exact column order & headers (one N/A sample row).
   const exportTemplate = () => {
+    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
     const head = exportHead();
     const sample = head.reduce((o: any, h) => { o[h] = "N/A"; return o; }, {});
     exportExcel("office-income-template", tx("Office Income Template", "অফিস আয় টেমপ্লেট"), [sample]);
+    auditExport("template");
   };
 
   return (
@@ -227,10 +286,10 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
             <p className="text-sm text-muted-foreground">{tx("Scrap, loan, grant etc. on the irrigation receipt serial.", "ভাঙারি, হাওলাত, অনুদান ইত্যাদি — সেচ রশিদ সিরিয়ালে।")}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>
-            <Button variant="outline" onClick={exportXlsx} disabled={!rows.length}><FileSpreadsheet className="mr-1 h-4 w-4" />{tx("Export Excel", "এক্সেল")}</Button>
-            <Button variant="outline" onClick={exportTemplate}><FileText className="mr-1 h-4 w-4" />{tx("Excel Template", "টেমপ্লেট")}</Button>
-            <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
+            {canExport && <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>}
+            {canExport && <Button variant="outline" onClick={exportXlsx} disabled={!rows.length}><FileSpreadsheet className="mr-1 h-4 w-4" />{tx("Export Excel", "এক্সেল")}</Button>}
+            {canExport && <Button variant="outline" onClick={exportTemplate}><FileText className="mr-1 h-4 w-4" />{tx("Excel Template", "টেমপ্লেট")}</Button>}
+            {canCreate && <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>}
           </div>
         </div>
 
@@ -305,21 +364,25 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
             </div>
             <div>
               <Label>{tx("Payer name", "প্রদানকারীর নাম")}</Label>
-              <Input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} />
+              <Input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} aria-invalid={!!fieldErrors.payer_name} />
+              {fieldErrors.payer_name && <p className="mt-1 text-xs text-destructive">{fieldErrors.payer_name}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>{tx("Father's name", "পিতার নাম")}</Label>
-                <Input value={form.father_name} onChange={(e) => setForm({ ...form, father_name: e.target.value })} />
+                <Input value={form.father_name} onChange={(e) => setForm({ ...form, father_name: e.target.value })} aria-invalid={!!fieldErrors.father_name} />
+                {fieldErrors.father_name && <p className="mt-1 text-xs text-destructive">{fieldErrors.father_name}</p>}
               </div>
               <div>
                 <Label>{tx("Village", "গ্রাম")}</Label>
-                <Input value={form.village} onChange={(e) => setForm({ ...form, village: e.target.value })} />
+                <Input value={form.village} onChange={(e) => setForm({ ...form, village: e.target.value })} aria-invalid={!!fieldErrors.village} />
+                {fieldErrors.village && <p className="mt-1 text-xs text-destructive">{fieldErrors.village}</p>}
               </div>
             </div>
             <div>
               <Label>{tx("Mobile", "মোবাইল")}</Label>
-              <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+              <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} aria-invalid={!!fieldErrors.mobile} />
+              {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -375,7 +438,8 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreview(null)}>{tx("Close", "বন্ধ")}</Button>
-            <Button onClick={() => { printReceipt(preview); }}><Printer className="mr-1 h-4 w-4" />{tx("Print", "প্রিন্ট")}</Button>
+            {canExport && <Button variant="outline" onClick={() => downloadReceiptPdf(preview)}><FileDown className="mr-1 h-4 w-4" />{tx("Download PDF", "পিডিএফ ডাউনলোড")}</Button>}
+            {canExport && <Button onClick={() => { printReceipt(preview); }}><Printer className="mr-1 h-4 w-4" />{tx("Print", "প্রিন্ট")}</Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
