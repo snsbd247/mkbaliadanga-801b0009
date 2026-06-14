@@ -218,6 +218,17 @@ GRANT anon, authenticated, service_role TO authenticator;
 GRANT ALL PRIVILEGES ON DATABASE :"db" TO supabase_admin;
 GRANT CREATE ON DATABASE :"db" TO supabase_auth_admin, supabase_storage_admin, supabase_functions_admin, supabase_realtime_admin;
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+
+-- Pre-create platform schemas owned by their admin roles so GoTrue/Storage
+-- migrations have a schema to write into (required on self-hosted Postgres).
+CREATE SCHEMA IF NOT EXISTS auth AUTHORIZATION supabase_auth_admin;
+CREATE SCHEMA IF NOT EXISTS storage AUTHORIZATION supabase_storage_admin;
+ALTER SCHEMA auth OWNER TO supabase_auth_admin;
+ALTER SCHEMA storage OWNER TO supabase_storage_admin;
+GRANT ALL ON SCHEMA auth TO supabase_auth_admin;
+GRANT ALL ON SCHEMA storage TO supabase_storage_admin;
+GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
+GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
 SQL
   ok "Self-hosted database roles are ready."
 }
