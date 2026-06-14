@@ -107,7 +107,8 @@ export default function CashAudit() {
       [tx("Total", "মোট"), money(d.totalIncome), money(d.totalExpense)],
       [tx("Closing cash", "সমাপনী ক্যাশ"), "", money(d.closing)],
     ];
-    exportTablePDF(streamTitle(stream), [tx("Description", "বিবরণ"), tx("Income", "আয়"), tx("Expense", "ব্যয়")], body, { from, to });
+    exportTablePDF(streamTitle(stream), [tx("Description", "বিবরণ"), tx("Income", "আয়"), tx("Expense", "ব্যয়")], body, { from, to },
+      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] });
   }
 
   function exportXlsx(stream: Stream) {

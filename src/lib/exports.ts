@@ -155,14 +155,37 @@ export async function exportTablePDF(
   title: string,
   head: string[],
   rows: any[][],
-  range?: { from?: string | null; to?: string | null }
+  range?: { from?: string | null; to?: string | null },
+  opts?: { signatures?: string[]; landscape?: boolean },
 ) {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: opts?.landscape ? "landscape" : "portrait" });
   const startY = await applyPdfHeaderFooter(doc, { title, range });
-  autoTable(doc, { startY: startY + 2, head: [head], body: rows, styles: { fontSize: 9 }, headStyles: { fillColor: [30, 110, 70] } });
+  autoTable(doc, { startY: startY + 2, head: [head], body: rows, styles: { fontSize: 9 }, headStyles: { fillColor: [30, 110, 70] }, theme: "grid" });
+
+  // Client-format signature block at the bottom of the last page.
+  const sigs = opts?.signatures;
+  if (sigs && sigs.length) {
+    const lang = pdfLang();
+    const bnFamily = lang === "bn" ? await ensureBanglaFont(doc) : null;
+    const useBn = lang === "bn" && !!bnFamily;
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    let y = ((doc as any).lastAutoTable?.finalY ?? startY) + 24;
+    if (y > pageH - 24) { doc.addPage(); y = 40; }
+    const slot = (pageW - 28) / sigs.length;
+    doc.setFontSize(9);
+    if (useBn && bnFamily) doc.setFont(bnFamily, "normal"); else doc.setFont(undefined, "normal");
+    sigs.forEach((label, i) => {
+      const cx = 14 + slot * i + slot / 2;
+      doc.line(cx - 22, y, cx + 22, y);
+      doc.text(label, cx, y + 5, { align: "center" });
+    });
+  }
+
   finalizePdf(doc);
   doc.save(`${buildExportName(title, range)}.pdf`);
 }
+
 
 export function exportExcel(
   filename: string,

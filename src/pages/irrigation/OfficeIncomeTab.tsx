@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
+import { exportTablePDF } from "@/lib/exports";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
-import { Plus, Trash2, Printer } from "lucide-react";
+import { Plus, Trash2, Printer, FileDown } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const INCOME_TYPES = [
@@ -133,6 +134,19 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     w.print();
   };
 
+  const exportList = () => {
+    exportTablePDF(
+      tx("Office Income Statement", "অফিস আয় বিবরণী"),
+      [tx("Receipt No", "রশিদ নং"), tx("Date", "তারিখ"), tx("Payer", "প্রদানকারী"), tx("Type", "ধরন"), tx("Stream", "স্ট্রিম"), tx("Amount", "টাকা")],
+      [
+        ...rows.map((r) => [r.receipt_no, fmtDate(r.received_on), r.payer_name, typeLabel(r.income_type), streamLabel(r.stream), money(Number(r.amount))]),
+        ["", "", "", "", tx("Total", "মোট"), money(total)],
+      ],
+      undefined,
+      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] },
+    );
+  };
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -141,7 +155,10 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
             <h3 className="font-semibold">{tx("Office income (without farmer)", "অফিস আয় (কৃষক ছাড়া)")}</h3>
             <p className="text-sm text-muted-foreground">{tx("Scrap, loan, grant etc. on the irrigation receipt serial.", "ভাঙারি, হাওলাত, অনুদান ইত্যাদি — সেচ রশিদ সিরিয়ালে।")}</p>
           </div>
-          <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>
+            <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
+          </div>
         </div>
 
         <div className="text-sm">{tx("Total", "মোট")}: <span className="font-semibold">{money(total)}</span> · {rows.length} {tx("entries", "এন্ট্রি")}</div>

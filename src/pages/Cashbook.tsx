@@ -542,7 +542,8 @@ function StreamCashbook(props: {
         ["", mFrom, tx("Opening cash", "প্রারম্ভিক জের"), "", "", "", opening],
         ...entries.map(r => [r.ref, fmtDate(r.date), r.label, r.raw?.payee || r.raw?.note || "", r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
         ["", "", tx("Total", "মোট"), "", totalIncome, totalExpense, closing],
-      ], range);
+      ], range,
+      { landscape: true, signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] });
   }
   function exportXlsx() {
     exportExcel(title, label, [
