@@ -3,6 +3,7 @@
 // position, and signature blocks are configurable per print run.
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { loadBranding, type CompanyBranding } from "@/lib/branding";
 import { formatLandSize } from "@/lib/irrigationCalc";
