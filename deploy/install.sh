@@ -232,9 +232,33 @@ start_app() {
 
 # ----------------------------------------------------------------------------- 11. Backups (cron)
 schedule_backups() {
-  local cron_line="0 2 * * * /usr/bin/env bash $DEPLOY_DIR/backup.sh >> $LOG_DIR/backup.log 2>&1"
-  ( crontab -l 2>/dev/null | grep -v "$DEPLOY_DIR/backup.sh" ; echo "$cron_line" ) | crontab -
-  ok "Daily backup scheduled at 02:00 (retention ${BACKUP_RETENTION_DAYS:-30}d)."
+  local cron_line tmp current_cron
+  cron_line="0 2 * * * /usr/bin/env bash $DEPLOY_DIR/backup.sh >> $LOG_DIR/backup.log 2>&1"
+
+  if ! have crontab; then
+    warn "crontab command not found — attempting to install cron before scheduling backups…"
+    apt-get update -y >/dev/null 2>&1 && apt-get install -y cron >/dev/null 2>&1 || {
+      warn "Could not install cron; deployment is complete, but daily backup scheduling was skipped."
+      return 0
+    }
+  fi
+
+  mkdir -p "$LOG_DIR" 2>/dev/null || true
+  systemctl enable --now cron >/dev/null 2>&1 || true
+
+  tmp="$(mktemp)"
+  current_cron="$(crontab -l 2>/dev/null || true)"
+  printf '%s\n' "$current_cron" | grep -Fv "$DEPLOY_DIR/backup.sh" > "$tmp" || true
+  printf '%s\n' "$cron_line" >> "$tmp"
+
+  if crontab "$tmp"; then
+    rm -f "$tmp"
+    ok "Daily backup scheduled at 02:00 (retention ${BACKUP_RETENTION_DAYS:-30}d)."
+  else
+    rm -f "$tmp"
+    warn "Could not write crontab; deployment is complete, but daily backup scheduling was skipped."
+    return 0
+  fi
 }
 
 # ----------------------------------------------------------------------------- Run
