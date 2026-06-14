@@ -226,6 +226,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       payable_amount: inv.payable_amount,
       paid_amount: inv.paid_amount,
       due_amount: inv.due_amount,
+      previous_due_amount: inv.previous_due_amount,
       invoice_status: inv.invoice_status,
       rate_source: inv.rate_source ?? (inv.is_manual_rate ? "MANUAL" : "STANDARD"),
       applied_rate: inv.applied_rate ?? inv.season_rate ?? null,
