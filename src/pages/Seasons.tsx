@@ -127,9 +127,14 @@ export default function Seasons() {
         actions={
           isAdmin && (
             <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button>
-              </DialogTrigger>
+              <div className="inline-flex gap-2">
+                <Button variant="outline" onClick={generateNext}>
+                  <Plus className="h-4 w-4 mr-1" />{tx("Generate next (6 months)", "নতুন সিজন অটো (৬ মাস)")}
+                </Button>
+                <DialogTrigger asChild>
+                  <Button><Plus className="h-4 w-4 mr-1" />{t("addNew")}</Button>
+                </DialogTrigger>
+              </div>
               <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle>{t("addNew")} — {t("seasons")}</DialogTitle>
