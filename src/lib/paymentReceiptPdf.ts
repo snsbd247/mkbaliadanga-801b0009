@@ -39,6 +39,11 @@ export interface ReceiptTemplate {
   footer_note: string;
   footer_note_bn: string;
   logo_url?: string | null;
+  show_watermark: boolean;
+  watermark_text: string;
+  show_penalty_row: boolean;
+  show_charge_row: boolean;
+  qr_placement: "left" | "center" | "right" | "none";
 }
 
 export const DEFAULT_TEMPLATE: ReceiptTemplate = {
@@ -52,6 +57,11 @@ export const DEFAULT_TEMPLATE: ReceiptTemplate = {
   header_alignment: "center",
   footer_note: "This is a system-generated receipt. Please retain for your records.",
   footer_note_bn: "এটি সিস্টেম-জেনারেটেড রসিদ। অনুগ্রহ করে আপনার রেকর্ডের জন্য সংরক্ষণ করুন।",
+  show_watermark: false,
+  watermark_text: "",
+  show_penalty_row: true,
+  show_charge_row: true,
+  qr_placement: "right",
 };
 
 const fmtBdt = (n: number) =>
@@ -114,6 +124,19 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   const pageH = doc.internal.pageSize.getHeight();
   const margin = tpl.paper_size === "a6" ? 8 : 12;
   const accent = hexToRgb(tpl.accent_color);
+
+  // Optional diagonal watermark (drawn first so content sits on top).
+  if (tpl.show_watermark && tpl.watermark_text.trim()) {
+    doc.saveGraphicsState();
+    // @ts-ignore - GState is available at runtime in jsPDF
+    doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
+    doc.setTextColor(120);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(tpl.paper_size === "a6" ? 28 : 48);
+    doc.text(tpl.watermark_text.trim(), pageW / 2, pageH / 2, { align: "center", angle: 45 });
+    doc.restoreGraphicsState();
+    doc.setTextColor(0);
+  }
   // Bangla cannot be embedded in jsPDF's built-in fonts, so we never render
   // BN strings in the PDF — the "both" mode falls back to English-only.
   const showBoth = false;
@@ -181,13 +204,15 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   if (data.mobile_masked) farmerLines.push(`${labels.mobile}: ${data.mobile_masked}`);
   for (const line of farmerLines) { doc.text(line, margin, y); y += 4; }
 
-  // Token block
-  if (tpl.show_token_block) {
+  // Token / QR block — placement configurable (left/center/right) or hidden.
+  if (tpl.show_token_block && tpl.qr_placement !== "none") {
+    const qrAlign = tpl.qr_placement;
+    const qrX = qrAlign === "left" ? margin : qrAlign === "right" ? pageW - margin : pageW / 2;
     y += 2;
-    doc.setFont("helvetica", "bold"); doc.text(labels.qr, margin, y); y += 5;
+    doc.setFont("helvetica", "bold"); doc.text(labels.qr, qrX, y, { align: qrAlign }); y += 5;
     doc.setFont("helvetica", "normal");
-    doc.text(`${labels.token}: ${data.token_masked}`, margin, y);
-    doc.text(`${labels.status}: ${data.token_status.toUpperCase()}`, pageW - margin, y, { align: "right" });
+    doc.text(`${labels.token}: ${data.token_masked}`, qrX, y, { align: qrAlign }); y += 4;
+    doc.text(`${labels.status}: ${data.token_status.toUpperCase()}`, qrX, y, { align: qrAlign });
     y += 6;
   }
 
@@ -215,17 +240,20 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   y += 32;
 
   // Optional hal/bokeya/penalty breakdown (irrigation & dues receipts)
+  const showCharge = tpl.show_charge_row;
+  const showPenalty = tpl.show_penalty_row;
   const hasBreakdown =
-    (data.hal_amount != null) || (data.bokeya_amount != null) || (data.penalty_amount != null);
+    (showCharge && ((data.hal_amount != null) || (data.bokeya_amount != null))) ||
+    (showPenalty && (data.penalty_amount != null));
   if (hasBreakdown) {
     doc.setFontSize(8); doc.setTextColor(60); doc.setFont("helvetica", "normal");
-    if (data.hal_amount != null) {
+    if (showCharge && data.hal_amount != null) {
       doc.text(`${labels.hal}: ${fmtBdt(data.hal_amount)}`, margin, y); y += 4;
     }
-    if (data.bokeya_amount != null) {
+    if (showCharge && data.bokeya_amount != null) {
       doc.text(`${labels.bokeya}: ${fmtBdt(data.bokeya_amount)}`, margin, y); y += 4;
     }
-    if (data.penalty_amount != null) {
+    if (showPenalty && data.penalty_amount != null) {
       doc.text(`${labels.penalty}: ${fmtBdt(data.penalty_amount)}`, margin, y); y += 4;
     }
     doc.setTextColor(0); y += 2;
