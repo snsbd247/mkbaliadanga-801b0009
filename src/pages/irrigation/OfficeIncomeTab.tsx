@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
-import { Plus, Trash2, Printer, FileDown, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Printer, FileDown, FileSpreadsheet, Eye, FileText } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const INCOME_TYPES = [
@@ -34,6 +34,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [preview, setPreview] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<any>({
     office_id: offices[0]?.id ?? "",
@@ -210,6 +211,13 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     exportExcel("office-income", tx("Office Income", "অফিস আয়"), data);
   };
 
+  // Blank A4-style Excel template with the exact column order & headers (one N/A sample row).
+  const exportTemplate = () => {
+    const head = exportHead();
+    const sample = head.reduce((o: any, h) => { o[h] = "N/A"; return o; }, {});
+    exportExcel("office-income-template", tx("Office Income Template", "অফিস আয় টেমপ্লেট"), [sample]);
+  };
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -221,6 +229,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
           <div className="flex gap-2">
             <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>
             <Button variant="outline" onClick={exportXlsx} disabled={!rows.length}><FileSpreadsheet className="mr-1 h-4 w-4" />{tx("Export Excel", "এক্সেল")}</Button>
+            <Button variant="outline" onClick={exportTemplate}><FileText className="mr-1 h-4 w-4" />{tx("Excel Template", "টেমপ্লেট")}</Button>
             <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
           </div>
         </div>
@@ -254,6 +263,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
                   <TableCell>{streamLabel(r.stream)}</TableCell>
                   <TableCell className="text-right font-medium">{money(Number(r.amount))}</TableCell>
                   <TableCell className="text-right whitespace-nowrap">
+                    <Button variant="ghost" size="icon" onClick={() => setPreview(r)}><Eye className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => printReceipt(r)}><Printer className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => remove(r)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
@@ -336,6 +346,40 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{tx("Receipt preview", "রশিদ প্রিভিউ")}</DialogTitle></DialogHeader>
+          {preview && (
+            <div className="space-y-1 text-sm">
+              {([
+                [tx("Receipt No", "রশিদ নং"), preview.receipt_no],
+                [tx("Date", "তারিখ"), fmtDate(preview.received_on)],
+                [tx("Name", "নাম"), preview.payer_name || "N/A"],
+                [tx("Father's name", "পিতার নাম"), preview.father_name || "N/A"],
+                [tx("Village", "গ্রাম"), preview.village || "N/A"],
+                [tx("Mobile", "মোবাইল"), preview.mobile || "N/A"],
+                [tx("Mouza", "মৌজা"), "N/A"],
+                [tx("Land", "জমি"), "N/A"],
+                [tx("Income Type", "আয়ের ধরন"), typeLabel(preview.income_type)],
+                [tx("Stream", "স্ট্রিম"), streamLabel(preview.stream)],
+                [tx("Remark", "রিমার্ক"), preview.note || "N/A"],
+                [tx("Amount Received", "প্রাপ্ত টাকা"), money(Number(preview.amount))],
+              ] as [string, any][]).map(([k, v]) => (
+                <div key={k} className="flex justify-between gap-4 border-b py-1">
+                  <span className="text-muted-foreground">{k}</span>
+                  <span className="font-medium text-right">{v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreview(null)}>{tx("Close", "বন্ধ")}</Button>
+            <Button onClick={() => { printReceipt(preview); }}><Printer className="mr-1 h-4 w-4" />{tx("Print", "প্রিন্ট")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {confirmDialog}
     </Card>
   );
