@@ -134,7 +134,19 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     w.print();
   };
 
-  return (
+  const exportList = () => {
+    exportTablePDF(
+      tx("Office Income Statement", "অফিস আয় বিবরণী"),
+      [tx("Receipt No", "রশিদ নং"), tx("Date", "তারিখ"), tx("Payer", "প্রদানকারী"), tx("Type", "ধরন"), tx("Stream", "স্ট্রিম"), tx("Amount", "টাকা")],
+      [
+        ...rows.map((r) => [r.receipt_no, fmtDate(r.received_on), r.payer_name, typeLabel(r.income_type), streamLabel(r.stream), money(Number(r.amount))]),
+        ["", "", "", "", tx("Total", "মোট"), money(total)],
+      ],
+      undefined,
+      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] },
+    );
+  };
+
     <Card>
       <CardContent className="pt-6 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
