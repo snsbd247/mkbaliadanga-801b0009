@@ -215,6 +215,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>
+            <Button variant="outline" onClick={exportXlsx} disabled={!rows.length}><FileSpreadsheet className="mr-1 h-4 w-4" />{tx("Export Excel", "এক্সেল")}</Button>
             <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
           </div>
         </div>
