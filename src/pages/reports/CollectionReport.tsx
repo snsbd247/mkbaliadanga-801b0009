@@ -423,7 +423,7 @@ export default function CollectionReport() {
                 ))}
                 {rows.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={14} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={18} className="text-center text-muted-foreground py-6">
                       {t("noCollectionsFiltered")}
                     </TableCell>
                   </TableRow>
