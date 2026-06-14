@@ -342,21 +342,25 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
             </div>
             <div>
               <Label>{tx("Payer name", "প্রদানকারীর নাম")}</Label>
-              <Input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} />
+              <Input value={form.payer_name} onChange={(e) => setForm({ ...form, payer_name: e.target.value })} aria-invalid={!!fieldErrors.payer_name} />
+              {fieldErrors.payer_name && <p className="mt-1 text-xs text-destructive">{fieldErrors.payer_name}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>{tx("Father's name", "পিতার নাম")}</Label>
-                <Input value={form.father_name} onChange={(e) => setForm({ ...form, father_name: e.target.value })} />
+                <Input value={form.father_name} onChange={(e) => setForm({ ...form, father_name: e.target.value })} aria-invalid={!!fieldErrors.father_name} />
+                {fieldErrors.father_name && <p className="mt-1 text-xs text-destructive">{fieldErrors.father_name}</p>}
               </div>
               <div>
                 <Label>{tx("Village", "গ্রাম")}</Label>
-                <Input value={form.village} onChange={(e) => setForm({ ...form, village: e.target.value })} />
+                <Input value={form.village} onChange={(e) => setForm({ ...form, village: e.target.value })} aria-invalid={!!fieldErrors.village} />
+                {fieldErrors.village && <p className="mt-1 text-xs text-destructive">{fieldErrors.village}</p>}
               </div>
             </div>
             <div>
               <Label>{tx("Mobile", "মোবাইল")}</Label>
-              <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+              <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} aria-invalid={!!fieldErrors.mobile} />
+              {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
