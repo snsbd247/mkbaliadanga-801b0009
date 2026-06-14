@@ -289,7 +289,7 @@ const App = () => (
 
                 <Route path="/sms-settings" element={<RequireRole roles={["super_admin"]}><SmsSettings /></RequireRole>} />
                 <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />
-                <Route path="/sms-templates" element={<RequireRole roles={["admin","super_admin"]}><SmsTemplates /></RequireRole>} />
+                <Route path="/sms-templates" element={<RequireRole roles={["super_admin"]}><SmsTemplates /></RequireRole>} />
                 <Route path="/locations" element={<RequirePerm module="locations"><Locations /></RequirePerm>} />
                 <Route path="/admin/reconciliation" element={<RequirePerm module="accounting"><LedgerReconciliation /></RequirePerm>} />
                 <Route path="/admin/share-capital-reconciliation" element={<RequirePerm module="accounting"><ShareCapitalReconciliation /></RequirePerm>} />
