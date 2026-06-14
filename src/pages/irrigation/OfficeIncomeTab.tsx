@@ -72,12 +72,16 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     setSaving(true);
     try {
       let receiptNo = form.receipt_no.trim();
-      if (!receiptNo) receiptNo = await nextMonthlyReceiptNo("IRR", form.office_id || null, crypto.randomUUID());
+      // সেচ রশিদের একই সিরিয়াল ধারা ব্যবহার করা হয়।
+      if (!receiptNo) receiptNo = await nextUnifiedReceiptNo(form.office_id || null, "IRR", crypto.randomUUID());
       const { error } = await (supabase as any).from("office_incomes").insert({
         office_id: form.office_id || null,
         receipt_no: receiptNo,
         income_type: form.income_type,
         payer_name: form.payer_name.trim(),
+        father_name: form.father_name?.trim() || null,
+        village: form.village?.trim() || null,
+        mobile: form.mobile?.trim() || null,
         amount: Number(form.amount),
         received_on: form.received_on,
         stream: form.stream,
@@ -87,7 +91,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
       if (error) throw error;
       toast.success(tx("Income recorded", "আয় সংরক্ষিত হয়েছে"));
       setOpen(false);
-      setForm({ ...form, payer_name: "", amount: "", receipt_no: "", note: "" });
+      setForm({ ...form, payer_name: "", father_name: "", village: "", mobile: "", amount: "", receipt_no: "", note: "" });
       load();
     } catch (e: any) {
       toast.error(e.message ?? tx("Failed to save", "সংরক্ষণ ব্যর্থ"));
