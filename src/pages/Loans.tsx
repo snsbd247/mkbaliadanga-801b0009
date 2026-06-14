@@ -22,7 +22,6 @@ export default function Loans() {
   const canApprove = usePermission("loans", "can_edit");
   const [rows, setRows] = useState<any[]>([]);
   const [tab, setTab] = useState("pending");
-  const [delId, setDelId] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${tx("Loans", "ঋণ")} — MK Baliadanga`; load(); }, []);
 
@@ -35,7 +34,15 @@ export default function Loans() {
     const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(tx("Loan deleted", "ঋণ মুছে ফেলা হয়েছে"));
-    setDelId(null); load();
+    load();
+  }
+
+  function confirmRemove(id: string) {
+    toast(tx("Delete this loan?", "এই ঋণ মুছবেন?"), {
+      description: tx("This action cannot be undone.", "এই কাজটি ফেরানো যাবে না।"),
+      action: { label: tx("Delete", "মুছুন"), onClick: () => remove(id) },
+      cancel: { label: tx("Cancel", "বাতিল"), onClick: () => {} },
+    });
   }
 
   async function decide(id: string, status: "approved" | "rejected") {
