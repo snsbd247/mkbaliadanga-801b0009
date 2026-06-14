@@ -152,6 +152,7 @@ dump_supabase_platform_logs() {
   log "----- supabase-auth (last 120 lines) -----";    docker logs --tail 120 supabase-auth    2>&1 || true
   log "----- supabase-storage (last 120 lines) -----"; docker logs --tail 120 supabase-storage 2>&1 || true
   log "----- supabase-rest (last 120 lines) -----";    docker logs --tail 120 supabase-rest    2>&1 || true
+  log "----- supabase-realtime (last 120 lines) -----"; docker logs --tail 120 supabase-realtime 2>&1 || true
 }
 
 wait_for_supabase_platform_schemas() {
@@ -177,8 +178,8 @@ restart_supabase_platform_services() {
   # After healing roles/schemas, force the schema-owning services to retry their
   # own migrations. `up -d` alone may leave an already-running broken container
   # untouched, which causes permanent waits on auth.users/storage.objects.
-  ( cd "$DEPLOY_DIR" && docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supabase-auth supabase-rest supabase-storage >/dev/null )
-  ( cd "$DEPLOY_DIR" && docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml restart supabase-auth supabase-rest supabase-storage >/dev/null 2>&1 || true )
+  ( cd "$DEPLOY_DIR" && docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supabase-auth supabase-rest supabase-storage supabase-realtime >/dev/null )
+  ( cd "$DEPLOY_DIR" && docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml restart supabase-auth supabase-rest supabase-storage supabase-realtime >/dev/null 2>&1 || true )
 }
 
 ensure_supabase_core_roles() {
@@ -227,20 +228,29 @@ SQL
 
 ALTER ROLE service_role BYPASSRLS;
 ALTER ROLE authenticator WITH LOGIN NOINHERIT PASSWORD :'pgpass';
-ALTER ROLE supabase_admin WITH LOGIN CREATEROLE CREATEDB REPLICATION BYPASSRLS PASSWORD :'pgpass';
+ALTER ROLE supabase_admin WITH LOGIN SUPERUSER CREATEROLE CREATEDB REPLICATION BYPASSRLS PASSWORD :'pgpass';
 ALTER ROLE supabase_auth_admin WITH LOGIN NOINHERIT CREATEROLE BYPASSRLS PASSWORD :'pgpass';
 ALTER ROLE supabase_storage_admin WITH LOGIN NOINHERIT CREATEROLE BYPASSRLS PASSWORD :'pgpass';
 ALTER ROLE supabase_functions_admin WITH LOGIN NOINHERIT CREATEROLE BYPASSRLS PASSWORD :'pgpass';
 ALTER ROLE supabase_realtime_admin WITH LOGIN NOINHERIT CREATEROLE BYPASSRLS PASSWORD :'pgpass';
 ALTER ROLE pgbouncer WITH LOGIN NOINHERIT PASSWORD :'pgpass';
 
-GRANT anon, authenticated, service_role TO authenticator;
+ALTER ROLE postgres SET search_path TO "$user", public, extensions;
+ALTER ROLE supabase_admin SET search_path TO "$user", public, auth, storage, extensions;
+ALTER ROLE supabase_auth_admin SET search_path TO auth;
+ALTER ROLE supabase_storage_admin SET search_path TO storage;
+ALTER ROLE supabase_realtime_admin SET search_path TO _realtime;
+ALTER ROLE authenticator SET search_path TO public, storage, graphql_public;
+
+GRANT anon, authenticated, service_role, supabase_admin TO authenticator;
 GRANT ALL PRIVILEGES ON DATABASE :"db" TO supabase_admin;
 GRANT CREATE ON DATABASE :"db" TO supabase_auth_admin, supabase_storage_admin, supabase_functions_admin, supabase_realtime_admin;
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT USAGE ON SCHEMA public TO supabase_auth_admin, supabase_storage_admin, supabase_functions_admin, supabase_realtime_admin;
 
 CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
 CREATE SCHEMA IF NOT EXISTS graphql_public;
 CREATE SCHEMA IF NOT EXISTS _realtime;
 ALTER SCHEMA extensions OWNER TO supabase_admin;
