@@ -38,8 +38,12 @@ export default function Loans() {
   }
 
   function confirmRemove(id: string) {
-    toast(tx("Delete this loan?", "এই ঋণ মুছবেন?"), {
+    const r = rows.find((x: any) => x.id === id);
+    const nm = lang === "bn" ? (r?.farmers?.name_bn || r?.farmers?.name_en) : r?.farmers?.name_en;
+    const amt = `৳${Number(r?.principal ?? 0).toLocaleString()}`;
+    toast(`${tx("Delete loan", "ঋণ মুছবেন")}: ${nm ?? ""} — ${amt}?`, {
       description: tx("This action cannot be undone.", "এই কাজটি ফেরানো যাবে না।"),
+      duration: 10000,
       action: { label: tx("Delete", "মুছুন"), onClick: () => remove(id) },
       cancel: { label: tx("Cancel", "বাতিল"), onClick: () => {} },
     });
