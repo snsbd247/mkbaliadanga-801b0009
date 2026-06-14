@@ -104,9 +104,20 @@ export default function Loans() {
     if (status === "approved") { patch.approved_by = user?.id ?? null; }
     const { error } = await supabase.from("loans").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
+    const ln = rows.find((r: any) => r.id === id);
+    if (ln?.created_by) {
+      await supabase.from("notifications").insert({
+        user_id: ln.created_by,
+        kind: status === "approved" ? "loan_approved" : "loan_rejected",
+        title: status === "approved" ? tx("Loan approved", "ঋণ অনুমোদিত") : tx("Loan rejected", "ঋণ বাতিল"),
+        body: `${ln?.farmers?.name_en ?? ln?.farmer_name ?? ""} — ৳${Number(ln?.principal ?? 0).toLocaleString()}`,
+        link: "/loans",
+      });
+    }
     toast.success(status === "approved" ? tx("Approved", "অনুমোদিত") : tx("Rejected", "বাতিল"));
     load();
   }
+
 
   const filtered = rows.filter(r => tab === "all" ? true : tab === "pending" ? r.status === "pending" : r.status === "approved");
 
