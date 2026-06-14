@@ -96,6 +96,11 @@ export default function ReceiptTemplatePage() {
           header_alignment: tpl.header_alignment,
           footer_note: tpl.footer_note,
           footer_note_bn: tpl.footer_note_bn,
+          show_watermark: tpl.show_watermark,
+          watermark_text: tpl.watermark_text,
+          show_penalty_row: tpl.show_penalty_row,
+          show_charge_row: tpl.show_charge_row,
+          qr_placement: tpl.qr_placement,
           updated_at: new Date().toISOString(),
         })
         .eq("id", 1);
