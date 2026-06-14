@@ -744,6 +744,14 @@ export default function FarmerDetail() {
         return;
       }
       toast.success(t("saved"));
+      // #13 — if billable area increased on edit, surface the extra estimated due.
+      const delta = Number(editForm.land_size ?? 0) - prevSize;
+      if (delta > 0.0001) {
+        const ownerNote = editForm.owner_type === "borgadar"
+          ? tx(" (borgadar's due)", " (বর্গাদারের ডিউ)")
+          : tx(" (owner's due)", " (নিজ নামে ডিউ)");
+        void estimateNewLandDue(delta, (editLoc as any).office_id ?? null, ownerNote);
+      }
       setEditLand(null);
       setEditLoc({});
       loadAll();
