@@ -198,19 +198,32 @@ export function NotificationBell() {
               Realtime disconnected — reconnecting…
             </div>
           )}
-          {!loading && !error && items.length === 0 && (
+          {!loading && !error && visible.length === 0 && (
             <p className="p-4 text-sm text-muted-foreground">{tx("No notifications", "কোনো নোটিফিকেশন নেই")}</p>
           )}
-          {!loading && !error && items.map((n) => (
-            <button
+          {!loading && !error && visible.map((n) => (
+            <div
               key={n.id}
-              onClick={() => { if (n.link) nav(n.link); }}
-              className={`flex w-full flex-col items-start gap-0.5 border-b px-3 py-2 text-left text-sm hover:bg-accent/40 ${!n.read ? "bg-primary/5" : ""}`}
+              className={`flex items-start gap-1 border-b px-3 py-2 text-sm hover:bg-accent/40 ${!n.read ? "bg-primary/5" : ""}`}
             >
-              <div className="font-medium">{n.title}</div>
-              {n.body && <div className="text-xs text-muted-foreground">{n.body}</div>}
-              <div className="text-[10px] text-muted-foreground">{fmtDate(n.created_at)}</div>
-            </button>
+              <button
+                onClick={() => { if (n.link) nav(n.link); }}
+                className="flex flex-1 flex-col items-start gap-0.5 text-left"
+              >
+                <div className="font-medium">{n.title}</div>
+                {n.body && <div className="text-xs text-muted-foreground">{n.body}</div>}
+                <div className="text-[10px] text-muted-foreground">{fmtDate(n.created_at)}</div>
+              </button>
+              {!n.archived && (
+                <button
+                  onClick={() => archive(n.id)}
+                  title={tx("Archive", "আর্কাইভ")}
+                  className="mt-0.5 shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </PopoverContent>
