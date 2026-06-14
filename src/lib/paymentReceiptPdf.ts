@@ -204,13 +204,15 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   if (data.mobile_masked) farmerLines.push(`${labels.mobile}: ${data.mobile_masked}`);
   for (const line of farmerLines) { doc.text(line, margin, y); y += 4; }
 
-  // Token block
-  if (tpl.show_token_block) {
+  // Token / QR block — placement configurable (left/center/right) or hidden.
+  if (tpl.show_token_block && tpl.qr_placement !== "none") {
+    const qrAlign = tpl.qr_placement;
+    const qrX = qrAlign === "left" ? margin : qrAlign === "right" ? pageW - margin : pageW / 2;
     y += 2;
-    doc.setFont("helvetica", "bold"); doc.text(labels.qr, margin, y); y += 5;
+    doc.setFont("helvetica", "bold"); doc.text(labels.qr, qrX, y, { align: qrAlign }); y += 5;
     doc.setFont("helvetica", "normal");
-    doc.text(`${labels.token}: ${data.token_masked}`, margin, y);
-    doc.text(`${labels.status}: ${data.token_status.toUpperCase()}`, pageW - margin, y, { align: "right" });
+    doc.text(`${labels.token}: ${data.token_masked}`, qrX, y, { align: qrAlign }); y += 4;
+    doc.text(`${labels.status}: ${data.token_status.toUpperCase()}`, qrX, y, { align: qrAlign });
     y += 6;
   }
 
