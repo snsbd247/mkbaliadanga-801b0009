@@ -64,6 +64,26 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
 
     setSaving(true);
     try {
+      // Transfer-back restriction: a recipient cannot be a prior owner who already
+      // transferred this same dag/mouza to the current owner (no reversing transfers).
+      const { data: priorTr } = await supabase
+        .from("land_transfers")
+        .select("source_farmer_id, land_transfer_recipients(recipient_farmer_id)")
+        .eq("source_dag_no", sourceLand.dag_no ?? "")
+        .eq("source_mouza", sourceLand.mouza ?? "");
+      const blocked = new Set<string>();
+      for (const tr of (priorTr as any[]) ?? []) {
+        const recs = tr.land_transfer_recipients ?? [];
+        if (recs.some((rc: any) => rc.recipient_farmer_id === sourceFarmerId)) {
+          if (tr.source_farmer_id) blocked.add(tr.source_farmer_id);
+        }
+      }
+      const reversing = recipients.find(r => blocked.has(r.farmer_id));
+      if (reversing) {
+        setSaving(false);
+        return toast.error(tx("Cannot transfer back to a previous owner of this land.", "এই জমি আগের মালিক/বর্গাদারে ফেরত transfer করা যাবে না।"));
+      }
+
       // Snapshot source owner details so history survives later land changes
       const { data: srcFarmer } = await supabase.from("farmers")
         .select("name_en,name_bn,farmer_code,member_no").eq("id", sourceFarmerId).maybeSingle();
