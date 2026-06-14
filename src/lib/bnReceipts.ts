@@ -258,6 +258,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (mouzaParts.length) rows.push([mouzaLabel, mouzaParts.join(" / ")]);
     if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
     if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
+    if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
+    if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
     rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
     if (d.collected_from_outstanding != null)
       rows.push([t.collectedFromDue, fmt2(Number(d.collected_from_outstanding))]);
