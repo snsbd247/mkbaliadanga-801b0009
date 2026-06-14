@@ -410,6 +410,10 @@ export default function CollectionReport() {
                     <TableCell className="text-right text-amber-600">{r.bokeya ? money(r.bokeya) : "—"}</TableCell>
                     <TableCell className="text-right">{r.hawlat ? money(r.hawlat) : "—"}</TableCell>
                     <TableCell className="text-right">{r.anudan ? money(r.anudan) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.vangari ? money(r.vangari) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.pukur ? money(r.pukur) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.bighat ? money(r.bighat) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.bhortifi ? money(r.bhortifi) : "—"}</TableCell>
                     <TableCell className="text-right">{r.rin ? money(r.rin) : "—"}</TableCell>
                     <TableCell className="text-right">{r.soncoy ? money(r.soncoy) : "—"}</TableCell>
                     <TableCell className="text-right">{r.bibidh ? money(r.bibidh) : "—"}</TableCell>
