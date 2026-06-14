@@ -139,19 +139,6 @@ export default function Loans() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      <AlertDialog open={!!delId} onOpenChange={(o) => { if (!o) setDelId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{tx("Delete loan?", "ঋণ মুছবেন?")}</AlertDialogTitle>
-            <AlertDialogDescription>{tx("This action cannot be undone.", "এই কাজটি ফেরানো যাবে না।")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{tx("Cancel", "বাতিল")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => delId && remove(delId)}>{tx("Delete", "মুছুন")}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
