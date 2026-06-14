@@ -4,13 +4,13 @@ import { useAuth } from "@/auth/AuthProvider";
 
 export type ModuleKey =
   | "dashboard" | "offices" | "farmers" | "seasons"
-  | "savings" | "irrigation" | "payments"
+  | "savings" | "loans" | "irrigation" | "payments"
   | "reports" | "users" | "audit" | "settings"
   | "accounting" | "cashbook" | "approvals" | "sms" | "locations"
   | "assets";
 
 export const ALL_MODULES: ModuleKey[] = [
-  "dashboard","offices","farmers","seasons","savings",
+  "dashboard","offices","farmers","seasons","savings","loans",
   "irrigation","payments","reports","users","audit","settings",
   "accounting","cashbook","approvals","sms","locations","assets",
 ];
