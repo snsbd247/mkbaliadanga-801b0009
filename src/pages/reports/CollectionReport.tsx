@@ -437,9 +437,12 @@ export default function CollectionReport() {
               </TableHeader>
               <TableBody>
                 {rows.map((r) => (
-                  <TableRow key={`${r.source}-${r.ref_id}`}>
+                  <TableRow key={`${r.source}-${r.ref_id}`} className={r.voided ? "opacity-70" : undefined}>
                     <TableCell>{fmtDate(r.date)}</TableCell>
-                    <TableCell className="font-mono text-xs">{r.receipt_no ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {r.receipt_no ?? "—"}
+                      {r.voided && <span className="ml-1 text-destructive font-semibold">— বাতিল</span>}
+                    </TableCell>
                     <TableCell className="text-xs">{r.farmer_code} — {r.farmer_name}</TableCell>
                     <TableCell className="text-right">{r.sech ? money(r.sech) : "—"}</TableCell>
                     <TableCell className="text-right">{r.jorimana ? money(r.jorimana) : "—"}</TableCell>
@@ -454,7 +457,7 @@ export default function CollectionReport() {
                     <TableCell className="text-right">{r.rin ? money(r.rin) : "—"}</TableCell>
                     <TableCell className="text-right">{r.soncoy ? money(r.soncoy) : "—"}</TableCell>
                     <TableCell className="text-right">{r.bibidh ? money(r.bibidh) : "—"}</TableCell>
-                    <TableCell className="text-right font-semibold">{money(r.amount)}</TableCell>
+                    <TableCell className="text-right font-semibold">{r.voided ? <span className="text-destructive">বাতিল</span> : money(r.amount)}</TableCell>
                     <TableCell className="text-xs">{r.user_name}</TableCell>
                   </TableRow>
                 ))}
