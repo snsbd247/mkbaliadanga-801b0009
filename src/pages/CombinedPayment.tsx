@@ -50,7 +50,8 @@ export default function CombinedPayment() {
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
   const loanAmt = Number(form.loan_principal || 0) + Number(form.loan_interest || 0);
-  const loanExceeds = !!selectedLoan && loanAmt > selectedLoan.remaining;
+  // Only the principal is capped by the remaining balance; interest is optional.
+  const loanExceeds = !!selectedLoan && Number(form.loan_principal || 0) > selectedLoan.remaining;
   // Suggested accrued interest = remaining principal × (rate%/duration) × months elapsed since last payment/issue
   const suggestedInterest = useMemo(() => {
     if (!selectedLoan) return 0;
@@ -96,13 +97,19 @@ export default function CombinedPayment() {
       setFarmer(f.data ?? null);
       const rows: LoanRow[] = (lq.data ?? []).map((l: any) => {
         const pays = l.loan_payments ?? [];
-        const paid = pays.reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+        // Remaining is PRINCIPAL only — interest is optional/suggested and is
+        // never carried as a due (client requirement).
+        const principal = Number(l.principal || 0);
+        const principalPaid = pays.reduce((s: number, p: any) => {
+          const pa = Number(p.principal_amount ?? 0);
+          return s + (pa > 0 ? pa : Number(p.amount || 0));
+        }, 0);
         const lastPay = pays.map((p: any) => p.paid_on).filter(Boolean).sort().pop() ?? null;
         return {
-          id: l.id, principal: Number(l.principal || 0),
+          id: l.id, principal,
           total_payable: Number(l.total_payable || l.principal || 0),
           issued_on: l.issued_on,
-          remaining: Math.max(0, Number(l.total_payable || l.principal || 0) - paid),
+          remaining: Math.max(0, principal - principalPaid),
           interest_rate: Number(l.interest_rate || l.loan_plans?.interest_rate || 0),
           duration_months: Number(l.loan_plans?.duration_months || 0),
           last_payment_on: lastPay,
