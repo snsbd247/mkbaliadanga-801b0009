@@ -18,7 +18,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/exports";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
