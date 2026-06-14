@@ -162,6 +162,16 @@ export function NotificationBell() {
             )}
           </div>
         </div>
+        <div className="flex border-b text-xs">
+          <button
+            onClick={() => setView("active")}
+            className={`flex-1 py-1.5 ${view === "active" ? "border-b-2 border-primary font-medium text-primary" : "text-muted-foreground"}`}
+          >{tx("Active", "সক্রিয়")}</button>
+          <button
+            onClick={() => setView("archived")}
+            className={`flex-1 py-1.5 ${view === "archived" ? "border-b-2 border-primary font-medium text-primary" : "text-muted-foreground"}`}
+          >{tx("Archived", "আর্কাইভ")}</button>
+        </div>
         <div className="max-h-96 overflow-auto">
           {loading && (
             <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
