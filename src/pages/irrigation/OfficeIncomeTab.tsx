@@ -109,7 +109,8 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     const w = window.open("", "_blank", "width=600,height=700");
     if (!w) return;
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${r.receipt_no}</title>
-      <style>body{font-family:'Noto Sans Bengali',Arial,sans-serif;padding:24px;color:#111}
+      <style>@page{size:A5 landscape;margin:10mm}
+      body{font-family:'Noto Sans Bengali',Arial,sans-serif;padding:24px;color:#111}
       h2{text-align:center;margin:0 0 4px}.sub{text-align:center;color:#555;margin-bottom:16px}
       table{width:100%;border-collapse:collapse}td{padding:6px 4px;border-bottom:1px solid #ddd}
       .lbl{color:#555;width:40%}.amt{text-align:right;font-size:20px;font-weight:bold;padding-top:14px}
