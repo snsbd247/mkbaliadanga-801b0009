@@ -156,7 +156,7 @@ export async function exportTablePDF(
   head: string[],
   rows: any[][],
   range?: { from?: string | null; to?: string | null },
-  opts?: { signatures?: string[]; landscape?: boolean },
+  opts?: { signatures?: string[]; landscape?: boolean; preview?: boolean },
 ) {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: opts?.landscape ? "landscape" : "portrait" });
   const startY = await applyPdfHeaderFooter(doc, { title, range });
