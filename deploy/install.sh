@@ -306,6 +306,47 @@ wait_for_edge_ports_free() {
   die "Ports 80/443 are still busy; Caddy cannot start. Stop the listed service/container and re-run install.sh."
 }
 
+verify_docker_egress() {
+  local i
+  for i in $(seq 1 3); do
+    if docker run --rm --network mk_net --entrypoint sh alpine:3.20 -c \
+      'wget -qO- --timeout=10 https://acme-v02.api.letsencrypt.org/directory >/dev/null' >/dev/null 2>&1; then
+      ok "Docker containers can reach Let's Encrypt."
+      return 0
+    fi
+    warn "Docker container outbound DNS/HTTPS failed (attempt $i/3); repairing forwarding and retrying…"
+    repair_docker_networking
+    create_network
+    sleep 2
+  done
+  die "Docker containers cannot reach Let's Encrypt. Fix VPS outbound DNS/HTTPS/firewall, then re-run install.sh."
+}
+
+verify_caddy_edge() {
+  local ports i
+  ports="$(docker port mk_caddy 2>/dev/null || true)"
+  printf '%s\n' "$ports" | tee -a "$LOG_DIR/deploy.log" >/dev/null || true
+  if ! printf '%s\n' "$ports" | grep -Eq '^80/tcp -> .*:80$'; then
+    dump_edge_port_status
+    docker inspect mk_caddy 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+    die "mk_caddy is running but host port 80 is not published to it."
+  fi
+  if ! printf '%s\n' "$ports" | grep -Eq '^443/tcp -> .*:443$'; then
+    dump_edge_port_status
+    docker inspect mk_caddy 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+    die "mk_caddy is running but host port 443 is not published to it."
+  fi
+  for i in $(seq 1 15); do
+    if curl -IsS --max-time 3 -H "Host: ${APP_DOMAIN}" http://127.0.0.1/ >/dev/null 2>&1; then
+      ok "Caddy is listening on host port 80."
+      return 0
+    fi
+    sleep 1
+  done
+  docker logs --tail 120 mk_caddy 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+  die "mk_caddy published port 80 but localhost is still refusing connections."
+}
+
 start_app() {
   cd "$DEPLOY_DIR"
   docker compose --env-file "$ENV_FILE" -f docker-compose.yml build mk_app
