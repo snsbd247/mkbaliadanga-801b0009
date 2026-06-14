@@ -144,7 +144,8 @@ export default function CombinedPayment() {
       let receiptNo: string;
       const manualNo = form.receipt_no.trim();
       if (manualNo) {
-        const { data: dup } = await supabase.from("payments").select("id").eq("receipt_no", manualNo).is("deleted_at", null).limit(1);
+        // Voided/cancelled receipt numbers are released and may be reused.
+        const { data: dup } = await supabase.from("payments").select("id").eq("receipt_no", manualNo).is("deleted_at", null).neq("status", "voided" as any).limit(1);
         if (dup && dup.length) { setSaving(false); return toast.error(lang === "bn" ? "এই রসিদ নম্বর আগে থেকেই আছে" : "Receipt number already exists"); }
         receiptNo = manualNo;
       } else {

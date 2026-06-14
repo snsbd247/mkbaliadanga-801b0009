@@ -63,6 +63,8 @@ export default function Payments() {
   const [previewSerial, setPreviewSerial] = useState<string>("");
   const [autoAmount, setAutoAmount] = useState<number>(0);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [kindFilter, setKindFilter] = useState<"all" | "irrigation" | "savings" | "loan">("all");
+  const [paidOnly, setPaidOnly] = useState(false);
   const [period, setPeriod] = useState<"all" | "today" | "this_month">((params.get("period") as any) === "today" || (params.get("period") as any) === "this_month" ? params.get("period") as any : "all");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
@@ -285,8 +287,27 @@ export default function Payments() {
     setShowDeleted(false);
     setPeriod("all");
     setFarmerId("");
+    setKindFilter("all");
+    setPaidOnly(false);
     setParams(new URLSearchParams(), { replace: true });
   }
+
+  const displayList = useMemo(() => {
+    return (list ?? []).filter((p: any) => {
+      if (paidOnly && !(p.status === "approved" && !p.voided_at)) return false;
+      if (kindFilter !== "all") {
+        const kinds = (p.payment_allocations ?? []).length
+          ? p.payment_allocations.map((a: any) => a.kind)
+          : [p.kind];
+        const matchSavings = kindFilter === "savings"
+          ? kinds.some((k: string) => k === "savings" || k === "share")
+          : kinds.includes(kindFilter);
+        if (!matchSavings) return false;
+      }
+      return true;
+    });
+  }, [list, kindFilter, paidOnly]);
+
 
   async function restorePayment(id: string) {
     const { error } = await supabase.from("payments").update({ deleted_at: null } as any).eq("id", id);
@@ -775,6 +796,19 @@ export default function Payments() {
                   <SelectItem value="this_month">{tx("This month", "এই মাস")}</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={kindFilter} onValueChange={(v: any) => setKindFilter(v)}>
+                <SelectTrigger className="w-[150px] h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{tx("All types", "সব ধরন")}</SelectItem>
+                  <SelectItem value="irrigation">{tx("Irrigation", "সেচ")}</SelectItem>
+                  <SelectItem value="savings">{tx("Savings/Share", "সেভিং/শেয়ার")}</SelectItem>
+                  <SelectItem value="loan">{tx("Loan", "ঋণ")}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Label className="text-sm flex items-center gap-2 cursor-pointer">
+                <Switch checked={paidOnly} onCheckedChange={setPaidOnly} />
+                <span className="text-xs">{tx("Paid only", "শুধু পরিশোধিত")}</span>
+              </Label>
               <Label className="text-sm flex items-center gap-2 cursor-pointer">
                 <Switch checked={showDeleted} onCheckedChange={setShowDeleted} />
                 <span className="text-xs">{t("showArchived")}</span>
@@ -786,7 +820,7 @@ export default function Payments() {
           <Table>
             <TableHeader><TableRow><TableHead>{t("date")}</TableHead><TableHead>Receipt #</TableHead><TableHead>{t("farmerName")}</TableHead><TableHead>{t("allocations")}</TableHead><TableHead>{t("amount")}</TableHead><TableHead>{t("status")}</TableHead><TableHead>{t("receipt")}</TableHead><TableHead>{t("action")}</TableHead></TableRow></TableHeader>
             <TableBody>
-              {list.map(p => (
+              {displayList.map(p => (
                 <TableRow key={p.id} data-payment-row={p.id}>
                   <TableCell>{fmtDate(p.created_at)}</TableCell>
                   <TableCell className="font-mono text-xs">{p.receipt_no ?? "—"}</TableCell>
@@ -942,7 +976,7 @@ export default function Payments() {
                   </TableCell>
                 </TableRow>
               ))}
-              {list.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+              {displayList.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
             </TableBody>
           </Table>
           </div>
