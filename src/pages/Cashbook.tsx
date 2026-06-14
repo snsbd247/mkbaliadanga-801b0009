@@ -564,7 +564,7 @@ function StreamCashbook(props: {
       [tx("Voucher #", "ভাউচার নং"), t("date"), tx("Head/Type", "খাত/ধরন"), tx("Description", "বিবরণ"), t("income"), t("expense"), t("balance")],
       [
         ["", mFrom, tx("Opening cash", "প্রারম্ভিক জের"), "", "", "", opening],
-        ...entries.map(r => [r.ref, fmtDate(r.date), r.label, r.raw?.payee || r.raw?.note || "", r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
+        ...entries.map(r => [r.ref, fmtDate(r.date), r.label, r.desc || r.raw?.payee || r.raw?.note || "", r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
         ["", "", tx("Total", "মোট"), "", totalIncome, totalExpense, closing],
       ], range,
       { landscape: true, signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] });
@@ -572,7 +572,7 @@ function StreamCashbook(props: {
   function exportXlsx() {
     exportExcel(title, label, [
       { Voucher: "", Date: mFrom, Head: tx("Opening cash", "প্রারম্ভিক জের"), Description: "", Income: "", Expense: "", Balance: opening },
-      ...entries.map(r => ({ Voucher: r.ref, Date: r.date, Head: r.label, Description: r.raw?.payee || r.raw?.note || "", Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })),
+      ...entries.map(r => ({ Voucher: r.ref, Date: r.date, Head: r.label, Description: r.desc || r.raw?.payee || r.raw?.note || "", Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })),
       { Voucher: "", Date: "", Head: tx("Total", "মোট"), Description: "", Income: totalIncome, Expense: totalExpense, Balance: closing },
     ], range);
   }
