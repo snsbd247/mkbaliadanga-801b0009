@@ -18,11 +18,14 @@ type Props = {
   sourceLand: any | null;
   sourceFarmerId: string;
   onDone: () => void;
+  /** When set, pre-fills a single recipient (the real owner) and reclaims the
+   *  borgadar land back to that owner (resulting land becomes owner-type). */
+  reclaimOwnerId?: string | null;
 };
 
 type Recipient = { farmer_id: string; area: number };
 
-export default function LandTransferDialog({ open, onOpenChange, sourceLand, sourceFarmerId, onDone }: Props) {
+export default function LandTransferDialog({ open, onOpenChange, sourceLand, sourceFarmerId, onDone, reclaimOwnerId }: Props) {
   const { tx } = useLang();
   const { user, officeId } = useAuth();
   const [transferType, setTransferType] = useState<"inheritance" | "sale" | "borga_transfer" | "other">("inheritance");
