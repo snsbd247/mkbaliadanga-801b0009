@@ -315,11 +315,14 @@ export default function CombinedPayment() {
     let ry = boxTop + 6;
     setF(); doc.setFontSize(9);
     for (const [label, val] of lines) {
+      const bold = label === totalLabel;
+      if (bnFont) doc.setFont(bnFont, bold ? "bold" : "normal"); else doc.setFont("helvetica", bold ? "bold" : "normal");
       doc.text(label, labelX, ry);
       doc.text(":", colonX, ry);
       doc.text(val, valueX, ry);
       ry += rowH;
     }
+    setF();
 
     // Signatures
     const sigY = Math.min(boxTop + boxH + 10, doc.internal.pageSize.getHeight() - 6);
