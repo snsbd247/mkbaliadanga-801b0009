@@ -45,6 +45,7 @@ import { formatId5 } from "@/lib/idFormat";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 import { PaidLandHistory } from "@/components/PaidLandHistory";
+import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
@@ -902,6 +903,7 @@ export default function FarmerDetail() {
           <TabsTrigger value="land_transfers">{tx("Transfer History", "হস্তান্তর ইতিহাস")}</TabsTrigger>
           {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
           {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
+          {farmer.is_voter && <TabsTrigger value="loans">{tx("Loans", "ঋণ")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           
           <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
@@ -1441,6 +1443,37 @@ export default function FarmerDetail() {
           </Table></Card>
         </TabsContent>
 
+        <TabsContent value="loans">
+          <Card>
+            <div className="px-4 py-3 border-b flex flex-wrap items-center gap-3">
+              <div className="text-sm"><span className="text-muted-foreground">{tx("Loan Due (Principal)", "ঋণ বাকি (আসল)")}: </span><span className="font-bold">{money(loanDue)}</span></div>
+              <Button asChild size="sm" variant="outline" className="ml-auto"><Link to="/loans"><Plus className="h-4 w-4 mr-1" />{tx("Issue Loan", "ঋণ ইস্যু")}</Link></Button>
+            </div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{tx("Issued", "ইস্যু")}</TableHead>
+                <TableHead className="text-right">{tx("Principal", "আসল")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead className="text-right">{t("actions")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {loans.map((l: any) => (
+                  <TableRow key={l.id}>
+                    <TableCell>{fmtDate(l.issued_on)}</TableCell>
+                    <TableCell className="text-right font-mono">{money(l.principal)}</TableCell>
+                    <TableCell><Badge variant={l.status === "approved" ? "default" : l.status === "pending" ? "secondary" : "outline"}>{l.status}</Badge></TableCell>
+                    <TableCell className="text-right">
+                      {l.status === "approved" && <Button size="sm" variant="ghost" onClick={() => setViewLoan(l)}><FileText className="h-4 w-4 mr-1" />{tx("Statement", "স্টেটমেন্ট")}</Button>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {loans.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+
         <TabsContent value="statement">
           <SavingsStatement farmer={farmer} />
         </TabsContent>
@@ -1665,6 +1698,14 @@ export default function FarmerDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!viewLoan} onOpenChange={(o) => { if (!o) setViewLoan(null); }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{tx("Loan Statement", "ঋণ স্টেটমেন্ট")}</DialogTitle></DialogHeader>
+          {viewLoan && <LoanStatement loanId={viewLoan.id} />}
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
