@@ -257,6 +257,32 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_storage_admin IN SCHEMA storage GRANT
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_storage_admin IN SCHEMA storage GRANT ALL ON TABLES TO anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_storage_admin IN SCHEMA storage GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_storage_admin IN SCHEMA storage GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
+-- Heal partially-created schemas from earlier failed installs: service
+-- containers must own their own objects before they can resume migrations.
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT c.oid::regclass AS obj FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'auth' AND c.relkind IN ('r','p','v','m','f') LOOP
+    EXECUTE format('ALTER TABLE %s OWNER TO supabase_auth_admin', r.obj);
+  END LOOP;
+  FOR r IN SELECT c.oid::regclass AS obj FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'auth' AND c.relkind = 'S' LOOP
+    EXECUTE format('ALTER SEQUENCE %s OWNER TO supabase_auth_admin', r.obj);
+  END LOOP;
+  FOR r IN SELECT p.oid::regprocedure AS obj FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'auth' LOOP
+    EXECUTE format('ALTER FUNCTION %s OWNER TO supabase_auth_admin', r.obj);
+  END LOOP;
+
+  FOR r IN SELECT c.oid::regclass AS obj FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'storage' AND c.relkind IN ('r','p','v','m','f') LOOP
+    EXECUTE format('ALTER TABLE %s OWNER TO supabase_storage_admin', r.obj);
+  END LOOP;
+  FOR r IN SELECT c.oid::regclass AS obj FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'storage' AND c.relkind = 'S' LOOP
+    EXECUTE format('ALTER SEQUENCE %s OWNER TO supabase_storage_admin', r.obj);
+  END LOOP;
+  FOR r IN SELECT p.oid::regprocedure AS obj FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'storage' LOOP
+    EXECUTE format('ALTER FUNCTION %s OWNER TO supabase_storage_admin', r.obj);
+  END LOOP;
+END$$;
 SQL
   ok "Self-hosted database roles are ready."
 }
