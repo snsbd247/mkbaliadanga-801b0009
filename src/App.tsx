@@ -260,8 +260,8 @@ const App = () => (
                 <Route path="/admin/audit-timeline" element={<RequireRole roles={["admin","super_admin"]}><AuditTimeline /></RequireRole>} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 <Route path="/import" element={<RequirePerm module="farmers" action="can_add"><DataImport /></RequirePerm>} />
-                <Route path="/users" element={<RequireRole roles={["admin","super_admin"]}><Users /></RequireRole>} />
-                <Route path="/settings" element={<RequireRole roles={["admin","super_admin"]}><Settings /></RequireRole>} />
+                <Route path="/users" element={<RequireRole roles={["super_admin"]}><Users /></RequireRole>} />
+                <Route path="/settings" element={<RequireRole roles={["super_admin"]}><Settings /></RequireRole>} />
                 <Route path="/scan" element={<RequirePerm module="payments"><Scan /></RequirePerm>} />
                 <Route path="/cashbook" element={<RequirePerm module="cashbook"><Cashbook /></RequirePerm>} />
                 <Route path="/hand-cash" element={<RequirePerm module="cashbook"><HandCash /></RequirePerm>} />
