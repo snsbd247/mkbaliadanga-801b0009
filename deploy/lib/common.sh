@@ -147,20 +147,29 @@ wait_for_supabase_db() {
   die "Database did not become ready in time. Check: docker logs supabase-db"
 }
 
+dump_supabase_platform_logs() {
+  log "----- Supabase container status -----"; docker ps -a --filter 'name=supabase-' --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' 2>&1 || true
+  log "----- supabase-auth (last 120 lines) -----";    docker logs --tail 120 supabase-auth    2>&1 || true
+  log "----- supabase-storage (last 120 lines) -----"; docker logs --tail 120 supabase-storage 2>&1 || true
+  log "----- supabase-rest (last 120 lines) -----";    docker logs --tail 120 supabase-rest    2>&1 || true
+}
+
 wait_for_supabase_platform_schemas() {
-  local tries="${1:-90}"
+  local tries="${1:-300}"
   log "Waiting for auth/storage platform schemas…"
-  for _ in $(seq 1 "$tries"); do
+  for i in $(seq 1 "$tries"); do
     if docker exec supabase-db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" -tAc \
       "SELECT to_regclass('auth.users') IS NOT NULL AND to_regclass('storage.objects') IS NOT NULL" 2>/dev/null | grep -q t; then
       ok "Platform schemas are ready."
       return 0
     fi
+    if (( i % 30 == 0 )); then
+      log "Still waiting for auth/storage schemas ($((i * 2))s elapsed)…"
+      docker ps -a --filter 'name=supabase-' --format 'table {{.Names}}\t{{.Status}}' 2>&1 || true
+    fi
     sleep 2
   done
-  log "----- supabase-auth (last 40 lines) -----";    docker logs --tail 40 supabase-auth    2>&1 || true
-  log "----- supabase-storage (last 40 lines) -----"; docker logs --tail 40 supabase-storage 2>&1 || true
-  log "----- supabase-rest (last 40 lines) -----";    docker logs --tail 40 supabase-rest    2>&1 || true
+  dump_supabase_platform_logs
   die "Auth/storage schemas did not become ready. Check: docker logs supabase-auth supabase-storage supabase-rest"
 }
 
@@ -221,6 +230,17 @@ GRANT anon, authenticated, service_role TO authenticator;
 GRANT ALL PRIVILEGES ON DATABASE :"db" TO supabase_admin;
 GRANT CREATE ON DATABASE :"db" TO supabase_auth_admin, supabase_storage_admin, supabase_functions_admin, supabase_realtime_admin;
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT USAGE ON SCHEMA public TO supabase_auth_admin, supabase_storage_admin, supabase_functions_admin, supabase_realtime_admin;
+
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE SCHEMA IF NOT EXISTS graphql_public;
+CREATE SCHEMA IF NOT EXISTS _realtime;
+ALTER SCHEMA extensions OWNER TO supabase_admin;
+ALTER SCHEMA graphql_public OWNER TO supabase_admin;
+ALTER SCHEMA _realtime OWNER TO supabase_realtime_admin;
+GRANT USAGE ON SCHEMA extensions TO postgres, anon, authenticated, service_role, authenticator;
+GRANT USAGE ON SCHEMA graphql_public TO anon, authenticated, service_role, authenticator;
+GRANT ALL ON SCHEMA _realtime TO supabase_realtime_admin;
 
 -- Pre-create platform schemas owned by their admin roles so GoTrue/Storage
 -- migrations have a schema to write into (required on self-hosted Postgres).
@@ -232,6 +252,11 @@ GRANT ALL ON SCHEMA auth TO supabase_auth_admin;
 GRANT ALL ON SCHEMA storage TO supabase_storage_admin;
 GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
 GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_auth_admin IN SCHEMA auth GRANT ALL ON TABLES TO supabase_auth_admin;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_storage_admin IN SCHEMA storage GRANT ALL ON TABLES TO supabase_storage_admin;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_storage_admin IN SCHEMA storage GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_storage_admin IN SCHEMA storage GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE supabase_storage_admin IN SCHEMA storage GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
 SQL
   ok "Self-hosted database roles are ready."
 }
