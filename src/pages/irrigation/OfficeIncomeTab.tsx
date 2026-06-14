@@ -80,13 +80,16 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
   const total = useMemo(() => rows.reduce((s, r) => s + Number(r.amount || 0), 0), [rows]);
 
   const save = async () => {
-    if (!form.payer_name.trim()) { toast.error(tx("Payer name required", "প্রদানকারীর নাম দিন")); return; }
-    if (form.payer_name.trim().length > 100) { toast.error(tx("Name too long", "নাম খুব বড়")); return; }
-    if (form.father_name?.trim().length > 100) { toast.error(tx("Father's name too long", "পিতার নাম খুব বড়")); return; }
-    if (form.village?.trim().length > 100) { toast.error(tx("Village too long", "গ্রাম খুব বড়")); return; }
+    const errs: Record<string, string> = {};
+    if (!form.payer_name.trim()) errs.payer_name = tx("Payer name required", "প্রদানকারীর নাম দিন");
+    else if (form.payer_name.trim().length > 100) errs.payer_name = tx("Name too long (max 100)", "নাম খুব বড় (সর্বোচ্চ ১০০)");
+    if (form.father_name?.trim().length > 100) errs.father_name = tx("Father's name too long (max 100)", "পিতার নাম খুব বড় (সর্বোচ্চ ১০০)");
+    if (form.village?.trim().length > 100) errs.village = tx("Village too long (max 100)", "গ্রাম খুব বড় (সর্বোচ্চ ১০০)");
     const mob = form.mobile?.trim();
-    if (mob && !/^[0-9+\-\s]{6,20}$/.test(mob)) { toast.error(tx("Invalid mobile number", "সঠিক মোবাইল নম্বর দিন")); return; }
-    if (!(Number(form.amount) > 0)) { toast.error(tx("Amount must be greater than 0", "টাকা ০-এর বেশি দিন")); return; }
+    if (mob && !/^[0-9+\-\s]{6,20}$/.test(mob)) errs.mobile = tx("Invalid mobile number", "সঠিক মোবাইল নম্বর দিন");
+    if (!(Number(form.amount) > 0)) errs.amount = tx("Amount must be greater than 0", "টাকা ০-এর বেশি দিন");
+    setFieldErrors(errs);
+    if (Object.keys(errs).length) { toast.error(tx("Please fix the highlighted fields", "চিহ্নিত ঘরগুলো ঠিক করুন")); return; }
     setSaving(true);
     try {
       let receiptNo = form.receipt_no.trim();
@@ -109,10 +112,26 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
       if (error) throw error;
       toast.success(tx("Income recorded", "আয় সংরক্ষিত হয়েছে"));
       setOpen(false);
+      setFieldErrors({});
       setForm({ ...form, payer_name: "", father_name: "", village: "", mobile: "", amount: "", receipt_no: "", note: "" });
       load();
     } catch (e: any) {
-      toast.error(e.message ?? tx("Failed to save", "সংরক্ষণ ব্যর্থ"));
+      // Map server-side validation messages to friendly field errors.
+      const msg: string = e?.message ?? "";
+      const map: Record<string, { key: string; en: string; bn: string }> = {
+        father_name: { key: "father_name", en: "Father's name is invalid (max 100 chars)", bn: "পিতার নাম সঠিক নয় (সর্বোচ্চ ১০০ অক্ষর)" },
+        village: { key: "village", en: "Village is invalid (max 100 chars)", bn: "গ্রাম সঠিক নয় (সর্বোচ্চ ১০০ অক্ষর)" },
+        mobile: { key: "mobile", en: "Mobile number format is invalid", bn: "মোবাইল নম্বরের ফরম্যাট সঠিক নয়" },
+        payer_name: { key: "payer_name", en: "Payer name is invalid", bn: "প্রদানকারীর নাম সঠিক নয়" },
+        amount: { key: "amount", en: "Amount must be greater than 0", bn: "টাকা ০-এর বেশি দিন" },
+      };
+      const hit = Object.values(map).find((m) => msg.includes(m.key));
+      if (hit) {
+        setFieldErrors({ [hit.key]: tx(hit.en, hit.bn) });
+        toast.error(tx(hit.en, hit.bn));
+      } else {
+        toast.error(msg || tx("Failed to save", "সংরক্ষণ ব্যর্থ"));
+      }
     } finally {
       setSaving(false);
     }
