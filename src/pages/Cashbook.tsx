@@ -602,6 +602,7 @@ function StreamCashbook(props: {
             <Label htmlFor={`consol-${stream}`} className="text-xs cursor-pointer">{tx("Consolidate income (receipt range)", "আয় একত্র (রশিদ রেঞ্জ)")}</Label>
           </div>
           <div className="ml-auto flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}><Printer className="h-4 w-4 mr-1" />{tx("Preview / Print", "প্রিভিউ / প্রিন্ট")}</Button>
             <Button size="sm" variant="outline" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
             <Button size="sm" variant="outline" onClick={exportXlsx}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("exportExcel")}</Button>
             {canSubmit && (
