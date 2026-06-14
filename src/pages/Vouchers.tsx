@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Paperclip, Download } from "lucide-react";
+import { Plus, Paperclip, Download, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
+import { exportTablePDF } from "@/lib/exports";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
