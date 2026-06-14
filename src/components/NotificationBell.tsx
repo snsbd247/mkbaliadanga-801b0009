@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, AlertCircle, Loader2 } from "lucide-react";
+import { Bell, AlertCircle, Loader2, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,6 +21,7 @@ export function NotificationBell() {
   const { tx } = useLang();
   const nav = useNavigate();
   const [items, setItems] = useState<any[]>([]);
+  const [view, setView] = useState<"active" | "archived">("active");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "connecting" | "subscribed" | "error" | "closed">("idle");
@@ -112,7 +113,8 @@ export function NotificationBell() {
     };
   }, [user?.id]);
 
-  const unread = items.filter((i) => !i.read).length;
+  const visible = items.filter((i) => (view === "archived" ? i.archived : !i.archived));
+  const unread = items.filter((i) => !i.read && !i.archived).length;
 
   async function markAll() {
     try {
@@ -121,6 +123,16 @@ export function NotificationBell() {
     } catch (e: any) {
       devErr("markAll failed", e);
       setError(e?.message ?? "Failed to mark read");
+    }
+  }
+
+  async function archive(id: string) {
+    try {
+      await supabase.from("notifications").update({ archived: true, read: true }).eq("id", id);
+      load();
+    } catch (e: any) {
+      devErr("archive failed", e);
+      setError(e?.message ?? "Failed to archive");
     }
   }
 
@@ -150,6 +162,16 @@ export function NotificationBell() {
             )}
           </div>
         </div>
+        <div className="flex border-b text-xs">
+          <button
+            onClick={() => setView("active")}
+            className={`flex-1 py-1.5 ${view === "active" ? "border-b-2 border-primary font-medium text-primary" : "text-muted-foreground"}`}
+          >{tx("Active", "সক্রিয়")}</button>
+          <button
+            onClick={() => setView("archived")}
+            className={`flex-1 py-1.5 ${view === "archived" ? "border-b-2 border-primary font-medium text-primary" : "text-muted-foreground"}`}
+          >{tx("Archived", "আর্কাইভ")}</button>
+        </div>
         <div className="max-h-96 overflow-auto">
           {loading && (
             <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
@@ -176,19 +198,32 @@ export function NotificationBell() {
               Realtime disconnected — reconnecting…
             </div>
           )}
-          {!loading && !error && items.length === 0 && (
+          {!loading && !error && visible.length === 0 && (
             <p className="p-4 text-sm text-muted-foreground">{tx("No notifications", "কোনো নোটিফিকেশন নেই")}</p>
           )}
-          {!loading && !error && items.map((n) => (
-            <button
+          {!loading && !error && visible.map((n) => (
+            <div
               key={n.id}
-              onClick={() => { if (n.link) nav(n.link); }}
-              className={`flex w-full flex-col items-start gap-0.5 border-b px-3 py-2 text-left text-sm hover:bg-accent/40 ${!n.read ? "bg-primary/5" : ""}`}
+              className={`flex items-start gap-1 border-b px-3 py-2 text-sm hover:bg-accent/40 ${!n.read ? "bg-primary/5" : ""}`}
             >
-              <div className="font-medium">{n.title}</div>
-              {n.body && <div className="text-xs text-muted-foreground">{n.body}</div>}
-              <div className="text-[10px] text-muted-foreground">{fmtDate(n.created_at)}</div>
-            </button>
+              <button
+                onClick={() => { if (n.link) nav(n.link); }}
+                className="flex flex-1 flex-col items-start gap-0.5 text-left"
+              >
+                <div className="font-medium">{n.title}</div>
+                {n.body && <div className="text-xs text-muted-foreground">{n.body}</div>}
+                <div className="text-[10px] text-muted-foreground">{fmtDate(n.created_at)}</div>
+              </button>
+              {!n.archived && (
+                <button
+                  onClick={() => archive(n.id)}
+                  title={tx("Archive", "আর্কাইভ")}
+                  className="mt-0.5 shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </PopoverContent>

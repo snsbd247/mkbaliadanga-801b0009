@@ -194,6 +194,18 @@ export function exportExcel(
   range?: { from?: string | null; to?: string | null }
 ) {
   const ws = XLSX.utils.json_to_sheet(rows);
+  // A4-friendly column widths: size each column to its widest cell (header or value),
+  // clamped so the sheet stays within a printable A4 width.
+  const headers = rows.length ? Object.keys(rows[0]) : [];
+  ws["!cols"] = headers.map((h) => {
+    const maxLen = rows.reduce((m, r) => {
+      const v = r[h];
+      const len = v === null || v === undefined ? 0 : String(v).length;
+      return Math.max(m, len);
+    }, h.length);
+    return { wch: Math.min(40, Math.max(10, maxLen + 2)) };
+  });
+  ws["!margins"] = { left: 0.5, right: 0.5, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 };
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, `${buildExportName(filename, range)}.xlsx`);
