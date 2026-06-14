@@ -187,6 +187,113 @@ export async function exportTablePDF(
 }
 
 
+// ---------- A4 Cash Book (client format) ----------
+export type CashbookRow = {
+  date: string;
+  ref?: string;        // voucher/receipt no
+  head: string;        // head / type / description label
+  desc?: string;       // extra description (note / payee / receipt range)
+  income?: number;     // জমা / আয়
+  expense?: number;    // খরচ / ব্যয়
+  balance: number;     // জের
+};
+
+export async function exportCashbookPDF(opts: {
+  title: string;                       // e.g. "সেচ ক্যাশ বুক"
+  monthLabel: string;                  // e.g. "2026-06"
+  range?: { from?: string | null; to?: string | null };
+  opening: number;
+  rows: CashbookRow[];
+  totalIncome: number;
+  totalExpense: number;
+  closing: number;
+}) {
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const lang = pdfLang();
+  const bnFamily = lang === "bn" ? await ensureBanglaFont(doc) : null;
+  const useBn = lang === "bn" && !!bnFamily;
+  const tableFont: any = useBn && bnFamily ? { font: bnFamily, fontStyle: "normal" } : {};
+
+  const startY = await applyPdfHeaderFooter(doc, { title: opts.title, range: opts.range });
+
+  const head = [[
+    tPdf("Date", "তারিখ"),
+    tPdf("V. No", "ভাউচার/রশিদ নং"),
+    tPdf("Particulars", "বিবরণ"),
+    tPdf("Receipt", "জমা/আয়"),
+    tPdf("Payment", "খরচ/ব্যয়"),
+    tPdf("Balance", "জের"),
+  ]];
+  const body: any[][] = [
+    [fmtDate(opts.range?.from || ""), "", tPdf("Opening balance", "প্রারম্ভিক জের"), "", "", moneyPdf(opts.opening)],
+    ...opts.rows.map(r => [
+      fmtDate(r.date), r.ref || "",
+      [r.head, r.desc].filter(Boolean).join(" — "),
+      r.income ? moneyPdf(r.income) : "",
+      r.expense ? moneyPdf(r.expense) : "",
+      moneyPdf(r.balance),
+    ]),
+  ];
+  const foot = [[
+    "", "", tPdf("Total / Closing", "মোট / সমাপনী জের"),
+    moneyPdf(opts.totalIncome), moneyPdf(opts.totalExpense), moneyPdf(opts.closing),
+  ]];
+
+  autoTable(doc, {
+    startY: startY + 2, head, body, foot, theme: "grid",
+    styles: { fontSize: 8, cellPadding: 1.5, ...tableFont },
+    headStyles: { fillColor: [30, 110, 70], halign: "center", ...tableFont },
+    footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: "bold", ...tableFont },
+    columnStyles: {
+      0: { cellWidth: 22 }, 1: { cellWidth: 26 }, 2: { cellWidth: "auto" },
+      3: { halign: "right", cellWidth: 26 }, 4: { halign: "right", cellWidth: 26 }, 5: { halign: "right", cellWidth: 26 },
+    },
+  });
+
+  // Signature block (client format)
+  const sigs = [tPdf("Prepared by", "প্রস্তুতকারী"), tPdf("Manager", "ম্যানেজার"), tPdf("President", "সভাপতি"), tPdf("Auditor", "নিরীক্ষক")];
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  let y = ((doc as any).lastAutoTable?.finalY ?? startY) + 22;
+  if (y > pageH - 22) { doc.addPage(); y = 40; }
+  const slot = (pageW - 28) / sigs.length;
+  doc.setFontSize(9);
+  if (useBn && bnFamily) doc.setFont(bnFamily, "normal"); else doc.setFont(undefined, "normal");
+  sigs.forEach((label, i) => {
+    const cx = 14 + slot * i + slot / 2;
+    doc.line(cx - 20, y, cx + 20, y);
+    doc.text(label, cx, y + 5, { align: "center" });
+  });
+
+  finalizePdf(doc);
+  doc.save(`${buildExportName(opts.title + "-" + opts.monthLabel, opts.range)}.pdf`);
+}
+
+export function exportCashbookExcel(opts: {
+  title: string;
+  monthLabel: string;
+  range?: { from?: string | null; to?: string | null };
+  opening: number;
+  rows: CashbookRow[];
+  totalIncome: number;
+  totalExpense: number;
+  closing: number;
+}) {
+  const data = [
+    { "তারিখ": fmtDate(opts.range?.from || ""), "ভাউচার/রশিদ নং": "", "বিবরণ": "প্রারম্ভিক জের", "জমা/আয়": "", "খরচ/ব্যয়": "", "জের": opts.opening },
+    ...opts.rows.map(r => ({
+      "তারিখ": r.date,
+      "ভাউচার/রশিদ নং": r.ref || "",
+      "বিবরণ": [r.head, r.desc].filter(Boolean).join(" — "),
+      "জমা/আয়": r.income || "",
+      "খরচ/ব্যয়": r.expense || "",
+      "জের": r.balance,
+    })),
+    { "তারিখ": "", "ভাউচার/রশিদ নং": "", "বিবরণ": "মোট / সমাপনী জের", "জমা/আয়": opts.totalIncome, "খরচ/ব্যয়": opts.totalExpense, "জের": opts.closing },
+  ];
+  exportExcel(`${opts.title}-${opts.monthLabel}`, opts.title.slice(0, 28), data, opts.range);
+}
+
 export function exportExcel(
   filename: string,
   sheetName: string,
