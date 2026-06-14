@@ -240,17 +240,20 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   y += 32;
 
   // Optional hal/bokeya/penalty breakdown (irrigation & dues receipts)
+  const showCharge = tpl.show_charge_row;
+  const showPenalty = tpl.show_penalty_row;
   const hasBreakdown =
-    (data.hal_amount != null) || (data.bokeya_amount != null) || (data.penalty_amount != null);
+    (showCharge && ((data.hal_amount != null) || (data.bokeya_amount != null))) ||
+    (showPenalty && (data.penalty_amount != null));
   if (hasBreakdown) {
     doc.setFontSize(8); doc.setTextColor(60); doc.setFont("helvetica", "normal");
-    if (data.hal_amount != null) {
+    if (showCharge && data.hal_amount != null) {
       doc.text(`${labels.hal}: ${fmtBdt(data.hal_amount)}`, margin, y); y += 4;
     }
-    if (data.bokeya_amount != null) {
+    if (showCharge && data.bokeya_amount != null) {
       doc.text(`${labels.bokeya}: ${fmtBdt(data.bokeya_amount)}`, margin, y); y += 4;
     }
-    if (data.penalty_amount != null) {
+    if (showPenalty && data.penalty_amount != null) {
       doc.text(`${labels.penalty}: ${fmtBdt(data.penalty_amount)}`, margin, y); y += 4;
     }
     doc.setTextColor(0); y += 2;
