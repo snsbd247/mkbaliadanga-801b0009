@@ -40,6 +40,10 @@ type CollectionRow = {
   rin: number;
   soncoy: number;
   bibidh: number;
+  vangari: number;
+  pukur: number;
+  bighat: number;
+  bhortifi: number;
 };
 
 type ProfileLite = { id: string; full_name: string | null; email: string | null; office_id: string | null };
@@ -137,6 +141,7 @@ export default function CollectionReport() {
           hal: Number(r.current_invoice_collected || 0),
           bokeya: Number(r.previous_due_collected || 0),
           hawlat: 0, anudan: 0, rin: 0, soncoy: 0, bibidh: 0,
+          vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
         });
       }
 
@@ -167,6 +172,7 @@ export default function CollectionReport() {
           receipt_no: null,
           sech: 0, jorimana: 0, hal: 0, bokeya: 0,
           hawlat: 0, anudan: 0, rin: Number(r.amount || 0), soncoy: 0, bibidh: 0,
+          vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
         });
       }
 
@@ -204,6 +210,10 @@ export default function CollectionReport() {
           rin: 0,
           soncoy: (!cat || cat === "general") ? amt : 0,
           bibidh: (cat === "misc" || cat === "bank") ? amt : 0,
+          vangari: (cat === "vangari" || cat === "scrap") ? amt : 0,
+          pukur: (cat === "pond" || cat === "pukur") ? amt : 0,
+          bighat: cat === "bighat" ? amt : 0,
+          bhortifi: (cat === "admission" || cat === "bhortifi") ? amt : 0,
         });
       }
 
@@ -340,10 +350,10 @@ export default function CollectionReport() {
             onPdf={() =>
               exportTablePDF(
                 `Collection Report${filterSuffix()}`,
-                ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Loan", "Savings", "Misc", "Total", "User"],
+                ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Vangari", "Pukur", "Bighat", "Bhorti Fee", "Loan", "Savings", "Misc", "Total", "User"],
                 rows.map((r) => [
                   fmtDate(r.date), r.receipt_no ?? "—", `${r.farmer_code} — ${r.farmer_name}`,
-                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.rin, r.soncoy, r.bibidh, r.amount, r.user_name,
+                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.bibidh, r.amount, r.user_name,
                 ]),
               )
             }
@@ -357,7 +367,7 @@ export default function CollectionReport() {
                   "Farmer ID": r.farmer_code,
                   "Farmer Name": r.farmer_name,
                   "সেচ": r.sech, "জরিমানা": r.jorimana, "হাল": r.hal, "বকেয়া": r.bokeya,
-                  "হাওলাত": r.hawlat, "অনুদান": r.anudan, "ঋণ": r.rin, "সঞ্চয়": r.soncoy, "বিবিধ": r.bibidh,
+                  "হাওলাত": r.hawlat, "অনুদান": r.anudan, "ভাঙারি": r.vangari, "পুকুর": r.pukur, "বিঘাত": r.bighat, "ভর্তি ফি": r.bhortifi, "ঋণ": r.rin, "সঞ্চয়": r.soncoy, "বিবিধ": r.bibidh,
                   "মোট": r.amount,
                   "User": r.user_name,
                 })),
@@ -377,6 +387,10 @@ export default function CollectionReport() {
                   <TableHead className="text-right">বকেয়া</TableHead>
                   <TableHead className="text-right">হাওলাত</TableHead>
                   <TableHead className="text-right">অনুদান</TableHead>
+                  <TableHead className="text-right">ভাঙারি</TableHead>
+                  <TableHead className="text-right">পুকুর</TableHead>
+                  <TableHead className="text-right">বিঘাত</TableHead>
+                  <TableHead className="text-right">ভর্তি ফি</TableHead>
                   <TableHead className="text-right">ঋণ</TableHead>
                   <TableHead className="text-right">সঞ্চয়</TableHead>
                   <TableHead className="text-right">বিবিধ</TableHead>
@@ -396,6 +410,10 @@ export default function CollectionReport() {
                     <TableCell className="text-right text-amber-600">{r.bokeya ? money(r.bokeya) : "—"}</TableCell>
                     <TableCell className="text-right">{r.hawlat ? money(r.hawlat) : "—"}</TableCell>
                     <TableCell className="text-right">{r.anudan ? money(r.anudan) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.vangari ? money(r.vangari) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.pukur ? money(r.pukur) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.bighat ? money(r.bighat) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.bhortifi ? money(r.bhortifi) : "—"}</TableCell>
                     <TableCell className="text-right">{r.rin ? money(r.rin) : "—"}</TableCell>
                     <TableCell className="text-right">{r.soncoy ? money(r.soncoy) : "—"}</TableCell>
                     <TableCell className="text-right">{r.bibidh ? money(r.bibidh) : "—"}</TableCell>
@@ -405,7 +423,7 @@ export default function CollectionReport() {
                 ))}
                 {rows.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={14} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={18} className="text-center text-muted-foreground py-6">
                       {t("noCollectionsFiltered")}
                     </TableCell>
                   </TableRow>

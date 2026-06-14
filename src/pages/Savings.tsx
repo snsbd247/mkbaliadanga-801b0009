@@ -41,6 +41,10 @@ export default function Savings() {
     { v: "hawlat", l: tx("Hawlat", "হাওলাত") },
     { v: "bank", l: tx("Bank", "ব্যাংক") },
     { v: "donation", l: tx("Donation", "দান") },
+    { v: "vangari", l: tx("Scrap (Vangari)", "ভাঙারি") },
+    { v: "pond", l: tx("Pond", "পুকুর") },
+    { v: "bighat", l: tx("Bighat", "বিঘাত") },
+    { v: "admission", l: tx("Admission Fee", "ভর্তি ফি") },
     { v: "misc", l: tx("Misc", "বিবিধ") },
   ];
   const [plans, setPlans] = useState<any[]>([]);
