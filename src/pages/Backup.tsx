@@ -16,22 +16,62 @@ import { Download, Database, FileSpreadsheet, Upload, AlertTriangle, ShieldCheck
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
+// NOTE: ordered parent -> child so upsert restore satisfies FK dependencies.
 const TABLES: { name: string; label: string }[] = [
+  // --- Locations & masters ---
+  { name: "offices", label: "Offices" },
+  { name: "divisions", label: "Divisions" },
+  { name: "districts", label: "Districts" },
+  { name: "upazilas", label: "Upazilas" },
+  { name: "mouzas", label: "Mouzas" },
+  { name: "accounts", label: "Chart of Accounts" },
+  { name: "savings_plans", label: "Savings Plans" },
+  { name: "loan_plans", label: "Loan Plans" },
+  { name: "seasons", label: "Seasons" },
+  { name: "irrigation_rates", label: "Irrigation Rates" },
+  { name: "irrigation_categories", label: "Irrigation Categories" },
+  { name: "irrigation_category_rates", label: "Irrigation Category Rates" },
+  // --- Farmers, lands, patwaris ---
+  { name: "patwaris", label: "Patwaris" },
   { name: "farmers", label: "Farmers" },
   { name: "lands", label: "Lands" },
   { name: "land_relations", label: "Land Relations" },
-  { name: "seasons", label: "Seasons" },
+  // --- Savings & shares ---
   { name: "savings_transactions", label: "Savings" },
   { name: "savings_yearly_opening", label: "Savings Opening" },
+  { name: "farmer_savings_plans", label: "Farmer Savings Plans" },
+  { name: "shares", label: "Shares" },
+  // --- Loans ---
   { name: "loans", label: "Loans" },
+  { name: "loan_guarantors", label: "Loan Guarantors" },
+  { name: "loan_installments", label: "Loan Installments" },
   { name: "loan_payments", label: "Loan Payments" },
+  // --- Irrigation ---
   { name: "irrigation_charges", label: "Irrigation Charges" },
+  { name: "irrigation_invoices", label: "Irrigation Invoices" },
+  { name: "irrigation_invoice_payments", label: "Irrigation Invoice Payments" },
+  // --- Payments & receipts ---
   { name: "payments", label: "Payments" },
   { name: "payment_allocations", label: "Payment Allocations" },
   { name: "receipts", label: "Receipts" },
   { name: "expenses", label: "Expenses" },
-  { name: "shares", label: "Shares" },
-  { name: "offices", label: "Offices" },
+  // --- Bank ---
+  { name: "bank_accounts", label: "Bank Accounts" },
+  { name: "bank_transactions", label: "Bank Transactions" },
+  // --- Accounting ---
+  { name: "vouchers", label: "Vouchers" },
+  { name: "journal_entries", label: "Journal Entries" },
+  { name: "journal_entry_lines", label: "Journal Entry Lines" },
+  { name: "ledger_entries", label: "Ledger Entries" },
+  // --- Assets ---
+  { name: "asset_categories", label: "Asset Categories" },
+  { name: "assets", label: "Assets" },
+  { name: "asset_stocks", label: "Asset Stocks" },
+  { name: "asset_purchases", label: "Asset Purchases" },
+  { name: "asset_movements", label: "Asset Movements" },
+  { name: "asset_installations", label: "Asset Installations" },
+  { name: "asset_maintenance_logs", label: "Asset Maintenance" },
+  { name: "asset_disposals", label: "Asset Disposals" },
 ];
 
 async function fetchAll(table: string) {
