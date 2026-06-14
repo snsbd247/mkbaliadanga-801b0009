@@ -296,7 +296,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
               <Input value={form.receipt_no} onChange={(e) => setForm({ ...form, receipt_no: e.target.value })} />
             </div>
             <div>
-              <Label>{tx("Note", "নোট")}</Label>
+              <Label>{tx("Remark", "রিমার্ক")}</Label>
               <Textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={2} />
             </div>
           </div>
