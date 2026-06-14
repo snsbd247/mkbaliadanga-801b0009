@@ -19,6 +19,7 @@ import { money, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportPaymentReceiptPDF, exportTablePDF, exportExcel } from "@/lib/exports";
+import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useBranding } from "@/lib/branding";
 import { EditButton, DeleteButton, PrintButton } from "@/components/ui/action-icon-button";
