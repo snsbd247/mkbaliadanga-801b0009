@@ -58,14 +58,33 @@ install_coolify() {
 
 # ----------------------------------------------------------------------------- 4. Docker network
 create_network() {
-  docker network inspect mk_net >/dev/null 2>&1 || docker network create mk_net
+  if docker network inspect mk_net >/dev/null 2>&1; then
+    local internal driver
+    internal="$(docker network inspect -f '{{.Internal}}' mk_net 2>/dev/null || echo true)"
+    driver="$(docker network inspect -f '{{.Driver}}' mk_net 2>/dev/null || echo unknown)"
+    if [[ "$internal" == "true" || "$driver" != "bridge" ]]; then
+      warn "Docker network mk_net is not an external-routing bridge network; recreating it…"
+      docker rm -f mk_caddy mk_app >/dev/null 2>&1 || true
+      docker network rm mk_net >/dev/null 2>&1 || true
+    fi
+  fi
+  docker network inspect mk_net >/dev/null 2>&1 || docker network create --driver bridge --attachable mk_net
 }
 
 # ----------------------------------------------------------------------------- 5. Firewall
 configure_firewall() {
+  sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+  mkdir -p /etc/sysctl.d
+  cat >/etc/sysctl.d/99-mkbaliadanga-docker.conf <<'EOF'
+net.ipv4.ip_forward=1
+EOF
+  if [[ -f /etc/default/ufw ]]; then
+    sed -i 's/^DEFAULT_FORWARD_POLICY=.*/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
+  fi
   ufw --force reset
   ufw default deny incoming
   ufw default allow outgoing
+  ufw default allow routed
   ufw allow 22/tcp
   ufw allow 80/tcp
   ufw allow 443/tcp
