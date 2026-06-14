@@ -217,6 +217,9 @@ export default function ReceiptTemplatePage() {
               <Label className="text-xs">Watermark text</Label>
               <Input value={tpl.watermark_text} onChange={(e) => setTpl({ ...tpl, watermark_text: e.target.value })} maxLength={40} placeholder="e.g. COPY / PAID" disabled={!tpl.show_watermark} />
             </div>
+          </div>
+
+
 
           <div className="grid gap-2 pt-2 border-t">
             <h4 className="text-sm font-semibold">Sections</h4>
