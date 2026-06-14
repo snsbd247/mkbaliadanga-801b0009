@@ -1610,6 +1610,16 @@ export default function FarmerDetail() {
         onDone={() => { setTransferLand(null); loadAll(); }}
       />
 
+      <LandTransferDialog
+        open={!!reclaimLand}
+        onOpenChange={(v) => { if (!v) setReclaimLand(null); }}
+        sourceLand={reclaimLand}
+        sourceFarmerId={id!}
+        reclaimOwnerId={reclaimLand?.owner_farmer_id ?? null}
+        onDone={() => { setReclaimLand(null); loadAll(); }}
+      />
+
+
       <Dialog open={editFarmerOpen} onOpenChange={(o) => { if (!o && !editFarmerSaving) { setEditFarmerOpen(false); setEditFarmerForm(null); setEditFarmerPhoto(null); setEditFarmerLocErr(null); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{t("edit")} — {lang === "bn" ? (farmer.name_bn || farmer.name_en) : farmer.name_en}</DialogTitle></DialogHeader>
