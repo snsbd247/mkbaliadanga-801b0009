@@ -173,6 +173,9 @@ export default function Cashbook() {
         if (error) throw error;
       } else {
         payload.created_by = user?.id;
+        // Pair the cashbook expense with the mirrored bank deposit so edits/deletes stay in sync.
+        const linkId = v.method === "bank" ? crypto.randomUUID() : null;
+        if (linkId) payload.link_id = linkId;
         const { data: ins, error } = await sb.from("expenses").insert(payload).select("id").single();
         if (error) throw error;
         // mirror bank deposit into bank_transactions
@@ -180,7 +183,7 @@ export default function Cashbook() {
           await sb.from("bank_transactions").insert({
             bank_account_id: v.bank_account_id, txn_date: v.expense_date, txn_type: "deposit",
             amount: v.amount, note: `${tx("Cashbook deposit", "ক্যাশবুক জমা")} — ${headName}`,
-            office_id: officeId ?? null, created_by: user?.id, reference_no: ins?.id ?? null,
+            office_id: officeId ?? null, created_by: user?.id, reference_no: ins?.id ?? null, link_id: linkId,
           });
         }
       }
