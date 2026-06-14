@@ -300,6 +300,8 @@ export default function IrrigationDueReport() {
                 <TableHead>{t("code")}</TableHead>
                 <TableHead>{t("farmer")}</TableHead>
                 <TableHead>{tx("Father", "পিতার নাম")}</TableHead>
+                <TableHead>{tx("Village", "গ্রাম")}</TableHead>
+                <TableHead>{tx("Mobile", "মোবাইল")}</TableHead>
                 <TableHead>{t("land")}</TableHead>
                 <TableHead>{tx("Owner", "মালিক")}</TableHead>
                 <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
@@ -315,6 +317,8 @@ export default function IrrigationDueReport() {
                   <TableCell className="text-xs">{r.farmer_code}</TableCell>
                   <TableCell>{r.farmer_name}</TableCell>
                   <TableCell className="text-xs">{r.father_name || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.village || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.mobile || "—"}</TableCell>
                   <TableCell className="text-xs">{r.land_label}</TableCell>
                   <TableCell className="text-xs">{r.owner_name || "—"}</TableCell>
                   <TableCell className="text-xs">{r.patwari_name}</TableCell>
@@ -325,7 +329,7 @@ export default function IrrigationDueReport() {
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
               )}
             </TableBody>
 

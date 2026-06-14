@@ -187,7 +187,7 @@ export default function CollectionReport() {
         .from("savings_transactions")
         .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,category,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
-        .eq("type", "deposit")
+        .in("type", ["deposit", "deposit_collection", "share_deposit", "share_collection", "profit"])
         .eq("status", "approved")
         .order("txn_date", { ascending: false });
       if (from) svQ = svQ.gte("txn_date", from);
@@ -199,6 +199,9 @@ export default function CollectionReport() {
         const fn = nameForFarmer(r.farmers);
         const amt = Number(r.amount || 0);
         const cat = (r as any).category as string | null;
+        const txType = (r as any).type as string;
+        const isShare = txType === "share_deposit" || txType === "share_collection" || cat === "share";
+        const isProfit = txType === "profit";
         out.push({
           source: "savings",
           date: r.txn_date,
@@ -214,10 +217,10 @@ export default function CollectionReport() {
           hawlat: cat === "hawlat" ? amt : 0,
           anudan: cat === "donation" ? amt : 0,
           rin: 0,
-          soncoy: (!cat || cat === "general") ? amt : 0,
-          share: cat === "share" ? amt : 0,
-          lav: 0,
-          bibidh: (cat === "misc" || cat === "bank") ? amt : 0,
+          soncoy: (!isShare && !isProfit && (!cat || cat === "general")) ? amt : 0,
+          share: isShare ? amt : 0,
+          lav: isProfit ? amt : 0,
+          bibidh: (!isShare && !isProfit && (cat === "misc" || cat === "bank")) ? amt : 0,
           vangari: (cat === "vangari" || cat === "scrap") ? amt : 0,
           pukur: (cat === "pond" || cat === "pukur") ? amt : 0,
           bighat: cat === "bighat" ? amt : 0,
