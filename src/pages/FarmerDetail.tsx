@@ -1282,6 +1282,11 @@ export default function FarmerDetail() {
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
                             {tx("Transfer", "হস্তান্তর")}
                           </Button>
+                          {l.owner_type === "borgadar" && l.owner_farmer_id && (
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setReclaimLand(l)} title={tx("Reclaim to Owner", "মালিকে ফেরত")}>
+                              {tx("Reclaim", "ফেরত")}
+                            </Button>
+                          )}
                           <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
                         </TableCell>
                       </TableRow>
