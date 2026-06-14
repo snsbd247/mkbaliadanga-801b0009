@@ -98,7 +98,27 @@ export const bighaToShatak = (bigha: number | string | null | undefined): number
  */
 export const KATHA_PER_BIGHA = 20;
 export const BIGHA_PER_KATHA = 1 / KATHA_PER_BIGHA; // 0.05
-export const SHATAK_PER_KATHA = round2(SHATAK_PER_BIGHA * BIGHA_PER_KATHA); // 4.95
+export const SHATAK_PER_KATHA = round2(SHATAK_PER_BIGHA * BIGHA_PER_KATHA); // 1.65
+
+/**
+ * Parse "bigha.katha" notation (e.g. 1.15 = ১ বিঘা ১৫ কাঠা) to শতক.
+ * Decimal part = number of কাঠা (max 19, since 20 কাঠা = 1 বিঘা).
+ */
+export const bighaKathaToShatak = (value: number | string | null | undefined): number => {
+  const v = n(value);
+  if (v <= 0) return 0;
+  const bigha = Math.floor(v);
+  const katha = Math.round((v - bigha) * 100);
+  return round2(bighaToShatak(bigha) + kathaToShatak(katha));
+};
+/** Format শতক back to "bigha.katha" notation string (e.g. "1.15"). */
+export const shatakToBighaKatha = (shatak: number | string | null | undefined): string => {
+  const s = n(shatak);
+  if (s <= 0) return "0";
+  const bigha = Math.floor(s / SHATAK_PER_BIGHA);
+  const katha = Math.round((s - bigha * SHATAK_PER_BIGHA) / SHATAK_PER_KATHA);
+  return `${bigha}.${String(katha).padStart(2, "0")}`;
+};
 export const shatakToKatha = (shatak: number | string | null | undefined): number =>
   round2(n(shatak) / SHATAK_PER_KATHA);
 export const kathaToShatak = (katha: number | string | null | undefined): number =>
