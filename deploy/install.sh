@@ -280,7 +280,25 @@ start_app() {
     docker logs --tail 120 mk_caddy 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
     die "mk_caddy is not running after startup."
   }
+
+  # Coolify's daemon often re-launches its Traefik proxy (coolify-proxy) and
+  # reclaims port 80, which then answers requests with Traefik's
+  # "no available server" page instead of our app. Permanently neutralise it and
+  # confirm mk_caddy actually owns the edge ports.
+  for c in coolify-proxy coolify-realtime-proxy traefik; do
+    if docker ps -a --format '{{.Names}}' | grep -qx "$c"; then
+      docker update --restart=no "$c" >/dev/null 2>&1 || true
+      docker stop "$c" >/dev/null 2>&1 || true
+    fi
+  done
+  docker restart mk_caddy >/dev/null 2>&1 || true
+  sleep 3
+  if docker ps --format '{{.Names}} {{.Ports}}' | grep -E ':80->' | grep -qv 'mk_caddy'; then
+    dump_edge_port_status
+    die "Another proxy is holding port 80 instead of mk_caddy (likely coolify-proxy)."
+  fi
 }
+
 
 # ----------------------------------------------------------------------------- 11. Backups (cron)
 schedule_backups() {
