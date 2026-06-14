@@ -251,9 +251,12 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
       <div style="display:inline-block;border:1px solid ${srcColor};color:${srcColor};padding:1px 8px;margin-top:3px;margin-left:4px;font-size:10px;font-weight:600;border-radius:3px;">${srcBn}</div>
     </div>
 
-    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;">
-      <div>রসিদ নং: <b>${d.invoice_no}</b></div>
-      <div>তারিখ: ${fmtDate(d.generated_at)}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;font-size:11px;">
+      <div>
+        <div>রসিদ নং: <b>${d.invoice_no}</b></div>
+        <div>তারিখ: ${fmtDate(d.generated_at)}</div>
+      </div>
+      ${qrDataUrl ? `<img src="${qrDataUrl}" style="width:58px;height:58px;display:block;" alt="QR" />` : ""}
     </div>
 
     <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:5px;font-size:11px;">
