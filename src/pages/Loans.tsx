@@ -126,7 +126,7 @@ export default function Loans() {
                         {canApprove && (
                           <>
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/loans/${r.id}/edit`)}><Pencil className="h-4 w-4" /></Button>
-                            <Button size="sm" variant="ghost" onClick={() => setDelId(r.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => confirmRemove(r.id)}><Trash2 className="h-4 w-4" /></Button>
                           </>
                         )}
                       </TableCell>
