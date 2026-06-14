@@ -29,6 +29,12 @@ const STREAMS: Array<{ value: string; label: string }> = [
 ];
 const streamLabel = (v?: string) => STREAMS.find(s => s.value === v)?.label ?? "অন্যান্য";
 
+// Map a bank account's stream to a cashbook cash stream so deposits/withdrawals
+// post to the correct cash (সেচ vs সেভিং). Irrigation accounts → irrigation cash.
+type CashStream = "irrigation" | "savings";
+const cashbookStreamForAccount = (accStream?: string): CashStream =>
+  (accStream === "sech" || accStream === "sech_small") ? "irrigation" : "savings";
+
 export default function BankAccounts() {
   const { user } = useAuth();
   const { t } = useLang();
@@ -78,23 +84,28 @@ export default function BankAccounts() {
     setA({ bank_name: "", branch: "", account_no: "", account_title: "", account_type: "savings", stream: "other", opening_balance: 0, is_active: true });
   }
 
-  async function isCashbookLocked(dateStr: string): Promise<boolean> {
+  // Stream-aware lock: only the cash stream the bank account belongs to blocks the txn.
+  async function isCashbookLocked(dateStr: string, stream?: CashStream): Promise<boolean> {
     const d = new Date(dateStr);
     const year = d.getFullYear(), month = d.getMonth() + 1;
-    const { data } = await sb.from("cashbook_submissions").select("id").eq("year", year).eq("month", month).eq("locked", true).limit(1);
+    let q = sb.from("cashbook_submissions").select("id").eq("year", year).eq("month", month).eq("locked", true);
+    if (stream) q = q.eq("stream", stream);
+    const { data } = await q.limit(1);
     return (data?.length ?? 0) > 0;
   }
 
   async function saveTxn() {
     if (!tx.bank_account_id || tx.amount <= 0) return toast.error("Account and amount required");
-    if (await isCashbookLocked(tx.txn_date)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
+    const acc = accounts.find(a => a.id === tx.bank_account_id);
+    const cbStream = cashbookStreamForAccount(acc?.stream);
+    if (await isCashbookLocked(tx.txn_date, cbStream)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
     const { post_cashbook, ...txnRow } = tx;
     const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id });
     if (error) return toast.error(error.message);
 
-    // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt
+    // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt.
+    // Routed to the correct cash stream based on the bank account's stream.
     if (post_cashbook && (tx.txn_type === "deposit" || tx.txn_type === "withdraw")) {
-      const acc = accounts.find(a => a.id === tx.bank_account_id);
       const bankLabel = acc ? `${acc.bank_name} — ${acc.account_no}` : "Bank";
       const ref = tx.reference_no ? ` (Ref: ${tx.reference_no})` : "";
       const noteSuffix = tx.note ? ` · ${tx.note}` : "";
@@ -102,12 +113,14 @@ export default function BankAccounts() {
         const { error: eErr } = await supabase.from("expenses").insert({
           head: "Bank Deposit", payee: bankLabel, amount: tx.amount, method: "bank",
           note: `Cash deposited to ${bankLabel}${ref}${noteSuffix}`,
-          expense_date: tx.txn_date, created_by: user?.id,
+          expense_date: tx.txn_date, created_by: user?.id, stream: cbStream,
         } as any);
         if (eErr) toast.error("Saved bank txn but cashbook expense failed: " + eErr.message);
       } else {
+        // irrigation accounts feed irrigation cash ("irrigation" kind); others feed savings ("other").
+        const wKind = cbStream === "irrigation" ? "irrigation" : "other";
         const { error: rErr } = await supabase.from("receipts").insert({
-          kind: "other", amount: tx.amount, method: "bank",
+          kind: wKind, amount: tx.amount, method: "bank",
           note: `Cash withdrawn from ${bankLabel}${ref}${noteSuffix}`,
           receipt_date: tx.txn_date, collected_by: user?.id,
         } as any);
@@ -122,7 +135,12 @@ export default function BankAccounts() {
   async function saveTransfer() {
     if (!xf.from_id || !xf.to_id || xf.from_id === xf.to_id) return toast.error("Pick two different accounts");
     if (xf.amount <= 0) return toast.error("Amount required");
-    if (await isCashbookLocked(xf.txn_date)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
+    const fromAcc = accounts.find(a => a.id === xf.from_id);
+    const toAcc = accounts.find(a => a.id === xf.to_id);
+    const streams = new Set<CashStream>([cashbookStreamForAccount(fromAcc?.stream), cashbookStreamForAccount(toAcc?.stream)]);
+    for (const s of streams) {
+      if (await isCashbookLocked(xf.txn_date, s)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
+    }
     const group = crypto.randomUUID();
     const common = { amount: xf.amount, txn_date: xf.txn_date, note: xf.note, transfer_group: group, created_by: user?.id };
     const { error } = await sb.from("bank_transactions").insert([
