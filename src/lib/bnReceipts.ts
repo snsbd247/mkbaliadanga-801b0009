@@ -4,6 +4,8 @@ import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
 import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
+import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
+import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
 export type ReceiptCopy = "both" | "farmer" | "office";
