@@ -1193,7 +1193,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       // Prior-season open dues
       let oldQ = supabase.from("irrigation_invoices" as any)
-        .select("id,farmer_id,due_amount")
+        .select("id,farmer_id,due_amount,delay_fee")
         .neq("season_id", seasonId).gt("due_amount", 0).is("deleted_at", null)
         .neq("invoice_status", "cancelled").neq("invoice_status", "carried_forward")
         .in("farmer_id", Array.from(targetByFarmer.keys()));
@@ -1203,10 +1203,14 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       const totals = new Map<string, number>();
       const oldByFarmer = new Map<string, string[]>();
       for (const r of ((old as any[]) ?? [])) {
-        totals.set(r.farmer_id, (totals.get(r.farmer_id) || 0) + Number(r.due_amount || 0));
+        // Carry only principal dues — exclude the late fee (জরিমানা) so it doesn't roll into the new season.
+        const carryAmt = Math.max(0, Number(r.due_amount || 0) - Number(r.delay_fee || 0));
+        if (carryAmt <= 0) continue;
+        totals.set(r.farmer_id, (totals.get(r.farmer_id) || 0) + carryAmt);
         oldByFarmer.set(r.farmer_id, [...(oldByFarmer.get(r.farmer_id) || []), r.id]);
       }
       if (!totals.size) { toast.success(tx("No previous dues to carry forward.", "হস্তান্তরযোগ্য কোনো পূর্ববর্তী বকেয়া নেই।")); return; }
+
 
       const now = new Date().toISOString();
       let done = 0;
