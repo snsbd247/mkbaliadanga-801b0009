@@ -70,46 +70,7 @@ export default function Loans() {
         title={tx("Loans", "ঋণ")}
         description={tx("Issue and manage member loans", "সদস্যদের ঋণ ইস্যু ও পরিচালনা")}
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />{tx("Issue Loan", "ঋণ ইস্যু")}</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>{tx("Issue Loan", "ঋণ ইস্যু")}</DialogTitle></DialogHeader>
-              <div className="grid gap-3">
-                <div>
-                  <Label>{tx("Member", "সদস্য")} *</Label>
-                  <FarmerSearchSelect value={form.farmer_id} votersOnly
-                    onChange={(id, f) => { setForm({ ...form, farmer_id: id ?? "" }); setFarmer(f); }} />
-                </div>
-                <div>
-                  <Label>{tx("Loan Plan", "ঋণ প্ল্যান")}</Label>
-                  <Select value={form.plan_id || "none"} onValueChange={(v) => pickPlan(v === "none" ? "" : v)}>
-                    <SelectTrigger><SelectValue placeholder={tx("Select", "নির্বাচন")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{tx("— None —", "— নেই —")}</SelectItem>
-                      {plans.map(p => <SelectItem key={p.id} value={p.id}>{(p.name_bn || p.name)} — {Number(p.interest_rate)}%</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>{tx("Principal (৳)", "আসল (৳)")} *</Label><Input type="number" min={0} value={form.principal} onChange={e => setForm({ ...form, principal: +e.target.value })} /></div>
-                  <div><Label>{tx("Interest Rate (%)", "সুদের হার (%)")}</Label><Input type="number" min={0} step="0.01" disabled={!form.interest_enabled} value={form.interest_rate} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
-                </div>
-                <div className="flex items-center justify-between rounded-md border p-3">
-                  <Label>{tx("Interest Enabled", "সুদ সক্রিয়")}</Label>
-                  <Switch checked={form.interest_enabled} onCheckedChange={v => setForm({ ...form, interest_enabled: v })} />
-                </div>
-                <div><Label>{tx("Issued On", "ইস্যু তারিখ")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
-                <div><Label>{tx("Note", "নোট")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
-                <div className="rounded-md bg-muted p-3 text-sm flex justify-between"><span>{tx("Total Payable", "মোট পরিশোধযোগ্য")}</span><span className="font-mono font-bold">{money(totalPayable)}</span></div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{tx("Cancel", "বাতিল")}</Button>
-                <Button onClick={save} disabled={saving}>{saving ? "…" : tx("Issue", "ইস্যু")}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button size="sm" onClick={() => navigate("/loans/new")}><Plus className="h-4 w-4 mr-1" />{tx("Issue Loan", "ঋণ ইস্যু")}</Button>
         }
       />
 
