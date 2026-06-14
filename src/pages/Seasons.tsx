@@ -8,12 +8,14 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, DollarSign } from "lucide-react";
+import { Plus, DollarSign, History, FileDown } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Badge } from "@/components/ui/badge";
+import { money } from "@/lib/format";
+import { exportTablePDF } from "@/lib/exports";
 
 type SeasonType = { id: string; code: string; name: string; name_bn: string | null };
 type LandType = { id: string; code: string; name: string; name_bn: string | null };
@@ -40,6 +42,8 @@ export default function Seasons() {
 
   const [ratesOpen, setRatesOpen] = useState(false);
   const [ratesSeason, setRatesSeason] = useState<any | null>(null);
+  const [cfOpen, setCfOpen] = useState(false);
+  const [cfSeason, setCfSeason] = useState<any | null>(null);
 
   useEffect(() => {
     document.title = `${t("seasons")} — ${t("appName")}`;
@@ -186,6 +190,9 @@ export default function Seasons() {
                   <TableCell className="text-right">
                     {isAdmin && (
                       <div className="inline-flex gap-1 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => { setCfSeason(s); setCfOpen(true); }}>
+                          <History className="h-3.5 w-3.5 mr-1" /> {tx("Carry-forward dues", "বকেয়া carry-forward")}
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => { setRatesSeason(s); setRatesOpen(true); }}>
                           <DollarSign className="h-3.5 w-3.5 mr-1" /> {tx("Rate config", "রেট কনফিগ")}
                         </Button>
@@ -206,6 +213,7 @@ export default function Seasons() {
       </Card>
 
       <SeasonRatesDialog open={ratesOpen} onOpenChange={setRatesOpen} season={ratesSeason} />
+      <CarryForwardDialog open={cfOpen} onOpenChange={setCfOpen} season={cfSeason} />
     </>
   );
 }
@@ -287,6 +295,94 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{tx("Cancel", "বাতিল")}</Button>
           <Button onClick={save} disabled={busy || landTypes.length === 0}>{busy ? "…" : tx("Save", "সংরক্ষণ")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Shows outstanding dues from EARLIER seasons that carry forward into the selected season.
+// Read-only summary (arrears already carry automatically in payment) + PDF export.
+function CarryForwardDialog({ open, onOpenChange, season }: { open: boolean; onOpenChange: (v: boolean) => void; season: any }) {
+  const { tx } = useLang();
+  const [rows, setRows] = useState<Array<{ farmer: string; code: string; due: number }>>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !season?.id) return;
+    (async () => {
+      setLoading(true);
+      try {
+        const { data } = await supabase
+          .from("irrigation_invoices")
+          .select("farmer_id,due_amount,seasons(year),farmers(name_en,name_bn,farmer_code)")
+          .neq("invoice_status", "cancelled")
+          .gt("due_amount", 0);
+        const targetYear = Number(season.year) || 0;
+        const byFarmer = new Map<string, { farmer: string; code: string; due: number }>();
+        for (const r of (data as any[]) ?? []) {
+          const yr = Number(r.seasons?.year) || 0;
+          if (yr >= targetYear) continue; // only earlier seasons carry forward
+          const key = r.farmer_id;
+          const name = r.farmers?.name_bn || r.farmers?.name_en || "—";
+          const cur = byFarmer.get(key) ?? { farmer: name, code: r.farmers?.farmer_code ?? "", due: 0 };
+          cur.due += Number(r.due_amount || 0);
+          byFarmer.set(key, cur);
+        }
+        setRows(Array.from(byFarmer.values()).filter(r => r.due > 0).sort((a, b) => b.due - a.due));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [open, season?.id, season?.year]);
+
+  const total = rows.reduce((s, r) => s + r.due, 0);
+  const seasonLabel = season ? `${season.irrigation_season_types?.name_bn || season.irrigation_season_types?.name || season.name || season.type} ${season.year}` : "";
+
+  function exportPdf() {
+    exportTablePDF(`বকেয়া carry-forward — ${seasonLabel}`, ["কৃষক", "কোড", "বকেয়া"],
+      [...rows.map(r => [r.farmer, r.code, r.due]), ["মোট", "", total]]);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{seasonLabel} — {tx("Carry-forward dues", "বকেয়া carry-forward")}</DialogTitle>
+        </DialogHeader>
+        <p className="text-xs text-muted-foreground">
+          {tx("Outstanding dues from earlier seasons that carry into this season. These already appear automatically in payment/dues.",
+            "আগের সিজনের যে বকেয়া এই সিজনে carry-forward হবে। পেমেন্ট/বকেয়া তালিকায় এগুলো স্বয়ংক্রিয়ভাবে দেখায়।")}
+        </p>
+        <div className="max-h-[360px] overflow-y-auto">
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
+              <TableHead>{tx("Code", "কোড")}</TableHead>
+              <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {loading && <TableRow><TableCell colSpan={3} className="text-center py-6 text-muted-foreground">…</TableCell></TableRow>}
+              {!loading && rows.length === 0 && <TableRow><TableCell colSpan={3} className="text-center py-6 text-muted-foreground">{tx("No carry-forward dues", "কোনো বকেয়া নেই")}</TableCell></TableRow>}
+              {rows.map((r, i) => (
+                <TableRow key={i}>
+                  <TableCell>{r.farmer}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.code}</TableCell>
+                  <TableCell className="text-right font-semibold text-destructive">{money(r.due)}</TableCell>
+                </TableRow>
+              ))}
+              {rows.length > 0 && (
+                <TableRow className="bg-muted/60 font-bold">
+                  <TableCell colSpan={2} className="text-right">{tx("Total", "মোট")}</TableCell>
+                  <TableCell className="text-right text-destructive">{money(total)}</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{tx("Close", "বন্ধ")}</Button>
+          <Button onClick={exportPdf} disabled={rows.length === 0}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

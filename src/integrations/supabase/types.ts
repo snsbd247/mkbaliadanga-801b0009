@@ -2105,6 +2105,54 @@ export type Database = {
           },
         ]
       }
+      hand_cash_submissions: {
+        Row: {
+          closing_cash: number
+          created_at: string
+          id: string
+          locked: boolean
+          month: number
+          office_id: string | null
+          opening_cash: number
+          submitted_at: string | null
+          submitted_by: string | null
+          total_expense: number
+          total_income: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          closing_cash?: number
+          created_at?: string
+          id?: string
+          locked?: boolean
+          month: number
+          office_id?: string | null
+          opening_cash?: number
+          submitted_at?: string | null
+          submitted_by?: string | null
+          total_expense?: number
+          total_income?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          closing_cash?: number
+          created_at?: string
+          id?: string
+          locked?: boolean
+          month?: number
+          office_id?: string | null
+          opening_cash?: number
+          submitted_at?: string | null
+          submitted_by?: string | null
+          total_expense?: number
+          total_income?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       import_audit_logs: {
         Row: {
           created_at: string

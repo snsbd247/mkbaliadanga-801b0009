@@ -71,6 +71,7 @@ import MyPermissions from "./pages/admin/MyPermissions";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import InvoiceReport from "./pages/reports/InvoiceReport";
 import CollectionReport from "./pages/reports/CollectionReport";
+import BankReport from "./pages/reports/BankReport";
 
 import ReceiptKindReport from "./pages/reports/ReceiptKindReport";
 import MonthlyReceiptRegister from "./pages/reports/MonthlyReceiptRegister";
@@ -242,6 +243,7 @@ const App = () => (
                 <Route path="/reports/irrigation-due" element={<RequirePerm module="reports"><IrrigationDueReport /></RequirePerm>} />
                 <Route path="/reports/invoices" element={<RequirePerm module="reports"><InvoiceReport /></RequirePerm>} />
                 <Route path="/reports/collections" element={<RequirePerm module="reports"><CollectionReport /></RequirePerm>} />
+                <Route path="/reports/bank" element={<RequirePerm module="reports"><BankReport /></RequirePerm>} />
                 
                 <Route path="/reports/receipts" element={<RequirePerm module="reports"><ReceiptKindReport /></RequirePerm>} />
                 <Route path="/reports/receipt-register" element={<RequirePerm module="reports"><MonthlyReceiptRegister /></RequirePerm>} />
