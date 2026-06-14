@@ -30,6 +30,7 @@ docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supab
 wait_for_supabase_db
 ensure_supabase_core_roles
 docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d
+restart_supabase_platform_services
 wait_for_supabase_platform_schemas
 
 # 4) Apply any new migrations
