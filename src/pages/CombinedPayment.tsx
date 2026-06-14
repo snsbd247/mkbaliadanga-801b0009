@@ -316,10 +316,11 @@ export default function CombinedPayment() {
     setF(); doc.setFontSize(9);
     for (const [label, val] of lines) {
       const bold = label === totalLabel;
-      if (bnFont) doc.setFont(bnFont, bold ? "bold" : "normal"); else doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFontSize(bold ? 10 : 9);
       doc.text(label, labelX, ry);
       doc.text(":", colonX, ry);
       doc.text(val, valueX, ry);
+      doc.setFontSize(9);
       ry += rowH;
     }
     setF();
