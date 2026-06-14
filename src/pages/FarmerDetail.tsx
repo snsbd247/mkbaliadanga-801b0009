@@ -710,6 +710,7 @@ export default function FarmerDetail() {
   async function saveEdit() {
     if (!editLand) return;
     setEditSaving(true);
+    const prevSize = Number(editLand.land_size ?? 0);
     try {
       const el = editLoc as any;
       if (!el.division_id) { setEditLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
