@@ -436,6 +436,8 @@ export default function CollectionReport() {
                   <TableHead className="text-right">ভর্তি ফি</TableHead>
                   <TableHead className="text-right">ঋণ</TableHead>
                   <TableHead className="text-right">সঞ্চয়</TableHead>
+                  <TableHead className="text-right">শেয়ার</TableHead>
+                  <TableHead className="text-right">লাভ</TableHead>
                   <TableHead className="text-right">বিবিধ</TableHead>
                   <TableHead className="text-right">মোট</TableHead>
                   <TableHead>{t("createdBy")}</TableHead>
