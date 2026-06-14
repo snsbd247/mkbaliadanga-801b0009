@@ -147,6 +147,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     );
   };
 
+  return (
     <Card>
       <CardContent className="pt-6 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
