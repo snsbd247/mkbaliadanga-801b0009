@@ -161,6 +161,12 @@ export default function Payments() {
       const { data: pa } = await supabase.from("payment_allocations").select("id").eq("payment_id", p.id).eq("kind", "irrigation").maybeSingle();
       if (pa) await supabase.from("payment_allocations").update({ amount: newAmount } as any).eq("id", (pa as any).id);
     }
+    // 4) Note (applies to all kinds incl. savings)
+    const newNote = editForm.note.trim() || null;
+    if ((p.note ?? null) !== newNote) {
+      before.note = p.note ?? null; after.note = newNote;
+      await supabase.from("payments").update({ note: newNote } as any).eq("id", p.id);
+    }
     await supabase.from("audit_logs").insert({
       user_id: user?.id, action: "edit", entity: "payments", entity_id: p.id, office_id: p.office_id ?? null,
       old_values: before, new_values: { ...after, reason: editForm.reason.trim() }, meta: { receipt_no: p.receipt_no },
