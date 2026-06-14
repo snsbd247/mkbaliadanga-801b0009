@@ -21,6 +21,8 @@ import ScanPayment from "./pages/ScanPayment";
 import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
 import Loans from "./pages/Loans";
+import LoanForm from "./pages/LoanForm";
+import LoanStatementPage from "./pages/LoanStatementPage";
 
 import IrrigationInvoices from "./pages/IrrigationInvoices";
 import IrrigationReports from "./pages/IrrigationReports";
@@ -227,6 +229,9 @@ const App = () => (
                 <Route path="/seasons" element={<RequirePerm module="seasons"><Seasons /></RequirePerm>} />
                 <Route path="/savings" element={<RequirePerm module="savings"><Savings /></RequirePerm>} />
                 <Route path="/loans" element={<RequirePerm module="loans"><Loans /></RequirePerm>} />
+                <Route path="/loans/new" element={<RequirePerm module="loans"><LoanForm /></RequirePerm>} />
+                <Route path="/loans/:id/edit" element={<RequirePerm module="loans"><LoanForm /></RequirePerm>} />
+                <Route path="/loans/:id/statement" element={<RequirePerm module="loans"><LoanStatementPage /></RequirePerm>} />
 
 
 
