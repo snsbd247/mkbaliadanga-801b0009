@@ -267,7 +267,7 @@ export default function Dues() {
                           {bucket(r.ageDays)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-semibold">{money(r.due)}</TableCell>
+                      <TableCell className="text-right font-semibold text-destructive">{money(r.due)}</TableCell>
                     </TableRow>
                   </Fragment>
                 );
