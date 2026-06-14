@@ -68,15 +68,23 @@ export function AppSidebar() {
 
     // ── Savings ──
     {
-      key: "savingsLoans", icon: Wallet, label: t("savings"),
+      key: "savings", icon: Wallet, label: t("savings"),
       children: [
         { url: "/savings", icon: Wallet, label: t("savings"), permKey: "savings" },
-        { url: "/loans", icon: Wallet, label: lang === "bn" ? "ঋণ" : "Loans", permKey: "savings" },
         { url: "/share-collection", icon: Wallet, label: t("shareCollection"), permKey: "savings" },
-        { url: "/admin/loan-plans", icon: Wallet, label: t("loanPlans" as any) || "ঋণ প্ল্যান", adminOnly: true },
         { url: "/statement", icon: FileText, label: t("statementLabel"), permKey: "savings" },
       ],
     },
+
+    // ── Loans ──
+    {
+      key: "loans", icon: HandCoins, label: lang === "bn" ? "ঋণ" : "Loans",
+      children: [
+        { url: "/loans", icon: HandCoins, label: lang === "bn" ? "ঋণ তালিকা" : "Loans", permKey: "savings" },
+        { url: "/admin/loan-plans", icon: FileText, label: t("loanPlans" as any) || "ঋণ প্ল্যান", adminOnly: true },
+      ],
+    },
+
 
     // ── Irrigation ──
     {
