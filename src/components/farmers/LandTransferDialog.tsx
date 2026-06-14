@@ -160,7 +160,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle>{tx("Transfer / Distribute Land", "জমি হস্তান্তর / বণ্টন")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isReclaim ? tx("Reclaim Land to Owner", "জমি মালিকে ফেরত") : tx("Transfer / Distribute Land", "জমি হস্তান্তর / বণ্টন")}</DialogTitle></DialogHeader>
         {sourceLand && (
           <div className="space-y-3 text-sm">
             <div className="rounded-md bg-muted p-2 text-xs">
