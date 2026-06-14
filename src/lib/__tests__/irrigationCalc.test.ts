@@ -105,8 +105,8 @@ describe("formatLandSize", () => {
     expect(formatLandSize(33, "short")).toBe("1.00 বিঘা / 33.00 শতক");
   });
   it("ascii variant for PDF/Excel without Bangla fonts", () => {
-    expect(formatLandSize(33, "ascii")).toBe("1.00 bigha (33.00 shatak)");
-    expect(formatLandSize(66, "ascii")).toBe("2.00 bigha (66.00 shatak)");
+    expect(formatLandSize(33, "ascii")).toBe("1.00 bigha · 20.00 katha (33.00 shatak)");
+    expect(formatLandSize(66, "ascii")).toBe("2.00 bigha · 40.00 katha (66.00 shatak)");
   });
   it("falls back when value is missing", () => {
     expect(formatLandSize(null)).toBe("—");
