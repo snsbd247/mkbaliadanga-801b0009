@@ -141,6 +141,7 @@ export default function CollectionReport() {
           hal: Number(r.current_invoice_collected || 0),
           bokeya: Number(r.previous_due_collected || 0),
           hawlat: 0, anudan: 0, rin: 0, soncoy: 0, bibidh: 0,
+          vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
         });
       }
 
