@@ -359,7 +359,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         <div style="border-top:0;padding-top:0;">${t.memberSig}</div>
         <div style="margin-top:18px;font-weight:600;">${d.farmer.name}</div>
       </div>
-      ${qrDataUrl ? `
+      ${qrDataUrl && tpl.qr_placement !== "none" ? `
       <div style="text-align:center;">
         <img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin:0 auto;" />
         <div style="font-size:9px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>
