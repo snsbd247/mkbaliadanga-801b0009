@@ -139,12 +139,19 @@ export default function CashAudit() {
 
   function AuditTable({ stream }: { stream: Stream }) {
     const d = rowsFor(stream);
+    const sub = subFor(stream);
+    const linked = !!sub;
     return (
       <>
         <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
           <div><Label>{tx("Opening cash", "প্রারম্ভিক ক্যাশ")}</Label>
-            <Input type="number" value={opening[stream] || ""} className="w-36"
-              onChange={e => { const val = +e.target.value; setOpening(prev => ({ ...prev, [stream]: val })); localStorage.setItem(`cb_open_${stream}`, String(val || 0)); }} />
+            <Input type="number" value={opening[stream] || ""} disabled={linked} className="w-36"
+              onChange={e => { const val = +e.target.value; setOpeningManual(prev => ({ ...prev, [stream]: val })); localStorage.setItem(`cb_open_${stream}`, String(val || 0)); }} />
+            <div className="text-xs text-muted-foreground mt-1">
+              {linked
+                ? (sub.locked ? tx("Linked from cashbook (locked)", "ক্যাশবুক থেকে লিংক (লক করা)") : tx("Linked from cashbook", "ক্যাশবুক থেকে লিংক"))
+                : tx("Manual (no cashbook submission)", "ম্যানুয়াল (ক্যাশবুক সাবমিশন নেই)")}
+            </div>
           </div>
           <div className="ml-auto flex gap-2">
             <Button size="sm" variant="outline" onClick={() => exportPdf(stream)}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
