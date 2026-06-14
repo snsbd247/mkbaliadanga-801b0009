@@ -63,6 +63,8 @@ export default function Payments() {
   const [previewSerial, setPreviewSerial] = useState<string>("");
   const [autoAmount, setAutoAmount] = useState<number>(0);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [kindFilter, setKindFilter] = useState<"all" | "irrigation" | "savings" | "loan">("all");
+  const [paidOnly, setPaidOnly] = useState(false);
   const [period, setPeriod] = useState<"all" | "today" | "this_month">((params.get("period") as any) === "today" || (params.get("period") as any) === "this_month" ? params.get("period") as any : "all");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawForm, setWithdrawForm] = useState({ amount: 0, note: "" });
