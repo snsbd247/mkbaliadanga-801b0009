@@ -100,12 +100,15 @@ export default function BankAccounts() {
     const cbStream = cashbookStreamForAccount(acc?.stream);
     if (await isCashbookLocked(tx.txn_date, cbStream)) return toast.error("এই মাসের ক্যাশবুক লক করা — ব্যাংক লেনদেন করা যাবে না");
     const { post_cashbook, ...txnRow } = tx;
-    const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id });
+    // Link the bank row with its mirrored cashbook row so edits/deletes stay paired.
+    const linkId = (post_cashbook && (tx.txn_type === "deposit" || tx.txn_type === "withdraw"))
+      ? crypto.randomUUID() : null;
+    const { error } = await sb.from("bank_transactions").insert({ ...txnRow, created_by: user?.id, link_id: linkId });
     if (error) return toast.error(error.message);
 
     // Auto-link to Cashbook: deposit (cash→bank) = expense; withdraw (bank→cash) = receipt.
     // Routed to the correct cash stream based on the bank account's stream.
-    if (post_cashbook && (tx.txn_type === "deposit" || tx.txn_type === "withdraw")) {
+    if (linkId) {
       const bankLabel = acc ? `${acc.bank_name} — ${acc.account_no}` : "Bank";
       const ref = tx.reference_no ? ` (Ref: ${tx.reference_no})` : "";
       const noteSuffix = tx.note ? ` · ${tx.note}` : "";
@@ -113,7 +116,7 @@ export default function BankAccounts() {
         const { error: eErr } = await supabase.from("expenses").insert({
           head: "Bank Deposit", payee: bankLabel, amount: tx.amount, method: "bank",
           note: `Cash deposited to ${bankLabel}${ref}${noteSuffix}`,
-          expense_date: tx.txn_date, created_by: user?.id, stream: cbStream,
+          expense_date: tx.txn_date, created_by: user?.id, stream: cbStream, link_id: linkId,
         } as any);
         if (eErr) toast.error("Saved bank txn but cashbook expense failed: " + eErr.message);
       } else {
@@ -122,7 +125,7 @@ export default function BankAccounts() {
         const { error: rErr } = await supabase.from("receipts").insert({
           kind: wKind, amount: tx.amount, method: "bank",
           note: `Cash withdrawn from ${bankLabel}${ref}${noteSuffix}`,
-          receipt_date: tx.txn_date, collected_by: user?.id,
+          receipt_date: tx.txn_date, collected_by: user?.id, link_id: linkId,
         } as any);
         if (rErr) toast.error("Saved bank txn but cashbook receipt failed: " + rErr.message);
       }

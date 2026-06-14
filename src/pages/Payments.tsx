@@ -20,10 +20,11 @@ import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
-import { downloadBnReceiptPdf, type ReceiptCopy } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo, peekMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
+import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
 import { DuplicateReceiptWarning } from "@/components/receipts/DuplicateReceiptWarning";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
@@ -54,6 +55,7 @@ export default function Payments() {
 
   const [allocs, setAllocs] = useState<Allocation[]>([{ kind: "irrigation", reference_id: "", amount: 0 }]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<{ data: BnReceiptData; copy: ReceiptCopy } | null>(null);
   
   const [openIrr, setOpenIrr] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -873,7 +875,7 @@ export default function Payments() {
                           f?.is_voter ? "ভোটার নং" : f?.account_number ? "সঞ্চয়ী নং" : null;
                         const memberRefNo = (f: any) => f?.voter_number ?? f?.account_number ?? null;
 
-                        const doDownload = async (copy: ReceiptCopy) => {
+                        const buildReceiptData = async (): Promise<BnReceiptData> => {
                           let irrEnriched: any = {};
                           if (kind === "irrigation") {
                             // Sum allocated to irrigation; pick the first allocation's irrigation_charges + land.
@@ -923,7 +925,7 @@ export default function Payments() {
                             };
                           }
 
-                          await downloadBnReceiptPdf({
+                          const rd: BnReceiptData = {
                             kind,
                             company_name: brand.company_name,
                             company_name_bn: brand.company_name_bn,
@@ -957,8 +959,12 @@ export default function Payments() {
                             collected_amount: Number(p.amount),
                             description,
                             verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
-                          }, copy, receiptArgs.options);
+                          };
+                          return rd;
                         };
+                        const doDownload = async (copy: ReceiptCopy) =>
+                          downloadBnReceiptPdf(await buildReceiptData(), copy, receiptArgs.options);
+                        const doPreview = async () => setPreview({ data: await buildReceiptData(), copy: "both" });
                         return (
                           <>
                             <button
@@ -968,7 +974,7 @@ export default function Payments() {
                               data-auto-print={p.id}
                               onClick={() => doDownload("both")}
                             />
-                            <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} /></span>
+                            <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} onPreview={kind === "irrigation" ? doPreview : undefined} title={t("printReceipt") || "Print Receipt"} /></span>
                           </>
                         );
                       })()}
@@ -1037,6 +1043,13 @@ export default function Payments() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <IrrigationReceiptPreviewDialog
+        open={!!preview}
+        onOpenChange={(o) => { if (!o) setPreview(null); }}
+        data={preview?.data ?? null}
+        copy={preview?.copy ?? "both"}
+      />
     </>
   );
 }

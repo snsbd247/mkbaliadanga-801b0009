@@ -457,3 +457,34 @@ export async function previewBnReceiptPdf(data: BnReceiptData, copy: ReceiptCopy
   const pdf = await renderPdf(data, copy, options);
   return pdf.output("datauristring");
 }
+
+/**
+ * Flatten a receipt into a single Excel row. Columns mirror the rendered receipt
+ * so the Excel export stays consistent with the PDF/preview content.
+ */
+export function irrigationReceiptToExcelRow(d: BnReceiptData): Record<string, string | number> {
+  const dagTokens = parseDagNumbers(d.farmer.dag_no);
+  return {
+    "রসিদ নং": d.receipt_no,
+    "তারিখ": fmtDate(d.date),
+    "বিল": d.bill_info ?? "",
+    "কৃষকের নাম": d.farmer.name,
+    "সদস্য নং": d.farmer.member_no ?? "",
+    "পিতা/স্বামী": d.farmer.father_or_husband ?? "",
+    "গ্রাম": d.farmer.village ?? "",
+    "মোবাইল": d.farmer.mobile ?? "",
+    "মৌজা": d.farmer.mouza ?? "",
+    "দাগ নং": dagTokens.join(", "),
+    "জমির ধরন": d.farmer.field_type_bn ?? "",
+    "জমির পরিমান (শতক)": d.farmer.land_size ?? "",
+    "জমির মালিক": d.land_owner_label ?? "",
+    "চার্জ রেট": d.rate ?? "",
+    "চার্জের পরিমাণ": d.charge_amount ?? "",
+    "হাল": d.current_season_charge ?? "",
+    "বকেয়া": d.total_outstanding ?? d.previous_due ?? 0,
+    "জরিমানা": d.penalty_amount ?? 0,
+    "সংগৃহীত পরিমাণ": d.collected_amount,
+    "রিমার্ক": d.remark ?? "",
+  };
+}
+

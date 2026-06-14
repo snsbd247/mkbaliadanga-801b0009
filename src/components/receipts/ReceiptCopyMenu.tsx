@@ -1,18 +1,19 @@
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Printer } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Printer, Eye } from "lucide-react";
 import { PrintButton } from "@/components/ui/action-icon-button";
 import type { ReceiptCopy } from "@/lib/bnReceipts";
 import { useLang } from "@/i18n/LanguageProvider";
 
 interface Props {
   onSelect: (copy: ReceiptCopy) => void;
+  onPreview?: () => void;
   size?: "sm" | "icon";
   label?: string;
   title?: string;
 }
 
-export function ReceiptCopyMenu({ onSelect, size = "icon", label, title }: Props) {
+export function ReceiptCopyMenu({ onSelect, onPreview, size = "icon", label, title }: Props) {
   const { tx } = useLang();
   return (
     <DropdownMenu>
@@ -26,6 +27,12 @@ export function ReceiptCopyMenu({ onSelect, size = "icon", label, title }: Props
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {onPreview && (
+          <>
+            <DropdownMenuItem onClick={onPreview}><Eye className="h-4 w-4 mr-2" />{tx("Preview", "প্রিভিউ")}</DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem onClick={() => onSelect("both")}>{tx("Both copies", "উভয় কপি")}</DropdownMenuItem>
         <DropdownMenuItem onClick={() => onSelect("farmer")}>{tx("Farmer copy", "কৃষক কপি")}</DropdownMenuItem>
         <DropdownMenuItem onClick={() => onSelect("office")}>{tx("Office copy", "অফিস কপি")}</DropdownMenuItem>
