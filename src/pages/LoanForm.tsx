@@ -31,7 +31,7 @@ export default function LoanForm() {
   const [, setFarmer] = useState<FarmerLite | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string>("pending");
-  const [errors, setErrors] = useState<{ farmer_id?: string; principal?: string }>({});
+  const [errors, setErrors] = useState<{ farmer_id?: string; principal?: string; interest_rate?: string; issued_on?: string }>({});
 
   useEffect(() => {
     document.title = `${isEdit ? tx("Edit Loan", "ঋণ এডিট") : tx("Issue Loan", "ঋণ ইস্যু")} — MK Baliadanga`;
@@ -63,9 +63,17 @@ export default function LoanForm() {
   }
 
   async function save() {
-    const errs: { farmer_id?: string; principal?: string } = {};
+    const errs: { farmer_id?: string; principal?: string; interest_rate?: string; issued_on?: string } = {};
     if (!form.farmer_id) errs.farmer_id = tx("Select a farmer", "ফার্মার নির্বাচন করুন");
-    if (!(Number(form.principal) > 0)) errs.principal = tx("Principal must be greater than 0", "আসল টাকা ০ এর বেশি হতে হবে");
+    const pr = Number(form.principal);
+    if (!(pr > 0)) errs.principal = tx("Principal must be greater than 0", "আসল টাকা ০ এর বেশি হতে হবে");
+    else if (pr > 100000000) errs.principal = tx("Principal is too large", "আসল টাকা অত্যধিক বড়");
+    if (form.interest_enabled) {
+      const ir = Number(form.interest_rate);
+      if (isNaN(ir) || ir < 0 || ir > 100) errs.interest_rate = tx("Interest rate must be between 0 and 100", "সুদের হার ০ থেকে ১০০ এর মধ্যে হতে হবে");
+    }
+    if (!form.issued_on) errs.issued_on = tx("Issue date is required", "ইস্যু তারিখ আবশ্যক");
+    else if (form.issued_on > new Date().toISOString().slice(0, 10)) errs.issued_on = tx("Issue date cannot be in the future", "ইস্যু তারিখ ভবিষ্যতের হতে পারে না");
     setErrors(errs);
     if (Object.keys(errs).length) return;
     const { data: mchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
@@ -133,13 +141,13 @@ export default function LoanForm() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>{tx("Principal (৳)", "আসল (৳)")} *</Label><Input type="number" min={0} value={form.principal} onChange={e => { setForm({ ...form, principal: +e.target.value }); setErrors(er => ({ ...er, principal: undefined })); }} aria-invalid={!!errors.principal} />{errors.principal && <p className="text-sm text-destructive mt-1">{errors.principal}</p>}</div>
-            <div><Label>{tx("Interest Rate (%)", "সুদের হার (%)")}</Label><Input type="number" min={0} step="0.01" disabled={!form.interest_enabled} value={form.interest_rate} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
+            <div><Label>{tx("Interest Rate (%)", "সুদের হার (%)")}</Label><Input type="number" min={0} step="0.01" disabled={!form.interest_enabled} value={form.interest_rate} onChange={e => { setForm({ ...form, interest_rate: +e.target.value }); setErrors(er => ({ ...er, interest_rate: undefined })); }} aria-invalid={!!errors.interest_rate} />{errors.interest_rate && <p className="text-sm text-destructive mt-1">{errors.interest_rate}</p>}</div>
           </div>
           <div className="flex items-center justify-between rounded-md border p-3">
             <Label>{tx("Interest Enabled", "সুদ সক্রিয়")}</Label>
             <Switch checked={form.interest_enabled} onCheckedChange={v => setForm({ ...form, interest_enabled: v })} />
           </div>
-          <div><Label>{tx("Issued On", "ইস্যু তারিখ")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
+          <div><Label>{tx("Issued On", "ইস্যু তারিখ")}</Label><Input type="date" value={form.issued_on} onChange={e => { setForm({ ...form, issued_on: e.target.value }); setErrors(er => ({ ...er, issued_on: undefined })); }} aria-invalid={!!errors.issued_on} />{errors.issued_on && <p className="text-sm text-destructive mt-1">{errors.issued_on}</p>}</div>
           <div><Label>{tx("Note", "নোট")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
           <div className="rounded-md bg-muted p-3 text-sm flex justify-between"><span>{tx("Total Payable", "মোট পরিশোধযোগ্য")}</span><span className="font-mono font-bold">{money(totalPayable)}</span></div>
           <div className="flex justify-end gap-2">

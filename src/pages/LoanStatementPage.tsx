@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { LoanStatement } from "@/components/LoanStatement";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, FileDown } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
+import { downloadLoanStatementPdf } from "@/lib/loanStatementPdf";
+import { toast } from "sonner";
 
 export default function LoanStatementPage() {
   const { tx, lang } = useLang();
@@ -24,6 +26,17 @@ export default function LoanStatementPage() {
 
   if (!id) return null;
 
+  async function exportPdf() {
+    const root = document.getElementById("loan-statement-root");
+    if (!root) return;
+    try {
+      const verifyUrl = `${window.location.origin}/verify/loan/${id}`;
+      await downloadLoanStatementPdf(root, { fileName: `loan-statement-${name || id}.pdf`, verifyUrl });
+    } catch (e: any) {
+      toast.error(e?.message || tx("PDF export failed", "PDF এক্সপোর্ট ব্যর্থ"));
+    }
+  }
+
   return (
     <>
       <div className="print:hidden">
@@ -32,6 +45,7 @@ export default function LoanStatementPage() {
           actions={
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate("/loans")}><ArrowLeft className="h-4 w-4 mr-1" />{tx("Back", "ফিরে")}</Button>
+              <Button variant="outline" size="sm" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />{tx("PDF", "PDF")}</Button>
               <Button size="sm" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" />{tx("Print", "প্রিন্ট")}</Button>
             </div>
           }
