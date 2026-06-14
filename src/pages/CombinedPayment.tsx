@@ -285,21 +285,25 @@ export default function CombinedPayment() {
     // Body box with label : value rows
     const a = lastReceipt.amounts ?? { savings: 0, share: 0, loan_principal: 0, loan_interest: 0, misc: 0 };
     const memberNameNo = `${lastReceipt.farmerName}${lastReceipt.member_no ? "- " + toBnDigits(lastReceipt.member_no) : ""}`;
+    const amtRows: [string, string][] = [
+      ["সংগৃহীত সঞ্চয়ের পরিমাণ", a.savings],
+      ["সংগৃহীত শেয়ারের পরিমাণ", a.share],
+      ["সংগৃহীত ঋণ আদয়", a.loan_principal],
+      ["ঋণের লভ্যাংশ আদায়", a.loan_interest],
+      ["বিবিধ আদায", a.misc],
+    ].filter(([, v]) => Number(v) > 0).map(([l, v]) => [l as string, taka(Number(v))]);
     const lines: [string, string][] = [
       ["সদস্যের নাম / সদস্য নং", memberNameNo],
       ["পিতা / স্বামীর নাম", lastReceipt.father_name || "—"],
       ["গ্রাম", lastReceipt.village || "—"],
       ["মোবাইল নং", lastReceipt.mobile ? toBnDigits(lastReceipt.mobile) : "—"],
-      ["সংগৃহীত সঞ্চয়ের পরিমাণ", taka(a.savings)],
-      ["সংগৃহীত শেয়ারের পরিমাণ", taka(a.share)],
-      ["সংগৃহীত ঋণ আদয়", taka(a.loan_principal)],
-      ["ঋণের লভ্যাংশ আদায়", taka(a.loan_interest)],
-      ["বিবিধ আদায", taka(a.misc)],
+      ...amtRows,
       ["মোট আদয়ের পরিমাণ", taka(lastReceipt.total)],
       ["কথায়", `${bnAmountInWords(lastReceipt.total)} টাকা মাত্র।`],
       ["মাঠে আদায় রশিদ নং", lastReceipt.field_receipt_no ? toBnDigits(lastReceipt.field_receipt_no) : "—"],
       ["বিবরন", ""],
     ];
+    const totalLabel = "মোট আদয়ের পরিমাণ";
     const rowH = 6.0;
     const boxTop = y;
     const boxH = lines.length * rowH + 4;
