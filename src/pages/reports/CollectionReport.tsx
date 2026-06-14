@@ -152,7 +152,7 @@ export default function CollectionReport() {
       // 2) Loan repayments (loan_payments.collected_by)
       let lpQ: any = supabase
         .from("loan_payments")
-        .select("id,paid_on,amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
+        .select("id,paid_on,amount,principal_amount,interest_amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
         .order("paid_on", { ascending: false });
       if (from) lpQ = lpQ.gte("paid_on", from);
       if (to) lpQ = lpQ.lte("paid_on", to);
