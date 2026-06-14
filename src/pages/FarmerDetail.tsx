@@ -1698,6 +1698,14 @@ export default function FarmerDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!viewLoan} onOpenChange={(o) => { if (!o) setViewLoan(null); }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{tx("Loan Statement", "ঋণ স্টেটমেন্ট")}</DialogTitle></DialogHeader>
+          {viewLoan && <LoanStatement loanId={viewLoan.id} />}
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
