@@ -1,6 +1,7 @@
 # deploy/Caddyfile — automatic HTTPS (Let's Encrypt) + auto-renewal
 {
 	email {$ADMIN_EMAIL}
+	acme_ca https://acme-v02.api.letsencrypt.org/directory
 }
 
 # ---- Frontend application (main domain + www) ----

@@ -309,8 +309,11 @@ wait_for_edge_ports_free() {
 verify_docker_egress() {
   local i
   for i in $(seq 1 3); do
-    if docker exec mk_app wget -qO- --timeout=10 http://acme-v02.api.letsencrypt.org/directory >/dev/null 2>&1; then
-      ok "Docker containers can reach Let's Encrypt."
+    # Let's Encrypt intentionally resets plain HTTP requests on this endpoint;
+    # use HTTPS so this check validates real DNS + TLS egress instead of failing
+    # on a healthy network and looping through firewall repairs.
+    if docker exec mk_app wget -qO- --timeout=10 https://acme-v02.api.letsencrypt.org/directory >/dev/null 2>&1; then
+      ok "Docker containers can reach Let's Encrypt over HTTPS."
       return 0
     fi
     warn "Docker container outbound DNS/HTTPS failed (attempt $i/3); repairing forwarding and retrying…"

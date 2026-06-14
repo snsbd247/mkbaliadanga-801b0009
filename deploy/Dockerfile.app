@@ -19,6 +19,7 @@ RUN rm -f .env .env.local .env.production .env.development .env.production.local
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
+RUN apk add --no-cache ca-certificates
 RUN printf 'server {\n\
   listen 80;\n\
   root /usr/share/nginx/html;\n\
