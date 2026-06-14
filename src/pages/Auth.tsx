@@ -304,6 +304,25 @@ export default function AuthPage() {
               </Alert>
             </div>
           )}
+
+          <Alert className="mt-4">
+            <Mail className="h-4 w-4" />
+            <AlertTitle>{lang === "bn" ? "অ্যাডমিন লগইন তথ্য" : "Admin login details"}</AlertTitle>
+            <AlertDescription>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>
+                  {lang === "bn"
+                    ? "ইউজারনেম অথবা ইমেইল দিয়ে লগইন করুন। @ ছাড়া দিলে এটি ইউজারনেম হিসেবে ধরা হবে; সমস্যা হলে পুরো ইমেইল দিয়ে চেষ্টা করুন।"
+                    : "Log in with your username or email. Input without @ is treated as a username; if it fails, try the full email."}
+                </p>
+                <p>
+                  {lang === "bn"
+                    ? "ডিপ্লয়মেন্টের পর অ্যাডমিন ইমেইল ও পাসওয়ার্ড সার্ভারের deploy/.env.production ফাইলের ADMIN_EMAIL এবং ADMIN_PASSWORD এ পাওয়া যাবে।"
+                    : "After deployment, the admin email and password are in the server's deploy/.env.production file under ADMIN_EMAIL and ADMIN_PASSWORD."}
+                </p>
+              </div>
+            </AlertDescription>
+          </Alert>
         </Card>
       </div>
 
