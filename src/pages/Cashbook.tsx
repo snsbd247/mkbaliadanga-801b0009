@@ -388,7 +388,15 @@ export default function Cashbook() {
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label>{t("amount")}</Label><Input type="number" value={r.amount || ""} onChange={ev => setR({ ...r, amount: +ev.target.value })} /></div>
                     <div><Label>{t("date")}</Label><Input type="date" value={r.receipt_date} onChange={ev => setR({ ...r, receipt_date: ev.target.value })} /></div>
-                    <div><Label>{t("method")}</Label><Input value={r.method} onChange={ev => setR({ ...r, method: ev.target.value })} /></div>
+                    <div><Label>{t("method")}</Label><Input value={r.method} onChange={ev => setR({ ...r, method: ev.target.value })} placeholder="cash / bank" /></div>
+                    {r.method === "bank" && (
+                      <div><Label>{tx("Bank (withdraw)", "ব্যাংক (উত্তোলন)")}</Label>
+                        <Select value={r.bank_account_id || ""} onValueChange={val => setR({ ...r, bank_account_id: val })}>
+                          <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>{bankAccounts.map(b => <SelectItem key={b.id} value={b.id}>{b.bank_name} — {b.account_no}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
                   <div><Label>{t("note")}</Label><Input value={r.note} onChange={ev => setR({ ...r, note: ev.target.value })} /></div>
                 </div>
