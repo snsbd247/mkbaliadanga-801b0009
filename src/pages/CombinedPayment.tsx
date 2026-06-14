@@ -211,7 +211,7 @@ export default function CombinedPayment() {
         father_name: farmer?.n ?? null,
         village: farmer?.village ?? null,
         mobile: farmer?.mobile ?? null,
-        field_receipt_no: form.receipt_no?.trim() || null,
+        field_receipt_no: form.field_receipt_no?.trim() || null,
         amounts: {
           savings: Number(form.savings || 0),
           share: Number(form.share || 0),
