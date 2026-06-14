@@ -464,6 +464,8 @@ export default function CollectionReport() {
                     <TableCell className="text-right">{r.bhortifi ? money(r.bhortifi) : "—"}</TableCell>
                     <TableCell className="text-right">{r.rin ? money(r.rin) : "—"}</TableCell>
                     <TableCell className="text-right">{r.soncoy ? money(r.soncoy) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.share ? money(r.share) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.lav ? money(r.lav) : "—"}</TableCell>
                     <TableCell className="text-right">{r.bibidh ? money(r.bibidh) : "—"}</TableCell>
                     <TableCell className="text-right font-semibold">{r.voided ? <span className="text-destructive">বাতিল</span> : money(r.amount)}</TableCell>
                     <TableCell className="text-xs">{r.user_name}</TableCell>
