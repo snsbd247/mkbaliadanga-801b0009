@@ -147,7 +147,7 @@ export function formatLandSize(
   const sf = s.toFixed(2);
   const bf = b.toFixed(2);
   const kf = k.toFixed(2);
-  if (variant === "ascii") return `${bf} bigha (${sf} shatak)`;
+  if (variant === "ascii") return `${bf} bigha · ${kf} katha (${sf} shatak)`;
   if (variant === "short") return `${bf} বিঘা / ${sf} শতক`;
   if (variant === "with_katha") return `${bf} বিঘা · ${kf} কাঠা · ${sf} শতক`;
   return `${bf} বিঘা (${sf} শতক)`;
