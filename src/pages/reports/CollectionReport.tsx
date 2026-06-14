@@ -210,6 +210,10 @@ export default function CollectionReport() {
           rin: 0,
           soncoy: (!cat || cat === "general") ? amt : 0,
           bibidh: (cat === "misc" || cat === "bank") ? amt : 0,
+          vangari: (cat === "vangari" || cat === "scrap") ? amt : 0,
+          pukur: (cat === "pond" || cat === "pukur") ? amt : 0,
+          bighat: cat === "bighat" ? amt : 0,
+          bhortifi: (cat === "admission" || cat === "bhortifi") ? amt : 0,
         });
       }
 
