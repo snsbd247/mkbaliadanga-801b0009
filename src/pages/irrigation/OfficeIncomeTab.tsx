@@ -68,6 +68,11 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
 
   const save = async () => {
     if (!form.payer_name.trim()) { toast.error(tx("Payer name required", "প্রদানকারীর নাম দিন")); return; }
+    if (form.payer_name.trim().length > 100) { toast.error(tx("Name too long", "নাম খুব বড়")); return; }
+    if (form.father_name?.trim().length > 100) { toast.error(tx("Father's name too long", "পিতার নাম খুব বড়")); return; }
+    if (form.village?.trim().length > 100) { toast.error(tx("Village too long", "গ্রাম খুব বড়")); return; }
+    const mob = form.mobile?.trim();
+    if (mob && !/^[0-9+\-\s]{6,20}$/.test(mob)) { toast.error(tx("Invalid mobile number", "সঠিক মোবাইল নম্বর দিন")); return; }
     if (!(Number(form.amount) > 0)) { toast.error(tx("Amount must be greater than 0", "টাকা ০-এর বেশি দিন")); return; }
     setSaving(true);
     try {
