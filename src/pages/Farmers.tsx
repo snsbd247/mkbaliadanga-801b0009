@@ -362,6 +362,7 @@ export default function Farmers() {
 
   function clearFilters() {
     setQ("");
+    setFatherQ("");
     setPage(0);
     setShowDeleted(false);
     setStatusFilter("active");
