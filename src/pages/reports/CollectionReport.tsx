@@ -219,6 +219,41 @@ export default function CollectionReport() {
         });
       }
 
+
+      // 4) Cancelled/voided receipts (payments.status = voided) — shown so the
+      // collection report reflects "<receipt_no> বাতিল".
+      let vdQ: any = supabase
+        .from("payments")
+        .select("id,receipt_no,amount,voided_at,void_reason,created_by,farmer_id,farmers(name_en,farmer_code,member_no)")
+        .eq("status", "voided")
+        .not("voided_at", "is", null)
+        .order("voided_at", { ascending: false });
+      if (from) vdQ = vdQ.gte("voided_at", from);
+      if (to) vdQ = vdQ.lte("voided_at", to + "T23:59:59");
+      if (farmerId !== ALL) vdQ = vdQ.eq("farmer_id", farmerId);
+      if (effectiveUserId) vdQ = vdQ.eq("created_by", effectiveUserId);
+      const { data: vd } = await vdQ;
+      for (const r of vd ?? []) {
+        const fn = nameForFarmer((r as any).farmers);
+        out.push({
+          source: "irrigation",
+          date: ((r as any).voided_at || "").slice(0, 10),
+          amount: 0,
+          farmer_id: (r as any).farmer_id ?? null,
+          farmer_code: fn.code,
+          farmer_name: fn.name,
+          user_id: (r as any).created_by,
+          user_name: nameForUser((r as any).created_by),
+          ref_id: r.id,
+          receipt_no: (r as any).receipt_no ?? null,
+          voided: true,
+          void_reason: (r as any).void_reason ?? null,
+          sech: 0, jorimana: 0, hal: 0, bokeya: 0,
+          hawlat: 0, anudan: 0, rin: 0, soncoy: 0, bibidh: 0,
+          vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
+        });
+      }
+
       out.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       setRows(out);
     } finally {
