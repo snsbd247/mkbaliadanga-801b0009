@@ -306,9 +306,15 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
 }
 
 async function renderCopyToCanvas(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer"): Promise<HTMLCanvasElement> {
+  // QR points to the public receipt verification page for this invoice.
+  let qrDataUrl: string | undefined;
+  try {
+    const verifyUrl = `${window.location.origin}/r/${encodeURIComponent(d.invoice_no)}`;
+    qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 120 });
+  } catch { /* QR is optional; skip on failure */ }
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:780px;background:#fff;";
-  wrap.innerHTML = copyHtml(d, brand, copyLabel, settings, role);
+  wrap.innerHTML = copyHtml(d, brand, copyLabel, settings, role, qrDataUrl);
   document.body.appendChild(wrap);
   try {
     await new Promise((r) => setTimeout(r, 60));
