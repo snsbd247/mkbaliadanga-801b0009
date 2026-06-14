@@ -925,7 +925,7 @@ export default function Payments() {
                             };
                           }
 
-                          await downloadBnReceiptPdf({
+                          const rd: BnReceiptData = {
                             kind,
                             company_name: brand.company_name,
                             company_name_bn: brand.company_name_bn,
@@ -959,8 +959,12 @@ export default function Payments() {
                             collected_amount: Number(p.amount),
                             description,
                             verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
-                          }, copy, receiptArgs.options);
+                          };
+                          return rd;
                         };
+                        const doDownload = async (copy: ReceiptCopy) =>
+                          downloadBnReceiptPdf(await buildReceiptData(), copy, receiptArgs.options);
+                        const doPreview = async () => setPreview({ data: await buildReceiptData(), copy: "both" });
                         return (
                           <>
                             <button
@@ -970,7 +974,7 @@ export default function Payments() {
                               data-auto-print={p.id}
                               onClick={() => doDownload("both")}
                             />
-                            <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} title={t("printReceipt") || "Print Receipt"} /></span>
+                            <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} onPreview={kind === "irrigation" ? doPreview : undefined} title={t("printReceipt") || "Print Receipt"} /></span>
                           </>
                         );
                       })()}
