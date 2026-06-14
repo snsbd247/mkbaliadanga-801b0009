@@ -190,6 +190,34 @@ export default function ReceiptTemplatePage() {
             </div>
           </div>
 
+          <div className="grid gap-3 pt-2 border-t md:grid-cols-2">
+            <h4 className="text-sm font-semibold md:col-span-2">QR & rows</h4>
+            <div>
+              <Label>QR / token placement</Label>
+              <Select value={tpl.qr_placement} onValueChange={(v) => setTpl({ ...tpl, qr_placement: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                  <SelectItem value="none">Hidden</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2 content-end">
+              <ToggleRow label="Show charge rows (hal / bokeya)" value={tpl.show_charge_row} onChange={(v) => setTpl({ ...tpl, show_charge_row: v })} />
+              <ToggleRow label="Show penalty row (jorimana)" value={tpl.show_penalty_row} onChange={(v) => setTpl({ ...tpl, show_penalty_row: v })} />
+            </div>
+          </div>
+
+          <div className="grid gap-3 pt-2 border-t">
+            <h4 className="text-sm font-semibold">Watermark</h4>
+            <ToggleRow label="Show watermark" value={tpl.show_watermark} onChange={(v) => setTpl({ ...tpl, show_watermark: v })} />
+            <div>
+              <Label className="text-xs">Watermark text</Label>
+              <Input value={tpl.watermark_text} onChange={(e) => setTpl({ ...tpl, watermark_text: e.target.value })} maxLength={40} placeholder="e.g. COPY / PAID" disabled={!tpl.show_watermark} />
+            </div>
+
           <div className="grid gap-2 pt-2 border-t">
             <h4 className="text-sm font-semibold">Sections</h4>
             <ToggleRow label="Show logo (uses Company logo from Settings)" value={tpl.show_logo} onChange={(v) => setTpl({ ...tpl, show_logo: v })} />
