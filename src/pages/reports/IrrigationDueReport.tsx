@@ -300,6 +300,8 @@ export default function IrrigationDueReport() {
                 <TableHead>{t("code")}</TableHead>
                 <TableHead>{t("farmer")}</TableHead>
                 <TableHead>{tx("Father", "পিতার নাম")}</TableHead>
+                <TableHead>{tx("Village", "গ্রাম")}</TableHead>
+                <TableHead>{tx("Mobile", "মোবাইল")}</TableHead>
                 <TableHead>{t("land")}</TableHead>
                 <TableHead>{tx("Owner", "মালিক")}</TableHead>
                 <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
