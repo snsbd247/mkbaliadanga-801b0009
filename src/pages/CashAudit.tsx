@@ -39,11 +39,24 @@ export default function CashAudit() {
   const [to, setTo] = useState(todayStr);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
-  const [opening, setOpening] = useState<Record<Stream, number>>({
+  const [openingManual, setOpeningManual] = useState<Record<Stream, number>>({
     irrigation: Number(localStorage.getItem("cb_open_irrigation") ?? 0),
     savings: Number(localStorage.getItem("cb_open_savings") ?? 0),
   });
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const fromYear = Number(from.slice(0, 4));
+  const fromMonth = Number(from.slice(5, 7));
+
+  // Auto-linked opening cash from cashbook submission for the month of `from`; falls back to manual.
+  function subFor(stream: Stream) {
+    return submissions.find(s => s.year === fromYear && s.month === fromMonth && s.stream === stream);
+  }
+  const opening: Record<Stream, number> = {
+    irrigation: subFor("irrigation") ? Number(subFor("irrigation").opening_cash || 0) : openingManual.irrigation,
+    savings: subFor("savings") ? Number(subFor("savings").opening_cash || 0) : openingManual.savings,
+  };
 
   useEffect(() => { document.title = `${tx("Cash Audit", "ক্যাশ অডিট")} — MK Baliadanga`; }, []);
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [from, to]);
@@ -51,12 +64,14 @@ export default function CashAudit() {
   async function load() {
     setLoading(true);
     try {
-      const [rec, exp] = await Promise.all([
+      const [rec, exp, subs] = await Promise.all([
         sb.from("receipts").select("kind,amount,receipt_date").gte("receipt_date", from).lte("receipt_date", to),
         sb.from("expenses").select("stream,head,amount,expense_date").is("deleted_at", null).gte("expense_date", from).lte("expense_date", to),
+        sb.from("cashbook_submissions").select("year,month,stream,opening_cash,closing_cash,locked").eq("year", fromYear).eq("month", fromMonth),
       ]);
       setReceipts(rec.data ?? []);
       setExpenses(exp.data ?? []);
+      setSubmissions(subs.data ?? []);
     } finally { setLoading(false); }
   }
 
