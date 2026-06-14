@@ -150,9 +150,11 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
   };
 
   const printReceipt = (r: any) => {
+    if (!canExport) { toast.error(tx("You don't have permission to print", "প্রিন্টের অনুমতি নেই")); return; }
     const officeName = offices.find((o) => o.id === r.office_id)?.name ?? "";
     const w = window.open("", "_blank", "width=820,height=1000");
     if (!w) return;
+    logAudit({ office_id: r.office_id ?? null, module: "receipt", action_type: "export", reference_id: r.id, new_data: { action: "print", receipt_no: r.receipt_no } });
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${r.receipt_no}</title>
       <style>
         @page{size:A4 portrait;margin:18mm}
