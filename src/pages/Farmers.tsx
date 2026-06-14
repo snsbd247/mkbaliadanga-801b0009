@@ -343,6 +343,9 @@ export default function Farmers() {
       const idClause = dagFarmerIds.length ? `,id.in.(${dagFarmerIds.join(",")})` : "";
       qy = qy.or(base + idClause);
     }
+    if (fatherQ && fatherQ.trim()) {
+      qy = qy.ilike("father_name", `%${fatherQ.trim()}%`);
+    }
     const { data } = await qy;
     const farmers = data ?? [];
     setList(farmers);
