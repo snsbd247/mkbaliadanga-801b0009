@@ -201,9 +201,21 @@ sync_laravel() {
 
 # ----------------------------------------------------------------------------- 10. App + proxy
 free_edge_ports() {
-  # Coolify installs its own reverse proxy (Traefik, container "coolify-proxy")
-  # that binds host ports 80/443. Our Caddy (mk_caddy) needs those ports, so
-  # stop the conflicting proxy before bringing the app up.
+  # Anything binding host ports 80/443 (Coolify's Traefik proxy, a leftover
+  # mk_caddy from a failed run, etc.) blocks our Caddy. Dynamically find and
+  # stop every container publishing those ports — except mk_caddy itself.
+  local ids id name
+  ids=$(docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' \
+    | grep -E ':80->|:443->' \
+    | grep -v -E '(^|[[:space:]])mk_caddy([[:space:]]|$)' \
+    | awk '{print $1}')
+  for id in $ids; do
+    name=$(docker inspect --format '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##')
+    warn "Stopping '${name:-$id}' to free host ports 80/443 for Caddy…"
+    docker stop "$id" >/dev/null 2>&1 || true
+  done
+
+  # Coolify may auto-restart its proxy; stop it explicitly by known names too.
   for c in coolify-proxy coolify-realtime-proxy traefik; do
     if docker ps --format '{{.Names}}' | grep -qx "$c"; then
       warn "Stopping '$c' to free host ports 80/443 for Caddy…"
