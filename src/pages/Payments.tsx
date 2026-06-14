@@ -1050,6 +1050,6 @@ export default function Payments() {
         data={preview?.data ?? null}
         copy={preview?.copy ?? "both"}
       />
-    </>physicians
+    </>
   );
 }
