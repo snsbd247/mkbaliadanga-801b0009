@@ -237,8 +237,8 @@ ALTER ROLE pgbouncer WITH LOGIN NOINHERIT PASSWORD :'pgpass';
 
 ALTER ROLE postgres SET search_path TO "$user", public, extensions;
 ALTER ROLE supabase_admin SET search_path TO "$user", public, auth, storage, extensions;
-ALTER ROLE supabase_auth_admin SET search_path TO auth;
-ALTER ROLE supabase_storage_admin SET search_path TO storage;
+ALTER ROLE supabase_auth_admin SET search_path TO auth, extensions;
+ALTER ROLE supabase_storage_admin SET search_path TO storage, extensions;
 ALTER ROLE supabase_realtime_admin SET search_path TO _realtime;
 ALTER ROLE authenticator SET search_path TO public, storage, graphql_public;
 
@@ -251,8 +251,15 @@ GRANT USAGE ON SCHEMA public TO supabase_auth_admin, supabase_storage_admin, sup
 CREATE SCHEMA IF NOT EXISTS extensions;
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
+GRANT USAGE ON SCHEMA extensions TO supabase_auth_admin, supabase_storage_admin, supabase_functions_admin, supabase_realtime_admin;
 CREATE SCHEMA IF NOT EXISTS graphql_public;
 CREATE SCHEMA IF NOT EXISTS _realtime;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END$$;
 ALTER SCHEMA extensions OWNER TO supabase_admin;
 ALTER SCHEMA graphql_public OWNER TO supabase_admin;
 ALTER SCHEMA _realtime OWNER TO supabase_realtime_admin;
