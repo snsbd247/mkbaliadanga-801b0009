@@ -78,7 +78,7 @@ export default function Payments() {
   const [editPayment, setEditPayment] = useState<any>(null);
   const [editInvoiceId, setEditInvoiceId] = useState<string | null>(null);
   const [editLandId, setEditLandId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, reason: "" });
+  const [editForm, setEditForm] = useState({ mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, note: "", reason: "" });
   const [editLoading, setEditLoading] = useState(false);
 
   async function openEditReceipt(p: any) {
