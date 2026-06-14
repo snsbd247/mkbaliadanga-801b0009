@@ -21,6 +21,8 @@ import ScanPayment from "./pages/ScanPayment";
 import Seasons from "./pages/Seasons";
 import Savings from "./pages/Savings";
 import Loans from "./pages/Loans";
+import LoanForm from "./pages/LoanForm";
+import LoanStatementPage from "./pages/LoanStatementPage";
 
 import IrrigationInvoices from "./pages/IrrigationInvoices";
 import IrrigationReports from "./pages/IrrigationReports";
