@@ -262,16 +262,16 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (mouzaParts.length) rows.push([mouzaLabel, mouzaParts.join(" / ")]);
     if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
     if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
-    if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
-    if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
+    if (tpl.show_charge_row && d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
+    if (tpl.show_charge_row && d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
     rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
     if (d.collected_from_outstanding != null)
       rows.push([t.collectedFromDue, fmt2(Number(d.collected_from_outstanding))]);
-    if (d.current_season_charge != null)
+    if (tpl.show_charge_row && d.current_season_charge != null)
       rows.push([t.currentCharge, fmt2(Number(d.current_season_charge))]);
-    // জরিমানা / বিলম্ব ফি — সবসময় আলাদা ঘরে দেখানো হয় (০ হলেও)।
-    rows.push([t.penalty, fmt2(Number(d.penalty_amount ?? 0))]);
-    if (d.maintenance_charge != null || d.canal_charge != null) {
+    // জরিমানা / বিলম্ব ফি — show_penalty_row চালু থাকলে সবসময় আলাদা ঘরে (০ হলেও)।
+    if (tpl.show_penalty_row) rows.push([t.penalty, fmt2(Number(d.penalty_amount ?? 0))]);
+    if (tpl.show_charge_row && (d.maintenance_charge != null || d.canal_charge != null)) {
       const extras = [d.maintenance_charge, d.canal_charge]
         .map((n) => fmt2(Number(n ?? 0)))
         .join(" / ");
