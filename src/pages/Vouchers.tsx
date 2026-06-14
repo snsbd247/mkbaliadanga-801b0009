@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Paperclip, Download } from "lucide-react";
+import { Plus, Paperclip, Download, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
+import { exportTablePDF } from "@/lib/exports";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -89,6 +90,22 @@ export default function Vouchers() {
     window.open(data.signedUrl, "_blank");
   }
 
+  function exportPdf() {
+    // #8 — stream/type-specific heading on each voucher register.
+    const typeLabel = filter === "all" ? tx("All Vouchers", "সকল ভাউচার") : (TYPES.find(t => t.v === filter)?.label ?? filter);
+    const total = rows.reduce((s, v) => s + Number(v.amount || 0), 0);
+    exportTablePDF(
+      `${tx("Voucher Register", "ভাউচার রেজিস্টার")} — ${typeLabel}`,
+      [tx("Voucher No", "ভাউচার নং"), tx("Type", "ধরন"), tx("Date", "তারিখ"), tx("Payee", "প্রাপক/প্রদানকারী"), tx("Narration", "বিবরণ"), tx("Amount", "টাকা")],
+      [
+        ...rows.map(v => [v.voucher_no, v.voucher_type, fmtDate(v.voucher_date), v.payee ?? "", v.narration ?? "", money(Number(v.amount || 0))]),
+        ["", "", "", "", tx("Total", "মোট"), money(total)],
+      ],
+      undefined,
+      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] },
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -135,6 +152,9 @@ export default function Vouchers() {
             </SelectContent>
           </Select>
         </div>
+        <Button size="sm" variant="outline" className="ml-auto" onClick={exportPdf} disabled={!rows.length}>
+          <FileDown className="h-4 w-4 mr-1" />{tx("Export PDF", "পিডিএফ")}
+        </Button>
       </Card>
 
       <Card className="overflow-x-auto"><Table>
