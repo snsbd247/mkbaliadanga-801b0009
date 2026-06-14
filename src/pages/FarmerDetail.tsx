@@ -121,6 +121,7 @@ export default function FarmerDetail() {
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
   const [patwaris, setPatwaris] = useState<any[]>([]);
   const [transferLand, setTransferLand] = useState<any | null>(null);
+  const [reclaimLand, setReclaimLand] = useState<any | null>(null);
   // Lands owned by this farmer that are given out to sharecroppers (borga)
   const [borgaOut, setBorgaOut] = useState<any[]>([]);
 
@@ -1281,6 +1282,11 @@ export default function FarmerDetail() {
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)} title={tx("Transfer / Distribute", "হস্তান্তর / বণ্টন")}>
                             {tx("Transfer", "হস্তান্তর")}
                           </Button>
+                          {l.owner_type === "borgadar" && l.owner_farmer_id && (
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setReclaimLand(l)} title={tx("Reclaim to Owner", "মালিকে ফেরত")}>
+                              {tx("Reclaim", "ফেরত")}
+                            </Button>
+                          )}
                           <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
                         </TableCell>
                       </TableRow>
@@ -1603,6 +1609,16 @@ export default function FarmerDetail() {
         sourceFarmerId={id!}
         onDone={() => { setTransferLand(null); loadAll(); }}
       />
+
+      <LandTransferDialog
+        open={!!reclaimLand}
+        onOpenChange={(v) => { if (!v) setReclaimLand(null); }}
+        sourceLand={reclaimLand}
+        sourceFarmerId={id!}
+        reclaimOwnerId={reclaimLand?.owner_farmer_id ?? null}
+        onDone={() => { setReclaimLand(null); loadAll(); }}
+      />
+
 
       <Dialog open={editFarmerOpen} onOpenChange={(o) => { if (!o && !editFarmerSaving) { setEditFarmerOpen(false); setEditFarmerForm(null); setEditFarmerPhoto(null); setEditFarmerLocErr(null); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">

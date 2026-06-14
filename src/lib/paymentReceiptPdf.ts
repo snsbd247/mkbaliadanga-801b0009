@@ -15,6 +15,10 @@ export interface PaymentReceiptData {
   kind: string;
   amount: number;
   method: string;
+  /** Optional breakdown for irrigation/dues receipts: current (hal) vs arrears (bokeya). */
+  hal_amount?: number | null;
+  bokeya_amount?: number | null;
+  penalty_amount?: number | null;
   note?: string | null;
   collected_by_name?: string | null;
   office_name?: string | null;
@@ -71,6 +75,7 @@ const L = {
     name: "Name", code: "Code", member: "Farmer ID", village: "Village", mobile: "Mobile",
     qr: "QR Card", token: "Token", status: "Status",
     type: "Type", method: "Method", amount: "Amount (BDT)",
+    hal: "Current (Hal)", bokeya: "Arrears (Bokeya)", penalty: "Penalty",
     note: "Note",
     paymentId: "Payment ID", idem: "Idempotency", collected: "Collected by",
     signature: "Authorised signature",
@@ -84,6 +89,7 @@ const L = {
     name: "নাম", code: "কোড", member: "ফার্মার আইডি", village: "গ্রাম", mobile: "মোবাইল",
     qr: "কিউআর কার্ড", token: "টোকেন", status: "অবস্থা",
     type: "ধরন", method: "পদ্ধতি", amount: "টাকা (BDT)",
+    hal: "হাল", bokeya: "বকেয়া", penalty: "জরিমানা",
     note: "মন্তব্য",
     paymentId: "পেমেন্ট আইডি", idem: "ইডেমপোটেন্সি", collected: "গ্রহীতা",
     signature: "অনুমোদিত স্বাক্ষর",
@@ -207,6 +213,25 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
     doc.setFontSize(9); doc.setFont("helvetica", "normal");
   }
   y += 32;
+
+  // Optional hal/bokeya/penalty breakdown (irrigation & dues receipts)
+  const hasBreakdown =
+    (data.hal_amount != null) || (data.bokeya_amount != null) || (data.penalty_amount != null);
+  if (hasBreakdown) {
+    doc.setFontSize(8); doc.setTextColor(60); doc.setFont("helvetica", "normal");
+    if (data.hal_amount != null) {
+      doc.text(`${labels.hal}: ${fmtBdt(data.hal_amount)}`, margin, y); y += 4;
+    }
+    if (data.bokeya_amount != null) {
+      doc.text(`${labels.bokeya}: ${fmtBdt(data.bokeya_amount)}`, margin, y); y += 4;
+    }
+    if (data.penalty_amount != null) {
+      doc.text(`${labels.penalty}: ${fmtBdt(data.penalty_amount)}`, margin, y); y += 4;
+    }
+    doc.setTextColor(0); y += 2;
+  }
+
+
 
   // Footer references
   doc.setFontSize(8); doc.setTextColor(110);

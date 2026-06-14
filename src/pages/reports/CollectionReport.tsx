@@ -41,6 +41,8 @@ type CollectionRow = {
   anudan: number;
   rin: number;
   soncoy: number;
+  share: number;
+  lav: number;
   bibidh: number;
   vangari: number;
   pukur: number;
@@ -142,7 +144,7 @@ export default function CollectionReport() {
           jorimana: Number(r.delay_fee_collected || 0),
           hal: Number(r.current_invoice_collected || 0),
           bokeya: Number(r.previous_due_collected || 0),
-          hawlat: 0, anudan: 0, rin: 0, soncoy: 0, bibidh: 0,
+          hawlat: 0, anudan: 0, rin: 0, soncoy: 0, share: 0, lav: 0, bibidh: 0,
           vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
         });
       }
@@ -150,7 +152,7 @@ export default function CollectionReport() {
       // 2) Loan repayments (loan_payments.collected_by)
       let lpQ: any = supabase
         .from("loan_payments")
-        .select("id,paid_on,amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
+        .select("id,paid_on,amount,principal_amount,interest_amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
         .order("paid_on", { ascending: false });
       if (from) lpQ = lpQ.gte("paid_on", from);
       if (to) lpQ = lpQ.lte("paid_on", to);
@@ -173,7 +175,9 @@ export default function CollectionReport() {
           ref_id: r.id,
           receipt_no: null,
           sech: 0, jorimana: 0, hal: 0, bokeya: 0,
-          hawlat: 0, anudan: 0, rin: Number(r.amount || 0), soncoy: 0, bibidh: 0,
+          hawlat: 0, anudan: 0,
+          rin: (r as any).principal_amount != null ? Number((r as any).principal_amount) : Number(r.amount || 0) - Number((r as any).interest_amount || 0),
+          soncoy: 0, share: 0, lav: Number((r as any).interest_amount || 0), bibidh: 0,
           vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
         });
       }
@@ -211,6 +215,8 @@ export default function CollectionReport() {
           anudan: cat === "donation" ? amt : 0,
           rin: 0,
           soncoy: (!cat || cat === "general") ? amt : 0,
+          share: cat === "share" ? amt : 0,
+          lav: 0,
           bibidh: (cat === "misc" || cat === "bank") ? amt : 0,
           vangari: (cat === "vangari" || cat === "scrap") ? amt : 0,
           pukur: (cat === "pond" || cat === "pukur") ? amt : 0,
@@ -249,7 +255,7 @@ export default function CollectionReport() {
           voided: true,
           void_reason: (r as any).void_reason ?? null,
           sech: 0, jorimana: 0, hal: 0, bokeya: 0,
-          hawlat: 0, anudan: 0, rin: 0, soncoy: 0, bibidh: 0,
+          hawlat: 0, anudan: 0, rin: 0, soncoy: 0, share: 0, lav: 0, bibidh: 0,
           vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
         });
       }
@@ -387,10 +393,10 @@ export default function CollectionReport() {
             onPdf={() =>
               exportTablePDF(
                 `Collection Report${filterSuffix()}`,
-                ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Vangari", "Pukur", "Bighat", "Bhorti Fee", "Loan", "Savings", "Misc", "Total", "User"],
+                ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Vangari", "Pukur", "Bighat", "Bhorti Fee", "Loan", "Savings", "Share", "Profit", "Misc", "Total", "User"],
                 rows.map((r) => [
                   fmtDate(r.date), `${r.receipt_no ?? "—"}${r.voided ? " (বাতিল)" : ""}`, `${r.farmer_code} — ${r.farmer_name}`,
-                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.bibidh, r.voided ? "বাতিল" : r.amount, r.user_name,
+                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.share, r.lav, r.bibidh, r.voided ? "বাতিল" : r.amount, r.user_name,
                 ]),
               )
             }
@@ -404,7 +410,7 @@ export default function CollectionReport() {
                   "Farmer ID": r.farmer_code,
                   "Farmer Name": r.farmer_name,
                   "সেচ": r.sech, "জরিমানা": r.jorimana, "হাল": r.hal, "বকেয়া": r.bokeya,
-                  "হাওলাত": r.hawlat, "অনুদান": r.anudan, "ভাঙারি": r.vangari, "পুকুর": r.pukur, "বিঘাত": r.bighat, "ভর্তি ফি": r.bhortifi, "ঋণ": r.rin, "সঞ্চয়": r.soncoy, "বিবিধ": r.bibidh,
+                  "হাওলাত": r.hawlat, "অনুদান": r.anudan, "ভাঙারি": r.vangari, "পুকুর": r.pukur, "বিঘাত": r.bighat, "ভর্তি ফি": r.bhortifi, "ঋণ": r.rin, "সঞ্চয়": r.soncoy, "শেয়ার": r.share, "লাভ": r.lav, "বিবিধ": r.bibidh,
                   "মোট": r.voided ? "বাতিল" : r.amount,
                   "User": r.user_name,
                 })),
@@ -430,6 +436,8 @@ export default function CollectionReport() {
                   <TableHead className="text-right">ভর্তি ফি</TableHead>
                   <TableHead className="text-right">ঋণ</TableHead>
                   <TableHead className="text-right">সঞ্চয়</TableHead>
+                  <TableHead className="text-right">শেয়ার</TableHead>
+                  <TableHead className="text-right">লাভ</TableHead>
                   <TableHead className="text-right">বিবিধ</TableHead>
                   <TableHead className="text-right">মোট</TableHead>
                   <TableHead>{t("createdBy")}</TableHead>
@@ -456,6 +464,8 @@ export default function CollectionReport() {
                     <TableCell className="text-right">{r.bhortifi ? money(r.bhortifi) : "—"}</TableCell>
                     <TableCell className="text-right">{r.rin ? money(r.rin) : "—"}</TableCell>
                     <TableCell className="text-right">{r.soncoy ? money(r.soncoy) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.share ? money(r.share) : "—"}</TableCell>
+                    <TableCell className="text-right">{r.lav ? money(r.lav) : "—"}</TableCell>
                     <TableCell className="text-right">{r.bibidh ? money(r.bibidh) : "—"}</TableCell>
                     <TableCell className="text-right font-semibold">{r.voided ? <span className="text-destructive">বাতিল</span> : money(r.amount)}</TableCell>
                     <TableCell className="text-xs">{r.user_name}</TableCell>
@@ -463,7 +473,7 @@ export default function CollectionReport() {
                 ))}
                 {rows.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={18} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={20} className="text-center text-muted-foreground py-6">
                       {t("noCollectionsFiltered")}
                     </TableCell>
                   </TableRow>

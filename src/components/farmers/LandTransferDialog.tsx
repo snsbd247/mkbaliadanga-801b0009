@@ -18,11 +18,14 @@ type Props = {
   sourceLand: any | null;
   sourceFarmerId: string;
   onDone: () => void;
+  /** When set, pre-fills a single recipient (the real owner) and reclaims the
+   *  borgadar land back to that owner (resulting land becomes owner-type). */
+  reclaimOwnerId?: string | null;
 };
 
 type Recipient = { farmer_id: string; area: number };
 
-export default function LandTransferDialog({ open, onOpenChange, sourceLand, sourceFarmerId, onDone }: Props) {
+export default function LandTransferDialog({ open, onOpenChange, sourceLand, sourceFarmerId, onDone, reclaimOwnerId }: Props) {
   const { tx } = useLang();
   const { user, officeId } = useAuth();
   const [transferType, setTransferType] = useState<"inheritance" | "sale" | "borga_transfer" | "other">("inheritance");
@@ -32,15 +35,17 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
   const [recipients, setRecipients] = useState<Recipient[]>([{ farmer_id: "", area: 0 }]);
   const [saving, setSaving] = useState(false);
 
+  const isReclaim = !!reclaimOwnerId;
+
   useEffect(() => {
     if (open) {
-      setTransferType("inheritance");
+      setTransferType(isReclaim ? "borga_transfer" : "inheritance");
       setEqualSplit(true);
       setRemark("");
       setTransferredOn(new Date().toISOString().slice(0, 10));
-      setRecipients([{ farmer_id: "", area: 0 }]);
+      setRecipients(isReclaim ? [{ farmer_id: reclaimOwnerId!, area: 0 }] : [{ farmer_id: "", area: 0 }]);
     }
-  }, [open]);
+  }, [open, isReclaim, reclaimOwnerId]);
 
   const totalLand = Number(sourceLand?.land_size || 0);
   const equalArea = useMemo(() => (recipients.length > 0 ? +(totalLand / recipients.length).toFixed(3) : 0), [totalLand, recipients.length]);
@@ -78,7 +83,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           if (tr.source_farmer_id) blocked.add(tr.source_farmer_id);
         }
       }
-      const reversing = recipients.find(r => blocked.has(r.farmer_id));
+      const reversing = !isReclaim && recipients.find(r => blocked.has(r.farmer_id));
       if (reversing) {
         setSaving(false);
         return toast.error(tx("Cannot transfer back to a previous owner of this land.", "এই জমি আগের মালিক/বর্গাদারে ফেরত transfer করা যাবে না।"));
@@ -115,9 +120,9 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           mouza: sourceLand.mouza ?? null,
           dag_no: sourceLand.dag_no ?? null,
           land_size: area,
-          owner_type: sourceLand.owner_type,
+          owner_type: isReclaim ? "owner" : sourceLand.owner_type,
           field_type: sourceLand.field_type,
-          owner_farmer_id: sourceLand.owner_type === "borgadar" ? sourceLand.owner_farmer_id : null,
+          owner_farmer_id: isReclaim ? null : (sourceLand.owner_type === "borgadar" ? sourceLand.owner_farmer_id : null),
           office_id: sourceLand.office_id ?? officeId ?? null,
           division_id: sourceLand.division_id ?? null,
           district_id: sourceLand.district_id ?? null,
@@ -155,7 +160,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle>{tx("Transfer / Distribute Land", "জমি হস্তান্তর / বণ্টন")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isReclaim ? tx("Reclaim Land to Owner", "জমি মালিকে ফেরত") : tx("Transfer / Distribute Land", "জমি হস্তান্তর / বণ্টন")}</DialogTitle></DialogHeader>
         {sourceLand && (
           <div className="space-y-3 text-sm">
             <div className="rounded-md bg-muted p-2 text-xs">
