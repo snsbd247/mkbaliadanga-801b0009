@@ -509,17 +509,41 @@ function StreamCashbook(props: {
   const { t, tx } = useLang();
   const { stream, label, month, mFrom, mTo, receipts, expenses, opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
 
+  const [consolidated, setConsolidated] = useState(true);
+
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
 
+  // Income rows — either one row per receipt, or one consolidated row per kind
+  // (cash-book style) with description "রশিদ নং X – Y (n টি)".
+  const incomeRows = useMemo(() => {
+    if (!consolidated) {
+      return streamReceipts.map(x => ({
+        date: x.receipt_date, kind: "income", ref: x.receipt_no || "—",
+        label: getKindLabel(t, x.kind as Kind), desc: x.note || "", amount: Number(x.amount), raw: x,
+      }));
+    }
+    const groups = new Map<string, any[]>();
+    streamReceipts.forEach(x => { if (!groups.has(x.kind)) groups.set(x.kind, []); groups.get(x.kind)!.push(x); });
+    return Array.from(groups.entries()).map(([kind, list]) => {
+      const sorted = [...list].sort((a, b) => String(a.receipt_no || "").localeCompare(String(b.receipt_no || "")));
+      const nos = sorted.map(s => s.receipt_no).filter(Boolean);
+      const range = nos.length === 0 ? "" : nos.length === 1 ? String(nos[0]) : `${nos[0]} – ${nos[nos.length - 1]}`;
+      const desc = `${tx("Receipt no", "রশিদ নং")} ${range} (${list.length}${tx(" pcs", "টি")})`;
+      const amount = list.reduce((s, x) => s + Number(x.amount), 0);
+      const date = sorted[sorted.length - 1].receipt_date;
+      return { date, kind: "income", ref: range || "—", label: getKindLabel(t, kind as Kind), desc, amount, raw: { note: desc } };
+    });
+  }, [streamReceipts, consolidated, t]);
+
   const entries = useMemo(() => {
     const rows: any[] = [
-      ...streamReceipts.map(x => ({ date: x.receipt_date, kind: "income", ref: x.receipt_no, label: x.note || x.kind, amount: Number(x.amount), raw: x })),
-      ...streamExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, amount: Number(x.amount), raw: x })),
+      ...incomeRows,
+      ...streamExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, desc: x.payee || x.note || "", amount: Number(x.amount), raw: x })),
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(opening || 0);
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
-  }, [streamReceipts, streamExpenses, opening]);
+  }, [incomeRows, streamExpenses, opening]);
 
   const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0);
   const totalExpense = streamExpenses.reduce((s, x) => s + Number(x.amount), 0);
