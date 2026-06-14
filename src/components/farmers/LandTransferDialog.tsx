@@ -35,15 +35,17 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
   const [recipients, setRecipients] = useState<Recipient[]>([{ farmer_id: "", area: 0 }]);
   const [saving, setSaving] = useState(false);
 
+  const isReclaim = !!reclaimOwnerId;
+
   useEffect(() => {
     if (open) {
-      setTransferType("inheritance");
+      setTransferType(isReclaim ? "borga_transfer" : "inheritance");
       setEqualSplit(true);
       setRemark("");
       setTransferredOn(new Date().toISOString().slice(0, 10));
-      setRecipients([{ farmer_id: "", area: 0 }]);
+      setRecipients(isReclaim ? [{ farmer_id: reclaimOwnerId!, area: 0 }] : [{ farmer_id: "", area: 0 }]);
     }
-  }, [open]);
+  }, [open, isReclaim, reclaimOwnerId]);
 
   const totalLand = Number(sourceLand?.land_size || 0);
   const equalArea = useMemo(() => (recipients.length > 0 ? +(totalLand / recipients.length).toFixed(3) : 0), [totalLand, recipients.length]);
