@@ -113,7 +113,8 @@ export function NotificationBell() {
     };
   }, [user?.id]);
 
-  const unread = items.filter((i) => !i.read).length;
+  const visible = items.filter((i) => (view === "archived" ? i.archived : !i.archived));
+  const unread = items.filter((i) => !i.read && !i.archived).length;
 
   async function markAll() {
     try {
@@ -122,6 +123,16 @@ export function NotificationBell() {
     } catch (e: any) {
       devErr("markAll failed", e);
       setError(e?.message ?? "Failed to mark read");
+    }
+  }
+
+  async function archive(id: string) {
+    try {
+      await supabase.from("notifications").update({ archived: true, read: true }).eq("id", id);
+      load();
+    } catch (e: any) {
+      devErr("archive failed", e);
+      setError(e?.message ?? "Failed to archive");
     }
   }
 
