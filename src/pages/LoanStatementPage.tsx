@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { LoanStatement } from "@/components/LoanStatement";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, FileDown } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
+import { downloadLoanStatementPdf } from "@/lib/loanStatementPdf";
+import { toast } from "sonner";
 
 export default function LoanStatementPage() {
   const { tx, lang } = useLang();
