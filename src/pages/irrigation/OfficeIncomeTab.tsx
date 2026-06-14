@@ -34,6 +34,13 @@ const STREAMS = [
 
 export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: string }) {
   const { tx } = useLang();
+  const { roles } = useAuth();
+  const role = roles?.includes("super_admin") || roles?.includes("developer")
+    ? "super_admin"
+    : roles?.includes("admin") ? "admin"
+    : roles?.includes("staff") ? "staff" : null;
+  const canExport = canExportOfficeIncome(role as any);
+  const canCreate = canCreateOfficeIncome(role as any);
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
