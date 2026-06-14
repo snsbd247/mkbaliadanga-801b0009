@@ -101,6 +101,7 @@ export function AppSidebar() {
         { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
         { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
         { url: "/hand-cash", icon: Banknote, label: "হ্যান্ড ক্যাশ", permKey: "cashbook" },
+        { url: "/cash-audit", icon: ScrollText, label: "ক্যাশ অডিট", permKey: "cashbook" },
         { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
       ],
     },

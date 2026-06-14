@@ -30,6 +30,8 @@ type CollectionRow = {
   user_name: string;
   ref_id: string;
   receipt_no: string | null;
+  voided?: boolean;
+  void_reason?: string | null;
   // breakdown columns
   sech: number;
   jorimana: number;
@@ -217,6 +219,41 @@ export default function CollectionReport() {
         });
       }
 
+
+      // 4) Cancelled/voided receipts (payments.status = voided) — shown so the
+      // collection report reflects "<receipt_no> বাতিল".
+      let vdQ: any = supabase
+        .from("payments")
+        .select("id,receipt_no,amount,voided_at,void_reason,created_by,farmer_id,farmers(name_en,farmer_code,member_no)")
+        .eq("status", "voided" as any)
+        .not("voided_at", "is", null)
+        .order("voided_at", { ascending: false });
+      if (from) vdQ = vdQ.gte("voided_at", from);
+      if (to) vdQ = vdQ.lte("voided_at", to + "T23:59:59");
+      if (farmerId !== ALL) vdQ = vdQ.eq("farmer_id", farmerId);
+      if (effectiveUserId) vdQ = vdQ.eq("created_by", effectiveUserId);
+      const { data: vd } = await vdQ;
+      for (const r of vd ?? []) {
+        const fn = nameForFarmer((r as any).farmers);
+        out.push({
+          source: "irrigation",
+          date: ((r as any).voided_at || "").slice(0, 10),
+          amount: 0,
+          farmer_id: (r as any).farmer_id ?? null,
+          farmer_code: fn.code,
+          farmer_name: fn.name,
+          user_id: (r as any).created_by,
+          user_name: nameForUser((r as any).created_by),
+          ref_id: r.id,
+          receipt_no: (r as any).receipt_no ?? null,
+          voided: true,
+          void_reason: (r as any).void_reason ?? null,
+          sech: 0, jorimana: 0, hal: 0, bokeya: 0,
+          hawlat: 0, anudan: 0, rin: 0, soncoy: 0, bibidh: 0,
+          vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
+        });
+      }
+
       out.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
       setRows(out);
     } finally {
@@ -352,8 +389,8 @@ export default function CollectionReport() {
                 `Collection Report${filterSuffix()}`,
                 ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Vangari", "Pukur", "Bighat", "Bhorti Fee", "Loan", "Savings", "Misc", "Total", "User"],
                 rows.map((r) => [
-                  fmtDate(r.date), r.receipt_no ?? "—", `${r.farmer_code} — ${r.farmer_name}`,
-                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.bibidh, r.amount, r.user_name,
+                  fmtDate(r.date), `${r.receipt_no ?? "—"}${r.voided ? " (বাতিল)" : ""}`, `${r.farmer_code} — ${r.farmer_name}`,
+                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.bibidh, r.voided ? "বাতিল" : r.amount, r.user_name,
                 ]),
               )
             }
@@ -363,12 +400,12 @@ export default function CollectionReport() {
                 "Collections",
                 rows.map((r) => ({
                   Date: r.date,
-                  "Receipt #": r.receipt_no ?? "",
+                  "Receipt #": `${r.receipt_no ?? ""}${r.voided ? " (বাতিল)" : ""}`,
                   "Farmer ID": r.farmer_code,
                   "Farmer Name": r.farmer_name,
                   "সেচ": r.sech, "জরিমানা": r.jorimana, "হাল": r.hal, "বকেয়া": r.bokeya,
                   "হাওলাত": r.hawlat, "অনুদান": r.anudan, "ভাঙারি": r.vangari, "পুকুর": r.pukur, "বিঘাত": r.bighat, "ভর্তি ফি": r.bhortifi, "ঋণ": r.rin, "সঞ্চয়": r.soncoy, "বিবিধ": r.bibidh,
-                  "মোট": r.amount,
+                  "মোট": r.voided ? "বাতিল" : r.amount,
                   "User": r.user_name,
                 })),
               )
@@ -400,9 +437,12 @@ export default function CollectionReport() {
               </TableHeader>
               <TableBody>
                 {rows.map((r) => (
-                  <TableRow key={`${r.source}-${r.ref_id}`}>
+                  <TableRow key={`${r.source}-${r.ref_id}`} className={r.voided ? "opacity-70" : undefined}>
                     <TableCell>{fmtDate(r.date)}</TableCell>
-                    <TableCell className="font-mono text-xs">{r.receipt_no ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {r.receipt_no ?? "—"}
+                      {r.voided && <span className="ml-1 text-destructive font-semibold">— বাতিল</span>}
+                    </TableCell>
                     <TableCell className="text-xs">{r.farmer_code} — {r.farmer_name}</TableCell>
                     <TableCell className="text-right">{r.sech ? money(r.sech) : "—"}</TableCell>
                     <TableCell className="text-right">{r.jorimana ? money(r.jorimana) : "—"}</TableCell>
@@ -417,7 +457,7 @@ export default function CollectionReport() {
                     <TableCell className="text-right">{r.rin ? money(r.rin) : "—"}</TableCell>
                     <TableCell className="text-right">{r.soncoy ? money(r.soncoy) : "—"}</TableCell>
                     <TableCell className="text-right">{r.bibidh ? money(r.bibidh) : "—"}</TableCell>
-                    <TableCell className="text-right font-semibold">{money(r.amount)}</TableCell>
+                    <TableCell className="text-right font-semibold">{r.voided ? <span className="text-destructive">বাতিল</span> : money(r.amount)}</TableCell>
                     <TableCell className="text-xs">{r.user_name}</TableCell>
                   </TableRow>
                 ))}
