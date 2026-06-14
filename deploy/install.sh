@@ -58,14 +58,33 @@ install_coolify() {
 
 # ----------------------------------------------------------------------------- 4. Docker network
 create_network() {
-  docker network inspect mk_net >/dev/null 2>&1 || docker network create mk_net
+  if docker network inspect mk_net >/dev/null 2>&1; then
+    local internal driver
+    internal="$(docker network inspect -f '{{.Internal}}' mk_net 2>/dev/null || echo true)"
+    driver="$(docker network inspect -f '{{.Driver}}' mk_net 2>/dev/null || echo unknown)"
+    if [[ "$internal" == "true" || "$driver" != "bridge" ]]; then
+      warn "Docker network mk_net is not an external-routing bridge network; recreating it…"
+      docker rm -f mk_caddy mk_app >/dev/null 2>&1 || true
+      docker network rm mk_net >/dev/null 2>&1 || true
+    fi
+  fi
+  docker network inspect mk_net >/dev/null 2>&1 || docker network create --driver bridge --attachable mk_net
 }
 
 # ----------------------------------------------------------------------------- 5. Firewall
 configure_firewall() {
+  sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+  mkdir -p /etc/sysctl.d
+  cat >/etc/sysctl.d/99-mkbaliadanga-docker.conf <<'EOF'
+net.ipv4.ip_forward=1
+EOF
+  if [[ -f /etc/default/ufw ]]; then
+    sed -i 's/^DEFAULT_FORWARD_POLICY=.*/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
+  fi
   ufw --force reset
   ufw default deny incoming
   ufw default allow outgoing
+  ufw default allow routed
   ufw allow 22/tcp
   ufw allow 80/tcp
   ufw allow 443/tcp
@@ -99,6 +118,7 @@ EOF
   mkdir -p /etc/docker
   cat >/etc/docker/daemon.json <<'EOF'
 {
+  "dns": ["1.1.1.1", "9.9.9.9", "8.8.8.8"],
   "log-driver": "json-file",
   "log-opts": { "max-size": "10m", "max-file": "3" },
   "no-new-privileges": true,
@@ -106,6 +126,38 @@ EOF
 }
 EOF
   systemctl restart docker
+}
+
+repair_docker_networking() {
+  log "Repairing Docker firewall/DNS forwarding…"
+  sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+  mkdir -p /etc/sysctl.d /etc/docker
+  cat >/etc/sysctl.d/99-mkbaliadanga-docker.conf <<'EOF'
+net.ipv4.ip_forward=1
+EOF
+  [[ -f /etc/default/ufw ]] && sed -i 's/^DEFAULT_FORWARD_POLICY=.*/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
+  ufw default allow routed >/dev/null 2>&1 || true
+  ufw reload >/dev/null 2>&1 || true
+  iptables -P FORWARD ACCEPT 2>/dev/null || true
+  iptables -N DOCKER-USER 2>/dev/null || true
+  iptables -C DOCKER-USER -j RETURN 2>/dev/null || iptables -I DOCKER-USER -j RETURN 2>/dev/null || true
+
+  local tmp=/tmp/mkbaliadanga-daemon.json
+  cat >"$tmp" <<'EOF'
+{
+  "dns": ["1.1.1.1", "9.9.9.9", "8.8.8.8"],
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "10m", "max-file": "3" },
+  "no-new-privileges": true,
+  "live-restore": true
+}
+EOF
+  if [[ ! -f /etc/docker/daemon.json ]] || ! cmp -s "$tmp" /etc/docker/daemon.json; then
+    cp "$tmp" /etc/docker/daemon.json
+    systemctl restart docker
+  fi
+  rm -f "$tmp"
+  ok "Docker firewall/DNS forwarding repaired."
 }
 
 # ----------------------------------------------------------------------------- 7. Generate .env.production
@@ -254,6 +306,46 @@ wait_for_edge_ports_free() {
   die "Ports 80/443 are still busy; Caddy cannot start. Stop the listed service/container and re-run install.sh."
 }
 
+verify_docker_egress() {
+  local i
+  for i in $(seq 1 3); do
+    if docker exec mk_app wget -qO- --timeout=10 http://acme-v02.api.letsencrypt.org/directory >/dev/null 2>&1; then
+      ok "Docker containers can reach Let's Encrypt."
+      return 0
+    fi
+    warn "Docker container outbound DNS/HTTPS failed (attempt $i/3); repairing forwarding and retrying…"
+    repair_docker_networking
+    create_network
+    sleep 2
+  done
+  die "Docker containers cannot reach Let's Encrypt. Fix VPS outbound DNS/HTTPS/firewall, then re-run install.sh."
+}
+
+verify_caddy_edge() {
+  local ports i
+  ports="$(docker port mk_caddy 2>/dev/null || true)"
+  printf '%s\n' "$ports" | tee -a "$LOG_DIR/deploy.log" >/dev/null || true
+  if ! printf '%s\n' "$ports" | grep -Eq '^80/tcp -> .*:80$'; then
+    dump_edge_port_status
+    docker inspect mk_caddy 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+    die "mk_caddy is running but host port 80 is not published to it."
+  fi
+  if ! printf '%s\n' "$ports" | grep -Eq '^443/tcp -> .*:443$'; then
+    dump_edge_port_status
+    docker inspect mk_caddy 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+    die "mk_caddy is running but host port 443 is not published to it."
+  fi
+  for i in $(seq 1 15); do
+    if curl -IsS --max-time 3 -H "Host: ${APP_DOMAIN}" http://127.0.0.1/ >/dev/null 2>&1; then
+      ok "Caddy is listening on host port 80."
+      return 0
+    fi
+    sleep 1
+  done
+  docker logs --tail 120 mk_caddy 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+  die "mk_caddy published port 80 but localhost is still refusing connections."
+}
+
 start_app() {
   cd "$DEPLOY_DIR"
   docker compose --env-file "$ENV_FILE" -f docker-compose.yml build mk_app
@@ -270,6 +362,7 @@ start_app() {
     sleep 2
   done
 
+  verify_docker_egress
   free_edge_ports
   wait_for_edge_ports_free
   if ! docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d --no-deps --force-recreate mk_caddy; then
@@ -293,6 +386,7 @@ start_app() {
   done
   docker restart mk_caddy >/dev/null 2>&1 || true
   sleep 3
+  verify_caddy_edge
   if docker ps --format '{{.Names}} {{.Ports}}' | grep -E ':80->' | grep -qv 'mk_caddy'; then
     dump_edge_port_status
     die "Another proxy is holding port 80 instead of mk_caddy (likely coolify-proxy)."
