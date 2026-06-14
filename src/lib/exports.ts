@@ -156,7 +156,7 @@ export async function exportTablePDF(
   head: string[],
   rows: any[][],
   range?: { from?: string | null; to?: string | null },
-  opts?: { signatures?: string[]; landscape?: boolean },
+  opts?: { signatures?: string[]; landscape?: boolean; preview?: boolean },
 ) {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: opts?.landscape ? "landscape" : "portrait" });
   const startY = await applyPdfHeaderFooter(doc, { title, range });
@@ -183,6 +183,14 @@ export async function exportTablePDF(
   }
 
   finalizePdf(doc);
+  if (opts?.preview) {
+    // Open the A4 PDF in a new tab so the user can check page breaks / margins
+    // before downloading. Falls back to saving if popups are blocked.
+    const url = doc.output("bloburl");
+    const win = window.open(url as any, "_blank");
+    if (!win) doc.save(`${buildExportName(title, range)}.pdf`);
+    return;
+  }
   doc.save(`${buildExportName(title, range)}.pdf`);
 }
 

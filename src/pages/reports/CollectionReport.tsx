@@ -264,6 +264,27 @@ export default function CollectionReport() {
       }
 
       out.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+      // Debug: show how each source/type maps into breakdown columns. Enable by
+      // running `localStorage.setItem('collectionDebug','1')` then reloading.
+      if (typeof window !== "undefined" && localStorage.getItem("collectionDebug") === "1") {
+        const cols = ["sech", "jorimana", "hal", "bokeya", "hawlat", "anudan", "vangari", "pukur", "bighat", "bhortifi", "rin", "soncoy", "share", "lav", "bibidh"] as const;
+        const summary: Record<string, any> = {};
+        for (const r of out) {
+          const key = r.source;
+          summary[key] = summary[key] || { count: 0, total: 0, ...Object.fromEntries(cols.map((c) => [c, 0])) };
+          summary[key].count += 1;
+          summary[key].total += r.amount;
+          for (const c of cols) summary[key][c] += (r as any)[c] || 0;
+        }
+        // eslint-disable-next-line no-console
+        console.groupCollapsed("[CollectionReport] type → column mapping");
+        // eslint-disable-next-line no-console
+        console.table(summary);
+        // eslint-disable-next-line no-console
+        console.groupEnd();
+      }
+
       setRows(out);
     } finally {
       setLoading(false);
