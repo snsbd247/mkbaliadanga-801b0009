@@ -202,32 +202,72 @@ sync_laravel() {
 # ----------------------------------------------------------------------------- 10. App + proxy
 free_edge_ports() {
   # Anything binding host ports 80/443 (Coolify's Traefik proxy, a leftover
-  # mk_caddy from a failed run, etc.) blocks our Caddy. Dynamically find and
-  # stop every container publishing those ports — except mk_caddy itself.
-  local ids id name
+  # mk_caddy from a failed run, host nginx/apache/caddy, etc.) blocks our edge
+  # Caddy. Stop those owners immediately before starting Caddy, not before the
+  # slow app build, otherwise another proxy can reclaim the ports during build.
+  local ids id name svc
+
+  for c in mk_caddy coolify-proxy coolify-realtime-proxy traefik; do
+    if docker ps --format '{{.Names}}' | grep -qx "$c"; then
+      warn "Stopping '$c' to free host ports 80/443 for Caddy…"
+      [[ "$c" != "mk_caddy" ]] && docker update --restart=no "$c" >/dev/null 2>&1 || true
+      docker stop "$c" >/dev/null 2>&1 || true
+    fi
+  done
+
   ids=$(docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' \
-    | grep -E ':80->|:443->' \
-    | grep -v -E '(^|[[:space:]])mk_caddy([[:space:]]|$)' \
+    | grep -E '(:80->|:443->|0\.0\.0\.0:80|0\.0\.0\.0:443|\[::\]:80|\[::\]:443)' \
     | awk '{print $1}')
   for id in $ids; do
     name=$(docker inspect --format '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##')
     warn "Stopping '${name:-$id}' to free host ports 80/443 for Caddy…"
+    [[ "${name:-}" != "mk_caddy" ]] && docker update --restart=no "$id" >/dev/null 2>&1 || true
     docker stop "$id" >/dev/null 2>&1 || true
   done
 
-  # Coolify may auto-restart its proxy; stop it explicitly by known names too.
-  for c in coolify-proxy coolify-realtime-proxy traefik; do
-    if docker ps --format '{{.Names}}' | grep -qx "$c"; then
-      warn "Stopping '$c' to free host ports 80/443 for Caddy…"
-      docker stop "$c" >/dev/null 2>&1 || true
+  for svc in nginx apache2 httpd caddy; do
+    if systemctl is-active --quiet "$svc" 2>/dev/null; then
+      warn "Stopping host service '$svc' to free ports 80/443 for Docker Caddy…"
+      systemctl stop "$svc" >/dev/null 2>&1 || true
+      systemctl disable "$svc" >/dev/null 2>&1 || true
     fi
   done
 }
 
+dump_edge_port_status() {
+  warn "Current host listeners on ports 80/443:"
+  ss -H -ltnp '( sport = :80 or sport = :443 )' 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+  warn "Containers publishing ports 80/443:"
+  docker ps --format 'table {{.Names}}\t{{.Ports}}' | grep -E '(:80->|:443->|0\.0\.0\.0:80|0\.0\.0\.0:443|\[::\]:80|\[::\]:443|NAMES)' | tee -a "$LOG_DIR/deploy.log" >&2 || true
+}
+
+wait_for_edge_ports_free() {
+  local i
+  for i in $(seq 1 20); do
+    if ! ss -H -ltn '( sport = :80 or sport = :443 )' 2>/dev/null | grep -q .; then
+      return 0
+    fi
+    free_edge_ports
+    sleep 1
+  done
+  dump_edge_port_status
+  die "Ports 80/443 are still busy; Caddy cannot start. Stop the listed service/container and re-run install.sh."
+}
+
 start_app() {
   cd "$DEPLOY_DIR"
+  docker compose --env-file "$ENV_FILE" -f docker-compose.yml build mk_app
+  docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d --no-deps mk_app
   free_edge_ports
-  docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d --build
+  wait_for_edge_ports_free
+  if ! docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d --no-deps --force-recreate mk_caddy; then
+    dump_edge_port_status
+    die "Caddy failed to start because ports 80/443 are not available."
+  fi
+  docker inspect -f '{{.State.Running}}' mk_caddy 2>/dev/null | grep -qx true || {
+    docker logs --tail 120 mk_caddy 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+    die "mk_caddy is not running after startup."
+  }
 }
 
 # ----------------------------------------------------------------------------- 11. Backups (cron)
