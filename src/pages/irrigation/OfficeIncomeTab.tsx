@@ -269,6 +269,20 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
+                <Label>{tx("Father's name", "পিতার নাম")}</Label>
+                <Input value={form.father_name} onChange={(e) => setForm({ ...form, father_name: e.target.value })} />
+              </div>
+              <div>
+                <Label>{tx("Village", "গ্রাম")}</Label>
+                <Input value={form.village} onChange={(e) => setForm({ ...form, village: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <Label>{tx("Mobile", "মোবাইল")}</Label>
+              <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
                 <Label>{tx("Amount", "টাকা")}</Label>
                 <Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
               </div>
