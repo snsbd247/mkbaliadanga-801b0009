@@ -4342,6 +4342,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          archived: boolean
           body: string | null
           created_at: string
           id: string
@@ -4352,6 +4353,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          archived?: boolean
           body?: string | null
           created_at?: string
           id?: string
@@ -4362,6 +4364,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          archived?: boolean
           body?: string | null
           created_at?: string
           id?: string
