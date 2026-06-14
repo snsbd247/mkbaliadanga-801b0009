@@ -550,16 +550,18 @@ export default function Reports() {
         <TabsContent value="savings">
           <ExportBar
             onPdf={() => exportTablePDF(`Savings Report${filterTitleSuffix()}`,
-              ["তারিখ", "কৃষক", "সঞ্চয়", "শেয়ার", "লাভ", "উত্তোলন", "অবস্থা"],
-              savingsRows.map(r => [r.date, r.farmer, money(r.deposit), money(r.share), money(r.profit), money(r.withdraw), r.status]))}
+              ["তারিখ", "কৃষক", "সঞ্চয়", "শেয়ার", "ঋণ", "লাভ", "বিবিধ", "উত্তোলন", "অবস্থা"],
+              savingsRows.map(r => [r.date, r.farmer, money(r.deposit), money(r.share), money(r.loan), money(r.profit), money(r.misc), money(r.withdraw), r.status]))}
             onXlsx={() => exportExcel("savings-report", "Savings",
-              savingsRows.map(r => ({ "তারিখ": r.date, "কৃষক": r.farmer, "সঞ্চয়": r.deposit, "শেয়ার": r.share, "লাভ": r.profit, "উত্তোলন": r.withdraw, "অবস্থা": r.status })))}
+              savingsRows.map(r => ({ "তারিখ": r.date, "কৃষক": r.farmer, "সঞ্চয়": r.deposit, "শেয়ার": r.share, "ঋণ": r.loan, "লাভ": r.profit, "বিবিধ": r.misc, "উত্তোলন": r.withdraw, "অবস্থা": r.status })))}
           />
           <Card className="overflow-x-auto"><Table>
             <TableHeader><TableRow>
               <TableHead>তারিখ</TableHead><TableHead>{t("farmerName")}</TableHead>
               <TableHead className="text-right">সঞ্চয়</TableHead><TableHead className="text-right">শেয়ার</TableHead>
-              <TableHead className="text-right">লাভ</TableHead><TableHead className="text-right">উত্তোলন</TableHead>
+              <TableHead className="text-right">ঋণ</TableHead>
+              <TableHead className="text-right">লাভ</TableHead><TableHead className="text-right">বিবিধ</TableHead>
+              <TableHead className="text-right">উত্তোলন</TableHead>
               <TableHead>{t("status")}</TableHead>
             </TableRow></TableHeader>
             <TableBody>{savingsRows.map((r, i) => <TableRow key={i}>
@@ -567,11 +569,13 @@ export default function Reports() {
               <TableCell>{r.farmer}</TableCell>
               <TableCell className="text-right">{r.deposit ? money(r.deposit) : "—"}</TableCell>
               <TableCell className="text-right">{r.share ? money(r.share) : "—"}</TableCell>
+              <TableCell className="text-right">{r.loan ? money(r.loan) : "—"}</TableCell>
               <TableCell className="text-right">{r.profit ? money(r.profit) : "—"}</TableCell>
+              <TableCell className="text-right">{r.misc ? money(r.misc) : "—"}</TableCell>
               <TableCell className="text-right">{r.withdraw ? money(r.withdraw) : "—"}</TableCell>
               <TableCell>{r.status}</TableCell>
             </TableRow>)}
-            {savingsRows.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
+            {savingsRows.length === 0 && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">{t("rpNoData" as any)}</TableCell></TableRow>}
             </TableBody>
           </Table></Card>
         </TabsContent>
