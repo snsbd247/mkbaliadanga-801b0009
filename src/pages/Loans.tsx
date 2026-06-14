@@ -133,12 +133,18 @@ export default function Loans() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={!!stmt} onOpenChange={(o) => { if (!o) setStmt(null); }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{tx("Loan Statement", "ঋণ স্টেটমেন্ট")} — {lang === "bn" ? (stmt?.farmers?.name_bn || stmt?.farmers?.name_en) : stmt?.farmers?.name_en}</DialogTitle></DialogHeader>
-          {stmt && <LoanStatement loanId={stmt.id} />}
-        </DialogContent>
-      </Dialog>
+      <AlertDialog open={!!delId} onOpenChange={(o) => { if (!o) setDelId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tx("Delete loan?", "ঋণ মুছবেন?")}</AlertDialogTitle>
+            <AlertDialogDescription>{tx("This action cannot be undone.", "এই কাজটি ফেরানো যাবে না।")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tx("Cancel", "বাতিল")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => delId && remove(delId)}>{tx("Delete", "মুছুন")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
