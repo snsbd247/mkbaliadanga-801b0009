@@ -4,13 +4,13 @@ import { useAuth } from "@/auth/AuthProvider";
 
 export type ModuleKey =
   | "dashboard" | "offices" | "farmers" | "seasons"
-  | "savings" | "irrigation" | "payments"
+  | "savings" | "loans" | "irrigation" | "payments"
   | "reports" | "users" | "audit" | "settings"
   | "accounting" | "cashbook" | "approvals" | "sms" | "locations"
   | "assets";
 
 export const ALL_MODULES: ModuleKey[] = [
-  "dashboard","offices","farmers","seasons","savings",
+  "dashboard","offices","farmers","seasons","savings","loans",
   "irrigation","payments","reports","users","audit","settings",
   "accounting","cashbook","approvals","sms","locations","assets",
 ];
@@ -26,6 +26,7 @@ const HARDCODED_STAFF: Record<string, Perm> = {
   dashboard: VIEW_ONLY,
   farmers: { can_view: true, can_add: true, can_edit: true, can_delete: false },
   savings: { can_view: true, can_add: true, can_edit: false, can_delete: false },
+  loans: { can_view: true, can_add: true, can_edit: false, can_delete: false },
   
   irrigation: { can_view: true, can_add: true, can_edit: false, can_delete: false },
   payments: { can_view: true, can_add: true, can_edit: false, can_delete: false },

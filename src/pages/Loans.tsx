@@ -18,6 +18,7 @@ import { Plus, Check, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
+import { usePermission } from "@/hooks/usePermission";
 import { money, fmtDate } from "@/lib/format";
 
 const EMPTY = {
@@ -27,7 +28,8 @@ const EMPTY = {
 
 export default function Loans() {
   const { tx, lang } = useLang();
-  const { user, officeId, isAdmin, isSuper } = useAuth();
+  const { user, officeId } = useAuth();
+  const canApprove = usePermission("loans", "can_edit");
   const [rows, setRows] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -188,7 +190,7 @@ export default function Loans() {
                         {r.status === "approved" && (
                           <Button size="sm" variant="ghost" onClick={() => setStmt(r)}><FileText className="h-4 w-4 mr-1" />{tx("Statement", "স্টেটমেন্ট")}</Button>
                         )}
-                        {r.status === "pending" && (isAdmin || isSuper) && (
+                        {r.status === "pending" && canApprove && (
                           <>
                             <Button size="sm" variant="ghost" onClick={() => decide(r.id, "approved")}><Check className="h-4 w-4" /></Button>
                             <Button size="sm" variant="ghost" onClick={() => decide(r.id, "rejected")}><X className="h-4 w-4" /></Button>

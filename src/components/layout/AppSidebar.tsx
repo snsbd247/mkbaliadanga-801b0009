@@ -80,7 +80,7 @@ export function AppSidebar() {
     {
       key: "loans", icon: HandCoins, label: lang === "bn" ? "ঋণ" : "Loans",
       children: [
-        { url: "/loans", icon: HandCoins, label: lang === "bn" ? "ঋণ তালিকা" : "Loans", permKey: "savings" },
+        { url: "/loans", icon: HandCoins, label: lang === "bn" ? "ঋণ তালিকা" : "Loans", permKey: "loans" },
         { url: "/admin/loan-plans", icon: FileText, label: t("loanPlans" as any) || "ঋণ প্ল্যান", adminOnly: true },
       ],
     },

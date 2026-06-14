@@ -35,7 +35,7 @@ const ACTION_LABEL: Record<string, { en: string; bn: string }> = {
 
 const MODULE_LABEL_BN: Record<string, string> = {
   dashboard: "ড্যাশবোর্ড", offices: "অফিস", farmers: "কৃষক", seasons: "মৌসুম",
-  savings: "সঞ্চয়", irrigation: "সেচ", payments: "পেমেন্ট",
+  savings: "সঞ্চয়", loans: "ঋণ", irrigation: "সেচ", payments: "পেমেন্ট",
   reports: "রিপোর্ট", users: "ব্যবহারকারী", audit: "অডিট", settings: "সেটিংস",
   accounting: "হিসাব", cashbook: "ক্যাশবুক", approvals: "অনুমোদন", sms: "এসএমএস",
   locations: "এলাকা", assets: "এসেট",
