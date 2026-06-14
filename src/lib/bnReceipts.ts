@@ -34,6 +34,8 @@ export interface ReceiptOptions {
   orgSize?: "sm" | "md" | "lg";
   /** When true, also print the verify URL (with token) as text under the QR. */
   showVerifyUrl?: boolean;
+  /** Shared receipt_settings template (watermark, QR placement, charge/penalty rows). */
+  template?: Partial<ReceiptTemplate>;
 }
 
 export interface BnReceiptData {
