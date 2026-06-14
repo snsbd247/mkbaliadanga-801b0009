@@ -28,6 +28,7 @@ import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
+import { calcInvoice, getChargeSettings } from "@/lib/irrigationInvoice";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButton";
 import IrrigationInvoicesTab from "@/components/farmers/IrrigationInvoicesTab";
@@ -627,10 +628,39 @@ export default function FarmerDetail() {
       } as any);
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved")); setOpenLand(false);
+      // #16 — show an estimated irrigation due for the new land in the active season.
+      void estimateNewLandDue(land.land_size, (landLoc as any).office_id ?? null);
       setLand({ ...EMPTY_LAND });
       setLandLoc({});
       loadAll();
     } finally { setSavingLand(false); }
+  }
+
+  // Read-only estimate (no DB invoice created). Uses the active season's base rate.
+  async function estimateNewLandDue(landSize: number, officeId: string | null) {
+    try {
+      const { data: season } = await supabase
+        .from("seasons").select("id,name,year,due_date,status")
+        .eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle();
+      if (!season?.id) return;
+      let rq = supabase.from("irrigation_rates")
+        .select("base_rate,office_id").eq("season_id", season.id).eq("is_active", true);
+      const { data: rates } = await rq;
+      const rate = (rates ?? []).find((r: any) => officeId && r.office_id === officeId)?.base_rate
+        ?? (rates ?? [])[0]?.base_rate;
+      if (!(Number(rate) > 0)) return;
+      const settings = await getChargeSettings(officeId);
+      const calc = calcInvoice({
+        land_size_shotok: landSize,
+        rate_per_shotok: Number(rate),
+        settings,
+        due_date: season.due_date || new Date().toISOString().slice(0, 10),
+      });
+      toast.info(
+        `${tx("Estimated irrigation due", "আনুমানিক সেচ বকেয়া")} (${season.name ?? season.year}): ${money(calc.due_amount)}`,
+        { duration: 7000 },
+      );
+    } catch { /* estimate only — ignore errors */ }
   }
 
   async function openEdit(row: LandRow) {
