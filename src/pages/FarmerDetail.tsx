@@ -903,6 +903,7 @@ export default function FarmerDetail() {
           <TabsTrigger value="land_transfers">{tx("Transfer History", "হস্তান্তর ইতিহাস")}</TabsTrigger>
           {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
           {farmer.is_voter && <TabsTrigger value="savings">{t("savings")}</TabsTrigger>}
+          {farmer.is_voter && <TabsTrigger value="loans">{tx("Loans", "ঋণ")}</TabsTrigger>}
           <TabsTrigger value="statement">{t("statement")}</TabsTrigger>
           
           <TabsTrigger value="irr_invoices">{t("irrigation")}</TabsTrigger>
