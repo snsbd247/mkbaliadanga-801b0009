@@ -107,32 +107,54 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
 
   const printReceipt = (r: any) => {
     const officeName = offices.find((o) => o.id === r.office_id)?.name ?? "";
-    const w = window.open("", "_blank", "width=600,height=700");
+    const w = window.open("", "_blank", "width=820,height=1000");
     if (!w) return;
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${r.receipt_no}</title>
-      <style>@page{size:A5 landscape;margin:10mm}
-      body{font-family:'Noto Sans Bengali',Arial,sans-serif;padding:24px;color:#111}
-      h2{text-align:center;margin:0 0 4px}.sub{text-align:center;color:#555;margin-bottom:16px}
-      table{width:100%;border-collapse:collapse}td{padding:6px 4px;border-bottom:1px solid #ddd}
-      .lbl{color:#555;width:40%}.amt{text-align:right;font-size:20px;font-weight:bold;padding-top:14px}
-      .sign{margin-top:48px;text-align:right}</style></head><body>
-      <h2>${officeName || tx("Office Income Receipt", "অফিস আয় রশিদ")}</h2>
-      <div class="sub">${tx("Office Income Receipt", "অফিস আয় রশিদ")}</div>
-      <table>
-        <tr><td class="lbl">${tx("Receipt No", "রশিদ নং")}</td><td>${r.receipt_no}</td></tr>
-        <tr><td class="lbl">${tx("Date", "তারিখ")}</td><td>${fmtDate(r.received_on)}</td></tr>
-        <tr><td class="lbl">${tx("Payer", "প্রদানকারী")}</td><td>${r.payer_name}</td></tr>
-        <tr><td class="lbl">${tx("Type", "ধরন")}</td><td>${typeLabel(r.income_type)}</td></tr>
-        <tr><td class="lbl">${tx("Stream", "স্ট্রিম")}</td><td>${streamLabel(r.stream)}</td></tr>
-        ${r.note ? `<tr><td class="lbl">${tx("Note", "নোট")}</td><td>${r.note}</td></tr>` : ""}
-        <tr><td class="lbl">${tx("Amount", "টাকা")}</td><td class="amt">${money(Number(r.amount))}</td></tr>
-      </table>
-      <div class="sign">${tx("Authorised signature", "অনুমোদিত স্বাক্ষর")}<br/>____________________</div>
+      <style>
+        @page{size:A4 portrait;margin:18mm}
+        *{box-sizing:border-box}
+        body{font-family:'Noto Sans Bengali',Arial,sans-serif;color:#1a1a1a;margin:0}
+        .sheet{border:2px solid #1f4e79;padding:28px 32px;border-radius:6px}
+        .head{text-align:center;border-bottom:2px solid #1f4e79;padding-bottom:12px;margin-bottom:18px}
+        .org{font-size:24px;font-weight:800;color:#1f4e79;letter-spacing:.3px}
+        .doc{display:inline-block;margin-top:10px;background:#1f4e79;color:#fff;padding:4px 18px;border-radius:20px;font-size:13px;font-weight:700}
+        .meta{display:flex;justify-content:space-between;font-size:13px;color:#444;margin:14px 0 18px}
+        table{width:100%;border-collapse:collapse;font-size:14px}
+        td{padding:9px 8px;border-bottom:1px solid #e3e3e3}
+        .lbl{color:#555;width:38%;font-weight:600}
+        .amtrow td{border-top:2px solid #1f4e79;border-bottom:none;padding-top:14px}
+        .amt{text-align:right;font-size:22px;font-weight:800;color:#1f4e79}
+        .signs{display:flex;justify-content:space-between;margin-top:64px}
+        .sig{width:42%;text-align:center;border-top:1px solid #999;padding-top:6px;font-size:12px;color:#555}
+        .foot{text-align:center;margin-top:26px;font-size:11px;color:#888}
+      </style></head><body onload="window.print()">
+      <div class="sheet">
+        <div class="head">
+          <div class="org">${officeName || tx("Office", "অফিস")}</div>
+          <div class="doc">${tx("OFFICE INCOME RECEIPT", "অফিস আয় রশিদ")}</div>
+        </div>
+        <div class="meta">
+          <span>${tx("Receipt No", "রশিদ নং")}: <b>${r.receipt_no}</b></span>
+          <span>${tx("Date", "তারিখ")}: <b>${fmtDate(r.received_on)}</b></span>
+        </div>
+        <table>
+          <tr><td class="lbl">${tx("Payer", "প্রদানকারী")}</td><td>${r.payer_name ?? ""}</td></tr>
+          <tr><td class="lbl">${tx("Income Type", "আয়ের ধরন")}</td><td>${typeLabel(r.income_type)}</td></tr>
+          <tr><td class="lbl">${tx("Stream", "স্ট্রিম")}</td><td>${streamLabel(r.stream)}</td></tr>
+          ${r.note ? `<tr><td class="lbl">${tx("Note", "নোট")}</td><td>${r.note}</td></tr>` : ""}
+          <tr class="amtrow"><td class="lbl">${tx("Amount Received", "প্রাপ্ত টাকা")}</td><td class="amt">${money(Number(r.amount))}</td></tr>
+        </table>
+        <div class="signs">
+          <div class="sig">${tx("Payer Signature", "প্রদানকারীর স্বাক্ষর")}</div>
+          <div class="sig">${tx("Authorised Signature", "অনুমোদিত স্বাক্ষর")}</div>
+        </div>
+        <div class="foot">${tx("This is a system-generated receipt.", "এটি সিস্টেম-জেনারেটেড রশিদ।")}</div>
+      </div>
       </body></html>`);
     w.document.close();
     w.focus();
-    w.print();
   };
+
 
   const exportList = () => {
     exportTablePDF(
