@@ -152,6 +152,9 @@ export default function Vouchers() {
             </SelectContent>
           </Select>
         </div>
+        <Button size="sm" variant="outline" className="ml-auto" onClick={exportPdf} disabled={!rows.length}>
+          <FileDown className="h-4 w-4 mr-1" />{tx("Export PDF", "পিডিএফ")}
+        </Button>
       </Card>
 
       <Card className="overflow-x-auto"><Table>
