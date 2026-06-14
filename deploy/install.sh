@@ -353,7 +353,7 @@ start_app() {
 
   # Verify mk_app is actually running and serving on port 80 before fronting it with Caddy.
   local i=0
-  until docker exec mk_app wget -qO- http://localhost:80/ >/dev/null 2>&1; do
+  until docker exec mk_app wget -qO- http://127.0.0.1:80/ >/dev/null 2>&1; do
     i=$((i+1))
     if [[ $i -ge 30 ]]; then
       docker logs --tail 120 mk_app 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
