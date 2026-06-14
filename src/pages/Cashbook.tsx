@@ -509,17 +509,41 @@ function StreamCashbook(props: {
   const { t, tx } = useLang();
   const { stream, label, month, mFrom, mTo, receipts, expenses, opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
 
+  const [consolidated, setConsolidated] = useState(true);
+
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
 
+  // Income rows — either one row per receipt, or one consolidated row per kind
+  // (cash-book style) with description "রশিদ নং X – Y (n টি)".
+  const incomeRows = useMemo(() => {
+    if (!consolidated) {
+      return streamReceipts.map(x => ({
+        date: x.receipt_date, kind: "income", ref: x.receipt_no || "—",
+        label: getKindLabel(t, x.kind as Kind), desc: x.note || "", amount: Number(x.amount), raw: x,
+      }));
+    }
+    const groups = new Map<string, any[]>();
+    streamReceipts.forEach(x => { if (!groups.has(x.kind)) groups.set(x.kind, []); groups.get(x.kind)!.push(x); });
+    return Array.from(groups.entries()).map(([kind, list]) => {
+      const sorted = [...list].sort((a, b) => String(a.receipt_no || "").localeCompare(String(b.receipt_no || "")));
+      const nos = sorted.map(s => s.receipt_no).filter(Boolean);
+      const range = nos.length === 0 ? "" : nos.length === 1 ? String(nos[0]) : `${nos[0]} – ${nos[nos.length - 1]}`;
+      const desc = `${tx("Receipt no", "রশিদ নং")} ${range} (${list.length}${tx(" pcs", "টি")})`;
+      const amount = list.reduce((s, x) => s + Number(x.amount), 0);
+      const date = sorted[sorted.length - 1].receipt_date;
+      return { date, kind: "income", ref: range || "—", label: getKindLabel(t, kind as Kind), desc, amount, raw: { note: desc } };
+    });
+  }, [streamReceipts, consolidated, t]);
+
   const entries = useMemo(() => {
     const rows: any[] = [
-      ...streamReceipts.map(x => ({ date: x.receipt_date, kind: "income", ref: x.receipt_no, label: x.note || x.kind, amount: Number(x.amount), raw: x })),
-      ...streamExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, amount: Number(x.amount), raw: x })),
+      ...incomeRows,
+      ...streamExpenses.map(x => ({ date: x.expense_date, kind: "expense", ref: x.voucher_no || "—", label: x.head, desc: x.payee || x.note || "", amount: Number(x.amount), raw: x })),
     ].sort((a, b) => a.date.localeCompare(b.date));
     let bal = Number(opening || 0);
     return rows.map(row => { bal += row.kind === "income" ? row.amount : -row.amount; return { ...row, balance: bal }; });
-  }, [streamReceipts, streamExpenses, opening]);
+  }, [incomeRows, streamExpenses, opening]);
 
   const totalIncome = streamReceipts.reduce((s, x) => s + Number(x.amount), 0);
   const totalExpense = streamExpenses.reduce((s, x) => s + Number(x.amount), 0);
@@ -540,7 +564,7 @@ function StreamCashbook(props: {
       [tx("Voucher #", "ভাউচার নং"), t("date"), tx("Head/Type", "খাত/ধরন"), tx("Description", "বিবরণ"), t("income"), t("expense"), t("balance")],
       [
         ["", mFrom, tx("Opening cash", "প্রারম্ভিক জের"), "", "", "", opening],
-        ...entries.map(r => [r.ref, fmtDate(r.date), r.label, r.raw?.payee || r.raw?.note || "", r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
+        ...entries.map(r => [r.ref, fmtDate(r.date), r.label, r.desc || r.raw?.payee || r.raw?.note || "", r.kind === "income" ? r.amount : "", r.kind === "expense" ? r.amount : "", r.balance]),
         ["", "", tx("Total", "মোট"), "", totalIncome, totalExpense, closing],
       ], range,
       { landscape: true, signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] });
@@ -548,7 +572,7 @@ function StreamCashbook(props: {
   function exportXlsx() {
     exportExcel(title, label, [
       { Voucher: "", Date: mFrom, Head: tx("Opening cash", "প্রারম্ভিক জের"), Description: "", Income: "", Expense: "", Balance: opening },
-      ...entries.map(r => ({ Voucher: r.ref, Date: r.date, Head: r.label, Description: r.raw?.payee || r.raw?.note || "", Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })),
+      ...entries.map(r => ({ Voucher: r.ref, Date: r.date, Head: r.label, Description: r.desc || r.raw?.payee || r.raw?.note || "", Income: r.kind === "income" ? r.amount : "", Expense: r.kind === "expense" ? r.amount : "", Balance: r.balance })),
       { Voucher: "", Date: "", Head: tx("Total", "মোট"), Description: "", Income: totalIncome, Expense: totalExpense, Balance: closing },
     ], range);
   }
@@ -564,6 +588,10 @@ function StreamCashbook(props: {
             <div>{t("income")}: <span className="font-semibold text-success">{money(totalIncome)}</span></div>
             <div>{t("expense")}: <span className="font-semibold text-destructive">{money(totalExpense)}</span></div>
             <div>{t("closing")}: <span className={`font-bold ${closing < 0 ? "due-text" : ""}`}>{money(closing)}</span></div>
+          </div>
+          <div className="flex items-center gap-2 self-center">
+            <Switch id={`consol-${stream}`} checked={consolidated} onCheckedChange={setConsolidated} />
+            <Label htmlFor={`consol-${stream}`} className="text-xs cursor-pointer">{tx("Consolidate income (receipt range)", "আয় একত্র (রশিদ রেঞ্জ)")}</Label>
           </div>
           <div className="ml-auto flex gap-2">
             <Button size="sm" variant="outline" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
@@ -600,7 +628,7 @@ function StreamCashbook(props: {
               <TableCell className="font-mono text-xs">{row.ref}</TableCell>
               <TableCell>{fmtDate(row.date)}</TableCell>
               <TableCell>{row.label}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">{row.raw?.payee || row.raw?.note || ""}{row.raw?.is_bank_deposit && <Badge variant="outline" className="ml-1">{tx("Bank", "ব্যাংক")}</Badge>}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">{row.desc || row.raw?.payee || row.raw?.note || ""}{row.raw?.is_bank_deposit && <Badge variant="outline" className="ml-1">{tx("Bank", "ব্যাংক")}</Badge>}</TableCell>
               <TableCell className="text-right text-success">{row.kind === "income" ? money(row.amount) : "—"}</TableCell>
               <TableCell className="text-right text-destructive">{row.kind === "expense" ? money(row.amount) : "—"}</TableCell>
               <TableCell className={`text-right font-semibold ${row.balance < 0 ? "due-text" : ""}`}>{money(row.balance)}</TableCell>
