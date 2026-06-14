@@ -129,6 +129,7 @@ const STR = {
     collectedFromDue: "বকেয়া থেকে সংগৃহীত:",
     currentCharge: "হাল:",
     extraCharges: "বিলম্ব ফি / রক্ষণাবেক্ষণ / নালা চার্জ:",
+    penalty: "জরিমানা / বিলম্ব ফি:",
     desc: "বিবরণ:",
     loanDesc: "ঋণের বিবরণ:",
     balance: "বর্তমান স্থিতি:",
