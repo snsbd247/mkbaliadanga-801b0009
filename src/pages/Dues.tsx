@@ -250,7 +250,7 @@ export default function Dues() {
                           {r.name}{r.father ? ` (পিতা: ${r.father})` : ""} · {r.code}
                           <span className="ml-2 text-xs text-muted-foreground">{farmerCount}টি ডিউ</span>
                         </TableCell>
-                        <TableCell className="text-right font-bold">{money(farmerTotal)}</TableCell>
+                        <TableCell className="text-right font-bold text-destructive">{money(farmerTotal)}</TableCell>
                       </TableRow>
                     )}
                     <TableRow key={i}>
