@@ -168,17 +168,41 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
   };
 
 
+  const NA = "N/A";
+  const exportHead = () => [
+    tx("Receipt No", "রশিদ নং"), tx("Date", "তারিখ"), tx("Name", "নাম"),
+    tx("Father's name", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
+    tx("Mouza", "মৌজা"), tx("Land", "জমি"), tx("Type", "ধরন"), tx("Stream", "স্ট্রিম"),
+    tx("Remark", "রিমার্ক"), tx("Amount", "টাকা"),
+  ];
+  const exportRow = (r: any) => [
+    r.receipt_no, fmtDate(r.received_on), r.payer_name || NA,
+    r.father_name || NA, r.village || NA, r.mobile || NA,
+    NA, NA, typeLabel(r.income_type), streamLabel(r.stream),
+    r.note || NA, money(Number(r.amount)),
+  ];
+
   const exportList = () => {
+    const head = exportHead();
     exportTablePDF(
       tx("Office Income Statement", "অফিস আয় বিবরণী"),
-      [tx("Receipt No", "রশিদ নং"), tx("Date", "তারিখ"), tx("Payer", "প্রদানকারী"), tx("Type", "ধরন"), tx("Stream", "স্ট্রিম"), tx("Amount", "টাকা")],
+      head,
       [
-        ...rows.map((r) => [r.receipt_no, fmtDate(r.received_on), r.payer_name, typeLabel(r.income_type), streamLabel(r.stream), money(Number(r.amount))]),
-        ["", "", "", "", tx("Total", "মোট"), money(total)],
+        ...rows.map(exportRow),
+        ["", "", "", "", "", "", "", "", "", "", tx("Total", "মোট"), money(total)],
       ],
       undefined,
-      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] },
+      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")], landscape: true },
     );
+  };
+
+  const exportXlsx = () => {
+    const head = exportHead();
+    const data = rows.map((r) => {
+      const cells = exportRow(r);
+      return head.reduce((o: any, h, i) => { o[h] = cells[i]; return o; }, {});
+    });
+    exportExcel("office-income", tx("Office Income", "অফিস আয়"), data);
   };
 
   return (
