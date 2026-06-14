@@ -318,7 +318,7 @@ export default function CombinedPayment() {
     }
 
     // Signatures
-    const sigY = boxTop + boxH + 14;
+    const sigY = Math.min(boxTop + boxH + 10, doc.internal.pageSize.getHeight() - 6);
     setF(); doc.setFontSize(9);
     doc.text("সদস্যের স্বাক্ষর / টিপসহি", margin, sigY);
     doc.text("আদয়কারীর স্বাক্ষর", pageW - margin, sigY, { align: "right" });
