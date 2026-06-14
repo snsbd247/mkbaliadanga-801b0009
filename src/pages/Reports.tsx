@@ -239,15 +239,21 @@ export default function Reports() {
 
   // --- Savings collection report (per-transaction split by type) ---
   const savingsRows = useMemo(() => {
-    return savings.map((r: any) => ({
-      date: fmtDate(r.txn_date),
-      farmer: r.farmers?.name_en ?? "—",
-      deposit: r.type === "deposit" ? Number(r.amount) : 0,
-      share: r.type === "share_collection" ? Number(r.amount) : 0,
-      profit: r.type === "profit" ? Number(r.amount) : 0,
-      withdraw: r.type === "withdraw" ? Number(r.amount) : 0,
-      status: r.status,
-    }));
+    return savings.map((r: any) => {
+      const cat = r.category ?? "general";
+      const isDeposit = r.type === "deposit";
+      return {
+        date: fmtDate(r.txn_date),
+        farmer: r.farmers?.name_en ?? "—",
+        deposit: isDeposit && (cat === "general" || cat === "bank") ? Number(r.amount) : 0,
+        share: r.type === "share_collection" ? Number(r.amount) : 0,
+        loan: (r.type === "loan" || (isDeposit && cat === "hawlat")) ? Number(r.amount) : 0,
+        profit: r.type === "profit" ? Number(r.amount) : 0,
+        misc: isDeposit && (cat === "misc" || cat === "donation" || cat === "vangari" || cat === "pond" || cat === "bighat" || cat === "admission") ? Number(r.amount) : 0,
+        withdraw: r.type === "withdraw" ? Number(r.amount) : 0,
+        status: r.status,
+      };
+    });
   }, [savings]);
 
 
