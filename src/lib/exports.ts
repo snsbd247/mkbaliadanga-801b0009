@@ -183,6 +183,14 @@ export async function exportTablePDF(
   }
 
   finalizePdf(doc);
+  if (opts?.preview) {
+    // Open the A4 PDF in a new tab so the user can check page breaks / margins
+    // before downloading. Falls back to saving if popups are blocked.
+    const url = doc.output("bloburl");
+    const win = window.open(url as any, "_blank");
+    if (!win) doc.save(`${buildExportName(title, range)}.pdf`);
+    return;
+  }
   doc.save(`${buildExportName(title, range)}.pdf`);
 }
 
