@@ -15,6 +15,29 @@ SEED_FILE="$ROOT_DIR/supabase/seed.sql"
 
 psql_db() { docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" "$@"; }
 
+ensure_authenticator_role() {
+  psql_db -q <<'SQL'
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    CREATE ROLE anon NOLOGIN NOINHERIT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    CREATE ROLE authenticated NOLOGIN NOINHERIT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE ROLE service_role NOLOGIN NOINHERIT BYPASSRLS;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
+    CREATE ROLE authenticator LOGIN NOINHERIT;
+  END IF;
+END$$;
+
+ALTER ROLE service_role BYPASSRLS;
+GRANT anon, authenticated, service_role TO authenticator;
+SQL
+}
+
 sync_migrations() {
   mkdir -p "$LOCAL_MIGRATIONS"
   if [[ -d "$REPO_MIGRATIONS" ]]; then
@@ -38,18 +61,12 @@ SQL
 
 configure_runtime_settings() {
   log "Configuring environment-specific database runtime settings…"
+  ensure_authenticator_role
   psql_db -q -v db="${POSTGRES_DB}" -v supabase_url="${VITE_SUPABASE_URL}" -v anon_key="${ANON_KEY}" -v jwt_secret="${JWT_SECRET}" <<'SQL'
 ALTER DATABASE :"db" SET app.supabase_url = :'supabase_url';
 ALTER DATABASE :"db" SET app.supabase_anon_key = :'anon_key';
 ALTER DATABASE :"db" SET app.settings.jwt_secret = :'jwt_secret';
 ALTER DATABASE :"db" SET app.settings.jwt_exp = '3600';
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
-    CREATE ROLE authenticator NOINHERIT LOGIN;
-  END IF;
-END
-$$;
 ALTER ROLE authenticator IN DATABASE :"db" SET app.supabase_url = :'supabase_url';
 ALTER ROLE authenticator IN DATABASE :"db" SET app.supabase_anon_key = :'anon_key';
 SQL

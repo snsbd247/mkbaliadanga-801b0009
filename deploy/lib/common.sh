@@ -51,9 +51,60 @@ quote_env_values_with_spaces() {
   local file="${1:-$ENV_FILE}"
   [[ -f "$file" ]] || return 0
   # Old generated env files may contain unquoted values like MK Baliadanga,
-  # which break `source`/`. file` with "command not found". Quote ANY KEY=VALUE
-  # line whose value is unquoted and contains whitespace.
-  sed -i -E "s|^([A-Za-z_][A-Za-z0-9_]*)=([^\"'#[:space:]][^\"'#]*[[:space:]][^\"'#]*)$|\1=\"\2\"|" "$file"
+  # sometimes with inline comments. Those break `source`/`. file` with
+  # "command not found". Repair any KEY=value line whose unquoted value has
+  # whitespace while preserving empty values and comments.
+  if have python3; then
+    python3 - "$file" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+out = []
+changed = False
+key_re = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
+
+for raw in text.splitlines(keepends=True):
+    newline = "\n" if raw.endswith("\n") else ""
+    line = raw[:-1] if newline else raw
+    if line.endswith("\r"):
+        line = line[:-1]
+        newline = "\r" + newline
+
+    m = key_re.match(line)
+    if not m:
+        out.append(raw)
+        continue
+
+    key, value = m.group(1), m.group(2)
+    stripped = value.lstrip()
+    if not stripped or stripped.startswith(("#", '"', "'")) or not re.search(r"\s", stripped):
+        out.append(raw)
+        continue
+
+    body = value
+    comment = ""
+    comment_match = re.search(r"\s+#", body)
+    if comment_match:
+        comment = body[comment_match.start():]
+        body = body[:comment_match.start()]
+
+    body = body.strip()
+    if body and re.search(r"\s", body):
+        escaped = body.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$").replace("`", "\\`")
+        out.append(f'{key}="{escaped}"{comment}{newline}')
+        changed = True
+    else:
+        out.append(raw)
+
+if changed:
+    path.write_text("".join(out))
+PY
+  else
+    sed -i -E "s|^([A-Za-z_][A-Za-z0-9_]*)=([^\"'#[:space:]][^\"'#]*[[:space:]][^\"'#]*)([[:space:]]+#.*)?$|\1=\"\2\"\3|" "$file"
+  fi
 }
 
 load_env() {
@@ -114,7 +165,7 @@ ensure_supabase_core_roles() {
   log "Ensuring self-hosted database roles exist…"
   docker exec -i supabase-db psql -v ON_ERROR_STOP=1 \
     -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" \
-    -v db="${POSTGRES_DB:-postgres}" -v pgpass="${POSTGRES_PASSWORD}" <<'SQL'
+    -v db="${POSTGRES_DB:-postgres}" <<'SQL'
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
@@ -148,6 +199,11 @@ BEGIN
     CREATE ROLE pgbouncer LOGIN NOINHERIT;
   END IF;
 END$$;
+SQL
+
+  docker exec -i supabase-db psql -v ON_ERROR_STOP=1 \
+    -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" \
+    -v db="${POSTGRES_DB:-postgres}" -v pgpass="${POSTGRES_PASSWORD}" <<'SQL'
 
 ALTER ROLE service_role BYPASSRLS;
 ALTER ROLE authenticator WITH LOGIN NOINHERIT PASSWORD :'pgpass';
