@@ -4923,12 +4923,17 @@ export type Database = {
           id: number
           language: string
           paper_size: string
+          qr_placement: string
+          show_charge_row: boolean
           show_logo: boolean
           show_office: boolean
+          show_penalty_row: boolean
           show_signature_line: boolean
           show_token_block: boolean
+          show_watermark: boolean
           updated_at: string
           updated_by: string | null
+          watermark_text: string
         }
         Insert: {
           accent_color?: string
@@ -4938,12 +4943,17 @@ export type Database = {
           id?: number
           language?: string
           paper_size?: string
+          qr_placement?: string
+          show_charge_row?: boolean
           show_logo?: boolean
           show_office?: boolean
+          show_penalty_row?: boolean
           show_signature_line?: boolean
           show_token_block?: boolean
+          show_watermark?: boolean
           updated_at?: string
           updated_by?: string | null
+          watermark_text?: string
         }
         Update: {
           accent_color?: string
@@ -4953,12 +4963,17 @@ export type Database = {
           id?: number
           language?: string
           paper_size?: string
+          qr_placement?: string
+          show_charge_row?: boolean
           show_logo?: boolean
           show_office?: boolean
+          show_penalty_row?: boolean
           show_signature_line?: boolean
           show_token_block?: boolean
+          show_watermark?: boolean
           updated_at?: string
           updated_by?: string | null
+          watermark_text?: string
         }
         Relationships: []
       }
