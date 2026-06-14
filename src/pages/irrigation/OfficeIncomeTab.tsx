@@ -255,6 +255,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
                   <TableCell>{streamLabel(r.stream)}</TableCell>
                   <TableCell className="text-right font-medium">{money(Number(r.amount))}</TableCell>
                   <TableCell className="text-right whitespace-nowrap">
+                    <Button variant="ghost" size="icon" onClick={() => setPreview(r)}><Eye className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => printReceipt(r)}><Printer className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => remove(r)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
