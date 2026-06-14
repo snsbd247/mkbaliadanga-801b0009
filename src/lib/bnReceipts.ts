@@ -319,8 +319,10 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     : `'Inter','Helvetica','Arial',sans-serif`;
 
   const layoutSettings = getReceiptLayoutSettings();
-  const wmText = layoutSettings.watermarkEnabled
-    ? (layoutSettings.watermarkText || d.company_name_bn || d.company_name || "").trim()
+  // Prefer the shared receipt_settings template; fall back to per-module layout settings.
+  const wmEnabled = tpl.show_watermark || layoutSettings.watermarkEnabled;
+  const wmText = wmEnabled
+    ? (tpl.watermark_text || layoutSettings.watermarkText || d.company_name_bn || d.company_name || "").trim()
     : "";
   const watermark = wmText
     ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
