@@ -438,7 +438,8 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreview(null)}>{tx("Close", "বন্ধ")}</Button>
-            <Button onClick={() => { printReceipt(preview); }}><Printer className="mr-1 h-4 w-4" />{tx("Print", "প্রিন্ট")}</Button>
+            {canExport && <Button variant="outline" onClick={() => downloadReceiptPdf(preview)}><FileDown className="mr-1 h-4 w-4" />{tx("Download PDF", "পিডিএফ ডাউনলোড")}</Button>}
+            {canExport && <Button onClick={() => { printReceipt(preview); }}><Printer className="mr-1 h-4 w-4" />{tx("Print", "প্রিন্ট")}</Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
