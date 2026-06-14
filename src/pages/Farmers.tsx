@@ -229,6 +229,7 @@ export default function Farmers() {
   const [duesMap, setDuesMap] = useState<Record<string, { net_due: number; loan_due: number; irr_due: number; savings_bal: number }>>({});
   const [offices, setOffices] = useState<any[]>([]);
   const [q, setQ] = useState("");
+  const [fatherQ, setFatherQ] = useState("");
   const [page, setPage] = useState(0);
   const [showDeleted, setShowDeleted] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
@@ -272,7 +273,7 @@ export default function Farmers() {
     }
   }, []);
 
-  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted, statusFilter, periodFilter]);
+  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, fatherQ, page, showDeleted, statusFilter, periodFilter]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
   // Open the edit dialog when navigated with ?edit=<farmerId>
@@ -342,6 +343,9 @@ export default function Farmers() {
       const idClause = dagFarmerIds.length ? `,id.in.(${dagFarmerIds.join(",")})` : "";
       qy = qy.or(base + idClause);
     }
+    if (fatherQ && fatherQ.trim()) {
+      qy = qy.ilike("father_name", `%${fatherQ.trim()}%`);
+    }
     const { data } = await qy;
     const farmers = data ?? [];
     setList(farmers);
@@ -358,6 +362,7 @@ export default function Farmers() {
 
   function clearFilters() {
     setQ("");
+    setFatherQ("");
     setPage(0);
     setShowDeleted(false);
     setStatusFilter("active");
@@ -780,6 +785,10 @@ export default function Farmers() {
           <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder={t("search") + tx(" / Dag (123, 124/A)…", " / দাগ (123, 124/A)…")} value={q} onChange={e => { setQ(e.target.value); setPage(0); }} className="pl-9" />
+          </div>
+          <div className="relative max-w-xs flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={tx("Search by father's name…", "পিতার নাম দিয়ে খুঁজুন…")} value={fatherQ} onChange={e => { setFatherQ(e.target.value); setPage(0); }} className="pl-9" />
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Select value={statusFilter} onValueChange={(v: any) => { setStatusFilter(v); setPage(0); const n = new URLSearchParams(searchParams); if (v === "all") n.delete("status"); else n.set("status", v); setSearchParams(n, { replace: true }); }}>
