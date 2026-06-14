@@ -43,7 +43,7 @@ export default function CombinedPayment() {
   const [farmer, setFarmer] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [saving, setSaving] = useState(false);
-  const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string; verifyUrl?: string | null } | null>(null);
+  const [lastReceipt, setLastReceipt] = useState<{ no: string; rows: any[]; total: number; farmerName: string; verifyUrl?: string | null; date?: string; member_no?: string | null; father_name?: string | null; village?: string | null; mobile?: string | null; field_receipt_no?: string | null; amounts?: { savings: number; share: number; loan_principal: number; loan_interest: number; misc: number } } | null>(null);
   const [dues, setDues] = useState<FarmerDuesBreakdown | null>(null);
   const [autoDownload, setAutoDownload] = useState<boolean>(() => {
     try { return localStorage.getItem("combined:autoDl") === "1"; } catch { return false; }
