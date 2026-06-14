@@ -32,7 +32,7 @@ type LoanRow = {
   interest_rate: number; duration_months: number; last_payment_on: string | null;
 };
 
-const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "", receipt_no: "" };
+const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "", receipt_no: "", field_receipt_no: "" };
 
 export default function CombinedPayment() {
   const { user, officeId } = useAuth();
@@ -211,7 +211,7 @@ export default function CombinedPayment() {
         father_name: farmer?.n ?? null,
         village: farmer?.village ?? null,
         mobile: farmer?.mobile ?? null,
-        field_receipt_no: form.receipt_no?.trim() || null,
+        field_receipt_no: form.field_receipt_no?.trim() || null,
         amounts: {
           savings: Number(form.savings || 0),
           share: Number(form.share || 0),
@@ -430,6 +430,11 @@ export default function CombinedPayment() {
             <Label>{lang === "bn" ? "রসিদ নম্বর" : "Receipt #"} <span className="text-xs text-muted-foreground">{lang === "bn" ? "(খালি রাখলে অটো)" : "(auto if blank)"}</span></Label>
             <Input value={form.receipt_no} onChange={(e) => setForm({ ...form, receipt_no: e.target.value })}
                    placeholder={lang === "bn" ? "যেমন: 4500" : "e.g. 4500"} />
+          </div>
+          <div>
+            <Label>{lang === "bn" ? "মাঠে আদায় রশিদ নং (ফিল্ড রশিদ)" : "Field collection receipt #"} <span className="text-xs text-muted-foreground">{lang === "bn" ? "(ঐচ্ছিক)" : "(optional)"}</span></Label>
+            <Input value={form.field_receipt_no} onChange={(e) => setForm({ ...form, field_receipt_no: e.target.value })}
+                   placeholder={lang === "bn" ? "মাঠের হাতে-লেখা রশিদ নং" : "Handwritten field receipt #"} />
           </div>
           <div>
             <Label>{lang === "bn" ? "মন্তব্য" : "Note"}</Label>

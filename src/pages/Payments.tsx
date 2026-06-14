@@ -78,7 +78,7 @@ export default function Payments() {
   const [editPayment, setEditPayment] = useState<any>(null);
   const [editInvoiceId, setEditInvoiceId] = useState<string | null>(null);
   const [editLandId, setEditLandId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, reason: "" });
+  const [editForm, setEditForm] = useState({ mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, note: "", reason: "" });
   const [editLoading, setEditLoading] = useState(false);
 
   async function openEditReceipt(p: any) {
@@ -102,7 +102,7 @@ export default function Payments() {
       }
     }
     setEditLandId(landId);
-    setEditForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(p.amount || 0), reason: "" });
+    setEditForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(p.amount || 0), note: p.note ?? "", reason: "" });
     setEditLoading(false);
   }
 
@@ -160,6 +160,12 @@ export default function Payments() {
       }
       const { data: pa } = await supabase.from("payment_allocations").select("id").eq("payment_id", p.id).eq("kind", "irrigation").maybeSingle();
       if (pa) await supabase.from("payment_allocations").update({ amount: newAmount } as any).eq("id", (pa as any).id);
+    }
+    // 4) Note (applies to all kinds incl. savings)
+    const newNote = editForm.note.trim() || null;
+    if ((p.note ?? null) !== newNote) {
+      before.note = p.note ?? null; after.note = newNote;
+      await supabase.from("payments").update({ note: newNote } as any).eq("id", p.id);
     }
     await supabase.from("audit_logs").insert({
       user_id: user?.id, action: "edit", entity: "payments", entity_id: p.id, office_id: p.office_id ?? null,
@@ -980,6 +986,10 @@ export default function Payments() {
               <div>
                 <Label>{tx("Amount (৳)", "টাকা (৳)")}</Label>
                 <Input type="number" step={1} value={editForm.amount || ""} onChange={(e) => setEditForm(f => ({ ...f, amount: Math.round(Number(e.target.value || 0)) }))} />
+              </div>
+              <div>
+                <Label>{tx("Note", "নোট")}</Label>
+                <Input value={editForm.note} onChange={(e) => setEditForm(f => ({ ...f, note: e.target.value }))} placeholder={tx("Remark / note", "মন্তব্য / নোট")} />
               </div>
               <div>
                 <Label>{tx("Reason for change", "পরিবর্তনের কারণ")} *</Label>
