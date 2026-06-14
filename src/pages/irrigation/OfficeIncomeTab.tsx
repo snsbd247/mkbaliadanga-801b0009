@@ -211,6 +211,13 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     exportExcel("office-income", tx("Office Income", "অফিস আয়"), data);
   };
 
+  // Blank A4-style Excel template with the exact column order & headers (one N/A sample row).
+  const exportTemplate = () => {
+    const head = exportHead();
+    const sample = head.reduce((o: any, h) => { o[h] = "N/A"; return o; }, {});
+    exportExcel("office-income-template", tx("Office Income Template", "অফিস আয় টেমপ্লেট"), [sample]);
+  };
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
