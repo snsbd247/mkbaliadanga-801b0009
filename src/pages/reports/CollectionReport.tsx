@@ -30,6 +30,8 @@ type CollectionRow = {
   user_name: string;
   ref_id: string;
   receipt_no: string | null;
+  voided?: boolean;
+  void_reason?: string | null;
   // breakdown columns
   sech: number;
   jorimana: number;
