@@ -145,10 +145,15 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
           <span>${tx("Date", "তারিখ")}: <b>${fmtDate(r.received_on)}</b></span>
         </div>
         <table>
-          <tr><td class="lbl">${tx("Payer", "প্রদানকারী")}</td><td>${r.payer_name ?? ""}</td></tr>
+          <tr><td class="lbl">${tx("Name", "নাম")}</td><td>${r.payer_name ?? "N/A"}</td></tr>
+          <tr><td class="lbl">${tx("Father's name", "পিতার নাম")}</td><td>${r.father_name || "N/A"}</td></tr>
+          <tr><td class="lbl">${tx("Village", "গ্রাম")}</td><td>${r.village || "N/A"}</td></tr>
+          <tr><td class="lbl">${tx("Mobile", "মোবাইল")}</td><td>${r.mobile || "N/A"}</td></tr>
+          <tr><td class="lbl">${tx("Mouza", "মৌজা")}</td><td>N/A</td></tr>
+          <tr><td class="lbl">${tx("Land", "জমি")}</td><td>N/A</td></tr>
           <tr><td class="lbl">${tx("Income Type", "আয়ের ধরন")}</td><td>${typeLabel(r.income_type)}</td></tr>
           <tr><td class="lbl">${tx("Stream", "স্ট্রিম")}</td><td>${streamLabel(r.stream)}</td></tr>
-          ${r.note ? `<tr><td class="lbl">${tx("Note", "নোট")}</td><td>${r.note}</td></tr>` : ""}
+          <tr><td class="lbl">${tx("Remark", "রিমার্ক")}</td><td>${r.note || "N/A"}</td></tr>
           <tr class="amtrow"><td class="lbl">${tx("Amount Received", "প্রাপ্ত টাকা")}</td><td class="amt">${money(Number(r.amount))}</td></tr>
         </table>
         <div class="signs">
