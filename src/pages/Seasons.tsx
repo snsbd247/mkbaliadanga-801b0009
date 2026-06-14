@@ -213,6 +213,7 @@ export default function Seasons() {
       </Card>
 
       <SeasonRatesDialog open={ratesOpen} onOpenChange={setRatesOpen} season={ratesSeason} />
+      <CarryForwardDialog open={cfOpen} onOpenChange={setCfOpen} season={cfSeason} />
     </>
   );
 }
