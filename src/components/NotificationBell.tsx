@@ -21,6 +21,7 @@ export function NotificationBell() {
   const { tx } = useLang();
   const nav = useNavigate();
   const [items, setItems] = useState<any[]>([]);
+  const [view, setView] = useState<"active" | "archived">("active");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "connecting" | "subscribed" | "error" | "closed">("idle");
