@@ -97,7 +97,9 @@ export function flattenInvoiceForExport(inv: any, lang: Lang = "bn") {
     [L.mobile]: inv.farmers?.mobile ?? "",
     [L.mouza]: inv.lands?.mouza ?? "",
     [L.dag]: parseDagNumbers(inv.lands?.dag_no).join(dagSeparatorString(getReceiptLayoutSettings().dagSeparator)),
-    [L.landSize]: inv.lands?.land_size ?? "",
+    [L.landSize]: inv.lands?.land_size != null && inv.lands?.land_size !== ""
+      ? formatLandSize(inv.lands.land_size, lang === "en" ? "ascii" : "with_katha")
+      : "",
     [L.landType]: inv.land_type_name ?? snap.land_type_name ?? "",
     [L.season]: inv.seasons?.name ?? inv.seasons?.type ?? "",
     [L.year]: inv.seasons?.year ?? "",
