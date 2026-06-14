@@ -657,7 +657,7 @@ export default function FarmerDetail() {
         due_date: season.due_date || new Date().toISOString().slice(0, 10),
       });
       toast.info(
-        `${tx("Estimated irrigation due", "আনুমানিক সেচ বকেয়া")} (${season.name ?? season.year}): ${money(calc.due_amount)}`,
+        `${tx("Estimated irrigation due", "আনুমানিক সেচ বকেয়া")} (${season.name ?? season.year}): ${money(calc.due_amount)}${suffix}`,
         { duration: 7000 },
       );
     } catch { /* estimate only — ignore errors */ }
