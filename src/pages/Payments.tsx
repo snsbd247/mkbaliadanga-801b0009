@@ -357,13 +357,13 @@ export default function Payments() {
       const primary = allocs[0];
 
       // Auto-generate receipt number if user didn't supply one.
-      // IRR-YYYY-NNNNN when every allocation is irrigation, otherwise PAY-YYYY-NNNNN.
+      // Unified paid-receipt serial shared across all streams (RCP-YYYY-MM-NNNN).
       let finalReceiptNo: string | null = receiptNo.trim() || null;
       if (!finalReceiptNo) {
         const allIrr = allocs.every(a => a.kind === "irrigation");
-        const rpcKind = allIrr ? "IRR" : "PAY";
-        finalReceiptNo = await nextMonthlyReceiptNo(rpcKind, officeId, idemKey);
+        finalReceiptNo = await nextUnifiedReceiptNo(officeId, allIrr ? "IRR" : "PAY", idemKey);
       }
+
 
       const payload: any = {
         farmer_id: farmerId,
