@@ -204,7 +204,22 @@ export default function CombinedPayment() {
 
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
       const verifyUrl = verifyToken ? `${window.location.origin}/r/${verifyToken}` : `${window.location.origin}/r/${receiptNo}`;
-      setLastReceipt({ no: receiptNo, rows, total, farmerName, verifyUrl });
+      setLastReceipt({
+        no: receiptNo, rows, total, farmerName, verifyUrl,
+        date: new Date().toISOString(),
+        member_no: farmer?.member_no ?? farmer?.farmer_code ?? null,
+        father_name: farmer?.n ?? null,
+        village: farmer?.village ?? null,
+        mobile: farmer?.mobile ?? null,
+        field_receipt_no: form.receipt_no?.trim() || null,
+        amounts: {
+          savings: Number(form.savings || 0),
+          share: Number(form.share || 0),
+          loan_principal: Number(form.loan_principal || 0),
+          loan_interest: Number(form.loan_interest || 0),
+          misc: 0,
+        },
+      });
 
       guard.clear();
       // Refresh related caches so Savings/Loans/Payments/Statement views update immediately
