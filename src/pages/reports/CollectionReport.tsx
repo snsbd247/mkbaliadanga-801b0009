@@ -40,6 +40,10 @@ type CollectionRow = {
   rin: number;
   soncoy: number;
   bibidh: number;
+  vangari: number;
+  pukur: number;
+  bighat: number;
+  bhortifi: number;
 };
 
 type ProfileLite = { id: string; full_name: string | null; email: string | null; office_id: string | null };
