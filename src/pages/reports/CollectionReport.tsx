@@ -172,6 +172,7 @@ export default function CollectionReport() {
           receipt_no: null,
           sech: 0, jorimana: 0, hal: 0, bokeya: 0,
           hawlat: 0, anudan: 0, rin: Number(r.amount || 0), soncoy: 0, bibidh: 0,
+          vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
         });
       }
 
