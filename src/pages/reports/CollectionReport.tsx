@@ -199,6 +199,7 @@ export default function CollectionReport() {
         const fn = nameForFarmer(r.farmers);
         const amt = Number(r.amount || 0);
         const cat = (r as any).category as string | null;
+        const isShare = (r as any).type === "share_deposit" || cat === "share";
         out.push({
           source: "savings",
           date: r.txn_date,
@@ -214,10 +215,10 @@ export default function CollectionReport() {
           hawlat: cat === "hawlat" ? amt : 0,
           anudan: cat === "donation" ? amt : 0,
           rin: 0,
-          soncoy: (!cat || cat === "general") ? amt : 0,
-          share: cat === "share" ? amt : 0,
+          soncoy: (!isShare && (!cat || cat === "general")) ? amt : 0,
+          share: isShare ? amt : 0,
           lav: 0,
-          bibidh: (cat === "misc" || cat === "bank") ? amt : 0,
+          bibidh: (!isShare && (cat === "misc" || cat === "bank")) ? amt : 0,
           vangari: (cat === "vangari" || cat === "scrap") ? amt : 0,
           pukur: (cat === "pond" || cat === "pukur") ? amt : 0,
           bighat: cat === "bighat" ? amt : 0,
