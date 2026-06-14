@@ -264,13 +264,26 @@ export default function Cashbook() {
   async function saveReceipt() {
     if (r.amount <= 0) return toast.error(t("amountMustBePositive"));
     if (!r.kind) return toast.error(t("pickAKind"));
+    if (r.method === "bank" && !r.bank_account_id) return toast.error(tx("Select a bank account", "ব্যাংক একাউন্ট নির্বাচন করুন"));
+    // A bank-method income = a withdrawal from that bank; pair it with a bank_transactions row.
+    const linkId = r.method === "bank" ? crypto.randomUUID() : null;
     const { error } = await supabase.from("receipts").insert({
       kind: r.kind, farmer_id: r.farmer_id || null, amount: r.amount, method: r.method,
-      note: r.note, receipt_date: r.receipt_date, collected_by: user?.id,
-    });
+      note: r.note, receipt_date: r.receipt_date, collected_by: user?.id, link_id: linkId,
+    } as any);
     if (error) return toast.error(error.message);
+    if (linkId) {
+      const acc = bankAccounts.find(b => b.id === r.bank_account_id);
+      const bankLabel = acc ? `${acc.bank_name} — ${acc.account_no}` : "Bank";
+      const { error: bErr } = await sb.from("bank_transactions").insert({
+        bank_account_id: r.bank_account_id, txn_date: r.receipt_date, txn_type: "withdraw",
+        amount: r.amount, note: `${tx("Cashbook withdraw", "ক্যাশবুক উত্তোলন")}${r.note ? " · " + r.note : ""}`,
+        office_id: officeId ?? null, created_by: user?.id, link_id: linkId,
+      });
+      if (bErr) toast.error("Saved receipt but bank withdraw failed: " + bErr.message);
+    }
     toast.success(t("saved")); setOpenR(false);
-    setR({ kind: "irrigation", farmer_id: "", amount: 0, method: "cash", note: "", receipt_date: new Date().toISOString().slice(0, 10) });
+    setR({ kind: "irrigation", farmer_id: "", amount: 0, method: "cash", bank_account_id: "", note: "", receipt_date: new Date().toISOString().slice(0, 10) });
     load();
   }
 
