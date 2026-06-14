@@ -243,9 +243,10 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (d.farmer.land_size != null) {
       const shatak = Number(d.farmer.land_size);
       const bigha = shatak / 33;
+      const katha = shatak / 1.65; // 1 বিঘা = 20 কাঠা = 33 শতক
       sizeLabel = lang === "bn"
-        ? `${bigha.toFixed(2)} বিঘা (${shatak.toFixed(2)} শতক)`
-        : `${bigha.toFixed(2)} bigha (${shatak.toFixed(2)} shatak)`;
+        ? `${bigha.toFixed(2)} বিঘা · ${katha.toFixed(2)} কাঠা (${shatak.toFixed(2)} শতক)`
+        : `${bigha.toFixed(2)} bigha · ${katha.toFixed(2)} katha (${shatak.toFixed(2)} shatak)`;
     }
     const layout = getReceiptLayoutSettings();
     const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels(lang);
