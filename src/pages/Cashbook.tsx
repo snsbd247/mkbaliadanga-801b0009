@@ -614,6 +614,21 @@ function StreamCashbook(props: {
         </div>
       </Card>
 
+      <CashbookA4Preview
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        companyName={props.brand?.company_name}
+        address={props.brand?.address}
+        title={title}
+        range={range}
+        opening={Number(opening || 0)}
+        rows={cbRows()}
+        totalIncome={totalIncome}
+        totalExpense={totalExpense}
+        closing={closing}
+      />
+
+
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>
           <TableHead>{tx("Voucher #", "ভাউচার নং")}</TableHead>
