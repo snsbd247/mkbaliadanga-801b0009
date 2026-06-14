@@ -158,6 +158,9 @@ wait_for_supabase_platform_schemas() {
     fi
     sleep 2
   done
+  log "----- supabase-auth (last 40 lines) -----";    docker logs --tail 40 supabase-auth    2>&1 || true
+  log "----- supabase-storage (last 40 lines) -----"; docker logs --tail 40 supabase-storage 2>&1 || true
+  log "----- supabase-rest (last 40 lines) -----";    docker logs --tail 40 supabase-rest    2>&1 || true
   die "Auth/storage schemas did not become ready. Check: docker logs supabase-auth supabase-storage supabase-rest"
 }
 
