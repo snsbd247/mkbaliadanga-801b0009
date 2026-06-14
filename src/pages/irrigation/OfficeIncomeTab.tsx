@@ -208,12 +208,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
 
 
   const NA = "N/A";
-  const exportHead = () => [
-    tx("Receipt No", "রশিদ নং"), tx("Date", "তারিখ"), tx("Name", "নাম"),
-    tx("Father's name", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
-    tx("Mouza", "মৌজা"), tx("Land", "জমি"), tx("Type", "ধরন"), tx("Stream", "স্ট্রিম"),
-    tx("Remark", "রিমার্ক"), tx("Amount", "টাকা"),
-  ];
+  const exportHead = () => officeIncomeHeaders(tx);
   const exportRow = (r: any) => [
     r.receipt_no, fmtDate(r.received_on), r.payer_name || NA,
     r.father_name || NA, r.village || NA, r.mobile || NA,
@@ -221,7 +216,11 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     r.note || NA, money(Number(r.amount)),
   ];
 
+  const auditExport = (action: string) =>
+    logAudit({ office_id: offices[0]?.id ?? null, module: "receipt", action_type: "export", new_data: { action, count: rows.length } });
+
   const exportList = () => {
+    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
     const head = exportHead();
     exportTablePDF(
       tx("Office Income Statement", "অফিস আয় বিবরণী"),
@@ -233,22 +232,27 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
       undefined,
       { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")], landscape: true },
     );
+    auditExport("pdf");
   };
 
   const exportXlsx = () => {
+    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
     const head = exportHead();
     const data = rows.map((r) => {
       const cells = exportRow(r);
       return head.reduce((o: any, h, i) => { o[h] = cells[i]; return o; }, {});
     });
     exportExcel("office-income", tx("Office Income", "অফিস আয়"), data);
+    auditExport("excel");
   };
 
   // Blank A4-style Excel template with the exact column order & headers (one N/A sample row).
   const exportTemplate = () => {
+    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
     const head = exportHead();
     const sample = head.reduce((o: any, h) => { o[h] = "N/A"; return o; }, {});
     exportExcel("office-income-template", tx("Office Income Template", "অফিস আয় টেমপ্লেট"), [sample]);
+    auditExport("template");
   };
 
   return (
