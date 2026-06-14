@@ -165,6 +165,7 @@ const STR = {
     collectedFromDue: "Collected from outstanding:",
     currentCharge: "Current season charge:",
     extraCharges: "Penalty / Maintenance / Canal:",
+    penalty: "Penalty / Late fee:",
     desc: "Description:",
     loanDesc: "Loan description:",
     balance: "Current balance:",
