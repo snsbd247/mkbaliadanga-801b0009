@@ -1307,6 +1307,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               </Button>
             )}
             <Button variant="outline" onClick={() => setManualOpen(true)}><Plus className="h-4 w-4 mr-1" /> {tx("Manual", "ম্যানুয়াল")}</Button>
+            <Button variant="outline" onClick={carryForwardDues} disabled={busy || !seasonId}>{tx("Carry forward dues", "বকেয়া carry-forward")}</Button>
           </div>
         </CardContent>
       </Card>
