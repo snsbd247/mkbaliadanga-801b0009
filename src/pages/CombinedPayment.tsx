@@ -300,7 +300,7 @@ export default function CombinedPayment() {
       ["মাঠে আদায় রশিদ নং", lastReceipt.field_receipt_no ? toBnDigits(lastReceipt.field_receipt_no) : "—"],
       ["বিবরন", ""],
     ];
-    const rowH = 6.4;
+    const rowH = 6.0;
     const boxTop = y;
     const boxH = lines.length * rowH + 4;
     doc.setDrawColor(40); doc.setLineWidth(0.4);
