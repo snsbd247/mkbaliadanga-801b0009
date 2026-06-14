@@ -65,8 +65,11 @@ export default function Loans() {
 
   async function save() {
     if (!form.farmer_id) return toast.error(tx("Select a farmer", "ফার্মার নির্বাচন করুন"));
-    if (!farmer?.is_voter) return toast.error(tx("Loans are only allowed for savings members", "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে"));
     if (!(Number(form.principal) > 0)) return toast.error(tx("Principal must be greater than 0", "আসল টাকা ০ এর বেশি হতে হবে"));
+    // Loans are only for savings members, and inactive members cannot transact.
+    const { data: mchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
+    if (!mchk?.is_voter) return toast.error(tx("Loans are only allowed for savings members", "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে"));
+    if (mchk?.savings_inactive) return toast.error(`${mchk?.name_en ?? tx("This member", "এই সদস্য")} ${tx("is inactive — loans cannot be issued.", "ইনঅ্যাক্টিভ — ঋণ ইস্যু করা যাবে না।")}`);
     setSaving(true);
     try {
       const { error } = await supabase.from("loans").insert({
