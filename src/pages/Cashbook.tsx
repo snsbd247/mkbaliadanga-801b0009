@@ -22,6 +22,7 @@ import { useBranding } from "@/lib/branding";
 import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { autoReceiptNo } from "@/lib/receiptNo";
+import { CashbookA4Preview } from "@/components/cashbook/CashbookA4Preview";
 
 const sb = supabase as any;
 
@@ -510,6 +511,7 @@ function StreamCashbook(props: {
   const { stream, label, month, mFrom, mTo, receipts, expenses, opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
 
   const [consolidated, setConsolidated] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
@@ -600,6 +602,7 @@ function StreamCashbook(props: {
             <Label htmlFor={`consol-${stream}`} className="text-xs cursor-pointer">{tx("Consolidate income (receipt range)", "আয় একত্র (রশিদ রেঞ্জ)")}</Label>
           </div>
           <div className="ml-auto flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}><Printer className="h-4 w-4 mr-1" />{tx("Preview / Print", "প্রিভিউ / প্রিন্ট")}</Button>
             <Button size="sm" variant="outline" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />{t("exportPdf")}</Button>
             <Button size="sm" variant="outline" onClick={exportXlsx}><FileSpreadsheet className="h-4 w-4 mr-1" />{t("exportExcel")}</Button>
             {canSubmit && (
@@ -610,6 +613,21 @@ function StreamCashbook(props: {
           </div>
         </div>
       </Card>
+
+      <CashbookA4Preview
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        companyName={props.brand?.company_name}
+        address={props.brand?.address}
+        title={title}
+        range={range}
+        opening={Number(opening || 0)}
+        rows={cbRows()}
+        totalIncome={totalIncome}
+        totalExpense={totalExpense}
+        closing={closing}
+      />
+
 
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>

@@ -229,6 +229,33 @@
 
   /* Hide app chrome by default in print — pages opt their content in via .print-area */
   .no-print-on-print { display: none !important; }
+
+  /* Cash book A4 preview: print only the preview, full-bleed pages */
+  body:has(.cb-print-area) > *:not([data-radix-portal]) { display: none !important; }
+  [data-radix-portal] [role="dialog"] {
+    position: static !important;
+    transform: none !important;
+    max-width: none !important;
+    max-height: none !important;
+    width: auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .cb-a4-page { page-break-after: always; break-after: page; box-shadow: none !important; }
+  .cb-a4-page:last-child { page-break-after: auto; break-after: auto; }
+}
+
+/* On-screen A4 page sizing for the cash book preview */
+.cb-a4-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 12mm;
+  box-sizing: border-box;
+}
+@media print {
+  .cb-a4-page { width: auto; min-height: auto; padding: 0; }
 }
 
 
