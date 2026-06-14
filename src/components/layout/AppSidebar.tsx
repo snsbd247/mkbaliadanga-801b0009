@@ -179,8 +179,8 @@ export function AppSidebar() {
       key: "auditMon", icon: ShieldAlert, label: t("auditAndMonitoring" as any) || "অডিট ও মনিটরিং",
       children: [
         { url: "/audit", icon: ScrollText, label: t("auditLogs"), developerOnly: true },
-        { url: "/admin/audit-timeline", icon: ScrollText, label: t("auditTimeline" as any) || "Audit Timeline", developerOnly: true },
-        { url: "/admin/retry-jobs", icon: RefreshCw, label: t("retryJobs" as any) || "Retry Jobs", developerOnly: true },
+        { url: "/admin/audit-timeline", icon: ScrollText, label: t("auditTimeline" as any) || "Audit Timeline", adminOnly: true },
+        { url: "/admin/retry-jobs", icon: RefreshCw, label: t("retryJobs" as any) || "Retry Jobs", adminOnly: true },
         { url: "/admin/duplicate-receipts", icon: ShieldAlert, label: t("duplicateReceiptAudit" as any) || "Duplicate Receipts", developerOnly: true },
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
