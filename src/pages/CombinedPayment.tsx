@@ -19,6 +19,8 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
 import { money } from "@/lib/format";
+import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
+import { ensureBanglaFont } from "@/lib/pdfFonts";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
