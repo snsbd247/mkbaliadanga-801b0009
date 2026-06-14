@@ -116,26 +116,31 @@ export default function CashAudit() {
 
   function exportPdf(stream: Stream) {
     const d = rowsFor(stream);
+    let sl = 0;
     const body: any[][] = [
-      [tx("Opening cash", "প্রারম্ভিক ক্যাশ"), "", money(d.open)],
-      ...d.lines.map(l => [l.label, l.income ? money(l.income) : "—", l.expense ? money(l.expense) : "—"]),
-      [tx("Total", "মোট"), money(d.totalIncome), money(d.totalExpense)],
-      [tx("Closing cash", "সমাপনী ক্যাশ"), "", money(d.closing)],
+      ["", tx("Opening cash", "প্রারম্ভিক ক্যাশ"), "", money(d.open)],
+      ...d.lines.map(l => [String(++sl), l.label, l.income ? money(l.income) : "—", l.expense ? money(l.expense) : "—"]),
+      ["", tx("Total", "মোট"), money(d.totalIncome), money(d.totalExpense)],
+      ["", tx("Closing cash", "সমাপনী ক্যাশ"), "", money(d.closing)],
     ];
-    exportTablePDF(streamTitle(stream), [tx("Description", "বিবরণ"), tx("Income", "আয়"), tx("Expense", "ব্যয়")], body, { from, to },
+    exportTablePDF(streamTitle(stream),
+      [tx("Sl", "ক্রমিক"), tx("Description", "বিবরণ"), tx("Income", "আয়"), tx("Expense", "ব্যয়")], body, { from, to },
       { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] });
   }
 
   function exportXlsx(stream: Stream) {
     const d = rowsFor(stream);
+    const SL = tx("Sl", "ক্রমিক"), DESC = tx("Description", "বিবরণ"), INC = tx("Income", "আয়"), EXP = tx("Expense", "ব্যয়");
+    let sl = 0;
     const rows = [
-      { [tx("Description", "বিবরণ")]: tx("Opening cash", "প্রারম্ভিক ক্যাশ"), [tx("Income", "আয়")]: "", [tx("Expense", "ব্যয়")]: d.open },
-      ...d.lines.map(l => ({ [tx("Description", "বিবরণ")]: l.label, [tx("Income", "আয়")]: l.income, [tx("Expense", "ব্যয়")]: l.expense })),
-      { [tx("Description", "বিবরণ")]: tx("Total", "মোট"), [tx("Income", "আয়")]: d.totalIncome, [tx("Expense", "ব্যয়")]: d.totalExpense },
-      { [tx("Description", "বিবরণ")]: tx("Closing cash", "সমাপনী ক্যাশ"), [tx("Income", "আয়")]: "", [tx("Expense", "ব্যয়")]: d.closing },
+      { [SL]: "", [DESC]: tx("Opening cash", "প্রারম্ভিক ক্যাশ"), [INC]: "", [EXP]: d.open },
+      ...d.lines.map(l => ({ [SL]: ++sl, [DESC]: l.label, [INC]: l.income, [EXP]: l.expense })),
+      { [SL]: "", [DESC]: tx("Total", "মোট"), [INC]: d.totalIncome, [EXP]: d.totalExpense },
+      { [SL]: "", [DESC]: tx("Closing cash", "সমাপনী ক্যাশ"), [INC]: "", [EXP]: d.closing },
     ];
     exportExcel(`cash-audit-${stream}`, streamTitle(stream), rows, { from, to });
   }
+
 
   function AuditTable({ stream }: { stream: Stream }) {
     const d = rowsFor(stream);
