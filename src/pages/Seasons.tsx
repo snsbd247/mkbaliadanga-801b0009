@@ -96,6 +96,30 @@ export default function Seasons() {
     load();
   }
 
+  // #14/#3 — prefill a new 6-month season continuing from the latest season.
+  function generateNext() {
+    const addMonths = (iso: string, m: number) => {
+      const d = new Date(iso); d.setMonth(d.getMonth() + m); return d.toISOString().slice(0, 10);
+    };
+    const latest = list[0];
+    let start = new Date().toISOString().slice(0, 10);
+    if (latest?.end_date) start = addMonths(latest.end_date, 0);
+    const end = addMonths(start, 6);
+    const year = new Date(start).getFullYear();
+    setForm({
+      year,
+      season_type_id: types[0]?.id ?? "",
+      name: "",
+      fiscal_year: `${year}-${year + 1}`,
+      start_date: start,
+      end_date: end,
+      due_date: end,
+      status: "active",
+    });
+    setOpen(true);
+  }
+
+
   return (
     <>
       <PageHeader
