@@ -273,7 +273,7 @@ export default function Farmers() {
     }
   }, []);
 
-  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, page, showDeleted, statusFilter, periodFilter]);
+  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, fatherQ, page, showDeleted, statusFilter, periodFilter]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
   // Open the edit dialog when navigated with ?edit=<farmerId>
