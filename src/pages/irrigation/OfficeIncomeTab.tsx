@@ -206,6 +206,28 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     w.focus();
   };
 
+  const downloadReceiptPdf = (r: any) => {
+    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
+    const body: any[][] = [
+      [tx("Receipt No", "রশিদ নং"), r.receipt_no],
+      [tx("Date", "তারিখ"), fmtDate(r.received_on)],
+      [tx("Name", "নাম"), r.payer_name || "N/A"],
+      [tx("Father's name", "পিতার নাম"), r.father_name || "N/A"],
+      [tx("Village", "গ্রাম"), r.village || "N/A"],
+      [tx("Mobile", "মোবাইল"), r.mobile || "N/A"],
+      [tx("Mouza", "মৌজা"), "N/A"],
+      [tx("Land", "জমি"), "N/A"],
+      [tx("Income Type", "আয়ের ধরন"), typeLabel(r.income_type)],
+      [tx("Stream", "স্ট্রিম"), streamLabel(r.stream)],
+      [tx("Remark", "রিমার্ক"), r.note || "N/A"],
+      [tx("Amount Received", "প্রাপ্ত টাকা"), money(Number(r.amount))],
+    ];
+    exportTablePDF(tx("Office Income Receipt", "অফিস আয় রশিদ"),
+      [tx("Field", "ফিল্ড"), tx("Value", "মান")], body, undefined,
+      { signatures: [tx("Payer Signature", "প্রদানকারীর স্বাক্ষর"), tx("Authorised Signature", "অনুমোদিত স্বাক্ষর")] });
+    logAudit({ office_id: r.office_id ?? null, module: "receipt", action_type: "export", reference_id: r.id, new_data: { action: "pdf_download", receipt_no: r.receipt_no } });
+  };
+
 
   const NA = "N/A";
   const exportHead = () => officeIncomeHeaders(tx);
