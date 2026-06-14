@@ -29,6 +29,12 @@ const STREAMS: Array<{ value: string; label: string }> = [
 ];
 const streamLabel = (v?: string) => STREAMS.find(s => s.value === v)?.label ?? "অন্যান্য";
 
+// Map a bank account's stream to a cashbook cash stream so deposits/withdrawals
+// post to the correct cash (সেচ vs সেভিং). Irrigation accounts → irrigation cash.
+type CashStream = "irrigation" | "savings";
+const cashbookStreamForAccount = (accStream?: string): CashStream =>
+  (accStream === "sech" || accStream === "sech_small") ? "irrigation" : "savings";
+
 export default function BankAccounts() {
   const { user } = useAuth();
   const { t } = useLang();
