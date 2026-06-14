@@ -182,7 +182,7 @@ function statusBn(s?: string | null) {
   }
 }
 
-function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer"): string {
+function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: string, settings: InvoicePdfSettings, role: "office" | "farmer", qrDataUrl?: string): string {
   const farmer = d.farmer ?? {};
   const land = d.land ?? {};
   const seasonLabel = [d.season?.name ?? d.season?.type, d.season?.year].filter(Boolean).join(" ");
