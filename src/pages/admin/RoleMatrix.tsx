@@ -38,7 +38,7 @@ const MODULE_LABEL_BN: Record<string, string> = {
   savings: "সঞ্চয়", irrigation: "সেচ", payments: "পেমেন্ট",
   reports: "রিপোর্ট", users: "ব্যবহারকারী", audit: "অডিট", settings: "সেটিংস",
   accounting: "হিসাব", cashbook: "ক্যাশবুক", approvals: "অনুমোদন", sms: "এসএমএস",
-  locations: "এলাকা",
+  locations: "এলাকা", assets: "এসেট",
 };
 
 type Perm = { can_view: boolean; can_add: boolean; can_edit: boolean; can_delete: boolean };
