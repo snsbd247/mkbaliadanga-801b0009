@@ -12,9 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
-import { exportTablePDF } from "@/lib/exports";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
-import { Plus, Trash2, Printer, FileDown } from "lucide-react";
+import { Plus, Trash2, Printer, FileDown, FileSpreadsheet } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const INCOME_TYPES = [
@@ -68,6 +68,11 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
 
   const save = async () => {
     if (!form.payer_name.trim()) { toast.error(tx("Payer name required", "প্রদানকারীর নাম দিন")); return; }
+    if (form.payer_name.trim().length > 100) { toast.error(tx("Name too long", "নাম খুব বড়")); return; }
+    if (form.father_name?.trim().length > 100) { toast.error(tx("Father's name too long", "পিতার নাম খুব বড়")); return; }
+    if (form.village?.trim().length > 100) { toast.error(tx("Village too long", "গ্রাম খুব বড়")); return; }
+    const mob = form.mobile?.trim();
+    if (mob && !/^[0-9+\-\s]{6,20}$/.test(mob)) { toast.error(tx("Invalid mobile number", "সঠিক মোবাইল নম্বর দিন")); return; }
     if (!(Number(form.amount) > 0)) { toast.error(tx("Amount must be greater than 0", "টাকা ০-এর বেশি দিন")); return; }
     setSaving(true);
     try {
@@ -168,17 +173,41 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
   };
 
 
+  const NA = "N/A";
+  const exportHead = () => [
+    tx("Receipt No", "রশিদ নং"), tx("Date", "তারিখ"), tx("Name", "নাম"),
+    tx("Father's name", "পিতার নাম"), tx("Village", "গ্রাম"), tx("Mobile", "মোবাইল"),
+    tx("Mouza", "মৌজা"), tx("Land", "জমি"), tx("Type", "ধরন"), tx("Stream", "স্ট্রিম"),
+    tx("Remark", "রিমার্ক"), tx("Amount", "টাকা"),
+  ];
+  const exportRow = (r: any) => [
+    r.receipt_no, fmtDate(r.received_on), r.payer_name || NA,
+    r.father_name || NA, r.village || NA, r.mobile || NA,
+    NA, NA, typeLabel(r.income_type), streamLabel(r.stream),
+    r.note || NA, money(Number(r.amount)),
+  ];
+
   const exportList = () => {
+    const head = exportHead();
     exportTablePDF(
       tx("Office Income Statement", "অফিস আয় বিবরণী"),
-      [tx("Receipt No", "রশিদ নং"), tx("Date", "তারিখ"), tx("Payer", "প্রদানকারী"), tx("Type", "ধরন"), tx("Stream", "স্ট্রিম"), tx("Amount", "টাকা")],
+      head,
       [
-        ...rows.map((r) => [r.receipt_no, fmtDate(r.received_on), r.payer_name, typeLabel(r.income_type), streamLabel(r.stream), money(Number(r.amount))]),
-        ["", "", "", "", tx("Total", "মোট"), money(total)],
+        ...rows.map(exportRow),
+        ["", "", "", "", "", "", "", "", "", "", tx("Total", "মোট"), money(total)],
       ],
       undefined,
-      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] },
+      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")], landscape: true },
     );
+  };
+
+  const exportXlsx = () => {
+    const head = exportHead();
+    const data = rows.map((r) => {
+      const cells = exportRow(r);
+      return head.reduce((o: any, h, i) => { o[h] = cells[i]; return o; }, {});
+    });
+    exportExcel("office-income", tx("Office Income", "অফিস আয়"), data);
   };
 
   return (
@@ -191,6 +220,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>
+            <Button variant="outline" onClick={exportXlsx} disabled={!rows.length}><FileSpreadsheet className="mr-1 h-4 w-4" />{tx("Export Excel", "এক্সেল")}</Button>
             <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
           </div>
         </div>
