@@ -211,6 +211,8 @@ export default function Cashbook() {
     if (!confirm(tx("Delete this voucher?", "এই ভাউচার মুছবেন?"))) return;
     const { error } = await sb.from("expenses").update({ deleted_at: new Date().toISOString() }).eq("id", x.id);
     if (error) return toast.error(error.message);
+    // Remove the paired bank transaction so balances stay consistent.
+    if (x.link_id) await sb.from("bank_transactions").delete().eq("link_id", x.link_id);
     toast.success(t("saved")); load();
   }
 
