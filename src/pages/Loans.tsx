@@ -108,12 +108,18 @@ export default function Loans() {
                       <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "pending" ? "secondary" : "outline"}>{r.status}</Badge></TableCell>
                       <TableCell className="text-right space-x-1">
                         {r.status === "approved" && (
-                          <Button size="sm" variant="ghost" onClick={() => setStmt(r)}><FileText className="h-4 w-4 mr-1" />{tx("Statement", "স্টেটমেন্ট")}</Button>
+                          <Button size="sm" variant="ghost" onClick={() => navigate(`/loans/${r.id}/statement`)}><FileText className="h-4 w-4 mr-1" />{tx("Statement", "স্টেটমেন্ট")}</Button>
                         )}
                         {r.status === "pending" && canApprove && (
                           <>
                             <Button size="sm" variant="ghost" onClick={() => decide(r.id, "approved")}><Check className="h-4 w-4" /></Button>
                             <Button size="sm" variant="ghost" onClick={() => decide(r.id, "rejected")}><X className="h-4 w-4" /></Button>
+                          </>
+                        )}
+                        {canApprove && (
+                          <>
+                            <Button size="sm" variant="ghost" onClick={() => navigate(`/loans/${r.id}/edit`)}><Pencil className="h-4 w-4" /></Button>
+                            <Button size="sm" variant="ghost" onClick={() => setDelId(r.id)}><Trash2 className="h-4 w-4" /></Button>
                           </>
                         )}
                       </TableCell>
