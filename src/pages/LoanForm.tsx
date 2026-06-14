@@ -141,7 +141,7 @@ export default function LoanForm() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>{tx("Principal (৳)", "আসল (৳)")} *</Label><Input type="number" min={0} value={form.principal} onChange={e => { setForm({ ...form, principal: +e.target.value }); setErrors(er => ({ ...er, principal: undefined })); }} aria-invalid={!!errors.principal} />{errors.principal && <p className="text-sm text-destructive mt-1">{errors.principal}</p>}</div>
-            <div><Label>{tx("Interest Rate (%)", "সুদের হার (%)")}</Label><Input type="number" min={0} step="0.01" disabled={!form.interest_enabled} value={form.interest_rate} onChange={e => setForm({ ...form, interest_rate: +e.target.value })} /></div>
+            <div><Label>{tx("Interest Rate (%)", "সুদের হার (%)")}</Label><Input type="number" min={0} step="0.01" disabled={!form.interest_enabled} value={form.interest_rate} onChange={e => { setForm({ ...form, interest_rate: +e.target.value }); setErrors(er => ({ ...er, interest_rate: undefined })); }} aria-invalid={!!errors.interest_rate} />{errors.interest_rate && <p className="text-sm text-destructive mt-1">{errors.interest_rate}</p>}</div>
           </div>
           <div className="flex items-center justify-between rounded-md border p-3">
             <Label>{tx("Interest Enabled", "সুদ সক্রিয়")}</Label>
