@@ -15,6 +15,10 @@ export interface PaymentReceiptData {
   kind: string;
   amount: number;
   method: string;
+  /** Optional breakdown for irrigation/dues receipts: current (hal) vs arrears (bokeya). */
+  hal_amount?: number | null;
+  bokeya_amount?: number | null;
+  penalty_amount?: number | null;
   note?: string | null;
   collected_by_name?: string | null;
   office_name?: string | null;
