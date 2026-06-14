@@ -245,54 +245,84 @@ export default function CombinedPayment() {
 
   async function printReceipt() {
     if (!lastReceipt) return;
-    // Loan & savings receipts print on A5 landscape per requirement
+    // A5 landscape — matches client's "শেয়ার,সঞ্চয়,ঋণ ও বিবিধ আদায় রশিদ" sample.
     const doc = new jsPDF({ unit: "mm", format: "a5", orientation: "l" });
     const pageW = doc.internal.pageSize.getWidth();
-    const margin = 12;
-    doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-    doc.text(brand.company_name || "Combined Receipt", pageW / 2, margin + 5, { align: "center" });
-    doc.setFontSize(11); doc.text("COMBINED PAYMENT RECEIPT", pageW / 2, margin + 12, { align: "center" });
-    doc.setDrawColor(31, 78, 121); doc.setLineWidth(0.6);
-    doc.line(margin, margin + 15, pageW - margin, margin + 15);
-    // QR code (top-right) for receipt verification
+    const margin = 14;
+    const bnFont = await ensureBanglaFont(doc);
+    const setF = () => { if (bnFont) doc.setFont(bnFont, "normal"); else doc.setFont("helvetica", "normal"); };
+    const taka = (n: number) => `${toBnDigits(Number(n || 0).toLocaleString("en-US"))}৳`;
+
+    // Header
+    setF(); doc.setFontSize(15);
+    doc.text(brand.company_name || "মহাম্মদখানি সেচ প্রকল্প", pageW / 2, margin + 2, { align: "center" });
+    doc.setFontSize(10);
+    doc.text("শেয়ার, সঞ্চয়, ঋণ ও বিবিধ আদায় রশিদ", pageW / 2, margin + 9, { align: "center" });
+    doc.setFontSize(9);
+    doc.setDrawColor(60); doc.setLineWidth(0.3);
+    doc.roundedRect(pageW / 2 - 14, margin + 12, 28, 6, 1, 1);
+    doc.text("সদস্য কপি", pageW / 2, margin + 16, { align: "center" });
+
+    // QR (top-right)
     if (lastReceipt.verifyUrl) {
       try {
         const qrUrl = await QRCode.toDataURL(lastReceipt.verifyUrl, { margin: 0, width: 160 });
-        doc.addImage(qrUrl, "PNG", pageW - margin - 18, margin - 2, 18, 18);
-        doc.setFontSize(6); doc.setTextColor(110);
-        doc.text(lang === "bn" ? "যাচাইয়ের জন্য স্ক্যান" : "Scan to verify", pageW - margin - 9, margin + 18, { align: "center" });
-        doc.setTextColor(0);
+        doc.addImage(qrUrl, "PNG", pageW - margin - 16, margin - 2, 16, 16);
       } catch { /* ignore */ }
     }
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    let y = margin + 22;
-    doc.text(`Receipt No: ${lastReceipt.no}`, margin, y);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, pageW - margin, y, { align: "right" }); y += 6;
-    doc.text(`Farmer: ${lastReceipt.farmerName}`, margin, y);
-    if (farmer?.member_no) doc.text(`Farmer ID: ${farmer.member_no}`, pageW - margin, y, { align: "right" });
-    y += 8;
-    // Table
-    doc.setDrawColor(150); doc.rect(margin, y, pageW - 2 * margin, 8 + lastReceipt.rows.length * 7 + 8);
-    doc.setFont("helvetica", "bold");
-    doc.text("Type", margin + 3, y + 5);
-    doc.text("Amount (BDT)", pageW - margin - 3, y + 5, { align: "right" });
-    doc.line(margin, y + 7, pageW - margin, y + 7);
-    doc.setFont("helvetica", "normal");
-    let ry = y + 13;
-    for (const r of lastReceipt.rows) {
-      doc.text(r.label_en, margin + 3, ry);
-      doc.text(r.amount.toFixed(2), pageW - margin - 3, ry, { align: "right" });
-      ry += 7;
+
+    // Receipt no + date row
+    let y = margin + 24;
+    setF(); doc.setFontSize(9);
+    doc.text(`রশিদ নং: ${toBnDigits(lastReceipt.no)}`, margin, y);
+    const dStr = new Date(lastReceipt.date || Date.now()).toLocaleDateString("en-GB").replace(/\//g, "/");
+    doc.text(`সংগৃহীত তারিখ: ${toBnDigits(dStr)} ইং`, pageW - margin, y, { align: "right" });
+    y += 6;
+    doc.setFontSize(8);
+    doc.text("আদায়ের তথ্য: শেয়ার / সঞ্চয় / ঋণ / হওলাত গ্রহন / অনুদান / ভাংড়ী বিক্রি / বিবিধ", margin, y);
+    y += 4;
+
+    // Body box with label : value rows
+    const a = lastReceipt.amounts ?? { savings: 0, share: 0, loan_principal: 0, loan_interest: 0, misc: 0 };
+    const memberNameNo = `${lastReceipt.farmerName}${lastReceipt.member_no ? "- " + toBnDigits(lastReceipt.member_no) : ""}`;
+    const lines: [string, string][] = [
+      ["সদস্যের নাম / সদস্য নং", memberNameNo],
+      ["পিতা / স্বামীর নাম", lastReceipt.father_name || "—"],
+      ["গ্রাম", lastReceipt.village || "—"],
+      ["মোবাইল নং", lastReceipt.mobile ? toBnDigits(lastReceipt.mobile) : "—"],
+      ["সংগৃহীত সঞ্চয়ের পরিমাণ", taka(a.savings)],
+      ["সংগৃহীত শেয়ারের পরিমাণ", taka(a.share)],
+      ["সংগৃহীত ঋণ আদয়", taka(a.loan_principal)],
+      ["ঋণের লভ্যাংশ আদায়", taka(a.loan_interest)],
+      ["বিবিধ আদায", taka(a.misc)],
+      ["মোট আদয়ের পরিমাণ", taka(lastReceipt.total)],
+      ["কথায়", `${bnAmountInWords(lastReceipt.total)} টাকা মাত্র।`],
+      ["মাঠে আদায় রশিদ নং", lastReceipt.field_receipt_no ? toBnDigits(lastReceipt.field_receipt_no) : "—"],
+      ["বিবরন", ""],
+    ];
+    const rowH = 6.4;
+    const boxTop = y;
+    const boxH = lines.length * rowH + 4;
+    doc.setDrawColor(40); doc.setLineWidth(0.4);
+    doc.rect(margin, boxTop, pageW - 2 * margin, boxH);
+    const labelX = margin + 3;
+    const colonX = margin + 62;
+    const valueX = margin + 66;
+    let ry = boxTop + 6;
+    setF(); doc.setFontSize(9);
+    for (const [label, val] of lines) {
+      doc.text(label, labelX, ry);
+      doc.text(":", colonX, ry);
+      doc.text(val, valueX, ry);
+      ry += rowH;
     }
-    doc.line(margin, ry - 4, pageW - margin, ry - 4);
-    doc.setFont("helvetica", "bold");
-    doc.text("Total", margin + 3, ry + 2);
-    doc.text(lastReceipt.total.toFixed(2), pageW - margin - 3, ry + 2, { align: "right" });
-    // Signature
-    const sigY = ry + 24;
-    doc.setDrawColor(120); doc.line(pageW - margin - 50, sigY, pageW - margin, sigY);
-    doc.setFontSize(8); doc.setTextColor(110);
-    doc.text("Authorised signature", pageW - margin - 25, sigY + 4, { align: "center" });
+
+    // Signatures
+    const sigY = boxTop + boxH + 14;
+    setF(); doc.setFontSize(9);
+    doc.text("সদস্যের স্বাক্ষর / টিপসহি", margin, sigY);
+    doc.text("আদয়কারীর স্বাক্ষর", pageW - margin, sigY, { align: "right" });
+
     doc.save(`combined-${lastReceipt.no}.pdf`);
   }
 
