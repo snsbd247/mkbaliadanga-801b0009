@@ -637,7 +637,7 @@ export default function FarmerDetail() {
   }
 
   // Read-only estimate (no DB invoice created). Uses the active season's base rate.
-  async function estimateNewLandDue(landSize: number, officeId: string | null) {
+  async function estimateNewLandDue(landSize: number, officeId: string | null, suffix = "") {
     try {
       const { data: season } = await supabase
         .from("seasons").select("id,name,year,due_date,status")
