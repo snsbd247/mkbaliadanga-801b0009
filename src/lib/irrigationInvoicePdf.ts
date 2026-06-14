@@ -138,6 +138,7 @@ export interface IrrigationInvoiceData {
   payable_amount?: number | null;
   paid_amount?: number | null;
   due_amount?: number | null;
+  previous_due_amount?: number | null;
 
   invoice_status?: string | null;
 
