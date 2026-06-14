@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
-import { exportTablePDF } from "@/lib/exports";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { Plus, Trash2, Printer, FileDown } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
