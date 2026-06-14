@@ -875,7 +875,7 @@ export default function Payments() {
                           f?.is_voter ? "ভোটার নং" : f?.account_number ? "সঞ্চয়ী নং" : null;
                         const memberRefNo = (f: any) => f?.voter_number ?? f?.account_number ?? null;
 
-                        const doDownload = async (copy: ReceiptCopy) => {
+                        const buildReceiptData = async (): Promise<BnReceiptData> => {
                           let irrEnriched: any = {};
                           if (kind === "irrigation") {
                             // Sum allocated to irrigation; pick the first allocation's irrigation_charges + land.
