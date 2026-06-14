@@ -173,6 +173,14 @@ wait_for_supabase_platform_schemas() {
   die "Auth/storage schemas did not become ready. Check: docker logs supabase-auth supabase-storage supabase-rest"
 }
 
+restart_supabase_platform_services() {
+  # After healing roles/schemas, force the schema-owning services to retry their
+  # own migrations. `up -d` alone may leave an already-running broken container
+  # untouched, which causes permanent waits on auth.users/storage.objects.
+  ( cd "$DEPLOY_DIR" && docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supabase-auth supabase-rest supabase-storage >/dev/null )
+  ( cd "$DEPLOY_DIR" && docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml restart supabase-auth supabase-rest supabase-storage >/dev/null 2>&1 || true )
+}
+
 ensure_supabase_core_roles() {
   log "Ensuring self-hosted database roles exist…"
   docker exec -i supabase-db psql -v ON_ERROR_STOP=1 \
