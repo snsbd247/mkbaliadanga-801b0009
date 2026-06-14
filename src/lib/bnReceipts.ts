@@ -128,7 +128,8 @@ const STR = {
     due: "বকেয়া:",
     collectedFromDue: "বকেয়া থেকে সংগৃহীত:",
     currentCharge: "হাল:",
-    extraCharges: "বিলম্ব ফি / রক্ষণাবেক্ষণ / নালা চার্জ:",
+    extraCharges: "রক্ষণাবেক্ষণ / নালা চার্জ:",
+    penalty: "জরিমানা / বিলম্ব ফি:",
     desc: "বিবরণ:",
     loanDesc: "ঋণের বিবরণ:",
     balance: "বর্তমান স্থিতি:",
@@ -163,7 +164,8 @@ const STR = {
     due: "Outstanding:",
     collectedFromDue: "Collected from outstanding:",
     currentCharge: "Current season charge:",
-    extraCharges: "Penalty / Maintenance / Canal:",
+    extraCharges: "Maintenance / Canal:",
+    penalty: "Penalty / Late fee:",
     desc: "Description:",
     loanDesc: "Loan description:",
     balance: "Current balance:",
@@ -256,16 +258,21 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (mouzaParts.length) rows.push([mouzaLabel, mouzaParts.join(" / ")]);
     if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
     if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
+    if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
+    if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
     rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
     if (d.collected_from_outstanding != null)
       rows.push([t.collectedFromDue, fmt2(Number(d.collected_from_outstanding))]);
     if (d.current_season_charge != null)
       rows.push([t.currentCharge, fmt2(Number(d.current_season_charge))]);
-    const extras = [d.penalty_amount, d.maintenance_charge, d.canal_charge]
-      .map((n) => fmt2(Number(n ?? 0)))
-      .join(" / ");
-    if (d.penalty_amount != null || d.maintenance_charge != null || d.canal_charge != null)
+    // জরিমানা / বিলম্ব ফি — সবসময় আলাদা ঘরে দেখানো হয় (০ হলেও)।
+    rows.push([t.penalty, fmt2(Number(d.penalty_amount ?? 0))]);
+    if (d.maintenance_charge != null || d.canal_charge != null) {
+      const extras = [d.maintenance_charge, d.canal_charge]
+        .map((n) => fmt2(Number(n ?? 0)))
+        .join(" / ");
       rows.push([t.extraCharges, extras]);
+    }
     if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
     const sl = getSavingsLabels(lang);

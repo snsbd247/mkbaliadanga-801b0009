@@ -108,6 +108,16 @@ export default function Dashboard() {
     const irrCashBal = (irrLedger.data ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
     const savCashBal = (savLedger.data ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
 
+    // Hand Cash module — latest submitted month's closing cash
+    const { data: hcSub } = await (supabase as any)
+      .from("hand_cash_submissions")
+      .select("closing_cash,year,month")
+      .order("year", { ascending: false })
+      .order("month", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const handCashClosing = hcSub ? Number(hcSub.closing_cash || 0) : 0;
+
     const farmersList = votersOnly ? farmersData.filter((f: any) => f.is_voter) : farmersData;
     setStats([
       { label: t("totalFarmers") + (votersOnly ? t("voterFarmersOnlySuffix") : ""), value: String(farmersList.length), icon: Users, href: "/farmers" },
@@ -123,6 +133,7 @@ export default function Dashboard() {
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
       
       { label: lang === "bn" ? "হাতে নগদ" : "Hand Cash", value: money(irrCashBal + savCashBal), icon: Banknote, tone: "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মাস শেষ)" : "Hand Cash (Month-end)", value: money(handCashClosing), icon: Banknote, tone: "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
