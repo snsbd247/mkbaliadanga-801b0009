@@ -113,6 +113,16 @@ load_env() {
     set -a
     . "$ENV_FILE"
     set +a
+    if [[ -n "${REALTIME_DB_ENC_KEY:-}" && ${#REALTIME_DB_ENC_KEY} -ne 16 && -w "$ENV_FILE" ]]; then
+      warn "Repairing REALTIME_DB_ENC_KEY length for self-hosted realtime (must be exactly 16 chars)."
+      REALTIME_DB_ENC_KEY="$(openssl rand -hex 8)"
+      if grep -q '^REALTIME_DB_ENC_KEY=' "$ENV_FILE"; then
+        sed -i "s|^REALTIME_DB_ENC_KEY=.*|REALTIME_DB_ENC_KEY=$REALTIME_DB_ENC_KEY|" "$ENV_FILE"
+      else
+        echo "REALTIME_DB_ENC_KEY=$REALTIME_DB_ENC_KEY" >> "$ENV_FILE"
+      fi
+      export REALTIME_DB_ENC_KEY
+    fi
   fi
 }
 gen_secret() { openssl rand -hex "${1:-32}"; }
