@@ -47,6 +47,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState<any>({
     office_id: offices[0]?.id ?? "",
     income_type: "vangari",
