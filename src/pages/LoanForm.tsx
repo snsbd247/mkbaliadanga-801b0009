@@ -31,7 +31,7 @@ export default function LoanForm() {
   const [, setFarmer] = useState<FarmerLite | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string>("pending");
-  const [errors, setErrors] = useState<{ farmer_id?: string; principal?: string }>({});
+  const [errors, setErrors] = useState<{ farmer_id?: string; principal?: string; interest_rate?: string; issued_on?: string }>({});
 
   useEffect(() => {
     document.title = `${isEdit ? tx("Edit Loan", "ঋণ এডিট") : tx("Issue Loan", "ঋণ ইস্যু")} — MK Baliadanga`;
