@@ -637,7 +637,7 @@ export default function FarmerDetail() {
   }
 
   // Read-only estimate (no DB invoice created). Uses the active season's base rate.
-  async function estimateNewLandDue(landSize: number, officeId: string | null) {
+  async function estimateNewLandDue(landSize: number, officeId: string | null, suffix = "") {
     try {
       const { data: season } = await supabase
         .from("seasons").select("id,name,year,due_date,status")
@@ -657,7 +657,7 @@ export default function FarmerDetail() {
         due_date: season.due_date || new Date().toISOString().slice(0, 10),
       });
       toast.info(
-        `${tx("Estimated irrigation due", "আনুমানিক সেচ বকেয়া")} (${season.name ?? season.year}): ${money(calc.due_amount)}`,
+        `${tx("Estimated irrigation due", "আনুমানিক সেচ বকেয়া")} (${season.name ?? season.year}): ${money(calc.due_amount)}${suffix}`,
         { duration: 7000 },
       );
     } catch { /* estimate only — ignore errors */ }
@@ -710,6 +710,7 @@ export default function FarmerDetail() {
   async function saveEdit() {
     if (!editLand) return;
     setEditSaving(true);
+    const prevSize = Number(editLand.land_size ?? 0);
     try {
       const el = editLoc as any;
       if (!el.division_id) { setEditLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
@@ -743,6 +744,14 @@ export default function FarmerDetail() {
         return;
       }
       toast.success(t("saved"));
+      // #13 — if billable area increased on edit, surface the extra estimated due.
+      const delta = Number(editForm.land_size ?? 0) - prevSize;
+      if (delta > 0.0001) {
+        const ownerNote = editForm.owner_type === "borgadar"
+          ? tx(" (borgadar's due)", " (বর্গাদারের ডিউ)")
+          : tx(" (owner's due)", " (নিজ নামে ডিউ)");
+        void estimateNewLandDue(delta, (editLoc as any).office_id ?? null, ownerNote);
+      }
       setEditLand(null);
       setEditLoc({});
       loadAll();
