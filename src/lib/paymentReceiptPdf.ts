@@ -75,6 +75,7 @@ const L = {
     name: "Name", code: "Code", member: "Farmer ID", village: "Village", mobile: "Mobile",
     qr: "QR Card", token: "Token", status: "Status",
     type: "Type", method: "Method", amount: "Amount (BDT)",
+    hal: "Current (Hal)", bokeya: "Arrears (Bokeya)", penalty: "Penalty",
     note: "Note",
     paymentId: "Payment ID", idem: "Idempotency", collected: "Collected by",
     signature: "Authorised signature",
