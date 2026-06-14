@@ -393,10 +393,10 @@ export default function CollectionReport() {
             onPdf={() =>
               exportTablePDF(
                 `Collection Report${filterSuffix()}`,
-                ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Vangari", "Pukur", "Bighat", "Bhorti Fee", "Loan", "Savings", "Misc", "Total", "User"],
+                ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Vangari", "Pukur", "Bighat", "Bhorti Fee", "Loan", "Savings", "Share", "Profit", "Misc", "Total", "User"],
                 rows.map((r) => [
                   fmtDate(r.date), `${r.receipt_no ?? "—"}${r.voided ? " (বাতিল)" : ""}`, `${r.farmer_code} — ${r.farmer_name}`,
-                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.bibidh, r.voided ? "বাতিল" : r.amount, r.user_name,
+                  r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.share, r.lav, r.bibidh, r.voided ? "বাতিল" : r.amount, r.user_name,
                 ]),
               )
             }
