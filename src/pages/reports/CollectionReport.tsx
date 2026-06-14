@@ -175,7 +175,9 @@ export default function CollectionReport() {
           ref_id: r.id,
           receipt_no: null,
           sech: 0, jorimana: 0, hal: 0, bokeya: 0,
-          hawlat: 0, anudan: 0, rin: Number(r.amount || 0), soncoy: 0, bibidh: 0,
+          hawlat: 0, anudan: 0,
+          rin: (r as any).principal_amount != null ? Number((r as any).principal_amount) : Number(r.amount || 0) - Number((r as any).interest_amount || 0),
+          soncoy: 0, share: 0, lav: Number((r as any).interest_amount || 0), bibidh: 0,
           vangari: 0, pukur: 0, bighat: 0, bhortifi: 0,
         });
       }
