@@ -39,11 +39,24 @@ export default function CashAudit() {
   const [to, setTo] = useState(todayStr);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
-  const [opening, setOpening] = useState<Record<Stream, number>>({
+  const [openingManual, setOpeningManual] = useState<Record<Stream, number>>({
     irrigation: Number(localStorage.getItem("cb_open_irrigation") ?? 0),
     savings: Number(localStorage.getItem("cb_open_savings") ?? 0),
   });
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const fromYear = Number(from.slice(0, 4));
+  const fromMonth = Number(from.slice(5, 7));
+
+  // Auto-linked opening cash from cashbook submission for the month of `from`; falls back to manual.
+  function subFor(stream: Stream) {
+    return submissions.find(s => s.year === fromYear && s.month === fromMonth && s.stream === stream);
+  }
+  const opening: Record<Stream, number> = {
+    irrigation: subFor("irrigation") ? Number(subFor("irrigation").opening_cash || 0) : openingManual.irrigation,
+    savings: subFor("savings") ? Number(subFor("savings").opening_cash || 0) : openingManual.savings,
+  };
 
   useEffect(() => { document.title = `${tx("Cash Audit", "ক্যাশ অডিট")} — MK Baliadanga`; }, []);
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [from, to]);
@@ -51,12 +64,14 @@ export default function CashAudit() {
   async function load() {
     setLoading(true);
     try {
-      const [rec, exp] = await Promise.all([
+      const [rec, exp, subs] = await Promise.all([
         sb.from("receipts").select("kind,amount,receipt_date").gte("receipt_date", from).lte("receipt_date", to),
         sb.from("expenses").select("stream,head,amount,expense_date").is("deleted_at", null).gte("expense_date", from).lte("expense_date", to),
+        sb.from("cashbook_submissions").select("year,month,stream,opening_cash,closing_cash,locked").eq("year", fromYear).eq("month", fromMonth),
       ]);
       setReceipts(rec.data ?? []);
       setExpenses(exp.data ?? []);
+      setSubmissions(subs.data ?? []);
     } finally { setLoading(false); }
   }
 
@@ -124,12 +139,19 @@ export default function CashAudit() {
 
   function AuditTable({ stream }: { stream: Stream }) {
     const d = rowsFor(stream);
+    const sub = subFor(stream);
+    const linked = !!sub;
     return (
       <>
         <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
           <div><Label>{tx("Opening cash", "প্রারম্ভিক ক্যাশ")}</Label>
-            <Input type="number" value={opening[stream] || ""} className="w-36"
-              onChange={e => { const val = +e.target.value; setOpening(prev => ({ ...prev, [stream]: val })); localStorage.setItem(`cb_open_${stream}`, String(val || 0)); }} />
+            <Input type="number" value={opening[stream] || ""} disabled={linked} className="w-36"
+              onChange={e => { const val = +e.target.value; setOpeningManual(prev => ({ ...prev, [stream]: val })); localStorage.setItem(`cb_open_${stream}`, String(val || 0)); }} />
+            <div className="text-xs text-muted-foreground mt-1">
+              {linked
+                ? (sub.locked ? tx("Linked from cashbook (locked)", "ক্যাশবুক থেকে লিংক (লক করা)") : tx("Linked from cashbook", "ক্যাশবুক থেকে লিংক"))
+                : tx("Manual (no cashbook submission)", "ম্যানুয়াল (ক্যাশবুক সাবমিশন নেই)")}
+            </div>
           </div>
           <div className="ml-auto flex gap-2">
             <Button size="sm" variant="outline" onClick={() => exportPdf(stream)}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
