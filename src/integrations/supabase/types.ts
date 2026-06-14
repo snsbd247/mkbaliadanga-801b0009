@@ -6167,6 +6167,10 @@ export type Database = {
         Returns: string
       }
       next_receipt_no: { Args: { p_kind: string }; Returns: string }
+      next_unified_receipt_no: {
+        Args: { p_office_id: string }
+        Returns: string
+      }
       next_voucher_no: {
         Args: { _office: string; _type: string }
         Returns: string
