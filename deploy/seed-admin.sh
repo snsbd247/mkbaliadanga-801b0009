@@ -20,10 +20,16 @@ log "Creating/refreshing admin login user (${ADMIN_EMAIL})…"
 psql_db -q -v email="${ADMIN_EMAIL}" -v password="${ADMIN_PASSWORD}" <<'SQL'
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- psql variables (:'email') are NOT interpolated inside dollar-quoted ($$)
+-- PL/pgSQL bodies, so stash them into session settings first and read them
+-- back with current_setting() inside the DO block.
+SELECT set_config('seed_admin.email', :'email', false);
+SELECT set_config('seed_admin.password', :'password', false);
+
 DO $$
 DECLARE
-  v_email text := :'email';
-  v_password text := :'password';
+  v_email text := current_setting('seed_admin.email');
+  v_password text := current_setting('seed_admin.password');
   v_uid uuid;
 BEGIN
   SELECT id INTO v_uid FROM auth.users WHERE email = v_email;
