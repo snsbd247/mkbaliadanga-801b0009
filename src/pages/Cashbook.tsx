@@ -99,7 +99,7 @@ export default function Cashbook() {
   // ----- Income receipt dialog -----
   const [openR, setOpenR] = useState(false);
   const [r, setR] = useState({
-    kind: "irrigation" as Kind, farmer_id: "", amount: 0, method: "cash",
+    kind: "irrigation" as Kind, farmer_id: "", amount: 0, method: "cash", bank_account_id: "",
     note: "", receipt_date: new Date().toISOString().slice(0, 10),
   });
 
