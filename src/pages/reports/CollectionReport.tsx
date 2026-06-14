@@ -387,6 +387,10 @@ export default function CollectionReport() {
                   <TableHead className="text-right">বকেয়া</TableHead>
                   <TableHead className="text-right">হাওলাত</TableHead>
                   <TableHead className="text-right">অনুদান</TableHead>
+                  <TableHead className="text-right">ভাঙারি</TableHead>
+                  <TableHead className="text-right">পুকুর</TableHead>
+                  <TableHead className="text-right">বিঘাত</TableHead>
+                  <TableHead className="text-right">ভর্তি ফি</TableHead>
                   <TableHead className="text-right">ঋণ</TableHead>
                   <TableHead className="text-right">সঞ্চয়</TableHead>
                   <TableHead className="text-right">বিবিধ</TableHead>
