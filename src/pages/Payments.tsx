@@ -988,6 +988,10 @@ export default function Payments() {
                 <Input type="number" step={1} value={editForm.amount || ""} onChange={(e) => setEditForm(f => ({ ...f, amount: Math.round(Number(e.target.value || 0)) }))} />
               </div>
               <div>
+                <Label>{tx("Note", "নোট")}</Label>
+                <Input value={editForm.note} onChange={(e) => setEditForm(f => ({ ...f, note: e.target.value }))} placeholder={tx("Remark / note", "মন্তব্য / নোট")} />
+              </div>
+              <div>
                 <Label>{tx("Reason for change", "পরিবর্তনের কারণ")} *</Label>
                 <Input value={editForm.reason} onChange={(e) => setEditForm(f => ({ ...f, reason: e.target.value }))} placeholder={tx("Why are you editing this receipt?", "কেন এই রসিদ এডিট করছেন?")} />
               </div>
