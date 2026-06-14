@@ -190,7 +190,7 @@ export default function Loans() {
                         {r.status === "approved" && (
                           <Button size="sm" variant="ghost" onClick={() => setStmt(r)}><FileText className="h-4 w-4 mr-1" />{tx("Statement", "স্টেটমেন্ট")}</Button>
                         )}
-                        {r.status === "pending" && (isAdmin || isSuper) && (
+                        {r.status === "pending" && canApprove && (
                           <>
                             <Button size="sm" variant="ghost" onClick={() => decide(r.id, "approved")}><Check className="h-4 w-4" /></Button>
                             <Button size="sm" variant="ghost" onClick={() => decide(r.id, "rejected")}><X className="h-4 w-4" /></Button>
