@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
-import { Plus, Trash2, Printer, FileDown, FileSpreadsheet, Eye, FileSpreadsheet as FileTemplate } from "lucide-react";
+import { Plus, Trash2, Printer, FileDown, FileSpreadsheet, Eye, FileText } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 const INCOME_TYPES = [
