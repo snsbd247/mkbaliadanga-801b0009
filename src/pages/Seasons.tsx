@@ -42,6 +42,8 @@ export default function Seasons() {
 
   const [ratesOpen, setRatesOpen] = useState(false);
   const [ratesSeason, setRatesSeason] = useState<any | null>(null);
+  const [cfOpen, setCfOpen] = useState(false);
+  const [cfSeason, setCfSeason] = useState<any | null>(null);
 
   useEffect(() => {
     document.title = `${t("seasons")} — ${t("appName")}`;
