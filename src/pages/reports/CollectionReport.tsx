@@ -41,6 +41,8 @@ type CollectionRow = {
   anudan: number;
   rin: number;
   soncoy: number;
+  share: number;
+  lav: number;
   bibidh: number;
   vangari: number;
   pukur: number;
