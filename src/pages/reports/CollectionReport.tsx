@@ -187,7 +187,7 @@ export default function CollectionReport() {
         .from("savings_transactions")
         .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,category,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
-        .eq("type", "deposit")
+        .in("type", ["deposit", "share_deposit"])
         .eq("status", "approved")
         .order("txn_date", { ascending: false });
       if (from) svQ = svQ.gte("txn_date", from);
