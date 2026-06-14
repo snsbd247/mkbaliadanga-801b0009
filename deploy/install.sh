@@ -363,6 +363,7 @@ start_app() {
     sleep 2
   done
 
+  verify_docker_egress
   free_edge_ports
   wait_for_edge_ports_free
   if ! docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d --no-deps --force-recreate mk_caddy; then
@@ -386,6 +387,7 @@ start_app() {
   done
   docker restart mk_caddy >/dev/null 2>&1 || true
   sleep 3
+  verify_caddy_edge
   if docker ps --format '{{.Names}} {{.Ports}}' | grep -E ':80->' | grep -qv 'mk_caddy'; then
     dump_edge_port_status
     die "Another proxy is holding port 80 instead of mk_caddy (likely coolify-proxy)."
