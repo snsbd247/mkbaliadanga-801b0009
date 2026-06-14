@@ -221,12 +221,15 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   ];
 
   const chargeRows: Array<[string, number | null | undefined]> = [
-    ["সেচ চার্জ", d.irrigation_amount],
+    ["চলতি সেচ চার্জ", d.irrigation_amount],
     ["রক্ষণাবেক্ষণ", d.maintenance_amount],
     ["খাল / নালা", d.canal_amount],
     ["অন্যান্য", d.other_charge],
     ["বিলম্ব ফি", d.delay_fee],
   ];
+  if (Number(d.previous_due_amount) > 0) {
+    chargeRows.push(["পূর্বের বকেয়া (পূর্ববর্তী সিজন)", d.previous_due_amount]);
+  }
 
   const farmerSig = `
     <div style="text-align:center;min-width:160px;">
