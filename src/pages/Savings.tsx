@@ -359,25 +359,33 @@ export default function Savings() {
     toast.success(tx("Savings account transferred", "সেভিং অ্যাকাউন্ট স্থানান্তর হয়েছে"));
     setTransfer(null); await load();
   }
-  function printReceipt(r: any) {
-    const receiptNo = `SAV-${r.id.slice(0, 8).toUpperCase()}`;
-    exportPaymentReceiptPDF({
-      brand: { company_name: brand.company_name, address: brand.address, mobile: brand.mobile },
+  async function printReceipt(r: any) {
+    const receiptNo = r.receipt_no?.trim() || `SAV-${r.id.slice(0, 8).toUpperCase()}`;
+    // Loan & savings receipts print on A5 landscape per requirement.
+    await downloadBnReceiptPdf({
+      kind: "savings",
       receipt_no: receiptNo,
       date: r.txn_date ?? r.created_at,
-      farmer: {
-        name_en: r.farmers?.name_en ?? "—",
-        farmer_code: r.farmers?.farmer_code,
-        member_no: r.farmers?.member_no,
-        mobile: r.farmers?.mobile,
-        village: r.farmers?.village,
+      company_name: brand.company_name,
+      company_name_bn: (brand as any).company_name_bn ?? undefined,
+      logo_url: (brand as any).logo_url ?? null,
+      org: {
+        name: brand.company_name,
+        name_bn: (brand as any).company_name_bn ?? null,
+        address: brand.address,
+        mobile: brand.mobile,
       },
-      amount: Number(r.amount),
-      method: "cash",
-      note: r.note ?? `Savings ${r.type} (${r.status})`,
-      allocations: [{ kind: `Savings ${r.type}`, amount: Number(r.amount) }],
-      qrText: `${window.location.origin}/r/sav-${r.id}`,
-    });
+      farmer: {
+        name: r.farmers?.name_bn || r.farmers?.name_en || "—",
+        member_no: r.farmers?.member_no ?? null,
+        village: r.farmers?.village ?? null,
+        mobile: r.farmers?.mobile ?? null,
+      },
+      savings_category_bn: r.category ?? null,
+      description: r.note ?? `সঞ্চয় ${r.type}`,
+      collected_amount: Number(r.amount),
+      verify_url: `${window.location.origin}/r/${receiptNo}`,
+    }, "both", { paper: "a5", orientation: "l" });
   }
 
 
