@@ -105,7 +105,7 @@ apply_seed() {
 main() {
   wait_for_supabase_db
   ensure_supabase_core_roles
-  ( cd "$DEPLOY_DIR" && docker compose --env-file "$ENV_FILE" -f docker-compose.supabase.yml up -d supabase-auth supabase-rest supabase-storage >/dev/null )
+  restart_supabase_platform_services
   wait_for_supabase_platform_schemas
   sync_migrations
   ensure_tracking
