@@ -13,7 +13,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF } from "@/lib/exports";
-import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
+import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { Plus, Trash2, Printer, FileDown } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
