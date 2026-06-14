@@ -263,11 +263,14 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       rows.push([t.collectedFromDue, fmt2(Number(d.collected_from_outstanding))]);
     if (d.current_season_charge != null)
       rows.push([t.currentCharge, fmt2(Number(d.current_season_charge))]);
-    const extras = [d.penalty_amount, d.maintenance_charge, d.canal_charge]
-      .map((n) => fmt2(Number(n ?? 0)))
-      .join(" / ");
-    if (d.penalty_amount != null || d.maintenance_charge != null || d.canal_charge != null)
+    // জরিমানা / বিলম্ব ফি — সবসময় আলাদা ঘরে দেখানো হয় (০ হলেও)।
+    rows.push([t.penalty, fmt2(Number(d.penalty_amount ?? 0))]);
+    if (d.maintenance_charge != null || d.canal_charge != null) {
+      const extras = [d.maintenance_charge, d.canal_charge]
+        .map((n) => fmt2(Number(n ?? 0)))
+        .join(" / ");
       rows.push([t.extraCharges, extras]);
+    }
     if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
   } else if (d.kind === "savings") {
     const sl = getSavingsLabels(lang);
