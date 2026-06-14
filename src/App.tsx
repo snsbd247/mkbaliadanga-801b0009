@@ -295,8 +295,8 @@ const App = () => (
                 <Route path="/admin/share-capital-reconciliation" element={<RequirePerm module="accounting"><ShareCapitalReconciliation /></RequirePerm>} />
                 <Route path="/admin/qr-rotation" element={<RequireRole roles={["super_admin"]}><QrRotation /></RequireRole>} />
                 <Route path="/admin/bulk-cards" element={<RequirePerm module="farmers"><BulkCards /></RequirePerm>} />
-                <Route path="/admin/receipt-template" element={<RequireRole roles={["admin","super_admin"]}><ReceiptTemplate /></RequireRole>} />
-                <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
+                <Route path="/admin/receipt-template" element={<RequireRole roles={["super_admin"]}><ReceiptTemplate /></RequireRole>} />
+                <Route path="/admin/card-designer" element={<RequireRole roles={["super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
                 <Route path="/admin/my-permissions" element={<MyPermissions />} />
                 <Route path="/admin/duplicate-receipts" element={<RequireDeveloper><DuplicateReceiptAudit /></RequireDeveloper>} />
