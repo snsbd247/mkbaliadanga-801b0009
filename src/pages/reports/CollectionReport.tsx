@@ -215,6 +215,8 @@ export default function CollectionReport() {
           anudan: cat === "donation" ? amt : 0,
           rin: 0,
           soncoy: (!cat || cat === "general") ? amt : 0,
+          share: cat === "share" ? amt : 0,
+          lav: 0,
           bibidh: (cat === "misc" || cat === "bank") ? amt : 0,
           vangari: (cat === "vangari" || cat === "scrap") ? amt : 0,
           pukur: (cat === "pond" || cat === "pukur") ? amt : 0,
