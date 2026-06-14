@@ -260,8 +260,8 @@ const App = () => (
                 <Route path="/admin/audit-timeline" element={<RequireRole roles={["admin","super_admin"]}><AuditTimeline /></RequireRole>} />
                 <Route path="/farmers/import" element={<RequirePerm module="farmers" action="can_add"><FarmersImport /></RequirePerm>} />
                 <Route path="/import" element={<RequirePerm module="farmers" action="can_add"><DataImport /></RequirePerm>} />
-                <Route path="/users" element={<RequireRole roles={["admin","super_admin"]}><Users /></RequireRole>} />
-                <Route path="/settings" element={<RequireRole roles={["admin","super_admin"]}><Settings /></RequireRole>} />
+                <Route path="/users" element={<RequireRole roles={["super_admin"]}><Users /></RequireRole>} />
+                <Route path="/settings" element={<RequireRole roles={["super_admin"]}><Settings /></RequireRole>} />
                 <Route path="/scan" element={<RequirePerm module="payments"><Scan /></RequirePerm>} />
                 <Route path="/cashbook" element={<RequirePerm module="cashbook"><Cashbook /></RequirePerm>} />
                 <Route path="/hand-cash" element={<RequirePerm module="cashbook"><HandCash /></RequirePerm>} />
@@ -287,16 +287,16 @@ const App = () => (
                 <Route path="/public-payments" element={<RequireRole roles={["admin","super_admin","staff"]}><PublicPaymentIntents /></RequireRole>} />
                 <Route path="/payment-reconciliation" element={<RequireRole roles={["admin","super_admin","committee"]}><PaymentReconciliation /></RequireRole>} />
 
-                <Route path="/sms-settings" element={<RequireRole roles={["admin","super_admin"]}><SmsSettings /></RequireRole>} />
+                <Route path="/sms-settings" element={<RequireRole roles={["super_admin"]}><SmsSettings /></RequireRole>} />
                 <Route path="/sms-logs" element={<RequirePerm module="sms"><SmsLogs /></RequirePerm>} />
-                <Route path="/sms-templates" element={<RequireRole roles={["admin","super_admin"]}><SmsTemplates /></RequireRole>} />
+                <Route path="/sms-templates" element={<RequireRole roles={["super_admin"]}><SmsTemplates /></RequireRole>} />
                 <Route path="/locations" element={<RequirePerm module="locations"><Locations /></RequirePerm>} />
                 <Route path="/admin/reconciliation" element={<RequirePerm module="accounting"><LedgerReconciliation /></RequirePerm>} />
                 <Route path="/admin/share-capital-reconciliation" element={<RequirePerm module="accounting"><ShareCapitalReconciliation /></RequirePerm>} />
-                <Route path="/admin/qr-rotation" element={<RequireRole roles={["admin","super_admin"]}><QrRotation /></RequireRole>} />
+                <Route path="/admin/qr-rotation" element={<RequireRole roles={["super_admin"]}><QrRotation /></RequireRole>} />
                 <Route path="/admin/bulk-cards" element={<RequirePerm module="farmers"><BulkCards /></RequirePerm>} />
-                <Route path="/admin/receipt-template" element={<RequireRole roles={["admin","super_admin"]}><ReceiptTemplate /></RequireRole>} />
-                <Route path="/admin/card-designer" element={<RequireRole roles={["admin","super_admin"]}><CardDesigner /></RequireRole>} />
+                <Route path="/admin/receipt-template" element={<RequireRole roles={["super_admin"]}><ReceiptTemplate /></RequireRole>} />
+                <Route path="/admin/card-designer" element={<RequireRole roles={["super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
                 <Route path="/admin/my-permissions" element={<MyPermissions />} />
                 <Route path="/admin/duplicate-receipts" element={<RequireDeveloper><DuplicateReceiptAudit /></RequireDeveloper>} />
