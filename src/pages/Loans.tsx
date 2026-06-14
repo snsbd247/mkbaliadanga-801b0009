@@ -27,7 +27,8 @@ const EMPTY = {
 
 export default function Loans() {
   const { tx, lang } = useLang();
-  const { user, officeId, isAdmin, isSuper } = useAuth();
+  const { user, officeId } = useAuth();
+  const canApprove = usePermission("loans", "can_edit");
   const [rows, setRows] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
