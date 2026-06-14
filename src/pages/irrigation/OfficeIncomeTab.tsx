@@ -16,6 +16,10 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { Plus, Trash2, Printer, FileDown, FileSpreadsheet, Eye, FileText } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { officeIncomeHeaders } from "@/lib/officeIncomeColumns";
+import { canExportOfficeIncome, canCreateOfficeIncome } from "@/lib/officeIncomePermissions";
+import { logAudit } from "@/lib/audit";
+import { useAuth } from "@/auth/AuthProvider";
 
 const INCOME_TYPES = [
   { value: "vangari", en: "Scrap (Vangari)", bn: "ভাঙারি" },
