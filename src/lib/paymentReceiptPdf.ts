@@ -124,6 +124,19 @@ function buildPaymentReceiptDoc(data: PaymentReceiptData, tplIn?: Partial<Receip
   const pageH = doc.internal.pageSize.getHeight();
   const margin = tpl.paper_size === "a6" ? 8 : 12;
   const accent = hexToRgb(tpl.accent_color);
+
+  // Optional diagonal watermark (drawn first so content sits on top).
+  if (tpl.show_watermark && tpl.watermark_text.trim()) {
+    doc.saveGraphicsState();
+    // @ts-ignore - GState is available at runtime in jsPDF
+    doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
+    doc.setTextColor(120);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(tpl.paper_size === "a6" ? 28 : 48);
+    doc.text(tpl.watermark_text.trim(), pageW / 2, pageH / 2, { align: "center", angle: 45 });
+    doc.restoreGraphicsState();
+    doc.setTextColor(0);
+  }
   // Bangla cannot be embedded in jsPDF's built-in fonts, so we never render
   // BN strings in the PDF — the "both" mode falls back to English-only.
   const showBoth = false;
