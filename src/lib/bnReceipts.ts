@@ -423,11 +423,14 @@ function resolveOpts(o?: ReceiptOptions) {
 
 async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions): Promise<jsPDF> {
   const opts = resolveOpts(options);
+  let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
+  try { tpl = { ...tpl, ...(await loadReceiptTemplate()) }; } catch { /* use defaults */ }
+  if (options?.template) tpl = { ...tpl, ...options.template };
   let qrDataUrl: string | null = null;
   if (data.verify_url) {
     try { qrDataUrl = await QRCode.toDataURL(data.verify_url, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
-  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl);
+  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl, tpl);
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
