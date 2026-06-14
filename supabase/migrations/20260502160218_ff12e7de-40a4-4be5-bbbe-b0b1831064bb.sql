@@ -22,7 +22,12 @@ DECLARE
   v_irr_total numeric; v_irr_paid numeric;
   v_total_deposits numeric;
 BEGIN
-  IF v_super IS NULL THEN RAISE EXCEPTION 'No super_admin user found'; END IF;
+  -- On a fresh install (e.g. self-hosted VPS) there is no super_admin yet.
+  -- This is demo seed data, so skip it gracefully instead of failing the run.
+  IF v_super IS NULL THEN
+    RAISE NOTICE 'No super_admin user found - skipping demo seed migration.';
+    RETURN;
+  END IF;
 
   FOR i IN 1..30 LOOP
     SELECT d.id, up.id, un.id, w.id, v.id, m.id, d.name, up.name, un.name
