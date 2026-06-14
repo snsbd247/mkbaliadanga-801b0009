@@ -257,7 +257,19 @@ wait_for_edge_ports_free() {
 start_app() {
   cd "$DEPLOY_DIR"
   docker compose --env-file "$ENV_FILE" -f docker-compose.yml build mk_app
-  docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d --no-deps mk_app
+  docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d --no-deps --force-recreate mk_app
+
+  # Verify mk_app is actually running and serving on port 80 before fronting it with Caddy.
+  local i=0
+  until docker exec mk_app wget -qO- http://localhost:80/ >/dev/null 2>&1; do
+    i=$((i+1))
+    if [[ $i -ge 30 ]]; then
+      docker logs --tail 120 mk_app 2>&1 | tee -a "$LOG_DIR/deploy.log" >&2 || true
+      die "mk_app is not serving on port 80 (this causes Caddy's 'no available server')."
+    fi
+    sleep 2
+  done
+
   free_edge_ports
   wait_for_edge_ports_free
   if ! docker compose --env-file "$ENV_FILE" -f docker-compose.yml up -d --no-deps --force-recreate mk_caddy; then
