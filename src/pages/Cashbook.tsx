@@ -511,6 +511,7 @@ function StreamCashbook(props: {
   const { stream, label, month, mFrom, mTo, receipts, expenses, opening, setOpening, locked, canSubmit, isSuper, onSubmit, onEdit, onDelete, onScan, submissions, onUnlock } = props;
 
   const [consolidated, setConsolidated] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const streamReceipts = useMemo(() => receipts.filter(x => STREAM_INCOME_KINDS[stream].has(x.kind)), [receipts, stream]);
   const streamExpenses = useMemo(() => expenses.filter(x => x.stream === stream), [expenses, stream]);
