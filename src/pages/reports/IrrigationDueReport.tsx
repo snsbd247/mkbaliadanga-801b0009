@@ -317,6 +317,8 @@ export default function IrrigationDueReport() {
                   <TableCell className="text-xs">{r.farmer_code}</TableCell>
                   <TableCell>{r.farmer_name}</TableCell>
                   <TableCell className="text-xs">{r.father_name || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.village || "—"}</TableCell>
+                  <TableCell className="text-xs">{r.mobile || "—"}</TableCell>
                   <TableCell className="text-xs">{r.land_label}</TableCell>
                   <TableCell className="text-xs">{r.owner_name || "—"}</TableCell>
                   <TableCell className="text-xs">{r.patwari_name}</TableCell>
