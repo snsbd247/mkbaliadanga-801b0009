@@ -98,7 +98,7 @@ export default function Reports() {
     if (officeId !== ALL) lpQ = lpQ.eq("office_id", officeId);
     setLoanPayments((await lpQ).data ?? []);
 
-    let svQ: any = supabase.from("savings_transactions").select("txn_date,type,amount,status,office_id,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).order("txn_date", { ascending: false });
+    let svQ: any = supabase.from("savings_transactions").select("txn_date,type,amount,status,category,office_id,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).order("txn_date", { ascending: false });
     svQ = applyCommon(svQ, "txn_date");
     setSavings((await svQ).data ?? []);
 
