@@ -287,8 +287,27 @@ export default function Payments() {
     setShowDeleted(false);
     setPeriod("all");
     setFarmerId("");
+    setKindFilter("all");
+    setPaidOnly(false);
     setParams(new URLSearchParams(), { replace: true });
   }
+
+  const displayList = useMemo(() => {
+    return (list ?? []).filter((p: any) => {
+      if (paidOnly && !(p.status === "approved" && !p.voided_at)) return false;
+      if (kindFilter !== "all") {
+        const kinds = (p.payment_allocations ?? []).length
+          ? p.payment_allocations.map((a: any) => a.kind)
+          : [p.kind];
+        const matchSavings = kindFilter === "savings"
+          ? kinds.some((k: string) => k === "savings" || k === "share")
+          : kinds.includes(kindFilter);
+        if (!matchSavings) return false;
+      }
+      return true;
+    });
+  }, [list, kindFilter, paidOnly]);
+
 
   async function restorePayment(id: string) {
     const { error } = await supabase.from("payments").update({ deleted_at: null } as any).eq("id", id);
