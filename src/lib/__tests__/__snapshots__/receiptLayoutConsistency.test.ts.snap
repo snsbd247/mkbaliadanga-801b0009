@@ -106,8 +106,10 @@ exports[`irrigation Excel snapshots — separator settings > Excel row snapshot:
 
 exports[`irrigation receipt snapshots — separator × language > snapshot: bn / comma 1`] = `
 "
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
-    <div style="text-align:center;">
+  <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
       <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
       <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
       
@@ -140,7 +142,7 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">মৌজা / জমির পরিমান:</td>
-      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা (33.00 শতক)</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা · 20.00 কাঠা (33.00 শতক)</td>
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">দাগ নং:</td>
@@ -172,8 +174,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
 
 exports[`irrigation receipt snapshots — separator × language > snapshot: bn / newline 1`] = `
 "
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
-    <div style="text-align:center;">
+  <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
       <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
       <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
       
@@ -206,7 +210,7 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">মৌজা / জমির পরিমান:</td>
-      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা (33.00 শতক)</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা · 20.00 কাঠা (33.00 শতক)</td>
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">দাগ নং:</td>
@@ -238,8 +242,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
 
 exports[`irrigation receipt snapshots — separator × language > snapshot: bn / semicolon 1`] = `
 "
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
-    <div style="text-align:center;">
+  <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
       <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
       <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
       
@@ -272,7 +278,7 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">মৌজা / জমির পরিমান:</td>
-      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা (33.00 শতক)</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা · 20.00 কাঠা (33.00 শতক)</td>
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">দাগ নং:</td>
@@ -304,8 +310,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
 
 exports[`irrigation receipt snapshots — separator × language > snapshot: bn with custom labels 1`] = `
 "
-  <div style="font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
-    <div style="text-align:center;">
+  <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
       <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
       <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
       
@@ -338,7 +346,7 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn w
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জমির বিবরণ:</td>
-      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা (33.00 শতক)</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 বিঘা · 20.00 কাঠা (33.00 শতক)</td>
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">দাগ:</td>
@@ -370,8 +378,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn w
 
 exports[`irrigation receipt snapshots — separator × language > snapshot: en / comma 1`] = `
 "
-  <div style="font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
-    <div style="text-align:center;">
+  <div style="position:relative;font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
       <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
       <div style="font-size:18px;font-weight:700;margin-top:2px;">Irrigation Charge Receipt</div>
       
@@ -404,7 +414,7 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: en /
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Mouza / Land size:</td>
-      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha (33.00 shatak)</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha · 20.00 katha (33.00 shatak)</td>
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Dag no:</td>
@@ -436,8 +446,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: en /
 
 exports[`irrigation receipt snapshots — separator × language > snapshot: en / newline 1`] = `
 "
-  <div style="font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
-    <div style="text-align:center;">
+  <div style="position:relative;font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
       <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
       <div style="font-size:18px;font-weight:700;margin-top:2px;">Irrigation Charge Receipt</div>
       
@@ -470,7 +482,7 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: en /
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Mouza / Land size:</td>
-      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha (33.00 shatak)</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha · 20.00 katha (33.00 shatak)</td>
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Dag no:</td>
@@ -502,8 +514,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: en /
 
 exports[`irrigation receipt snapshots — separator × language > snapshot: en / semicolon 1`] = `
 "
-  <div style="font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
-    <div style="text-align:center;">
+  <div style="position:relative;font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
       <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
       <div style="font-size:18px;font-weight:700;margin-top:2px;">Irrigation Charge Receipt</div>
       
@@ -536,7 +550,7 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: en /
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Mouza / Land size:</td>
-      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha (33.00 shatak)</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">Baliadanga / 1.00 bigha · 20.00 katha (33.00 shatak)</td>
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Dag no:</td>
