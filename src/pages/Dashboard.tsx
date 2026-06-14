@@ -122,9 +122,7 @@ export default function Dashboard() {
       { label: t("thisMonthCollection"), value: money(monthCollect), icon: CalendarClock, delta: momDelta, href: "/payments?period=this_month" },
       { label: lang === "bn" ? "সেচের বাকি" : "Irrigation Due", value: money(irrigationDue), icon: Droplets, tone: "danger", href: "/reports/irrigation-due" },
       
-      { label: lang === "bn" ? "হাতে নগদ — সেচ" : "Hand Cash — Irrigation", value: money(irrCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
-      { label: lang === "bn" ? "হাতে নগদ — সঞ্চয়" : "Hand Cash — Savings", value: money(savCashBal), icon: Wallet, tone: "success", href: "/cashbook" },
-      { label: lang === "bn" ? "হ্যান্ড ক্যাশ (মোট)" : "Hand Cash (Total)", value: money(irrCashBal + savCashBal), icon: Banknote, tone: "success", href: "/hand-cash" },
+      { label: lang === "bn" ? "হাতে নগদ" : "Hand Cash", value: money(irrCashBal + savCashBal), icon: Banknote, tone: "success", href: "/hand-cash" },
       { label: t("pendingApprovals"), value: String(pendingCount), icon: AlertTriangle, tone: pendingCount > 0 ? "warn" : "default", href: "/approvals" },
     ]);
 
