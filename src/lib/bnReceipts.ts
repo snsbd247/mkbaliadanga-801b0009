@@ -4,6 +4,8 @@ import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
 import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
+import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
+import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
 export type ReceiptCopy = "both" | "farmer" | "office";
@@ -32,6 +34,8 @@ export interface ReceiptOptions {
   orgSize?: "sm" | "md" | "lg";
   /** When true, also print the verify URL (with token) as text under the QR. */
   showVerifyUrl?: boolean;
+  /** Shared receipt_settings template (watermark, QR placement, charge/penalty rows). */
+  template?: Partial<ReceiptTemplate>;
 }
 
 export interface BnReceiptData {
@@ -214,7 +218,7 @@ function orgBlock(
   return `<div style="text-align:center;font-size:${fontPx}px;color:#333;margin-top:2px;">${lines}</div>`;
 }
 
-function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean): string {
+function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean, tpl: ReceiptTemplate = DEFAULT_TEMPLATE): string {
   const t = STR[lang];
   const logo = d.logo_url
     ? `<img src="${d.logo_url}" crossorigin="anonymous" style="height:60px;display:block;margin:0 auto 4px;" />`
@@ -258,16 +262,16 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     if (mouzaParts.length) rows.push([mouzaLabel, mouzaParts.join(" / ")]);
     if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
     if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
-    if (d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
-    if (d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
+    if (tpl.show_charge_row && d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
+    if (tpl.show_charge_row && d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
     rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
     if (d.collected_from_outstanding != null)
       rows.push([t.collectedFromDue, fmt2(Number(d.collected_from_outstanding))]);
-    if (d.current_season_charge != null)
+    if (tpl.show_charge_row && d.current_season_charge != null)
       rows.push([t.currentCharge, fmt2(Number(d.current_season_charge))]);
-    // জরিমানা / বিলম্ব ফি — সবসময় আলাদা ঘরে দেখানো হয় (০ হলেও)।
-    rows.push([t.penalty, fmt2(Number(d.penalty_amount ?? 0))]);
-    if (d.maintenance_charge != null || d.canal_charge != null) {
+    // জরিমানা / বিলম্ব ফি — show_penalty_row চালু থাকলে সবসময় আলাদা ঘরে (০ হলেও)।
+    if (tpl.show_penalty_row) rows.push([t.penalty, fmt2(Number(d.penalty_amount ?? 0))]);
+    if (tpl.show_charge_row && (d.maintenance_charge != null || d.canal_charge != null)) {
       const extras = [d.maintenance_charge, d.canal_charge]
         .map((n) => fmt2(Number(n ?? 0)))
         .join(" / ");
@@ -315,8 +319,10 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     : `'Inter','Helvetica','Arial',sans-serif`;
 
   const layoutSettings = getReceiptLayoutSettings();
-  const wmText = layoutSettings.watermarkEnabled
-    ? (layoutSettings.watermarkText || d.company_name_bn || d.company_name || "").trim()
+  // Prefer the shared receipt_settings template; fall back to per-module layout settings.
+  const wmEnabled = tpl.show_watermark || layoutSettings.watermarkEnabled;
+  const wmText = wmEnabled
+    ? (tpl.watermark_text || layoutSettings.watermarkText || d.company_name_bn || d.company_name || "").trim()
     : "";
   const watermark = wmText
     ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
@@ -353,7 +359,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         <div style="border-top:0;padding-top:0;">${t.memberSig}</div>
         <div style="margin-top:18px;font-weight:600;">${d.farmer.name}</div>
       </div>
-      ${qrDataUrl ? `
+      ${qrDataUrl && tpl.qr_placement !== "none" ? `
       <div style="text-align:center;">
         <img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin:0 auto;" />
         <div style="font-size:9px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>
@@ -369,11 +375,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   </div>`;
 }
 
-function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean): HTMLDivElement {
+function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean, tpl: ReceiptTemplate = DEFAULT_TEMPLATE): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
-  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl);
-  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl);
+  const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl, tpl);
+  const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl, tpl);
   if (copy === "farmer") wrap.innerHTML = farmerCopy;
   else if (copy === "office") wrap.innerHTML = officeCopy;
   else wrap.innerHTML = `${farmerCopy}<div style="border-top:1px dashed #111;margin:8px 22px;"></div>${officeCopy}`;
@@ -417,11 +423,14 @@ function resolveOpts(o?: ReceiptOptions) {
 
 async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions): Promise<jsPDF> {
   const opts = resolveOpts(options);
+  let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
+  try { tpl = { ...tpl, ...(await loadReceiptTemplate()) }; } catch { /* use defaults */ }
+  if (options?.template) tpl = { ...tpl, ...options.template };
   let qrDataUrl: string | null = null;
   if (data.verify_url) {
     try { qrDataUrl = await QRCode.toDataURL(data.verify_url, { margin: 0, width: 180 }); } catch { /* noop */ }
   }
-  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl);
+  const node = buildHtml(data, copy, opts.lang, opts.orgLayout, opts.orgSize, qrDataUrl, opts.showVerifyUrl, tpl);
   try {
     await new Promise((r) => setTimeout(r, 60));
     const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
