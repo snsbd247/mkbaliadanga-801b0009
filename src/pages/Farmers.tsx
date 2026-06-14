@@ -229,6 +229,7 @@ export default function Farmers() {
   const [duesMap, setDuesMap] = useState<Record<string, { net_due: number; loan_due: number; irr_due: number; savings_bal: number }>>({});
   const [offices, setOffices] = useState<any[]>([]);
   const [q, setQ] = useState("");
+  const [fatherQ, setFatherQ] = useState("");
   const [page, setPage] = useState(0);
   const [showDeleted, setShowDeleted] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
