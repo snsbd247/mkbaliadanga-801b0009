@@ -83,7 +83,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           if (tr.source_farmer_id) blocked.add(tr.source_farmer_id);
         }
       }
-      const reversing = recipients.find(r => blocked.has(r.farmer_id));
+      const reversing = !isReclaim && recipients.find(r => blocked.has(r.farmer_id));
       if (reversing) {
         setSaving(false);
         return toast.error(tx("Cannot transfer back to a previous owner of this land.", "এই জমি আগের মালিক/বর্গাদারে ফেরত transfer করা যাবে না।"));
