@@ -153,6 +153,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
     </tr>
     <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জরিমানা / বিলম্ব ফি:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">সংগৃহীত পরিমাণ:</td>
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00 (পাঁচ শত টাকা)</td>
     </tr>
@@ -218,6 +222,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">বকেয়া:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জরিমানা / বিলম্ব ফি:</td>
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
     </tr>
     <tr>
@@ -289,6 +297,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn /
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
     </tr>
     <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জরিমানা / বিলম্ব ফি:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">সংগৃহীত পরিমাণ:</td>
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00 (পাঁচ শত টাকা)</td>
     </tr>
@@ -354,6 +366,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: bn w
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">বকেয়া:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জরিমানা / বিলম্ব ফি:</td>
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
     </tr>
     <tr>
@@ -425,6 +441,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: en /
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
     </tr>
     <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Penalty / Late fee:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Amount collected:</td>
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00</td>
     </tr>
@@ -493,6 +513,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: en /
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
     </tr>
     <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Penalty / Late fee:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Amount collected:</td>
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">500.00</td>
     </tr>
@@ -558,6 +582,10 @@ exports[`irrigation receipt snapshots — separator × language > snapshot: en /
     </tr>
     <tr>
       <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Outstanding:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Penalty / Late fee:</td>
       <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">0.00</td>
     </tr>
     <tr>
