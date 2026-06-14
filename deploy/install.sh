@@ -118,6 +118,7 @@ EOF
   mkdir -p /etc/docker
   cat >/etc/docker/daemon.json <<'EOF'
 {
+  "dns": ["1.1.1.1", "9.9.9.9", "8.8.8.8"],
   "log-driver": "json-file",
   "log-opts": { "max-size": "10m", "max-file": "3" },
   "no-new-privileges": true,
@@ -125,6 +126,38 @@ EOF
 }
 EOF
   systemctl restart docker
+}
+
+repair_docker_networking() {
+  log "Repairing Docker firewall/DNS forwarding…"
+  sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+  mkdir -p /etc/sysctl.d /etc/docker
+  cat >/etc/sysctl.d/99-mkbaliadanga-docker.conf <<'EOF'
+net.ipv4.ip_forward=1
+EOF
+  [[ -f /etc/default/ufw ]] && sed -i 's/^DEFAULT_FORWARD_POLICY=.*/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
+  ufw default allow routed >/dev/null 2>&1 || true
+  ufw reload >/dev/null 2>&1 || true
+  iptables -P FORWARD ACCEPT 2>/dev/null || true
+  iptables -N DOCKER-USER 2>/dev/null || true
+  iptables -C DOCKER-USER -j RETURN 2>/dev/null || iptables -I DOCKER-USER -j RETURN 2>/dev/null || true
+
+  local tmp=/tmp/mkbaliadanga-daemon.json
+  cat >"$tmp" <<'EOF'
+{
+  "dns": ["1.1.1.1", "9.9.9.9", "8.8.8.8"],
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "10m", "max-file": "3" },
+  "no-new-privileges": true,
+  "live-restore": true
+}
+EOF
+  if [[ ! -f /etc/docker/daemon.json ]] || ! cmp -s "$tmp" /etc/docker/daemon.json; then
+    cp "$tmp" /etc/docker/daemon.json
+    systemctl restart docker
+  fi
+  rm -f "$tmp"
+  ok "Docker firewall/DNS forwarding repaired."
 }
 
 # ----------------------------------------------------------------------------- 7. Generate .env.production
