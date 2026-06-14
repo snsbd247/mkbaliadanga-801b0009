@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { parseDagNumbers } from "@/lib/dagNumbers";
 import { getReceiptLayoutSettings, dagSeparatorString } from "@/lib/receiptLayoutSettings";
 import { roundTaka } from "@/lib/rounding";
+import { formatLandSize } from "@/lib/irrigationCalc";
 
 const r = (v: any) => (v === "" || v === null || v === undefined) ? v : roundTaka(Number(v));
 
