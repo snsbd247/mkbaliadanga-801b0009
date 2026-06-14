@@ -147,7 +147,7 @@ export default function LoanForm() {
             <Label>{tx("Interest Enabled", "সুদ সক্রিয়")}</Label>
             <Switch checked={form.interest_enabled} onCheckedChange={v => setForm({ ...form, interest_enabled: v })} />
           </div>
-          <div><Label>{tx("Issued On", "ইস্যু তারিখ")}</Label><Input type="date" value={form.issued_on} onChange={e => setForm({ ...form, issued_on: e.target.value })} /></div>
+          <div><Label>{tx("Issued On", "ইস্যু তারিখ")}</Label><Input type="date" value={form.issued_on} onChange={e => { setForm({ ...form, issued_on: e.target.value }); setErrors(er => ({ ...er, issued_on: undefined })); }} aria-invalid={!!errors.issued_on} />{errors.issued_on && <p className="text-sm text-destructive mt-1">{errors.issued_on}</p>}</div>
           <div><Label>{tx("Note", "নোট")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
           <div className="rounded-md bg-muted p-3 text-sm flex justify-between"><span>{tx("Total Payable", "মোট পরিশোধযোগ্য")}</span><span className="font-mono font-bold">{money(totalPayable)}</span></div>
           <div className="flex justify-end gap-2">
