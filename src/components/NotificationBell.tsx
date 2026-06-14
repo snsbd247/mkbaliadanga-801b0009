@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, AlertCircle, Loader2 } from "lucide-react";
+import { Bell, AlertCircle, Loader2, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
