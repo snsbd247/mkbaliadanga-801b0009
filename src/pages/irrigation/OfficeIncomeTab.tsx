@@ -155,7 +155,10 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
             <h3 className="font-semibold">{tx("Office income (without farmer)", "অফিস আয় (কৃষক ছাড়া)")}</h3>
             <p className="text-sm text-muted-foreground">{tx("Scrap, loan, grant etc. on the irrigation receipt serial.", "ভাঙারি, হাওলাত, অনুদান ইত্যাদি — সেচ রশিদ সিরিয়ালে।")}</p>
           </div>
-          <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>
+            <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
+          </div>
         </div>
 
         <div className="text-sm">{tx("Total", "মোট")}: <span className="font-semibold">{money(total)}</span> · {rows.length} {tx("entries", "এন্ট্রি")}</div>
