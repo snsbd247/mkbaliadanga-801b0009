@@ -90,6 +90,22 @@ export default function Vouchers() {
     window.open(data.signedUrl, "_blank");
   }
 
+  function exportPdf() {
+    // #8 — stream/type-specific heading on each voucher register.
+    const typeLabel = filter === "all" ? tx("All Vouchers", "সকল ভাউচার") : (TYPES.find(t => t.v === filter)?.label ?? filter);
+    const total = rows.reduce((s, v) => s + Number(v.amount || 0), 0);
+    exportTablePDF(
+      `${tx("Voucher Register", "ভাউচার রেজিস্টার")} — ${typeLabel}`,
+      [tx("Voucher No", "ভাউচার নং"), tx("Type", "ধরন"), tx("Date", "তারিখ"), tx("Payee", "প্রাপক/প্রদানকারী"), tx("Narration", "বিবরণ"), tx("Amount", "টাকা")],
+      [
+        ...rows.map(v => [v.voucher_no, v.voucher_type, fmtDate(v.voucher_date), v.payee ?? "", v.narration ?? "", money(Number(v.amount || 0))]),
+        ["", "", "", "", tx("Total", "মোট"), money(total)],
+      ],
+      undefined,
+      { signatures: [tx("Prepared by", "প্রস্তুতকারী"), tx("Manager", "ম্যানেজার"), tx("President", "সভাপতি"), tx("Auditor", "নিরীক্ষক")] },
+    );
+  }
+
   return (
     <>
       <PageHeader
