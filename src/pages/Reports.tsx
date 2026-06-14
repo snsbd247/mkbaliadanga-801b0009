@@ -207,17 +207,20 @@ export default function Reports() {
   // --- Collection report (per-payment breakdown by kind) ---
   const collectionRows = useMemo(() => {
     return payments.map((p: any) => {
+      const voided = !!p.voided_at || p.status === "voided" || p.status === "cancelled";
       let loan = 0, irrigation = 0, sav = 0;
       const list = p.payment_allocations ?? [];
-      if (list.length === 0) {
-        if (p.kind === "loan") loan = Number(p.amount);
-        else if (p.kind === "irrigation") irrigation = Number(p.amount);
-        else if (p.kind === "savings") sav = Number(p.amount);
-      } else {
-        for (const a of list) {
-          if (a.kind === "loan") loan += Number(a.amount);
-          else if (a.kind === "irrigation") irrigation += Number(a.amount);
-          else if (a.kind === "savings") sav += Number(a.amount);
+      if (!voided) {
+        if (list.length === 0) {
+          if (p.kind === "loan") loan = Number(p.amount);
+          else if (p.kind === "irrigation") irrigation = Number(p.amount);
+          else if (p.kind === "savings") sav = Number(p.amount);
+        } else {
+          for (const a of list) {
+            if (a.kind === "loan") loan += Number(a.amount);
+            else if (a.kind === "irrigation") irrigation += Number(a.amount);
+            else if (a.kind === "savings") sav += Number(a.amount);
+          }
         }
       }
       return {
@@ -225,11 +228,11 @@ export default function Reports() {
         receipt: p.receipt_no ?? "—",
         farmer: p.farmers?.name_en ?? "—",
         loan, irrigation, savings: sav,
-        category: p.category ?? "—",
-        amount: Number(p.amount),
+        category: voided ? (p.void_reason ? `বাতিল — ${p.void_reason}` : "বাতিল") : (p.category ?? "—"),
+        amount: voided ? 0 : Number(p.amount),
         user: p.collected_by ? (userMap[p.collected_by] ?? "—") : "—",
         method: p.method ?? "—",
-        status: p.status,
+        status: voided ? `বাতিল (রশিদ ${p.receipt_no ?? "—"} বাতিল)` : p.status,
       };
     });
   }, [payments, userMap]);
