@@ -145,7 +145,7 @@ export default function CombinedPayment() {
         if (dup && dup.length) { setSaving(false); return toast.error(lang === "bn" ? "এই রসিদ নম্বর আগে থেকেই আছে" : "Receipt number already exists"); }
         receiptNo = manualNo;
       } else {
-        receiptNo = await nextMonthlyReceiptNo("COMBO", officeId, form.farmer_id);
+        receiptNo = await nextUnifiedReceiptNo(officeId, "COMBO", form.farmer_id);
       }
       const rows: { kind: string; label_bn: string; label_en: string; amount: number }[] = [];
       let verifyToken: string | null = null;
