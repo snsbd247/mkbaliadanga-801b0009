@@ -39,6 +39,11 @@ export interface ReceiptTemplate {
   footer_note: string;
   footer_note_bn: string;
   logo_url?: string | null;
+  show_watermark: boolean;
+  watermark_text: string;
+  show_penalty_row: boolean;
+  show_charge_row: boolean;
+  qr_placement: "left" | "center" | "right" | "none";
 }
 
 export const DEFAULT_TEMPLATE: ReceiptTemplate = {
@@ -52,6 +57,11 @@ export const DEFAULT_TEMPLATE: ReceiptTemplate = {
   header_alignment: "center",
   footer_note: "This is a system-generated receipt. Please retain for your records.",
   footer_note_bn: "এটি সিস্টেম-জেনারেটেড রসিদ। অনুগ্রহ করে আপনার রেকর্ডের জন্য সংরক্ষণ করুন।",
+  show_watermark: false,
+  watermark_text: "",
+  show_penalty_row: true,
+  show_charge_row: true,
+  qr_placement: "right",
 };
 
 const fmtBdt = (n: number) =>
