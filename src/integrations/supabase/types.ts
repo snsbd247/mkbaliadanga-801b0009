@@ -2615,6 +2615,8 @@ export type Database = {
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          carried_forward_at: string | null
+          carried_forward_to: string | null
           created_at: string
           delay_fee: number
           deleted_at: string | null
@@ -2644,6 +2646,7 @@ export type Database = {
           owner_farmer_id: string
           paid_amount: number
           payable_amount: number
+          previous_due_amount: number
           rate_source: string | null
           recalculated_at: string | null
           recalculated_by: string | null
@@ -2658,6 +2661,8 @@ export type Database = {
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          carried_forward_at?: string | null
+          carried_forward_to?: string | null
           created_at?: string
           delay_fee?: number
           deleted_at?: string | null
@@ -2687,6 +2692,7 @@ export type Database = {
           owner_farmer_id: string
           paid_amount?: number
           payable_amount?: number
+          previous_due_amount?: number
           rate_source?: string | null
           recalculated_at?: string | null
           recalculated_by?: string | null
@@ -2701,6 +2707,8 @@ export type Database = {
           cancel_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          carried_forward_at?: string | null
+          carried_forward_to?: string | null
           created_at?: string
           delay_fee?: number
           deleted_at?: string | null
@@ -2730,6 +2738,7 @@ export type Database = {
           owner_farmer_id?: string
           paid_amount?: number
           payable_amount?: number
+          previous_due_amount?: number
           rate_source?: string | null
           recalculated_at?: string | null
           recalculated_by?: string | null
@@ -6147,6 +6156,8 @@ export type Database = {
           cancel_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          carried_forward_at: string | null
+          carried_forward_to: string | null
           created_at: string
           delay_fee: number
           deleted_at: string | null
@@ -6176,6 +6187,7 @@ export type Database = {
           owner_farmer_id: string
           paid_amount: number
           payable_amount: number
+          previous_due_amount: number
           rate_source: string | null
           recalculated_at: string | null
           recalculated_by: string | null
