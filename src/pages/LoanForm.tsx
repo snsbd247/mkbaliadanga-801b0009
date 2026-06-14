@@ -118,7 +118,8 @@ export default function LoanForm() {
           <div>
             <Label>{tx("Member", "সদস্য")} *</Label>
             <FarmerSearchSelect value={form.farmer_id} votersOnly
-              onChange={(id, f) => { setForm({ ...form, farmer_id: id ?? "" }); setFarmer(f); }} />
+              onChange={(id, f) => { setForm({ ...form, farmer_id: id ?? "" }); setFarmer(f); setErrors(e => ({ ...e, farmer_id: undefined })); }} />
+            {errors.farmer_id && <p className="text-sm text-destructive mt-1">{errors.farmer_id}</p>}
           </div>
           <div>
             <Label>{tx("Loan Plan", "ঋণ প্ল্যান")}</Label>
