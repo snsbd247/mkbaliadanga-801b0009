@@ -269,7 +269,10 @@ export default function IrrigationDueReport() {
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">{filtered.length} {t("rows")} {loading && `(${t("loading")})`}</p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body)}>
+              <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body, { from: dueFrom, to: dueTo }, { landscape: true, preview: true })}>
+                <FileDown className="mr-1 h-4 w-4" /> {tx("Preview (A4)", "প্রিভিউ (A4)")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => exportTablePDF("Irrigation-Due", head, body, { from: dueFrom, to: dueTo }, { landscape: true })}>
                 <FileDown className="mr-1 h-4 w-4" /> PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => exportCSV(
