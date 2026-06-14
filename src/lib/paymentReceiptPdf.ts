@@ -89,6 +89,7 @@ const L = {
     name: "নাম", code: "কোড", member: "ফার্মার আইডি", village: "গ্রাম", mobile: "মোবাইল",
     qr: "কিউআর কার্ড", token: "টোকেন", status: "অবস্থা",
     type: "ধরন", method: "পদ্ধতি", amount: "টাকা (BDT)",
+    hal: "হাল", bokeya: "বকেয়া", penalty: "জরিমানা",
     note: "মন্তব্য",
     paymentId: "পেমেন্ট আইডি", idem: "ইডেমপোটেন্সি", collected: "গ্রহীতা",
     signature: "অনুমোদিত স্বাক্ষর",
