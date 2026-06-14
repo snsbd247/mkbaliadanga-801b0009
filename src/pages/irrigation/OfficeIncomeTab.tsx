@@ -264,10 +264,10 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
             <p className="text-sm text-muted-foreground">{tx("Scrap, loan, grant etc. on the irrigation receipt serial.", "ভাঙারি, হাওলাত, অনুদান ইত্যাদি — সেচ রশিদ সিরিয়ালে।")}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>
-            <Button variant="outline" onClick={exportXlsx} disabled={!rows.length}><FileSpreadsheet className="mr-1 h-4 w-4" />{tx("Export Excel", "এক্সেল")}</Button>
-            <Button variant="outline" onClick={exportTemplate}><FileText className="mr-1 h-4 w-4" />{tx("Excel Template", "টেমপ্লেট")}</Button>
-            <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>
+            {canExport && <Button variant="outline" onClick={exportList} disabled={!rows.length}><FileDown className="mr-1 h-4 w-4" />{tx("Export PDF", "পিডিএফ")}</Button>}
+            {canExport && <Button variant="outline" onClick={exportXlsx} disabled={!rows.length}><FileSpreadsheet className="mr-1 h-4 w-4" />{tx("Export Excel", "এক্সেল")}</Button>}
+            {canExport && <Button variant="outline" onClick={exportTemplate}><FileText className="mr-1 h-4 w-4" />{tx("Excel Template", "টেমপ্লেট")}</Button>}
+            {canCreate && <Button onClick={() => setOpen(true)}><Plus className="mr-1" />{tx("Add income", "আয় যোগ")}</Button>}
           </div>
         </div>
 
