@@ -86,6 +86,12 @@ export default function Loans() {
         created_by: user?.id ?? null,
       });
       if (error) throw error;
+      await supabase.from("notifications").insert({
+        kind: "loan_pending",
+        title: tx("Loan approval pending", "ঋণ অনুমোদন অপেক্ষমাণ"),
+        body: `${mchk?.name_en ?? ""} — ৳${Number(form.principal).toLocaleString()}`,
+        link: "/loans",
+      });
       toast.success(tx("Loan issued — pending approval", "ঋণ ইস্যু হয়েছে — অনুমোদনের অপেক্ষায়"));
       setOpen(false); load();
     } catch (e: any) {
