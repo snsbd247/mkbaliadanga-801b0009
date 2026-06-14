@@ -18,6 +18,7 @@ import { Plus, Check, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
+import { usePermission } from "@/hooks/usePermission";
 import { money, fmtDate } from "@/lib/format";
 
 const EMPTY = {
