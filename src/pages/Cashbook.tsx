@@ -22,6 +22,7 @@ import { useBranding } from "@/lib/branding";
 import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
 import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { autoReceiptNo } from "@/lib/receiptNo";
+import { CashbookA4Preview } from "@/components/cashbook/CashbookA4Preview";
 
 const sb = supabase as any;
 
