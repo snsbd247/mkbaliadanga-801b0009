@@ -102,7 +102,7 @@ export default function Payments() {
       }
     }
     setEditLandId(landId);
-    setEditForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(p.amount || 0), reason: "" });
+    setEditForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(p.amount || 0), note: p.note ?? "", reason: "" });
     setEditLoading(false);
   }
 
