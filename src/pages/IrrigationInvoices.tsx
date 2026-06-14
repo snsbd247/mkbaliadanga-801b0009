@@ -1173,6 +1173,64 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     } finally { setBusy(false); }
   }
 
+  async function carryForwardDues() {
+    if (!seasonId) return toast.error(tx("Select a season", "সিজন বাছাই করুন"));
+    if (!confirm(tx("Carry forward previous unpaid dues into this season? Old invoices will be marked as carried forward.", "পূর্বের অপরিশোধিত বকেয়া এই সিজনে আনা হবে? পুরোনো ইনভয়েস carried-forward হিসেবে চিহ্নিত হবে।"))) return;
+    setBusy(true);
+    try {
+      // Current-season invoices (carry-forward targets)
+      let curQ = supabase.from("irrigation_invoices" as any)
+        .select("id,farmer_id,payable_amount,due_amount,previous_due_amount,generated_at")
+        .eq("season_id", seasonId).neq("invoice_status", "cancelled").is("deleted_at", null);
+      if (officeId) curQ = curQ.eq("office_id", officeId);
+      const { data: cur } = await curQ;
+      const targetByFarmer = new Map<string, any>();
+      for (const inv of ((cur as any[]) ?? []).sort((a, b) => (a.generated_at || "").localeCompare(b.generated_at || ""))) {
+        if (!targetByFarmer.has(inv.farmer_id)) targetByFarmer.set(inv.farmer_id, inv);
+      }
+      if (!targetByFarmer.size) { toast.error(tx("No invoices in this season yet — generate first.", "এই সিজনে কোনো ইনভয়েস নেই — আগে তৈরি করুন।")); return; }
+
+      // Prior-season open dues
+      let oldQ = supabase.from("irrigation_invoices" as any)
+        .select("id,farmer_id,due_amount")
+        .neq("season_id", seasonId).gt("due_amount", 0).is("deleted_at", null)
+        .neq("invoice_status", "cancelled").neq("invoice_status", "carried_forward")
+        .in("farmer_id", Array.from(targetByFarmer.keys()));
+      if (officeId) oldQ = oldQ.eq("office_id", officeId);
+      const { data: old } = await oldQ;
+
+      const totals = new Map<string, number>();
+      const oldByFarmer = new Map<string, string[]>();
+      for (const r of ((old as any[]) ?? [])) {
+        totals.set(r.farmer_id, (totals.get(r.farmer_id) || 0) + Number(r.due_amount || 0));
+        oldByFarmer.set(r.farmer_id, [...(oldByFarmer.get(r.farmer_id) || []), r.id]);
+      }
+      if (!totals.size) { toast.success(tx("No previous dues to carry forward.", "হস্তান্তরযোগ্য কোনো পূর্ববর্তী বকেয়া নেই।")); return; }
+
+      const now = new Date().toISOString();
+      let done = 0;
+      for (const [farmerId, total] of totals) {
+        const target = targetByFarmer.get(farmerId);
+        if (!target || !(total > 0)) continue;
+        const { error: e1 } = await supabase.from("irrigation_invoices" as any).update({
+          previous_due_amount: Number(target.previous_due_amount || 0) + total,
+          payable_amount: Number(target.payable_amount || 0) + total,
+          due_amount: Number(target.due_amount || 0) + total,
+          carried_forward_at: now,
+        }).eq("id", target.id);
+        if (e1) { console.error(e1); continue; }
+        await supabase.from("irrigation_invoices" as any).update({
+          invoice_status: "carried_forward", due_amount: 0, carried_forward_to: target.id, carried_forward_at: now,
+        }).in("id", oldByFarmer.get(farmerId) || []);
+        done++;
+      }
+      toast.success(`${done} ${tx("farmer(s) — dues carried forward.", "জন কৃষকের বকেয়া হস্তান্তর হয়েছে।")}`);
+      setPrevDueWarning(null);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -1249,6 +1307,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               </Button>
             )}
             <Button variant="outline" onClick={() => setManualOpen(true)}><Plus className="h-4 w-4 mr-1" /> {tx("Manual", "ম্যানুয়াল")}</Button>
+            <Button variant="outline" onClick={carryForwardDues} disabled={busy || !seasonId}>{tx("Carry forward dues", "বকেয়া carry-forward")}</Button>
           </div>
         </CardContent>
       </Card>
@@ -1257,8 +1316,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>{tx("Previous outstanding detected", "পূর্বের বকেয়া পাওয়া গেছে")}</AlertTitle>
-          <AlertDescription>
-            {prevDueWarning.farmers} {tx("farmer(s) have prior unpaid invoices totalling", "জন কৃষকের আগের অপরিশোধিত ইনভয়েস রয়েছে — মোট")} <span className="font-mono font-semibold">{money(prevDueWarning.total)}</span>.
+          <AlertDescription className="space-y-2">
+            <div>{prevDueWarning.farmers} {tx("farmer(s) have prior unpaid invoices totalling", "জন কৃষকের আগের অপরিশোধিত ইনভয়েস রয়েছে — মোট")} <span className="font-mono font-semibold">{money(prevDueWarning.total)}</span>.</div>
+            <Button size="sm" variant="outline" onClick={carryForwardDues} disabled={busy}>
+              {tx("Carry forward previous dues (manual)", "পূর্ববর্তী বকেয়া carry-forward করুন (ম্যানুয়াল)")}
+            </Button>
           </AlertDescription>
         </Alert>
       )}
