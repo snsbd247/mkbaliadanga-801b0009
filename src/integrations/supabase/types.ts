@@ -1113,6 +1113,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          link_id: string | null
           note: string | null
           office_id: string | null
           reference_no: string | null
@@ -1127,6 +1128,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          link_id?: string | null
           note?: string | null
           office_id?: string | null
           reference_no?: string | null
@@ -1141,6 +1143,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          link_id?: string | null
           note?: string | null
           office_id?: string | null
           reference_no?: string | null
@@ -1581,6 +1584,7 @@ export type Database = {
           head_id: string | null
           id: string
           is_bank_deposit: boolean
+          link_id: string | null
           method: string | null
           note: string | null
           office_id: string | null
@@ -1602,6 +1606,7 @@ export type Database = {
           head_id?: string | null
           id?: string
           is_bank_deposit?: boolean
+          link_id?: string | null
           method?: string | null
           note?: string | null
           office_id?: string | null
@@ -1623,6 +1628,7 @@ export type Database = {
           head_id?: string | null
           id?: string
           is_bank_deposit?: boolean
+          link_id?: string | null
           method?: string | null
           note?: string | null
           office_id?: string | null
@@ -4985,6 +4991,7 @@ export type Database = {
           farmer_id: string | null
           id: string
           kind: Database["public"]["Enums"]["receipt_kind"]
+          link_id: string | null
           method: string | null
           note: string | null
           office_id: string | null
@@ -5000,6 +5007,7 @@ export type Database = {
           farmer_id?: string | null
           id?: string
           kind: Database["public"]["Enums"]["receipt_kind"]
+          link_id?: string | null
           method?: string | null
           note?: string | null
           office_id?: string | null
@@ -5015,6 +5023,7 @@ export type Database = {
           farmer_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["receipt_kind"]
+          link_id?: string | null
           method?: string | null
           note?: string | null
           office_id?: string | null
