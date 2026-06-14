@@ -309,8 +309,7 @@ wait_for_edge_ports_free() {
 verify_docker_egress() {
   local i
   for i in $(seq 1 3); do
-    if docker run --rm --network mk_net --entrypoint sh alpine:3.20 -c \
-      'wget -qO- --timeout=10 https://acme-v02.api.letsencrypt.org/directory >/dev/null' >/dev/null 2>&1; then
+    if docker exec mk_app wget -qO- --timeout=10 http://acme-v02.api.letsencrypt.org/directory >/dev/null 2>&1; then
       ok "Docker containers can reach Let's Encrypt."
       return 0
     fi
