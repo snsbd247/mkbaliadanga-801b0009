@@ -50,7 +50,8 @@ export default function CombinedPayment() {
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
   const loanAmt = Number(form.loan_principal || 0) + Number(form.loan_interest || 0);
-  const loanExceeds = !!selectedLoan && loanAmt > selectedLoan.remaining;
+  // Only the principal is capped by the remaining balance; interest is optional.
+  const loanExceeds = !!selectedLoan && Number(form.loan_principal || 0) > selectedLoan.remaining;
   // Suggested accrued interest = remaining principal × (rate%/duration) × months elapsed since last payment/issue
   const suggestedInterest = useMemo(() => {
     if (!selectedLoan) return 0;
