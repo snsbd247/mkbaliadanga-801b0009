@@ -126,7 +126,13 @@ generate_env() {
   [[ -z "${POSTGRES_PASSWORD:-}" ]] && { POSTGRES_PASSWORD=$(gen_password); _set POSTGRES_PASSWORD "$POSTGRES_PASSWORD"; }
   [[ -z "${JWT_SECRET:-}"        ]] && { JWT_SECRET=$(gen_secret 32);       _set JWT_SECRET "$JWT_SECRET"; }
   [[ -z "${SECRET_KEY_BASE:-}"   ]] && { _set SECRET_KEY_BASE "$(gen_secret 32)"; }
-  [[ -z "${REALTIME_DB_ENC_KEY:-}" ]] && { _set REALTIME_DB_ENC_KEY "$(gen_secret 16)"; }
+  # Realtime uses AES-128 for tenant credentials, so this key must be exactly
+  # 16 bytes/chars. Earlier installers generated 32 hex chars, which makes the
+  # realtime container crash-loop during self-host seeding.
+  if [[ -z "${REALTIME_DB_ENC_KEY:-}" || ${#REALTIME_DB_ENC_KEY} -ne 16 ]]; then
+    REALTIME_DB_ENC_KEY="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 16)"
+    _set REALTIME_DB_ENC_KEY "$REALTIME_DB_ENC_KEY"
+  fi
   [[ -z "${VAULT_ENC_KEY:-}"     ]] && { _set VAULT_ENC_KEY "$(gen_secret 16)"; }
   [[ -z "${DASHBOARD_PASSWORD:-}" ]] && { _set DASHBOARD_PASSWORD "$(gen_password)"; }
   [[ -z "${ADMIN_PASSWORD:-}" ]] && { ADMIN_PASSWORD=$(gen_password); _set ADMIN_PASSWORD "$ADMIN_PASSWORD"; }
