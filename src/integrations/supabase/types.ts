@@ -4381,8 +4381,10 @@ export type Database = {
           amount: number
           created_at: string
           created_by: string | null
+          father_name: string | null
           id: string
           income_type: string
+          mobile: string | null
           note: string | null
           office_id: string | null
           payer_name: string
@@ -4390,13 +4392,16 @@ export type Database = {
           received_on: string
           stream: string
           updated_at: string
+          village: string | null
         }
         Insert: {
           amount?: number
           created_at?: string
           created_by?: string | null
+          father_name?: string | null
           id?: string
           income_type?: string
+          mobile?: string | null
           note?: string | null
           office_id?: string | null
           payer_name: string
@@ -4404,13 +4409,16 @@ export type Database = {
           received_on?: string
           stream?: string
           updated_at?: string
+          village?: string | null
         }
         Update: {
           amount?: number
           created_at?: string
           created_by?: string | null
+          father_name?: string | null
           id?: string
           income_type?: string
+          mobile?: string | null
           note?: string | null
           office_id?: string | null
           payer_name?: string
@@ -4418,6 +4426,7 @@ export type Database = {
           received_on?: string
           stream?: string
           updated_at?: string
+          village?: string | null
         }
         Relationships: []
       }

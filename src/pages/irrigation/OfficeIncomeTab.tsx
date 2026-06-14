@@ -13,7 +13,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF } from "@/lib/exports";
-import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
+import { nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
 import { Plus, Trash2, Printer, FileDown } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -39,6 +39,9 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     office_id: offices[0]?.id ?? "",
     income_type: "vangari",
     payer_name: "",
+    father_name: "",
+    village: "",
+    mobile: "",
     amount: "",
     received_on: new Date().toISOString().slice(0, 10),
     stream: "sech",
@@ -69,12 +72,16 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     setSaving(true);
     try {
       let receiptNo = form.receipt_no.trim();
-      if (!receiptNo) receiptNo = await nextMonthlyReceiptNo("IRR", form.office_id || null, crypto.randomUUID());
+      // সেচ রশিদের একই সিরিয়াল ধারা ব্যবহার করা হয়।
+      if (!receiptNo) receiptNo = await nextUnifiedReceiptNo(form.office_id || null, "IRR", crypto.randomUUID());
       const { error } = await (supabase as any).from("office_incomes").insert({
         office_id: form.office_id || null,
         receipt_no: receiptNo,
         income_type: form.income_type,
         payer_name: form.payer_name.trim(),
+        father_name: form.father_name?.trim() || null,
+        village: form.village?.trim() || null,
+        mobile: form.mobile?.trim() || null,
         amount: Number(form.amount),
         received_on: form.received_on,
         stream: form.stream,
@@ -84,7 +91,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
       if (error) throw error;
       toast.success(tx("Income recorded", "আয় সংরক্ষিত হয়েছে"));
       setOpen(false);
-      setForm({ ...form, payer_name: "", amount: "", receipt_no: "", note: "" });
+      setForm({ ...form, payer_name: "", father_name: "", village: "", mobile: "", amount: "", receipt_no: "", note: "" });
       load();
     } catch (e: any) {
       toast.error(e.message ?? tx("Failed to save", "সংরক্ষণ ব্যর্থ"));
@@ -138,10 +145,15 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
           <span>${tx("Date", "তারিখ")}: <b>${fmtDate(r.received_on)}</b></span>
         </div>
         <table>
-          <tr><td class="lbl">${tx("Payer", "প্রদানকারী")}</td><td>${r.payer_name ?? ""}</td></tr>
+          <tr><td class="lbl">${tx("Name", "নাম")}</td><td>${r.payer_name ?? "N/A"}</td></tr>
+          <tr><td class="lbl">${tx("Father's name", "পিতার নাম")}</td><td>${r.father_name || "N/A"}</td></tr>
+          <tr><td class="lbl">${tx("Village", "গ্রাম")}</td><td>${r.village || "N/A"}</td></tr>
+          <tr><td class="lbl">${tx("Mobile", "মোবাইল")}</td><td>${r.mobile || "N/A"}</td></tr>
+          <tr><td class="lbl">${tx("Mouza", "মৌজা")}</td><td>N/A</td></tr>
+          <tr><td class="lbl">${tx("Land", "জমি")}</td><td>N/A</td></tr>
           <tr><td class="lbl">${tx("Income Type", "আয়ের ধরন")}</td><td>${typeLabel(r.income_type)}</td></tr>
           <tr><td class="lbl">${tx("Stream", "স্ট্রিম")}</td><td>${streamLabel(r.stream)}</td></tr>
-          ${r.note ? `<tr><td class="lbl">${tx("Note", "নোট")}</td><td>${r.note}</td></tr>` : ""}
+          <tr><td class="lbl">${tx("Remark", "রিমার্ক")}</td><td>${r.note || "N/A"}</td></tr>
           <tr class="amtrow"><td class="lbl">${tx("Amount Received", "প্রাপ্ত টাকা")}</td><td class="amt">${money(Number(r.amount))}</td></tr>
         </table>
         <div class="signs">
@@ -257,6 +269,20 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
+                <Label>{tx("Father's name", "পিতার নাম")}</Label>
+                <Input value={form.father_name} onChange={(e) => setForm({ ...form, father_name: e.target.value })} />
+              </div>
+              <div>
+                <Label>{tx("Village", "গ্রাম")}</Label>
+                <Input value={form.village} onChange={(e) => setForm({ ...form, village: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <Label>{tx("Mobile", "মোবাইল")}</Label>
+              <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
                 <Label>{tx("Amount", "টাকা")}</Label>
                 <Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
               </div>
@@ -270,7 +296,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
               <Input value={form.receipt_no} onChange={(e) => setForm({ ...form, receipt_no: e.target.value })} />
             </div>
             <div>
-              <Label>{tx("Note", "নোট")}</Label>
+              <Label>{tx("Remark", "রিমার্ক")}</Label>
               <Textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={2} />
             </div>
           </div>
