@@ -93,10 +93,11 @@ export const bighaToShatak = (bigha: number | string | null | undefined): number
   round2(n(bigha) * SHATAK_PER_BIGHA);
 
 /**
- * Katha conversion — local org standard: 1 কাঠা = 0.15 বিঘা (≈ 4.95 শতক).
- * Hence 1 বিঘা ≈ 6.6667 কাঠা.
+ * Katha conversion — local org standard: 1 বিঘা = 20 কাঠা.
+ * Hence 1 কাঠা = 0.05 বিঘা = 1.65 শতক.
  */
-export const BIGHA_PER_KATHA = 0.15;
+export const KATHA_PER_BIGHA = 20;
+export const BIGHA_PER_KATHA = 1 / KATHA_PER_BIGHA; // 0.05
 export const SHATAK_PER_KATHA = round2(SHATAK_PER_BIGHA * BIGHA_PER_KATHA); // 4.95
 export const shatakToKatha = (shatak: number | string | null | undefined): number =>
   round2(n(shatak) / SHATAK_PER_KATHA);
