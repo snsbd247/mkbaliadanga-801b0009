@@ -26,6 +26,29 @@ export async function nextMonthlyReceiptNo(
   return autoReceiptNo(kind === "COMBO" ? "PAY" : kind, fallbackSeed);
 }
 
+/**
+ * Unified paid-receipt serial shared across all farmer payment streams
+ * (irrigation / savings / loan / combined). Format: RCP-YYYY-MM-NNNN.
+ * Falls back to the legacy per-kind monthly number on RPC failure.
+ */
+export async function nextUnifiedReceiptNo(
+  officeId: string | null | undefined,
+  fallbackKind: MonthlyKind = "PAY",
+  fallbackSeed: string = crypto.randomUUID(),
+): Promise<string> {
+  if (officeId) {
+    try {
+      const { data, error } = await (supabase as any).rpc("next_unified_receipt_no", {
+        p_office_id: officeId,
+      });
+      if (!error && typeof data === "string" && data) return data;
+    } catch {
+      /* fall through */
+    }
+  }
+  return nextMonthlyReceiptNo(fallbackKind, officeId, fallbackSeed);
+}
+
 /** Non-consuming preview of the next monthly receipt no. Returns null if unknown. */
 export async function peekMonthlyReceiptNo(
   kind: MonthlyKind,
