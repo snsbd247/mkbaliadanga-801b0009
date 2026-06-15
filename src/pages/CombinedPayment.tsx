@@ -40,6 +40,10 @@ export default function CombinedPayment() {
   const brand = useBranding();
   const qc = useQueryClient();
   const [form, setForm] = useState({ ...EMPTY });
+  useEffect(() => {
+    const fid = new URLSearchParams(window.location.search).get("farmer");
+    if (fid) setForm((p) => (p.farmer_id ? p : { ...p, farmer_id: fid }));
+  }, []);
   const [farmer, setFarmer] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [saving, setSaving] = useState(false);
