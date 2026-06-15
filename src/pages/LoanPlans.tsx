@@ -104,6 +104,7 @@ export default function LoanPlans() {
                       <SelectItem value="daily">{tx("Daily", "দৈনিক")}</SelectItem>
                       <SelectItem value="weekly">{tx("Weekly", "সাপ্তাহিক")}</SelectItem>
                       <SelectItem value="monthly">{tx("Monthly", "মাসিক")}</SelectItem>
+                      <SelectItem value="lump_sum">{tx("Lump sum (end of term)", "একবারে পরিশোধ (মেয়াদ শেষে)")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
