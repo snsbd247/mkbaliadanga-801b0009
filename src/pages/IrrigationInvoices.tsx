@@ -1018,7 +1018,12 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       }
 
       const targetOffice = officeId || (lands?.[0]?.office_id ?? null);
-      const settings = await getChargeSettings(targetOffice);
+      const rawSettings = await getChargeSettings(targetOffice);
+      // Never auto-apply a delay fee (জরিমানা) at generation time. The due of a
+      // freshly generated invoice must equal the land's expected charge
+      // (irrigation + maintenance + canal + other) and no penalty may carry into
+      // a newly generated season. Delay fee is added separately at payment time.
+      const settings = { ...rawSettings, auto_apply_delay_fee: false };
 
       const eligible = (lands ?? []).filter((l: any) => Number(l.land_size) > 0 && !skip.has(l.id));
 
