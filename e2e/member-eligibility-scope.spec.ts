@@ -43,3 +43,37 @@ test.describe("member eligibility scope (savings/loans only)", () => {
     expect(gated).toBe(false);
   });
 });
+
+/**
+ * Server-side enforcement: a direct REST insert (UI bypass) into
+ * savings_transactions / loans for an ineligible farmer must be rejected by the
+ * database trigger. Gated on credentials so it only runs in configured CI.
+ */
+const SB_URL = process.env.VITE_SUPABASE_URL ?? "";
+const SB_ANON = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
+const INELIGIBLE_FARMER = process.env.E2E_INELIGIBLE_FARMER_ID ?? "";
+const E2E_TOKEN = process.env.E2E_ACCESS_TOKEN ?? "";
+
+const sbSkip =
+  !SB_URL || !SB_ANON || !INELIGIBLE_FARMER || !E2E_TOKEN
+    ? "server-side member-block e2e credentials not configured"
+    : null;
+
+test.describe("server-side savings/loan block", () => {
+  test.skip(!!sbSkip, sbSkip ?? "");
+
+  test("direct savings_transactions insert is rejected for ineligible farmer", async ({ request }) => {
+    const res = await request.post(`${SB_URL}/rest/v1/savings_transactions`, {
+      headers: {
+        apikey: SB_ANON,
+        Authorization: `Bearer ${E2E_TOKEN}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      data: { farmer_id: INELIGIBLE_FARMER, type: "deposit", amount: 1, status: "approved" },
+    });
+    const body = await res.text();
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+    expect(body).toMatch(/MEMBER_INACTIVE|MEMBER_NO_INVALID/);
+  });
+});
