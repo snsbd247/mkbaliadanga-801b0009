@@ -471,13 +471,17 @@ export default function CombinedPayment() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={reset} disabled={saving}>{lang === "bn" ? "রিসেট" : "Reset"}</Button>
-              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds || farmerInactive}>
+              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds || farmerInactive || memberIneligible}>
                 <Save className="h-4 w-4 mr-1" />{saving ? "…" : (lang === "bn" ? "সংরক্ষণ" : "Save")}
               </Button>
               {farmerInactive && (
                 <p className="text-xs text-destructive mt-1 w-full">
                   {lang === "bn" ? "ইনঅ্যাক্টিভ সদস্য — লেনদেন বন্ধ।" : "Inactive member — payments are disabled."}
                 </p>
+              )}
+              {!farmerInactive && memberIneligible && (
+                <p className="text-xs text-destructive mt-1 w-full">{memberCheck?.reason}</p>
+              )}
               )}
             </div>
           </div>
