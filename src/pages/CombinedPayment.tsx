@@ -207,7 +207,7 @@ export default function CombinedPayment() {
         no: receiptNo, rows, total, farmerName, verifyUrl,
         date: new Date().toISOString(),
         member_no: farmer?.member_no ?? farmer?.farmer_code ?? null,
-        father_name: farmer?.n ?? null,
+        father_name: (farmer as any)?.father_name ?? null,
         village: farmer?.village ?? null,
         mobile: farmer?.mobile ?? null,
         field_receipt_no: form.field_receipt_no?.trim() || null,
