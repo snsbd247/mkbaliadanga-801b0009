@@ -149,6 +149,14 @@ export default function Loans() {
           </Card>
         </TabsContent>
       </Tabs>
+      {discountLoan && (
+        <LumpSumDiscountDialog
+          loan={discountLoan}
+          open={!!discountLoan}
+          onOpenChange={(v) => { if (!v) setDiscountLoan(null); }}
+          onDone={load}
+        />
+      )}
     </>
   );
 }
