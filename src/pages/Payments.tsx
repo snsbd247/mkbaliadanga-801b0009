@@ -630,10 +630,10 @@ export default function Payments() {
         </Dialog><ReceiptSettingsButton /></div>}
       />
       <DuplicateReceiptWarning />
-      <Tabs defaultValue="quick" className="space-y-4">
+      <Tabs defaultValue="irrigation" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="quick">{tx("Quick / Multi-allocation", "দ্রুত / মিশ্র")}</TabsTrigger>
-          <TabsTrigger value="irrigation">{tx("Structured Irrigation Payment", "কাঠামোবদ্ধ সেচ পেমেন্ট")}</TabsTrigger>
+          <TabsTrigger value="irrigation">{tx("Irrigation Payment (জরিমানা · ২ সিজন)", "সেচ পেমেন্ট (জরিমানা · ২ সিজন)")}</TabsTrigger>
+          <TabsTrigger value="quick">{tx("Quick / Multi-allocation", "দ্রুত / মিশ্র (সেভিং)")}</TabsTrigger>
         </TabsList>
         <TabsContent value="irrigation">
           <IrrigationPaymentPanel initialFarmerId={farmerId} onPaid={load} />
