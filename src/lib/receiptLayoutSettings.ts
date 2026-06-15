@@ -31,6 +31,8 @@ export interface ReceiptLayoutSettings {
   loanOutstandingLabelEn: string;
   /** Global default paper size for receipt PDFs (payment / loan / irrigation / combined). */
   defaultPaperSize: PaperSize;
+  /** Global default page orientation for receipt PDFs. */
+  defaultOrientation: PaperOrientation;
   /** Diagonal watermark text printed behind receipt content (e.g. "MK BALIADANGA"). Empty = none. */
   watermarkText: string;
   /** Master on/off — overrides watermarkText. */
