@@ -29,7 +29,8 @@ export function shatakToUnits(shatak: number): LandUnits {
 export function landSizeLabel(shatak: number | null | undefined, lang: "bn" | "en"): string | null {
   if (shatak == null) return null;
   const u = shatakToUnits(Number(shatak));
+  // Per client convention the receipt shows land size in কাঠা ও শতক only (no বিঘা).
   return lang === "bn"
-    ? `${u.bigha.toFixed(2)} বিঘা · ${u.katha.toFixed(2)} কাঠা (${u.shatak.toFixed(2)} শতক)`
-    : `${u.bigha.toFixed(2)} bigha · ${u.katha.toFixed(2)} katha (${u.shatak.toFixed(2)} shatak)`;
+    ? `${u.katha.toFixed(2)} কাঠা · ${u.shatak.toFixed(2)} শতক`
+    : `${u.katha.toFixed(2)} katha · ${u.shatak.toFixed(2)} shatak`;
 }
