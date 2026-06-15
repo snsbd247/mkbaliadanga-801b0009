@@ -23,19 +23,16 @@ describe("landUnits — বিঘা/শতক/কাঠা conversion", () => {
     expect(u).toEqual({ shatak: 0, bigha: 0, katha: 0 });
   });
 
-  it("label shows বিঘা · কাঠা · শতক together (bn)", () => {
+  it("label shows কাঠা · শতক only, no বিঘা (bn)", () => {
     const label = landSizeLabel(33, "bn")!;
-    expect(label).toContain("বিঘা");
-    expect(label).toContain("কাঠা");
-    expect(label).toContain("শতক");
-    expect(label).toContain("1.00 বিঘা");
+    expect(label).not.toContain("বিঘা");
     expect(label).toContain("20.00 কাঠা");
     expect(label).toContain("33.00 শতক");
   });
 
-  it("label shows bigha · katha · shatak (en)", () => {
+  it("label shows katha · shatak only (en)", () => {
     const label = landSizeLabel(16.5, "en")!;
-    expect(label).toBe("0.50 bigha · 10.00 katha (16.50 shatak)");
+    expect(label).toBe("10.00 katha · 16.50 shatak");
   });
 
   it("returns null when land size is missing", () => {
