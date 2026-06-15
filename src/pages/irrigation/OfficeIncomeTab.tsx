@@ -20,6 +20,8 @@ import { officeIncomeHeaders } from "@/lib/officeIncomeColumns";
 import { canExportOfficeIncome, canCreateOfficeIncome } from "@/lib/officeIncomePermissions";
 import { logAudit } from "@/lib/audit";
 import { useAuth } from "@/auth/AuthProvider";
+import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
+import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
 
 const INCOME_TYPES = [
   { value: "vangari", en: "Scrap (Vangari)", bn: "ভাঙারি" },
