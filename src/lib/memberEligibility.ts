@@ -29,14 +29,20 @@ export function evaluateMemberEligibility(
     return {
       ok: false,
       farmer,
-      reason: `${name} ${tx("is not an active member — savings/loan transactions are not allowed.", "একটিভ সদস্য নয় — সঞ্চয়/ঋণ ট্রানজেকশন করা যাবে না।")}`,
+      reason: `${name} ${tx(
+        "is not an active member — savings/loan transactions are blocked. Fix: set the member status to Active in the farmer profile.",
+        "একটিভ সদস্য নয় — সঞ্চয়/ঋণ ট্রানজেকশন বন্ধ। সমাধান: ফার্মার প্রোফাইলে সদস্য স্ট্যাটাস 'একটিভ' করুন।",
+      )}`,
     };
   }
   if (!isValidMemberNo(farmer.member_no)) {
     return {
       ok: false,
       farmer,
-      reason: `${name} ${tx("has a missing or invalid member number — savings/loan transactions are not allowed.", "এর সদস্য নাম্বার নেই বা সঠিক নয় — সঞ্চয়/ঋণ ট্রানজেকশন করা যাবে না।")}`,
+      reason: `${name} ${tx(
+        "has a missing or invalid member number — savings/loan transactions are blocked. Fix: add a valid member number (digits, 1–20 characters) in the farmer profile.",
+        "এর সদস্য নাম্বার নেই বা সঠিক নয় — সঞ্চয়/ঋণ ট্রানজেকশন বন্ধ। সমাধান: ফার্মার প্রোফাইলে সঠিক সদস্য নাম্বার (সংখ্যা, ১–২০ অক্ষর) দিন।",
+      )}`,
     };
   }
   return { ok: true, farmer };
