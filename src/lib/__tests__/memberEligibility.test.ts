@@ -23,6 +23,16 @@ describe("isValidMemberNo", () => {
     expect(isValidMemberNo("12 34")).toBe(false);
     expect(isValidMemberNo("1".repeat(21))).toBe(false);
   });
+  it("rejects disallowed special characters and whitespace edge cases", () => {
+    expect(isValidMemberNo("12#34")).toBe(false);
+    expect(isValidMemberNo("12.34")).toBe(false);
+    expect(isValidMemberNo("১২৩")).toBe(false); // Bangla digits are not ASCII-valid
+    expect(isValidMemberNo("\t007\n")).toBe(true); // trimmed then valid
+  });
+  it("accepts boundary lengths (1 and 20 chars)", () => {
+    expect(isValidMemberNo("7")).toBe(true);
+    expect(isValidMemberNo("1".repeat(20))).toBe(true);
+  });
 });
 
 describe("evaluateMemberEligibility (savings/loans rule)", () => {

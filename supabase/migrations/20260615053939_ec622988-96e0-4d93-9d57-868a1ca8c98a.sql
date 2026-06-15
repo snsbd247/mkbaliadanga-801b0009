@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.assert_member_eligible_for_savings_loan() FROM PUBLIC, anon, authenticated;

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { money } from "@/lib/format";
-import { checkMemberEligibility } from "@/lib/memberEligibility";
+import { guardSavingsLoan } from "@/lib/memberEligibility";
 
 const EMPTY = {
   farmer_id: "", plan_id: "", principal: 0, interest_rate: 9,
@@ -77,7 +77,7 @@ export default function LoanForm() {
     else if (form.issued_on > new Date().toISOString().slice(0, 10)) errs.issued_on = tx("Issue date cannot be in the future", "ইস্যু তারিখ ভবিষ্যতের হতে পারে না");
     setErrors(errs);
     if (Object.keys(errs).length) return;
-    const elig = await checkMemberEligibility(form.farmer_id, tx);
+    const elig = await guardSavingsLoan(form.farmer_id, "loan", tx);
     if (!elig.ok) { setErrors({ farmer_id: elig.reason }); return; }
     const { data: mchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
     setSaving(true);
