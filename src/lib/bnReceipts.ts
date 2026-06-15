@@ -414,7 +414,7 @@ function resolveOpts(o?: ReceiptOptions) {
   return {
     lang: (o?.lang ?? "bn") as ReceiptLang,
     paper: o?.paper ?? getDefaultPaperSize(),
-    orientation: o?.orientation ?? "p",
+    orientation: o?.orientation ?? getDefaultOrientation(),
     margins: { t: o?.margins?.t ?? 10, r: o?.margins?.r ?? 10, b: o?.margins?.b ?? 10, l: o?.margins?.l ?? 10 },
     orgLayout: (o?.orgLayout ?? "two-line") as "one-line" | "two-line",
     orgSize: (o?.orgSize ?? "sm") as "sm" | "md" | "lg",
