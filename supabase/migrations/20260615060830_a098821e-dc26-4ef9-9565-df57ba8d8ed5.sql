@@ -1,0 +1,2 @@
+ALTER TABLE public.loan_payments ADD COLUMN IF NOT EXISTS discount_amount numeric NOT NULL DEFAULT 0;
+COMMENT ON COLUMN public.loan_payments.discount_amount IS 'Admin-applied interest waiver/discount on lump-sum repayments; net = principal + interest - discount';

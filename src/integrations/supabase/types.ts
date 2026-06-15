@@ -4085,6 +4085,7 @@ export type Database = {
           approved_by: string | null
           collected_by: string | null
           created_at: string
+          discount_amount: number
           id: string
           interest_amount: number | null
           loan_id: string
@@ -4105,6 +4106,7 @@ export type Database = {
           approved_by?: string | null
           collected_by?: string | null
           created_at?: string
+          discount_amount?: number
           id?: string
           interest_amount?: number | null
           loan_id: string
@@ -4125,6 +4127,7 @@ export type Database = {
           approved_by?: string | null
           collected_by?: string | null
           created_at?: string
+          discount_amount?: number
           id?: string
           interest_amount?: number | null
           loan_id?: string

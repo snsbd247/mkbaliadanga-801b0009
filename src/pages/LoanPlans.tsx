@@ -65,6 +65,12 @@ export default function LoanPlans() {
       if (form.id) {
         const { error } = await sb.from("loan_plans").update(payload).eq("id", form.id);
         if (error) throw error;
+        // Recalculate interest + due amounts for active lump-sum loans on term/rate edit.
+        if (form.installment_type === "lump_sum") {
+          const { data: rc, error: rcErr } = await sb.functions.invoke("recalc-lumpsum-loans", { body: { plan_id: form.id } });
+          if (rcErr) toast.warning(tx("Plan saved, but loan recalculation failed", "প্ল্যান সংরক্ষিত, তবে ঋণ পুনঃহিসাব ব্যর্থ"));
+          else if (rc?.updated > 0) toast.success(tx(`Recalculated ${rc.updated} loan(s)`, `${rc.updated} টি ঋণ পুনঃহিসাব হয়েছে`));
+        }
       } else {
         payload.office_id = officeId ?? null;
         payload.created_by = user?.id ?? null;

@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Check, X, FileText, Pencil, Trash2 } from "lucide-react";
+import { Plus, Check, X, FileText, Pencil, Trash2, BadgePercent } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { usePermission } from "@/hooks/usePermission";
 import { money, fmtDate } from "@/lib/format";
+import { LumpSumDiscountDialog } from "@/components/loans/LumpSumDiscountDialog";
+import { isLumpSum } from "@/lib/lumpSumLoan";
 
 export default function Loans() {
   const { tx, lang } = useLang();
@@ -22,11 +24,12 @@ export default function Loans() {
   const canApprove = usePermission("loans", "can_edit");
   const [rows, setRows] = useState<any[]>([]);
   const [tab, setTab] = useState("pending");
+  const [discountLoan, setDiscountLoan] = useState<any | null>(null);
 
   useEffect(() => { document.title = `${tx("Loans", "ঋণ")} — MK Baliadanga`; load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from("loans").select("*, farmers(name_en,name_bn,farmer_code,member_no), loan_plans(name,name_bn), loan_payments(amount,principal_amount)").is("deleted_at", null).order("created_at", { ascending: false });
+    const { data } = await supabase.from("loans").select("*, farmers(name_en,name_bn,farmer_code,member_no), loan_plans(name,name_bn,installment_type), loan_payments(amount,principal_amount)").is("deleted_at", null).order("created_at", { ascending: false });
     setRows(data ?? []);
   }
 
@@ -121,6 +124,9 @@ export default function Loans() {
                         {r.status === "approved" && (
                           <Button size="sm" variant="ghost" onClick={() => navigate(`/loans/${r.id}/statement`)}><FileText className="h-4 w-4 mr-1" />{tx("Statement", "স্টেটমেন্ট")}</Button>
                         )}
+                        {r.status === "approved" && canApprove && isLumpSum(r.loan_plans?.installment_type) && (
+                          <Button size="sm" variant="ghost" onClick={() => setDiscountLoan(r)}><BadgePercent className="h-4 w-4 mr-1" />{tx("Repay/Discount", "পরিশোধ/ছাড়")}</Button>
+                        )}
                         {r.status === "pending" && canApprove && (
                           <>
                             <Button size="sm" variant="ghost" onClick={() => decide(r.id, "approved")}><Check className="h-4 w-4" /></Button>
@@ -143,6 +149,14 @@ export default function Loans() {
           </Card>
         </TabsContent>
       </Tabs>
+      {discountLoan && (
+        <LumpSumDiscountDialog
+          loan={discountLoan}
+          open={!!discountLoan}
+          onOpenChange={(v) => { if (!v) setDiscountLoan(null); }}
+          onDone={load}
+        />
+      )}
     </>
   );
 }
