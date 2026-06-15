@@ -64,3 +64,27 @@ test.describe("loan reliability", () => {
   });
 });
 
+
+test.describe("loan payment entry points are unified to Combined Payment", () => {
+  test("FarmerDetail 'Pay Now' redirects to Combined Payment with farmer preselected", async ({ page }) => {
+    await page.goto("/farmers");
+    const firstFarmer = page.locator('a[href*="/farmers/"]').first();
+    if (await firstFarmer.count()) {
+      await firstFarmer.click();
+      await expect(page).toHaveURL(/\/farmers\/[0-9a-f-]+/);
+      const payBtn = page.getByRole("button", { name: /Pay Now|আদায়|পেমেন্ট/ }).first();
+      if (await payBtn.count()) {
+        await payBtn.click();
+        // Must land on the Combined Payment route, with the farmer query param carried over.
+        await expect(page).toHaveURL(/\/payments\/combined\?farmer=[0-9a-f-]+/);
+      }
+    }
+  });
+
+  test("the regular Payments screen offers no loan-creation entry (only irrigation/savings)", async ({ page }) => {
+    await page.goto("/payments");
+    // The new-payment allocation kind selector must not contain a "Loan" creation option.
+    const loanCreateOption = page.getByRole("option", { name: /^Loan$|^ঋণ$/ });
+    await expect(loanCreateOption).toHaveCount(0);
+  });
+});

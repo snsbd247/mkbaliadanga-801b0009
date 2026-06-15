@@ -26,6 +26,7 @@ import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceipt
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFarmerDues, type FarmerDuesBreakdown } from "@/lib/farmerDues";
+import { logAudit } from "@/lib/audit";
 import { suggestedInterest as calcSuggestedInterest, loanPrincipalExceeds } from "@/lib/loanPaymentRules";
 import { COLLECTION_RECEIPT_PAPER } from "@/lib/receiptPaper";
 
@@ -89,7 +90,7 @@ export default function CombinedPayment() {
     if (!form.farmer_id) { setFarmer(null); setLoans([]); setDues(null); return; }
     (async () => {
       const [f, lq] = await Promise.all([
-        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive,n").eq("id", form.farmer_id).maybeSingle(),
+        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive,status,father_name").eq("id", form.farmer_id).maybeSingle(),
         supabase.from("loans").select("id,principal,total_payable,issued_on,interest_rate,loan_plans(interest_rate,duration_months),loan_payments(amount,paid_on)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
       ]);
       setFarmer(f.data ?? null);
@@ -123,12 +124,14 @@ export default function CombinedPayment() {
     [form.savings, form.share, form.loan_principal, form.loan_interest],
   );
 
+  const farmerInactive = (farmer as any)?.status === "inactive" || !!(farmer as any)?.savings_inactive;
+
   function reset() { setForm({ ...EMPTY }); setLastReceipt(null); guard.clear(); }
 
   async function submit() {
     if (!form.farmer_id) return toast.error(lang === "bn" ? "কৃষক নির্বাচন করুন" : "Select a farmer");
     if (total <= 0) return toast.error(lang === "bn" ? "অন্তত একটি amount দিন" : "Enter at least one amount");
-    if ((farmer as any)?.savings_inactive) return toast.error(lang === "bn" ? `${farmer?.name_en ?? "এই সদস্য"} ইনঅ্যাক্টিভ — নতুন লেনদেন করা যাবে না।` : "Member is inactive — new transactions are not allowed.");
+    if (farmerInactive) return toast.error(lang === "bn" ? `${farmer?.name_en ?? "এই সদস্য"} ইনঅ্যাক্টিভ — নতুন লেনদেন করা যাবে না।` : "Member is inactive — new transactions are not allowed.");
     if (loanAmt > 0 && !form.loan_id) return toast.error(lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan");
     if (loanAmt > 0 && Number(form.loan_principal || 0) <= 0) return toast.error(lang === "bn" ? "আসল টাকা বাধ্যতামূলক" : "Principal amount is required");
     if (loanAmt > 0 && !farmer?.is_voter) return toast.error(lang === "bn" ? "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে" : "Loans are only allowed for savings members");
@@ -199,13 +202,32 @@ export default function CombinedPayment() {
         if (interest > 0) rows.push({ kind: "loan_interest", label_bn: "ঋণ লাভ", label_en: "Loan Interest", amount: interest });
       }
 
+      // Audit log — record who submitted savings/share/loan repayments and when.
+      if (Number(form.savings) > 0 || Number(form.share) > 0) {
+        logAudit({
+          office_id: officeId, module: "savings_repayment", action_type: "create",
+          reference_id: form.farmer_id,
+          new_data: { receipt_no: receiptNo, savings: Number(form.savings || 0), share: Number(form.share || 0) },
+        });
+      }
+      if (loanAmt > 0 && form.loan_id) {
+        logAudit({
+          office_id: officeId, module: "loan_repayment", action_type: "create",
+          reference_id: form.loan_id,
+          new_data: {
+            receipt_no: receiptNo, farmer_id: form.farmer_id,
+            principal: Number(form.loan_principal || 0), interest: Number(form.loan_interest || 0),
+          },
+        });
+      }
+
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
       const verifyUrl = verifyToken ? `${window.location.origin}/r/${verifyToken}` : `${window.location.origin}/r/${receiptNo}`;
       setLastReceipt({
         no: receiptNo, rows, total, farmerName, verifyUrl,
         date: new Date().toISOString(),
         member_no: farmer?.member_no ?? farmer?.farmer_code ?? null,
-        father_name: farmer?.n ?? null,
+        father_name: (farmer as any)?.father_name ?? null,
         village: farmer?.village ?? null,
         mobile: farmer?.mobile ?? null,
         field_receipt_no: form.field_receipt_no?.trim() || null,
@@ -444,9 +466,14 @@ export default function CombinedPayment() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={reset} disabled={saving}>{lang === "bn" ? "রিসেট" : "Reset"}</Button>
-              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds}>
+              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds || farmerInactive}>
                 <Save className="h-4 w-4 mr-1" />{saving ? "…" : (lang === "bn" ? "সংরক্ষণ" : "Save")}
               </Button>
+              {farmerInactive && (
+                <p className="text-xs text-destructive mt-1 w-full">
+                  {lang === "bn" ? "ইনঅ্যাক্টিভ সদস্য — লেনদেন বন্ধ।" : "Inactive member — payments are disabled."}
+                </p>
+              )}
             </div>
           </div>
           <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
