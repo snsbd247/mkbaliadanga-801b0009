@@ -482,7 +482,6 @@ export default function CombinedPayment() {
               {!farmerInactive && memberIneligible && (
                 <p className="text-xs text-destructive mt-1 w-full">{memberCheck?.reason}</p>
               )}
-              )}
             </div>
           </div>
           <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
