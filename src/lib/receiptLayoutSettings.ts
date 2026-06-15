@@ -101,6 +101,7 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
       parsed?.loanRowSpacingPx ?? DEFAULT_RECEIPT_LAYOUT.loanRowSpacingPx,
     );
     merged.defaultPaperSize = (parsed?.defaultPaperSize === "a4" ? "a4" : "a5");
+    merged.defaultOrientation = (parsed?.defaultOrientation === "l" ? "l" : "p");
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
