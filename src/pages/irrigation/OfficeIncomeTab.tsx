@@ -340,6 +340,23 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
               <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} aria-invalid={!!fieldErrors.mobile} />
               {fieldErrors.mobile && <p className="mt-1 text-xs text-destructive">{fieldErrors.mobile}</p>}
             </div>
+            {/* জমি ও মৌজা — অফিস আয়ের রশিদে সবসময় N/A; ব্যবহারকারী পরিবর্তন করতে পারবে না। */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="flex items-center gap-1">
+                  <Lock className="h-3 w-3" />{tx("Land", "জমি")}
+                </Label>
+                <Input value="N/A" readOnly disabled className="bg-muted cursor-not-allowed" />
+                <p className="mt-1 text-xs text-muted-foreground">{tx("Locked for office income", "অফিস আয়ে লক করা")}</p>
+              </div>
+              <div>
+                <Label className="flex items-center gap-1">
+                  <Lock className="h-3 w-3" />{tx("Mouza", "মৌজা")}
+                </Label>
+                <Input value="N/A" readOnly disabled className="bg-muted cursor-not-allowed" />
+                <p className="mt-1 text-xs text-muted-foreground">{tx("Locked for office income", "অফিস আয়ে লক করা")}</p>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>{tx("Amount", "টাকা")}</Label>
