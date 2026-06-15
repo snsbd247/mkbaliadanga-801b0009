@@ -26,6 +26,7 @@ import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceipt
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFarmerDues, type FarmerDuesBreakdown } from "@/lib/farmerDues";
+import { suggestedInterest as calcSuggestedInterest, loanPrincipalExceeds } from "@/lib/loanPaymentRules";
 
 type LoanRow = {
   id: string; principal: number; total_payable: number; issued_on: string; remaining: number;
