@@ -202,6 +202,25 @@ export default function CombinedPayment() {
         if (interest > 0) rows.push({ kind: "loan_interest", label_bn: "ঋণ লাভ", label_en: "Loan Interest", amount: interest });
       }
 
+      // Audit log — record who submitted savings/share/loan repayments and when.
+      if (Number(form.savings) > 0 || Number(form.share) > 0) {
+        logAudit({
+          office_id: officeId, module: "savings_repayment", action_type: "create",
+          reference_id: form.farmer_id,
+          new_data: { receipt_no: receiptNo, savings: Number(form.savings || 0), share: Number(form.share || 0) },
+        });
+      }
+      if (loanAmt > 0 && form.loan_id) {
+        logAudit({
+          office_id: officeId, module: "loan_repayment", action_type: "create",
+          reference_id: form.loan_id,
+          new_data: {
+            receipt_no: receiptNo, farmer_id: form.farmer_id,
+            principal: Number(form.loan_principal || 0), interest: Number(form.loan_interest || 0),
+          },
+        });
+      }
+
       const farmerName = farmer?.name_bn || farmer?.name_en || "";
       const verifyUrl = verifyToken ? `${window.location.origin}/r/${verifyToken}` : `${window.location.origin}/r/${receiptNo}`;
       setLastReceipt({
