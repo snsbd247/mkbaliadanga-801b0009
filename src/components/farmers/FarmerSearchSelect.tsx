@@ -113,7 +113,13 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [q, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function pick(it: FarmerLite) { setSelected(it); onChange(it.id, it); setOpen(false); }
+  function pick(it: FarmerLite) {
+    if (blockInactive && it.status === "inactive") {
+      toast.error(tx("This member is inactive and cannot make transactions.", "এই সদস্য নিষ্ক্রিয়, লেনদেন করা যাবে না।"));
+      return;
+    }
+    setSelected(it); onChange(it.id, it); setOpen(false);
+  }
 
   function onKey(e: React.KeyboardEvent) {
     if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, items.length - 1)); }
