@@ -88,6 +88,9 @@ export interface BnReceiptData {
   collected_from_outstanding?: number | null;  // বকেয়া থেকে সংগৃহীত
   remark?: string | null;                      // রিমার্ক/নোট
 
+  /** Office income (no farmer): forces জমি/মৌজা rows to locked "N/A" and skips charge rows. */
+  office_income?: boolean;
+
   collected_amount: number;
   collector_signature_url?: string | null;
   office_collector_signature_url?: string | null;
@@ -237,7 +240,12 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   rows.push([t.villageLine, `${d.farmer.village ?? "—"}${d.farmer.mobile ? " / " + d.farmer.mobile : ""}`]);
   if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
 
-  if (d.kind === "irrigation") {
+  if (d.office_income) {
+    // Farmer-less office income receipt: জমি ও মৌজা সবসময় locked "N/A".
+    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+    rows.push([mouzaLabel, "N/A"]);
+    rows.push([t.landOwner, "N/A"]);
+  } else if (d.kind === "irrigation") {
     // Always show land owner row — fallback to "তথ্য পাওয়া যায়নি" / "Not available" when missing
     rows.push([
       t.landOwner,
@@ -296,7 +304,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     ? `${fmt2(d.collected_amount)} (${bnAmountInWords(d.collected_amount)})`
     : `${fmt2(d.collected_amount)}`;
   rows.push([totalLabel, amountText]);
-  if (d.kind === "irrigation" && (d.remark ?? "").trim()) {
+  if ((d.kind === "irrigation" || d.office_income) && (d.remark ?? "").trim()) {
     rows.push([t.remark, String(d.remark).trim()]);
   }
 
