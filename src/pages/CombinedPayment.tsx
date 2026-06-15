@@ -347,6 +347,7 @@ export default function CombinedPayment() {
           <div>
             <Label>{lang === "bn" ? "কৃষক" : "Farmer"} *</Label>
             <FarmerSearchSelect
+              blockInactive
               value={form.farmer_id}
               onChange={(id) => setForm({ ...form, farmer_id: id ?? "", loan_id: "", loan_principal: 0, loan_interest: 0 })}
             />

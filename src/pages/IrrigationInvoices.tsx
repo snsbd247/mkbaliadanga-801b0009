@@ -1538,7 +1538,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
         <div className="space-y-3">
           <div>
             <Label>{tx("Farmer", "কৃষক")}</Label>
-            <FarmerSearchSelect value={farmerId} onChange={(id) => { setFarmerId(id); setLandId(""); }} placeholder={tx("Search farmer", "কৃষক খুঁজুন")} />
+            <FarmerSearchSelect blockInactive value={farmerId} onChange={(id) => { setFarmerId(id); setLandId(""); }} placeholder={tx("Search farmer", "কৃষক খুঁজুন")} />
           </div>
           <div>
             <Label>{tx("Land", "জমি")}</Label>

@@ -125,7 +125,7 @@ export default function LoanForm() {
         <div className="grid gap-3">
           <div>
             <Label>{tx("Member", "সদস্য")} *</Label>
-            <FarmerSearchSelect value={form.farmer_id} votersOnly
+            <FarmerSearchSelect value={form.farmer_id} votersOnly blockInactive
               onChange={(id, f) => { setForm({ ...form, farmer_id: id ?? "" }); setFarmer(f); setErrors(e => ({ ...e, farmer_id: undefined })); }} />
             {errors.farmer_id && <p className="text-sm text-destructive mt-1">{errors.farmer_id}</p>}
           </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronsUpDown, Loader2, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLang } from "@/i18n/LanguageProvider";
+import { toast } from "sonner";
 
 
 export type FarmerLite = {
@@ -19,6 +20,7 @@ export type FarmerLite = {
   voter_number?: string | null;
   is_voter?: boolean | null;
   father_name?: string | null;
+  status?: string | null;
 };
 
 interface Props {
@@ -30,9 +32,11 @@ interface Props {
   className?: string;
   /** Only allow farmers with is_voter = true (used for savings/loans/shares). */
   votersOnly?: boolean;
+  /** Prevent picking inactive farmers (used on transaction screens). */
+  blockInactive?: boolean;
 }
 
-const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter,father_name";
+const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter,father_name,status";
 const MIN_SEARCH = 2;
 
 function highlight(text: string | null | undefined, q: string): React.ReactNode {
@@ -50,7 +54,7 @@ function highlight(text: string | null | undefined, q: string): React.ReactNode 
 }
 
 /** Searchable, debounced farmer combobox. Searches name / code / account / mobile / voter / member. */
-export function FarmerSearchSelect({ value, onChange, excludeIds = [], placeholder, disabled, className, votersOnly = false }: Props) {
+export function FarmerSearchSelect({ value, onChange, excludeIds = [], placeholder, disabled, className, votersOnly = false, blockInactive = false }: Props) {
   const { tx } = useLang();
   const ph = placeholder ?? tx("Search farmer…", "কৃষক খুঁজুন…");
   const [open, setOpen] = useState(false);
@@ -109,7 +113,13 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [q, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function pick(it: FarmerLite) { setSelected(it); onChange(it.id, it); setOpen(false); }
+  function pick(it: FarmerLite) {
+    if (blockInactive && it.status === "inactive") {
+      toast.error(tx("This member is inactive and cannot make transactions.", "এই সদস্য নিষ্ক্রিয়, লেনদেন করা যাবে না।"));
+      return;
+    }
+    setSelected(it); onChange(it.id, it); setOpen(false);
+  }
 
   function onKey(e: React.KeyboardEvent) {
     if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, items.length - 1)); }
@@ -168,6 +178,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">
                   {highlight(it.name_en, term)}{it.name_bn ? <> ({highlight(it.name_bn, term)})</> : null}
+                  {it.status === "inactive" ? <span className="ml-1 text-xs text-destructive">({tx("Inactive", "নিষ্ক্রিয়")})</span> : null}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   {highlight(it.member_no ?? it.farmer_code, term)}
