@@ -3915,6 +3915,51 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_discount_audit: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          discount_after: number
+          discount_before: number
+          id: string
+          interest_after: number
+          interest_before: number
+          loan_id: string
+          note: string | null
+          office_id: string | null
+          payment_id: string | null
+          receipt_no: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          discount_after?: number
+          discount_before?: number
+          id?: string
+          interest_after?: number
+          interest_before?: number
+          loan_id: string
+          note?: string | null
+          office_id?: string | null
+          payment_id?: string | null
+          receipt_no?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          discount_after?: number
+          discount_before?: number
+          id?: string
+          interest_after?: number
+          interest_before?: number
+          loan_id?: string
+          note?: string | null
+          office_id?: string | null
+          payment_id?: string | null
+          receipt_no?: string | null
+        }
+        Relationships: []
+      }
       loan_guarantors: {
         Row: {
           created_at: string
