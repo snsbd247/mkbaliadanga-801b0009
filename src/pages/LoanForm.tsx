@@ -85,8 +85,8 @@ export default function LoanForm() {
     if (!(pr > 0)) errs.principal = tx("Principal must be greater than 0", "আসল টাকা ০ এর বেশি হতে হবে");
     else if (pr > 100000000) errs.principal = tx("Principal is too large", "আসল টাকা অত্যধিক বড়");
     if (form.interest_enabled) {
-      const ir = Number(form.interest_rate);
-      if (isNaN(ir) || ir < 0 || ir > 100) errs.interest_rate = tx("Interest rate must be between 0 and 100", "সুদের হার ০ থেকে ১০০ এর মধ্যে হতে হবে");
+      const iv = validateLumpSumInterest(form.interest_rate, tx);
+      if (!iv.ok) errs.interest_rate = iv.error;
     }
     if (!form.issued_on) errs.issued_on = tx("Issue date is required", "ইস্যু তারিখ আবশ্যক");
     else if (form.issued_on > new Date().toISOString().slice(0, 10)) errs.issued_on = tx("Issue date cannot be in the future", "ইস্যু তারিখ ভবিষ্যতের হতে পারে না");
