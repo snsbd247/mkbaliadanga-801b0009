@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
+import { landSizeLabel } from "@/lib/landUnits";
 import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
 import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
@@ -244,16 +245,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         ? d.land_owner_label
         : (lang === "bn" ? "তথ্য পাওয়া যায়নি" : "Not available"),
     ]);
-    // Land size stored in শতক; show both বিঘা and শতক so users can cross-check (1 বিঘা = 33 শতক).
-    let sizeLabel: string | null = null;
-    if (d.farmer.land_size != null) {
-      const shatak = Number(d.farmer.land_size);
-      const bigha = shatak / 33;
-      const katha = shatak / 1.65; // 1 বিঘা = 20 কাঠা = 33 শতক
-      sizeLabel = lang === "bn"
-        ? `${bigha.toFixed(2)} বিঘা · ${katha.toFixed(2)} কাঠা (${shatak.toFixed(2)} শতক)`
-        : `${bigha.toFixed(2)} bigha · ${katha.toFixed(2)} katha (${shatak.toFixed(2)} shatak)`;
-    }
+    // Land size stored in শতক; show বিঘা · কাঠা · শতক so users can cross-check (1 বিঘা = 33 শতক = 20 কাঠা).
+    const sizeLabel: string | null = landSizeLabel(d.farmer.land_size, lang);
     const layout = getReceiptLayoutSettings();
     const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels(lang);
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
