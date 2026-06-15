@@ -126,6 +126,8 @@ export default function CombinedPayment() {
   );
 
   const farmerInactive = (farmer as any)?.status === "inactive" || !!(farmer as any)?.savings_inactive;
+  const memberCheck = farmer ? evaluateMemberEligibility(farmer as any, (en, bn) => (lang === "bn" ? bn : en)) : null;
+  const memberIneligible = !!farmer && !!memberCheck && !memberCheck.ok;
 
   function reset() { setForm({ ...EMPTY }); setLastReceipt(null); guard.clear(); }
 
