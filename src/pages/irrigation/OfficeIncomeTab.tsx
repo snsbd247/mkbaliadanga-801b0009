@@ -182,7 +182,6 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     await downloadBnReceiptPdf(buildBnData(r), "both");
   };
 
-  const downloadReceiptPdf = (r: any) => printReceipt(r);
 
 
 
