@@ -446,7 +446,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     <div className="space-y-4">
       <Card className="p-4">
         <Label>{tx("Select farmer", "ফার্মার বাছাই")}</Label>
-        <FarmerSearchSelect value={farmerId || null} onChange={(id) => setFarmerId(id ?? "")} />
+        <FarmerSearchSelect blockInactive value={farmerId || null} onChange={(id) => setFarmerId(id ?? "")} />
       </Card>
 
       {farmerId && loading && (
