@@ -32,9 +32,11 @@ interface Props {
   className?: string;
   /** Only allow farmers with is_voter = true (used for savings/loans/shares). */
   votersOnly?: boolean;
+  /** Prevent picking inactive farmers (used on transaction screens). */
+  blockInactive?: boolean;
 }
 
-const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter,father_name";
+const SELECT_COLS = "id,name_en,name_bn,farmer_code,member_no,account_number,mobile,voter_number,is_voter,father_name,status";
 const MIN_SEARCH = 2;
 
 function highlight(text: string | null | undefined, q: string): React.ReactNode {
