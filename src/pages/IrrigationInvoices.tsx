@@ -1462,7 +1462,9 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     try {
       const land = lands.find((l: any) => l.id === landId);
       const billed = await resolveBilledFarmer(landId, dueDate);
-      const settings = await getChargeSettings(land?.office_id ?? null);
+      const rawSettings = await getChargeSettings(land?.office_id ?? null);
+      // No auto delay fee at generation — penalty is added at payment time only.
+      const settings = { ...rawSettings, auto_apply_delay_fee: false };
       const calc = calcInvoice({
         land_size_shotok: Number(land?.land_size ?? 0),
         rate_per_shotok: rate,
