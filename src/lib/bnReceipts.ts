@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
+import { landSizeLabel } from "@/lib/landUnits";
 import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
 import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
