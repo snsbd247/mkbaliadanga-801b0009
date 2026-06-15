@@ -151,84 +151,39 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
     load();
   };
 
-  const printReceipt = (r: any) => {
-    if (!canExport) { toast.error(tx("You don't have permission to print", "প্রিন্টের অনুমতি নেই")); return; }
+  // Build a bnReceipts (irrigation payment receipt) payload from an office-income row.
+  // Heading/labels auto-switch by stream (সেচ → irrigation, সেভিং → savings);
+  // জমি ও মৌজা are locked to N/A via the office_income flag.
+  const buildBnData = (r: any): BnReceiptData => {
     const officeName = offices.find((o) => o.id === r.office_id)?.name ?? "";
-    const w = window.open("", "_blank", "width=820,height=1000");
-    if (!w) return;
-    logAudit({ office_id: r.office_id ?? null, module: "receipt", action_type: "export", reference_id: r.id, new_data: { action: "print", receipt_no: r.receipt_no } });
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${r.receipt_no}</title>
-      <style>
-        @page{size:A4 portrait;margin:18mm}
-        *{box-sizing:border-box}
-        body{font-family:'Noto Sans Bengali',Arial,sans-serif;color:#1a1a1a;margin:0}
-        .sheet{border:2px solid #1f4e79;padding:28px 32px;border-radius:6px}
-        .head{text-align:center;border-bottom:2px solid #1f4e79;padding-bottom:12px;margin-bottom:18px}
-        .org{font-size:24px;font-weight:800;color:#1f4e79;letter-spacing:.3px}
-        .doc{display:inline-block;margin-top:10px;background:#1f4e79;color:#fff;padding:4px 18px;border-radius:20px;font-size:13px;font-weight:700}
-        .meta{display:flex;justify-content:space-between;font-size:13px;color:#444;margin:14px 0 18px}
-        table{width:100%;border-collapse:collapse;font-size:14px}
-        td{padding:9px 8px;border-bottom:1px solid #e3e3e3}
-        .lbl{color:#555;width:38%;font-weight:600}
-        .amtrow td{border-top:2px solid #1f4e79;border-bottom:none;padding-top:14px}
-        .amt{text-align:right;font-size:22px;font-weight:800;color:#1f4e79}
-        .signs{display:flex;justify-content:space-between;margin-top:64px}
-        .sig{width:42%;text-align:center;border-top:1px solid #999;padding-top:6px;font-size:12px;color:#555}
-        .foot{text-align:center;margin-top:26px;font-size:11px;color:#888}
-      </style></head><body onload="window.print()">
-      <div class="sheet">
-        <div class="head">
-          <div class="org">${officeName || tx("Office", "অফিস")}</div>
-          <div class="doc">${tx("OFFICE INCOME RECEIPT", "অফিস আয় রশিদ")}</div>
-        </div>
-        <div class="meta">
-          <span>${tx("Receipt No", "রশিদ নং")}: <b>${r.receipt_no}</b></span>
-          <span>${tx("Date", "তারিখ")}: <b>${fmtDate(r.received_on)}</b></span>
-        </div>
-        <table>
-          <tr><td class="lbl">${tx("Name", "নাম")}</td><td>${r.payer_name ?? "N/A"}</td></tr>
-          <tr><td class="lbl">${tx("Father's name", "পিতার নাম")}</td><td>${r.father_name || "N/A"}</td></tr>
-          <tr><td class="lbl">${tx("Village", "গ্রাম")}</td><td>${r.village || "N/A"}</td></tr>
-          <tr><td class="lbl">${tx("Mobile", "মোবাইল")}</td><td>${r.mobile || "N/A"}</td></tr>
-          <tr><td class="lbl">${tx("Mouza", "মৌজা")}</td><td>N/A</td></tr>
-          <tr><td class="lbl">${tx("Land", "জমি")}</td><td>N/A</td></tr>
-          <tr><td class="lbl">${tx("Income Type", "আয়ের ধরন")}</td><td>${typeLabel(r.income_type)}</td></tr>
-          <tr><td class="lbl">${tx("Stream", "স্ট্রিম")}</td><td>${streamLabel(r.stream)}</td></tr>
-          <tr><td class="lbl">${tx("Remark", "রিমার্ক")}</td><td>${r.note || "N/A"}</td></tr>
-          <tr class="amtrow"><td class="lbl">${tx("Amount Received", "প্রাপ্ত টাকা")}</td><td class="amt">${money(Number(r.amount))}</td></tr>
-        </table>
-        <div class="signs">
-          <div class="sig">${tx("Payer Signature", "প্রদানকারীর স্বাক্ষর")}</div>
-          <div class="sig">${tx("Authorised Signature", "অনুমোদিত স্বাক্ষর")}</div>
-        </div>
-        <div class="foot">${tx("This is a system-generated receipt.", "এটি সিস্টেম-জেনারেটেড রশিদ।")}</div>
-      </div>
-      </body></html>`);
-    w.document.close();
-    w.focus();
+    return {
+      kind: r.stream === "saving" ? "savings" : "irrigation",
+      office_income: true,
+      receipt_no: r.receipt_no,
+      date: r.received_on,
+      bill_info: typeLabel(r.income_type),
+      company_name_bn: officeName,
+      company_name: officeName,
+      org: officeName ? { name: officeName, name_bn: officeName } : null,
+      farmer: {
+        name: r.payer_name || "N/A",
+        father_or_husband: r.father_name || null,
+        village: r.village || null,
+        mobile: r.mobile || null,
+      },
+      remark: r.note || null,
+      collected_amount: Number(r.amount),
+    };
   };
 
-  const downloadReceiptPdf = (r: any) => {
-    if (!canExport) { toast.error(tx("You don't have permission to export", "এক্সপোর্টের অনুমতি নেই")); return; }
-    const body: any[][] = [
-      [tx("Receipt No", "রশিদ নং"), r.receipt_no],
-      [tx("Date", "তারিখ"), fmtDate(r.received_on)],
-      [tx("Name", "নাম"), r.payer_name || "N/A"],
-      [tx("Father's name", "পিতার নাম"), r.father_name || "N/A"],
-      [tx("Village", "গ্রাম"), r.village || "N/A"],
-      [tx("Mobile", "মোবাইল"), r.mobile || "N/A"],
-      [tx("Mouza", "মৌজা"), "N/A"],
-      [tx("Land", "জমি"), "N/A"],
-      [tx("Income Type", "আয়ের ধরন"), typeLabel(r.income_type)],
-      [tx("Stream", "স্ট্রিম"), streamLabel(r.stream)],
-      [tx("Remark", "রিমার্ক"), r.note || "N/A"],
-      [tx("Amount Received", "প্রাপ্ত টাকা"), money(Number(r.amount))],
-    ];
-    exportTablePDF(tx("Office Income Receipt", "অফিস আয় রশিদ"),
-      [tx("Field", "ফিল্ড"), tx("Value", "মান")], body, undefined,
-      { signatures: [tx("Payer Signature", "প্রদানকারীর স্বাক্ষর"), tx("Authorised Signature", "অনুমোদিত স্বাক্ষর")] });
+  const printReceipt = async (r: any) => {
+    if (!canExport) { toast.error(tx("You don't have permission to print", "প্রিন্টের অনুমতি নেই")); return; }
     logAudit({ office_id: r.office_id ?? null, module: "receipt", action_type: "export", reference_id: r.id, new_data: { action: "pdf_download", receipt_no: r.receipt_no } });
+    await downloadBnReceiptPdf(buildBnData(r), "both");
   };
+
+  const downloadReceiptPdf = (r: any) => printReceipt(r);
+
 
 
   const NA = "N/A";
