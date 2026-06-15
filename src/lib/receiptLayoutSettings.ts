@@ -5,6 +5,7 @@
 
 export type DagSeparator = "comma" | "newline" | "semicolon";
 export type PaperSize = "a4" | "a5";
+export type PaperOrientation = "p" | "l";
 
 export interface ReceiptLayoutSettings {
   dagSeparator: DagSeparator;
