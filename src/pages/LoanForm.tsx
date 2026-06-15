@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { money } from "@/lib/format";
-import { checkMemberEligibility, guardSavingsLoan } from "@/lib/memberEligibility";
+import { guardSavingsLoan } from "@/lib/memberEligibility";
 
 const EMPTY = {
   farmer_id: "", plan_id: "", principal: 0, interest_rate: 9,

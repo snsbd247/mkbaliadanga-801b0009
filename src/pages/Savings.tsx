@@ -16,7 +16,7 @@ import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, C
 import { TruncateText } from "@/components/ui/truncate-text";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
-import { checkMemberEligibility, guardSavingsLoan } from "@/lib/memberEligibility";
+import { guardSavingsLoan } from "@/lib/memberEligibility";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";

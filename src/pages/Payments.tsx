@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
-import { checkMemberEligibility, guardSavingsLoan } from "@/lib/memberEligibility";
+import { guardSavingsLoan } from "@/lib/memberEligibility";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer, ArrowDownToLine } from "lucide-react";
