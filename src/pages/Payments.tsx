@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
-import { checkMemberEligibility } from "@/lib/memberEligibility";
+import { checkMemberEligibility, guardSavingsLoan } from "@/lib/memberEligibility";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer, ArrowDownToLine } from "lucide-react";
@@ -367,7 +367,7 @@ export default function Payments() {
 
     // Member guard: savings/loan allocations require an active member with a member number.
     if (allocs.some(a => a.kind === "savings" || (a.kind as string) === "loan")) {
-      const elig = await checkMemberEligibility(farmerId, tx);
+      const elig = await guardSavingsLoan(farmerId, allocs.some(a => (a.kind as string) === "loan") ? "loan" : "savings", tx);
       if (!elig.ok) return toast.error(elig.reason);
     }
 
