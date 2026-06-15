@@ -242,7 +242,7 @@ export default function CombinedPayment() {
   async function printReceipt() {
     if (!lastReceipt) return;
     // A5 landscape — matches client's "শেয়ার,সঞ্চয়,ঋণ ও বিবিধ আদায় রশিদ" sample.
-    const doc = new jsPDF({ unit: "mm", format: "a5", orientation: "l" });
+    const doc = new jsPDF({ unit: COLLECTION_RECEIPT_PAPER.unit, format: COLLECTION_RECEIPT_PAPER.format, orientation: COLLECTION_RECEIPT_PAPER.orientation });
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 14;
     const bnFont = await ensureBanglaFont(doc);
