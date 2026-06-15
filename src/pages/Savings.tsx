@@ -208,7 +208,7 @@ export default function Savings() {
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
     // Member guard: savings/loan txns only for active members with a member number
-    const elig = await guardSavingsLoan(form.farmer_id, form.type.includes("share") || form.type === "deposit" || form.type === "withdraw" || form.type === "profit" ? "savings" : "savings", tx);
+    const elig = await guardSavingsLoan(form.farmer_id, "savings", tx);
     if (!elig.ok) return toast.error(elig.reason);
     // Voter guard: farmer must be is_voter=true to record savings/share txns
     const { data: vchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
