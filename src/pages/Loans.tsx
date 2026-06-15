@@ -24,6 +24,7 @@ export default function Loans() {
   const canApprove = usePermission("loans", "can_edit");
   const [rows, setRows] = useState<any[]>([]);
   const [tab, setTab] = useState("pending");
+  const [discountLoan, setDiscountLoan] = useState<any | null>(null);
 
   useEffect(() => { document.title = `${tx("Loans", "ঋণ")} — MK Baliadanga`; load(); }, []);
 
