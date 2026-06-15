@@ -197,3 +197,8 @@ export function getLoanLabels(lang: "bn" | "en"): { desc: string; outstanding: s
 export function getDefaultPaperSize(): PaperSize {
   return getReceiptLayoutSettings().defaultPaperSize;
 }
+
+/** Global default page orientation for receipt PDFs (portrait or landscape). */
+export function getDefaultOrientation(): PaperOrientation {
+  return getReceiptLayoutSettings().defaultOrientation;
+}
