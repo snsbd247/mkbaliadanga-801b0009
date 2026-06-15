@@ -19,7 +19,7 @@ import { isLumpSum } from "@/lib/lumpSumLoan";
 
 export default function Loans() {
   const { tx, lang } = useLang();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const canApprove = usePermission("loans", "can_edit");
   const [rows, setRows] = useState<any[]>([]);
