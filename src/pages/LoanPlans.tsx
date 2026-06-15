@@ -138,7 +138,7 @@ export default function LoanPlans() {
                 <TableCell>{r.name_bn || r.name}</TableCell>
                 <TableCell className="text-right">{r.duration_months}</TableCell>
                 <TableCell className="text-right">{Number(r.interest_rate).toFixed(2)}</TableCell>
-                <TableCell>{r.installment_type}</TableCell>
+                <TableCell>{r.installment_type === "daily" ? tx("Daily", "দৈনিক") : r.installment_type === "weekly" ? tx("Weekly", "সাপ্তাহিক") : r.installment_type === "lump_sum" ? tx("Lump sum (end of term)", "একবারে পরিশোধ (মেয়াদ শেষে)") : tx("Monthly", "মাসিক")}</TableCell>
                 <TableCell>{r.is_active ? tx("Yes", "হ্যাঁ") : tx("No", "না")}</TableCell>
                 <TableCell className="text-right">
                   <Button size="icon" variant="ghost" onClick={() => openEdit(r)}><Pencil className="h-4 w-4" /></Button>
