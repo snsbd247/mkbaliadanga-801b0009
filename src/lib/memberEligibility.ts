@@ -6,10 +6,46 @@ export type MemberCheck = {
   farmer?: { status?: string | null; member_no?: string | null; name_en?: string | null };
 };
 
+/** Allowed member number format: 1–20 chars, digits/letters/-// and must contain a digit. */
+const MEMBER_NO_RE = /^[0-9A-Za-z\-/]{1,20}$/;
+
+/** Pure, synchronous validation of a member number string. */
+export function isValidMemberNo(memberNo: unknown): boolean {
+  if (memberNo == null) return false;
+  const s = String(memberNo).trim();
+  if (s === "") return false;
+  if (!MEMBER_NO_RE.test(s)) return false;
+  return /\d/.test(s); // must contain at least one digit
+}
+
+/** Pure, synchronous eligibility rule shared by all callers. */
+export function evaluateMemberEligibility(
+  farmer: { status?: string | null; member_no?: string | null; name_en?: string | null } | null | undefined,
+  tx: (en: string, bn: string) => string,
+): MemberCheck {
+  const name = farmer?.name_en || tx("This farmer", "এই ফার্মার");
+  if (!farmer) return { ok: false, reason: tx("Farmer not found", "ফার্মার পাওয়া যায়নি") };
+  if (String(farmer.status) !== "active") {
+    return {
+      ok: false,
+      farmer,
+      reason: `${name} ${tx("is not an active member — savings/loan transactions are not allowed.", "একটিভ সদস্য নয় — সঞ্চয়/ঋণ ট্রানজেকশন করা যাবে না।")}`,
+    };
+  }
+  if (!isValidMemberNo(farmer.member_no)) {
+    return {
+      ok: false,
+      farmer,
+      reason: `${name} ${tx("has a missing or invalid member number — savings/loan transactions are not allowed.", "এর সদস্য নাম্বার নেই বা সঠিক নয় — সঞ্চয়/ঋণ ট্রানজেকশন করা যাবে না।")}`,
+    };
+  }
+  return { ok: true, farmer };
+}
+
 /**
  * Savings & Loans transactions are member-only:
  * a farmer may transact savings/loans ONLY when the farmer is an active member
- * (status === 'active') AND has a member number (member_no).
+ * (status === 'active') AND has a valid member number (member_no).
  * Every farmer is not a member, but every member is a farmer.
  * This check does NOT apply to irrigation/other modules.
  */
@@ -23,21 +59,5 @@ export async function checkMemberEligibility(
     .select("status,member_no,name_en")
     .eq("id", farmerId)
     .maybeSingle();
-  const name = data?.name_en || tx("This farmer", "এই ফার্মার");
-  if (!data) return { ok: false, reason: tx("Farmer not found", "ফার্মার পাওয়া যায়নি") };
-  if (String(data.status) !== "active") {
-    return {
-      ok: false,
-      farmer: data,
-      reason: `${name} ${tx("is not an active member — savings/loan transactions are not allowed.", "একটিভ সদস্য নয় — সঞ্চয়/ঋণ ট্রানজেকশন করা যাবে না।")}`,
-    };
-  }
-  if (!data.member_no || String(data.member_no).trim() === "") {
-    return {
-      ok: false,
-      farmer: data,
-      reason: `${name} ${tx("has no member number — savings/loan transactions are not allowed.", "এর সদস্য নাম্বার নেই — সঞ্চয়/ঋণ ট্রানজেকশন করা যাবে না।")}`,
-    };
-  }
-  return { ok: true, farmer: data };
+  return evaluateMemberEligibility(data, tx);
 }

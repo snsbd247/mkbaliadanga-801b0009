@@ -19,6 +19,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
 import { money } from "@/lib/format";
+import { evaluateMemberEligibility } from "@/lib/memberEligibility";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { ensureBanglaFont } from "@/lib/pdfFonts";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceiptNo";
@@ -125,6 +126,8 @@ export default function CombinedPayment() {
   );
 
   const farmerInactive = (farmer as any)?.status === "inactive" || !!(farmer as any)?.savings_inactive;
+  const memberCheck = farmer ? evaluateMemberEligibility(farmer as any, (en, bn) => (lang === "bn" ? bn : en)) : null;
+  const memberIneligible = !!farmer && !!memberCheck && !memberCheck.ok;
 
   function reset() { setForm({ ...EMPTY }); setLastReceipt(null); guard.clear(); }
 
@@ -132,8 +135,8 @@ export default function CombinedPayment() {
     if (!form.farmer_id) return toast.error(lang === "bn" ? "কৃষক নির্বাচন করুন" : "Select a farmer");
     if (total <= 0) return toast.error(lang === "bn" ? "অন্তত একটি amount দিন" : "Enter at least one amount");
     if (farmerInactive) return toast.error(lang === "bn" ? `${farmer?.name_en ?? "এই সদস্য"} ইনঅ্যাক্টিভ — নতুন লেনদেন করা যাবে না।` : "Member is inactive — new transactions are not allowed.");
-    if ((farmer as any)?.status !== "active") return toast.error(lang === "bn" ? `${farmer?.name_en ?? "এই সদস্য"} একটিভ সদস্য নয় — সঞ্চয়/ঋণ লেনদেন করা যাবে না।` : "Not an active member — savings/loan transactions are not allowed.");
-    if (!(farmer as any)?.member_no || String((farmer as any).member_no).trim() === "") return toast.error(lang === "bn" ? `${farmer?.name_en ?? "এই সদস্য"} এর সদস্য নাম্বার নেই — সঞ্চয়/ঋণ লেনদেন করা যাবে না।` : "No member number — savings/loan transactions are not allowed.");
+    const elig = evaluateMemberEligibility(farmer as any, (en, bn) => (lang === "bn" ? bn : en));
+    if (!elig.ok) return toast.error(elig.reason);
     if (loanAmt > 0 && !form.loan_id) return toast.error(lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan");
     if (loanAmt > 0 && Number(form.loan_principal || 0) <= 0) return toast.error(lang === "bn" ? "আসল টাকা বাধ্যতামূলক" : "Principal amount is required");
     if (loanAmt > 0 && !farmer?.is_voter) return toast.error(lang === "bn" ? "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে" : "Loans are only allowed for savings members");
@@ -468,13 +471,16 @@ export default function CombinedPayment() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={reset} disabled={saving}>{lang === "bn" ? "রিসেট" : "Reset"}</Button>
-              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds || farmerInactive}>
+              <Button onClick={submit} disabled={saving || total <= 0 || !form.farmer_id || loanExceeds || farmerInactive || memberIneligible}>
                 <Save className="h-4 w-4 mr-1" />{saving ? "…" : (lang === "bn" ? "সংরক্ষণ" : "Save")}
               </Button>
               {farmerInactive && (
                 <p className="text-xs text-destructive mt-1 w-full">
                   {lang === "bn" ? "ইনঅ্যাক্টিভ সদস্য — লেনদেন বন্ধ।" : "Inactive member — payments are disabled."}
                 </p>
+              )}
+              {!farmerInactive && memberIneligible && (
+                <p className="text-xs text-destructive mt-1 w-full">{memberCheck?.reason}</p>
               )}
             </div>
           </div>
