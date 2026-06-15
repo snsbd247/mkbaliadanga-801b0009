@@ -178,6 +178,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">
                   {highlight(it.name_en, term)}{it.name_bn ? <> ({highlight(it.name_bn, term)})</> : null}
+                  {it.status === "inactive" ? <span className="ml-1 text-xs text-destructive">({tx("Inactive", "নিষ্ক্রিয়")})</span> : null}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   {highlight(it.member_no ?? it.farmer_code, term)}
