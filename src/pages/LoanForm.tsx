@@ -15,6 +15,8 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { money } from "@/lib/format";
 import { guardSavingsLoan } from "@/lib/memberEligibility";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { isLumpSum, lumpSumSchedule, validateLumpSumInterest } from "@/lib/lumpSumLoan";
 
 const EMPTY = {
   farmer_id: "", plan_id: "", principal: 0, interest_rate: 9,
@@ -53,10 +55,23 @@ export default function LoanForm() {
     })();
   }, [id]);
 
+  const selectedPlan = useMemo(() => plans.find(p => p.id === form.plan_id) || null, [plans, form.plan_id]);
+  const lumpSum = isLumpSum(selectedPlan?.installment_type);
+
   const totalPayable = useMemo(() => {
     const pr = Number(form.principal || 0);
     return form.interest_enabled ? Math.round(pr * (1 + Number(form.interest_rate || 0) / 100)) : pr;
   }, [form.principal, form.interest_rate, form.interest_enabled]);
+
+  const schedule = useMemo(() => {
+    if (!lumpSum || !(Number(form.principal) > 0)) return [];
+    return lumpSumSchedule({
+      principal: Number(form.principal),
+      interestRate: form.interest_enabled ? Number(form.interest_rate || 0) : 0,
+      durationMonths: Number(selectedPlan?.duration_months || 0),
+      issuedOn: form.issued_on,
+    });
+  }, [lumpSum, form.principal, form.interest_rate, form.interest_enabled, form.issued_on, selectedPlan]);
 
   function pickPlan(id: string) {
     const pl = plans.find(p => p.id === id);
@@ -70,8 +85,8 @@ export default function LoanForm() {
     if (!(pr > 0)) errs.principal = tx("Principal must be greater than 0", "আসল টাকা ০ এর বেশি হতে হবে");
     else if (pr > 100000000) errs.principal = tx("Principal is too large", "আসল টাকা অত্যধিক বড়");
     if (form.interest_enabled) {
-      const ir = Number(form.interest_rate);
-      if (isNaN(ir) || ir < 0 || ir > 100) errs.interest_rate = tx("Interest rate must be between 0 and 100", "সুদের হার ০ থেকে ১০০ এর মধ্যে হতে হবে");
+      const iv = validateLumpSumInterest(form.interest_rate, tx);
+      if (!iv.ok) errs.interest_rate = iv.error;
     }
     if (!form.issued_on) errs.issued_on = tx("Issue date is required", "ইস্যু তারিখ আবশ্যক");
     else if (form.issued_on > new Date().toISOString().slice(0, 10)) errs.issued_on = tx("Issue date cannot be in the future", "ইস্যু তারিখ ভবিষ্যতের হতে পারে না");
@@ -150,6 +165,31 @@ export default function LoanForm() {
           </div>
           <div><Label>{tx("Issued On", "ইস্যু তারিখ")}</Label><Input type="date" value={form.issued_on} onChange={e => { setForm({ ...form, issued_on: e.target.value }); setErrors(er => ({ ...er, issued_on: undefined })); }} aria-invalid={!!errors.issued_on} />{errors.issued_on && <p className="text-sm text-destructive mt-1">{errors.issued_on}</p>}</div>
           <div><Label>{tx("Note", "নোট")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
+          {lumpSum && schedule.length > 0 && (
+            <div className="rounded-md border p-3">
+              <div className="text-sm font-medium mb-2">{tx("Repayment Schedule (lump sum at end of term)", "পরিশোধ সূচি (মেয়াদ শেষে একবারে)")}</div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{tx("Due Date", "নির্ধারিত তারিখ")}</TableHead>
+                    <TableHead className="text-right">{tx("Principal Due", "আসল")}</TableHead>
+                    <TableHead className="text-right">{tx("Interest Due", "লাভ")}</TableHead>
+                    <TableHead className="text-right">{tx("Total Due", "মোট")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {schedule.map(r => (
+                    <TableRow key={r.seq}>
+                      <TableCell>{r.dueDate}</TableCell>
+                      <TableCell className="text-right font-mono">{money(r.principalDue)}</TableCell>
+                      <TableCell className="text-right font-mono">{money(r.interestDue)}</TableCell>
+                      <TableCell className="text-right font-mono font-bold">{money(r.totalDue)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           <div className="rounded-md bg-muted p-3 text-sm flex justify-between"><span>{tx("Total Payable", "মোট পরিশোধযোগ্য")}</span><span className="font-mono font-bold">{money(totalPayable)}</span></div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => navigate("/loans")} disabled={saving}>{tx("Cancel", "বাতিল")}</Button>
