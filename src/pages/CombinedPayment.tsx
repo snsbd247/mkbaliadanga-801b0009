@@ -132,6 +132,8 @@ export default function CombinedPayment() {
     if (!form.farmer_id) return toast.error(lang === "bn" ? "কৃষক নির্বাচন করুন" : "Select a farmer");
     if (total <= 0) return toast.error(lang === "bn" ? "অন্তত একটি amount দিন" : "Enter at least one amount");
     if (farmerInactive) return toast.error(lang === "bn" ? `${farmer?.name_en ?? "এই সদস্য"} ইনঅ্যাক্টিভ — নতুন লেনদেন করা যাবে না।` : "Member is inactive — new transactions are not allowed.");
+    if ((farmer as any)?.status !== "active") return toast.error(lang === "bn" ? `${farmer?.name_en ?? "এই সদস্য"} একটিভ সদস্য নয় — সঞ্চয়/ঋণ লেনদেন করা যাবে না।` : "Not an active member — savings/loan transactions are not allowed.");
+    if (!(farmer as any)?.member_no || String((farmer as any).member_no).trim() === "") return toast.error(lang === "bn" ? `${farmer?.name_en ?? "এই সদস্য"} এর সদস্য নাম্বার নেই — সঞ্চয়/ঋণ লেনদেন করা যাবে না।` : "No member number — savings/loan transactions are not allowed.");
     if (loanAmt > 0 && !form.loan_id) return toast.error(lang === "bn" ? "ঋণ নির্বাচন করুন" : "Select a loan");
     if (loanAmt > 0 && Number(form.loan_principal || 0) <= 0) return toast.error(lang === "bn" ? "আসল টাকা বাধ্যতামূলক" : "Principal amount is required");
     if (loanAmt > 0 && !farmer?.is_voter) return toast.error(lang === "bn" ? "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে" : "Loans are only allowed for savings members");
