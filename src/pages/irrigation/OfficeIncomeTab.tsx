@@ -367,39 +367,12 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{tx("Receipt preview", "রশিদ প্রিভিউ")}</DialogTitle></DialogHeader>
-          {preview && (
-            <div className="space-y-1 text-sm">
-              {([
-                [tx("Receipt No", "রশিদ নং"), preview.receipt_no],
-                [tx("Date", "তারিখ"), fmtDate(preview.received_on)],
-                [tx("Name", "নাম"), preview.payer_name || "N/A"],
-                [tx("Father's name", "পিতার নাম"), preview.father_name || "N/A"],
-                [tx("Village", "গ্রাম"), preview.village || "N/A"],
-                [tx("Mobile", "মোবাইল"), preview.mobile || "N/A"],
-                [tx("Mouza", "মৌজা"), "N/A"],
-                [tx("Land", "জমি"), "N/A"],
-                [tx("Income Type", "আয়ের ধরন"), typeLabel(preview.income_type)],
-                [tx("Stream", "স্ট্রিম"), streamLabel(preview.stream)],
-                [tx("Remark", "রিমার্ক"), preview.note || "N/A"],
-                [tx("Amount Received", "প্রাপ্ত টাকা"), money(Number(preview.amount))],
-              ] as [string, any][]).map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-4 border-b py-1">
-                  <span className="text-muted-foreground">{k}</span>
-                  <span className="font-medium text-right">{v}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPreview(null)}>{tx("Close", "বন্ধ")}</Button>
-            {canExport && <Button variant="outline" onClick={() => downloadReceiptPdf(preview)}><FileDown className="mr-1 h-4 w-4" />{tx("Download PDF", "পিডিএফ ডাউনলোড")}</Button>}
-            {canExport && <Button onClick={() => { printReceipt(preview); }}><Printer className="mr-1 h-4 w-4" />{tx("Print", "প্রিন্ট")}</Button>}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <IrrigationReceiptPreviewDialog
+        open={!!preview}
+        onOpenChange={(o) => !o && setPreview(null)}
+        data={preview ? buildBnData(preview) : null}
+      />
+
 
       {confirmDialog}
     </Card>
