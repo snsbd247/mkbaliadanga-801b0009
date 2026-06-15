@@ -89,7 +89,7 @@ export default function CombinedPayment() {
     if (!form.farmer_id) { setFarmer(null); setLoans([]); setDues(null); return; }
     (async () => {
       const [f, lq] = await Promise.all([
-        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive,status").eq("id", form.farmer_id).maybeSingle(),
+        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive,status,father_name").eq("id", form.farmer_id).maybeSingle(),
         supabase.from("loans").select("id,principal,total_payable,issued_on,interest_rate,loan_plans(interest_rate,duration_months),loan_payments(amount,paid_on)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
       ]);
       setFarmer(f.data ?? null);
