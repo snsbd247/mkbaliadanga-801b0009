@@ -55,10 +55,23 @@ export default function LoanForm() {
     })();
   }, [id]);
 
+  const selectedPlan = useMemo(() => plans.find(p => p.id === form.plan_id) || null, [plans, form.plan_id]);
+  const lumpSum = isLumpSum(selectedPlan?.installment_type);
+
   const totalPayable = useMemo(() => {
     const pr = Number(form.principal || 0);
     return form.interest_enabled ? Math.round(pr * (1 + Number(form.interest_rate || 0) / 100)) : pr;
   }, [form.principal, form.interest_rate, form.interest_enabled]);
+
+  const schedule = useMemo(() => {
+    if (!lumpSum || !(Number(form.principal) > 0)) return [];
+    return lumpSumSchedule({
+      principal: Number(form.principal),
+      interestRate: form.interest_enabled ? Number(form.interest_rate || 0) : 0,
+      durationMonths: Number(selectedPlan?.duration_months || 0),
+      issuedOn: form.issued_on,
+    });
+  }, [lumpSum, form.principal, form.interest_rate, form.interest_enabled, form.issued_on, selectedPlan]);
 
   function pickPlan(id: string) {
     const pl = plans.find(p => p.id === id);
