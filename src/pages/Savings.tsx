@@ -95,6 +95,8 @@ export default function Savings() {
   }
   async function enrollPlan() {
     if (!planForm.farmer_id || !planForm.plan_id) return toast.error(t("selectFarmerAndPlan"));
+    const planElig = await checkMemberEligibility(planForm.farmer_id, tx);
+    if (!planElig.ok) return toast.error(planElig.reason);
     const plan = plans.find(p => p.id === planForm.plan_id);
     const c = calcMaturity(plan);
     const { error } = await supabase.from("farmer_savings_plans").insert({
