@@ -88,6 +88,9 @@ export interface BnReceiptData {
   collected_from_outstanding?: number | null;  // বকেয়া থেকে সংগৃহীত
   remark?: string | null;                      // রিমার্ক/নোট
 
+  /** Office income (no farmer): forces জমি/মৌজা rows to locked "N/A" and skips charge rows. */
+  office_income?: boolean;
+
   collected_amount: number;
   collector_signature_url?: string | null;
   office_collector_signature_url?: string | null;
