@@ -131,6 +131,27 @@ export function ReceiptSettingsButton() {
         </div>
 
         <div className="border-t pt-2 space-y-1">
+          <Label className="text-xs">Page orientation (Portrait / Landscape)</Label>
+          <Select
+            value={pdfOrientation}
+            onValueChange={(v) => {
+              const next = (v === "l" ? "l" : "p") as PaperOrientation;
+              setPdfOrientation(next);
+              setReceiptLayoutSettings({ defaultOrientation: next });
+            }}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="p">Portrait (লম্বালম্বি)</SelectItem>
+              <SelectItem value="l">Landscape (আড়াআড়ি)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            A4/A5 সহ সব receipt PDF (অফিস আয় সহ) এই orientation-এ render হবে।
+          </p>
+        </div>
+
+        <div className="border-t pt-2 space-y-1">
           <label className="flex items-center gap-2 text-xs cursor-pointer">
             <input
               type="checkbox"
