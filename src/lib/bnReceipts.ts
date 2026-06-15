@@ -240,7 +240,12 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
   rows.push([t.villageLine, `${d.farmer.village ?? "—"}${d.farmer.mobile ? " / " + d.farmer.mobile : ""}`]);
   if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
 
-  if (d.kind === "irrigation") {
+  if (d.office_income) {
+    // Farmer-less office income receipt: জমি ও মৌজা সবসময় locked "N/A".
+    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+    rows.push([mouzaLabel, "N/A"]);
+    rows.push([t.landOwner, "N/A"]);
+  } else if (d.kind === "irrigation") {
     // Always show land owner row — fallback to "তথ্য পাওয়া যায়নি" / "Not available" when missing
     rows.push([
       t.landOwner,
