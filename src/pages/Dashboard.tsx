@@ -13,6 +13,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { useAuth } from "@/auth/AuthProvider";
 import { NoOfficeBanner } from "@/components/layout/NoOfficeBanner";
 import { SmsProviderStatusCard } from "@/components/dashboard/SmsProviderStatusCard";
+import { LumpSumDueCard } from "@/components/dashboard/LumpSumDueCard";
 
 interface Stat { label: string; value: string; icon: any; tone?: "default" | "danger" | "warn" | "success"; delta?: number | null; href?: string }
 
