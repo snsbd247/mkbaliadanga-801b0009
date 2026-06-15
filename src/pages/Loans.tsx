@@ -124,6 +124,9 @@ export default function Loans() {
                         {r.status === "approved" && (
                           <Button size="sm" variant="ghost" onClick={() => navigate(`/loans/${r.id}/statement`)}><FileText className="h-4 w-4 mr-1" />{tx("Statement", "স্টেটমেন্ট")}</Button>
                         )}
+                        {r.status === "approved" && canApprove && isLumpSum(r.loan_plans?.installment_type) && (
+                          <Button size="sm" variant="ghost" onClick={() => setDiscountLoan(r)}><BadgePercent className="h-4 w-4 mr-1" />{tx("Repay/Discount", "পরিশোধ/ছাড়")}</Button>
+                        )}
                         {r.status === "pending" && canApprove && (
                           <>
                             <Button size="sm" variant="ghost" onClick={() => decide(r.id, "approved")}><Check className="h-4 w-4" /></Button>
