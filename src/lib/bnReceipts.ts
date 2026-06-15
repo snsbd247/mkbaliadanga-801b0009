@@ -304,7 +304,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     ? `${fmt2(d.collected_amount)} (${bnAmountInWords(d.collected_amount)})`
     : `${fmt2(d.collected_amount)}`;
   rows.push([totalLabel, amountText]);
-  if (d.kind === "irrigation" && (d.remark ?? "").trim()) {
+  if ((d.kind === "irrigation" || d.office_income) && (d.remark ?? "").trim()) {
     rows.push([t.remark, String(d.remark).trim()]);
   }
 
