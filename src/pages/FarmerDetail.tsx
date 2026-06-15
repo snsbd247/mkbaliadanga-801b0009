@@ -870,6 +870,18 @@ export default function FarmerDetail() {
         description={`${farmer.member_no ?? farmer.farmer_code} • ${farmer.offices?.name ?? ""}`}
         actions={<>
           <ReceiptSettingsButton />
+          <Button
+            variant={farmer.status === "inactive" ? "default" : "outline"}
+            onClick={async () => {
+              const next = farmer.status === "active" ? "inactive" : "active";
+              const { error } = await supabase.from("farmers").update({ status: next } as any).eq("id", farmer.id);
+              if (error) return toast.error(error.message);
+              setFarmer((p: any) => p ? { ...p, status: next } : p);
+              toast.success(next === "active" ? tx("Member activated", "সদস্য সক্রিয় করা হয়েছে") : tx("Member marked inactive", "সদস্য নিষ্ক্রিয় করা হয়েছে"));
+            }}
+          >
+            {farmer.status === "inactive" ? tx("Activate", "সক্রিয় করুন") : tx("Make Inactive", "নিষ্ক্রিয় করুন")}
+          </Button>
           <Button variant="outline" onClick={openFarmerEdit}><Pencil className="h-4 w-4 mr-1" />{t("edit")}</Button>
           <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />{t("pgPrintCard")}</Button>
