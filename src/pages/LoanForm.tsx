@@ -165,6 +165,31 @@ export default function LoanForm() {
           </div>
           <div><Label>{tx("Issued On", "ইস্যু তারিখ")}</Label><Input type="date" value={form.issued_on} onChange={e => { setForm({ ...form, issued_on: e.target.value }); setErrors(er => ({ ...er, issued_on: undefined })); }} aria-invalid={!!errors.issued_on} />{errors.issued_on && <p className="text-sm text-destructive mt-1">{errors.issued_on}</p>}</div>
           <div><Label>{tx("Note", "নোট")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
+          {lumpSum && schedule.length > 0 && (
+            <div className="rounded-md border p-3">
+              <div className="text-sm font-medium mb-2">{tx("Repayment Schedule (lump sum at end of term)", "পরিশোধ সূচি (মেয়াদ শেষে একবারে)")}</div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{tx("Due Date", "নির্ধারিত তারিখ")}</TableHead>
+                    <TableHead className="text-right">{tx("Principal Due", "আসল")}</TableHead>
+                    <TableHead className="text-right">{tx("Interest Due", "লাভ")}</TableHead>
+                    <TableHead className="text-right">{tx("Total Due", "মোট")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {schedule.map(r => (
+                    <TableRow key={r.seq}>
+                      <TableCell>{r.dueDate}</TableCell>
+                      <TableCell className="text-right font-mono">{money(r.principalDue)}</TableCell>
+                      <TableCell className="text-right font-mono">{money(r.interestDue)}</TableCell>
+                      <TableCell className="text-right font-mono font-bold">{money(r.totalDue)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           <div className="rounded-md bg-muted p-3 text-sm flex justify-between"><span>{tx("Total Payable", "মোট পরিশোধযোগ্য")}</span><span className="font-mono font-bold">{money(totalPayable)}</span></div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => navigate("/loans")} disabled={saving}>{tx("Cancel", "বাতিল")}</Button>
