@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronsUpDown, Loader2, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLang } from "@/i18n/LanguageProvider";
+import { toast } from "sonner";
 
 
 export type FarmerLite = {
@@ -19,6 +20,7 @@ export type FarmerLite = {
   voter_number?: string | null;
   is_voter?: boolean | null;
   father_name?: string | null;
+  status?: string | null;
 };
 
 interface Props {
