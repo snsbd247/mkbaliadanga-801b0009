@@ -4305,6 +4305,39 @@ export type Database = {
           },
         ]
       }
+      member_block_audit: {
+        Row: {
+          attempted_by: string | null
+          created_at: string
+          farmer_id: string | null
+          id: string
+          member_no: string | null
+          office_id: string | null
+          reason: string
+          transaction_type: string
+        }
+        Insert: {
+          attempted_by?: string | null
+          created_at?: string
+          farmer_id?: string | null
+          id?: string
+          member_no?: string | null
+          office_id?: string | null
+          reason: string
+          transaction_type: string
+        }
+        Update: {
+          attempted_by?: string | null
+          created_at?: string
+          farmer_id?: string | null
+          id?: string
+          member_no?: string | null
+          office_id?: string | null
+          reason?: string
+          transaction_type?: string
+        }
+        Relationships: []
+      }
       mouzas: {
         Row: {
           code: string | null
