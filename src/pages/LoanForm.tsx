@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { money } from "@/lib/format";
+import { checkMemberEligibility } from "@/lib/memberEligibility";
 
 const EMPTY = {
   farmer_id: "", plan_id: "", principal: 0, interest_rate: 9,
@@ -76,9 +77,9 @@ export default function LoanForm() {
     else if (form.issued_on > new Date().toISOString().slice(0, 10)) errs.issued_on = tx("Issue date cannot be in the future", "ইস্যু তারিখ ভবিষ্যতের হতে পারে না");
     setErrors(errs);
     if (Object.keys(errs).length) return;
+    const elig = await checkMemberEligibility(form.farmer_id, tx);
+    if (!elig.ok) { setErrors({ farmer_id: elig.reason }); return; }
     const { data: mchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
-    if (!mchk?.is_voter) { setErrors({ farmer_id: tx("Loans are only allowed for savings members", "শুধু সঞ্চয় সদস্যকে ঋণ দেওয়া যাবে") }); return; }
-    if (mchk?.savings_inactive) { setErrors({ farmer_id: `${mchk?.name_en ?? tx("This member", "এই সদস্য")} ${tx("is inactive — loans cannot be issued.", "ইনঅ্যাক্টিভ — ঋণ ইস্যু করা যাবে না।")}` }); return; }
     setSaving(true);
     try {
       const payload = {

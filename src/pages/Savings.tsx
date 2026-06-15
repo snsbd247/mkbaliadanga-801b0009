@@ -16,6 +16,7 @@ import { Plus, Check, X, Printer, Ban, FileSpreadsheet, FileText, ChevronDown, C
 import { TruncateText } from "@/components/ui/truncate-text";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
+import { checkMemberEligibility } from "@/lib/memberEligibility";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
@@ -94,6 +95,8 @@ export default function Savings() {
   }
   async function enrollPlan() {
     if (!planForm.farmer_id || !planForm.plan_id) return toast.error(t("selectFarmerAndPlan"));
+    const planElig = await checkMemberEligibility(planForm.farmer_id, tx);
+    if (!planElig.ok) return toast.error(planElig.reason);
     const plan = plans.find(p => p.id === planForm.plan_id);
     const c = calcMaturity(plan);
     const { error } = await supabase.from("farmer_savings_plans").insert({
@@ -204,6 +207,9 @@ export default function Savings() {
 
   async function save() {
     if (!form.farmer_id || form.amount <= 0) return toast.error(t("pickFarmerAndAmount"));
+    // Member guard: savings/loan txns only for active members with a member number
+    const elig = await checkMemberEligibility(form.farmer_id, tx);
+    if (!elig.ok) return toast.error(elig.reason);
     // Voter guard: farmer must be is_voter=true to record savings/share txns
     const { data: vchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
     if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? tx("This farmer", "এই ফার্মার")} ${tx("does not have Voter / Savings A/C enabled — savings/share entry not allowed.", "এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।")}`);

@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/i18n/LanguageProvider";
 import { money, fmtDate } from "@/lib/format";
+import { checkMemberEligibility } from "@/lib/memberEligibility";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { Paperclip, Check, X, FileText, Plus, Trash2, Printer, ArrowDownToLine } from "lucide-react";
@@ -362,6 +363,12 @@ export default function Payments() {
     for (const a of allocs) {
       if (Number(a.amount) <= 0) return toast.error(t("eachAllocationMustBePositive"));
       if (a.kind === "irrigation" && !a.reference_id) return toast.error(`Pick target for ${a.kind}`);
+    }
+
+    // Member guard: savings/loan allocations require an active member with a member number.
+    if (allocs.some(a => a.kind === "savings" || (a.kind as string) === "loan")) {
+      const elig = await checkMemberEligibility(farmerId, tx);
+      if (!elig.ok) return toast.error(elig.reason);
     }
 
     // Soft duplicate-payment guard: same farmer + same amount within 2 minutes.
