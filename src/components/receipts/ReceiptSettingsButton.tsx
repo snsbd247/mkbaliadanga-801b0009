@@ -14,6 +14,7 @@ export function ReceiptSettingsButton() {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [pdfPaper, setPdfPaper] = useState<PaperSize>(() => getReceiptLayoutSettings().defaultPaperSize);
+  const [pdfOrientation, setPdfOrientation] = useState<PaperOrientation>(() => getReceiptLayoutSettings().defaultOrientation);
   const [wmEnabled, setWmEnabled] = useState<boolean>(() => getReceiptLayoutSettings().watermarkEnabled);
   const [wmText, setWmText] = useState<string>(() => getReceiptLayoutSettings().watermarkText);
   return (
