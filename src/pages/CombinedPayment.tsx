@@ -123,6 +123,8 @@ export default function CombinedPayment() {
     [form.savings, form.share, form.loan_principal, form.loan_interest],
   );
 
+  const farmerInactive = (farmer as any)?.status === "inactive" || !!(farmer as any)?.savings_inactive;
+
   function reset() { setForm({ ...EMPTY }); setLastReceipt(null); guard.clear(); }
 
   async function submit() {
