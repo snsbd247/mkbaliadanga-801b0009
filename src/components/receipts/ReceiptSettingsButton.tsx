@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings2, RotateCcw } from "lucide-react";
 import { setReceiptOptions, useReceiptOptions, resetReceiptOptionsToDemo } from "@/lib/receiptOptions";
-import { getReceiptLayoutSettings, setReceiptLayoutSettings, type PaperSize } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, setReceiptLayoutSettings, type PaperSize, type PaperOrientation } from "@/lib/receiptLayoutSettings";
 import { useLang } from "@/i18n/LanguageProvider";
 
 export function ReceiptSettingsButton() {
@@ -14,6 +14,7 @@ export function ReceiptSettingsButton() {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [pdfPaper, setPdfPaper] = useState<PaperSize>(() => getReceiptLayoutSettings().defaultPaperSize);
+  const [pdfOrientation, setPdfOrientation] = useState<PaperOrientation>(() => getReceiptLayoutSettings().defaultOrientation);
   const [wmEnabled, setWmEnabled] = useState<boolean>(() => getReceiptLayoutSettings().watermarkEnabled);
   const [wmText, setWmText] = useState<string>(() => getReceiptLayoutSettings().watermarkText);
   return (
@@ -127,6 +128,27 @@ export function ReceiptSettingsButton() {
           </Select>
           <p className="text-[11px] text-muted-foreground">
             সব receipt PDF এই paper size-এ generate হবে।
+          </p>
+        </div>
+
+        <div className="border-t pt-2 space-y-1">
+          <Label className="text-xs">Page orientation (Portrait / Landscape)</Label>
+          <Select
+            value={pdfOrientation}
+            onValueChange={(v) => {
+              const next = (v === "l" ? "l" : "p") as PaperOrientation;
+              setPdfOrientation(next);
+              setReceiptLayoutSettings({ defaultOrientation: next });
+            }}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="p">Portrait (লম্বালম্বি)</SelectItem>
+              <SelectItem value="l">Landscape (আড়াআড়ি)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            A4/A5 সহ সব receipt PDF (অফিস আয় সহ) এই orientation-এ render হবে।
           </p>
         </div>
 

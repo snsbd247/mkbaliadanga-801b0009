@@ -5,6 +5,7 @@
 
 export type DagSeparator = "comma" | "newline" | "semicolon";
 export type PaperSize = "a4" | "a5";
+export type PaperOrientation = "p" | "l";
 
 export interface ReceiptLayoutSettings {
   dagSeparator: DagSeparator;
@@ -30,6 +31,8 @@ export interface ReceiptLayoutSettings {
   loanOutstandingLabelEn: string;
   /** Global default paper size for receipt PDFs (payment / loan / irrigation / combined). */
   defaultPaperSize: PaperSize;
+  /** Global default page orientation for receipt PDFs. */
+  defaultOrientation: PaperOrientation;
   /** Diagonal watermark text printed behind receipt content (e.g. "MK BALIADANGA"). Empty = none. */
   watermarkText: string;
   /** Master on/off — overrides watermarkText. */
@@ -54,6 +57,7 @@ export const DEFAULT_RECEIPT_LAYOUT: ReceiptLayoutSettings = {
   loanOutstandingLabelBn: "",
   loanOutstandingLabelEn: "",
   defaultPaperSize: "a5",
+  defaultOrientation: "p",
   watermarkText: "",
   watermarkEnabled: false,
 };
@@ -97,6 +101,7 @@ export function getReceiptLayoutSettings(): ReceiptLayoutSettings {
       parsed?.loanRowSpacingPx ?? DEFAULT_RECEIPT_LAYOUT.loanRowSpacingPx,
     );
     merged.defaultPaperSize = (parsed?.defaultPaperSize === "a4" ? "a4" : "a5");
+    merged.defaultOrientation = (parsed?.defaultOrientation === "l" ? "l" : "p");
     return merged;
   } catch {
     return { ...DEFAULT_RECEIPT_LAYOUT };
@@ -191,4 +196,9 @@ export function getLoanLabels(lang: "bn" | "en"): { desc: string; outstanding: s
 /** Global default paper size for receipt PDFs (A4 or A5). */
 export function getDefaultPaperSize(): PaperSize {
   return getReceiptLayoutSettings().defaultPaperSize;
+}
+
+/** Global default page orientation for receipt PDFs (portrait or landscape). */
+export function getDefaultOrientation(): PaperOrientation {
+  return getReceiptLayoutSettings().defaultOrientation;
 }

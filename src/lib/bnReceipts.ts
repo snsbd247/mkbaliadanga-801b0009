@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
 import { landSizeLabel } from "@/lib/landUnits";
-import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation } from "@/lib/receiptLayoutSettings";
 import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
@@ -414,7 +414,7 @@ function resolveOpts(o?: ReceiptOptions) {
   return {
     lang: (o?.lang ?? "bn") as ReceiptLang,
     paper: o?.paper ?? getDefaultPaperSize(),
-    orientation: o?.orientation ?? "p",
+    orientation: o?.orientation ?? getDefaultOrientation(),
     margins: { t: o?.margins?.t ?? 10, r: o?.margins?.r ?? 10, b: o?.margins?.b ?? 10, l: o?.margins?.l ?? 10 },
     orgLayout: (o?.orgLayout ?? "two-line") as "one-line" | "two-line",
     orgSize: (o?.orgSize ?? "sm") as "sm" | "md" | "lg",
