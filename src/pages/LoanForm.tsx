@@ -15,6 +15,8 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { money } from "@/lib/format";
 import { guardSavingsLoan } from "@/lib/memberEligibility";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { isLumpSum, lumpSumSchedule, validateLumpSumInterest } from "@/lib/lumpSumLoan";
 
 const EMPTY = {
   farmer_id: "", plan_id: "", principal: 0, interest_rate: 9,
