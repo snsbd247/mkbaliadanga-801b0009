@@ -26,6 +26,8 @@ import { nextMonthlyReceiptNo, nextUnifiedReceiptNo } from "@/lib/monthlyReceipt
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFarmerDues, type FarmerDuesBreakdown } from "@/lib/farmerDues";
+import { suggestedInterest as calcSuggestedInterest, loanPrincipalExceeds } from "@/lib/loanPaymentRules";
+import { COLLECTION_RECEIPT_PAPER } from "@/lib/receiptPaper";
 
 type LoanRow = {
   id: string; principal: number; total_payable: number; issued_on: string; remaining: number;
@@ -40,6 +42,10 @@ export default function CombinedPayment() {
   const brand = useBranding();
   const qc = useQueryClient();
   const [form, setForm] = useState({ ...EMPTY });
+  useEffect(() => {
+    const fid = new URLSearchParams(window.location.search).get("farmer");
+    if (fid) setForm((p) => (p.farmer_id ? p : { ...p, farmer_id: fid }));
+  }, []);
   const [farmer, setFarmer] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [saving, setSaving] = useState(false);
@@ -53,19 +59,9 @@ export default function CombinedPayment() {
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
   const loanAmt = Number(form.loan_principal || 0) + Number(form.loan_interest || 0);
   // Only the principal is capped by the remaining balance; interest is optional.
-  const loanExceeds = !!selectedLoan && Number(form.loan_principal || 0) > selectedLoan.remaining;
+  const loanExceeds = loanPrincipalExceeds(selectedLoan, Number(form.loan_principal || 0));
   // Suggested accrued interest = remaining principal × (rate%/duration) × months elapsed since last payment/issue
-  const suggestedInterest = useMemo(() => {
-    if (!selectedLoan) return 0;
-    const rate = Number(selectedLoan.interest_rate || 0);
-    const dur = Number(selectedLoan.duration_months || 0);
-    if (rate <= 0 || dur <= 0) return 0;
-    const since = selectedLoan.last_payment_on || selectedLoan.issued_on;
-    if (!since) return 0;
-    const months = Math.max(0, Math.round((Date.now() - new Date(since).getTime()) / (1000 * 60 * 60 * 24 * 30)));
-    const principalRemaining = Math.min(selectedLoan.principal, selectedLoan.remaining);
-    return Math.round(principalRemaining * (rate / 100 / dur) * months);
-  }, [selectedLoan]);
+  const suggestedInterest = useMemo(() => calcSuggestedInterest(selectedLoan), [selectedLoan]);
   // Remaining (unpaid) profit after the amount entered in this transaction —
   // shown as a profit due so partial profit payments leave a visible balance.
   const profitDue = useMemo(
@@ -247,7 +243,7 @@ export default function CombinedPayment() {
   async function printReceipt() {
     if (!lastReceipt) return;
     // A5 landscape — matches client's "শেয়ার,সঞ্চয়,ঋণ ও বিবিধ আদায় রশিদ" sample.
-    const doc = new jsPDF({ unit: "mm", format: "a5", orientation: "l" });
+    const doc = new jsPDF({ unit: COLLECTION_RECEIPT_PAPER.unit, format: COLLECTION_RECEIPT_PAPER.format, orientation: COLLECTION_RECEIPT_PAPER.orientation });
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 14;
     const bnFont = await ensureBanglaFont(doc);
