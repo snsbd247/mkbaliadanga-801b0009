@@ -242,6 +242,7 @@ export default function Dashboard() {
     <>
       <PageHeader title={t("dashboard")} description={t("appName")} />
       <NoOfficeBanner />
+      <div className="mb-4"><LumpSumDueCard officeId={officeId} /></div>
       <div className="mb-3 flex items-center gap-2 text-xs flex-wrap">
         <Badge variant={isSuper ? "secondary" : "default"}>
           {isSuper ? t("viewingAllOffices") : `${t("officeLabel")}: ${officeName || "—"}`}
