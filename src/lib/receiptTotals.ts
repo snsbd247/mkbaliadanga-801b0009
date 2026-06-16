@@ -15,11 +15,8 @@ export async function getCanonicalReceiptTotals(receiptNo: string): Promise<Cano
   if (!receiptNo?.trim()) return null;
   try {
     const { data, error } = await supabase.functions.invoke("receipt-totals", {
-      method: "GET" as any,
-      body: undefined,
-      // pass via query string
+      body: { receipt_no: receiptNo.trim() },
     });
-    // supabase-js v2 invoke doesn't take query params directly; use fetch URL instead.
     if (error) throw error;
     return data as CanonicalReceiptTotals;
   } catch {
