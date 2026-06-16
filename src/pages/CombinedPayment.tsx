@@ -121,8 +121,11 @@ export default function CombinedPayment() {
   }, [form.farmer_id]);
 
   const total = useMemo(
-    () => Number(form.savings || 0) + Number(form.share || 0) + Number(form.loan_principal || 0) + Number(form.loan_interest || 0),
-    [form.savings, form.share, form.loan_principal, form.loan_interest],
+    () =>
+      (form.include.savings ? Number(form.savings || 0) : 0) +
+      (form.include.share ? Number(form.share || 0) : 0) +
+      (form.include.loan ? Number(form.loan_principal || 0) + Number(form.loan_interest || 0) : 0),
+    [form.savings, form.share, form.loan_principal, form.loan_interest, form.include],
   );
 
   const farmerInactive = (farmer as any)?.status === "inactive" || !!(farmer as any)?.savings_inactive;
