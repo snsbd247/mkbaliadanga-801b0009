@@ -1,0 +1,137 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`office income receipt — layout snapshot & orientation parity > BN layout is stable (snapshot) 1`] = `
+"
+  <div style="position:relative;font-family:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="কৃষকের কপি">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">সেচ চার্জ সংগ্রহের রশিদ</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">কৃষকের কপি</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>রসিদ নম্বরঃ RCP-২০২৬-০৬-০০০৯</div>
+        <div>বিলের তথ্য: ভাঙারি</div>
+      </div>
+      <div style="text-align:right;">
+        <div>সংগৃহীত তারিখ: Jun 16, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">কৃষকের নাম এবং কৃষক সদস্য নং:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">অফিস আয়</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">গ্রাম/মহল্লা/মোবাইল:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">— / 01700000000</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">পিতা/স্বামী নাম:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">মৌজা / জমির পরিমান:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">N/A</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">জমির মালিক:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">N/A</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">সংগৃহীত পরিমাণ:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">1,500.00 (এক হাজার পাঁচ শত টাকা)</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">রিমার্ক/নোট:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">ভাঙারি বিক্রি</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">সদস্যের স্বাক্ষর</div>
+        <div style="margin-top:18px;font-weight:600;">অফিস আয়</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>আদায়কারীর স্বাক্ষর</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
+
+exports[`office income receipt — layout snapshot & orientation parity > EN layout is stable (snapshot) 1`] = `
+"
+  <div style="position:relative;font-family:'Inter','Helvetica','Arial',sans-serif;color:#111;padding:18px 22px;" data-receipt-copy="Farmer Copy">
+    
+    <div style="position:relative;z-index:1;"></div>
+    <div style="text-align:center;position:relative;z-index:1;">
+      <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;"></div>
+      <div style="font-size:18px;font-weight:700;margin-top:2px;">Irrigation Charge Receipt</div>
+      
+      <div style="display:inline-block;border:1px solid #111;padding:2px 14px;margin-top:6px;font-size:13px;">Farmer Copy</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:13px;">
+      <div>
+        <div>Receipt No: RCP-2026-06-0009</div>
+        <div>Bill info: ভাঙারি</div>
+      </div>
+      <div style="text-align:right;">
+        <div>Collected on: Jun 16, 2026</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border:1px solid #111;border-collapse:collapse;margin-top:8px;font-size:13px;">
+      
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Farmer name & member no:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">অফিস আয়</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Village / Mobile:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">— / 01700000000</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Father/Husband:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">—</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Mouza / Land size:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">N/A</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Land owner:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">N/A</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Amount collected:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">1,500.00</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 8px;vertical-align:top;width:38%;color:#111;">Remark / Note:</td>
+      <td style="padding:4px 8px;vertical-align:top;color:#111;white-space:pre-line;">ভাঙারি বিক্রি</td>
+    </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
+      <div style="text-align:left;">
+        <div style="border-top:0;padding-top:0;">Member signature</div>
+        <div style="margin-top:18px;font-weight:600;">অফিস আয়</div>
+      </div>
+      
+      <div style="text-align:right;">
+        <div>Collector signature</div>
+        <div style="margin-top:30px;border-top:1px solid #111;width:140px;height:1px;display:inline-block;" data-sig="placeholder"></div>
+      </div>
+    </div>
+  </div>"
+`;
