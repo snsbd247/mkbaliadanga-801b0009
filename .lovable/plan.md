@@ -1,50 +1,45 @@
-# ব্যাংক + রিসিট/হ্যান্ড ক্যাশ — কী আছে / কী নেই / কী আপডেট দরকার
+# Payment Module Improvements
 
-নিচে আপনার প্রতিটি পয়েন্ট কোড অনুযায়ী যাচাই করে অবস্থা দেওয়া হলো। কোনো কিছু এখনই পরিবর্তন করিনি — আপনি বললে ধাপে ধাপে করব।
+Seven related changes to the সেচ (irrigation) and সেভিং (savings) payment flow. Grouped by area. Each is isolated so other modules (loan, cashbook, bank, report) stay untouched.
 
-## ১. ব্যাংকের হিসাব (Cash ↔ Bank দুই দিকে সিঙ্ক)
+## 1. Richer info when selecting farmer's সেচ dues
+When a farmer is selected for payment, the due list will also show, per due row:
+- মালিকের নাম (owner name) — already loaded via `owner:farmers!owner_farmer_id`
+- মৌজা (mouza) and জমির পরিমান (land size) — already loaded via `lands(mouza,land_size)`
+- টাকা (due amount) — shown
+So staff can confirm details with the farmer before collecting. This is a UI-only change in `IrrigationPaymentPanel.tsx` (add owner/mouza columns to the due table).
 
-অনুরোধ: ক্যাশবুকে ব্যাংকের আয়/ব্যয় করলে ব্যাংক কম-বেশি হবে, আবার ব্যাংকে আয়/ব্যয় করলে ক্যাশ কম-বেশি হবে — যেকোনো একটা করলেই দুই জায়গায় কাজ করবে।
+## 2. No rounding on land size (only money rounds)
+Land amounts like `1.99` must stay exactly as entered — never rounded. Money keeps rounding. Audit land-entry inputs/format helpers to ensure `1.99` is preserved end-to-end (entry, storage, receipt). Only `money()`/rounding helpers apply to currency.
 
-অবস্থা — **আংশিক করা আছে**:
-- ব্যাংক → ক্যাশবুক: ডিপোজিট করলে ক্যাশবুকে expense, উত্তোলন করলে ক্যাশবুকে receipt অটো যোগ হয় (একটা checkbox দিয়ে নিয়ন্ত্রণ)। ✅
-- ক্যাশবুক → ব্যাংক: ক্যাশবুকে method = "bank" দিলে `bank_transactions`-এ deposit অটো বসে। ✅
-- **ফাঁক**: এই অটো-পোস্টগুলো একটার সাথে অন্যটা "লিঙ্ক" করা নেই (আলাদা সারি তৈরি হয়)। ফলে এডিট/ডিলিট করলে দুই জায়গায় মিল না-ও থাকতে পারে এবং ডাবল-কাউন্টের ঝুঁকি আছে। উত্তোলন ক্যাশবুক থেকে শুরু করার সরাসরি পথ নেই (শুধু ব্যাংক থেকে)।
+## 3. Auto-fill due amount on selection
+When a farmer's due land is selected, its outstanding amount auto-populates so staff only press Pay/Confirm — no manual typing. In the structured panel the total is already auto-computed (`grandTotal`); we will verify the Quick/legacy entry path also auto-fills and remove the manual amount requirement there.
 
-দরকার (update):
-- দুই পক্ষের সারি একটা `link_id` দিয়ে জোড়া লাগানো, যাতে একটা মুছলে/বদলালে অন্যটাও আপডেট হয়।
-- ডাবল-এন্ট্রি বন্ধ করার গার্ড।
+## 4. Admin-only post-payment receipt edit
+Admins can edit a paid receipt's মৌজা, মালিক, জমির পরিমান, টাকা, জরিমানা after payment (to fix mistakes). Requires:
+- A single serialized list of all paid receipts (সেচ + সেভিং) in one place.
+- An admin edit dialog updating the receipt + linked records, writing an audit log entry of old/new values.
 
-## ২. Bank AC (ডিপোজিট/উত্তোলন/রিপোর্ট)
+## 5. সেচ জরিমানা (penalty) entry field
+Add an explicit জরিমানা input in the সেচ payment flow (the structured panel has delay-fee override; we will surface a clear penalty field that flows into `penalty_amount`/`delay_fee`).
 
-- শুধু ডিপোজিট আছে → **না, উত্তোলনও আছে** (deposit/withdraw/transfer)। ✅
-- উত্তোলন + নোট অপশন → **আছে** (Note ফিল্ড)। ✅
-- জমা/উত্তোলন আলাদা কলাম + মোট → **আছে** ("Statement" ট্যাবে জমা, উত্তোলন, Balance কলাম)। ✅
-- নিচে যোগ-বিয়োগ করে ব্যালেন্স → **আছে** (প্রারম্ভিক → মোট জমা − মোট উত্তোলন = সমাপনী)। ✅
-- ক্যাশবুক লক থাকলে ব্যাংক লেনদেন বন্ধ → **আছে** (`isCashbookLocked` স্ট্রিম অনুযায়ী)। ✅
+## 6. Receipt void/cancel (admin) + report visibility
+Admin can fully void a paid receipt. On void:
+- Receipt is marked cancelled; the released serial can be reused by the next farmer OR remain permanently voided (your choice — see question).
+- Collection report shows voided receipts flagged as বাতিল.
 
-দরকার (update, ছোট):
-- রিপোর্ট/Statement-এ মোট জমা ও মোট উত্তোলনের আলাদা summary কলাম PDF/Excel-এও নিশ্চিত করা (টেবিলে আছে, এক্সপোর্টে আছে — শুধু হেডার লেবেল বাংলা স্থির করা)।
+## 7. Savings Combination Payment — receipt option
+Add a receipt (field) option to the existing savings Combination Payment so it can print/download a রশিদ like other flows.
 
-## ৩. রিসিট ও হ্যান্ড ক্যাশ (আগের পয়েন্টগুলোর অবস্থা)
+## Database changes (require approval)
+- Receipt void: add `cancelled_at`, `cancelled_by`, `cancel_reason` to the receipts/payments tables.
+- Admin receipt edit audit: reuse existing `audit_logs`.
+- Confirm `irrigation_invoices`/`receipts` already expose penalty fields (they do: `delay_fee`, `penalty_amount`).
 
-- সেচ রিসিট watermark/QR placement/charge/penalty এখন shared receipt settings থেকে নেয় → **করা হয়েছে**। ✅
-- সেচ রিসিট preview পেজ (QR/মৌজা/watermark যাচাই) → **নেই** (`previewBnReceiptPdf` ফাংশন আছে, কিন্তু আলাদা প্রিভিউ UI নেই)।
-- সেচ রিসিট PDF/Excel এক্সপোর্ট প্রিভিউর মতো একই লেআউটে → **PDF আছে, Excel নেই**।
-- হ্যান্ড ক্যাশ মাসিক ওপেনিং ব্যালেন্স ফরম + lock + cashbook auto-fill → **করা আছে** (আপনার নতুন ফরম্যাট দিলে মিলিয়ে নেওয়া হবে)।
+## Open questions
+1. Voided serial: reuse for the next farmer, or keep the number permanently voided (gap in sequence)?
+2. Item 4/6 "admin": super_admin + admin both, or super_admin only?
+3. Should item 1's extra info also appear on the printed receipt, or only on-screen during collection?
 
-## প্রস্তাবিত কাজের ক্রম (আপনার অনুমোদনের পর)
-
-```
-ধাপ ১ — ব্যাংক ↔ ক্যাশ লিঙ্কড সিঙ্ক
-  • bank_transactions ও expenses/receipts-এ link_id যোগ (migration)
-  • এক জায়গায় এডিট/ডিলিট হলে জোড়া সারিও আপডেট
-  • ডাবল-কাউন্ট গার্ড
-ধাপ ২ — ব্যাংক উত্তোলন ক্যাশবুক থেকেও শুরু করার অপশন (নোটসহ)
-ধাপ ৩ — সেচ রিসিট প্রিভিউ পেজ (QR/মৌজা/watermark যাচাই) + Excel এক্সপোর্ট
-ধাপ ৪ — সব পরিবর্তনের পর paymentReceiptPdf ও bnReceipts snapshot/regression টেস্ট চালানো
-```
-
-টেকনিক্যাল নোট: ব্যাংক-ক্যাশ লিঙ্কের জন্য একটি ডাটাবেস migration লাগবে (`link_id` কলাম + সূচক)। অন্য মডিউল (সেচ/সেভিং/ক্যাশবুক হিসাব) যেন প্রভাবিত না হয় সেজন্য বিদ্যমান auto-post লজিকের ওপরেই গড়ে তোলা হবে, নতুন স্কিমা ভাঙা হবে না।
-
-কোনটা আগে করব বলুন — পুরোটা, নাকি নির্দিষ্ট ধাপ?
+## Suggested order
+Start with the low-risk UI items (1, 2, 3, 5), then the DB-backed items (4, 6), then savings (7). I can implement them incrementally so each is verifiable before the next.
