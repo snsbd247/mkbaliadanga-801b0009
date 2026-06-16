@@ -135,6 +135,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     setCurrentCollected(roundTk(currentPayable));
   }, [currentPayable]);
 
+  // Auto-fill the "previous due received" box with the full previous due so the
+  // operator only needs to confirm. They can still edit it for partial payments.
+  useEffect(() => {
+    setPreviousCollected(roundTk(previousDueTotal));
+  }, [previousDueTotal]);
+
   const previousRemainingAfter = previousDueTotal - Number(previousCollected || 0);
   const blockedByPreviousDue = previousDueTotal > 0 && previousRemainingAfter > 0 && !specialPermission;
 
