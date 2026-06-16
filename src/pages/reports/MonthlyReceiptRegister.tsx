@@ -311,33 +311,45 @@ export default function MonthlyReceiptRegister() {
               <TableHead>Farmer</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Amount</TableHead>
+              {canVoid && <TableHead className="text-right">Action</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={canVoid ? 7 : 6} className="text-center text-muted-foreground py-8">Loading…</TableCell></TableRow>
             ) : rows.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No data</TableCell></TableRow>
+              <TableRow><TableCell colSpan={canVoid ? 7 : 6} className="text-center text-muted-foreground py-8">No data</TableCell></TableRow>
             ) : (
               <>
                 {rows.map(r => {
                   const isDup = analysis.duplicates.has(r.receipt_no);
+                  const isVoid = !!r.voided_at;
                   return (
-                    <TableRow key={r.id} className={isDup ? "bg-destructive/5" : ""}>
+                    <TableRow key={r.id} className={isVoid ? "bg-destructive/10 opacity-70" : isDup ? "bg-destructive/5" : ""}>
                       <TableCell>{fmtDate(r.created_at)}</TableCell>
                       <TableCell className="font-mono text-xs">
-                        {r.receipt_no}
+                        <span className={isVoid ? "line-through" : ""}>{r.receipt_no}</span>
                         {isDup && <Badge variant="destructive" className="ml-2">DUP</Badge>}
+                        {isVoid && <Badge variant="destructive" className="ml-2">বাতিল</Badge>}
                       </TableCell>
                       <TableCell><Badge variant="outline">{r.prefix}</Badge></TableCell>
                       <TableCell>{r.farmer}</TableCell>
-                      <TableCell>{r.status ?? "—"}</TableCell>
+                      <TableCell>{isVoid ? <span className="text-destructive" title={r.void_reason ?? ""}>বাতিল</span> : (r.status ?? "—")}</TableCell>
                       <TableCell className="text-right">{money(r.amount)}</TableCell>
+                      {canVoid && (
+                        <TableCell className="text-right">
+                          {!isVoid && r.receipt_no !== "—" && (
+                            <Button size="sm" variant="ghost" className="h-7 text-destructive" onClick={() => { setVoidTarget(r); setVoidReason(""); }}>
+                              <Ban className="h-3.5 w-3.5 mr-1" />বাতিল
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
                 <TableRow className="font-semibold bg-muted/40">
-                  <TableCell colSpan={5}>Total ({rows.length} receipts)</TableCell>
+                  <TableCell colSpan={canVoid ? 6 : 5}>Total ({rows.length} receipts)</TableCell>
                   <TableCell className="text-right">{money(grandTotal)}</TableCell>
                 </TableRow>
               </>
@@ -345,6 +357,27 @@ export default function MonthlyReceiptRegister() {
           </TableBody>
         </Table>
       </Card>
+
+      <Dialog open={!!voidTarget} onOpenChange={(o) => { if (!o) setVoidTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>রশিদ বাতিল করুন — {voidTarget?.receipt_no}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p className="text-muted-foreground">
+              বাতিল করলে রশিদটি কালেকশন রিপোর্টে "বাতিল" দেখাবে এবং নম্বরটি পরের এন্ট্রিতে পুনঃব্যবহার হবে।
+            </p>
+            <Label>বাতিলের কারণ *</Label>
+            <Textarea value={voidReason} onChange={(e) => setVoidReason(e.target.value)} placeholder="যেমন: কৃষক টাকা আনেনি / ভুল এন্ট্রি" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVoidTarget(null)} disabled={voiding}>বাতিল</Button>
+            <Button variant="destructive" onClick={confirmVoid} disabled={voiding}>
+              {voiding ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Ban className="h-4 w-4 mr-1" />}নিশ্চিত করুন
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
