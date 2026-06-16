@@ -390,6 +390,34 @@ export default function CombinedPayment() {
               <div className="flex justify-between border-t pt-0.5 font-semibold"><span>{lang === "bn" ? "নিট বকেয়া" : "Net due"}</span><span className="font-mono">{money(dues.net_due)}</span></div>
             </div>
           )}
+          <div>
+            <Label className="text-xs text-muted-foreground">{lang === "bn" ? "রসিদে অন্তর্ভুক্ত লাইন" : "Lines included in receipt"}</Label>
+            <div className="flex flex-wrap gap-4 mt-1">
+              {([
+                { key: "savings", label_bn: "সঞ্চয়", label_en: "Savings" },
+                { key: "share", label_bn: "শেয়ার", label_en: "Share" },
+                { key: "loan", label_bn: "ঋণ", label_en: "Loan" },
+              ] as const).map((opt) => (
+                <label key={opt.key} className="flex items-center gap-1.5 text-sm cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.include[opt.key]}
+                    onChange={(e) => {
+                      const on = e.target.checked;
+                      setForm((p) => ({
+                        ...p,
+                        include: { ...p.include, [opt.key]: on },
+                        ...(on ? {} : opt.key === "loan"
+                          ? { loan_id: "", loan_principal: 0, loan_interest: 0 }
+                          : { [opt.key]: 0 }),
+                      }));
+                    }}
+                  />
+                  <span>{lang === "bn" ? opt.label_bn : opt.label_en}</span>
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "সঞ্চয় (৳)" : "Savings (৳)"}</Label>
