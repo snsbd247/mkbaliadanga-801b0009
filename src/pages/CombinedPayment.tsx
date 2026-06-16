@@ -448,7 +448,7 @@ export default function CombinedPayment() {
             </div>
             <div>
               <Label>{lang === "bn" ? "ঋণ আসল (৳) *" : "Loan Principal (৳) *"}</Label>
-              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_principal}
+              <Input type="number" min={0} step="0.01" disabled={!form.include.loan || !form.loan_id} value={form.loan_principal}
                      aria-invalid={loanExceeds || undefined}
                      onChange={(e) => setForm({ ...form, loan_principal: Number(e.target.value) || 0 })} />
             </div>
