@@ -46,17 +46,22 @@ Deno.serve(async (req) => {
     const live = (pays ?? []).filter((p: any) => !p.voided_at && p.status !== "voided");
     const lines: { kind: string; amount: number }[] = [];
 
+    let hasSavingsTx = false;
     for (const s of stx ?? []) {
       if ((s as any).status !== "approved") continue;
       const amt = Number((s as any).amount || 0);
       if (amt <= 0) continue;
       const t = (s as any).type;
-      if (t === "deposit") lines.push({ kind: "savings", amount: amt });
+      if (t === "deposit") { lines.push({ kind: "savings", amount: amt }); hasSavingsTx = true; }
       else if (t === "share_collection" || t === "share_deposit") lines.push({ kind: "share", amount: amt });
     }
     for (const p of live) {
       const amt = Number((p as any).amount || 0);
-      if (amt > 0 && (p as any).kind !== "savings") lines.push({ kind: (p as any).kind, amount: amt });
+      if (amt <= 0) continue;
+      // Skip the mirror savings payment row only when a savings_transactions
+      // deposit already represents it (combined-payment flow), to avoid double counting.
+      if ((p as any).kind === "savings" && hasSavingsTx) continue;
+      lines.push({ kind: (p as any).kind, amount: amt });
     }
 
     const total = lines.reduce((s, l) => s + l.amount, 0);
