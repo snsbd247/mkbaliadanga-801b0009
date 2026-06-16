@@ -36,7 +36,7 @@ type LoanRow = {
   interest_rate: number; duration_months: number; last_payment_on: string | null;
 };
 
-const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "", receipt_no: "", field_receipt_no: "" };
+const EMPTY = { farmer_id: "", savings: 0, share: 0, loan_id: "", loan_principal: 0, loan_interest: 0, note: "", receipt_no: "", field_receipt_no: "", include: { savings: true, share: true, loan: true } };
 
 export default function CombinedPayment() {
   const { user, officeId } = useAuth();
@@ -59,7 +59,7 @@ export default function CombinedPayment() {
   const isDirty = JSON.stringify(form) !== JSON.stringify(EMPTY);
   const guard = useUnsavedFormGuard("combined-payment-draft", form, isDirty);
   const selectedLoan = useMemo(() => loans.find(l => l.id === form.loan_id), [loans, form.loan_id]);
-  const loanAmt = Number(form.loan_principal || 0) + Number(form.loan_interest || 0);
+  const loanAmt = form.include.loan ? Number(form.loan_principal || 0) + Number(form.loan_interest || 0) : 0;
   // Only the principal is capped by the remaining balance; interest is optional.
   const loanExceeds = loanPrincipalExceeds(selectedLoan, Number(form.loan_principal || 0));
   // Suggested accrued interest = remaining principal × (rate%/duration) × months elapsed since last payment/issue
@@ -121,8 +121,11 @@ export default function CombinedPayment() {
   }, [form.farmer_id]);
 
   const total = useMemo(
-    () => Number(form.savings || 0) + Number(form.share || 0) + Number(form.loan_principal || 0) + Number(form.loan_interest || 0),
-    [form.savings, form.share, form.loan_principal, form.loan_interest],
+    () =>
+      (form.include.savings ? Number(form.savings || 0) : 0) +
+      (form.include.share ? Number(form.share || 0) : 0) +
+      (form.include.loan ? Number(form.loan_principal || 0) + Number(form.loan_interest || 0) : 0),
+    [form.savings, form.share, form.loan_principal, form.loan_interest, form.include],
   );
 
   const farmerInactive = (farmer as any)?.status === "inactive" || !!(farmer as any)?.savings_inactive;
@@ -159,7 +162,7 @@ export default function CombinedPayment() {
       let verifyToken: string | null = null;
 
       // 1) Savings deposit
-      if (Number(form.savings) > 0) {
+      if (form.include.savings && Number(form.savings) > 0) {
         const { error } = await supabase.from("savings_transactions").insert({
           farmer_id: form.farmer_id, type: "deposit" as any, amount: Number(form.savings),
           note: form.note || "Combined payment", status: "approved" as any, created_by: user?.id,
@@ -175,7 +178,7 @@ export default function CombinedPayment() {
       }
 
       // 2) Share collection (recorded in savings_transactions as share_collection)
-      if (Number(form.share) > 0) {
+      if (form.include.share && Number(form.share) > 0) {
         const { error } = await supabase.from("savings_transactions").insert({
           farmer_id: form.farmer_id, type: "share_collection" as any, amount: Number(form.share),
           note: form.note || "Combined payment", status: "approved" as any, created_by: user?.id,
@@ -208,7 +211,7 @@ export default function CombinedPayment() {
       }
 
       // Audit log — record who submitted savings/share/loan repayments and when.
-      if (Number(form.savings) > 0 || Number(form.share) > 0) {
+      if ((form.include.savings && Number(form.savings) > 0) || (form.include.share && Number(form.share) > 0)) {
         logAudit({
           office_id: officeId, module: "savings_repayment", action_type: "create",
           reference_id: form.farmer_id,
@@ -387,22 +390,50 @@ export default function CombinedPayment() {
               <div className="flex justify-between border-t pt-0.5 font-semibold"><span>{lang === "bn" ? "নিট বকেয়া" : "Net due"}</span><span className="font-mono">{money(dues.net_due)}</span></div>
             </div>
           )}
+          <div>
+            <Label className="text-xs text-muted-foreground">{lang === "bn" ? "রসিদে অন্তর্ভুক্ত লাইন" : "Lines included in receipt"}</Label>
+            <div className="flex flex-wrap gap-4 mt-1">
+              {([
+                { key: "savings", label_bn: "সঞ্চয়", label_en: "Savings" },
+                { key: "share", label_bn: "শেয়ার", label_en: "Share" },
+                { key: "loan", label_bn: "ঋণ", label_en: "Loan" },
+              ] as const).map((opt) => (
+                <label key={opt.key} className="flex items-center gap-1.5 text-sm cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.include[opt.key]}
+                    onChange={(e) => {
+                      const on = e.target.checked;
+                      setForm((p) => ({
+                        ...p,
+                        include: { ...p.include, [opt.key]: on },
+                        ...(on ? {} : opt.key === "loan"
+                          ? { loan_id: "", loan_principal: 0, loan_interest: 0 }
+                          : { [opt.key]: 0 }),
+                      }));
+                    }}
+                  />
+                  <span>{lang === "bn" ? opt.label_bn : opt.label_en}</span>
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "সঞ্চয় (৳)" : "Savings (৳)"}</Label>
-              <Input type="number" min={0} step="0.01" value={form.savings}
+              <Input type="number" min={0} step="0.01" disabled={!form.include.savings} value={form.savings}
                      onChange={(e) => setForm({ ...form, savings: Number(e.target.value) || 0 })} />
             </div>
             <div>
               <Label>{lang === "bn" ? "শেয়ার (৳)" : "Share (৳)"}</Label>
-              <Input type="number" min={0} step="0.01" value={form.share}
+              <Input type="number" min={0} step="0.01" disabled={!form.include.share} value={form.share}
                      onChange={(e) => setForm({ ...form, share: Number(e.target.value) || 0 })} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "ঋণ" : "Loan"}</Label>
-              <Select value={form.loan_id || "none"}
+              <Select value={form.loan_id || "none"} disabled={!form.include.loan}
                       onValueChange={(v) => setForm({ ...form, loan_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder={lang === "bn" ? "নির্বাচন করুন" : "Select loan"} /></SelectTrigger>
                 <SelectContent>
@@ -417,7 +448,7 @@ export default function CombinedPayment() {
             </div>
             <div>
               <Label>{lang === "bn" ? "ঋণ আসল (৳) *" : "Loan Principal (৳) *"}</Label>
-              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_principal}
+              <Input type="number" min={0} step="0.01" disabled={!form.include.loan || !form.loan_id} value={form.loan_principal}
                      aria-invalid={loanExceeds || undefined}
                      onChange={(e) => setForm({ ...form, loan_principal: Number(e.target.value) || 0 })} />
             </div>
@@ -425,7 +456,7 @@ export default function CombinedPayment() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "ঋণ লাভ (৳) — অপশনাল" : "Loan Interest (৳) — optional"}</Label>
-              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_interest}
+              <Input type="number" min={0} step="0.01" disabled={!form.include.loan || !form.loan_id} value={form.loan_interest}
                      onChange={(e) => setForm({ ...form, loan_interest: Number(e.target.value) || 0 })} />
               {selectedLoan && suggestedInterest > 0 && (
                 <button type="button" className="text-xs mt-1 text-primary underline"
