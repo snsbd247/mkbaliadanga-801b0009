@@ -456,7 +456,7 @@ export default function CombinedPayment() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "ঋণ লাভ (৳) — অপশনাল" : "Loan Interest (৳) — optional"}</Label>
-              <Input type="number" min={0} step="0.01" disabled={!form.loan_id} value={form.loan_interest}
+              <Input type="number" min={0} step="0.01" disabled={!form.include.loan || !form.loan_id} value={form.loan_interest}
                      onChange={(e) => setForm({ ...form, loan_interest: Number(e.target.value) || 0 })} />
               {selectedLoan && suggestedInterest > 0 && (
                 <button type="button" className="text-xs mt-1 text-primary underline"
