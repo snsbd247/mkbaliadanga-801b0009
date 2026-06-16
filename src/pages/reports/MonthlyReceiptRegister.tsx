@@ -61,7 +61,7 @@ export default function MonthlyReceiptRegister() {
 
       let q = supabase
         .from("payments")
-        .select("id,receipt_no,created_at,amount,status,kind,collected_by,farmers(name_en,farmer_code,member_no)")
+        .select("id,receipt_no,created_at,amount,status,kind,collected_by,office_id,voided_at,void_reason,farmers(name_en,farmer_code,member_no)")
         .gte("created_at", `${from}T00:00:00`)
         .lte("created_at", `${to}T23:59:59`)
         .is("deleted_at", null)
@@ -85,6 +85,9 @@ export default function MonthlyReceiptRegister() {
           amount: Number(p.amount) || 0,
           status: p.status,
           collected_by: p.collected_by ?? null,
+          office_id: p.office_id ?? null,
+          voided_at: p.voided_at ?? null,
+          void_reason: p.void_reason ?? null,
           farmer: `${p.farmers?.name_en ?? "—"}${p.farmers?.member_no || p.farmers?.farmer_code ? ` (${p.farmers.member_no || p.farmers.farmer_code})` : ""}`,
         };
       });
@@ -93,6 +96,33 @@ export default function MonthlyReceiptRegister() {
       toast.error(e.message ?? "Load failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function confirmVoid() {
+    if (!voidTarget) return;
+    if (!voidReason.trim()) { toast.error("কারণ লিখুন"); return; }
+    setVoiding(true);
+    try {
+      const { error } = await supabase.rpc("void_receipt_and_recycle", {
+        p_receipt_no: voidTarget.receipt_no,
+        p_office_id: voidTarget.office_id,
+        p_reason: voidReason.trim(),
+      });
+      if (error) throw error;
+      logAudit({
+        office_id: voidTarget.office_id, module: "receipt", action_type: "void",
+        reference_id: voidTarget.id,
+        new_data: { receipt_no: voidTarget.receipt_no, reason: voidReason.trim() },
+      });
+      toast.success(`রশিদ ${voidTarget.receipt_no} বাতিল হয়েছে — নম্বরটি পুনঃব্যবহার হবে`);
+      setVoidTarget(null);
+      setVoidReason("");
+      await load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Void failed");
+    } finally {
+      setVoiding(false);
     }
   }
 
