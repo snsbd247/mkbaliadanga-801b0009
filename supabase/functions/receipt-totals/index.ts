@@ -9,8 +9,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const url = new URL(req.url);
-    const receiptNo = (url.searchParams.get("receipt_no") || "").trim();
+    let receiptNo = "";
+    if (req.method === "POST") {
+      const body = await req.json().catch(() => ({}));
+      receiptNo = String(body?.receipt_no ?? "").trim();
+    } else {
+      receiptNo = (new URL(req.url).searchParams.get("receipt_no") || "").trim();
+    }
     if (!receiptNo) {
       return new Response(JSON.stringify({ error: "receipt_no is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
