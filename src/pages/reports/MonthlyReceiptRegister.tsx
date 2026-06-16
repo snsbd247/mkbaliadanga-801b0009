@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
-import { FileDown, FileSpreadsheet, Loader2, AlertTriangle } from "lucide-react";
+import { logAudit } from "@/lib/audit";
+import { FileDown, FileSpreadsheet, Loader2, AlertTriangle, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 type Kind = "SAV" | "LOAN" | "IRR" | "COMBO" | "PAY" | "ALL";
@@ -25,6 +29,9 @@ type Row = {
   status: string | null;
   farmer: string;
   collected_by: string | null;
+  office_id: string | null;
+  voided_at: string | null;
+  void_reason: string | null;
 };
 
 const KINDS: Kind[] = ["ALL", "SAV", "LOAN", "IRR", "COMBO", "PAY"];
@@ -33,12 +40,17 @@ function pad2(n: number) { return String(n).padStart(2, "0"); }
 
 export default function MonthlyReceiptRegister() {
   const now = new Date();
+  const { roles } = useAuth();
+  const canVoid = !!roles?.some((r) => r === "super_admin" || r === "admin" || r === "developer");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [kind, setKind] = useState<Kind>("ALL");
   const [loading, setLoading] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
+  const [voidTarget, setVoidTarget] = useState<Row | null>(null);
+  const [voidReason, setVoidReason] = useState("");
+  const [voiding, setVoiding] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -49,7 +61,7 @@ export default function MonthlyReceiptRegister() {
 
       let q = supabase
         .from("payments")
-        .select("id,receipt_no,created_at,amount,status,kind,collected_by,farmers(name_en,farmer_code,member_no)")
+        .select("id,receipt_no,created_at,amount,status,kind,collected_by,office_id,voided_at,void_reason,farmers(name_en,farmer_code,member_no)")
         .gte("created_at", `${from}T00:00:00`)
         .lte("created_at", `${to}T23:59:59`)
         .is("deleted_at", null)
@@ -73,6 +85,9 @@ export default function MonthlyReceiptRegister() {
           amount: Number(p.amount) || 0,
           status: p.status,
           collected_by: p.collected_by ?? null,
+          office_id: p.office_id ?? null,
+          voided_at: p.voided_at ?? null,
+          void_reason: p.void_reason ?? null,
           farmer: `${p.farmers?.name_en ?? "—"}${p.farmers?.member_no || p.farmers?.farmer_code ? ` (${p.farmers.member_no || p.farmers.farmer_code})` : ""}`,
         };
       });
@@ -81,6 +96,33 @@ export default function MonthlyReceiptRegister() {
       toast.error(e.message ?? "Load failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function confirmVoid() {
+    if (!voidTarget) return;
+    if (!voidReason.trim()) { toast.error("কারণ লিখুন"); return; }
+    setVoiding(true);
+    try {
+      const { error } = await supabase.rpc("void_receipt_and_recycle", {
+        p_receipt_no: voidTarget.receipt_no,
+        p_office_id: voidTarget.office_id,
+        p_reason: voidReason.trim(),
+      });
+      if (error) throw error;
+      logAudit({
+        office_id: voidTarget.office_id, module: "receipt", action_type: "void",
+        reference_id: voidTarget.id,
+        new_data: { receipt_no: voidTarget.receipt_no, reason: voidReason.trim() },
+      });
+      toast.success(`রশিদ ${voidTarget.receipt_no} বাতিল হয়েছে — নম্বরটি পুনঃব্যবহার হবে`);
+      setVoidTarget(null);
+      setVoidReason("");
+      await load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Void failed");
+    } finally {
+      setVoiding(false);
     }
   }
 
@@ -269,33 +311,45 @@ export default function MonthlyReceiptRegister() {
               <TableHead>Farmer</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Amount</TableHead>
+              {canVoid && <TableHead className="text-right">Action</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={canVoid ? 7 : 6} className="text-center text-muted-foreground py-8">Loading…</TableCell></TableRow>
             ) : rows.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No data</TableCell></TableRow>
+              <TableRow><TableCell colSpan={canVoid ? 7 : 6} className="text-center text-muted-foreground py-8">No data</TableCell></TableRow>
             ) : (
               <>
                 {rows.map(r => {
                   const isDup = analysis.duplicates.has(r.receipt_no);
+                  const isVoid = !!r.voided_at;
                   return (
-                    <TableRow key={r.id} className={isDup ? "bg-destructive/5" : ""}>
+                    <TableRow key={r.id} className={isVoid ? "bg-destructive/10 opacity-70" : isDup ? "bg-destructive/5" : ""}>
                       <TableCell>{fmtDate(r.created_at)}</TableCell>
                       <TableCell className="font-mono text-xs">
-                        {r.receipt_no}
+                        <span className={isVoid ? "line-through" : ""}>{r.receipt_no}</span>
                         {isDup && <Badge variant="destructive" className="ml-2">DUP</Badge>}
+                        {isVoid && <Badge variant="destructive" className="ml-2">বাতিল</Badge>}
                       </TableCell>
                       <TableCell><Badge variant="outline">{r.prefix}</Badge></TableCell>
                       <TableCell>{r.farmer}</TableCell>
-                      <TableCell>{r.status ?? "—"}</TableCell>
+                      <TableCell>{isVoid ? <span className="text-destructive" title={r.void_reason ?? ""}>বাতিল</span> : (r.status ?? "—")}</TableCell>
                       <TableCell className="text-right">{money(r.amount)}</TableCell>
+                      {canVoid && (
+                        <TableCell className="text-right">
+                          {!isVoid && r.receipt_no !== "—" && (
+                            <Button size="sm" variant="ghost" className="h-7 text-destructive" onClick={() => { setVoidTarget(r); setVoidReason(""); }}>
+                              <Ban className="h-3.5 w-3.5 mr-1" />বাতিল
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
                 <TableRow className="font-semibold bg-muted/40">
-                  <TableCell colSpan={5}>Total ({rows.length} receipts)</TableCell>
+                  <TableCell colSpan={canVoid ? 6 : 5}>Total ({rows.length} receipts)</TableCell>
                   <TableCell className="text-right">{money(grandTotal)}</TableCell>
                 </TableRow>
               </>
@@ -303,6 +357,27 @@ export default function MonthlyReceiptRegister() {
           </TableBody>
         </Table>
       </Card>
+
+      <Dialog open={!!voidTarget} onOpenChange={(o) => { if (!o) setVoidTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>রশিদ বাতিল করুন — {voidTarget?.receipt_no}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p className="text-muted-foreground">
+              বাতিল করলে রশিদটি কালেকশন রিপোর্টে "বাতিল" দেখাবে এবং নম্বরটি পরের এন্ট্রিতে পুনঃব্যবহার হবে।
+            </p>
+            <Label>বাতিলের কারণ *</Label>
+            <Textarea value={voidReason} onChange={(e) => setVoidReason(e.target.value)} placeholder="যেমন: কৃষক টাকা আনেনি / ভুল এন্ট্রি" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVoidTarget(null)} disabled={voiding}>বাতিল</Button>
+            <Button variant="destructive" onClick={confirmVoid} disabled={voiding}>
+              {voiding ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Ban className="h-4 w-4 mr-1" />}নিশ্চিত করুন
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

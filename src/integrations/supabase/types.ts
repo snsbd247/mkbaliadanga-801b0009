@@ -4974,6 +4974,27 @@ export type Database = {
         }
         Relationships: []
       }
+      receipt_no_pool: {
+        Row: {
+          created_at: string
+          id: string
+          office_id: string | null
+          receipt_no: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          office_id?: string | null
+          receipt_no: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          office_id?: string | null
+          receipt_no?: string
+        }
+        Relationships: []
+      }
       receipt_sequences: {
         Row: {
           kind: string
@@ -5080,6 +5101,9 @@ export type Database = {
           receipt_no: string | null
           reference_id: string | null
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount: number
@@ -5096,6 +5120,9 @@ export type Database = {
           receipt_no?: string | null
           reference_id?: string | null
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount?: number
@@ -5112,6 +5139,9 @@ export type Database = {
           receipt_no?: string | null
           reference_id?: string | null
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -6417,6 +6447,10 @@ export type Database = {
         }[]
       }
       verify_seed_integrity: { Args: never; Returns: Json }
+      void_receipt_and_recycle: {
+        Args: { p_office_id: string; p_reason: string; p_receipt_no: string }
+        Returns: undefined
+      }
     }
     Enums: {
       account_type: "asset" | "liability" | "income" | "expense" | "equity"
