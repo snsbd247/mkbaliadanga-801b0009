@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,11 +89,12 @@ export default function Payments() {
   const [editHistory, setEditHistory] = useState<any[]>([]);
 
   async function loadEditHistory(paymentId: string) {
-    const { data } = await supabase.from("audit_logs")
-      .select("id,action,old_values,new_values,created_at,user_id")
-      .eq("entity", "payments").eq("entity_id", paymentId)
-      .order("created_at", { ascending: false });
-    setEditHistory(data ?? []);
+    try {
+      const { rows } = await fetchReceiptAuditLogs({ paymentId, limit: 50 });
+      setEditHistory(rows);
+    } catch {
+      setEditHistory([]);
+    }
   }
 
   async function openEditReceipt(p: any) {
