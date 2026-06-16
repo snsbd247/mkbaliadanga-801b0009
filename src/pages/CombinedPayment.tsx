@@ -162,7 +162,7 @@ export default function CombinedPayment() {
       let verifyToken: string | null = null;
 
       // 1) Savings deposit
-      if (Number(form.savings) > 0) {
+      if (form.include.savings && Number(form.savings) > 0) {
         const { error } = await supabase.from("savings_transactions").insert({
           farmer_id: form.farmer_id, type: "deposit" as any, amount: Number(form.savings),
           note: form.note || "Combined payment", status: "approved" as any, created_by: user?.id,
