@@ -433,7 +433,7 @@ export default function CombinedPayment() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "ঋণ" : "Loan"}</Label>
-              <Select value={form.loan_id || "none"}
+              <Select value={form.loan_id || "none"} disabled={!form.include.loan}
                       onValueChange={(v) => setForm({ ...form, loan_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder={lang === "bn" ? "নির্বাচন করুন" : "Select loan"} /></SelectTrigger>
                 <SelectContent>
