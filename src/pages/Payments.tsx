@@ -85,11 +85,21 @@ export default function Payments() {
   const [editLandId, setEditLandId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, note: "", reason: "" });
   const [editLoading, setEditLoading] = useState(false);
+  const [editHistory, setEditHistory] = useState<any[]>([]);
+
+  async function loadEditHistory(paymentId: string) {
+    const { data } = await supabase.from("audit_logs")
+      .select("id,action,old_values,new_values,created_at,user_id")
+      .eq("entity", "payments").eq("entity_id", paymentId)
+      .order("created_at", { ascending: false });
+    setEditHistory(data ?? []);
+  }
 
   async function openEditReceipt(p: any) {
     setEditPayment(p);
     setEditOpen(true);
     setEditLoading(true);
+    loadEditHistory(p.id);
     const irrAlloc = (p.payment_allocations ?? []).find((a: any) => a.kind === "irrigation" && a.reference_id)
       ?? (p.kind === "irrigation" && p.reference_id ? { reference_id: p.reference_id, amount: p.amount } : null);
     const invId = irrAlloc?.reference_id ?? null;
@@ -1042,6 +1052,19 @@ export default function Payments() {
                 <Label>{tx("Reason for change", "পরিবর্তনের কারণ")} *</Label>
                 <Input value={editForm.reason} onChange={(e) => setEditForm(f => ({ ...f, reason: e.target.value }))} placeholder={tx("Why are you editing this receipt?", "কেন এই রসিদ এডিট করছেন?")} />
               </div>
+              {editHistory.length > 0 && (
+                <div className="rounded-md border p-2 max-h-48 overflow-auto space-y-2">
+                  <div className="text-xs font-medium text-muted-foreground">{tx("Edit history", "এডিট ইতিহাস")}</div>
+                  {editHistory.map((h) => (
+                    <div key={h.id} className="text-xs border-b pb-1 last:border-0">
+                      <div className="text-muted-foreground">{new Date(h.created_at).toLocaleString()} · {h.new_values?.reason || "—"}</div>
+                      <div className="font-mono whitespace-pre-wrap break-all">
+                        {tx("Before", "আগে")}: {JSON.stringify(h.old_values)}{"\n"}{tx("After", "পরে")}: {JSON.stringify((({ reason, ...rest }) => rest)(h.new_values || {}))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
