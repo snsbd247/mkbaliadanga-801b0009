@@ -99,6 +99,7 @@ export default function Payments() {
     setEditPayment(p);
     setEditOpen(true);
     setEditLoading(true);
+    loadEditHistory(p.id);
     const irrAlloc = (p.payment_allocations ?? []).find((a: any) => a.kind === "irrigation" && a.reference_id)
       ?? (p.kind === "irrigation" && p.reference_id ? { reference_id: p.reference_id, amount: p.amount } : null);
     const invId = irrAlloc?.reference_id ?? null;
