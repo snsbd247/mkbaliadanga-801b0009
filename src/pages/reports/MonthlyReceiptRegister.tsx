@@ -29,6 +29,9 @@ type Row = {
   status: string | null;
   farmer: string;
   collected_by: string | null;
+  office_id: string | null;
+  voided_at: string | null;
+  void_reason: string | null;
 };
 
 const KINDS: Kind[] = ["ALL", "SAV", "LOAN", "IRR", "COMBO", "PAY"];
