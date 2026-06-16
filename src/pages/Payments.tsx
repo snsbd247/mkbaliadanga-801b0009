@@ -1052,6 +1052,19 @@ export default function Payments() {
                 <Label>{tx("Reason for change", "পরিবর্তনের কারণ")} *</Label>
                 <Input value={editForm.reason} onChange={(e) => setEditForm(f => ({ ...f, reason: e.target.value }))} placeholder={tx("Why are you editing this receipt?", "কেন এই রসিদ এডিট করছেন?")} />
               </div>
+              {editHistory.length > 0 && (
+                <div className="rounded-md border p-2 max-h-48 overflow-auto space-y-2">
+                  <div className="text-xs font-medium text-muted-foreground">{tx("Edit history", "এডিট ইতিহাস")}</div>
+                  {editHistory.map((h) => (
+                    <div key={h.id} className="text-xs border-b pb-1 last:border-0">
+                      <div className="text-muted-foreground">{new Date(h.created_at).toLocaleString()} · {h.new_values?.reason || "—"}</div>
+                      <div className="font-mono whitespace-pre-wrap break-all">
+                        {tx("Before", "আগে")}: {JSON.stringify(h.old_values)}{"\n"}{tx("After", "পরে")}: {JSON.stringify((({ reason, ...rest }) => rest)(h.new_values || {}))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
