@@ -211,7 +211,7 @@ export default function CombinedPayment() {
       }
 
       // Audit log — record who submitted savings/share/loan repayments and when.
-      if (Number(form.savings) > 0 || Number(form.share) > 0) {
+      if ((form.include.savings && Number(form.savings) > 0) || (form.include.share && Number(form.share) > 0)) {
         logAudit({
           office_id: officeId, module: "savings_repayment", action_type: "create",
           reference_id: form.farmer_id,
