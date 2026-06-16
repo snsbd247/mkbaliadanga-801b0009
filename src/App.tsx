@@ -80,6 +80,7 @@ import MonthlyReceiptRegister from "./pages/reports/MonthlyReceiptRegister";
 import OfficerSummaryReport from "./pages/reports/OfficerSummaryReport";
 import RateSourceReport from "./pages/reports/RateSourceReport";
 import OverrideAuditReport from "./pages/reports/OverrideAuditReport";
+import ReceiptAuditReport from "./pages/reports/ReceiptAuditReport";
 import FarmerRejectionsReport from "./pages/reports/FarmerRejectionsReport";
 import ExpensesReport from "./pages/reports/ExpensesReport";
 import PromiseDueReport from "./pages/reports/PromiseDueReport";
@@ -339,6 +340,7 @@ const App = () => (
                 <Route path="/assets/maintenance-schedules" element={<RequirePerm module="assets"><MaintenanceSchedules /></RequirePerm>} />
                 <Route path="/reports/rate-source" element={<RequireRole roles={["admin","super_admin"]}><RateSourceReport /></RequireRole>} />
                 <Route path="/reports/override-audit" element={<RequireRole roles={["admin","super_admin"]}><OverrideAuditReport /></RequireRole>} />
+                <Route path="/reports/receipt-audit" element={<RequireRole roles={["admin","super_admin"]}><ReceiptAuditReport /></RequireRole>} />
                 <Route path="/irrigation-reports" element={<RequirePerm module="reports"><IrrigationReports /></RequirePerm>} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/help" element={<Help />} />

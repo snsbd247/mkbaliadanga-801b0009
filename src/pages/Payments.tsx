@@ -238,6 +238,13 @@ export default function Payments() {
     const pr = params.get("period");
     if (pr === "today" || pr === "this_month" || pr === "all") setPeriod(pr);
   }, [params]);
+  // Deep-link from the receipt audit log: open the edit dialog for ?receipt=NO
+  useEffect(() => {
+    const rno = params.get("receipt");
+    if (!rno || editOpen || !(list ?? []).length) return;
+    const match = (list ?? []).find((p: any) => p.receipt_no === rno);
+    if (match) openEditReceipt(match);
+  }, [params, list]);
 
   // Live preview of the auto-generated monthly receipt no. Reads (does not consume) the counter.
   useEffect(() => {
