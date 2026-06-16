@@ -426,7 +426,7 @@ export default function CombinedPayment() {
             </div>
             <div>
               <Label>{lang === "bn" ? "শেয়ার (৳)" : "Share (৳)"}</Label>
-              <Input type="number" min={0} step="0.01" value={form.share}
+              <Input type="number" min={0} step="0.01" disabled={!form.include.share} value={form.share}
                      onChange={(e) => setForm({ ...form, share: Number(e.target.value) || 0 })} />
             </div>
           </div>
