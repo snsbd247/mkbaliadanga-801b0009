@@ -178,7 +178,7 @@ export default function CombinedPayment() {
       }
 
       // 2) Share collection (recorded in savings_transactions as share_collection)
-      if (Number(form.share) > 0) {
+      if (form.include.share && Number(form.share) > 0) {
         const { error } = await supabase.from("savings_transactions").insert({
           farmer_id: form.farmer_id, type: "share_collection" as any, amount: Number(form.share),
           note: form.note || "Combined payment", status: "approved" as any, created_by: user?.id,
