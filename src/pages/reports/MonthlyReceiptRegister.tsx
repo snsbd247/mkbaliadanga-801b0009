@@ -40,12 +40,17 @@ function pad2(n: number) { return String(n).padStart(2, "0"); }
 
 export default function MonthlyReceiptRegister() {
   const now = new Date();
+  const { roles } = useAuth();
+  const canVoid = !!roles?.some((r) => r === "super_admin" || r === "admin" || r === "developer");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [kind, setKind] = useState<Kind>("ALL");
   const [loading, setLoading] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
+  const [voidTarget, setVoidTarget] = useState<Row | null>(null);
+  const [voidReason, setVoidReason] = useState("");
+  const [voiding, setVoiding] = useState(false);
 
   async function load() {
     setLoading(true);
