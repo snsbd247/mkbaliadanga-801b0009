@@ -38,7 +38,9 @@ export async function fetchReceiptAuditLogs(
     .from("audit_logs" as any)
     .select("id,created_at,action,entity,entity_id,office_id,old_values,new_values,meta,user_id", { count: "exact" })
     .eq("entity", "payments")
-    .order("created_at", { ascending: filters.ascending ?? false });
+    .order("created_at", { ascending: filters.ascending ?? false })
+    // Stable secondary key so rows never reorder across pages on identical timestamps.
+    .order("id", { ascending: filters.ascending ?? false });
 
   if (filters.paymentId) q = q.eq("entity_id", filters.paymentId);
   if (filters.officeId) q = q.eq("office_id", filters.officeId);
