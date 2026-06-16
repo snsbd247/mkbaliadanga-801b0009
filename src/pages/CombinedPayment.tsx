@@ -421,7 +421,7 @@ export default function CombinedPayment() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{lang === "bn" ? "সঞ্চয় (৳)" : "Savings (৳)"}</Label>
-              <Input type="number" min={0} step="0.01" value={form.savings}
+              <Input type="number" min={0} step="0.01" disabled={!form.include.savings} value={form.savings}
                      onChange={(e) => setForm({ ...form, savings: Number(e.target.value) || 0 })} />
             </div>
             <div>
