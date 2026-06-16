@@ -240,10 +240,10 @@ export default function CombinedPayment() {
         mobile: farmer?.mobile ?? null,
         field_receipt_no: form.field_receipt_no?.trim() || null,
         amounts: {
-          savings: Number(form.savings || 0),
-          share: Number(form.share || 0),
-          loan_principal: Number(form.loan_principal || 0),
-          loan_interest: Number(form.loan_interest || 0),
+          savings: form.include.savings ? Number(form.savings || 0) : 0,
+          share: form.include.share ? Number(form.share || 0) : 0,
+          loan_principal: form.include.loan ? Number(form.loan_principal || 0) : 0,
+          loan_interest: form.include.loan ? Number(form.loan_interest || 0) : 0,
           misc: 0,
         },
       });
