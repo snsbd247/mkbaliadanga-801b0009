@@ -318,6 +318,9 @@ export default function QuickSeed() {
               <Button size="sm" variant="outline" onClick={downloadSummary}>
                 <FileText className="h-4 w-4 mr-1" /> PDF সারাংশ
               </Button>
+              <Button size="sm" variant="outline" onClick={downloadSummaryCsv}>
+                <FileText className="h-4 w-4 mr-1" /> CSV সারাংশ
+              </Button>
               <input
                 ref={fileRef} type="file" accept="application/json" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) restoreFromFile(f); e.currentTarget.value = ""; }}
