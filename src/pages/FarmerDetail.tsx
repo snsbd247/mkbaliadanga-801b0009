@@ -757,6 +757,7 @@ export default function FarmerDetail() {
         owner_type: editForm.owner_type as any,
         field_type: editForm.field_type as any,
         patwari_id: editForm.patwari_id || null,
+        notes: editForm.notes?.trim() || null,
       } as any).eq("id", editLand.id).select("id");
       if (error) { toast.error(error.message); return; }
       if (!data || data.length === 0) {
