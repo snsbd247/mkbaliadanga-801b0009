@@ -141,14 +141,14 @@ export default function SocietyCashBook() {
       </Card>
 
       <div className="bn-cashbook bg-white text-black p-4 overflow-x-auto">
+        <div className="text-center font-semibold text-sm mb-1">
+          {society}
+          <span className="ml-2 font-normal">{toBnDigits(`${bnDate(from)} - ${bnDate(to)}`)}</span>
+        </div>
+        <div className="bn-cb-cols grid grid-cols-2 gap-3 items-start">
         {/* জমা */}
-        <section className="mb-8" aria-label="জমা অংশ">
-          <div className="flex items-baseline justify-between mb-1">
-            <span className="text-sm">{toBnDigits(`${bnDate(from)} - ${bnDate(to)}`)}</span>
-            <h2 className="text-lg font-bold">জমা</h2>
-            <span className="text-sm">&nbsp;</span>
-          </div>
-          <div className="text-center font-semibold text-sm mb-1">{society}</div>
+        <section aria-label="জমা অংশ">
+          <div className="text-center font-bold text-lg mb-1">জমা</div>
           <table className="w-full border-collapse text-xs bn-cb-table" aria-label="জমা ক্যাশ বহি">
             <thead>
               <tr>
