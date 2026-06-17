@@ -283,6 +283,7 @@ const App = () => (
                 <Route path="/cash-audit" element={<RequirePerm module="cashbook"><CashAudit /></RequirePerm>} />
                 <Route path="/reports/irrigation-statement" element={<RequirePerm module="cashbook"><IrrigationCashStatement /></RequirePerm>} />
                 <Route path="/reports/society-statement" element={<RequirePerm module="cashbook"><SocietyCashStatement /></RequirePerm>} />
+                <Route path="/reports/society-cashbook" element={<RequirePerm module="cashbook"><SocietyCashBook /></RequirePerm>} />
 
                 <Route path="/statement" element={<RequirePerm module="savings"><Statement /></RequirePerm>} />
                 <Route path="/dues" element={<RequirePerm module="reports"><Dues /></RequirePerm>} />
