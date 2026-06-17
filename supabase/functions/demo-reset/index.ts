@@ -20,6 +20,7 @@ const FULL_WIPE_ORDER = [
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
   "bank_transactions", "bank_accounts",
+  "office_incomes", "hand_cash_submissions",
   "cashbook_submissions",
   "farmer_notes",
   "public_payment_intents",
