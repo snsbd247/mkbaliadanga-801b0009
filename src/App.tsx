@@ -36,6 +36,8 @@ import Settings from "./pages/Settings";
 import Scan from "./pages/Scan";
 import Cashbook from "./pages/Cashbook";
 import CashAudit from "./pages/CashAudit";
+import IrrigationCashStatement from "./pages/reports/IrrigationCashStatement";
+
 import HandCash from "./pages/HandCash";
 import Statement from "./pages/Statement";
 import Dues from "./pages/Dues";
