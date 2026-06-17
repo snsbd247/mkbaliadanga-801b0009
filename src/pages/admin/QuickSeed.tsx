@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 
-type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "all";
+type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "all";
 
 type Status = "idle" | "running" | "ok" | "err";
 
@@ -26,9 +26,10 @@ const MODULES: { key: ModuleKey; title: string; desc: string; icon: any; modules
   { key: "irrigation", title: "সেচ",                  desc: "সিজন + রেট + ইনভয়েস + পেমেন্ট (Cash/Hawlat/Bank) + QR verifiable রসিদ",              icon: Droplets,     modules: ["locations", "settings", "accounting", "farmers", "irrigation"] },
   { key: "expenses",   title: "খরচ",                  desc: "মাসিক/বার্ষিক বিভিন্ন ধরনের খরচ এন্ট্রি (অফিস, বেতন, ইউটিলিটি ইত্যাদি)",                     icon: Receipt,      modules: ["settings", "accounting", "expenses"] },
   { key: "bank",       title: "ব্যাংক",               desc: "৩টি ব্যাংক একাউন্ট + ডিপোজিট/উইথড্র লেনদেন",                                                 icon: Banknote,     modules: ["settings", "accounting", "bank"] },
+  { key: "cashbook",   title: "ক্যাশ বহি ও রিপোর্ট",  desc: "রসিদ (Cash Book), অফিস আয় (সেচ ও সমিতি), মাসিক ক্যাশ বহি ও হ্যান্ড ক্যাশ সাবমিশন — Cash Book/Hand Cash/Cash Audit/Cash Statement/আয়-ব্যয় ক্যাশ বহি রিপোর্টের জন্য", icon: BookOpen, modules: ["locations", "settings", "accounting", "farmers", "irrigation", "expenses", "bank", "cashbook"] },
 ];
 
-const ALL_OPS_MODULES = ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank"];
+const ALL_OPS_MODULES = ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank", "cashbook"];
 
 export default function QuickSeed() {
   const { officeId } = useAuth();

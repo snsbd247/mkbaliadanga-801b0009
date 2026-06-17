@@ -20,6 +20,7 @@ const FULL_WIPE_ORDER = [
   "savings_transactions", "savings_yearly_opening", "farmer_savings_plans", "savings_plans", "shares",
   "expenses",
   "bank_transactions", "bank_accounts",
+  "office_incomes", "hand_cash_submissions",
   "cashbook_submissions",
   "farmer_notes",
   "public_payment_intents",
@@ -805,25 +806,109 @@ async function seedExpenses(admin: any, officeId: string, monthsBack: number = 1
   const today = new Date();
   const dateAt = (m: number, d: number) =>
     new Date(today.getFullYear(), today.getMonth() - m, d).toISOString().slice(0, 10);
-  const heads = [
-    { head: "Office Rent", amount: 5000, payee: "Landlord" },
-    { head: "Electricity", amount: 1200, payee: "PDB" },
-    { head: "Stationery",  amount: 800,  payee: "Local Shop" },
+  // Stream-tagged heads so BOTH the Irrigation and Society income-expense cash
+  // books / cash statements populate their columns. Irrigation heads match the
+  // keyword mapping used by the irrigation cash book report.
+  const irr = [
+    { head: "শ্রমিক মজুরি", amount: 1500, payee: "শ্রমিক", day: 3 },
+    { head: "যন্ত্রাংশ ক্রয়", amount: 2200, payee: "যন্ত্রাংশ দোকান", day: 6 },
+    { head: "যন্ত্রাংশ মেরামত", amount: 900, payee: "মিস্ত্রি", day: 9 },
+    { head: "যাতায়াত", amount: 400, payee: "—", day: 12 },
+    { head: "বিদ্যুৎ বিল", amount: 1800, payee: "পল্লী বিদ্যুৎ", day: 15 },
+  ];
+  const soc = [
+    { head: "অফিস ভাড়া", amount: 5000, payee: "বাড়িওয়ালা", day: 1 },
+    { head: "বেতন ও ভাতা", amount: 8000, payee: "কর্মচারী", day: 10 },
+    { head: "স্টেশনারি", amount: 800, payee: "স্থানীয় দোকান", day: 18 },
   ];
   const rows: any[] = [];
-  if (monthsBack > 1) {
-    for (let m = monthsBack - 1; m >= 0; m--) {
-      for (const h of heads) {
-        rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, note: "Demo monthly", expense_date: dateAt(m, h.head === "Office Rent" ? 1 : h.head === "Electricity" ? 10 : 18) });
-      }
-    }
-  } else {
-    for (const h of heads) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, note: "Demo" });
+  let vseq = 1;
+  const months = monthsBack > 1 ? monthsBack : 1;
+  for (let m = months - 1; m >= 0; m--) {
+    for (const h of irr) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, stream: "irrigation", voucher_no: `V-I-${vseq++}`, note: "Demo", expense_date: dateAt(m, h.day) });
+    for (const h of soc) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, stream: "savings", voucher_no: `V-S-${vseq++}`, note: "Demo", expense_date: dateAt(m, h.day) });
+    rows.push({ head: "ব্যাংক জমা", amount: 3000, payee: "ব্যাংক", office_id: officeId, stream: "irrigation", is_bank_deposit: true, voucher_no: `V-I-${vseq++}`, note: "Demo bank deposit", expense_date: dateAt(m, 25) });
   }
   const { error } = await admin.from("expenses").insert(rows);
   if (error) throw new Error(`expenses: ${error.message}`);
   return rows.length;
 }
+
+// Seeds the data behind the cash reports: Cash Book, Hand Cash, Cash Audit,
+// Cash Statement (Irrigation/Society) and the Income-Expense Cash Books.
+// Covers office_incomes (sech + saving), receipts (income side) and the
+// monthly cashbook/hand-cash submissions.
+async function seedCashReports(admin: any, officeId: string, farmers: any[], monthsBack: number = 1) {
+  const today = new Date();
+  const dateAt = (m: number, d: number) =>
+    new Date(today.getFullYear(), today.getMonth() - m, d).toISOString().slice(0, 10);
+  const months = monthsBack > 1 ? monthsBack : 1;
+  const voters = (farmers ?? []).filter((f: any) => f.is_voter);
+  const out: Record<string, number> = { office_incomes: 0, receipts: 0, cashbook_submissions: 0, hand_cash_submissions: 0 };
+
+  // 1) Office incomes — irrigation (stream=sech) + society (stream=saving)
+  const oi: any[] = [];
+  let oiSeq = 1;
+  for (let m = months - 1; m >= 0; m--) {
+    const ym = dateAt(m, 1).slice(0, 7);
+    oi.push({ office_id: officeId, receipt_no: `OI-${ym}-${oiSeq++}`, income_type: "নালা চার্জ", payer_name: "মাঠ কমিটি", amount: 1200, received_on: dateAt(m, 4), stream: "sech" });
+    oi.push({ office_id: officeId, receipt_no: `OI-${ym}-${oiSeq++}`, income_type: "পুকুর ইজারা", payer_name: "ইজারাদার", amount: 2000, received_on: dateAt(m, 8), stream: "sech" });
+    oi.push({ office_id: officeId, receipt_no: `OI-${ym}-${oiSeq++}`, income_type: "বিবিধ আয়", payer_name: "সমিতি", amount: 700, received_on: dateAt(m, 14), stream: "saving" });
+    oi.push({ office_id: officeId, receipt_no: `OI-${ym}-${oiSeq++}`, income_type: "ফরম বিক্রয়", payer_name: "সদস্য", amount: 300, received_on: dateAt(m, 21), stream: "saving" });
+  }
+  if (oi.length) {
+    const { error } = await admin.from("office_incomes").insert(oi);
+    if (error) throw new Error(`office_incomes: ${error.message}`);
+    out.office_incomes = oi.length;
+  }
+
+  // 2) Receipts — income side for Cash Book / Hand Cash / Cash Audit.
+  // receipt_no is auto-generated by the set_receipt_no trigger; don't set it.
+  const kinds = ["irrigation", "savings_deposit", "share", "donation", "pond"];
+  const rec: any[] = [];
+  voters.forEach((f: any, i: number) => {
+    for (let m = months - 1; m >= 0; m--) {
+      if ((i + m) % 4 === 0) {
+        rec.push({ kind: pick(kinds, i + m), farmer_id: f.id, amount: 300 + (i % 6) * 50, method: "cash", office_id: officeId, receipt_date: dateAt(m, 6 + (i % 18)) });
+      }
+    }
+  });
+  const recCapped = rec.slice(0, Math.max(20, months * 15));
+  if (recCapped.length) {
+    const { error } = await admin.from("receipts").insert(recCapped);
+    if (error) throw new Error(`receipts: ${error.message}`);
+    out.receipts = recCapped.length;
+  }
+
+  // 3) Monthly cashbook submissions (unique year,month) — skip the current open month.
+  const cb: any[] = [];
+  for (let m = months; m >= 1; m--) {
+    const dt = new Date(today.getFullYear(), today.getMonth() - m, 1);
+    const income = 8000 + (m % 3) * 1500;
+    const expense = 5000 + (m % 4) * 800;
+    cb.push({ year: dt.getFullYear(), month: dt.getMonth() + 1, stream: "all", opening_cash: 10000, total_income: income, total_expense: expense, closing_cash: 10000 + income - expense, locked: true, note: "Demo monthly cashbook" });
+  }
+  if (cb.length) {
+    const { error } = await admin.from("cashbook_submissions").upsert(cb, { onConflict: "year,month", ignoreDuplicates: true });
+    if (!error) out.cashbook_submissions = cb.length;
+  }
+
+  // 4) Monthly hand-cash submissions (unique office_id,year,month).
+  const hc: any[] = [];
+  for (let m = months; m >= 1; m--) {
+    const dt = new Date(today.getFullYear(), today.getMonth() - m, 1);
+    const income = 6000 + (m % 3) * 1000;
+    const expense = 3500 + (m % 4) * 600;
+    hc.push({ office_id: officeId, year: dt.getFullYear(), month: dt.getMonth() + 1, opening_cash: 5000, total_income: income, total_expense: expense, closing_cash: 5000 + income - expense, locked: m > 1 });
+  }
+  if (hc.length) {
+    const { error } = await admin.from("hand_cash_submissions").upsert(hc, { onConflict: "office_id,year,month", ignoreDuplicates: true });
+    if (!error) out.hand_cash_submissions = hc.length;
+  }
+
+  return out;
+}
+
 
 
 // ---- ASSETS module seeder ----
@@ -1527,6 +1612,7 @@ function estimateImport(modules: string[], size: number) {
   if (modules.includes("irrigation") && modules.includes("farmers")) c["irrigation_due_promises"] = 5;
   if (modules.includes("expenses")) c["expenses"] = 3;
   if (modules.includes("bank")) { c["bank_accounts"] = 3; c["bank_transactions"] = 6; }
+  if (modules.includes("cashbook")) { c["office_incomes"] = 4; c["receipts"] = 15; c["cashbook_submissions"] = 1; c["hand_cash_submissions"] = 1; }
   if (modules.includes("assets")) {
     c["asset_categories"] = 4; c["assets"] = 8; c["asset_stocks"] = 8;
     c["asset_purchases"] = 8; c["asset_installations"] = 3;
@@ -1606,6 +1692,12 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
   bank: [
     { table: "bank_accounts",     page: "/banking", page_label: "Bank Accounts",     required: true },
     { table: "bank_transactions", page: "/banking", page_label: "Bank Transactions", required: true },
+  ],
+  cashbook: [
+    { table: "receipts",               page: "/cashbook",  page_label: "Cash Book (Receipts)", required: true },
+    { table: "office_incomes",         page: "/cashbook",  page_label: "Office Incomes",       required: true },
+    { table: "cashbook_submissions",   page: "/cashbook",  page_label: "Cash Book Submissions", required: false },
+    { table: "hand_cash_submissions",  page: "/hand-cash", page_label: "Hand Cash",            required: false },
   ],
   assets: [
     { table: "asset_categories",            page: "/assets/categories",    page_label: "Asset Categories",      required: true },
@@ -1751,7 +1843,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               const p = await seedPatwaris(admin, officeId, locs, desired); summary.patwaris = p.length;
             }});
           }
-          const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
+          const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings") || modules.includes("cashbook");
           if (needFarmers && !modules.includes("farmers")) {
             steps.push({ key: "farmers:fetch", label: "বিদ্যমান ফার্মার লোড", fn: async () => {
               const { data } = await admin.from("farmers").select("id, farmer_code, is_voter, voter_number, account_number").limit(size);
@@ -1782,6 +1874,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
           if (modules.includes("expenses")) steps.push({ key: "expenses", label: `খরচ seed${monthsBack > 1 ? ` (${monthsBack} মাস পুনরাবৃত্ত)` : ""}`, fn: async () => { summary.expenses = await seedExpenses(admin, officeId, monthsBack); }});
           if (modules.includes("accounting")) steps.push({ key: "accounting_period", label: "চলতি অর্থবছরের পিরিয়ড open", fn: async () => { await seedAccountingPeriod(admin, officeId); }});
           if (modules.includes("bank")) steps.push({ key: "bank", label: `ব্যাংক একাউন্ট ও লেনদেন seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { const b = await seedBankAccounts(admin, officeId, monthsBack); summary.bank = b; }});
+          if (modules.includes("cashbook")) steps.push({ key: "cashbook", label: `ক্যাশ বহি / হ্যান্ড ক্যাশ / অফিস আয় / রসিদ seed${monthsBack > 1 ? ` (${monthsBack} মাস)` : ""}`, fn: async () => { summary.cashbook = await seedCashReports(admin, officeId, farmers, monthsBack); }});
           if (modules.includes("assets")) steps.push({ key: "assets", label: `অ্যাসেট মডিউল seed${monthsBack > 1 ? ` (${monthsBack} মাস অবচয় + maintenance + movement)` : ""}`, fn: async () => { summary.assets = await seedAssets(admin, officeId, monthsBack); }});
           if (modules.includes("farmers")) steps.push({ key: "farmer_notes", label: "ফার্মার নোট seed", fn: async () => { if (farmers.length) summary.farmer_notes = await seedFarmerNotes(admin, farmers); }});
           if (modules.includes("farmers")) steps.push({ key: "land_history", label: `ভূমির ইতিহাস seed${monthsBack > 12 ? ` (${Math.ceil(monthsBack/12)} বছর)` : ""}`, fn: async () => { if (lands.length) summary.land_history = await seedLandHistory(admin, officeId, farmers, lands, monthsBack); }});
