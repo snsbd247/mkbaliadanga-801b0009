@@ -364,6 +364,13 @@ export default function Help() {
           >
             <Languages className="h-4 w-4 mr-1" /> English
           </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => window.dispatchEvent(new Event("open-onboarding"))}
+          >
+            <Compass className="h-4 w-4 mr-1" /> {tx("ওয়াকথ্রু চালু করুন", "Start Walkthrough")}
+          </Button>
           <Button asChild size="sm">
             <a href="/help/user-manual-v5.pdf" download>
               <Download className="h-4 w-4 mr-1" /> {tx("PDF ডাউনলোড", "Download PDF")}
