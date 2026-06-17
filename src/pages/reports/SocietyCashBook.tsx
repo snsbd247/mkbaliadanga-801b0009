@@ -245,16 +245,23 @@ export default function SocietyCashBook() {
 
       <style>{`
         .bn-cb-table th, .bn-cb-table td { word-wrap: break-word; overflow-wrap: anywhere; }
+        .bn-cb-table { table-layout: fixed; }
         @media print {
           body * { visibility: hidden; }
           .bn-cashbook, .bn-cashbook * { visibility: visible; }
-          .bn-cashbook { position: absolute; left: 0; top: 0; width: 100%; }
-          .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+          .bn-cashbook { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
+          /* Two equal columns kept side-by-side and top-aligned on every page */
+          .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: start; }
+          .bn-cb-cols > section { break-inside: auto; }
+          /* Repeat header on each printed page and never split a row */
+          .bn-cb-table { width: 100%; }
           .bn-cb-table thead { display: table-header-group; }
-          .bn-cb-table tr { page-break-inside: avoid; }
+          .bn-cb-table tfoot { display: table-footer-group; }
+          .bn-cb-table tr { page-break-inside: avoid; break-inside: avoid; }
           @page { size: A4 landscape; margin: 8mm; }
         }
       `}</style>
+
     </div>
   );
 }
