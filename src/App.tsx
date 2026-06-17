@@ -116,6 +116,7 @@ import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
 import Help from "./pages/Help";
+import Trust from "./pages/Trust";
 import HelpFarmerCard from "./pages/HelpFarmerCard";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
@@ -195,6 +196,7 @@ const App = () => (
               <Route path="/farmer/pay" element={<PublicPay />} />
               <Route path="/pay" element={<Navigate to="/" replace />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/trust" element={<Trust />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/verify/:token" element={<VerifyReceipt />} />
               <Route path="/r/:token" element={<VerifyReceipt />} />
