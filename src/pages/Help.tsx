@@ -204,8 +204,56 @@ const MODULES: Module[] = [
     remove: [{ bn: "সদস্য রো → Remove। পরিবর্তন কমিটি অডিটে লগ হয়।", en: "Member row → Remove — change is logged in committee audit." }],
   },
   {
+    id: "cashReports",
+    title: { bn: "১১. ক্যাশ বহি ও আয়-ব্যয় রিপোর্ট", en: "11. Cash Book & Income-Expense Reports" },
+    intro: {
+      bn: "সেচ ও সোসাইটি দুই ধারার জন্য ক্যাশ বহি, হ্যান্ড ক্যাশ, ক্যাশ অডিট, ক্যাশ স্টেটমেন্ট ও আয়-ব্যয় ক্যাশ বহি। সেচ আয়-ব্যয় ক্যাশ বহি PDF/Excel/CSV — তিন ফরম্যাটেই একই কলাম ও মোট নিয়ে এক্সপোর্ট করা যায়।",
+      en: "Cash Book, Hand Cash, Cash Audit, Cash Statement and Income-Expense Cash Book for both Irrigation and Society streams. The Irrigation Income-Expense Cash Book exports to PDF, Excel and CSV — all formats keep identical columns and totals.",
+    },
+    add: [
+      { bn: "সাইডবার → Reports → সেচ আয়-ব্যয় ক্যাশ বহি।", en: "Sidebar → Reports → Irrigation Income-Expense Cash Book." },
+      { bn: "তারিখ পরিসর ও অফিস ফিল্টার দিন (অফিস-স্কোপড অ্যাডমিন শুধু নিজের অফিসই পাবেন)।", en: "Set date range and office filter (office-scoped admins are locked to their own office)." },
+      { bn: "কলাম হেডার ও মোট-এ বাংলা/English টোগল করুন — ডাটা ম্যাপিং অপরিবর্তিত থাকে।", en: "Toggle Bangla/English for column headers and totals — data mapping stays the same." },
+      { bn: "Export PDF / Excel / CSV — জেনারেট হওয়ার সময় বোতাম disabled থাকে ও toast দেখায়; প্রতিটি ডাউনলোড অডিট লগে রেকর্ড হয়।", en: "Export PDF / Excel / CSV — buttons disable while generating with a toast; each download is recorded in the audit log." },
+    ],
+    extra: {
+      title: { bn: "সেভড ফিল্টার প্রিসেট", en: "Saved Filter Presets" },
+      steps: [
+        { bn: "তারিখ পরিসর + অফিস সংরক্ষণ করে প্রিসেট তৈরি করুন — ডিভাইসজুড়ে সিঙ্ক হয়।", en: "Save a date range + office as a preset — it syncs across your devices." },
+        { bn: "প্রিসেট বাছাই করে দ্রুত একই লেজার পিরিয়ড পুনরায় চালান ও এক্সপোর্ট করুন।", en: "Pick a preset to quickly re-run and export the same ledger period." },
+      ],
+    },
+  },
+  {
+    id: "demoTools",
+    title: { bn: "১২. ডেমো ডাটা ও ব্যাকআপ (অ্যাডমিন)", en: "12. Demo Data & Backup (Admin)" },
+    intro: {
+      bn: "Quick Seed ও Demo Data Manager দিয়ে ক্যাশ বহি, হ্যান্ড ক্যাশ ও স্টেটমেন্টসহ ডেমো ডাটা ইমপোর্ট করুন। সিড করার আগে স্বয়ংক্রিয় ব্যাকআপ, সিডের পর রো-কাউন্ট ভ্যালিডেশন ও PDF সারাংশ পাওয়া যায়।",
+      en: "Use Quick Seed and Demo Data Manager to import demo data including Cash Book, Hand Cash and Statements. Get automatic backup before seeding, post-seed row-count validation and a downloadable PDF summary.",
+    },
+    add: [
+      { bn: "সাইডবার → Admin → Quick Seed → \"শুধু ক্যাশ বহি + হ্যান্ড ক্যাশ\" প্রিসেট অন্য মডিউল না ছুঁয়ে শুধু ক্যাশ ডাটা সিড করে।", en: "Sidebar → Admin → Quick Seed → the \"Cash Book + Hand Cash only\" preset seeds just cash data without touching other modules." },
+      { bn: "\"Backup first\" টোগল চালু রাখলে সিডের আগে পুরো ক্যাশ-রিপোর্ট ব্যাকআপ ডাউনলোড হয়।", en: "Keep the \"Backup first\" toggle on to download a full cash-report backup before seeding." },
+      { bn: "সিডের পর ভ্যালিডেশন স্ক্রিনে প্রতি টেবিলের রো-কাউন্ট ও mismatch সতর্কতা দেখায়।", en: "After seeding, the validation screen shows per-table row counts and flags mismatches." },
+      { bn: "\"Restore from last backup\" বা ফাইল আপলোড করে সর্বশেষ স্ন্যাপশট থেকে ক্যাশ ডাটা ফিরিয়ে আনুন।", en: "Restore cash data from the last snapshot via \"Restore from last backup\" or by uploading a file." },
+      { bn: "প্রতিটি Quick Seed/DemoManager রান অডিট লগে (ইউজার, সময়, মডিউল, ব্যাকআপ ও ভ্যালিডেশন) রেকর্ড হয়।", en: "Every Quick Seed/DemoManager run is recorded in the audit log (user, time, modules, backup and validation)." },
+    ],
+  },
+  {
+    id: "exportAudit",
+    title: { bn: "১৩. এক্সপোর্ট অডিট লগ (অ্যাডমিন)", en: "13. Export Audit Log (Admin)" },
+    intro: {
+      bn: "সেচ ক্যাশ বহি এক্সপোর্টের সম্পূর্ণ অডিট লগ — কে, কখন, কোন অফিস, কোন তারিখ পরিসর ও কোন ফরম্যাটে (XLSX/PDF/CSV) ডাউনলোড করেছেন।",
+      en: "Full audit log of irrigation cash book exports — who, when, which office, which date range and which format (XLSX/PDF/CSV).",
+    },
+    add: [
+      { bn: "সাইডবার → Admin → Irrigation Export Audit।", en: "Sidebar → Admin → Irrigation Export Audit." },
+      { bn: "ইউজার, অফিস, তারিখ পরিসর ও ফরম্যাট দিয়ে লগ ফিল্টার করুন।", en: "Filter the log by user, office, date range and format." },
+    ],
+  },
+  {
     id: "recent",
-    title: { bn: "১১. সাম্প্রতিক আপডেট (২০২৬ মে)", en: "11. Recent Updates (May 2026)" },
+    title: { bn: "১৪. সাম্প্রতিক আপডেট (২০২৬ জুন)", en: "14. Recent Updates (June 2026)" },
     intro: {
       bn: "সাম্প্রতিক রিলিজে যুক্ত হওয়া নতুন ফিচার ও ফিক্স — Loan No unique, Hawlat/Bank category, QR receipt verify, draft restore, tab-return refresh fix, ও প্রোফাইল-ইডিট রিটার্ন।",
       en: "New features and fixes in the latest release — Loan No uniqueness, Hawlat/Bank irrigation category, QR receipt verify, draft restore, tab-return refresh fix, and profile-edit return.",
@@ -220,6 +268,11 @@ const MODULES: Module[] = [
       { bn: "অন্য ট্যাবে গিয়ে ফিরে এলে আর পেজ refresh হবে না (window-focus refetch বন্ধ)।", en: "Returning from another browser tab no longer reloads the page (window-focus refetch disabled)." },
       { bn: "ফার্মার প্রোফাইল থেকে Edit করে Save করলে এখন প্রোফাইলেই ফিরবে — list-এ যাবে না।", en: "Editing a farmer from their profile now returns to the profile after Save — not the list." },
       { bn: "Lands ফর্মে village/ward/union ছাড়াই Save করা যায় (validation শিথিল)।", en: "Lands form now saves without village/ward/union (validation relaxed)." },
+      { bn: "সেচ আয়-ব্যয় ক্যাশ বহি Excel ও CSV এক্সপোর্ট — PDF-এর সমান কলাম/মোট, বাংলা/English হেডার টোগল।", en: "Irrigation Income-Expense Cash Book now exports to Excel and CSV — same columns/totals as PDF, with Bangla/English header toggle." },
+      { bn: "অফিস-স্কোপড অ্যাডমিন শুধু নিজের অফিসের ডাটাই ফিল্টার/এক্সপোর্ট করতে পারবেন; প্রতিটি এক্সপোর্ট অডিট লগে থাকে।", en: "Office-scoped admins can only filter/export their own office data; every export is recorded in the audit log." },
+      { bn: "সেচ ক্যাশ বহির সেভড ফিল্টার প্রিসেট এখন ডাটাবেজে — ডিভাইসজুড়ে সিঙ্ক হয়।", en: "Irrigation cash book saved filter presets are now stored in the database — synced across devices." },
+      { bn: "Quick Seed/Demo Manager এখন ক্যাশ বহি ও হ্যান্ড ক্যাশ ডেমো ডাটা সিড করে, সিডের আগে অটো-ব্যাকআপ, রো-কাউন্ট ভ্যালিডেশন ও PDF সারাংশসহ।", en: "Quick Seed/Demo Manager now seed Cash Book and Hand Cash demo data, with auto-backup before seeding, row-count validation and a PDF summary." },
+      { bn: "ক্যাশ-রিপোর্ট ব্যাকআপ থেকে Restore ও Quick Seed/DemoManager রান অডিট লগ যোগ হয়েছে।", en: "Added Restore from cash-report backup and an audit log for Quick Seed/DemoManager runs." },
     ],
   },
 ];
