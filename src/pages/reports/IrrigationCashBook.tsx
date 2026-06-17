@@ -296,16 +296,16 @@ export default function IrrigationCashBook() {
           </section>
 
           {/* খরচ */}
-          <section aria-label={tx("Expense section", "খরচ অংশ")}>
-            <div className="text-center mb-1"><h2 className="text-base font-bold">{tx("Expense", "খরচ")}</h2></div>
-            <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={tx("Expense cash book", "খরচ ক্যাশ বহি")}>
+          <section aria-label={rt("Expense section", "খরচ অংশ")}>
+            <div className="text-center mb-1"><h2 className="text-base font-bold">{rt("Expense", "খরচ")}</h2></div>
+            <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={rt("Expense cash book", "খরচ ক্যাশ বহি")}>
               <thead>
                 <tr>
-                  <th className="border border-black p-0.5">{tx("Date", "তারিখ")}</th>
-                  <th className="border border-black p-0.5">{tx("Voucher no", "ভাউচার নং")}</th>
-                  <th className="border border-black p-0.5">{tx("Purpose of expense", "কি বাবদ খরচ")}</th>
+                  <th className="border border-black p-0.5">{rt("Date", "তারিখ")}</th>
+                  <th className="border border-black p-0.5">{rt("Voucher no", "ভাউচার নং")}</th>
+                  <th className="border border-black p-0.5">{rt("Purpose of expense", "কি বাবদ খরচ")}</th>
                   {KHARCH_COLS.map((c) => <th key={c.key} className="border border-black p-0.5">{c.label}</th>)}
-                  <th className="border border-black p-0.5">{tx("Total", "মোট")}</th>
+                  <th className="border border-black p-0.5">{rt("Total", "মোট")}</th>
                 </tr>
               </thead>
               <tbody>
