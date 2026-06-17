@@ -119,46 +119,48 @@ export default function SocietyCashStatement() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="জমা খরচ হিসাব (সমিতি)" description="অডিট রিপোর্ট — সমিতির জমা ও খরচের পূর্ণাঙ্গ বিবরণ" />
+      <PageHeader title={tx("Cash Statement (Society)", "জমা খরচ হিসাব (সমিতি)")} description={tx("Audit report — complete society income and expense details", "অডিট রিপোর্ট — সমিতির জমা ও খরচের পূর্ণাঙ্গ বিবরণ")} />
 
       <Card className="p-3 flex flex-wrap items-end gap-3 print:hidden">
-        <div><Label>শুরুর তারিখ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-        <div><Label>শেষ তারিখ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-        <div><Label>আগত তহবিল (টাকা)</Label><Input type="number" className="w-40" value={opening || ""} onChange={(e) => setOpening(+e.target.value)} /></div>
+        <div><Label>{tx("Start date", "শুরুর তারিখ")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+        <div><Label>{tx("End date", "শেষ তারিখ")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+        <div><Label>{tx("Opening fund (amount)", "আগত তহবিল (টাকা)")}</Label><Input type="number" className="w-40" value={opening || ""} onChange={(e) => setOpening(+e.target.value)} /></div>
         <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={exportCsv} disabled={loading || rowCount === 0}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" /> এক্সেল
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
           </Button>
           <Button onClick={() => window.print()} disabled={loading || rowCount === 0}>
-            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট
+            <Printer className="h-4 w-4 mr-1" /> {tx("Print", "প্রিন্ট")}
           </Button>
         </div>
-        {loading && <span className="text-sm text-muted-foreground">লোড হচ্ছে…</span>}
-        {!loading && rowCount === 0 && <span className="text-sm text-destructive">এই সময়ে কোনো তথ্য নেই</span>}
+        {loading && <span className="text-sm text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</span>}
+        {!loading && rowCount === 0 && <span className="text-sm text-destructive">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</span>}
       </Card>
 
       <div className="bn-statement bg-white text-black p-6 mx-auto" style={{ maxWidth: "900px" }}>
         <div className="text-center mb-3">
           <h1 className="text-xl font-bold">{society} - এর</h1>
           <h2 className="text-base font-semibold mt-1">
-            {bnDate(from)} ইং তারিখ হতে {bnDate(to)} ইং তারিখ পর্যন্ত জমা খরচ হিসাব <span className="font-bold">(সমিতি)</span>
+            {lang === "bn"
+              ? <>{formatDate(from)} ইং তারিখ হতে {formatDate(to)} ইং তারিখ পর্যন্ত জমা খরচ হিসাব <span className="font-bold">(সমিতি)</span></>
+              : <>Cash statement from {formatDate(from)} to {formatDate(to)} <span className="font-bold">(Society)</span></>}
           </h2>
         </div>
 
-        <table className="w-full border-collapse text-sm bn-table" aria-label="সমিতির জমা ও খরচ হিসাব">
-          <caption className="sr-only">সমিতির জমা ও খরচের দুই-কলাম হিসাব</caption>
+        <table className="w-full border-collapse text-sm bn-table" aria-label={tx("Society income and expense statement", "সমিতির জমা ও খরচ হিসাব")}>
+          <caption className="sr-only">{tx("Two-column society income and expense statement", "সমিতির জমা ও খরচের দুই-কলাম হিসাব")}</caption>
           <thead>
             <tr>
-              <th colSpan={3} className="border border-black p-1 text-center font-bold">জমা</th>
-              <th colSpan={3} className="border border-black p-1 text-center font-bold">খরচ</th>
+              <th colSpan={3} className="border border-black p-1 text-center font-bold">{tx("Income", "জমা")}</th>
+              <th colSpan={3} className="border border-black p-1 text-center font-bold">{tx("Expense", "খরচ")}</th>
             </tr>
             <tr>
-              <th className="border border-black p-1 w-12">ক্রঃনং</th>
-              <th className="border border-black p-1">বিবরন</th>
-              <th className="border border-black p-1 w-28">টাকা</th>
-              <th className="border border-black p-1 w-12">ক্রঃনং</th>
-              <th className="border border-black p-1">বিবরন</th>
-              <th className="border border-black p-1 w-28">টাকা</th>
+              <th className="border border-black p-1 w-12">{tx("SL", "ক্রঃনং")}</th>
+              <th className="border border-black p-1">{tx("Description", "বিবরন")}</th>
+              <th className="border border-black p-1 w-28">{tx("Amount", "টাকা")}</th>
+              <th className="border border-black p-1 w-12">{tx("SL", "ক্রঃনং")}</th>
+              <th className="border border-black p-1">{tx("Description", "বিবরন")}</th>
+              <th className="border border-black p-1 w-28">{tx("Amount", "টাকা")}</th>
             </tr>
           </thead>
           <tbody>
