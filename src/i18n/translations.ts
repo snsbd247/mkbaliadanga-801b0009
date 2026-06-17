@@ -2796,6 +2796,7 @@ export const translations = {
     dmModSavings: "সঞ্চয় + শেয়ার",
     dmModExpenses: "খরচ",
     dmModBank: "ব্যাংক একাউন্ট + লেনদেন",
+    dmModCashbook: "ক্যাশ বহি / হ্যান্ড ক্যাশ / অফিস আয় / রসিদ",
     dmModAssets: "অ্যাসেট (ক্রয়, অবচয়, রক্ষণাবেক্ষণ, ডিসপোজাল)",
     pgPrintCard: "কার্ড প্রিন্ট",
     pgFarmerId: "কৃষক আইডি",
