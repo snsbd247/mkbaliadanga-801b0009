@@ -212,7 +212,7 @@ export default function ScanPayment() {
 
   return (
     <>
-      <PageHeader title="পেমেন্ট স্ক্যান" description="পেমেন্ট সংগ্রহ করতে সদস্য কার্ডের QR স্ক্যান করুন।" actions={<ReceiptSettingsButton />} />
+      <PageHeader title="Scan Payment" description="Scan farmer membership-card QR to collect a payment." actions={<ReceiptSettingsButton />} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-4">
           <div className="flex items-center justify-between mb-3">
