@@ -144,6 +144,12 @@ export const MODULE_VERIFY: Record<DemoModule, ModuleVerifyEntry[]> = {
     { table: "bank_accounts",      page: "/banking", page_label: "Bank Accounts",     required: true },
     { table: "bank_transactions",  page: "/banking", page_label: "Bank Transactions", required: true },
   ],
+  cashbook: [
+    { table: "receipts",              page: "/cashbook",  page_label: "Cash Book (Receipts)",  required: true },
+    { table: "office_incomes",        page: "/cashbook",  page_label: "Office Incomes",        required: true },
+    { table: "cashbook_submissions",  page: "/cashbook",  page_label: "Cash Book Submissions", required: false },
+    { table: "hand_cash_submissions", page: "/hand-cash", page_label: "Hand Cash",             required: false },
+  ],
   assets: [
     { table: "asset_categories",            page: "/assets/categories",    page_label: "Asset Categories",      required: true },
     { table: "assets",                      page: "/assets",               page_label: "Asset Registry",        required: true },
