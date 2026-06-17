@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, FileSpreadsheet } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
-import { computeStatement, type Line } from "@/lib/irrigationCashStatement";
+import { computeStatement, incomeDrillDownUrl, expenseDrillDownUrl, type Line } from "@/lib/irrigationCashStatement";
 import { downloadCsv } from "@/lib/csvExport";
 
 const sb = supabase as any;
