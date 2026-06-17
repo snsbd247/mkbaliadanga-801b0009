@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, FileSpreadsheet } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
-import { computeStatement, type Line } from "@/lib/irrigationCashStatement";
+import { computeStatement, incomeDrillDownUrl, expenseDrillDownUrl, type Line } from "@/lib/irrigationCashStatement";
 import { downloadCsv } from "@/lib/csvExport";
 
 const sb = supabase as any;
@@ -163,11 +163,19 @@ export default function IrrigationCashStatement() {
             <tr className="font-bold">
               <td colSpan={2} className="border border-black p-1 text-right">মোট আয়=</td>
               <td className="border border-black p-1 text-right">
-                <Link to={`/payments?kind=irrigation&from=${from}&to=${to}`} className="underline print:no-underline print:text-black text-blue-700">{bnMoney(totalIncome)}</Link>
+                <Link
+                  to={incomeDrillDownUrl(from, to)}
+                  aria-label={`সেচ আয়ের পেমেন্ট রেকর্ড দেখুন (${from} থেকে ${to})`}
+                  className="underline print:no-underline print:text-black text-blue-700 print:pointer-events-none"
+                >{bnMoney(totalIncome)}</Link>
               </td>
               <td colSpan={2} className="border border-black p-1 text-right">মোট ব্যয়=</td>
               <td className="border border-black p-1 text-right">
-                <Link to={`/reports/expenses?stream=irrigation&from=${from}&to=${to}`} className="underline print:no-underline print:text-black text-blue-700">{bnMoney(totalExpense)}</Link>
+                <Link
+                  to={expenseDrillDownUrl(from, to)}
+                  aria-label={`সেচ খরচের রেকর্ড দেখুন (${from} থেকে ${to})`}
+                  className="underline print:no-underline print:text-black text-blue-700 print:pointer-events-none"
+                >{bnMoney(totalExpense)}</Link>
               </td>
             </tr>
             <tr className="font-bold">

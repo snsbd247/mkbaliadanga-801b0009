@@ -47,3 +47,25 @@ describe("computeStatement (সেচ জমা খরচ হিসাব)", () 
     expect(r.totalIncome).toBeCloseTo(1500.5);
   });
 });
+
+import { incomeDrillDownUrl, expenseDrillDownUrl } from "@/lib/irrigationCashStatement";
+
+describe("drill-down links", () => {
+  it("income link scopes to irrigation payments for the date range", () => {
+    const url = incomeDrillDownUrl("2025-07-01", "2026-06-30");
+    expect(url.startsWith("/payments?")).toBe(true);
+    const q = new URLSearchParams(url.split("?")[1]);
+    expect(q.get("kind")).toBe("irrigation");
+    expect(q.get("from")).toBe("2025-07-01");
+    expect(q.get("to")).toBe("2026-06-30");
+  });
+
+  it("expense link scopes to irrigation expenses for the date range", () => {
+    const url = expenseDrillDownUrl("2025-07-01", "2026-06-30");
+    expect(url.startsWith("/reports/expenses?")).toBe(true);
+    const q = new URLSearchParams(url.split("?")[1]);
+    expect(q.get("stream")).toBe("irrigation");
+    expect(q.get("from")).toBe("2025-07-01");
+    expect(q.get("to")).toBe("2026-06-30");
+  });
+});

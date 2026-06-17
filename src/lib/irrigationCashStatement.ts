@@ -80,3 +80,15 @@ export function computeStatement(
     grandExpense,
   };
 }
+
+// Drill-down URL builders. Income always scopes to irrigation payments and
+// expense always scopes to the irrigation stream, for the selected range.
+export function incomeDrillDownUrl(from: string, to: string): string {
+  const p = new URLSearchParams({ kind: "irrigation", from, to });
+  return `/payments?${p.toString()}`;
+}
+
+export function expenseDrillDownUrl(from: string, to: string): string {
+  const p = new URLSearchParams({ stream: "irrigation", from, to });
+  return `/reports/expenses?${p.toString()}`;
+}
