@@ -163,7 +163,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         const { error: rcErr } = await supabase.from("land_transfer_recipients").insert({
           transfer_id: transferId,
           recipient_farmer_id: r.farmer_id,
-          new_land_id: nl!.id,
+          new_land_id: landId,
           area_decimal: area,
         } as any);
         if (rcErr) throw rcErr;
