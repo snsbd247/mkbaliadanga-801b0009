@@ -6,7 +6,7 @@
 export type DemoModule =
   | "locations" | "settings" | "accounting" | "farmers"
   | "irrigation" | "loans" | "savings" | "expenses"
-  | "bank" | "assets";
+  | "bank" | "cashbook" | "assets";
 
 export type DemoPreset = {
   id: string;
