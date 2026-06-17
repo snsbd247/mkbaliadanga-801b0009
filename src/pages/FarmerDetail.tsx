@@ -1257,7 +1257,14 @@ export default function FarmerDetail() {
               </TableRow></TableHeader>
               <TableBody>
                 {(() => {
+                  const matchesNote = (l: any) => {
+                    const q = noteSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    const parts = [landSelfNotes[l.id], ...(landNotes[l.id] ?? [])].filter(Boolean).join(" ").toLowerCase();
+                    return parts.includes(q);
+                  };
                   const matchesFilter = (l: any) => {
+                    if (!matchesNote(l)) return false;
                     if (paymentFilter === "all") return true;
                     const s = landSeasonStatus(l.id).state;
                     if (paymentFilter === "paid") return s === "paid";
@@ -1273,11 +1280,12 @@ export default function FarmerDetail() {
                       <TableRow key={l.id}>
                         <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
                         <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link>
-                          {(landNotes[l.id]?.length) ? (
-                            <div className="text-[11px] text-muted-foreground mt-0.5 whitespace-normal max-w-[160px]" title={landNotes[l.id].join(" • ")}>
-                              📝 {landNotes[l.id].join(" • ")}
-                            </div>
-                          ) : null}
+                          <LandNoteCell
+                            landId={l.id}
+                            officeId={l.office_id ?? null}
+                            note={landSelfNotes[l.id] ?? ""}
+                            onSaved={(n) => setLandSelfNotes((p) => ({ ...p, [l.id]: n }))}
+                          />
                         </TableCell>
                         <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
