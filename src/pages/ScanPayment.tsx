@@ -98,7 +98,7 @@ export default function ScanPayment() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-scan-payment";
 
-  useEffect(() => { document.title = `পেমেন্ট স্ক্যান — ${t("appName")}`; return () => { stop(); }; /* eslint-disable-next-line */ }, []);
+  useEffect(() => { document.title = `Scan Payment — ${t("appName")}`; return () => { stop(); }; /* eslint-disable-next-line */ }, []);
 
   async function start() {
     setScanning(true); setErrMsg(null);
