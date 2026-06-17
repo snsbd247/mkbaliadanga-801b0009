@@ -169,41 +169,41 @@ export default function SocietyCashStatement() {
               const exp = expenseLines[i];
               return (
                 <tr key={i}>
-                  <td className="border border-black p-1 text-center">{inc ? toBnDigits(String(i + 1).padStart(2, "0")) : ""}</td>
+                  <td className="border border-black p-1 text-center">{inc ? (lang === "bn" ? toBnDigits(String(i + 1).padStart(2, "0")) : String(i + 1).padStart(2, "0")) : ""}</td>
                   <td className="border border-black p-1">{inc?.label ?? ""}</td>
-                  <td className="border border-black p-1 text-right">{inc ? bnMoney(inc.amount) : ""}</td>
-                  <td className="border border-black p-1 text-center">{exp ? toBnDigits(String(i + 1).padStart(2, "0")) : ""}</td>
+                  <td className="border border-black p-1 text-right">{inc ? formatMoney(inc.amount) : ""}</td>
+                  <td className="border border-black p-1 text-center">{exp ? (lang === "bn" ? toBnDigits(String(i + 1).padStart(2, "0")) : String(i + 1).padStart(2, "0")) : ""}</td>
                   <td className="border border-black p-1">{exp?.label ?? ""}</td>
-                  <td className="border border-black p-1 text-right">{exp ? bnMoney(exp.amount) : ""}</td>
+                  <td className="border border-black p-1 text-right">{exp ? formatMoney(exp.amount) : ""}</td>
                 </tr>
               );
             })}
             {rowCount === 0 && (
-              <tr><td colSpan={6} className="border border-black p-3 text-center">এই সময়ে কোনো তথ্য নেই</td></tr>
+              <tr><td colSpan={6} className="border border-black p-3 text-center">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</td></tr>
             )}
             <tr className="font-bold">
               <td colSpan={2} className="border border-black p-1 text-right">
-                <Link to={incomeDrillDownUrl(from, to)} aria-label={`সঞ্চয় জমা রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">মোট আয়=</Link>
+                <Link to={incomeDrillDownUrl(from, to)} aria-label={tx(`View savings income records (${from} to ${to})`, `সঞ্চয় জমা রেকর্ড দেখুন (${from} থেকে ${to})`)} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">{tx("Total income=", "মোট আয়=")}</Link>
               </td>
-              <td className="border border-black p-1 text-right">{bnMoney(totalIncome)}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(totalIncome)}</td>
               <td colSpan={2} className="border border-black p-1 text-right">
-                <Link to={expenseDrillDownUrl(from, to)} aria-label={`সমিতির খরচ রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">মোট ব্যয়=</Link>
+                <Link to={expenseDrillDownUrl(from, to)} aria-label={tx(`View society expense records (${from} to ${to})`, `সমিতির খরচ রেকর্ড দেখুন (${from} থেকে ${to})`)} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">{tx("Total expense=", "মোট ব্যয়=")}</Link>
               </td>
-              <td className="border border-black p-1 text-right">{bnMoney(totalExpense)}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(totalExpense)}</td>
             </tr>
             <tr className="font-bold">
               <td colSpan={2} className="border border-black p-1 text-right">
-                <Link to={incomingDrillDownUrl(from, to)} aria-label={`আগত তহবিল (ব্যাংক) রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">আগত তহবিল=</Link>
+                <Link to={incomingDrillDownUrl(from, to)} aria-label={tx(`View opening fund (bank) records (${from} to ${to})`, `আগত তহবিল (ব্যাংক) রেকর্ড দেখুন (${from} থেকে ${to})`)} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">{tx("Opening fund=", "আগত তহবিল=")}</Link>
               </td>
-              <td className="border border-black p-1 text-right">{bnMoney(openingFund)}</td>
-              <td colSpan={2} className="border border-black p-1 text-right">হস্তমজুদ তহবিল=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(closingFund)}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(openingFund)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Cash in hand fund=", "হস্তমজুদ তহবিল=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(closingFund)}</td>
             </tr>
             <tr className="font-bold">
-              <td colSpan={2} className="border border-black p-1 text-right">সর্বমোট=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(grandIncome)}</td>
-              <td colSpan={2} className="border border-black p-1 text-right">সর্বমোট=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(grandExpense)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(grandIncome)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(grandExpense)}</td>
             </tr>
           </tbody>
         </table>
