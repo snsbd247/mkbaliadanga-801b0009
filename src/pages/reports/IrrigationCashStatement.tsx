@@ -163,7 +163,7 @@ export default function IrrigationCashStatement() {
           ))}
         </div>
 
-        <div className="mt-10 text-sm">
+        <div className="bn-sign-block mt-10 text-sm">
           <div className="font-semibold mb-6">ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ</div>
           <div className="grid grid-cols-3 gap-8">
             <div>১।</div>
