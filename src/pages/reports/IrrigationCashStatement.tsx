@@ -174,10 +174,16 @@ export default function IrrigationCashStatement() {
       </div>
 
       <style>{`
+        .bn-table { table-layout: fixed; }
+        .bn-table th, .bn-table td { word-wrap: break-word; overflow-wrap: anywhere; }
         @media print {
           body * { visibility: hidden; }
           .bn-statement, .bn-statement * { visibility: visible; }
           .bn-statement { position: absolute; left: 0; top: 0; width: 100%; }
+          .bn-table { page-break-inside: auto; }
+          .bn-table thead { display: table-header-group; }
+          .bn-table tr { page-break-inside: avoid; }
+          .bn-sign-block { page-break-inside: avoid; }
           @page { size: A4 portrait; margin: 12mm; }
         }
       `}</style>
