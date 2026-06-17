@@ -130,37 +130,37 @@ export default function IrrigationCashBook() {
   const kharchTot = useMemo(() => sumIrrKharch(kharchRows), [kharchRows]);
   const hasData = jamaRows.length + kharchRows.length > 0;
 
-  const project = lang === "bn"
+  const project = rlang === "bn"
     ? (branding.company_name_bn || branding.company_name || "সেচ প্রকল্প")
     : (branding.company_name || branding.company_name_bn || "Irrigation Project");
-  const formatMoney = lang === "bn" ? bnMoney : enMoney;
-  const formatDate = lang === "bn" ? bnDate : enDate;
-  const formatText = (s: string) => (lang === "bn" ? bnText(s) : s);
+  const formatMoney = rlang === "bn" ? bnMoney : enMoney;
+  const formatDate = rlang === "bn" ? bnDate : enDate;
+  const formatText = (s: string) => (rlang === "bn" ? bnText(s) : s);
 
   // Column definitions (key + label) drive both rendering and the drill-down modal.
   const JAMA_COLS: { key: keyof IrrJamaRow; label: string }[] = [
-    { key: "sechCharge", label: tx("Irrigation charge", "সেচ চার্জ") },
-    { key: "nalaCharge", label: tx("Canal charge", "নালা চার্জ") },
-    { key: "maintenance", label: tx("Maintenance", "রক্ষণাবেক্ষণ") },
-    { key: "lateFee", label: tx("Late fee", "বিলম্ব ফি") },
-    { key: "bankWithdraw", label: tx("Bank withdrawal", "ব্যাংকে উত্তোলন") },
-    { key: "pond", label: tx("Pond", "পুকুর") },
-    { key: "misc", label: tx("Miscellaneous", "বিবিধ") },
+    { key: "sechCharge", label: rt("Irrigation charge", "সেচ চার্জ") },
+    { key: "nalaCharge", label: rt("Canal charge", "নালা চার্জ") },
+    { key: "maintenance", label: rt("Maintenance", "রক্ষণাবেক্ষণ") },
+    { key: "lateFee", label: rt("Late fee", "বিলম্ব ফি") },
+    { key: "bankWithdraw", label: rt("Bank withdrawal", "ব্যাংকে উত্তোলন") },
+    { key: "pond", label: rt("Pond", "পুকুর") },
+    { key: "misc", label: rt("Miscellaneous", "বিবিধ") },
   ];
   const KHARCH_COLS: { key: keyof IrrKharchRow; label: string }[] = [
-    { key: "labor", label: tx("Labor", "শ্রমিক") },
-    { key: "partsBuy", label: tx("Parts purchase", "যন্ত্রাংশ ক্রয়") },
-    { key: "partsRepair", label: tx("Parts repair", "যন্ত্রাংশ মেরামত") },
-    { key: "transport", label: tx("Transport", "যাতায়াত") },
-    { key: "hospitality", label: tx("Hospitality", "আপ্যায়ন") },
-    { key: "publicity", label: tx("Publicity", "প্রচার") },
-    { key: "salary", label: tx("Salary & allowance", "বেতন ও ভাতা") },
-    { key: "electricity", label: tx("Electricity bill", "বিদ্যুৎ বিল") },
-    { key: "stationery", label: tx("Stationery", "স্টেশনারি") },
-    { key: "officeRent", label: tx("Office rent", "অফিস ভাড়া") },
-    { key: "motor", label: tx("Motor rent", "মোটর বাঁধা") },
-    { key: "bankDeposit", label: tx("Bank deposit", "ব্যাংক জমা") },
-    { key: "misc", label: tx("Miscellaneous", "বিবিধ") },
+    { key: "labor", label: rt("Labor", "শ্রমিক") },
+    { key: "partsBuy", label: rt("Parts purchase", "যন্ত্রাংশ ক্রয়") },
+    { key: "partsRepair", label: rt("Parts repair", "যন্ত্রাংশ মেরামত") },
+    { key: "transport", label: rt("Transport", "যাতায়াত") },
+    { key: "hospitality", label: rt("Hospitality", "আপ্যায়ন") },
+    { key: "publicity", label: rt("Publicity", "প্রচার") },
+    { key: "salary", label: rt("Salary & allowance", "বেতন ও ভাতা") },
+    { key: "electricity", label: rt("Electricity bill", "বিদ্যুৎ বিল") },
+    { key: "stationery", label: rt("Stationery", "স্টেশনারি") },
+    { key: "officeRent", label: rt("Office rent", "অফিস ভাড়া") },
+    { key: "motor", label: rt("Motor rent", "মোটর বাঁধা") },
+    { key: "bankDeposit", label: rt("Bank deposit", "ব্যাংক জমা") },
+    { key: "misc", label: rt("Miscellaneous", "বিবিধ") },
   ];
 
   const showJamaDetail = (key: keyof IrrJamaRow, label: string) => {
