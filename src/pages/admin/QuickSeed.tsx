@@ -39,6 +39,30 @@ export default function QuickSeed() {
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [size, setSize] = useState(50);
+  const [backupFirst, setBackupFirst] = useState(true);
+  const [cashValidation, setCashValidation] = useState<CashCountRow[] | null>(null);
+
+  const CASH_KEYS = ["cashbook", "cash_only", "all", "year_ops", "recent_features"];
+
+  const maybeBackup = async (key: string) => {
+    if (!backupFirst || !CASH_KEYS.includes(key)) return;
+    try {
+      const r = await downloadCashReportBackup(officeId);
+      toast.success(`ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি, ${r.tables} টেবিল)`);
+    } catch (e: any) {
+      toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
+    }
+  };
+
+  const validateCash = async (key: string) => {
+    if (!CASH_KEYS.includes(key)) return;
+    try {
+      const rows = await fetchCashReportCounts(officeId);
+      setCashValidation(rows);
+      const bad = flagCashMismatches(rows);
+      if (bad.length) toast.warning(`${bad.length} টি cash-report টেবিল খালি`);
+    } catch { /* validation best-effort */ }
+  };
 
   const runEdge = async (key: string, modules: string[], monthsBack?: number) => {
     setStatus((s) => ({ ...s, [key]: "running" }));
@@ -46,6 +70,7 @@ export default function QuickSeed() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Please sign in");
+      await maybeBackup(key);
       const body: any = { action: "import", modules, size, confirm: "RESET", transactional: true };
       if (monthsBack && monthsBack > 1) body.monthsBack = monthsBack;
       const { data, error } = await supabase.functions.invoke("demo-reset", { body });
@@ -55,6 +80,7 @@ export default function QuickSeed() {
       const summary = Object.entries(counts).map(([k, v]) => `${k}: ${v}`).join(", ") || "ডাটা যোগ হয়েছে";
       setStatus((s) => ({ ...s, [key]: "ok" }));
       setMsg((m) => ({ ...m, [key]: summary }));
+      await validateCash(key);
       toast.success(`${key}: ডামি ডাটা তৈরি হয়েছে`);
     } catch (e: any) {
       setStatus((s) => ({ ...s, [key]: "err" }));
