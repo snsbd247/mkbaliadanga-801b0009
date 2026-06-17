@@ -100,7 +100,7 @@ export default function HandCash() {
     };
     const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month" });
     if (error) return toast.error(error.message);
-    toast.success("সাবমিট হয়েছে");
+    toast.success(tx("Submitted", "সাবমিট হয়েছে"));
     load();
   }
 
