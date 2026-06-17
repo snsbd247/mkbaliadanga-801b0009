@@ -90,3 +90,50 @@ describe("cash reports — post-seed validation flags", () => {
     expect(flagCashMismatches(optionalEmpty)).toHaveLength(0);
   });
 });
+
+import { OFFICE_INCOME_LABEL, KIND_LABEL } from "../irrigationCashStatement";
+
+// Localized header/label parity: switching language must change labels but never
+// the underlying amounts, for BOTH irrigation and society statements.
+describe("cash reports — localized labels (Irrigation & Society)", () => {
+  const income = [
+    { kind: "irrigation", amount: 1000 },
+    { income_type: "pond_lease", stream: "sech", amount: 300 },
+  ];
+  const expenses = [{ stream: "irrigation", head: "শ্রমিক মজুরি", amount: 400 }];
+
+  it("irrigation: bn vs en labels differ, totals identical", () => {
+    const bn = computeStatement(income, expenses, 0, "bn");
+    const en = computeStatement(income, expenses, 0, "en");
+    expect(bn.totalIncome).toBe(en.totalIncome);
+    expect(bn.totalExpense).toBe(en.totalExpense);
+    // the irrigation-payment income line label is localized
+    const bnLabel = bn.incomeLines.map((l) => l.label);
+    const enLabel = en.incomeLines.map((l) => l.label);
+    expect(bnLabel).not.toEqual(enLabel);
+  });
+
+  it("irrigation: known kind/income_type labels exist in both languages", () => {
+    expect(KIND_LABEL.irrigation.bn).toBeTruthy();
+    expect(KIND_LABEL.irrigation.en).toBeTruthy();
+    expect(KIND_LABEL.irrigation.bn).not.toBe(KIND_LABEL.irrigation.en);
+  });
+
+  it("society: bn vs en line labels differ, totals identical", () => {
+    const input = {
+      savings: [{ type: "deposit", amount: 1200 }],
+      loanPayments: [{ amount: 800 }],
+      bankTx: [{ txn_type: "withdraw", amount: 200 }],
+      officeIncomes: [{ income_type: "misc", amount: 100 }],
+      expenses: [{ head: "বেতন প্রদান", amount: 400 }],
+      loansIssued: [{ principal: 1000 }],
+      opening: 0,
+    };
+    const bn = computeSocietyStatement(input, "bn");
+    const en = computeSocietyStatement(input, "en");
+    expect(bn.totalIncome).toBe(en.totalIncome);
+    expect(bn.totalExpense).toBe(en.totalExpense);
+    expect(bn.incomeLines.map((l) => l.label)).not.toEqual(en.incomeLines.map((l) => l.label));
+    expect(bn.expenseLines.map((l) => l.label)).not.toEqual(en.expenseLines.map((l) => l.label));
+  });
+})
