@@ -332,9 +332,9 @@ export default function IrrigationCashBook() {
         </div>
 
         <div className="bn-cb-footer hidden print:flex justify-between text-[10px] mt-2 pt-1 border-t border-black">
-          <span>{tx("Total income", "মোট জমা")}: {formatMoney(jamaTot.total)}</span>
-          <span>{tx("Total expense", "মোট খরচ")}: {formatMoney(kharchTot.total)}</span>
-          <span>{tx("Balance", "জের")}: {formatMoney(jamaTot.total - kharchTot.total)}</span>
+          <span>{rt("Total income", "মোট জমা")}: {formatMoney(jamaTot.total)}</span>
+          <span>{rt("Total expense", "মোট খরচ")}: {formatMoney(kharchTot.total)}</span>
+          <span>{rt("Balance", "জের")}: {formatMoney(jamaTot.total - kharchTot.total)}</span>
         </div>
       </div>
 
