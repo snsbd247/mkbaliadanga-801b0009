@@ -12,6 +12,7 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { FileDown, FileSpreadsheet, Lock, Unlock, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = supabase as any;
 
@@ -21,6 +22,8 @@ const MONTHS_BN = ["জানুয়ারি", "ফেব্রুয়া�
 
 export default function HandCash() {
   const { user, isAdmin, isSuper, officeId } = useAuth();
+  const { tx, lang } = useLang();
+  const MONTHS = lang === "bn" ? MONTHS_BN : ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const today = new Date();
 
   const [year, setYear] = useState(today.getFullYear());
@@ -34,7 +37,7 @@ export default function HandCash() {
   const lastDay = new Date(year, month, 0).getDate();
   const mTo = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-  useEffect(() => { document.title = "হ্যান্ড ক্যাশ — MK Baliadanga"; }, []);
+  useEffect(() => { document.title = `${tx("Hand Cash", "হ্যান্ড ক্যাশ")} — MK Baliadanga`; }, [lang]);
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [year, month]);
 
   async function load() {
@@ -88,8 +91,8 @@ export default function HandCash() {
   const finalClosing = rows.length ? rows[rows.length - 1].closing : openingBalance;
 
   async function submitMonth() {
-    if (locked) return toast.error("এই মাস ইতিমধ্যে সাবমিট/লক করা");
-    if (!confirm(`${MONTHS_BN[month - 1]} ${year} — হ্যান্ড ক্যাশ ফাইনাল সাবমিট করবেন? এরপর প্রারম্ভিক জমা লক হয়ে যাবে।`)) return;
+    if (locked) return toast.error(tx("This month is already submitted/locked", "এই মাস ইতিমধ্যে সাবমিট/লক করা"));
+    if (!confirm(`${MONTHS[month - 1]} ${year} — ${tx("Final submit hand cash? Opening balance will be locked.", "হ্যান্ড ক্যাশ ফাইনাল সাবমিট করবেন? এরপর প্রারম্ভিক জমা লক হয়ে যাবে।")}`)) return;
     const payload = {
       office_id: officeId ?? null, year, month,
       opening_cash: openingBalance, total_income: totalIncome, total_expense: totalExpense,
@@ -97,7 +100,7 @@ export default function HandCash() {
     };
     const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month" });
     if (error) return toast.error(error.message);
-    toast.success("সাবমিট হয়েছে");
+    toast.success(tx("Submitted", "সাবমিট হয়েছে"));
     load();
   }
 
@@ -110,7 +113,7 @@ export default function HandCash() {
     };
     const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month" });
     if (error) return toast.error(error.message);
-    toast.success("প্রারম্ভিক জমা সংরক্ষিত");
+    toast.success(tx("Opening balance saved", "প্রারম্ভিক জমা সংরক্ষিত"));
     load();
   }
 
@@ -118,12 +121,12 @@ export default function HandCash() {
     if (!submission?.id) return;
     const { error } = await sb.from("hand_cash_submissions").update({ locked: false }).eq("id", submission.id);
     if (error) return toast.error(error.message);
-    toast.success("আনলক হয়েছে");
+    toast.success(tx("Unlocked", "আনলক হয়েছে"));
     load();
   }
 
   function exportPdf() {
-    exportTablePDF("হ্যান্ড ক্যাশ", ["তারিখ", "প্রারম্ভিক জমা", "আয়", "ব্যয়", "সমাপনী"],
+    exportTablePDF(tx("Hand Cash", "হ্যান্ড ক্যাশ"), [tx("Date", "তারিখ"), tx("Opening balance", "প্রারম্ভিক জমা"), tx("Income", "আয়"), tx("Expense", "ব্যয়"), tx("Closing", "সমাপনী")],
       rows.map(r => [fmtDate(r.date), r.opening, r.income, r.expense, r.closing]), { from: mFrom, to: mTo });
   }
   function exportXlsx() {
@@ -135,53 +138,53 @@ export default function HandCash() {
 
   return (
     <>
-      <PageHeader title="হ্যান্ড ক্যাশ" description="ক্যাশবুক থেকে দৈনিক নগদ হিসাব (মাসিক)" />
+      <PageHeader title={tx("Hand Cash", "হ্যান্ড ক্যাশ")} description={tx("Daily cash account from cashbook (monthly)", "ক্যাশবুক থেকে দৈনিক নগদ হিসাব (মাসিক)")} />
 
       <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
         <div>
-          <Label>বছর</Label>
+          <Label>{tx("Year", "বছর")}</Label>
           <select className="block h-9 rounded-md border bg-background px-2 text-sm" value={year} onChange={e => setYear(+e.target.value)}>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <div>
-          <Label>মাস</Label>
+          <Label>{tx("Month", "মাস")}</Label>
           <select className="block h-9 rounded-md border bg-background px-2 text-sm" value={month} onChange={e => setMonth(+e.target.value)}>
-            {MONTHS_BN.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
         </div>
         <div>
-          <Label>প্রারম্ভিক জমা</Label>
+          <Label>{tx("Opening balance", "প্রারম্ভিক জমা")}</Label>
           <Input type="number" value={openingBalance || ""} disabled={locked} onChange={e => setOpeningBalance(+e.target.value)} className="w-36" />
         </div>
         <div className="ml-auto flex gap-2 items-center">
           {locked
-            ? <Badge variant="secondary" className="gap-1"><Lock className="h-3 w-3" /> লক করা</Badge>
-            : <Button size="sm" variant="outline" onClick={saveOpeningDraft}>সংরক্ষণ</Button>}
-          {!locked && <Button size="sm" onClick={submitMonth}><CheckCircle2 className="h-4 w-4 mr-1" />ফাইনাল সাবমিট</Button>}
-          {locked && (isAdmin || isSuper) && <Button size="sm" variant="outline" onClick={unlockMonth}><Unlock className="h-4 w-4 mr-1" />আনলক</Button>}
+            ? <Badge variant="secondary" className="gap-1"><Lock className="h-3 w-3" /> {tx("Locked", "লক করা")}</Badge>
+            : <Button size="sm" variant="outline" onClick={saveOpeningDraft}>{tx("Save", "সংরক্ষণ")}</Button>}
+          {!locked && <Button size="sm" onClick={submitMonth}><CheckCircle2 className="h-4 w-4 mr-1" />{tx("Final submit", "ফাইনাল সাবমিট")}</Button>}
+          {locked && (isAdmin || isSuper) && <Button size="sm" variant="outline" onClick={unlockMonth}><Unlock className="h-4 w-4 mr-1" />{tx("Unlock", "আনলক")}</Button>}
           <Button size="sm" variant="outline" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
           <Button size="sm" variant="outline" onClick={exportXlsx}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
         </div>
       </Card>
 
       <Card className="p-3 mb-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div><div className="text-xs text-muted-foreground">প্রারম্ভিক জমা</div><div className="text-lg font-bold">{money(openingBalance)}</div></div>
-        <div><div className="text-xs text-muted-foreground">মোট আয়</div><div className="text-lg font-bold text-success">{money(totalIncome)}</div></div>
-        <div><div className="text-xs text-muted-foreground">মোট ব্যয়</div><div className="text-lg font-bold text-destructive">{money(totalExpense)}</div></div>
-        <div><div className="text-xs text-muted-foreground">সমাপনী জমা</div><div className="text-lg font-bold text-primary">{money(finalClosing)}</div></div>
+        <div><div className="text-xs text-muted-foreground">{tx("Opening balance", "প্রারম্ভিক জমা")}</div><div className="text-lg font-bold">{money(openingBalance)}</div></div>
+        <div><div className="text-xs text-muted-foreground">{tx("Total income", "মোট আয়")}</div><div className="text-lg font-bold text-success">{money(totalIncome)}</div></div>
+        <div><div className="text-xs text-muted-foreground">{tx("Total expense", "মোট ব্যয়")}</div><div className="text-lg font-bold text-destructive">{money(totalExpense)}</div></div>
+        <div><div className="text-xs text-muted-foreground">{tx("Closing balance", "সমাপনী জমা")}</div><div className="text-lg font-bold text-primary">{money(finalClosing)}</div></div>
       </Card>
 
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>
-          <TableHead>তারিখ</TableHead>
-          <TableHead className="text-right">প্রারম্ভিক জমা</TableHead>
-          <TableHead className="text-right">আয়</TableHead>
-          <TableHead className="text-right">ব্যয়</TableHead>
-          <TableHead className="text-right">সমাপনী</TableHead>
+          <TableHead>{tx("Date", "তারিখ")}</TableHead>
+          <TableHead className="text-right">{tx("Opening balance", "প্রারম্ভিক জমা")}</TableHead>
+          <TableHead className="text-right">{tx("Income", "আয়")}</TableHead>
+          <TableHead className="text-right">{tx("Expense", "ব্যয়")}</TableHead>
+          <TableHead className="text-right">{tx("Closing", "সমাপনী")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
-          {rows.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">এই মাসে কোনো লেনদেন নেই</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{tx("No transactions this month", "এই মাসে কোনো লেনদেন নেই")}</TableCell></TableRow>}
           {rows.map((r) => (
             <TableRow key={r.date}>
               <TableCell>{fmtDate(r.date)}</TableCell>
@@ -193,7 +196,7 @@ export default function HandCash() {
           ))}
           {rows.length > 0 && (
             <TableRow className="bg-muted/60 font-bold">
-              <TableCell className="text-right">মোট</TableCell>
+              <TableCell className="text-right">{tx("Total", "মোট")}</TableCell>
               <TableCell />
               <TableCell className="text-right text-success">{money(totalIncome)}</TableCell>
               <TableCell className="text-right text-destructive">{money(totalExpense)}</TableCell>
