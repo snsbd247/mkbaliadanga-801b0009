@@ -115,7 +115,7 @@ export function AppSidebar() {
         { url: "/reports/society-statement", icon: ScrollText, label: "জমা খরচ হিসাব (সমিতি)", permKey: "cashbook" },
         { url: "/reports/society-cashbook", icon: ScrollText, label: "আয়-ব্যয় ক্যাশ বহি (সমিতি)", permKey: "cashbook" },
 
-        { url: "/approvals", icon: ClipboardCheck, label: "অনুমোদন", permKey: "approvals" },
+        { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
       ],
     },
 
