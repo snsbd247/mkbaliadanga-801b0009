@@ -280,7 +280,17 @@ export default function IrrigationCashBook() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={tx("Irrigation Income-Expense Cash Book", "সেচ আয়-ব্যয় ক্যাশ বহি")} description={tx("Two-page income (জমা) and expense (খরচ) cash book for the irrigation stream", "সেচ খাতের জমা ও খরচের দুই পৃষ্ঠার ক্যাশ বহি")} />
+      <PageHeader
+        title={tx("Irrigation Income-Expense Cash Book", "সেচ আয়-ব্যয় ক্যাশ বহি")}
+        description={tx("Two-page income (জমা) and expense (খরচ) cash book for the irrigation stream", "সেচ খাতের জমা ও খরচের দুই পৃষ্ঠার ক্যাশ বহি")}
+        actions={
+          <Button asChild variant="outline" size="sm" className="print:hidden">
+            <Link to="/help#cashReports">
+              <HelpCircle className="h-4 w-4 mr-1" /> {tx("Manual", "ম্যানুয়াল")}
+            </Link>
+          </Button>
+        }
+      />
 
       <Card className="p-3 flex flex-wrap items-end gap-3 print:hidden">
         <div><Label>{tx("Start date", "শুরুর তারিখ")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
