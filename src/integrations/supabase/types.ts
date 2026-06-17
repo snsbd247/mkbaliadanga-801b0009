@@ -2204,6 +2204,36 @@ export type Database = {
         }
         Relationships: []
       }
+      irrigation_cashbook_export_audit: {
+        Row: {
+          created_at: string
+          date_from: string
+          date_to: string
+          format: string
+          id: string
+          office_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_from: string
+          date_to: string
+          format: string
+          id?: string
+          office_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_from?: string
+          date_to?: string
+          format?: string
+          id?: string
+          office_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       irrigation_categories: {
         Row: {
           allow_manual_negotiation: boolean
