@@ -299,6 +299,10 @@ export default function DemoManager() {
             <Checkbox checked={transactional} onCheckedChange={(v) => setTransactional(!!v)} />
             <span>{tx("Transactional — auto-rollback partial data on error", "ট্রানজ্যাকশনাল — error হলে আংশিক ডেটা auto-মুছে যাবে")}</span>
           </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={backupFirst} onCheckedChange={(v) => setBackupFirst(!!v)} />
+            <span>{tx("Auto JSON backup of cash-report tables before seeding (Cash Book module)", "seed-এর আগে ক্যাশ-রিপোর্ট টেবিলের স্বয়ংক্রিয় JSON ব্যাকআপ (Cash Book মডিউল)")}</span>
+          </label>
         </CardContent>
       </Card>
 
