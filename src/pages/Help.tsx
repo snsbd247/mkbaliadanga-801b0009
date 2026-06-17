@@ -304,12 +304,36 @@ const REPORTS_GUIDE = {
 export default function Help() {
   const [lang, setLang] = useState<Lang>("bn");
   const [q, setQ] = useState("");
+  const [openItems, setOpenItems] = useState<string[]>([]);
+  const scrolledHash = useRef<string>("");
   const filtered = useMemo(
     () => MODULES.filter((m) => (m.title[lang] + m.intro[lang]).toLowerCase().includes(q.toLowerCase())),
     [q, lang]
   );
 
+  // Deep-link support: /help#cashReports opens & scrolls to that manual section.
+  useEffect(() => {
+    const applyHash = () => {
+      const id = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+      if (!id || !MODULES.some((m) => m.id === id)) return;
+      setOpenItems((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      scrolledHash.current = id;
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
+
+  // Scroll to the targeted section once it is rendered/open.
+  useEffect(() => {
+    const id = scrolledHash.current;
+    if (!id || !openItems.includes(id)) return;
+    const el = document.getElementById(`help-${id}`);
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); scrolledHash.current = ""; }
+  }, [openItems, filtered]);
+
   const tx = (bn: string, en: string) => (lang === "bn" ? bn : en);
+
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-5xl">
