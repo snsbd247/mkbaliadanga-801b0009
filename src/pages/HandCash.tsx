@@ -113,7 +113,7 @@ export default function HandCash() {
     };
     const { error } = await sb.from("hand_cash_submissions").upsert(payload, { onConflict: "office_id,year,month" });
     if (error) return toast.error(error.message);
-    toast.success("প্রারম্ভিক জমা সংরক্ষিত");
+    toast.success(tx("Opening balance saved", "প্রারম্ভিক জমা সংরক্ষিত"));
     load();
   }
 
