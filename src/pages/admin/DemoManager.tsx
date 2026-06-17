@@ -24,7 +24,8 @@ import { DEMO_PRESETS, type DemoModule } from "@/lib/demoPresets";
 import { formatId5 } from "@/lib/idFormat";
 import { downloadCashReportBackup, fetchCashReportCounts, type CashCountRow } from "@/lib/cashReportBackup";
 import { logDemoRun } from "@/lib/demoOpsAudit";
-import { downloadCashReportSummaryPdf } from "@/lib/cashReportSummaryPdf";
+import { downloadCashReportSummaryPdf, downloadCashReportSummaryCsv } from "@/lib/cashReportSummaryPdf";
+import { getBackupSchedule, setBackupSchedule, maybeScheduledBackup, type BackupSchedule } from "@/lib/cashReportSchedule";
 import { useAuth } from "@/auth/AuthProvider";
 
 const MODULE_KEYS = [
