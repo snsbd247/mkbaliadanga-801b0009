@@ -11,7 +11,8 @@ import { Printer, FileSpreadsheet } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
-import { computeSocietyStatement, computeBankSummary, type Line } from "@/lib/societyCashStatement";
+import { computeSocietyStatement, computeBankSummary, incomeDrillDownUrl, expenseDrillDownUrl, incomingDrillDownUrl, type Line } from "@/lib/societyCashStatement";
+import { Link } from "react-router-dom";
 
 const sb = supabase as any;
 
