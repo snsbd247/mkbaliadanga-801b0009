@@ -22,6 +22,7 @@ import * as XLSX from "xlsx";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import { DEMO_PRESETS, type DemoModule } from "@/lib/demoPresets";
 import { formatId5 } from "@/lib/idFormat";
+import { downloadCashReportBackup } from "@/lib/cashReportBackup";
 
 const MODULE_KEYS = [
   { id: "locations", tk: "dmModLocations" },
@@ -71,6 +72,7 @@ export default function DemoManager() {
   const [presetId, setPresetId] = useState<string>("custom");
   const [transactional, setTransactional] = useState(true);
   const [rowCountReport, setRowCountReport] = useState<any>(null);
+  const [backupFirst, setBackupFirst] = useState(true);
 
   // logs + filters
   const [logs, setLogs] = useState<any[]>([]);
@@ -130,6 +132,16 @@ export default function DemoManager() {
     if (confirmText !== "RESET") {
       toast.error(t("dmConfirmRequired" as any));
       return;
+    }
+    // Auto safety backup of cash-report tables before seeding/resetting them.
+    if (backupFirst && selected.includes("cashbook")) {
+      try {
+        const r = await downloadCashReportBackup();
+        toast.success(`ক্যাশ-রিপোর্ট ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি)`);
+      } catch (e: any) {
+        toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
+        return; // do not proceed if the safety backup failed
+      }
     }
     setPreviewOpen(false);
     setLoading(true);
@@ -286,6 +298,10 @@ export default function DemoManager() {
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox checked={transactional} onCheckedChange={(v) => setTransactional(!!v)} />
             <span>{tx("Transactional — auto-rollback partial data on error", "ট্রানজ্যাকশনাল — error হলে আংশিক ডেটা auto-মুছে যাবে")}</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={backupFirst} onCheckedChange={(v) => setBackupFirst(!!v)} />
+            <span>{tx("Auto JSON backup of cash-report tables before seeding (Cash Book module)", "seed-এর আগে ক্যাশ-রিপোর্ট টেবিলের স্বয়ংক্রিয় JSON ব্যাকআপ (Cash Book মডিউল)")}</span>
           </label>
         </CardContent>
       </Card>

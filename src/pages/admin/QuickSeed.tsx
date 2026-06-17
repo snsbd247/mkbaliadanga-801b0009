@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen, Wallet, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
+import { fetchCashReportCounts, flagCashMismatches, downloadCashReportBackup, type CashCountRow } from "@/lib/cashReportBackup";
 
-type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "all";
+type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "cash_only" | "all";
 
 type Status = "idle" | "running" | "ok" | "err";
 
@@ -27,6 +28,8 @@ const MODULES: { key: ModuleKey; title: string; desc: string; icon: any; modules
   { key: "expenses",   title: "খরচ",                  desc: "মাসিক/বার্ষিক বিভিন্ন ধরনের খরচ এন্ট্রি (অফিস, বেতন, ইউটিলিটি ইত্যাদি)",                     icon: Receipt,      modules: ["settings", "accounting", "expenses"] },
   { key: "bank",       title: "ব্যাংক",               desc: "৩টি ব্যাংক একাউন্ট + ডিপোজিট/উইথড্র লেনদেন",                                                 icon: Banknote,     modules: ["settings", "accounting", "bank"] },
   { key: "cashbook",   title: "ক্যাশ বহি ও রিপোর্ট",  desc: "রসিদ (Cash Book), অফিস আয় (সেচ ও সমিতি), মাসিক ক্যাশ বহি ও হ্যান্ড ক্যাশ সাবমিশন — Cash Book/Hand Cash/Cash Audit/Cash Statement/আয়-ব্যয় ক্যাশ বহি রিপোর্টের জন্য", icon: BookOpen, modules: ["locations", "settings", "accounting", "farmers", "irrigation", "expenses", "bank", "cashbook"] },
+  { key: "cash_only",  title: "শুধু ক্যাশ বহি + হ্যান্ড ক্যাশ", desc: "অন্য মডিউল না ছুঁয়ে শুধুমাত্র Cash Book ও Hand Cash সাবমিশন ডেমো ডাটা ইমপোর্ট করে (ন্যূনতম prerequisite সহ)।", icon: Wallet, modules: ["locations", "settings", "accounting", "farmers", "cashbook"] },
+
 ];
 
 const ALL_OPS_MODULES = ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank", "cashbook"];
@@ -36,6 +39,30 @@ export default function QuickSeed() {
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [size, setSize] = useState(50);
+  const [backupFirst, setBackupFirst] = useState(true);
+  const [cashValidation, setCashValidation] = useState<CashCountRow[] | null>(null);
+
+  const CASH_KEYS = ["cashbook", "cash_only", "all", "year_ops", "recent_features"];
+
+  const maybeBackup = async (key: string) => {
+    if (!backupFirst || !CASH_KEYS.includes(key)) return;
+    try {
+      const r = await downloadCashReportBackup(officeId);
+      toast.success(`ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি, ${r.tables} টেবিল)`);
+    } catch (e: any) {
+      toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
+    }
+  };
+
+  const validateCash = async (key: string) => {
+    if (!CASH_KEYS.includes(key)) return;
+    try {
+      const rows = await fetchCashReportCounts(officeId);
+      setCashValidation(rows);
+      const bad = flagCashMismatches(rows);
+      if (bad.length) toast.warning(`${bad.length} টি cash-report টেবিল খালি`);
+    } catch { /* validation best-effort */ }
+  };
 
   const runEdge = async (key: string, modules: string[], monthsBack?: number) => {
     setStatus((s) => ({ ...s, [key]: "running" }));
@@ -43,6 +70,7 @@ export default function QuickSeed() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Please sign in");
+      await maybeBackup(key);
       const body: any = { action: "import", modules, size, confirm: "RESET", transactional: true };
       if (monthsBack && monthsBack > 1) body.monthsBack = monthsBack;
       const { data, error } = await supabase.functions.invoke("demo-reset", { body });
@@ -52,6 +80,7 @@ export default function QuickSeed() {
       const summary = Object.entries(counts).map(([k, v]) => `${k}: ${v}`).join(", ") || "ডাটা যোগ হয়েছে";
       setStatus((s) => ({ ...s, [key]: "ok" }));
       setMsg((m) => ({ ...m, [key]: summary }));
+      await validateCash(key);
       toast.success(`${key}: ডামি ডাটা তৈরি হয়েছে`);
     } catch (e: any) {
       setStatus((s) => ({ ...s, [key]: "err" }));
@@ -109,6 +138,10 @@ export default function QuickSeed() {
         description="প্রতি মডিউলে এক ক্লিকে টেস্ট ডাটা তৈরি করুন। প্রিরিকুইজিট মডিউল (locations/settings/accounting) স্বয়ংক্রিয়ভাবে অন্তর্ভুক্ত।"
         actions={
           <div className="flex items-center gap-2 flex-wrap">
+            <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer" title="ক্যাশ-রিপোর্ট মডিউল seed করার আগে স্বয়ংক্রিয় JSON ব্যাকআপ">
+              <input type="checkbox" checked={backupFirst} onChange={(e) => setBackupFirst(e.target.checked)} />
+              <ShieldCheck className="h-3.5 w-3.5" /> seed-এর আগে ব্যাকআপ
+            </label>
             <label className="text-xs text-muted-foreground">Size</label>
             <input
               type="number"
@@ -168,6 +201,33 @@ export default function QuickSeed() {
           </div>
         )}
       </div>
+
+      {cashValidation && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Cash-Report Validation (Cash Book / Hand Cash / Cash Statement)
+              {flagCashMismatches(cashValidation).length === 0
+                ? <Badge className="bg-green-600 ml-auto">সব ঠিক আছে</Badge>
+                : <Badge variant="destructive" className="ml-auto">{flagCashMismatches(cashValidation).length} টি mismatch</Badge>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3 text-xs">
+              {cashValidation.map((r) => (
+                <div key={r.table} className="flex items-center justify-between border rounded px-2 py-1">
+                  <span className="font-mono">{r.table}{r.required && <span className="text-destructive">*</span>}</span>
+                  <Badge variant={r.ok ? "secondary" : "destructive"}>{r.count}</Badge>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">* required টেবিল — খালি হলে mismatch হিসেবে flag হয়।</p>
+          </CardContent>
+        </Card>
+      )}
+
+
 
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
