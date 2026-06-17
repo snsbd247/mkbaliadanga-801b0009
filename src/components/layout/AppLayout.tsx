@@ -12,6 +12,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { MenuSearch } from "./MenuSearch";
 import { MenuShortcutsHelp } from "./MenuShortcutsHelp";
 import { MissingI18nPanel } from "@/components/dev/MissingI18nPanel";
+import { OnboardingWalkthrough } from "./OnboardingWalkthrough";
 import { useBranding } from "@/lib/branding";
 import { TruncateText } from "@/components/ui/truncate-text";
 import { SiteFooter } from "./SiteFooter";
