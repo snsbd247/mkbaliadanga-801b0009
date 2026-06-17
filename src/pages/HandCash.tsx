@@ -126,7 +126,7 @@ export default function HandCash() {
   }
 
   function exportPdf() {
-    exportTablePDF("হ্যান্ড ক্যাশ", ["তারিখ", "প্রারম্ভিক জমা", "আয়", "ব্যয়", "সমাপনী"],
+    exportTablePDF(tx("Hand Cash", "হ্যান্ড ক্যাশ"), [tx("Date", "তারিখ"), tx("Opening balance", "প্রারম্ভিক জমা"), tx("Income", "আয়"), tx("Expense", "ব্যয়"), tx("Closing", "সমাপনী")],
       rows.map(r => [fmtDate(r.date), r.opening, r.income, r.expense, r.closing]), { from: mFrom, to: mTo });
   }
   function exportXlsx() {
