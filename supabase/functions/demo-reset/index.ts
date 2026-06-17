@@ -1837,7 +1837,7 @@ async function runStream(admin: any, action: string, modules: string[], size: nu
               const p = await seedPatwaris(admin, officeId, locs, desired); summary.patwaris = p.length;
             }});
           }
-          const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings");
+          const needFarmers = modules.includes("irrigation") || modules.includes("loans") || modules.includes("savings") || modules.includes("cashbook");
           if (needFarmers && !modules.includes("farmers")) {
             steps.push({ key: "farmers:fetch", label: "বিদ্যমান ফার্মার লোড", fn: async () => {
               const { data } = await admin.from("farmers").select("id, farmer_code, is_voter, voter_number, account_number").limit(size);
