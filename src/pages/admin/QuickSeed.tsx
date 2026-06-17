@@ -28,6 +28,8 @@ const MODULES: { key: ModuleKey; title: string; desc: string; icon: any; modules
   { key: "expenses",   title: "খরচ",                  desc: "মাসিক/বার্ষিক বিভিন্ন ধরনের খরচ এন্ট্রি (অফিস, বেতন, ইউটিলিটি ইত্যাদি)",                     icon: Receipt,      modules: ["settings", "accounting", "expenses"] },
   { key: "bank",       title: "ব্যাংক",               desc: "৩টি ব্যাংক একাউন্ট + ডিপোজিট/উইথড্র লেনদেন",                                                 icon: Banknote,     modules: ["settings", "accounting", "bank"] },
   { key: "cashbook",   title: "ক্যাশ বহি ও রিপোর্ট",  desc: "রসিদ (Cash Book), অফিস আয় (সেচ ও সমিতি), মাসিক ক্যাশ বহি ও হ্যান্ড ক্যাশ সাবমিশন — Cash Book/Hand Cash/Cash Audit/Cash Statement/আয়-ব্যয় ক্যাশ বহি রিপোর্টের জন্য", icon: BookOpen, modules: ["locations", "settings", "accounting", "farmers", "irrigation", "expenses", "bank", "cashbook"] },
+  { key: "cash_only",  title: "শুধু ক্যাশ বহি + হ্যান্ড ক্যাশ", desc: "অন্য মডিউল না ছুঁয়ে শুধুমাত্র Cash Book ও Hand Cash সাবমিশন ডেমো ডাটা ইমপোর্ট করে (ন্যূনতম prerequisite সহ)।", icon: Wallet, modules: ["locations", "settings", "accounting", "farmers", "cashbook"] },
+
 ];
 
 const ALL_OPS_MODULES = ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank", "cashbook"];
