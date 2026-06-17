@@ -138,53 +138,53 @@ export default function HandCash() {
 
   return (
     <>
-      <PageHeader title="হ্যান্ড ক্যাশ" description="ক্যাশবুক থেকে দৈনিক নগদ হিসাব (মাসিক)" />
+      <PageHeader title={tx("Hand Cash", "হ্যান্ড ক্যাশ")} description={tx("Daily cash account from cashbook (monthly)", "ক্যাশবুক থেকে দৈনিক নগদ হিসাব (মাসিক)")} />
 
       <Card className="p-3 mb-3 flex flex-wrap items-end gap-3">
         <div>
-          <Label>বছর</Label>
+          <Label>{tx("Year", "বছর")}</Label>
           <select className="block h-9 rounded-md border bg-background px-2 text-sm" value={year} onChange={e => setYear(+e.target.value)}>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <div>
-          <Label>মাস</Label>
+          <Label>{tx("Month", "মাস")}</Label>
           <select className="block h-9 rounded-md border bg-background px-2 text-sm" value={month} onChange={e => setMonth(+e.target.value)}>
-            {MONTHS_BN.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
         </div>
         <div>
-          <Label>প্রারম্ভিক জমা</Label>
+          <Label>{tx("Opening balance", "প্রারম্ভিক জমা")}</Label>
           <Input type="number" value={openingBalance || ""} disabled={locked} onChange={e => setOpeningBalance(+e.target.value)} className="w-36" />
         </div>
         <div className="ml-auto flex gap-2 items-center">
           {locked
-            ? <Badge variant="secondary" className="gap-1"><Lock className="h-3 w-3" /> লক করা</Badge>
-            : <Button size="sm" variant="outline" onClick={saveOpeningDraft}>সংরক্ষণ</Button>}
-          {!locked && <Button size="sm" onClick={submitMonth}><CheckCircle2 className="h-4 w-4 mr-1" />ফাইনাল সাবমিট</Button>}
-          {locked && (isAdmin || isSuper) && <Button size="sm" variant="outline" onClick={unlockMonth}><Unlock className="h-4 w-4 mr-1" />আনলক</Button>}
+            ? <Badge variant="secondary" className="gap-1"><Lock className="h-3 w-3" /> {tx("Locked", "লক করা")}</Badge>
+            : <Button size="sm" variant="outline" onClick={saveOpeningDraft}>{tx("Save", "সংরক্ষণ")}</Button>}
+          {!locked && <Button size="sm" onClick={submitMonth}><CheckCircle2 className="h-4 w-4 mr-1" />{tx("Final submit", "ফাইনাল সাবমিট")}</Button>}
+          {locked && (isAdmin || isSuper) && <Button size="sm" variant="outline" onClick={unlockMonth}><Unlock className="h-4 w-4 mr-1" />{tx("Unlock", "আনলক")}</Button>}
           <Button size="sm" variant="outline" onClick={exportPdf}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
           <Button size="sm" variant="outline" onClick={exportXlsx}><FileSpreadsheet className="h-4 w-4 mr-1" />Excel</Button>
         </div>
       </Card>
 
       <Card className="p-3 mb-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div><div className="text-xs text-muted-foreground">প্রারম্ভিক জমা</div><div className="text-lg font-bold">{money(openingBalance)}</div></div>
-        <div><div className="text-xs text-muted-foreground">মোট আয়</div><div className="text-lg font-bold text-success">{money(totalIncome)}</div></div>
-        <div><div className="text-xs text-muted-foreground">মোট ব্যয়</div><div className="text-lg font-bold text-destructive">{money(totalExpense)}</div></div>
-        <div><div className="text-xs text-muted-foreground">সমাপনী জমা</div><div className="text-lg font-bold text-primary">{money(finalClosing)}</div></div>
+        <div><div className="text-xs text-muted-foreground">{tx("Opening balance", "প্রারম্ভিক জমা")}</div><div className="text-lg font-bold">{money(openingBalance)}</div></div>
+        <div><div className="text-xs text-muted-foreground">{tx("Total income", "মোট আয়")}</div><div className="text-lg font-bold text-success">{money(totalIncome)}</div></div>
+        <div><div className="text-xs text-muted-foreground">{tx("Total expense", "মোট ব্যয়")}</div><div className="text-lg font-bold text-destructive">{money(totalExpense)}</div></div>
+        <div><div className="text-xs text-muted-foreground">{tx("Closing balance", "সমাপনী জমা")}</div><div className="text-lg font-bold text-primary">{money(finalClosing)}</div></div>
       </Card>
 
       <Card className="overflow-x-auto"><Table>
         <TableHeader><TableRow>
-          <TableHead>তারিখ</TableHead>
-          <TableHead className="text-right">প্রারম্ভিক জমা</TableHead>
-          <TableHead className="text-right">আয়</TableHead>
-          <TableHead className="text-right">ব্যয়</TableHead>
-          <TableHead className="text-right">সমাপনী</TableHead>
+          <TableHead>{tx("Date", "তারিখ")}</TableHead>
+          <TableHead className="text-right">{tx("Opening balance", "প্রারম্ভিক জমা")}</TableHead>
+          <TableHead className="text-right">{tx("Income", "আয়")}</TableHead>
+          <TableHead className="text-right">{tx("Expense", "ব্যয়")}</TableHead>
+          <TableHead className="text-right">{tx("Closing", "সমাপনী")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
-          {rows.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">এই মাসে কোনো লেনদেন নেই</TableCell></TableRow>}
+          {rows.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{tx("No transactions this month", "এই মাসে কোনো লেনদেন নেই")}</TableCell></TableRow>}
           {rows.map((r) => (
             <TableRow key={r.date}>
               <TableCell>{fmtDate(r.date)}</TableCell>
@@ -196,7 +196,7 @@ export default function HandCash() {
           ))}
           {rows.length > 0 && (
             <TableRow className="bg-muted/60 font-bold">
-              <TableCell className="text-right">মোট</TableCell>
+              <TableCell className="text-right">{tx("Total", "মোট")}</TableCell>
               <TableCell />
               <TableCell className="text-right text-success">{money(totalIncome)}</TableCell>
               <TableCell className="text-right text-destructive">{money(totalExpense)}</TableCell>
