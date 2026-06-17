@@ -87,7 +87,12 @@ export default function Payments() {
   const [editLandId, setEditLandId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, note: "", reason: "" });
   const [editLoading, setEditLoading] = useState(false);
+  const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(null);
   const [editHistory, setEditHistory] = useState<any[]>([]);
+  const editPreview = useMemo(() => {
+    if (!editBaseline) return null;
+    return previewEdit(editBaseline, { delay_fee: editForm.delay_fee, amount: editForm.amount });
+  }, [editBaseline, editForm.delay_fee, editForm.amount]);
 
   async function loadEditHistory(paymentId: string) {
     try {
