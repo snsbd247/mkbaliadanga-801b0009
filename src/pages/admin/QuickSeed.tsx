@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 import { fetchCashReportCounts, flagCashMismatches, downloadCashReportBackup, type CashCountRow } from "@/lib/cashReportBackup";
 
-type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "all";
+type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "cash_only" | "all";
 
 type Status = "idle" | "running" | "ok" | "err";
 
