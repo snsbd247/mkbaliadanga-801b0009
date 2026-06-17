@@ -767,6 +767,19 @@ export default function FarmerDetail() {
         toast.error(t("noPermissionOrNotFound" as any) || "পরিবর্তন সংরক্ষণ করা যায়নি — অনুমতি নেই বা রেকর্ড পাওয়া যায়নি।");
         return;
       }
+      // Audit trail for note changes made via the edit dialog
+      const newNote = editForm.notes?.trim() || null;
+      const oldNote = (editLand as any).notes?.trim() || null;
+      if (newNote !== oldNote) {
+        const { data: u } = await supabase.auth.getUser();
+        await supabase.from("land_note_audit").insert({
+          land_id: editLand.id,
+          office_id: (editLand as any).office_id ?? null,
+          old_note: oldNote,
+          new_note: newNote,
+          changed_by: u?.user?.id ?? null,
+        } as any);
+      }
       toast.success(t("saved"));
       // #13 — if billable area increased on edit, surface the extra estimated due.
       const delta = Number(editForm.land_size ?? 0) - prevSize;
