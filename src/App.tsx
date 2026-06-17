@@ -327,6 +327,7 @@ const App = () => (
                 <Route path="/admin/farmer-login-audit" element={<RequireDeveloper><FarmerLoginAudit /></RequireDeveloper>} />
                 <Route path="/admin/demo-manager" element={<RequireDeveloper><DemoManager /></RequireDeveloper>} />
                 <Route path="/admin/quick-seed" element={<RequireDeveloper><QuickSeed /></RequireDeveloper>} />
+                <Route path="/admin/demo-ops-audit" element={<RequireDeveloper><DemoOpsAudit /></RequireDeveloper>} />
                 <Route path="/admin/patwaris" element={<RequireRole roles={["admin","super_admin"]}><Patwaris /></RequireRole>} />
                 <Route path="/admin/patwaris/:id" element={<RequireRole roles={["admin","super_admin"]}><PatwariDetail /></RequireRole>} />
                 <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />
