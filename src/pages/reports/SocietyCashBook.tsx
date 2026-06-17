@@ -1,4 +1,3 @@
-// i18n-ignore-file — fixed Bengali cash book (সমিতির আয়-ব্যয় ক্যাশ বহি)
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -15,6 +14,7 @@ import {
   buildJamaRows, buildKharchRows, sumJama, sumKharch,
   type JamaRow, type KharchRow,
 } from "@/lib/societyCashBook";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = supabase as any;
 
@@ -34,9 +34,20 @@ function bnText(s: string): string {
   return /^[0-9-]+$/.test(s) ? toBnDigits(s) : s;
 }
 
+function enMoney(nv: number): string {
+  if (!nv) return "";
+  return Number(nv || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+function enDate(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 export default function SocietyCashBook() {
   const branding = useBranding();
   const { officeId } = useAuth();
+  const { lang, tx } = useLang();
 
   const today = new Date();
   const fyStartYear = today.getMonth() + 1 >= 7 ? today.getFullYear() : today.getFullYear() - 1;
@@ -46,7 +57,7 @@ export default function SocietyCashBook() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { document.title = "আয়-ব্যয় ক্যাশ বহি (সমিতি)"; }, []);
+  useEffect(() => { document.title = tx("Income-Expense Cash Book (Society)", "আয়-ব্যয় ক্যাশ বহি (সমিতি)"); }, [lang]);
 
   useEffect(() => {
     setLoading(true); setError(null);
@@ -80,7 +91,7 @@ export default function SocietyCashBook() {
         let farmerNames: Record<string, string> = {};
         if (farmerIds.size) {
           const { data: fr } = await sb.from("farmers").select("id,name_bn,name_en").in("id", Array.from(farmerIds));
-          (fr ?? []).forEach((r: any) => { farmerNames[r.id] = r.name_bn || r.name_en || ""; });
+          (fr ?? []).forEach((r: any) => { farmerNames[r.id] = lang === "bn" ? (r.name_bn || r.name_en || "") : (r.name_en || r.name_bn || ""); });
         }
 
         setInput({
@@ -89,34 +100,39 @@ export default function SocietyCashBook() {
           farmerNames, loanFarmers,
         });
       } catch (e: any) {
-        setError(e?.message || "তথ্য লোড করা যায়নি");
+        setError(e?.message || tx("Could not load data", "তথ্য লোড করা যায়নি"));
         setInput(null);
       } finally {
         setLoading(false);
       }
     })();
-  }, [from, to, officeId]);
+  }, [from, to, officeId, lang]);
 
-  const jamaRows = useMemo<JamaRow[]>(() => (input ? buildJamaRows(input) : []), [input]);
-  const kharchRows = useMemo<KharchRow[]>(() => (input ? buildKharchRows(input) : []), [input]);
+  const jamaRows = useMemo<JamaRow[]>(() => (input ? buildJamaRows(input, lang) : []), [input, lang]);
+  const kharchRows = useMemo<KharchRow[]>(() => (input ? buildKharchRows(input, lang) : []), [input, lang]);
   const jamaTot = useMemo(() => sumJama(jamaRows), [jamaRows]);
   const kharchTot = useMemo(() => sumKharch(kharchRows), [kharchRows]);
   const hasData = jamaRows.length + kharchRows.length > 0;
-  const society = branding.company_name_bn || branding.company_name || "সমবায় সমিতি";
+  const society = lang === "bn"
+    ? (branding.company_name_bn || branding.company_name || "সমবায় সমিতি")
+    : (branding.company_name || branding.company_name_bn || "Cooperative Society");
+  const formatMoney = lang === "bn" ? bnMoney : enMoney;
+  const formatDate = lang === "bn" ? bnDate : enDate;
+  const formatText = (s: string) => lang === "bn" ? bnText(s) : s;
 
   const exportCsv = () => {
-    downloadCsv(`সমিতি-ক্যাশবহি-জমা-${from}_${to}`, jamaRows, [
-      { header: "তারিখ", accessor: (r) => r.date },
-      { header: "রশিদ নং", accessor: (r) => r.receiptNo },
-      { header: "নাম", accessor: (r) => r.name },
-      { header: "শেয়ার", accessor: (r) => r.share || "" },
-      { header: "সঞ্চয়", accessor: (r) => r.savings || "" },
-      { header: "ব্যাংক উত্তোলন", accessor: (r) => r.bankWithdraw || "" },
-      { header: "কর্জ আদায়", accessor: (r) => r.loanPrincipal || "" },
-      { header: "কর্জ সুদ", accessor: (r) => r.loanInterest || "" },
-      { header: "ফরম", accessor: (r) => r.form || "" },
-      { header: "বিবিধ", accessor: (r) => r.misc || "" },
-      { header: "মোট", accessor: (r) => r.total },
+    downloadCsv(`${tx("society-cashbook-income", "সমিতি-ক্যাশবহি-জমা")}-${from}_${to}`, jamaRows, [
+      { header: tx("Date", "তারিখ"), accessor: (r) => r.date },
+      { header: tx("Receipt no", "রশিদ নং"), accessor: (r) => r.receiptNo },
+      { header: tx("Name", "নাম"), accessor: (r) => r.name },
+      { header: tx("Share", "শেয়ার"), accessor: (r) => r.share || "" },
+      { header: tx("Savings", "সঞ্চয়"), accessor: (r) => r.savings || "" },
+      { header: tx("Bank withdrawal", "ব্যাংক উত্তোলন"), accessor: (r) => r.bankWithdraw || "" },
+      { header: tx("Loan collection", "কর্জ আদায়"), accessor: (r) => r.loanPrincipal || "" },
+      { header: tx("Loan interest", "কর্জ সুদ"), accessor: (r) => r.loanInterest || "" },
+      { header: tx("Form", "ফরম"), accessor: (r) => r.form || "" },
+      { header: tx("Miscellaneous", "বিবিধ"), accessor: (r) => r.misc || "" },
+      { header: tx("Total", "মোট"), accessor: (r) => r.total },
     ]);
   };
 
