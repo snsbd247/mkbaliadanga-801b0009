@@ -657,6 +657,26 @@ export default function DemoManager() {
         </Card>
       )}
 
+      {(rowCountReport || cashValidation) && !loading && (
+        <Card className="border-primary/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">{tx("Cash-Report Summary", "ক্যাশ-রিপোর্ট সারাংশ")}</CardTitle>
+            <CardDescription>{tx("Download a PDF with row counts, mismatch warnings and Cash Book / Hand Cash / Cash Statement totals.", "Row count, mismatch warning ও Cash Book / Hand Cash / Cash Statement totals সহ PDF নামান।")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button size="sm" variant="outline" onClick={async () => {
+              const tid = toast.loading(tx("Generating PDF…", "PDF তৈরি হচ্ছে…"));
+              try {
+                await downloadCashReportSummaryPdf({ source: "DemoManager", modules: selected, counts: cashValidation });
+                toast.success(tx("PDF downloaded", "PDF নামানো হয়েছে"), { id: tid });
+              } catch (e: any) { toast.error(e?.message ?? "Failed", { id: tid }); }
+            }}>
+              {tx("Download PDF Summary", "PDF সারাংশ নামান")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {rowCountReport && !loading && (
         <Card>
           <CardHeader>
