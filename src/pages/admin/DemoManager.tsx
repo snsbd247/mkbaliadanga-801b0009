@@ -22,7 +22,10 @@ import * as XLSX from "xlsx";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import { DEMO_PRESETS, type DemoModule } from "@/lib/demoPresets";
 import { formatId5 } from "@/lib/idFormat";
-import { downloadCashReportBackup } from "@/lib/cashReportBackup";
+import { downloadCashReportBackup, fetchCashReportCounts, type CashCountRow } from "@/lib/cashReportBackup";
+import { logDemoRun } from "@/lib/demoOpsAudit";
+import { downloadCashReportSummaryPdf } from "@/lib/cashReportSummaryPdf";
+import { useAuth } from "@/auth/AuthProvider";
 
 const MODULE_KEYS = [
   { id: "locations", tk: "dmModLocations" },
