@@ -7,6 +7,39 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchCashReportCounts, flagCashMismatches, type CashCountRow } from "@/lib/cashReportBackup";
 import { computeStatement } from "@/lib/irrigationCashStatement";
 import { computeSocietyStatement } from "@/lib/societyCashStatement";
+import { ensureBanglaFont } from "@/lib/pdfFonts";
+import { rowsToCsvBlob } from "@/lib/csvExport";
+
+function isBn(): boolean {
+  try { return localStorage.getItem("lang") === "bn"; } catch { return false; }
+}
+
+// Bilingual label helper for PDF/CSV.
+const L = {
+  title: ["Cash Report Demo Summary", "ক্যাশ রিপোর্ট ডেমো সারাংশ"],
+  source: ["Source", "উৎস"],
+  generated: ["Generated", "তৈরি"],
+  modules: ["Modules", "মডিউল"],
+  warning: ["WARNING: required table(s) empty", "সতর্কতা: প্রয়োজনীয় টেবিল খালি"],
+  allOk: ["Validation: all required tables populated.", "যাচাই: সব প্রয়োজনীয় টেবিলে ডাটা আছে।"],
+  table: ["Table", "টেবিল"],
+  rows: ["Rows", "সারি"],
+  required: ["Required", "আবশ্যক"],
+  status: ["Status", "অবস্থা"],
+  yes: ["Yes", "হ্যাঁ"],
+  no: ["No", "না"],
+  ok: ["OK", "ঠিক"],
+  empty: ["EMPTY", "খালি"],
+  report: ["Report", "রিপোর্ট"],
+  incomeIn: ["Income / In", "আয় / জমা"],
+  expenseOut: ["Expense / Out", "ব্যয় / খরচ"],
+  closingNet: ["Closing / Net", "সমাপনী / নিট"],
+  cashBook: ["Cash Book (receipts)", "ক্যাশ বহি (রসিদ)"],
+  handCash: ["Hand Cash", "হ্যান্ড ক্যাশ"],
+  csIrr: ["Cash Statement (Irrigation)", "ক্যাশ স্টেটমেন্ট (সেচ)"],
+  csSoc: ["Cash Statement (Society)", "ক্যাশ স্টেটমেন্ট (সমিতি)"],
+};
+const pick = (k: keyof typeof L) => (isBn() ? L[k][1] : L[k][0]);
 
 const sb = supabase as any;
 
