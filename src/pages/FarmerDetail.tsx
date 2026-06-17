@@ -1161,6 +1161,14 @@ export default function FarmerDetail() {
                         </Select>
                       </div>
                     )}
+
+                    {/* Per-land note (shown later in the lands list) */}
+                    <div>
+                      <Label>{tx("Note (optional)", "নোট (ঐচ্ছিক)")}</Label>
+                      <Textarea disabled={savingLand} rows={2} value={land.notes}
+                        onChange={e => setLand({ ...land, notes: e.target.value })}
+                        placeholder={tx("e.g. disputed land, partial owner, special remark", "যেমন: বিরোধপূর্ণ জমি, আংশিক মালিক, বিশেষ মন্তব্য")} />
+                    </div>
                   </div>
                   <DialogFooter><Button variant="outline" disabled={savingLand} onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand} disabled={savingLand}>{savingLand ? "…" : t("save")}</Button></DialogFooter>
                 </DialogContent>
