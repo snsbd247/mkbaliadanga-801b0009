@@ -121,7 +121,7 @@ export default function HandCash() {
     if (!submission?.id) return;
     const { error } = await sb.from("hand_cash_submissions").update({ locked: false }).eq("id", submission.id);
     if (error) return toast.error(error.message);
-    toast.success("আনলক হয়েছে");
+    toast.success(tx("Unlocked", "আনলক হয়েছে"));
     load();
   }
 
