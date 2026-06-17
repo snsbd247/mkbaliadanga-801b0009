@@ -11,6 +11,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
+import { normalizeLandSize } from "@/lib/landMath";
 
 type Props = {
   open: boolean;
@@ -114,7 +115,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
       // Create new land rows for each recipient (clone fields) + transfer recipient records
       for (let i = 0; i < recipients.length; i++) {
         const r = recipients[i];
-        const area = effectiveAreas[i];
+        const area = normalizeLandSize(effectiveAreas[i]);
         const newLandPayload: any = {
           farmer_id: r.farmer_id,
           mouza: sourceLand.mouza ?? null,
@@ -145,7 +146,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
             .maybeSingle();
           if (existing) {
             const { error: upErr } = await supabase.from("lands")
-              .update({ land_size: Number(existing.land_size || 0) + area } as any)
+              .update({ land_size: normalizeLandSize(Number(existing.land_size || 0) + area) } as any)
               .eq("id", existing.id);
             if (upErr) throw upErr;
             landId = existing.id;
