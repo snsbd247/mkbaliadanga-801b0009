@@ -1,0 +1,208 @@
+// i18n-ignore-file — fixed Bengali audit statement (সেচ জমা খরচ হিসাব)
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/auth/AuthProvider";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Printer } from "lucide-react";
+import { useBranding } from "@/lib/branding";
+import { toBnDigits } from "@/lib/bnNumber";
+
+const sb = supabase as any;
+
+// Income receipt kinds that belong to the irrigation (সেচ) cash stream.
+const IRRIGATION_INCOME_KINDS = new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]);
+const KIND_LABEL: Record<string, string> = {
+  irrigation: "সেচ চার্জ আদায় (বকেয়া সহ)",
+  bigha_rent: "ভাড়ী বিক্রয়",
+  pond: "পুকুর, সবজি আয়",
+  crop_sale: "ফসল বিক্রয়",
+  scrap: "ভাঙ্গারি বিক্রয়",
+};
+
+type Line = { label: string; amount: number };
+
+// Bengali money: comma grouping + two decimals + Bengali digits.
+function bnMoney(n: number): string {
+  const fixed = Number(n || 0).toFixed(2);
+  const [intPart, dec] = fixed.split(".");
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return toBnDigits(`${grouped}.${dec}`);
+}
+
+function bnDate(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return toBnDigits(`${d}.${m}.${y}`);
+}
+
+export default function IrrigationCashStatement() {
+  const branding = useBranding();
+  const { officeId } = useAuth();
+
+  // Default to the running Bangladeshi fiscal year (Jul 1 – Jun 30).
+  const today = new Date();
+  const fyStartYear = today.getMonth() + 1 >= 7 ? today.getFullYear() : today.getFullYear() - 1;
+  const [from, setFrom] = useState(`${fyStartYear}-07-01`);
+  const [to, setTo] = useState(`${fyStartYear + 1}-06-30`);
+  const [opening, setOpening] = useState<number>(0);
+  const [receipts, setReceipts] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => { document.title = "জমা খরচ হিসাব (সেচ)"; }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    (async () => {
+      let recQ = sb.from("receipts").select("kind,amount,receipt_date,office_id").gte("receipt_date", from).lte("receipt_date", to);
+      let expQ = sb.from("expenses").select("stream,head,amount,expense_date,office_id").is("deleted_at", null).gte("expense_date", from).lte("expense_date", to);
+      if (officeId) { recQ = recQ.eq("office_id", officeId); expQ = expQ.eq("office_id", officeId); }
+      const [rec, exp] = await Promise.all([recQ, expQ]);
+      setReceipts(rec.data ?? []);
+      setExpenses(exp.data ?? []);
+      setLoading(false);
+    })();
+  }, [from, to, officeId]);
+
+  const { incomeLines, expenseLines, totalIncome, totalExpense } = useMemo(() => {
+    const incMap = new Map<string, number>();
+    let totalIncome = 0;
+    for (const r of receipts) {
+      if (!IRRIGATION_INCOME_KINDS.has(r.kind)) continue;
+      const amt = Number(r.amount || 0);
+      const label = KIND_LABEL[r.kind] ?? r.kind;
+      incMap.set(label, (incMap.get(label) ?? 0) + amt);
+      totalIncome += amt;
+    }
+    const expMap = new Map<string, number>();
+    let totalExpense = 0;
+    for (const e of expenses) {
+      if (e.stream !== "irrigation") continue;
+      const amt = Number(e.amount || 0);
+      const label = e.head || "বিবিধ খরচ";
+      expMap.set(label, (expMap.get(label) ?? 0) + amt);
+      totalExpense += amt;
+    }
+    const incomeLines: Line[] = Array.from(incMap, ([label, amount]) => ({ label, amount }));
+    const expenseLines: Line[] = Array.from(expMap, ([label, amount]) => ({ label, amount }));
+    return { incomeLines, expenseLines, totalIncome, totalExpense };
+  }, [receipts, expenses]);
+
+  const openingFund = Number(opening || 0);
+  const grandIncome = totalIncome + openingFund;      // মোট আয় + আগত তহবিল
+  const closingFund = grandIncome - totalExpense;      // হস্তমজুদ তহবিল
+  const grandExpense = totalExpense + closingFund;     // মোট ব্যয় + হস্তমজুদ = সর্বমোট
+
+  const rowCount = Math.max(incomeLines.length, expenseLines.length);
+  const society = branding.company_name_bn || branding.company_name || "সমবায় সমিতি";
+
+  return (
+    <div className="space-y-4">
+      <PageHeader title="জমা খরচ হিসাব (সেচ)" description="অডিট রিপোর্ট — জমা ও খরচের পূর্ণাঙ্গ বিবরণ" />
+
+      <Card className="p-3 flex flex-wrap items-end gap-3 print:hidden">
+        <div><Label>শুরুর তারিখ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+        <div><Label>শেষ তারিখ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+        <div><Label>আগত তহবিল (টাকা)</Label><Input type="number" className="w-40" value={opening || ""} onChange={(e) => setOpening(+e.target.value)} /></div>
+        <div className="ml-auto">
+          <Button onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" /> প্রিন্ট / PDF</Button>
+        </div>
+        {loading && <span className="text-sm text-muted-foreground">লোড হচ্ছে…</span>}
+      </Card>
+
+      <div className="bn-statement bg-white text-black p-6 mx-auto" style={{ maxWidth: "900px" }}>
+        <div className="text-center mb-3">
+          <h1 className="text-xl font-bold">{society} - এর</h1>
+          <h2 className="text-base font-semibold mt-1">
+            {bnDate(from)} ইং তারিখ হতে {bnDate(to)} ইং তারিখ পর্যন্ত জমা খরচ হিসাব <span className="font-bold">(সেচ)</span>
+          </h2>
+        </div>
+
+        <table className="w-full border-collapse text-sm bn-table">
+          <thead>
+            <tr>
+              <th colSpan={3} className="border border-black p-1 text-center font-bold">জমা</th>
+              <th colSpan={3} className="border border-black p-1 text-center font-bold">খরচ</th>
+            </tr>
+            <tr>
+              <th className="border border-black p-1 w-12">ক্রঃনং</th>
+              <th className="border border-black p-1">বিবরন</th>
+              <th className="border border-black p-1 w-28">টাকা</th>
+              <th className="border border-black p-1 w-12">ক্রঃনং</th>
+              <th className="border border-black p-1">বিবরন</th>
+              <th className="border border-black p-1 w-28">টাকা</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rowCount }).map((_, i) => {
+              const inc = incomeLines[i];
+              const exp = expenseLines[i];
+              return (
+                <tr key={i}>
+                  <td className="border border-black p-1 text-center">{inc ? toBnDigits(String(i + 1).padStart(2, "0")) : ""}</td>
+                  <td className="border border-black p-1">{inc?.label ?? ""}</td>
+                  <td className="border border-black p-1 text-right">{inc ? bnMoney(inc.amount) : ""}</td>
+                  <td className="border border-black p-1 text-center">{exp ? toBnDigits(String(i + 1).padStart(2, "0")) : ""}</td>
+                  <td className="border border-black p-1">{exp?.label ?? ""}</td>
+                  <td className="border border-black p-1 text-right">{exp ? bnMoney(exp.amount) : ""}</td>
+                </tr>
+              );
+            })}
+            {rowCount === 0 && (
+              <tr><td colSpan={6} className="border border-black p-3 text-center">এই সময়ে কোনো তথ্য নেই</td></tr>
+            )}
+            <tr className="font-bold">
+              <td colSpan={2} className="border border-black p-1 text-right">মোট আয়=</td>
+              <td className="border border-black p-1 text-right">{bnMoney(totalIncome)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">মোট ব্যয়=</td>
+              <td className="border border-black p-1 text-right">{bnMoney(totalExpense)}</td>
+            </tr>
+            <tr className="font-bold">
+              <td colSpan={2} className="border border-black p-1 text-right">আগত তহবিল=</td>
+              <td className="border border-black p-1 text-right">{bnMoney(openingFund)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">হস্তমজুদ তহবিল=</td>
+              <td className="border border-black p-1 text-right">{bnMoney(closingFund)}</td>
+            </tr>
+            <tr className="font-bold">
+              <td colSpan={2} className="border border-black p-1 text-right">সর্বমোট=</td>
+              <td className="border border-black p-1 text-right">{bnMoney(grandIncome)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">সর্বমোট=</td>
+              <td className="border border-black p-1 text-right">{bnMoney(grandExpense)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="grid grid-cols-4 gap-4 mt-16 text-center text-xs">
+          {["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"].map((role) => (
+            <div key={role}>
+              <div className="border-t border-black pt-1 font-semibold">{role}</div>
+              <div className="leading-tight mt-0.5">{society}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 text-sm">
+          <div className="font-semibold mb-6">ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ</div>
+          <div className="grid grid-cols-3 gap-8">
+            <div>১।</div>
+            <div>২।</div>
+            <div>৩।</div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          .bn-statement, .bn-statement * { visibility: visible; }
+          .bn-statement { position: absolute; left: 0; top: 0; width: 100%; }
+          @page { size: A4 portrait; margin: 12mm; }
+        }
+      `}</style>
+    </div>
+  );
+}
