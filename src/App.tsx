@@ -37,6 +37,7 @@ import Scan from "./pages/Scan";
 import Cashbook from "./pages/Cashbook";
 import CashAudit from "./pages/CashAudit";
 import IrrigationCashStatement from "./pages/reports/IrrigationCashStatement";
+import SocietyCashStatement from "./pages/reports/SocietyCashStatement";
 
 import HandCash from "./pages/HandCash";
 import Statement from "./pages/Statement";
@@ -280,6 +281,7 @@ const App = () => (
                 <Route path="/hand-cash" element={<RequirePerm module="cashbook"><HandCash /></RequirePerm>} />
                 <Route path="/cash-audit" element={<RequirePerm module="cashbook"><CashAudit /></RequirePerm>} />
                 <Route path="/reports/irrigation-statement" element={<RequirePerm module="cashbook"><IrrigationCashStatement /></RequirePerm>} />
+                <Route path="/reports/society-statement" element={<RequirePerm module="cashbook"><SocietyCashStatement /></RequirePerm>} />
 
                 <Route path="/statement" element={<RequirePerm module="savings"><Statement /></RequirePerm>} />
                 <Route path="/dues" element={<RequirePerm module="reports"><Dues /></RequirePerm>} />
