@@ -238,6 +238,7 @@ export default function SocietyCashBook() {
             </tbody>
           </table>
         </section>
+        </div>
       </div>
 
       <style>{`
@@ -246,7 +247,7 @@ export default function SocietyCashBook() {
           body * { visibility: hidden; }
           .bn-cashbook, .bn-cashbook * { visibility: visible; }
           .bn-cashbook { position: absolute; left: 0; top: 0; width: 100%; }
-          .bn-cb-page { page-break-before: always; }
+          .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
           .bn-cb-table thead { display: table-header-group; }
           .bn-cb-table tr { page-break-inside: avoid; }
           @page { size: A4 landscape; margin: 8mm; }
