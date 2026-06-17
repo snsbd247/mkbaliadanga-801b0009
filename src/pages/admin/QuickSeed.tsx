@@ -214,6 +214,19 @@ export default function QuickSeed() {
               <input type="checkbox" checked={backupFirst} onChange={(e) => setBackupFirst(e.target.checked)} />
               <ShieldCheck className="h-3.5 w-3.5" /> seed-এর আগে ব্যাকআপ
             </label>
+            <label className="flex items-center gap-1 text-xs text-muted-foreground" title="নির্ধারিত সময় পর পর seed-এর আগে স্বয়ংক্রিয় ব্যাকআপ স্ন্যাপশট">
+              নির্ধারিত ব্যাকআপ
+              <select
+                value={schedule}
+                onChange={(e) => { const v = e.target.value as BackupSchedule; setSchedule(v); setBackupSchedule(v); }}
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+              >
+                <option value="off">বন্ধ</option>
+                <option value="daily">দৈনিক</option>
+                <option value="weekly">সাপ্তাহিক</option>
+              </select>
+            </label>
+
             <label className="text-xs text-muted-foreground">Size</label>
             <input
               type="number"
