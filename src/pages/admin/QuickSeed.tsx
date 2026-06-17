@@ -149,6 +149,16 @@ export default function QuickSeed() {
     }
   };
 
+  const downloadSummaryCsv = async () => {
+    const tid = toast.loading("CSV সারাংশ তৈরি হচ্ছে…");
+    try {
+      await downloadCashReportSummaryCsv({ source: "QuickSeed", modules: ["cashbook"], officeId, counts: cashValidation });
+      toast.success("CSV ডাউনলোড হয়েছে", { id: tid });
+    } catch (e: any) {
+      toast.error(`CSV ব্যর্থ: ${e?.message ?? "Failed"}`, { id: tid });
+    }
+  };
+
 
 
 
