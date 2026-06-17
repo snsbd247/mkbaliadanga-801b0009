@@ -97,7 +97,7 @@ export function AppSidebar() {
         { url: "/admin/irrigation-categories", icon: Sprout, label: t("irrigationCategories" as any) || "সেচ ক্যাটাগরি", adminOnly: true },
         { url: "/admin/irrigation-category-rates", icon: Droplets, label: t("categoryRates" as any) || "ক্যাটাগরি রেট", adminOnly: true },
         { url: "/admin/rate-audit", icon: ScrollText, label: t("rateChangeHistory" as any), adminOnly: true },
-        { url: "/admin/irrigation-due-mismatch", icon: ShieldAlert, label: t("irrigationDueMismatch" as any) || "Irrigation Due Mismatch", adminOnly: true },
+        { url: "/admin/irrigation-due-mismatch", icon: ShieldAlert, label: t("irrigationDueMismatch" as any) || "সেচ বকেয়া অমিল", adminOnly: true },
       ],
     },
 
