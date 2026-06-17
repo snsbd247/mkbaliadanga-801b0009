@@ -114,7 +114,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
       // Create new land rows for each recipient (clone fields) + transfer recipient records
       for (let i = 0; i < recipients.length; i++) {
         const r = recipients[i];
-        const area = effectiveAreas[i];
+        const area = normalizeLandSize(effectiveAreas[i]);
         const newLandPayload: any = {
           farmer_id: r.farmer_id,
           mouza: sourceLand.mouza ?? null,
