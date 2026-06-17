@@ -825,8 +825,8 @@ async function seedExpenses(admin: any, officeId: string, monthsBack: number = 1
   let vseq = 1;
   const months = monthsBack > 1 ? monthsBack : 1;
   for (let m = months - 1; m >= 0; m--) {
-    for (const h of irr) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, stream: "irrigation", voucher_no: `V-I-${vseq++}`, note: "Demo", expense_date: dateAt(m, h.day) });
-    for (const h of soc) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, stream: "savings", voucher_no: `V-S-${vseq++}`, note: "Demo", expense_date: dateAt(m, h.day) });
+    for (const h of irr) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, stream: "irrigation", is_bank_deposit: false, voucher_no: `V-I-${vseq++}`, note: "Demo", expense_date: dateAt(m, h.day) });
+    for (const h of soc) rows.push({ head: h.head, amount: h.amount, payee: h.payee, office_id: officeId, stream: "savings", is_bank_deposit: false, voucher_no: `V-S-${vseq++}`, note: "Demo", expense_date: dateAt(m, h.day) });
     rows.push({ head: "ব্যাংক জমা", amount: 3000, payee: "ব্যাংক", office_id: officeId, stream: "irrigation", is_bank_deposit: true, voucher_no: `V-I-${vseq++}`, note: "Demo bank deposit", expense_date: dateAt(m, 25) });
   }
   const { error } = await admin.from("expenses").insert(rows);
