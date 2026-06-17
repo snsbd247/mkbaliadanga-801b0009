@@ -14,13 +14,21 @@ import { toBnDigits } from "@/lib/bnNumber";
 const sb = supabase as any;
 
 // Income receipt kinds that belong to the irrigation (সেচ) cash stream.
-const IRRIGATION_INCOME_KINDS = new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]);
+// Farmer payments whose kind belongs to the irrigation (সেচ) cash stream.
+const IRRIGATION_PAYMENT_KINDS = new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]);
 const KIND_LABEL: Record<string, string> = {
   irrigation: "সেচ চার্জ আদায় (বকেয়া সহ)",
   bigha_rent: "ভাড়ী বিক্রয়",
   pond: "পুকুর, সবজি আয়",
   crop_sale: "ফসল বিক্রয়",
   scrap: "ভাঙ্গারি বিক্রয়",
+};
+// Farmer-less office incomes (stream = sech) line labels.
+const OFFICE_INCOME_LABEL: Record<string, string> = {
+  scrap: "ভাঙ্গারি বিক্রয়",
+  hawlat: "হাওলাত গ্রহণ",
+  grant: "অনুদান",
+  other: "বিবিধ আয়",
 };
 
 type Line = { label: string; amount: number };
