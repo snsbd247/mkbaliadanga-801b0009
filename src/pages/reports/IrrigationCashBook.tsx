@@ -261,16 +261,16 @@ export default function IrrigationCashBook() {
 
         <div className="bn-cb-cols grid grid-cols-2 gap-3 items-start">
           {/* জমা */}
-          <section aria-label={tx("Income section", "জমা অংশ")}>
-            <div className="text-center mb-1"><h2 className="text-base font-bold">{tx("Income", "জমা")}</h2></div>
-            <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={tx("Income cash book", "জমা ক্যাশ বহি")}>
+          <section aria-label={rt("Income section", "জমা অংশ")}>
+            <div className="text-center mb-1"><h2 className="text-base font-bold">{rt("Income", "জমা")}</h2></div>
+            <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={rt("Income cash book", "জমা ক্যাশ বহি")}>
               <thead>
                 <tr>
-                  <th className="border border-black p-0.5">{tx("Date", "তারিখ")}</th>
-                  <th className="border border-black p-0.5">{tx("Receipt no", "রশিদ নং")}</th>
-                  <th className="border border-black p-0.5">{tx("Received from", "কাহার নিকট হতে")}</th>
+                  <th className="border border-black p-0.5">{rt("Date", "তারিখ")}</th>
+                  <th className="border border-black p-0.5">{rt("Receipt no", "রশিদ নং")}</th>
+                  <th className="border border-black p-0.5">{rt("Received from", "কাহার নিকট হতে")}</th>
                   {JAMA_COLS.map((c) => <th key={c.key} className="border border-black p-0.5">{c.label}</th>)}
-                  <th className="border border-black p-0.5">{tx("Total", "মোট")}</th>
+                  <th className="border border-black p-0.5">{rt("Total", "মোট")}</th>
                 </tr>
               </thead>
               <tbody>
