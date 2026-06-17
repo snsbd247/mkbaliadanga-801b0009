@@ -185,23 +185,43 @@ export default function IrrigationCashBook() {
 
   const fileBase = `${rt("irrigation-cashbook", "সেচ-আয়-ব্যয়-ক্যাশবহি")}-${from}_${to}`;
 
-  // Build a matrix (header + rows + grand total) for one section, matching the on-screen columns.
-  const jamaMatrix = () => {
-    const head = [rt("Date", "তারিখ"), rt("Receipt no", "রশিদ নং"), rt("Received from", "কাহার নিকট হতে"),
-      ...JAMA_COLS.map((c) => c.label), rt("Total", "মোট")];
-    const body = jamaRows.map((r) => [r.date, r.receiptNo, r.name, ...JAMA_COLS.map((c) => Number(r[c.key]) || ""), r.total]);
-    const tot = [rt("Grand total", "সর্বমোট"), "", "", ...JAMA_COLS.map((c) => Number(jamaTot[c.key]) || ""), jamaTot.total];
-    return [head, ...body, tot];
-  };
-  const kharchMatrix = () => {
-    const head = [rt("Date", "তারিখ"), rt("Voucher no", "ভাউচার নং"), rt("Purpose of expense", "কি বাবদ খরচ"),
-      ...KHARCH_COLS.map((c) => c.label), rt("Total", "মোট")];
-    const body = kharchRows.map((r) => [r.date, r.voucherNo, r.name, ...KHARCH_COLS.map((c) => Number(r[c.key]) || ""), r.total]);
-    const tot = [rt("Grand total", "সর্বমোট"), "", "", ...KHARCH_COLS.map((c) => Number(kharchTot[c.key]) || ""), kharchTot.total];
-    return [head, ...body, tot];
+  const jamaLabels = () => ({
+    date: rt("Date", "তারিখ"), receiptNo: rt("Receipt no", "রশিদ নং"),
+    receivedFrom: rt("Received from", "কাহার নিকট হতে"), total: rt("Total", "মোট"),
+    grandTotal: rt("Grand total", "সর্বমোট"), cols: JAMA_COLS.map((c) => c.label),
+  });
+  const kharchLabels = () => ({
+    date: rt("Date", "তারিখ"), voucherNo: rt("Voucher no", "ভাউচার নং"),
+    purpose: rt("Purpose of expense", "কি বাবদ খরচ"), total: rt("Total", "মোট"),
+    grandTotal: rt("Grand total", "সর্বমোট"), cols: KHARCH_COLS.map((c) => c.label),
+  });
+
+  // Record each download for auditing (best-effort — never blocks the download).
+  const logExport = async (format: "XLSX" | "CSV" | "PDF") => {
+    if (!user?.id) return;
+    try {
+      await sb.from("irrigation_cashbook_export_audit").insert({
+        user_id: user.id, office_id: effectiveOffice, date_from: from, date_to: to, format,
+      });
+    } catch { /* auditing is best-effort */ }
   };
 
-  const exportCsv = () => {
+  const runExport = async (format: "XLSX" | "CSV", fn: () => void) => {
+    if (exporting) return;
+    setExporting(true);
+    const tid = toast.loading(rt(`Generating ${format}…`, `${format} তৈরি হচ্ছে…`));
+    try {
+      fn();
+      await logExport(format);
+      toast.success(rt(`${format} downloaded`, `${format} ডাউনলোড হয়েছে`), { id: tid });
+    } catch (e: any) {
+      toast.error(e?.message || rt("Export failed", "এক্সপোর্ট ব্যর্থ হয়েছে"), { id: tid });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportCsv = () => runExport("CSV", () => {
     downloadCsv(fileBase, jamaRows, [
       { header: rt("Date", "তারিখ"), accessor: (r) => r.date },
       { header: rt("Receipt no", "রশিদ নং"), accessor: (r) => r.receiptNo },
@@ -209,16 +229,39 @@ export default function IrrigationCashBook() {
       ...JAMA_COLS.map((c) => ({ header: c.label, accessor: (r: IrrJamaRow) => Number(r[c.key]) || "" })),
       { header: rt("Total", "মোট"), accessor: (r) => r.total },
     ]);
-  };
+  });
 
-  const exportExcel = () => {
+  const exportExcel = () => runExport("XLSX", () => {
     const wb = XLSX.utils.book_new();
-    const wsJama = XLSX.utils.aoa_to_sheet([[project], [`${formatDate(from)} - ${formatDate(to)}`], [], ...jamaMatrix()]);
-    const wsKharch = XLSX.utils.aoa_to_sheet([[project], [`${formatDate(from)} - ${formatDate(to)}`], [], ...kharchMatrix()]);
+    const meta = [[project], [`${formatDate(from)} - ${formatDate(to)}`], []];
+    const wsJama = XLSX.utils.aoa_to_sheet([...meta, ...buildJamaExportMatrix(jamaRows, jamaTot, jamaLabels())]);
+    const wsKharch = XLSX.utils.aoa_to_sheet([...meta, ...buildKharchExportMatrix(kharchRows, kharchTot, kharchLabels())]);
     XLSX.utils.book_append_sheet(wb, wsJama, rt("Income", "জমা"));
     XLSX.utils.book_append_sheet(wb, wsKharch, rt("Expense", "খরচ"));
     XLSX.writeFile(wb, `${fileBase}.xlsx`);
+  });
+
+  const handlePrint = () => { logExport("PDF"); window.print(); };
+
+  const savePreset = () => {
+    const name = window.prompt(rt("Preset name", "প্রিসেটের নাম"));
+    if (!name) return;
+    const next = [...presets.filter((p) => p.name !== name), { name, from, to, officeFilter }];
+    setPresets(next);
+    localStorage.setItem(PRESET_KEY, JSON.stringify(next));
+    toast.success(rt("Preset saved", "প্রিসেট সংরক্ষিত হয়েছে"));
   };
+  const applyPreset = (name: string) => {
+    const p = presets.find((x) => x.name === name);
+    if (!p) return;
+    setFrom(p.from); setTo(p.to); setOfficeFilter(p.officeFilter);
+  };
+  const deletePreset = (name: string) => {
+    const next = presets.filter((p) => p.name !== name);
+    setPresets(next);
+    localStorage.setItem(PRESET_KEY, JSON.stringify(next));
+  };
+
 
 
   return (
