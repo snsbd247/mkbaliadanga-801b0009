@@ -1102,7 +1102,11 @@ export default function FarmerDetail() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <Label>{t("landSize")} ({t("decimal" as any)}) <span className="text-destructive">*</span></Label>
-                          <Input disabled={savingLand} type="number" step="0.001" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} />
+                          <Input disabled={savingLand} type="number" step="0.001" value={land.land_size} onChange={e => {
+                            const r = parseLandInput(e.target.value);
+                            if (r.error === "precision") toast.error(tx("Land size allows up to 3 decimals only", "জমির পরিমাণ সর্বোচ্চ ৩ দশমিক পর্যন্ত"));
+                            setLand({ ...land, land_size: r.value });
+                          }} />
                         </div>
                         <div>
                           <Label>{t("fieldType")}</Label>
