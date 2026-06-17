@@ -127,6 +127,7 @@ export function AppLayout() {
           <SiteFooter />
         </div>
         <MissingI18nPanel />
+        <OnboardingWalkthrough />
       </div>
     </SidebarProvider>
   );
