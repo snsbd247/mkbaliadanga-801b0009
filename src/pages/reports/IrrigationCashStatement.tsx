@@ -67,40 +67,13 @@ export default function IrrigationCashStatement() {
     })();
   }, [from, to, officeId]);
 
-  const { incomeLines, expenseLines, totalIncome, totalExpense } = useMemo(() => {
-    const incMap = new Map<string, number>();
-    let totalIncome = 0;
-    for (const r of receipts) {
-      const amt = Number(r.amount || 0);
-      let label: string | null = null;
-      if (r.income_type !== undefined || r.stream === "sech") {
-        label = OFFICE_INCOME_LABEL[r.income_type] ?? "বিবিধ আয়";
-      } else if (IRRIGATION_PAYMENT_KINDS.has(r.kind)) {
-        label = KIND_LABEL[r.kind] ?? r.kind;
-      }
-      if (!label) continue;
-      incMap.set(label, (incMap.get(label) ?? 0) + amt);
-      totalIncome += amt;
-    }
-    const expMap = new Map<string, number>();
-    let totalExpense = 0;
-    for (const e of expenses) {
-      if (e.stream !== "irrigation") continue;
-      const amt = Number(e.amount || 0);
-      const label = e.head || "বিবিধ খরচ";
-      expMap.set(label, (expMap.get(label) ?? 0) + amt);
-      totalExpense += amt;
-    }
-    const incomeLines: Line[] = Array.from(incMap, ([label, amount]) => ({ label, amount }));
-    const expenseLines: Line[] = Array.from(expMap, ([label, amount]) => ({ label, amount }));
-    return { incomeLines, expenseLines, totalIncome, totalExpense };
-  }, [receipts, expenses]);
-
-
-  const openingFund = Number(opening || 0);
-  const grandIncome = totalIncome + openingFund;      // মোট আয় + আগত তহবিল
-  const closingFund = grandIncome - totalExpense;      // হস্তমজুদ তহবিল
-  const grandExpense = totalExpense + closingFund;     // মোট ব্যয় + হস্তমজুদ = সর্বমোট
+  const {
+    incomeLines, expenseLines, totalIncome, totalExpense,
+    openingFund, grandIncome, closingFund, grandExpense,
+  } = useMemo(
+    () => computeStatement(receipts, expenses, opening),
+    [receipts, expenses, opening],
+  );
 
   const rowCount = Math.max(incomeLines.length, expenseLines.length);
   const society = branding.company_name_bn || branding.company_name || "সমবায় সমিতি";
