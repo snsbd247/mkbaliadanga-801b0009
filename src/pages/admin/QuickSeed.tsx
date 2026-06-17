@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen, Wallet, ShieldCheck } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen, Wallet, ShieldCheck, Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
-import { fetchCashReportCounts, flagCashMismatches, downloadCashReportBackup, type CashCountRow } from "@/lib/cashReportBackup";
+import { fetchCashReportCounts, flagCashMismatches, downloadCashReportBackup, getLastSnapshot, restoreCashReportBackup, type CashCountRow, type CashSnapshot } from "@/lib/cashReportBackup";
+import { logDemoRun } from "@/lib/demoOpsAudit";
+import { downloadCashReportSummaryPdf } from "@/lib/cashReportSummaryPdf";
+import { useRef } from "react";
 
 type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "cash_only" | "all";
 
