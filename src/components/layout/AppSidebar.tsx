@@ -178,7 +178,7 @@ export function AppSidebar() {
         { url: "/reports/invoices", icon: FileBarChart, label: t("invoicesReport" as any), permKey: "reports" },
         { url: "/irrigation-reports", icon: FileBarChart, label: t("irrigationRevenueCollection" as any), permKey: "reports" },
         { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
-       { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
+       { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "প্রতিশ্রুত বকেয়া", permKey: "reports" },
        { url: "/reports/cultivation-history", icon: FileBarChart, label: t("cultivationHistoryReport"), permKey: "reports" },
       
       { url: "/reports/irrigation-category", icon: FileBarChart, label: t("irrigationCategoryReport"), permKey: "reports" },
