@@ -40,6 +40,7 @@ import IrrigationCashStatement from "./pages/reports/IrrigationCashStatement";
 import SocietyCashStatement from "./pages/reports/SocietyCashStatement";
 import SocietyCashBook from "./pages/reports/SocietyCashBook";
 import IrrigationCashBook from "./pages/reports/IrrigationCashBook";
+import IrrigationExportAudit from "./pages/admin/IrrigationExportAudit";
 
 import HandCash from "./pages/HandCash";
 import Statement from "./pages/Statement";
@@ -286,6 +287,7 @@ const App = () => (
                 <Route path="/reports/society-statement" element={<RequirePerm module="cashbook"><SocietyCashStatement /></RequirePerm>} />
                 <Route path="/reports/society-cashbook" element={<RequirePerm module="cashbook"><SocietyCashBook /></RequirePerm>} />
                 <Route path="/reports/irrigation-cashbook" element={<RequirePerm module="cashbook"><IrrigationCashBook /></RequirePerm>} />
+                <Route path="/reports/irrigation-cashbook-audit" element={<RequirePerm module="cashbook"><IrrigationExportAudit /></RequirePerm>} />
 
                 <Route path="/statement" element={<RequirePerm module="savings"><Statement /></RequirePerm>} />
                 <Route path="/dues" element={<RequirePerm module="reports"><Dues /></RequirePerm>} />
