@@ -91,8 +91,8 @@ export default function HandCash() {
   const finalClosing = rows.length ? rows[rows.length - 1].closing : openingBalance;
 
   async function submitMonth() {
-    if (locked) return toast.error("এই মাস ইতিমধ্যে সাবমিট/লক করা");
-    if (!confirm(`${MONTHS_BN[month - 1]} ${year} — হ্যান্ড ক্যাশ ফাইনাল সাবমিট করবেন? এরপর প্রারম্ভিক জমা লক হয়ে যাবে।`)) return;
+    if (locked) return toast.error(tx("This month is already submitted/locked", "এই মাস ইতিমধ্যে সাবমিট/লক করা"));
+    if (!confirm(`${MONTHS[month - 1]} ${year} — ${tx("Final submit hand cash? Opening balance will be locked.", "হ্যান্ড ক্যাশ ফাইনাল সাবমিট করবেন? এরপর প্রারম্ভিক জমা লক হয়ে যাবে।")}`)) return;
     const payload = {
       office_id: officeId ?? null, year, month,
       opening_cash: openingBalance, total_income: totalIncome, total_expense: totalExpense,
