@@ -55,6 +55,11 @@ const TABLES: { name: string; label: string }[] = [
   { name: "payment_allocations", label: "Payment Allocations" },
   { name: "receipts", label: "Receipts" },
   { name: "expenses", label: "Expenses" },
+  // --- Cashbook, hand cash & office income ---
+  { name: "cashbook_expense_heads", label: "Cashbook Expense Heads" },
+  { name: "cashbook_submissions", label: "Cashbook Submissions" },
+  { name: "hand_cash_submissions", label: "Hand Cash Submissions" },
+  { name: "office_incomes", label: "Office Incomes" },
   // --- Bank ---
   { name: "bank_accounts", label: "Bank Accounts" },
   { name: "bank_transactions", label: "Bank Transactions" },
