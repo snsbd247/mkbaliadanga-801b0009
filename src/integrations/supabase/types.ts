@@ -3423,6 +3423,102 @@ export type Database = {
           },
         ]
       }
+      land_note_attachments: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          created_by: string | null
+          file_name: string
+          file_path: string
+          id: string
+          land_id: string
+          office_id: string | null
+          size_bytes: number | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          land_id: string
+          office_id?: string | null
+          size_bytes?: number | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          land_id?: string
+          office_id?: string | null
+          size_bytes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_note_attachments_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_note_attachments_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands_with_location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      land_note_audit: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          land_id: string
+          new_note: string | null
+          office_id: string | null
+          old_note: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          land_id: string
+          new_note?: string | null
+          office_id?: string | null
+          old_note?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          land_id?: string
+          new_note?: string | null
+          office_id?: string | null
+          old_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_note_audit_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "land_note_audit_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands_with_location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       land_relations: {
         Row: {
           area_decimal: number | null

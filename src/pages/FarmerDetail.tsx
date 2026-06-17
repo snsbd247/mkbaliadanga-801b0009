@@ -50,6 +50,7 @@ import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 import { formatLand, parseLandInput } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
+import { LandNoteCell } from "@/components/farmers/LandNoteCell";
 import { Textarea } from "@/components/ui/textarea";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
@@ -107,6 +108,7 @@ export default function FarmerDetail() {
   const [farmerOfficeId, setFarmerOfficeId] = useState<string | null>(null);
   const [landPayMap, setLandPayMap] = useState<Record<string, { lastDate: string | null; total: number }>>({});
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "due">("all");
+  const [noteSearch, setNoteSearch] = useState("");
   const [hiddenInvoiceCount, setHiddenInvoiceCount] = useState<number>(0);
   const [backfilling, setBackfilling] = useState(false);
   const [offices, setOffices] = useState<any[]>([]);
@@ -765,6 +767,19 @@ export default function FarmerDetail() {
         toast.error(t("noPermissionOrNotFound" as any) || "পরিবর্তন সংরক্ষণ করা যায়নি — অনুমতি নেই বা রেকর্ড পাওয়া যায়নি।");
         return;
       }
+      // Audit trail for note changes made via the edit dialog
+      const newNote = editForm.notes?.trim() || null;
+      const oldNote = (editLand as any).notes?.trim() || null;
+      if (newNote !== oldNote) {
+        const { data: u } = await supabase.auth.getUser();
+        await supabase.from("land_note_audit").insert({
+          land_id: editLand.id,
+          office_id: (editLand as any).office_id ?? null,
+          old_note: oldNote,
+          new_note: newNote,
+          changed_by: u?.user?.id ?? null,
+        } as any);
+      }
       toast.success(t("saved"));
       // #13 — if billable area increased on edit, surface the extra estimated due.
       const delta = Number(editForm.land_size ?? 0) - prevSize;
@@ -1166,9 +1181,10 @@ export default function FarmerDetail() {
                     {/* Per-land note (shown later in the lands list) */}
                     <div>
                       <Label>{tx("Note (optional)", "নোট (ঐচ্ছিক)")}</Label>
-                      <Textarea disabled={savingLand} rows={2} value={land.notes}
-                        onChange={e => setLand({ ...land, notes: e.target.value })}
+                      <Textarea disabled={savingLand} rows={2} value={land.notes} maxLength={2000}
+                        onChange={e => setLand({ ...land, notes: e.target.value.slice(0, 2000) })}
                         placeholder={tx("e.g. disputed land, partial owner, special remark", "যেমন: বিরোধপূর্ণ জমি, আংশিক মালিক, বিশেষ মন্তব্য")} />
+                      <div className="text-[10px] text-muted-foreground text-right">{(land.notes ?? "").length}/2000</div>
                     </div>
                   </div>
                   <DialogFooter><Button variant="outline" disabled={savingLand} onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand} disabled={savingLand}>{savingLand ? "…" : t("save")}</Button></DialogFooter>
@@ -1204,7 +1220,13 @@ export default function FarmerDetail() {
                   {partialCount > 0 && <Badge variant="default" className="bg-amber-500 hover:bg-amber-500">{tx("Partially Paid", "আংশিক পরিশোধিত")}: {partialCount}</Badge>}
                   <Badge variant="destructive">{tx("Due", "বকেয়া")}: {dueCount}</Badge>
                   {noneCount > 0 && <Badge variant="secondary">{tx("No invoice", "ইনভয়েস নেই")}: {noneCount}</Badge>}
-                  <div className="ml-auto">
+                  <div className="ml-auto flex items-center gap-2">
+                    <Input
+                      value={noteSearch}
+                      onChange={(e) => setNoteSearch(e.target.value)}
+                      placeholder={tx("Search by note…", "নোট দিয়ে খুঁজুন…")}
+                      className="h-8 w-[180px] text-xs"
+                    />
                     <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
                       <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -1249,7 +1271,14 @@ export default function FarmerDetail() {
               </TableRow></TableHeader>
               <TableBody>
                 {(() => {
+                  const matchesNote = (l: any) => {
+                    const q = noteSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    const parts = [landSelfNotes[l.id], ...(landNotes[l.id] ?? [])].filter(Boolean).join(" ").toLowerCase();
+                    return parts.includes(q);
+                  };
                   const matchesFilter = (l: any) => {
+                    if (!matchesNote(l)) return false;
                     if (paymentFilter === "all") return true;
                     const s = landSeasonStatus(l.id).state;
                     if (paymentFilter === "paid") return s === "paid";
@@ -1265,11 +1294,12 @@ export default function FarmerDetail() {
                       <TableRow key={l.id}>
                         <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
                         <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link>
-                          {(landNotes[l.id]?.length) ? (
-                            <div className="text-[11px] text-muted-foreground mt-0.5 whitespace-normal max-w-[160px]" title={landNotes[l.id].join(" • ")}>
-                              📝 {landNotes[l.id].join(" • ")}
-                            </div>
-                          ) : null}
+                          <LandNoteCell
+                            landId={l.id}
+                            officeId={l.office_id ?? null}
+                            note={landSelfNotes[l.id] ?? ""}
+                            onSaved={(n) => setLandSelfNotes((p) => ({ ...p, [l.id]: n }))}
+                          />
                         </TableCell>
                         <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
@@ -1786,9 +1816,10 @@ export default function FarmerDetail() {
             </div>
             <div>
               <Label>{tx("Note (optional)", "নোট (ঐচ্ছিক)")}</Label>
-              <Textarea disabled={editSaving} rows={2} value={editForm.notes}
-                onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+              <Textarea disabled={editSaving} rows={2} value={editForm.notes} maxLength={2000}
+                onChange={e => setEditForm({ ...editForm, notes: e.target.value.slice(0, 2000) })}
                 placeholder={tx("e.g. disputed land, partial owner, special remark", "যেমন: বিরোধপূর্ণ জমি, আংশিক মালিক, বিশেষ মন্তব্য")} />
+              <div className="text-[10px] text-muted-foreground text-right">{(editForm.notes ?? "").length}/2000</div>
             </div>
           </div>
           <DialogFooter>
