@@ -148,7 +148,9 @@ export default function SocietyCashBook() {
         <div className="bn-cb-cols grid grid-cols-2 gap-3 items-start">
         {/* জমা */}
         <section aria-label="জমা অংশ">
-          <div className="text-center font-bold text-lg mb-1">জমা</div>
+          <div className="text-center mb-1">
+            <h2 className="text-lg font-bold">জমা</h2>
+          </div>
           <table className="w-full border-collapse text-xs bn-cb-table" aria-label="জমা ক্যাশ বহি">
             <thead>
               <tr>
