@@ -72,6 +72,7 @@ export default function DemoManager() {
   const [presetId, setPresetId] = useState<string>("custom");
   const [transactional, setTransactional] = useState(true);
   const [rowCountReport, setRowCountReport] = useState<any>(null);
+  const [backupFirst, setBackupFirst] = useState(true);
 
   // logs + filters
   const [logs, setLogs] = useState<any[]>([]);
