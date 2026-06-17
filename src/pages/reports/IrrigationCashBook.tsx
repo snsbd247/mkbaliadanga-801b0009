@@ -318,9 +318,9 @@ export default function IrrigationCashBook() {
                     <td className="border border-black p-0.5 text-right">{formatMoney(r.total)}</td>
                   </tr>
                 ))}
-                {kharchRows.length === 0 && <tr><td colSpan={17} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
+                {kharchRows.length === 0 && <tr><td colSpan={17} className="border border-black p-3 text-center">{rt("No data", "তথ্য নেই")}</td></tr>}
                 <tr className="font-bold">
-                  <td colSpan={3} className="border border-black p-0.5 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+                  <td colSpan={3} className="border border-black p-0.5 text-right">{rt("Grand total=", "সর্বমোট=")}</td>
                   {KHARCH_COLS.map((c) => (
                     <td key={c.key} className="border border-black p-0.5 text-right cursor-pointer hover:bg-yellow-100 print:cursor-auto" onClick={() => showKharchDetail(c.key, c.label)}>{formatMoney(Number(kharchTot[c.key]))}</td>
                   ))}
