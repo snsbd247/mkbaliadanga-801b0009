@@ -209,7 +209,7 @@ export default function SocietyCashStatement() {
         </table>
 
         <div className="bn-sign-block grid grid-cols-4 gap-4 mt-16 text-center text-xs">
-          {["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"].map((role) => (
+          {(lang === "bn" ? ["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"] : ["Audit Officer", "President", "Secretary", "Treasurer"]).map((role) => (
             <div key={role}>
               <div className="border-t border-black pt-1 font-semibold">{role}</div>
               <div className="leading-tight mt-0.5">{society}</div>
@@ -218,51 +218,51 @@ export default function SocietyCashStatement() {
         </div>
 
         <div className="bn-sign-block mt-10 text-sm">
-          <div className="font-semibold mb-6">ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ</div>
+          <div className="font-semibold mb-6">{tx("Management committee members' signatures:", "ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ")}</div>
           <div className="grid grid-cols-3 gap-8">
-            <div>১।</div>
-            <div>২।</div>
-            <div>৩।</div>
+            <div>{tx("1.", "১।")}</div>
+            <div>{tx("2.", "২।")}</div>
+            <div>{tx("3.", "৩।")}</div>
           </div>
         </div>
 
         {bankSummary.length > 0 && (
           <div className="bn-sign-block mt-10">
-            <div className="font-semibold mb-2 text-sm">পর্যবেক্ষণ ঃ (ব্যাংক হিসাব) ঃ নিরীক্ষাকালে সমিতিতে নিম্নরূপ ব্যাংক হিসাব পরিলক্ষিত হলো।</div>
-            <table className="w-full border-collapse text-xs bn-table" aria-label="ব্যাংক হিসাব সারসংক্ষেপ">
+            <div className="font-semibold mb-2 text-sm">{tx("Observation: (Bank accounts): The following bank accounts were observed in the society during audit.", "পর্যবেক্ষণ ঃ (ব্যাংক হিসাব) ঃ নিরীক্ষাকালে সমিতিতে নিম্নরূপ ব্যাংক হিসাব পরিলক্ষিত হলো।")}</div>
+            <table className="w-full border-collapse text-xs bn-table" aria-label={tx("Bank account summary", "ব্যাংক হিসাব সারসংক্ষেপ")}>
               <thead>
                 <tr>
-                  <th className="border border-black p-1 w-10">ক্রঃনং</th>
-                  <th className="border border-black p-1">হিসাব নং</th>
-                  <th className="border border-black p-1">{bnDate(from)}</th>
-                  <th className="border border-black p-1">সুদ প্রাপ্তি</th>
-                  <th className="border border-black p-1">ব্যাংক চার্জ কর্তন</th>
-                  <th className="border border-black p-1">ব্যাংক জমা</th>
-                  <th className="border border-black p-1">ব্যাংক উত্তোলন</th>
-                  <th className="border border-black p-1">{bnDate(to)}</th>
+                  <th className="border border-black p-1 w-10">{tx("SL", "ক্রঃনং")}</th>
+                  <th className="border border-black p-1">{tx("Account no", "হিসাব নং")}</th>
+                  <th className="border border-black p-1">{formatDate(from)}</th>
+                  <th className="border border-black p-1">{tx("Interest received", "সুদ প্রাপ্তি")}</th>
+                  <th className="border border-black p-1">{tx("Bank charge deducted", "ব্যাংক চার্জ কর্তন")}</th>
+                  <th className="border border-black p-1">{tx("Bank deposit", "ব্যাংক জমা")}</th>
+                  <th className="border border-black p-1">{tx("Bank withdrawal", "ব্যাংক উত্তোলন")}</th>
+                  <th className="border border-black p-1">{formatDate(to)}</th>
                 </tr>
               </thead>
               <tbody>
                 {bankSummary.map((r, i) => (
                   <tr key={i}>
-                    <td className="border border-black p-1 text-center">{toBnDigits(String(i + 1).padStart(2, "0"))}</td>
+                    <td className="border border-black p-1 text-center">{lang === "bn" ? toBnDigits(String(i + 1).padStart(2, "0")) : String(i + 1).padStart(2, "0")}</td>
                     <td className="border border-black p-1">{r.account}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.opening)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.interest)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.charge)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.deposit)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.withdraw)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.closing)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.opening)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.interest)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.charge)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.deposit)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.withdraw)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.closing)}</td>
                   </tr>
                 ))}
                 <tr className="font-bold">
-                  <td colSpan={2} className="border border-black p-1 text-right">মোট=</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.opening)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.interest)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.charge)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.deposit)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.withdraw)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.closing)}</td>
+                  <td colSpan={2} className="border border-black p-1 text-right">{tx("Total=", "মোট=")}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.opening)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.interest)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.charge)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.deposit)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.withdraw)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.closing)}</td>
                 </tr>
               </tbody>
             </table>
