@@ -53,7 +53,7 @@ import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "", notes: "" };
 
 // Show land size exactly as entered (up to 3 decimals) via the shared utility.
 const fmtLand = (v: any) => formatLand(v);
