@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Printer, FileSpreadsheet } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
@@ -43,20 +45,37 @@ function enDate(iso: string): string {
   return `${d}.${m}.${y}`;
 }
 
+type DetailState = {
+  title: string;
+  rows: { date: string; ref: string; name: string; amount: number }[];
+  total: number;
+} | null;
+
 export default function IrrigationCashBook() {
   const branding = useBranding();
-  const { officeId } = useAuth();
+  const { officeId, isAdmin } = useAuth();
   const { lang, tx } = useLang();
 
   const today = new Date();
   const fyStartYear = today.getMonth() + 1 >= 7 ? today.getFullYear() : today.getFullYear() - 1;
   const [from, setFrom] = useState(`${fyStartYear}-07-01`);
   const [to, setTo] = useState(`${fyStartYear + 1}-06-30`);
+  const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
+  const [officeFilter, setOfficeFilter] = useState<string>("all");
   const [input, setInput] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState<DetailState>(null);
+
+  // The effective office: a non-scoped admin may pick any office; scoped users are locked to theirs.
+  const effectiveOffice = officeId ?? (officeFilter === "all" ? null : officeFilter);
 
   useEffect(() => { document.title = tx("Irrigation Income-Expense Cash Book", "সেচ আয়-ব্যয় ক্যাশ বহি"); }, [lang]);
+
+  useEffect(() => {
+    if (officeId || !isAdmin) return;
+    sb.from("offices").select("id,name").order("name").then(({ data }: any) => setOffices(data ?? []));
+  }, [officeId, isAdmin]);
 
   useEffect(() => {
     setLoading(true); setError(null);
@@ -75,9 +94,9 @@ export default function IrrigationCashBook() {
           .select("head,amount,expense_date,voucher_no,payee,is_bank_deposit,office_id,stream,deleted_at")
           .is("deleted_at", null).eq("stream", "irrigation")
           .gte("expense_date", from).lte("expense_date", to);
-        if (officeId) {
-          payQ = payQ.eq("office_id", officeId); oiQ = oiQ.eq("office_id", officeId);
-          btQ = btQ.eq("office_id", officeId); exQ = exQ.eq("office_id", officeId);
+        if (effectiveOffice) {
+          payQ = payQ.eq("office_id", effectiveOffice); oiQ = oiQ.eq("office_id", effectiveOffice);
+          btQ = btQ.eq("office_id", effectiveOffice); exQ = exQ.eq("office_id", effectiveOffice);
         }
         const [pay, oi, bt, ex] = await Promise.all([payQ, oiQ, btQ, exQ]);
         const payRows = (pay.data ?? []).filter((p: any) => !p.deleted_at && !p.voided_at && p.status !== "rejected");
@@ -98,7 +117,7 @@ export default function IrrigationCashBook() {
         setLoading(false);
       }
     })();
-  }, [from, to, officeId, lang]);
+  }, [from, to, effectiveOffice, lang]);
 
   const jamaRows = useMemo<IrrJamaRow[]>(() => (input ? buildIrrJamaRows(input, lang) : []), [input, lang]);
   const kharchRows = useMemo<IrrKharchRow[]>(() => (input ? buildIrrKharchRows(input, lang) : []), [input, lang]);
@@ -113,20 +132,42 @@ export default function IrrigationCashBook() {
   const formatDate = lang === "bn" ? bnDate : enDate;
   const formatText = (s: string) => (lang === "bn" ? bnText(s) : s);
 
-  const JAMA_COLS = [
-    tx("Date", "তারিখ"), tx("Receipt no", "রশিদ নং"), tx("Received from", "কাহার নিকট হতে"),
-    tx("Irrigation charge", "সেচ চার্জ"), tx("Canal charge", "নালা চার্জ"), tx("Maintenance", "রক্ষণাবেক্ষণ"),
-    tx("Late fee", "বিলম্ব ফি"), tx("Bank withdrawal", "ব্যাংকে উত্তোলন"), tx("Pond", "পুকুর"),
-    tx("Miscellaneous", "বিবিধ"), tx("Total", "মোট"),
+  // Column definitions (key + label) drive both rendering and the drill-down modal.
+  const JAMA_COLS: { key: keyof IrrJamaRow; label: string }[] = [
+    { key: "sechCharge", label: tx("Irrigation charge", "সেচ চার্জ") },
+    { key: "nalaCharge", label: tx("Canal charge", "নালা চার্জ") },
+    { key: "maintenance", label: tx("Maintenance", "রক্ষণাবেক্ষণ") },
+    { key: "lateFee", label: tx("Late fee", "বিলম্ব ফি") },
+    { key: "bankWithdraw", label: tx("Bank withdrawal", "ব্যাংকে উত্তোলন") },
+    { key: "pond", label: tx("Pond", "পুকুর") },
+    { key: "misc", label: tx("Miscellaneous", "বিবিধ") },
   ];
-  const KHARCH_COLS = [
-    tx("Date", "তারিখ"), tx("Voucher no", "ভাউচার নং"), tx("Purpose of expense", "কি বাবদ খরচ"),
-    tx("Labor", "শ্রমিক"), tx("Parts purchase", "যন্ত্রাংশ ক্রয়"), tx("Parts repair", "যন্ত্রাংশ মেরামত"),
-    tx("Transport", "যাতায়াত"), tx("Hospitality", "আপ্যায়ন"), tx("Publicity", "প্রচার"),
-    tx("Salary & allowance", "বেতন ও ভাতা"), tx("Electricity bill", "বিদ্যুৎ বিল"), tx("Stationery", "স্টেশনারি"),
-    tx("Office rent", "অফিস ভাড়া"), tx("Motor rent", "মোটর বাঁধা"), tx("Bank deposit", "ব্যাংক জমা"),
-    tx("Miscellaneous", "বিবিধ"), tx("Total", "মোট"),
+  const KHARCH_COLS: { key: keyof IrrKharchRow; label: string }[] = [
+    { key: "labor", label: tx("Labor", "শ্রমিক") },
+    { key: "partsBuy", label: tx("Parts purchase", "যন্ত্রাংশ ক্রয়") },
+    { key: "partsRepair", label: tx("Parts repair", "যন্ত্রাংশ মেরামত") },
+    { key: "transport", label: tx("Transport", "যাতায়াত") },
+    { key: "hospitality", label: tx("Hospitality", "আপ্যায়ন") },
+    { key: "publicity", label: tx("Publicity", "প্রচার") },
+    { key: "salary", label: tx("Salary & allowance", "বেতন ও ভাতা") },
+    { key: "electricity", label: tx("Electricity bill", "বিদ্যুৎ বিল") },
+    { key: "stationery", label: tx("Stationery", "স্টেশনারি") },
+    { key: "officeRent", label: tx("Office rent", "অফিস ভাড়া") },
+    { key: "motor", label: tx("Motor rent", "মোটর বাঁধা") },
+    { key: "bankDeposit", label: tx("Bank deposit", "ব্যাংক জমা") },
+    { key: "misc", label: tx("Miscellaneous", "বিবিধ") },
   ];
+
+  const showJamaDetail = (key: keyof IrrJamaRow, label: string) => {
+    const rows = jamaRows.filter((r) => Number(r[key]) > 0)
+      .map((r) => ({ date: r.date, ref: r.receiptNo, name: r.name, amount: Number(r[key]) }));
+    setDetail({ title: label, rows, total: rows.reduce((a, r) => a + r.amount, 0) });
+  };
+  const showKharchDetail = (key: keyof IrrKharchRow, label: string) => {
+    const rows = kharchRows.filter((r) => Number(r[key]) > 0)
+      .map((r) => ({ date: r.date, ref: r.voucherNo, name: r.name, amount: Number(r[key]) }));
+    setDetail({ title: label, rows, total: rows.reduce((a, r) => a + r.amount, 0) });
+  };
 
   const exportCsv = () => {
     downloadCsv(`${tx("irrigation-cashbook", "সেচ-আয়-ব্যয়-ক্যাশবহি")}-${from}_${to}`, jamaRows, [
@@ -151,6 +192,18 @@ export default function IrrigationCashBook() {
       <Card className="p-3 flex flex-wrap items-end gap-3 print:hidden">
         <div><Label>{tx("Start date", "শুরুর তারিখ")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
         <div><Label>{tx("End date", "শেষ তারিখ")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+        {!officeId && isAdmin && (
+          <div>
+            <Label>{tx("Office", "অফিস")}</Label>
+            <Select value={officeFilter} onValueChange={setOfficeFilter}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tx("All offices", "সব অফিস")}</SelectItem>
+                {offices.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
             <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
@@ -162,10 +215,11 @@ export default function IrrigationCashBook() {
         {loading && <span className="text-sm text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</span>}
         {error && <span className="text-sm text-destructive">{error}</span>}
         {!loading && !error && !hasData && <span className="text-sm text-destructive">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</span>}
+        {!loading && hasData && <span className="text-xs text-muted-foreground basis-full">{tx("Tip: click any total to see the underlying transactions.", "টিপস: যেকোনো মোট-এ ক্লিক করে অন্তর্নিহিত লেনদেন দেখুন।")}</span>}
       </Card>
 
       <div className="bn-cashbook bg-white text-black p-4 overflow-x-auto">
-        <div className="text-center font-bold text-base mb-1">
+        <div className="bn-cb-header text-center font-bold text-base mb-1">
           {project}
           <span className="ml-2 font-normal text-sm">
             {lang === "bn" ? toBnDigits(`${formatDate(from)} - ${formatDate(to)}`) : `${formatDate(from)} - ${formatDate(to)}`}
@@ -178,7 +232,13 @@ export default function IrrigationCashBook() {
             <div className="text-center mb-1"><h2 className="text-base font-bold">{tx("Income", "জমা")}</h2></div>
             <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={tx("Income cash book", "জমা ক্যাশ বহি")}>
               <thead>
-                <tr>{JAMA_COLS.map((h) => <th key={h} className="border border-black p-0.5">{h}</th>)}</tr>
+                <tr>
+                  <th className="border border-black p-0.5">{tx("Date", "তারিখ")}</th>
+                  <th className="border border-black p-0.5">{tx("Receipt no", "রশিদ নং")}</th>
+                  <th className="border border-black p-0.5">{tx("Received from", "কাহার নিকট হতে")}</th>
+                  {JAMA_COLS.map((c) => <th key={c.key} className="border border-black p-0.5">{c.label}</th>)}
+                  <th className="border border-black p-0.5">{tx("Total", "মোট")}</th>
+                </tr>
               </thead>
               <tbody>
                 {jamaRows.map((r, i) => (
@@ -186,26 +246,16 @@ export default function IrrigationCashBook() {
                     <td className="border border-black p-0.5 whitespace-nowrap">{formatDate(r.date)}</td>
                     <td className="border border-black p-0.5 text-center">{formatText(r.receiptNo)}</td>
                     <td className="border border-black p-0.5">{r.name}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.sechCharge)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.nalaCharge)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.maintenance)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.lateFee)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.bankWithdraw)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.pond)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.misc)}</td>
+                    {JAMA_COLS.map((c) => <td key={c.key} className="border border-black p-0.5 text-right">{formatMoney(Number(r[c.key]))}</td>)}
                     <td className="border border-black p-0.5 text-right">{formatMoney(r.total)}</td>
                   </tr>
                 ))}
                 {jamaRows.length === 0 && <tr><td colSpan={11} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
                 <tr className="font-bold">
                   <td colSpan={3} className="border border-black p-0.5 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(jamaTot.sechCharge)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(jamaTot.nalaCharge)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(jamaTot.maintenance)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(jamaTot.lateFee)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(jamaTot.bankWithdraw)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(jamaTot.pond)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(jamaTot.misc)}</td>
+                  {JAMA_COLS.map((c) => (
+                    <td key={c.key} className="border border-black p-0.5 text-right cursor-pointer hover:bg-yellow-100 print:cursor-auto" onClick={() => showJamaDetail(c.key, c.label)}>{formatMoney(Number(jamaTot[c.key]))}</td>
+                  ))}
                   <td className="border border-black p-0.5 text-right">{formatMoney(jamaTot.total)}</td>
                 </tr>
               </tbody>
@@ -217,7 +267,13 @@ export default function IrrigationCashBook() {
             <div className="text-center mb-1"><h2 className="text-base font-bold">{tx("Expense", "খরচ")}</h2></div>
             <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={tx("Expense cash book", "খরচ ক্যাশ বহি")}>
               <thead>
-                <tr>{KHARCH_COLS.map((h) => <th key={h} className="border border-black p-0.5">{h}</th>)}</tr>
+                <tr>
+                  <th className="border border-black p-0.5">{tx("Date", "তারিখ")}</th>
+                  <th className="border border-black p-0.5">{tx("Voucher no", "ভাউচার নং")}</th>
+                  <th className="border border-black p-0.5">{tx("Purpose of expense", "কি বাবদ খরচ")}</th>
+                  {KHARCH_COLS.map((c) => <th key={c.key} className="border border-black p-0.5">{c.label}</th>)}
+                  <th className="border border-black p-0.5">{tx("Total", "মোট")}</th>
+                </tr>
               </thead>
               <tbody>
                 {kharchRows.map((r, i) => (
@@ -225,45 +281,66 @@ export default function IrrigationCashBook() {
                     <td className="border border-black p-0.5 whitespace-nowrap">{formatDate(r.date)}</td>
                     <td className="border border-black p-0.5 text-center">{formatText(r.voucherNo)}</td>
                     <td className="border border-black p-0.5">{r.name}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.labor)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.partsBuy)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.partsRepair)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.transport)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.hospitality)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.publicity)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.salary)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.electricity)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.stationery)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.officeRent)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.motor)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.bankDeposit)}</td>
-                    <td className="border border-black p-0.5 text-right">{formatMoney(r.misc)}</td>
+                    {KHARCH_COLS.map((c) => <td key={c.key} className="border border-black p-0.5 text-right">{formatMoney(Number(r[c.key]))}</td>)}
                     <td className="border border-black p-0.5 text-right">{formatMoney(r.total)}</td>
                   </tr>
                 ))}
                 {kharchRows.length === 0 && <tr><td colSpan={17} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
                 <tr className="font-bold">
                   <td colSpan={3} className="border border-black p-0.5 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.labor)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.partsBuy)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.partsRepair)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.transport)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.hospitality)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.publicity)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.salary)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.electricity)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.stationery)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.officeRent)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.motor)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.bankDeposit)}</td>
-                  <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.misc)}</td>
+                  {KHARCH_COLS.map((c) => (
+                    <td key={c.key} className="border border-black p-0.5 text-right cursor-pointer hover:bg-yellow-100 print:cursor-auto" onClick={() => showKharchDetail(c.key, c.label)}>{formatMoney(Number(kharchTot[c.key]))}</td>
+                  ))}
                   <td className="border border-black p-0.5 text-right">{formatMoney(kharchTot.total)}</td>
                 </tr>
               </tbody>
             </table>
           </section>
         </div>
+
+        <div className="bn-cb-footer hidden print:flex justify-between text-[10px] mt-2 pt-1 border-t border-black">
+          <span>{tx("Total income", "মোট জমা")}: {formatMoney(jamaTot.total)}</span>
+          <span>{tx("Total expense", "মোট খরচ")}: {formatMoney(kharchTot.total)}</span>
+          <span>{tx("Balance", "জের")}: {formatMoney(jamaTot.total - kharchTot.total)}</span>
+        </div>
       </div>
+
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{detail?.title} — {tx("transactions", "লেনদেন")}</DialogTitle></DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left p-1">{tx("Date", "তারিখ")}</th>
+                  <th className="text-left p-1">{tx("Ref", "নং")}</th>
+                  <th className="text-left p-1">{tx("Name", "নাম")}</th>
+                  <th className="text-right p-1">{tx("Amount", "টাকা")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail?.rows.map((r, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="p-1 whitespace-nowrap">{formatDate(r.date)}</td>
+                    <td className="p-1">{formatText(r.ref)}</td>
+                    <td className="p-1">{r.name}</td>
+                    <td className="p-1 text-right">{formatMoney(r.amount)}</td>
+                  </tr>
+                ))}
+                {detail && detail.rows.length === 0 && <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">{tx("No transactions", "কোনো লেনদেন নেই")}</td></tr>}
+              </tbody>
+              {detail && detail.rows.length > 0 && (
+                <tfoot>
+                  <tr className="font-bold border-t">
+                    <td colSpan={3} className="p-1 text-right">{tx("Total", "মোট")}</td>
+                    <td className="p-1 text-right">{formatMoney(detail.total)}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .bn-cb-table th, .bn-cb-table td { word-wrap: break-word; overflow-wrap: anywhere; }
@@ -272,11 +349,15 @@ export default function IrrigationCashBook() {
           body * { visibility: hidden; }
           .bn-cashbook, .bn-cashbook * { visibility: visible; }
           .bn-cashbook { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
+          .bn-cb-header { display: block; }
           .bn-cb-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: start; }
           .bn-cb-cols > section { break-inside: auto; }
           .bn-cb-table { width: 100%; }
           .bn-cb-table thead { display: table-header-group; }
+          .bn-cb-table tfoot { display: table-footer-group; }
           .bn-cb-table tr { page-break-inside: avoid; break-inside: avoid; }
+          .bn-cb-table td, .bn-cb-table th { border: 1px solid #000 !important; }
+          .bn-cb-footer { position: fixed; bottom: 0; left: 0; right: 0; }
           @page { size: A4 landscape; margin: 6mm; }
         }
       `}</style>
