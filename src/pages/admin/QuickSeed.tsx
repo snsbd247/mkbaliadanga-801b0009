@@ -138,6 +138,10 @@ export default function QuickSeed() {
         description="প্রতি মডিউলে এক ক্লিকে টেস্ট ডাটা তৈরি করুন। প্রিরিকুইজিট মডিউল (locations/settings/accounting) স্বয়ংক্রিয়ভাবে অন্তর্ভুক্ত।"
         actions={
           <div className="flex items-center gap-2 flex-wrap">
+            <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer" title="ক্যাশ-রিপোর্ট মডিউল seed করার আগে স্বয়ংক্রিয় JSON ব্যাকআপ">
+              <input type="checkbox" checked={backupFirst} onChange={(e) => setBackupFirst(e.target.checked)} />
+              <ShieldCheck className="h-3.5 w-3.5" /> seed-এর আগে ব্যাকআপ
+            </label>
             <label className="text-xs text-muted-foreground">Size</label>
             <input
               type="number"
