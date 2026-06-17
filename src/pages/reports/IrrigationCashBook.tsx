@@ -54,6 +54,9 @@ type DetailState = {
   total: number;
 } | null;
 
+type Preset = { name: string; from: string; to: string; officeFilter: string };
+const PRESET_KEY = "irr_cashbook_presets";
+
 export default function IrrigationCashBook() {
   const branding = useBranding();
   const { officeId, isAdmin } = useAuth();
