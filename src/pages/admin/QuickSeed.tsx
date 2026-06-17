@@ -278,9 +278,25 @@ export default function QuickSeed() {
               ))}
             </div>
             <p className="text-[10px] text-muted-foreground mt-2">* required টেবিল — খালি হলে mismatch হিসেবে flag হয়।</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button size="sm" variant="outline" onClick={restoreFromLast} disabled={restoring}>
+                <ShieldCheck className="h-4 w-4 mr-1" /> শেষ ব্যাকআপ থেকে Restore
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={restoring}>
+                <Upload className="h-4 w-4 mr-1" /> ফাইল থেকে Restore
+              </Button>
+              <Button size="sm" variant="outline" onClick={downloadSummary}>
+                <FileText className="h-4 w-4 mr-1" /> PDF সারাংশ
+              </Button>
+              <input
+                ref={fileRef} type="file" accept="application/json" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) restoreFromFile(f); e.currentTarget.value = ""; }}
+              />
+            </div>
           </CardContent>
         </Card>
       )}
+
 
 
 
