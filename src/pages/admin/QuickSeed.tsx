@@ -202,6 +202,33 @@ export default function QuickSeed() {
         )}
       </div>
 
+      {cashValidation && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Cash-Report Validation (Cash Book / Hand Cash / Cash Statement)
+              {flagCashMismatches(cashValidation).length === 0
+                ? <Badge className="bg-green-600 ml-auto">সব ঠিক আছে</Badge>
+                : <Badge variant="destructive" className="ml-auto">{flagCashMismatches(cashValidation).length} টি mismatch</Badge>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3 text-xs">
+              {cashValidation.map((r) => (
+                <div key={r.table} className="flex items-center justify-between border rounded px-2 py-1">
+                  <span className="font-mono">{r.table}{r.required && <span className="text-destructive">*</span>}</span>
+                  <Badge variant={r.ok ? "secondary" : "destructive"}>{r.count}</Badge>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">* required টেবিল — খালি হলে mismatch হিসেবে flag হয়।</p>
+          </CardContent>
+        </Card>
+      )}
+
+
+
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {MODULES.map((m) => {
