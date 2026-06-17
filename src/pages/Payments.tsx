@@ -141,6 +141,18 @@ export default function Payments() {
   async function saveEditReceipt() {
     if (!editPayment) return;
     if (!editForm.reason.trim()) return toast.error(tx("Reason is required", "কারণ আবশ্যক"));
+    // Save-time consistency check: recalculated due/paid must agree across
+    // invoice, allocation and payment records before we persist anything.
+    if (editBaseline && editPreview) {
+      const { ok, errors } = checkConsistency({
+        invoicePaid: editPreview.paid,
+        allocationAmount: Math.round(Number(editForm.amount) || 0),
+        paymentAmount: Math.round(Number(editForm.amount) || 0),
+        payable: editPreview.payable,
+        due: editPreview.due,
+      });
+      if (!ok) return toast.error(tx("Cannot save: ", "সংরক্ষণ করা যাচ্ছে না: ") + errors.join("; "));
+    }
     const p = editPayment;
     const before: any = {};
     const after: any = {};
