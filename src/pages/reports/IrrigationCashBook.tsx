@@ -15,9 +15,11 @@ import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
 import {
   buildIrrJamaRows, buildIrrKharchRows, sumIrrJama, sumIrrKharch,
+  buildJamaExportMatrix, buildKharchExportMatrix, resolveEffectiveOffice,
   type IrrJamaRow, type IrrKharchRow,
 } from "@/lib/irrigationCashBook";
 import { useLang } from "@/i18n/LanguageProvider";
+import { toast } from "sonner";
 
 const sb = supabase as any;
 
