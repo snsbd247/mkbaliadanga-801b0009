@@ -255,7 +255,7 @@ export default function IrrigationCashBook() {
         <div className="bn-cb-header text-center font-bold text-base mb-1">
           {project}
           <span className="ml-2 font-normal text-sm">
-            {lang === "bn" ? toBnDigits(`${formatDate(from)} - ${formatDate(to)}`) : `${formatDate(from)} - ${formatDate(to)}`}
+            {rlang === "bn" ? toBnDigits(`${formatDate(from)} - ${formatDate(to)}`) : `${formatDate(from)} - ${formatDate(to)}`}
           </span>
         </div>
 
