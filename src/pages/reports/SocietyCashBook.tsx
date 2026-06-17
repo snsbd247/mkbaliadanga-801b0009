@@ -190,10 +190,9 @@ export default function SocietyCashBook() {
         </section>
 
         {/* খরচ */}
-        <section aria-label="খরচ অংশ" className="bn-cb-page">
+        <section aria-label="খরচ অংশ">
           <div className="text-center mb-1">
             <h2 className="text-lg font-bold">খরচ</h2>
-            <div className="font-semibold text-sm">{society}</div>
           </div>
           <table className="w-full border-collapse text-xs bn-cb-table" aria-label="খরচ ক্যাশ বহি">
             <thead>
