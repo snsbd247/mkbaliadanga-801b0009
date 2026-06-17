@@ -7,10 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Printer } from "lucide-react";
+import { Printer, FileSpreadsheet } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { computeStatement, type Line } from "@/lib/irrigationCashStatement";
+import { downloadCsv } from "@/lib/csvExport";
 
 const sb = supabase as any;
 
