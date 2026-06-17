@@ -420,9 +420,9 @@ export default function Help() {
             />
           </div>
 
-          <Accordion type="multiple" className="space-y-2">
+          <Accordion type="multiple" className="space-y-2" value={openItems} onValueChange={setOpenItems}>
             {filtered.map((m) => (
-              <AccordionItem key={m.id} value={m.id} className="border rounded-lg px-3 bg-card">
+              <AccordionItem key={m.id} id={`help-${m.id}`} value={m.id} className="border rounded-lg px-3 bg-card scroll-mt-20">
                 <AccordionTrigger className="text-left">
                   <span className="font-medium">{m.title[lang]}</span>
                 </AccordionTrigger>
@@ -446,6 +446,7 @@ export default function Help() {
             ))}
           </Accordion>
         </TabsContent>
+
 
         {/* ── REPORTS ── */}
         <TabsContent value="reports" className="mt-4">
