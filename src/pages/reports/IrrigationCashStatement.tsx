@@ -1,5 +1,6 @@
 // i18n-ignore-file — fixed Bengali audit statement (সেচ জমা খরচ হিসাব)
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
