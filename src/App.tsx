@@ -116,6 +116,7 @@ import ShareCollection from "./pages/ShareCollection";
 import DuesAudit from "./pages/DuesAudit";
 import Profile from "./pages/Profile";
 import Help from "./pages/Help";
+import Trust from "./pages/Trust";
 import HelpFarmerCard from "./pages/HelpFarmerCard";
 import NotFound from "./pages/NotFound.tsx";
 import { RequirePerm } from "./components/auth/RequirePerm";
