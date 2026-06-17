@@ -164,13 +164,19 @@ export default function SocietyCashStatement() {
               <tr><td colSpan={6} className="border border-black p-3 text-center">এই সময়ে কোনো তথ্য নেই</td></tr>
             )}
             <tr className="font-bold">
-              <td colSpan={2} className="border border-black p-1 text-right">মোট আয়=</td>
+              <td colSpan={2} className="border border-black p-1 text-right">
+                <Link to={incomeDrillDownUrl(from, to)} aria-label={`সঞ্চয় জমা রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">মোট আয়=</Link>
+              </td>
               <td className="border border-black p-1 text-right">{bnMoney(totalIncome)}</td>
-              <td colSpan={2} className="border border-black p-1 text-right">মোট ব্যয়=</td>
+              <td colSpan={2} className="border border-black p-1 text-right">
+                <Link to={expenseDrillDownUrl(from, to)} aria-label={`সমিতির খরচ রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">মোট ব্যয়=</Link>
+              </td>
               <td className="border border-black p-1 text-right">{bnMoney(totalExpense)}</td>
             </tr>
             <tr className="font-bold">
-              <td colSpan={2} className="border border-black p-1 text-right">আগত তহবিল=</td>
+              <td colSpan={2} className="border border-black p-1 text-right">
+                <Link to={incomingDrillDownUrl(from, to)} aria-label={`আগত তহবিল (ব্যাংক) রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">আগত তহবিল=</Link>
+              </td>
               <td className="border border-black p-1 text-right">{bnMoney(openingFund)}</td>
               <td colSpan={2} className="border border-black p-1 text-right">হস্তমজুদ তহবিল=</td>
               <td className="border border-black p-1 text-right">{bnMoney(closingFund)}</td>
