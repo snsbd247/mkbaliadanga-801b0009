@@ -138,39 +138,39 @@ export default function SocietyCashBook() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="আয়-ব্যয় ক্যাশ বহি (সমিতি)" description="সমিতির জমা ও খরচের লেনদেন ভিত্তিক ক্যাশ বহি" />
+      <PageHeader title={tx("Income-Expense Cash Book (Society)", "আয়-ব্যয় ক্যাশ বহি (সমিতি)")} description={tx("Transaction-based society income and expense cash book", "সমিতির জমা ও খরচের লেনদেন ভিত্তিক ক্যাশ বহি")} />
 
       <Card className="p-3 flex flex-wrap items-end gap-3 print:hidden">
-        <div><Label>শুরুর তারিখ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-        <div><Label>শেষ তারিখ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+        <div><Label>{tx("Start date", "শুরুর তারিখ")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+        <div><Label>{tx("End date", "শেষ তারিখ")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
         <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" /> এক্সেল
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
           </Button>
           <Button onClick={() => window.print()} disabled={loading || !hasData}>
-            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট
+            <Printer className="h-4 w-4 mr-1" /> {tx("Print", "প্রিন্ট")}
           </Button>
         </div>
-        {loading && <span className="text-sm text-muted-foreground">লোড হচ্ছে…</span>}
+        {loading && <span className="text-sm text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</span>}
         {error && <span className="text-sm text-destructive">{error}</span>}
-        {!loading && !error && !hasData && <span className="text-sm text-destructive">এই সময়ে কোনো তথ্য নেই</span>}
+        {!loading && !error && !hasData && <span className="text-sm text-destructive">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</span>}
       </Card>
 
       <div className="bn-cashbook bg-white text-black p-4 overflow-x-auto">
         <div className="text-center font-semibold text-sm mb-1">
           {society}
-          <span className="ml-2 font-normal">{toBnDigits(`${bnDate(from)} - ${bnDate(to)}`)}</span>
+          <span className="ml-2 font-normal">{lang === "bn" ? toBnDigits(`${formatDate(from)} - ${formatDate(to)}`) : `${formatDate(from)} - ${formatDate(to)}`}</span>
         </div>
         <div className="bn-cb-cols grid grid-cols-2 gap-3 items-start">
         {/* জমা */}
-        <section aria-label="জমা অংশ">
+        <section aria-label={tx("Income section", "জমা অংশ")}>
           <div className="text-center mb-1">
-            <h2 className="text-lg font-bold">জমা</h2>
+            <h2 className="text-lg font-bold">{tx("Income", "জমা")}</h2>
           </div>
-          <table className="w-full border-collapse text-xs bn-cb-table" aria-label="জমা ক্যাশ বহি">
+          <table className="w-full border-collapse text-xs bn-cb-table" aria-label={tx("Income cash book", "জমা ক্যাশ বহি")}>
             <thead>
               <tr>
-                {["তারিখ", "রশিদ নং", "কাহার নিকট প্রাপ্ত", "শেয়ার", "সঞ্চয়ের আমানত", "ব্যাংক উত্তোলন", "কর্জের আদায়", "কর্জের সুদ আদায়", "ফরম", "বিবিধ", "মোট"].map((h) => (
+                {[tx("Date", "তারিখ"), tx("Receipt no", "রশিদ নং"), tx("Received from", "কাহার নিকট প্রাপ্ত"), tx("Share", "শেয়ার"), tx("Savings deposit", "সঞ্চয়ের আমানত"), tx("Bank withdrawal", "ব্যাংক উত্তোলন"), tx("Loan collection", "কর্জের আদায়"), tx("Loan interest collection", "কর্জের সুদ আদায়"), tx("Form", "ফরম"), tx("Miscellaneous", "বিবিধ"), tx("Total", "মোট")].map((h) => (
                   <th key={h} className="border border-black p-1">{h}</th>
                 ))}
               </tr>
@@ -178,30 +178,30 @@ export default function SocietyCashBook() {
             <tbody>
               {jamaRows.map((r, i) => (
                 <tr key={i}>
-                  <td className="border border-black p-1 whitespace-nowrap">{bnDate(r.date)}</td>
-                  <td className="border border-black p-1 text-center">{bnText(r.receiptNo)}</td>
+                  <td className="border border-black p-1 whitespace-nowrap">{formatDate(r.date)}</td>
+                  <td className="border border-black p-1 text-center">{formatText(r.receiptNo)}</td>
                   <td className="border border-black p-1">{r.name}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.share)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.savings)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.bankWithdraw)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.loanPrincipal)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.loanInterest)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.form)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.misc)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.total)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.share)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.savings)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.bankWithdraw)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.loanPrincipal)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.loanInterest)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.form)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.misc)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.total)}</td>
                 </tr>
               ))}
-              {jamaRows.length === 0 && <tr><td colSpan={11} className="border border-black p-3 text-center">তথ্য নেই</td></tr>}
+              {jamaRows.length === 0 && <tr><td colSpan={11} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
               <tr className="font-bold">
-                <td colSpan={3} className="border border-black p-1 text-right">সর্বমোট=</td>
-                <td className="border border-black p-1 text-right">{bnMoney(jamaTot.share)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(jamaTot.savings)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(jamaTot.bankWithdraw)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(jamaTot.loanPrincipal)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(jamaTot.loanInterest)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(jamaTot.form)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(jamaTot.misc)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(jamaTot.total)}</td>
+                <td colSpan={3} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.share)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.savings)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.bankWithdraw)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.loanPrincipal)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.loanInterest)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.form)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.misc)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(jamaTot.total)}</td>
               </tr>
             </tbody>
           </table>
