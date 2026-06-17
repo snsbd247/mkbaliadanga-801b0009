@@ -125,6 +125,14 @@ export default function ExpensesReport() {
         description={t("expensesReportDesc")}
       />
 
+      {fromStatement && (
+        <div className="mb-4 rounded-md border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-foreground">
+          সেচ জমা খরচ হিসাব থেকে ফিল্টার প্রয়োগ করা হয়েছে — সেচ খরচ
+          {(from || to) && <> ({from || "…"} → {to || "…"})</>}
+        </div>
+      )}
+
+
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-5">
           <div>
