@@ -56,6 +56,10 @@ export default function IrrigationCashBook() {
   const branding = useBranding();
   const { officeId, isAdmin } = useAuth();
   const { lang, tx } = useLang();
+  // Per-report language override — switches display only, never the data mapping.
+  const [reportLang, setReportLang] = useState<"bn" | "en">(lang === "en" ? "en" : "bn");
+  const rlang = reportLang;
+  const rt = (en: string, bn: string) => (rlang === "bn" ? bn : en);
 
   const today = new Date();
   const fyStartYear = today.getMonth() + 1 >= 7 ? today.getFullYear() : today.getFullYear() - 1;
