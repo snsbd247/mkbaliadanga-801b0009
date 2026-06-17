@@ -129,10 +129,10 @@ export default function SocietyCashBook() {
         <div><Label>শেষ তারিখ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
         <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> এক্সেল
           </Button>
           <Button onClick={() => window.print()} disabled={loading || !hasData}>
-            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট / PDF
+            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট
           </Button>
         </div>
         {loading && <span className="text-sm text-muted-foreground">লোড হচ্ছে…</span>}
@@ -204,7 +204,7 @@ export default function SocietyCashBook() {
                 <th rowSpan={2} className="border border-black p-1">কাহাকে প্রদত্ত হইল</th>
                 <th rowSpan={2} className="border border-black p-1">জমানত ফেরত</th>
                 <th rowSpan={2} className="border border-black p-1">ব্যাংক জমা</th>
-                <th colSpan={3} className="border border-black p-1 text-center">কি বাবদ (ON ACCOUNT OF)</th>
+                <th colSpan={3} className="border border-black p-1 text-center">কি বাবদ</th>
                 <th rowSpan={2} className="border border-black p-1">মোট</th>
               </tr>
               <tr>
