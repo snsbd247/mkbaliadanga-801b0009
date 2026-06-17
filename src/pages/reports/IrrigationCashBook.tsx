@@ -76,9 +76,7 @@ export default function IrrigationCashBook() {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<DetailState>(null);
-  const [presets, setPresets] = useState<Preset[]>(() => {
-    try { return JSON.parse(localStorage.getItem(PRESET_KEY) || "[]"); } catch { return []; }
-  });
+  const [presets, setPresets] = useState<Preset[]>([]);
 
   // The effective office: scoped users are locked to theirs; non-scoped admins may pick.
   const effectiveOffice = resolveEffectiveOffice(officeId, isAdmin, officeFilter);
