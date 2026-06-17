@@ -53,6 +53,12 @@ type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?:
 
 const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "" };
 
+// Show land size exactly as entered (up to 3 decimals), without forcing 2-decimal rounding.
+const fmtLand = (v: any) => {
+  const n = Number(v || 0);
+  return n.toLocaleString("en-US", { maximumFractionDigits: 3 });
+};
+
 function pickCurrentSeason(seasons: any[]) {
   const today = new Date();
   const todayKey = today.toISOString().slice(0, 10);
@@ -1098,7 +1104,7 @@ export default function FarmerDetail() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <Label>{t("landSize")} ({t("decimal" as any)}) <span className="text-destructive">*</span></Label>
-                          <Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} />
+                          <Input disabled={savingLand} type="number" step="0.001" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} />
                         </div>
                         <div>
                           <Label>{t("fieldType")}</Label>
@@ -1231,7 +1237,7 @@ export default function FarmerDetail() {
                             </div>
                           ) : null}
                         </TableCell>
-                        <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                         <TableCell className="text-xs">
                           {l.owner_type === "owner"
@@ -1314,7 +1320,7 @@ export default function FarmerDetail() {
                     return (
                       <TableRow className="bg-muted/40 font-semibold">
                         <TableCell colSpan={2} className="text-right">{label} ({tx("Subtotal", "উপ-মোট")})</TableCell>
-                        <TableCell className="text-right">{sizeSum.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmtLand(sizeSum)}</TableCell>
                         <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
@@ -1348,7 +1354,7 @@ export default function FarmerDetail() {
                     out.push(
                       <TableRow key="grand" className="bg-muted/70 font-bold border-t-2">
                         <TableCell colSpan={2} className="text-right">{tx("Grand Total", "সর্বমোট")}</TableCell>
-                        <TableCell className="text-right">{totalSize.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmtLand(totalSize)}</TableCell>
                         <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(totalAmt)}</TableCell>
                         <TableCell />
@@ -1393,7 +1399,7 @@ export default function FarmerDetail() {
                     <TableRow key={l.id}>
                       <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
                       <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
-                      <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
                       <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                       <TableCell className="text-right">{money(landInvMap[l.id]?.paid ?? 0)}</TableCell>
                     </TableRow>
@@ -1709,7 +1715,7 @@ export default function FarmerDetail() {
                   );
                 })()}
               </div>
-              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.01" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
+              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.001" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
               <div><Label>{t("ownerType")}</Label>
                 <Select value={editForm.owner_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, owner_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
