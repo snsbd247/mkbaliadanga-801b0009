@@ -66,11 +66,21 @@ export default function IrrigationCashStatement() {
   useEffect(() => {
     setLoading(true);
     (async () => {
-      let recQ = sb.from("receipts").select("kind,amount,receipt_date,office_id").gte("receipt_date", from).lte("receipt_date", to);
-      let expQ = sb.from("expenses").select("stream,head,amount,expense_date,office_id").is("deleted_at", null).gte("expense_date", from).lte("expense_date", to);
-      if (officeId) { recQ = recQ.eq("office_id", officeId); expQ = expQ.eq("office_id", officeId); }
-      const [rec, exp] = await Promise.all([recQ, expQ]);
-      setReceipts(rec.data ?? []);
+      // Income: farmer payments on the irrigation stream + farmer-less office incomes (stream=sech).
+      let payQ = sb.from("payments")
+        .select("kind,amount,created_at,office_id,status,deleted_at,voided_at")
+        .gte("created_at", from).lte("created_at", `${to}T23:59:59`);
+      let offQ = sb.from("office_incomes")
+        .select("income_type,amount,received_on,office_id,stream")
+        .eq("stream", "sech").gte("received_on", from).lte("received_on", to);
+      let expQ = sb.from("expenses")
+        .select("stream,head,amount,expense_date,office_id")
+        .is("deleted_at", null).eq("stream", "irrigation")
+        .gte("expense_date", from).lte("expense_date", to);
+      if (officeId) { payQ = payQ.eq("office_id", officeId); offQ = offQ.eq("office_id", officeId); expQ = expQ.eq("office_id", officeId); }
+      const [pay, off, exp] = await Promise.all([payQ, offQ, expQ]);
+      const payRows = (pay.data ?? []).filter((p: any) => !p.deleted_at && !p.voided_at && p.status !== "rejected");
+      setReceipts([...payRows, ...(off.data ?? [])]);
       setExpenses(exp.data ?? []);
       setLoading(false);
     })();
@@ -80,9 +90,14 @@ export default function IrrigationCashStatement() {
     const incMap = new Map<string, number>();
     let totalIncome = 0;
     for (const r of receipts) {
-      if (!IRRIGATION_INCOME_KINDS.has(r.kind)) continue;
       const amt = Number(r.amount || 0);
-      const label = KIND_LABEL[r.kind] ?? r.kind;
+      let label: string | null = null;
+      if (r.income_type !== undefined || r.stream === "sech") {
+        label = OFFICE_INCOME_LABEL[r.income_type] ?? "বিবিধ আয়";
+      } else if (IRRIGATION_PAYMENT_KINDS.has(r.kind)) {
+        label = KIND_LABEL[r.kind] ?? r.kind;
+      }
+      if (!label) continue;
       incMap.set(label, (incMap.get(label) ?? 0) + amt);
       totalIncome += amt;
     }
@@ -99,6 +114,7 @@ export default function IrrigationCashStatement() {
     const expenseLines: Line[] = Array.from(expMap, ([label, amount]) => ({ label, amount }));
     return { incomeLines, expenseLines, totalIncome, totalExpense };
   }, [receipts, expenses]);
+
 
   const openingFund = Number(opening || 0);
   const grandIncome = totalIncome + openingFund;      // মোট আয় + আগত তহবিল
