@@ -1088,6 +1088,17 @@ export default function Payments() {
                 <Label>{tx("Reason for change", "পরিবর্তনের কারণ")} *</Label>
                 <Input value={editForm.reason} onChange={(e) => setEditForm(f => ({ ...f, reason: e.target.value }))} placeholder={tx("Why are you editing this receipt?", "কেন এই রসিদ এডিট করছেন?")} />
               </div>
+              {editInvoiceId && editPreview && (
+                <div className="rounded-md border bg-muted/40 p-2 space-y-1">
+                  <div className="text-xs font-medium text-muted-foreground">{tx("Recalculated preview", "পুনঃগণনা প্রিভিউ")}</div>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>{tx("Payable", "প্রদেয়")}<div className="font-semibold">{money(editPreview.payable)}</div></div>
+                    <div>{tx("Paid", "পরিশোধিত")}<div className="font-semibold">{money(editPreview.paid)}</div></div>
+                    <div>{tx("Due", "বকেয়া")}<div className="font-semibold">{money(editPreview.due)}</div></div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{tx("Status", "অবস্থা")}: {editPreview.status}</div>
+                </div>
+              )}
               {editHistory.length > 0 && (
                 <div className="rounded-md border p-2 max-h-48 overflow-auto space-y-2">
                   <div className="text-xs font-medium text-muted-foreground">{tx("Edit history", "এডিট ইতিহাস")}</div>
