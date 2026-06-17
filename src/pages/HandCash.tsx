@@ -12,6 +12,7 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { FileDown, FileSpreadsheet, Lock, Unlock, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = supabase as any;
 
