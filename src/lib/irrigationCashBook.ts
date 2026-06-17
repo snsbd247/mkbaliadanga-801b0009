@@ -179,3 +179,60 @@ export function sumIrrKharch(rows: IrrKharchRow[]) {
     salary: 0, electricity: 0, stationery: 0, officeRent: 0, motor: 0, bankDeposit: 0, misc: 0, total: 0,
   });
 }
+
+// ── Ordered column keys (single source of truth for rendering + export) ──────
+export const JAMA_COL_KEYS = [
+  "sechCharge", "nalaCharge", "maintenance", "lateFee", "bankWithdraw", "pond", "misc",
+] as const;
+export const KHARCH_COL_KEYS = [
+  "labor", "partsBuy", "partsRepair", "transport", "hospitality", "publicity", "salary",
+  "electricity", "stationery", "officeRent", "motor", "bankDeposit", "misc",
+] as const;
+
+export type JamaColKey = (typeof JAMA_COL_KEYS)[number];
+export type KharchColKey = (typeof KHARCH_COL_KEYS)[number];
+
+export type JamaExportLabels = {
+  date: string; receiptNo: string; receivedFrom: string; total: string; grandTotal: string;
+  cols: string[]; // must align with JAMA_COL_KEYS order/length
+};
+export type KharchExportLabels = {
+  date: string; voucherNo: string; purpose: string; total: string; grandTotal: string;
+  cols: string[]; // must align with KHARCH_COL_KEYS order/length
+};
+
+type Cell = string | number;
+
+// Pure matrix: [header, ...rows, grandTotal]. Used by both XLSX and CSV exports
+// so columns, totals, and language headers stay identical across formats.
+export function buildJamaExportMatrix(
+  rows: IrrJamaRow[], tot: ReturnType<typeof sumIrrJama>, labels: JamaExportLabels,
+): Cell[][] {
+  const head: Cell[] = [labels.date, labels.receiptNo, labels.receivedFrom, ...labels.cols, labels.total];
+  const body: Cell[][] = rows.map((r) => [
+    r.date, r.receiptNo, r.name, ...JAMA_COL_KEYS.map((k) => Number(r[k]) || ""), r.total,
+  ]);
+  const grand: Cell[] = [labels.grandTotal, "", "", ...JAMA_COL_KEYS.map((k) => Number(tot[k]) || ""), tot.total];
+  return [head, ...body, grand];
+}
+
+export function buildKharchExportMatrix(
+  rows: IrrKharchRow[], tot: ReturnType<typeof sumIrrKharch>, labels: KharchExportLabels,
+): Cell[][] {
+  const head: Cell[] = [labels.date, labels.voucherNo, labels.purpose, ...labels.cols, labels.total];
+  const body: Cell[][] = rows.map((r) => [
+    r.date, r.voucherNo, r.name, ...KHARCH_COL_KEYS.map((k) => Number(r[k]) || ""), r.total,
+  ]);
+  const grand: Cell[] = [labels.grandTotal, "", "", ...KHARCH_COL_KEYS.map((k) => Number(tot[k]) || ""), tot.total];
+  return [head, ...body, grand];
+}
+
+// Office scoping: a scoped user (officeId set) is always locked to their office;
+// only a non-scoped admin may pick an office (or "all" → null).
+export function resolveEffectiveOffice(
+  officeId: string | null, isAdmin: boolean, officeFilter: string,
+): string | null {
+  if (officeId) return officeId;
+  if (!isAdmin) return null;
+  return officeFilter === "all" ? null : officeFilter;
+}

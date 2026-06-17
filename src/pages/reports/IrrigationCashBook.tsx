@@ -15,9 +15,11 @@ import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
 import {
   buildIrrJamaRows, buildIrrKharchRows, sumIrrJama, sumIrrKharch,
+  buildJamaExportMatrix, buildKharchExportMatrix, resolveEffectiveOffice,
   type IrrJamaRow, type IrrKharchRow,
 } from "@/lib/irrigationCashBook";
 import { useLang } from "@/i18n/LanguageProvider";
+import { toast } from "sonner";
 
 const sb = supabase as any;
 
@@ -52,9 +54,12 @@ type DetailState = {
   total: number;
 } | null;
 
+type Preset = { name: string; from: string; to: string; officeFilter: string };
+const PRESET_KEY = "irr_cashbook_presets";
+
 export default function IrrigationCashBook() {
   const branding = useBranding();
-  const { officeId, isAdmin } = useAuth();
+  const { officeId, isAdmin, user } = useAuth();
   const { lang, tx } = useLang();
   // Per-report language override — switches display only, never the data mapping.
   const [reportLang, setReportLang] = useState<"bn" | "en">(lang === "en" ? "en" : "bn");
@@ -69,11 +74,15 @@ export default function IrrigationCashBook() {
   const [officeFilter, setOfficeFilter] = useState<string>("all");
   const [input, setInput] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<DetailState>(null);
+  const [presets, setPresets] = useState<Preset[]>(() => {
+    try { return JSON.parse(localStorage.getItem(PRESET_KEY) || "[]"); } catch { return []; }
+  });
 
-  // The effective office: a non-scoped admin may pick any office; scoped users are locked to theirs.
-  const effectiveOffice = officeId ?? (officeFilter === "all" ? null : officeFilter);
+  // The effective office: scoped users are locked to theirs; non-scoped admins may pick.
+  const effectiveOffice = resolveEffectiveOffice(officeId, isAdmin, officeFilter);
 
   useEffect(() => { document.title = tx("Irrigation Income-Expense Cash Book", "সেচ আয়-ব্যয় ক্যাশ বহি"); }, [lang]);
 
@@ -176,23 +185,43 @@ export default function IrrigationCashBook() {
 
   const fileBase = `${rt("irrigation-cashbook", "সেচ-আয়-ব্যয়-ক্যাশবহি")}-${from}_${to}`;
 
-  // Build a matrix (header + rows + grand total) for one section, matching the on-screen columns.
-  const jamaMatrix = () => {
-    const head = [rt("Date", "তারিখ"), rt("Receipt no", "রশিদ নং"), rt("Received from", "কাহার নিকট হতে"),
-      ...JAMA_COLS.map((c) => c.label), rt("Total", "মোট")];
-    const body = jamaRows.map((r) => [r.date, r.receiptNo, r.name, ...JAMA_COLS.map((c) => Number(r[c.key]) || ""), r.total]);
-    const tot = [rt("Grand total", "সর্বমোট"), "", "", ...JAMA_COLS.map((c) => Number(jamaTot[c.key]) || ""), jamaTot.total];
-    return [head, ...body, tot];
-  };
-  const kharchMatrix = () => {
-    const head = [rt("Date", "তারিখ"), rt("Voucher no", "ভাউচার নং"), rt("Purpose of expense", "কি বাবদ খরচ"),
-      ...KHARCH_COLS.map((c) => c.label), rt("Total", "মোট")];
-    const body = kharchRows.map((r) => [r.date, r.voucherNo, r.name, ...KHARCH_COLS.map((c) => Number(r[c.key]) || ""), r.total]);
-    const tot = [rt("Grand total", "সর্বমোট"), "", "", ...KHARCH_COLS.map((c) => Number(kharchTot[c.key]) || ""), kharchTot.total];
-    return [head, ...body, tot];
+  const jamaLabels = () => ({
+    date: rt("Date", "তারিখ"), receiptNo: rt("Receipt no", "রশিদ নং"),
+    receivedFrom: rt("Received from", "কাহার নিকট হতে"), total: rt("Total", "মোট"),
+    grandTotal: rt("Grand total", "সর্বমোট"), cols: JAMA_COLS.map((c) => c.label),
+  });
+  const kharchLabels = () => ({
+    date: rt("Date", "তারিখ"), voucherNo: rt("Voucher no", "ভাউচার নং"),
+    purpose: rt("Purpose of expense", "কি বাবদ খরচ"), total: rt("Total", "মোট"),
+    grandTotal: rt("Grand total", "সর্বমোট"), cols: KHARCH_COLS.map((c) => c.label),
+  });
+
+  // Record each download for auditing (best-effort — never blocks the download).
+  const logExport = async (format: "XLSX" | "CSV" | "PDF") => {
+    if (!user?.id) return;
+    try {
+      await sb.from("irrigation_cashbook_export_audit").insert({
+        user_id: user.id, office_id: effectiveOffice, date_from: from, date_to: to, format,
+      });
+    } catch { /* auditing is best-effort */ }
   };
 
-  const exportCsv = () => {
+  const runExport = async (format: "XLSX" | "CSV", fn: () => void) => {
+    if (exporting) return;
+    setExporting(true);
+    const tid = toast.loading(rt(`Generating ${format}…`, `${format} তৈরি হচ্ছে…`));
+    try {
+      fn();
+      await logExport(format);
+      toast.success(rt(`${format} downloaded`, `${format} ডাউনলোড হয়েছে`), { id: tid });
+    } catch (e: any) {
+      toast.error(e?.message || rt("Export failed", "এক্সপোর্ট ব্যর্থ হয়েছে"), { id: tid });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportCsv = () => runExport("CSV", () => {
     downloadCsv(fileBase, jamaRows, [
       { header: rt("Date", "তারিখ"), accessor: (r) => r.date },
       { header: rt("Receipt no", "রশিদ নং"), accessor: (r) => r.receiptNo },
@@ -200,16 +229,39 @@ export default function IrrigationCashBook() {
       ...JAMA_COLS.map((c) => ({ header: c.label, accessor: (r: IrrJamaRow) => Number(r[c.key]) || "" })),
       { header: rt("Total", "মোট"), accessor: (r) => r.total },
     ]);
-  };
+  });
 
-  const exportExcel = () => {
+  const exportExcel = () => runExport("XLSX", () => {
     const wb = XLSX.utils.book_new();
-    const wsJama = XLSX.utils.aoa_to_sheet([[project], [`${formatDate(from)} - ${formatDate(to)}`], [], ...jamaMatrix()]);
-    const wsKharch = XLSX.utils.aoa_to_sheet([[project], [`${formatDate(from)} - ${formatDate(to)}`], [], ...kharchMatrix()]);
+    const meta = [[project], [`${formatDate(from)} - ${formatDate(to)}`], []];
+    const wsJama = XLSX.utils.aoa_to_sheet([...meta, ...buildJamaExportMatrix(jamaRows, jamaTot, jamaLabels())]);
+    const wsKharch = XLSX.utils.aoa_to_sheet([...meta, ...buildKharchExportMatrix(kharchRows, kharchTot, kharchLabels())]);
     XLSX.utils.book_append_sheet(wb, wsJama, rt("Income", "জমা"));
     XLSX.utils.book_append_sheet(wb, wsKharch, rt("Expense", "খরচ"));
     XLSX.writeFile(wb, `${fileBase}.xlsx`);
+  });
+
+  const handlePrint = () => { logExport("PDF"); window.print(); };
+
+  const savePreset = () => {
+    const name = window.prompt(rt("Preset name", "প্রিসেটের নাম"));
+    if (!name) return;
+    const next = [...presets.filter((p) => p.name !== name), { name, from, to, officeFilter }];
+    setPresets(next);
+    localStorage.setItem(PRESET_KEY, JSON.stringify(next));
+    toast.success(rt("Preset saved", "প্রিসেট সংরক্ষিত হয়েছে"));
   };
+  const applyPreset = (name: string) => {
+    const p = presets.find((x) => x.name === name);
+    if (!p) return;
+    setFrom(p.from); setTo(p.to); setOfficeFilter(p.officeFilter);
+  };
+  const deletePreset = (name: string) => {
+    const next = presets.filter((p) => p.name !== name);
+    setPresets(next);
+    localStorage.setItem(PRESET_KEY, JSON.stringify(next));
+  };
+
 
 
   return (
@@ -235,17 +287,39 @@ export default function IrrigationCashBook() {
           <Button variant="outline" onClick={() => setReportLang((p) => (p === "bn" ? "en" : "bn"))}>
             <Languages className="h-4 w-4 mr-1" /> {reportLang === "bn" ? "English" : "বাংলা"}
           </Button>
-          <Button variant="outline" onClick={exportExcel} disabled={loading || !hasData}>
+          <Button variant="outline" onClick={exportExcel} disabled={loading || exporting || !hasData}>
             <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
           </Button>
-          <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
+          <Button variant="outline" onClick={exportCsv} disabled={loading || exporting || !hasData}>
             <FileDown className="h-4 w-4 mr-1" /> CSV
           </Button>
-          <Button onClick={() => window.print()} disabled={loading || !hasData}>
+          <Button onClick={handlePrint} disabled={loading || exporting || !hasData}>
             <Printer className="h-4 w-4 mr-1" /> {tx("Print", "প্রিন্ট")}
           </Button>
         </div>
-        {loading && <span className="text-sm text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</span>}
+
+        {/* Saved filter presets (date range + office) */}
+        <div className="basis-full flex flex-wrap items-end gap-2">
+          <div>
+            <Label>{tx("Presets", "প্রিসেট")}</Label>
+            <Select value="" onValueChange={applyPreset}>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder={tx("Apply a preset", "প্রিসেট প্রয়োগ করুন")} /></SelectTrigger>
+              <SelectContent>
+                {presets.length === 0 && <SelectItem value="__none" disabled>{tx("No presets saved", "কোনো প্রিসেট নেই")}</SelectItem>}
+                {presets.map((p) => <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" size="sm" onClick={savePreset}>{tx("Save current", "বর্তমান সংরক্ষণ")}</Button>
+          {presets.map((p) => (
+            <button key={p.name} type="button" onClick={() => deletePreset(p.name)}
+              className="text-xs text-destructive underline">
+              {tx("Delete", "মুছুন")} “{p.name}”
+            </button>
+          ))}
+        </div>
+
+        {(loading || exporting) && <span className="text-sm text-muted-foreground">{exporting ? tx("Generating file…", "ফাইল তৈরি হচ্ছে…") : tx("Loading…", "লোড হচ্ছে…")}</span>}
         {error && <span className="text-sm text-destructive">{error}</span>}
         {!loading && !error && !hasData && <span className="text-sm text-destructive">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</span>}
         {!loading && hasData && <span className="text-xs text-muted-foreground basis-full">{tx("Tip: click any total to see the underlying transactions.", "টিপস: যেকোনো মোট-এ ক্লিক করে অন্তর্নিহিত লেনদেন দেখুন।")}</span>}
