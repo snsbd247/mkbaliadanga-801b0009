@@ -1717,7 +1717,11 @@ export default function FarmerDetail() {
                   );
                 })()}
               </div>
-              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.001" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
+              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.001" value={editForm.land_size} onChange={e => {
+                const r = parseLandInput(e.target.value);
+                if (r.error === "precision") toast.error(tx("Land size allows up to 3 decimals only", "জমির পরিমাণ সর্বোচ্চ ৩ দশমিক পর্যন্ত"));
+                setEditForm({ ...editForm, land_size: r.value });
+              }} /></div>
               <div><Label>{t("ownerType")}</Label>
                 <Select value={editForm.owner_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, owner_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
