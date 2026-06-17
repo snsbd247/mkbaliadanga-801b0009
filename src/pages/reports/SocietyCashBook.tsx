@@ -208,50 +208,50 @@ export default function SocietyCashBook() {
         </section>
 
         {/* খরচ */}
-        <section aria-label="খরচ অংশ">
+        <section aria-label={tx("Expense section", "খরচ অংশ")}>
           <div className="text-center mb-1">
-            <h2 className="text-lg font-bold">খরচ</h2>
+            <h2 className="text-lg font-bold">{tx("Expense", "খরচ")}</h2>
           </div>
-          <table className="w-full border-collapse text-xs bn-cb-table" aria-label="খরচ ক্যাশ বহি">
+          <table className="w-full border-collapse text-xs bn-cb-table" aria-label={tx("Expense cash book", "খরচ ক্যাশ বহি")}>
             <thead>
               <tr>
-                <th rowSpan={2} className="border border-black p-1">তারিখ</th>
-                <th rowSpan={2} className="border border-black p-1">ভাউচার নং</th>
-                <th rowSpan={2} className="border border-black p-1">কাহাকে প্রদত্ত হইল</th>
-                <th rowSpan={2} className="border border-black p-1">জমানত ফেরত</th>
-                <th rowSpan={2} className="border border-black p-1">ব্যাংক জমা</th>
-                <th colSpan={3} className="border border-black p-1 text-center">কি বাবদ</th>
-                <th rowSpan={2} className="border border-black p-1">মোট</th>
+                <th rowSpan={2} className="border border-black p-1">{tx("Date", "তারিখ")}</th>
+                <th rowSpan={2} className="border border-black p-1">{tx("Voucher no", "ভাউচার নং")}</th>
+                <th rowSpan={2} className="border border-black p-1">{tx("Paid to", "কাহাকে প্রদত্ত হইল")}</th>
+                <th rowSpan={2} className="border border-black p-1">{tx("Deposit refund", "জমানত ফেরত")}</th>
+                <th rowSpan={2} className="border border-black p-1">{tx("Bank deposit", "ব্যাংক জমা")}</th>
+                <th colSpan={3} className="border border-black p-1 text-center">{tx("Purpose", "কি বাবদ")}</th>
+                <th rowSpan={2} className="border border-black p-1">{tx("Total", "মোট")}</th>
               </tr>
               <tr>
-                <th className="border border-black p-1">ঋণ প্রদান</th>
-                <th className="border border-black p-1">বেতন ভাতা</th>
-                <th className="border border-black p-1">বিবিধ</th>
+                <th className="border border-black p-1">{tx("Loan disbursement", "ঋণ প্রদান")}</th>
+                <th className="border border-black p-1">{tx("Salary allowance", "বেতন ভাতা")}</th>
+                <th className="border border-black p-1">{tx("Miscellaneous", "বিবিধ")}</th>
               </tr>
             </thead>
             <tbody>
               {kharchRows.map((r, i) => (
                 <tr key={i}>
-                  <td className="border border-black p-1 whitespace-nowrap">{bnDate(r.date)}</td>
-                  <td className="border border-black p-1 text-center">{bnText(r.voucherNo)}</td>
+                  <td className="border border-black p-1 whitespace-nowrap">{formatDate(r.date)}</td>
+                  <td className="border border-black p-1 text-center">{formatText(r.voucherNo)}</td>
                   <td className="border border-black p-1">{r.name}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.depositReturn)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.bankDeposit)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.loanGiven)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.salary)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.misc)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(r.total)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.depositReturn)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.bankDeposit)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.loanGiven)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.salary)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.misc)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(r.total)}</td>
                 </tr>
               ))}
-              {kharchRows.length === 0 && <tr><td colSpan={9} className="border border-black p-3 text-center">তথ্য নেই</td></tr>}
+              {kharchRows.length === 0 && <tr><td colSpan={9} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
               <tr className="font-bold">
-                <td colSpan={3} className="border border-black p-1 text-right">সর্বমোট=</td>
-                <td className="border border-black p-1 text-right">{bnMoney(kharchTot.depositReturn)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(kharchTot.bankDeposit)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(kharchTot.loanGiven)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(kharchTot.salary)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(kharchTot.misc)}</td>
-                <td className="border border-black p-1 text-right">{bnMoney(kharchTot.total)}</td>
+                <td colSpan={3} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(kharchTot.depositReturn)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(kharchTot.bankDeposit)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(kharchTot.loanGiven)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(kharchTot.salary)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(kharchTot.misc)}</td>
+                <td className="border border-black p-1 text-right">{formatMoney(kharchTot.total)}</td>
               </tr>
             </tbody>
           </table>
