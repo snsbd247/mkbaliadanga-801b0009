@@ -26,13 +26,15 @@ export type BankSummaryRow = {
   closing: number;
 };
 
+type ReportLang = "en" | "bn";
+
 const SALARY_HEADS = ["salary", "বেতন", "বেতন প্রদান"];
 
 function sum<T>(rows: T[], pick: (r: T) => number | string): number {
   return rows.reduce((s, r) => s + Number(pick(r) || 0), 0);
 }
 
-export function computeSocietyStatement(input: SocietyInput) {
+export function computeSocietyStatement(input: SocietyInput, lang: ReportLang = "bn") {
   const {
     savings = [], loanPayments = [], bankTx = [], officeIncomes = [],
     expenses = [], loansIssued = [], opening = 0,
@@ -53,21 +55,21 @@ export function computeSocietyStatement(input: SocietyInput) {
   const miscExpense = sum(expenses.filter((e) => !isSalary(e.head)), (e) => e.amount);
 
   const incomeLines: Line[] = [
-    { label: "শেয়ার আদায়", amount: shareIn },
-    { label: "সঞ্চয় আদায়", amount: savingsIn },
-    { label: "কর্জ আসল আদায়", amount: loanRecovered },
-    { label: "ব্যাংক উত্তোলন", amount: bankWithdraw },
-    { label: "ব্যাংক লাভ প্রাপ্তি", amount: bankInterest },
-    { label: "বিবিধ আদায়", amount: miscIncome },
+    { label: lang === "bn" ? "শেয়ার আদায়" : "Share collection", amount: shareIn },
+    { label: lang === "bn" ? "সঞ্চয় আদায়" : "Savings collection", amount: savingsIn },
+    { label: lang === "bn" ? "কর্জ আসল আদায়" : "Loan principal collection", amount: loanRecovered },
+    { label: lang === "bn" ? "ব্যাংক উত্তোলন" : "Bank withdrawal", amount: bankWithdraw },
+    { label: lang === "bn" ? "ব্যাংক লাভ প্রাপ্তি" : "Bank interest received", amount: bankInterest },
+    { label: lang === "bn" ? "বিবিধ আদায়" : "Miscellaneous collection", amount: miscIncome },
   ].filter((l) => l.amount > 0);
 
   const expenseLines: Line[] = [
-    { label: "ব্যাংক জমা", amount: bankDeposit },
-    { label: "ব্যাংক লাভ জমা", amount: bankInterest },
-    { label: "সঞ্চয় ফেরত", amount: savingsReturn },
-    { label: "ঋণ প্রদান", amount: loanGiven },
-    { label: "বেতন প্রদান", amount: salaryOut },
-    { label: "বিবিধ খরচ", amount: miscExpense },
+    { label: lang === "bn" ? "ব্যাংক জমা" : "Bank deposit", amount: bankDeposit },
+    { label: lang === "bn" ? "ব্যাংক লাভ জমা" : "Bank interest deposit", amount: bankInterest },
+    { label: lang === "bn" ? "সঞ্চয় ফেরত" : "Savings refund", amount: savingsReturn },
+    { label: lang === "bn" ? "ঋণ প্রদান" : "Loan disbursement", amount: loanGiven },
+    { label: lang === "bn" ? "বেতন প্রদান" : "Salary payment", amount: salaryOut },
+    { label: lang === "bn" ? "বিবিধ খরচ" : "Miscellaneous expense", amount: miscExpense },
   ].filter((l) => l.amount > 0);
 
   const totalIncome = incomeLines.reduce((s, l) => s + l.amount, 0);

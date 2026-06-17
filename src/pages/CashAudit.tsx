@@ -39,15 +39,15 @@ const STREAM_INCOME_KINDS: Record<Stream, Set<string>> = {
   savings: new Set(["savings_deposit", "share", "loan_taken", "donation", "other"]),
 };
 
-const KIND_LABEL: Record<string, string> = {
-  irrigation: "সেচ", bigha_rent: "বিঘা ভাড়া", pond: "পুকুর", crop_sale: "ফসল বিক্রি", scrap: "ভাঙারি",
-  savings_deposit: "সঞ্চয় জমা", share: "শেয়ার", loan_taken: "হাওলাত", donation: "অনুদান", other: "অন্যান্য",
+const KIND_LABEL: Record<string, { en: string; bn: string }> = {
+  irrigation: { en: "Irrigation", bn: "সেচ" }, bigha_rent: { en: "Bigha rent", bn: "বিঘা ভাড়া" }, pond: { en: "Pond", bn: "পুকুর" }, crop_sale: { en: "Crop sale", bn: "ফসল বিক্রি" }, scrap: { en: "Scrap", bn: "ভাঙারি" },
+  savings_deposit: { en: "Savings deposit", bn: "সঞ্চয় জমা" }, share: { en: "Share", bn: "শেয়ার" }, loan_taken: { en: "Loan taken", bn: "হাওলাত" }, donation: { en: "Donation", bn: "অনুদান" }, other: { en: "Other", bn: "অন্যান্য" },
 };
 
 type AuditLine = { label: string; income: number; expense: number; linked: boolean };
 
 export default function CashAudit() {
-  const { t, tx } = useLang();
+  const { t, tx, lang } = useLang();
   const { officeId: myOffice } = useAuth();
   const today = new Date();
   const firstOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
@@ -100,7 +100,7 @@ export default function CashAudit() {
     savings: subFor("savings") ? Number(subFor("savings").opening_cash || 0) : openingManual.savings,
   };
 
-  useEffect(() => { document.title = `${tx("Cash Audit", "ক্যাশ অডিট")} — MK Baliadanga`; }, []);
+  useEffect(() => { document.title = `${tx("Cash Audit", "ক্যাশ অডিট")} — MK Baliadanga`; }, [lang]);
   useEffect(() => {
     (async () => {
       const { data } = await sb.from("offices").select("id,name").order("name");
@@ -141,7 +141,7 @@ export default function CashAudit() {
     for (const r of receipts) {
       if (!incomeKinds.has(r.kind)) continue;
       const amt = Number(r.amount || 0);
-      get(KIND_LABEL[r.kind] ?? r.kind).income += amt;
+      get(KIND_LABEL[r.kind]?.[lang] ?? r.kind).income += amt;
       totalIncome += amt;
     }
     for (const e of expenses) {
@@ -154,8 +154,8 @@ export default function CashAudit() {
     return { lines, totalIncome, totalExpense };
   }
 
-  const irrigation = useMemo(() => buildLines("irrigation"), [receipts, expenses]);
-  const savings = useMemo(() => buildLines("savings"), [receipts, expenses]);
+  const irrigation = useMemo(() => buildLines("irrigation"), [receipts, expenses, lang]);
+  const savings = useMemo(() => buildLines("savings"), [receipts, expenses, lang]);
 
   function streamTitle(stream: Stream) {
     return stream === "irrigation" ? tx("Irrigation Audit", "সেচ অডিট") : tx("Savings Audit", "সেভিং অডিট");

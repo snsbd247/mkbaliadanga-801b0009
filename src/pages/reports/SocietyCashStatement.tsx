@@ -1,4 +1,3 @@
-// i18n-ignore-file — fixed Bengali audit statement (সমিতির জমা খরচ হিসাব)
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -13,6 +12,7 @@ import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
 import { computeSocietyStatement, computeBankSummary, incomeDrillDownUrl, expenseDrillDownUrl, incomingDrillDownUrl, type Line } from "@/lib/societyCashStatement";
 import { Link } from "react-router-dom";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = supabase as any;
 
@@ -29,9 +29,20 @@ function bnDate(iso: string): string {
   return toBnDigits(`${d}.${m}.${y}`);
 }
 
+function enMoney(n: number): string {
+  return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function enDate(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export default function SocietyCashStatement() {
   const branding = useBranding();
   const { officeId } = useAuth();
+  const { lang, tx } = useLang();
 
   const today = new Date();
   const fyStartYear = today.getMonth() + 1 >= 7 ? today.getFullYear() : today.getFullYear() - 1;
@@ -41,7 +52,7 @@ export default function SocietyCashStatement() {
   const [data, setData] = useState<any>({ savings: [], loanPayments: [], bankTx: [], officeIncomes: [], expenses: [], loansIssued: [], bankAccounts: [] });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { document.title = "জমা খরচ হিসাব (সমিতি)"; }, []);
+  useEffect(() => { document.title = tx("Cash Statement (Society)", "জমা খরচ হিসাব (সমিতি)"); }, [lang]);
 
   useEffect(() => {
     setLoading(true);
@@ -72,12 +83,16 @@ export default function SocietyCashStatement() {
     })();
   }, [from, to, officeId]);
 
-  const stmt = useMemo(() => computeSocietyStatement({ ...data, opening }), [data, opening]);
+  const stmt = useMemo(() => computeSocietyStatement({ ...data, opening }, lang), [data, opening, lang]);
   const bankSummary = useMemo(() => computeBankSummary(data.bankAccounts ?? [], data.bankTxAll ?? []), [data]);
 
   const { incomeLines, expenseLines, totalIncome, totalExpense, openingFund, grandIncome, closingFund, grandExpense } = stmt;
   const rowCount = Math.max(incomeLines.length, expenseLines.length);
-  const society = branding.company_name_bn || branding.company_name || "সমবায় সমিতি";
+  const society = lang === "bn"
+    ? (branding.company_name_bn || branding.company_name || "সমবায় সমিতি")
+    : (branding.company_name || branding.company_name_bn || "Cooperative Society");
+  const formatMoney = lang === "bn" ? bnMoney : enMoney;
+  const formatDate = lang === "bn" ? bnDate : enDate;
 
   const bankTotals = bankSummary.reduce((a, r) => ({
     opening: a.opening + r.opening, interest: a.interest + r.interest, charge: a.charge + r.charge,
@@ -86,64 +101,66 @@ export default function SocietyCashStatement() {
 
   const exportCsv = () => {
     const rows = [
-      ...incomeLines.map((l: Line) => ({ section: "জমা", desc: l.label, amount: l.amount })),
-      ...expenseLines.map((l: Line) => ({ section: "খরচ", desc: l.label, amount: l.amount })),
-      { section: "মোট", desc: "মোট আয়", amount: totalIncome },
-      { section: "মোট", desc: "মোট ব্যয়", amount: totalExpense },
-      { section: "তহবিল", desc: "আগত তহবিল", amount: openingFund },
-      { section: "তহবিল", desc: "হস্তমজুদ তহবিল", amount: closingFund },
-      { section: "সর্বমোট", desc: "সর্বমোট (জমা)", amount: grandIncome },
-      { section: "সর্বমোট", desc: "সর্বমোট (খরচ)", amount: grandExpense },
+      ...incomeLines.map((l: Line) => ({ section: tx("Income", "জমা"), desc: l.label, amount: l.amount })),
+      ...expenseLines.map((l: Line) => ({ section: tx("Expense", "খরচ"), desc: l.label, amount: l.amount })),
+      { section: tx("Total", "মোট"), desc: tx("Total income", "মোট আয়"), amount: totalIncome },
+      { section: tx("Total", "মোট"), desc: tx("Total expense", "মোট ব্যয়"), amount: totalExpense },
+      { section: tx("Fund", "তহবিল"), desc: tx("Opening fund", "আগত তহবিল"), amount: openingFund },
+      { section: tx("Fund", "তহবিল"), desc: tx("Cash in hand fund", "হস্তমজুদ তহবিল"), amount: closingFund },
+      { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (income)", "সর্বমোট (জমা)"), amount: grandIncome },
+      { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (expense)", "সর্বমোট (খরচ)"), amount: grandExpense },
     ];
-    downloadCsv(`সমিতি-জমা-খরচ-${from}_${to}`, rows, [
-      { header: "বিভাগ", accessor: (r) => r.section },
-      { header: "বিবরন", accessor: (r) => r.desc },
-      { header: "টাকা", accessor: (r) => Number(r.amount || 0).toFixed(2) },
+    downloadCsv(`${tx("society-cash-statement", "সমিতি-জমা-খরচ")}-${from}_${to}`, rows, [
+      { header: tx("Section", "বিভাগ"), accessor: (r) => r.section },
+      { header: tx("Description", "বিবরন"), accessor: (r) => r.desc },
+      { header: tx("Amount", "টাকা"), accessor: (r) => Number(r.amount || 0).toFixed(2) },
     ]);
   };
 
   return (
     <div className="space-y-4">
-      <PageHeader title="জমা খরচ হিসাব (সমিতি)" description="অডিট রিপোর্ট — সমিতির জমা ও খরচের পূর্ণাঙ্গ বিবরণ" />
+      <PageHeader title={tx("Cash Statement (Society)", "জমা খরচ হিসাব (সমিতি)")} description={tx("Audit report — complete society income and expense details", "অডিট রিপোর্ট — সমিতির জমা ও খরচের পূর্ণাঙ্গ বিবরণ")} />
 
       <Card className="p-3 flex flex-wrap items-end gap-3 print:hidden">
-        <div><Label>শুরুর তারিখ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-        <div><Label>শেষ তারিখ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-        <div><Label>আগত তহবিল (টাকা)</Label><Input type="number" className="w-40" value={opening || ""} onChange={(e) => setOpening(+e.target.value)} /></div>
+        <div><Label>{tx("Start date", "শুরুর তারিখ")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+        <div><Label>{tx("End date", "শেষ তারিখ")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+        <div><Label>{tx("Opening fund (amount)", "আগত তহবিল (টাকা)")}</Label><Input type="number" className="w-40" value={opening || ""} onChange={(e) => setOpening(+e.target.value)} /></div>
         <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={exportCsv} disabled={loading || rowCount === 0}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" /> এক্সেল
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
           </Button>
           <Button onClick={() => window.print()} disabled={loading || rowCount === 0}>
-            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট
+            <Printer className="h-4 w-4 mr-1" /> {tx("Print", "প্রিন্ট")}
           </Button>
         </div>
-        {loading && <span className="text-sm text-muted-foreground">লোড হচ্ছে…</span>}
-        {!loading && rowCount === 0 && <span className="text-sm text-destructive">এই সময়ে কোনো তথ্য নেই</span>}
+        {loading && <span className="text-sm text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</span>}
+        {!loading && rowCount === 0 && <span className="text-sm text-destructive">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</span>}
       </Card>
 
       <div className="bn-statement bg-white text-black p-6 mx-auto" style={{ maxWidth: "900px" }}>
         <div className="text-center mb-3">
           <h1 className="text-xl font-bold">{society} - এর</h1>
           <h2 className="text-base font-semibold mt-1">
-            {bnDate(from)} ইং তারিখ হতে {bnDate(to)} ইং তারিখ পর্যন্ত জমা খরচ হিসাব <span className="font-bold">(সমিতি)</span>
+            {lang === "bn"
+              ? <>{formatDate(from)} ইং তারিখ হতে {formatDate(to)} ইং তারিখ পর্যন্ত জমা খরচ হিসাব <span className="font-bold">(সমিতি)</span></>
+              : <>Cash statement from {formatDate(from)} to {formatDate(to)} <span className="font-bold">(Society)</span></>}
           </h2>
         </div>
 
-        <table className="w-full border-collapse text-sm bn-table" aria-label="সমিতির জমা ও খরচ হিসাব">
-          <caption className="sr-only">সমিতির জমা ও খরচের দুই-কলাম হিসাব</caption>
+        <table className="w-full border-collapse text-sm bn-table" aria-label={tx("Society income and expense statement", "সমিতির জমা ও খরচ হিসাব")}>
+          <caption className="sr-only">{tx("Two-column society income and expense statement", "সমিতির জমা ও খরচের দুই-কলাম হিসাব")}</caption>
           <thead>
             <tr>
-              <th colSpan={3} className="border border-black p-1 text-center font-bold">জমা</th>
-              <th colSpan={3} className="border border-black p-1 text-center font-bold">খরচ</th>
+              <th colSpan={3} className="border border-black p-1 text-center font-bold">{tx("Income", "জমা")}</th>
+              <th colSpan={3} className="border border-black p-1 text-center font-bold">{tx("Expense", "খরচ")}</th>
             </tr>
             <tr>
-              <th className="border border-black p-1 w-12">ক্রঃনং</th>
-              <th className="border border-black p-1">বিবরন</th>
-              <th className="border border-black p-1 w-28">টাকা</th>
-              <th className="border border-black p-1 w-12">ক্রঃনং</th>
-              <th className="border border-black p-1">বিবরন</th>
-              <th className="border border-black p-1 w-28">টাকা</th>
+              <th className="border border-black p-1 w-12">{tx("SL", "ক্রঃনং")}</th>
+              <th className="border border-black p-1">{tx("Description", "বিবরন")}</th>
+              <th className="border border-black p-1 w-28">{tx("Amount", "টাকা")}</th>
+              <th className="border border-black p-1 w-12">{tx("SL", "ক্রঃনং")}</th>
+              <th className="border border-black p-1">{tx("Description", "বিবরন")}</th>
+              <th className="border border-black p-1 w-28">{tx("Amount", "টাকা")}</th>
             </tr>
           </thead>
           <tbody>
@@ -152,47 +169,47 @@ export default function SocietyCashStatement() {
               const exp = expenseLines[i];
               return (
                 <tr key={i}>
-                  <td className="border border-black p-1 text-center">{inc ? toBnDigits(String(i + 1).padStart(2, "0")) : ""}</td>
+                  <td className="border border-black p-1 text-center">{inc ? (lang === "bn" ? toBnDigits(String(i + 1).padStart(2, "0")) : String(i + 1).padStart(2, "0")) : ""}</td>
                   <td className="border border-black p-1">{inc?.label ?? ""}</td>
-                  <td className="border border-black p-1 text-right">{inc ? bnMoney(inc.amount) : ""}</td>
-                  <td className="border border-black p-1 text-center">{exp ? toBnDigits(String(i + 1).padStart(2, "0")) : ""}</td>
+                  <td className="border border-black p-1 text-right">{inc ? formatMoney(inc.amount) : ""}</td>
+                  <td className="border border-black p-1 text-center">{exp ? (lang === "bn" ? toBnDigits(String(i + 1).padStart(2, "0")) : String(i + 1).padStart(2, "0")) : ""}</td>
                   <td className="border border-black p-1">{exp?.label ?? ""}</td>
-                  <td className="border border-black p-1 text-right">{exp ? bnMoney(exp.amount) : ""}</td>
+                  <td className="border border-black p-1 text-right">{exp ? formatMoney(exp.amount) : ""}</td>
                 </tr>
               );
             })}
             {rowCount === 0 && (
-              <tr><td colSpan={6} className="border border-black p-3 text-center">এই সময়ে কোনো তথ্য নেই</td></tr>
+              <tr><td colSpan={6} className="border border-black p-3 text-center">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</td></tr>
             )}
             <tr className="font-bold">
               <td colSpan={2} className="border border-black p-1 text-right">
-                <Link to={incomeDrillDownUrl(from, to)} aria-label={`সঞ্চয় জমা রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">মোট আয়=</Link>
+                <Link to={incomeDrillDownUrl(from, to)} aria-label={tx(`View savings income records (${from} to ${to})`, `সঞ্চয় জমা রেকর্ড দেখুন (${from} থেকে ${to})`)} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">{tx("Total income=", "মোট আয়=")}</Link>
               </td>
-              <td className="border border-black p-1 text-right">{bnMoney(totalIncome)}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(totalIncome)}</td>
               <td colSpan={2} className="border border-black p-1 text-right">
-                <Link to={expenseDrillDownUrl(from, to)} aria-label={`সমিতির খরচ রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">মোট ব্যয়=</Link>
+                <Link to={expenseDrillDownUrl(from, to)} aria-label={tx(`View society expense records (${from} to ${to})`, `সমিতির খরচ রেকর্ড দেখুন (${from} থেকে ${to})`)} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">{tx("Total expense=", "মোট ব্যয়=")}</Link>
               </td>
-              <td className="border border-black p-1 text-right">{bnMoney(totalExpense)}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(totalExpense)}</td>
             </tr>
             <tr className="font-bold">
               <td colSpan={2} className="border border-black p-1 text-right">
-                <Link to={incomingDrillDownUrl(from, to)} aria-label={`আগত তহবিল (ব্যাংক) রেকর্ড দেখুন (${from} থেকে ${to})`} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">আগত তহবিল=</Link>
+                <Link to={incomingDrillDownUrl(from, to)} aria-label={tx(`View opening fund (bank) records (${from} to ${to})`, `আগত তহবিল (ব্যাংক) রেকর্ড দেখুন (${from} থেকে ${to})`)} className="text-primary underline print:no-underline print:text-black print:pointer-events-none">{tx("Opening fund=", "আগত তহবিল=")}</Link>
               </td>
-              <td className="border border-black p-1 text-right">{bnMoney(openingFund)}</td>
-              <td colSpan={2} className="border border-black p-1 text-right">হস্তমজুদ তহবিল=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(closingFund)}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(openingFund)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Cash in hand fund=", "হস্তমজুদ তহবিল=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(closingFund)}</td>
             </tr>
             <tr className="font-bold">
-              <td colSpan={2} className="border border-black p-1 text-right">সর্বমোট=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(grandIncome)}</td>
-              <td colSpan={2} className="border border-black p-1 text-right">সর্বমোট=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(grandExpense)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(grandIncome)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(grandExpense)}</td>
             </tr>
           </tbody>
         </table>
 
         <div className="bn-sign-block grid grid-cols-4 gap-4 mt-16 text-center text-xs">
-          {["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"].map((role) => (
+          {(lang === "bn" ? ["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"] : ["Audit Officer", "President", "Secretary", "Treasurer"]).map((role) => (
             <div key={role}>
               <div className="border-t border-black pt-1 font-semibold">{role}</div>
               <div className="leading-tight mt-0.5">{society}</div>
@@ -201,51 +218,51 @@ export default function SocietyCashStatement() {
         </div>
 
         <div className="bn-sign-block mt-10 text-sm">
-          <div className="font-semibold mb-6">ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ</div>
+          <div className="font-semibold mb-6">{tx("Management committee members' signatures:", "ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ")}</div>
           <div className="grid grid-cols-3 gap-8">
-            <div>১।</div>
-            <div>২।</div>
-            <div>৩।</div>
+            <div>{tx("1.", "১।")}</div>
+            <div>{tx("2.", "২।")}</div>
+            <div>{tx("3.", "৩।")}</div>
           </div>
         </div>
 
         {bankSummary.length > 0 && (
           <div className="bn-sign-block mt-10">
-            <div className="font-semibold mb-2 text-sm">পর্যবেক্ষণ ঃ (ব্যাংক হিসাব) ঃ নিরীক্ষাকালে সমিতিতে নিম্নরূপ ব্যাংক হিসাব পরিলক্ষিত হলো।</div>
-            <table className="w-full border-collapse text-xs bn-table" aria-label="ব্যাংক হিসাব সারসংক্ষেপ">
+            <div className="font-semibold mb-2 text-sm">{tx("Observation: (Bank accounts): The following bank accounts were observed in the society during audit.", "পর্যবেক্ষণ ঃ (ব্যাংক হিসাব) ঃ নিরীক্ষাকালে সমিতিতে নিম্নরূপ ব্যাংক হিসাব পরিলক্ষিত হলো।")}</div>
+            <table className="w-full border-collapse text-xs bn-table" aria-label={tx("Bank account summary", "ব্যাংক হিসাব সারসংক্ষেপ")}>
               <thead>
                 <tr>
-                  <th className="border border-black p-1 w-10">ক্রঃনং</th>
-                  <th className="border border-black p-1">হিসাব নং</th>
-                  <th className="border border-black p-1">{bnDate(from)}</th>
-                  <th className="border border-black p-1">সুদ প্রাপ্তি</th>
-                  <th className="border border-black p-1">ব্যাংক চার্জ কর্তন</th>
-                  <th className="border border-black p-1">ব্যাংক জমা</th>
-                  <th className="border border-black p-1">ব্যাংক উত্তোলন</th>
-                  <th className="border border-black p-1">{bnDate(to)}</th>
+                  <th className="border border-black p-1 w-10">{tx("SL", "ক্রঃনং")}</th>
+                  <th className="border border-black p-1">{tx("Account no", "হিসাব নং")}</th>
+                  <th className="border border-black p-1">{formatDate(from)}</th>
+                  <th className="border border-black p-1">{tx("Interest received", "সুদ প্রাপ্তি")}</th>
+                  <th className="border border-black p-1">{tx("Bank charge deducted", "ব্যাংক চার্জ কর্তন")}</th>
+                  <th className="border border-black p-1">{tx("Bank deposit", "ব্যাংক জমা")}</th>
+                  <th className="border border-black p-1">{tx("Bank withdrawal", "ব্যাংক উত্তোলন")}</th>
+                  <th className="border border-black p-1">{formatDate(to)}</th>
                 </tr>
               </thead>
               <tbody>
                 {bankSummary.map((r, i) => (
                   <tr key={i}>
-                    <td className="border border-black p-1 text-center">{toBnDigits(String(i + 1).padStart(2, "0"))}</td>
+                    <td className="border border-black p-1 text-center">{lang === "bn" ? toBnDigits(String(i + 1).padStart(2, "0")) : String(i + 1).padStart(2, "0")}</td>
                     <td className="border border-black p-1">{r.account}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.opening)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.interest)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.charge)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.deposit)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.withdraw)}</td>
-                    <td className="border border-black p-1 text-right">{bnMoney(r.closing)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.opening)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.interest)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.charge)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.deposit)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.withdraw)}</td>
+                    <td className="border border-black p-1 text-right">{formatMoney(r.closing)}</td>
                   </tr>
                 ))}
                 <tr className="font-bold">
-                  <td colSpan={2} className="border border-black p-1 text-right">মোট=</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.opening)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.interest)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.charge)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.deposit)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.withdraw)}</td>
-                  <td className="border border-black p-1 text-right">{bnMoney(bankTotals.closing)}</td>
+                  <td colSpan={2} className="border border-black p-1 text-right">{tx("Total=", "মোট=")}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.opening)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.interest)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.charge)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.deposit)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.withdraw)}</td>
+                  <td className="border border-black p-1 text-right">{formatMoney(bankTotals.closing)}</td>
                 </tr>
               </tbody>
             </table>
