@@ -10,28 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
+import { computeStatement, type Line } from "@/lib/irrigationCashStatement";
 
 const sb = supabase as any;
-
-// Income receipt kinds that belong to the irrigation (সেচ) cash stream.
-// Farmer payments whose kind belongs to the irrigation (সেচ) cash stream.
-const IRRIGATION_PAYMENT_KINDS = new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]);
-const KIND_LABEL: Record<string, string> = {
-  irrigation: "সেচ চার্জ আদায় (বকেয়া সহ)",
-  bigha_rent: "ভাড়ী বিক্রয়",
-  pond: "পুকুর, সবজি আয়",
-  crop_sale: "ফসল বিক্রয়",
-  scrap: "ভাঙ্গারি বিক্রয়",
-};
-// Farmer-less office incomes (stream = sech) line labels.
-const OFFICE_INCOME_LABEL: Record<string, string> = {
-  scrap: "ভাঙ্গারি বিক্রয়",
-  hawlat: "হাওলাত গ্রহণ",
-  grant: "অনুদান",
-  other: "বিবিধ আয়",
-};
-
-type Line = { label: string; amount: number };
 
 // Bengali money: comma grouping + two decimals + Bengali digits.
 function bnMoney(n: number): string {
@@ -86,40 +67,13 @@ export default function IrrigationCashStatement() {
     })();
   }, [from, to, officeId]);
 
-  const { incomeLines, expenseLines, totalIncome, totalExpense } = useMemo(() => {
-    const incMap = new Map<string, number>();
-    let totalIncome = 0;
-    for (const r of receipts) {
-      const amt = Number(r.amount || 0);
-      let label: string | null = null;
-      if (r.income_type !== undefined || r.stream === "sech") {
-        label = OFFICE_INCOME_LABEL[r.income_type] ?? "বিবিধ আয়";
-      } else if (IRRIGATION_PAYMENT_KINDS.has(r.kind)) {
-        label = KIND_LABEL[r.kind] ?? r.kind;
-      }
-      if (!label) continue;
-      incMap.set(label, (incMap.get(label) ?? 0) + amt);
-      totalIncome += amt;
-    }
-    const expMap = new Map<string, number>();
-    let totalExpense = 0;
-    for (const e of expenses) {
-      if (e.stream !== "irrigation") continue;
-      const amt = Number(e.amount || 0);
-      const label = e.head || "বিবিধ খরচ";
-      expMap.set(label, (expMap.get(label) ?? 0) + amt);
-      totalExpense += amt;
-    }
-    const incomeLines: Line[] = Array.from(incMap, ([label, amount]) => ({ label, amount }));
-    const expenseLines: Line[] = Array.from(expMap, ([label, amount]) => ({ label, amount }));
-    return { incomeLines, expenseLines, totalIncome, totalExpense };
-  }, [receipts, expenses]);
-
-
-  const openingFund = Number(opening || 0);
-  const grandIncome = totalIncome + openingFund;      // মোট আয় + আগত তহবিল
-  const closingFund = grandIncome - totalExpense;      // হস্তমজুদ তহবিল
-  const grandExpense = totalExpense + closingFund;     // মোট ব্যয় + হস্তমজুদ = সর্বমোট
+  const {
+    incomeLines, expenseLines, totalIncome, totalExpense,
+    openingFund, grandIncome, closingFund, grandExpense,
+  } = useMemo(
+    () => computeStatement(receipts, expenses, opening),
+    [receipts, expenses, opening],
+  );
 
   const rowCount = Math.max(incomeLines.length, expenseLines.length);
   const society = branding.company_name_bn || branding.company_name || "সমবায় সমিতি";
@@ -200,7 +154,7 @@ export default function IrrigationCashStatement() {
           </tbody>
         </table>
 
-        <div className="grid grid-cols-4 gap-4 mt-16 text-center text-xs">
+        <div className="bn-sign-block grid grid-cols-4 gap-4 mt-16 text-center text-xs">
           {["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"].map((role) => (
             <div key={role}>
               <div className="border-t border-black pt-1 font-semibold">{role}</div>
@@ -209,7 +163,7 @@ export default function IrrigationCashStatement() {
           ))}
         </div>
 
-        <div className="mt-10 text-sm">
+        <div className="bn-sign-block mt-10 text-sm">
           <div className="font-semibold mb-6">ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ</div>
           <div className="grid grid-cols-3 gap-8">
             <div>১।</div>
@@ -220,10 +174,16 @@ export default function IrrigationCashStatement() {
       </div>
 
       <style>{`
+        .bn-table { table-layout: fixed; }
+        .bn-table th, .bn-table td { word-wrap: break-word; overflow-wrap: anywhere; }
         @media print {
           body * { visibility: hidden; }
           .bn-statement, .bn-statement * { visibility: visible; }
           .bn-statement { position: absolute; left: 0; top: 0; width: 100%; }
+          .bn-table { page-break-inside: auto; }
+          .bn-table thead { display: table-header-group; }
+          .bn-table tr { page-break-inside: avoid; }
+          .bn-sign-block { page-break-inside: avoid; }
           @page { size: A4 portrait; margin: 12mm; }
         }
       `}</style>
