@@ -78,6 +78,7 @@ export default function DemoManager() {
   const [transactional, setTransactional] = useState(true);
   const [rowCountReport, setRowCountReport] = useState<any>(null);
   const [backupFirst, setBackupFirst] = useState(true);
+  const [schedule, setSchedule] = useState<BackupSchedule>(getBackupSchedule());
   const [cashValidation, setCashValidation] = useState<CashCountRow[] | null>(null);
 
   // logs + filters
