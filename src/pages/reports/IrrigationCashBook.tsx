@@ -59,7 +59,7 @@ const PRESET_KEY = "irr_cashbook_presets";
 
 export default function IrrigationCashBook() {
   const branding = useBranding();
-  const { officeId, isAdmin } = useAuth();
+  const { officeId, isAdmin, user } = useAuth();
   const { lang, tx } = useLang();
   // Per-report language override — switches display only, never the data mapping.
   const [reportLang, setReportLang] = useState<"bn" | "en">(lang === "en" ? "en" : "bn");
@@ -74,11 +74,15 @@ export default function IrrigationCashBook() {
   const [officeFilter, setOfficeFilter] = useState<string>("all");
   const [input, setInput] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<DetailState>(null);
+  const [presets, setPresets] = useState<Preset[]>(() => {
+    try { return JSON.parse(localStorage.getItem(PRESET_KEY) || "[]"); } catch { return []; }
+  });
 
-  // The effective office: a non-scoped admin may pick any office; scoped users are locked to theirs.
-  const effectiveOffice = officeId ?? (officeFilter === "all" ? null : officeFilter);
+  // The effective office: scoped users are locked to theirs; non-scoped admins may pick.
+  const effectiveOffice = resolveEffectiveOffice(officeId, isAdmin, officeFilter);
 
   useEffect(() => { document.title = tx("Irrigation Income-Expense Cash Book", "সেচ আয়-ব্যয় ক্যাশ বহি"); }, [lang]);
 
