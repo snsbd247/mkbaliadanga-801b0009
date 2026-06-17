@@ -35,6 +35,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { IrrigationPaymentPanel } from "@/components/payments/IrrigationPaymentPanel";
 import { findRecentDuplicatePayment } from "@/lib/duplicatePaymentCheck";
 import { getTodayMethodSummary, type MethodSummary } from "@/lib/paymentMethodSummary";
+import { previewEdit, checkConsistency, type EditBaseline } from "@/lib/combinedReceiptValidation";
 
 type Allocation = { kind: "savings" | "irrigation"; reference_id: string; amount: number };
 
@@ -86,7 +87,12 @@ export default function Payments() {
   const [editLandId, setEditLandId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ mouza: "", land_size: 0, owner_farmer_id: "", delay_fee: 0, amount: 0, note: "", reason: "" });
   const [editLoading, setEditLoading] = useState(false);
+  const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(null);
   const [editHistory, setEditHistory] = useState<any[]>([]);
+  const editPreview = useMemo(() => {
+    if (!editBaseline) return null;
+    return previewEdit(editBaseline, { delay_fee: editForm.delay_fee, amount: editForm.amount });
+  }, [editBaseline, editForm.delay_fee, editForm.amount]);
 
   async function loadEditHistory(paymentId: string) {
     try {
@@ -107,18 +113,27 @@ export default function Payments() {
     const invId = irrAlloc?.reference_id ?? null;
     setEditInvoiceId(invId);
     let mouza = "", land_size = 0, owner = "", delay = 0, landId: string | null = null;
+    let baseline: EditBaseline | null = null;
     if (invId) {
       const { data: inv } = await supabase.from("irrigation_invoices")
-        .select("land_id,owner_farmer_id,delay_fee,lands(mouza,land_size)").eq("id", invId).maybeSingle();
+        .select("land_id,owner_farmer_id,delay_fee,payable_amount,due_amount,paid_amount,lands(mouza,land_size)").eq("id", invId).maybeSingle();
       if (inv) {
         landId = (inv as any).land_id ?? null;
         owner = (inv as any).owner_farmer_id ?? "";
         delay = Number((inv as any).delay_fee || 0);
         mouza = (inv as any).lands?.mouza ?? "";
         land_size = Number((inv as any).lands?.land_size || 0);
+        baseline = {
+          payable_amount: Number((inv as any).payable_amount || 0),
+          due_amount: Number((inv as any).due_amount || 0),
+          paid_amount: Number((inv as any).paid_amount || 0),
+          delay_fee: delay,
+          amount: Number(p.amount || 0),
+        };
       }
     }
     setEditLandId(landId);
+    setEditBaseline(baseline);
     setEditForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(p.amount || 0), note: p.note ?? "", reason: "" });
     setEditLoading(false);
   }
@@ -126,6 +141,18 @@ export default function Payments() {
   async function saveEditReceipt() {
     if (!editPayment) return;
     if (!editForm.reason.trim()) return toast.error(tx("Reason is required", "কারণ আবশ্যক"));
+    // Save-time consistency check: recalculated due/paid must agree across
+    // invoice, allocation and payment records before we persist anything.
+    if (editBaseline && editPreview) {
+      const { ok, errors } = checkConsistency({
+        invoicePaid: editPreview.paid,
+        allocationAmount: Math.round(Number(editForm.amount) || 0),
+        paymentAmount: Math.round(Number(editForm.amount) || 0),
+        payable: editPreview.payable,
+        due: editPreview.due,
+      });
+      if (!ok) return toast.error(tx("Cannot save: ", "সংরক্ষণ করা যাচ্ছে না: ") + errors.join("; "));
+    }
     const p = editPayment;
     const before: any = {};
     const after: any = {};
@@ -1061,6 +1088,17 @@ export default function Payments() {
                 <Label>{tx("Reason for change", "পরিবর্তনের কারণ")} *</Label>
                 <Input value={editForm.reason} onChange={(e) => setEditForm(f => ({ ...f, reason: e.target.value }))} placeholder={tx("Why are you editing this receipt?", "কেন এই রসিদ এডিট করছেন?")} />
               </div>
+              {editInvoiceId && editPreview && (
+                <div className="rounded-md border bg-muted/40 p-2 space-y-1">
+                  <div className="text-xs font-medium text-muted-foreground">{tx("Recalculated preview", "পুনঃগণনা প্রিভিউ")}</div>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>{tx("Payable", "প্রদেয়")}<div className="font-semibold">{money(editPreview.payable)}</div></div>
+                    <div>{tx("Paid", "পরিশোধিত")}<div className="font-semibold">{money(editPreview.paid)}</div></div>
+                    <div>{tx("Due", "বকেয়া")}<div className="font-semibold">{money(editPreview.due)}</div></div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{tx("Status", "অবস্থা")}: {editPreview.status}</div>
+                </div>
+              )}
               {editHistory.length > 0 && (
                 <div className="rounded-md border p-2 max-h-48 overflow-auto space-y-2">
                   <div className="text-xs font-medium text-muted-foreground">{tx("Edit history", "এডিট ইতিহাস")}</div>
