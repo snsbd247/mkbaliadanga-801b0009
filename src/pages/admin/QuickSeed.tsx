@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen, Wallet, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
+import { fetchCashReportCounts, flagCashMismatches, downloadCashReportBackup, type CashCountRow } from "@/lib/cashReportBackup";
 
 type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "all";
 
