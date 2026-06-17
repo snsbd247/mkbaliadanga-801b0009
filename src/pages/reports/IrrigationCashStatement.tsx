@@ -1,5 +1,6 @@
 // i18n-ignore-file — fixed Bengali audit statement (সেচ জমা খরচ হিসাব)
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -161,9 +162,13 @@ export default function IrrigationCashStatement() {
             )}
             <tr className="font-bold">
               <td colSpan={2} className="border border-black p-1 text-right">মোট আয়=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(totalIncome)}</td>
+              <td className="border border-black p-1 text-right">
+                <Link to={`/payments?kind=irrigation&from=${from}&to=${to}`} className="underline print:no-underline print:text-black text-blue-700">{bnMoney(totalIncome)}</Link>
+              </td>
               <td colSpan={2} className="border border-black p-1 text-right">মোট ব্যয়=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(totalExpense)}</td>
+              <td className="border border-black p-1 text-right">
+                <Link to={`/reports/expenses?stream=irrigation&from=${from}&to=${to}`} className="underline print:no-underline print:text-black text-blue-700">{bnMoney(totalExpense)}</Link>
+              </td>
             </tr>
             <tr className="font-bold">
               <td colSpan={2} className="border border-black p-1 text-right">আগত তহবিল=</td>
