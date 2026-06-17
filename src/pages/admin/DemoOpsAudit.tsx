@@ -85,6 +85,11 @@ export default function DemoOpsAudit() {
       <PageHeader
         title={tx("Demo Operations Audit", "ডেমো অপারেশন অডিট")}
         description={tx("Track QuickSeed / DemoManager runs — who, when, modules, backup status and validation results", "QuickSeed / DemoManager রান দেখুন — কে, কখন, কোন মডিউল, ব্যাকআপ অবস্থা ও যাচাই ফলাফল")}
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link to="/help#demoTools"><HelpCircle className="h-4 w-4 mr-1" /> {tx("Manual", "ম্যানুয়াল")}</Link>
+          </Button>
+        }
       />
 
       <Card className="p-3 flex flex-wrap items-end gap-3">
