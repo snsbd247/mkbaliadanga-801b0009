@@ -133,6 +133,16 @@ export default function DemoManager() {
       toast.error(t("dmConfirmRequired" as any));
       return;
     }
+    // Auto safety backup of cash-report tables before seeding/resetting them.
+    if (backupFirst && selected.includes("cashbook")) {
+      try {
+        const r = await downloadCashReportBackup();
+        toast.success(`ক্যাশ-রিপোর্ট ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি)`);
+      } catch (e: any) {
+        toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
+        return; // do not proceed if the safety backup failed
+      }
+    }
     setPreviewOpen(false);
     setLoading(true);
     setLastResult(null);
