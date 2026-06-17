@@ -1155,6 +1155,7 @@ export const translations = {
     dmModSavings: "Savings + shares",
     dmModExpenses: "Expenses",
     dmModBank: "Bank accounts + transactions",
+    dmModCashbook: "Cash Book / Hand Cash / office incomes / receipts",
     dmModAssets: "Assets (purchases, depreciation, maintenance, disposals)",
     // Shared page labels (audit fix 2026-05)
     pgPrintCard: "Print Card",
