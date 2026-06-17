@@ -50,6 +50,7 @@ import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 import { formatLand, parseLandInput } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
+import { LandNoteCell } from "@/components/farmers/LandNoteCell";
 import { Textarea } from "@/components/ui/textarea";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
