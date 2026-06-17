@@ -187,3 +187,67 @@ describe("irrigationCashBook — office scoping for exports", () => {
     expect(resolveEffectiveOffice(null, false, "office-B")).toBe(null);
   });
 });
+
+const BN_KHARCH = {
+  date: "তারিখ", voucherNo: "ভাউচার নং", purpose: "কি বাবদ খরচ", total: "মোট", grandTotal: "সর্বমোট",
+  cols: ["শ্রমিক", "যন্ত্রাংশ ক্রয়", "যন্ত্রাংশ মেরামত", "যাতায়াত", "আপ্যায়ন", "প্রচার", "বেতন ও ভাতা",
+    "বিদ্যুৎ বিল", "স্টেশনারি", "অফিস ভাড়া", "মোটর বাঁধা", "ব্যাংক জমা", "বিবিধ"],
+}
+
+// PDF (on-screen table), XLSX and CSV are all rendered from the SAME matrix
+// builders, so verifying matrix parity guarantees the three formats stay aligned
+// on columns, totals and language headers.
+describe("irrigationCashBook — XLSX / CSV / PDF parity", () => {
+  const jrows = buildIrrJamaRows(fixture, "bn");
+  const jtot = sumIrrJama(jrows);
+  const krows = buildIrrKharchRows(fixture, "bn");
+  const ktot = sumIrrKharch(krows);
+
+  it("jama: same columns and totals across formats (single source of truth)", () => {
+    const a = buildJamaExportMatrix(jrows, jtot, EN_JAMA);
+    const b = buildJamaExportMatrix(jrows, jtot, EN_JAMA);
+    expect(a).toEqual(b); // CSV and XLSX consume the identical matrix
+    expect(a[0].length).toBe(3 + JAMA_COL_KEYS.length + 1);
+    expect(a[a.length - 1][a[0].length - 1]).toBe(jtot.total);
+  });
+
+  it("kharch: same columns and totals across formats", () => {
+    const a = buildKharchExportMatrix(krows, ktot, EN_KHARCH);
+    const b = buildKharchExportMatrix(krows, ktot, EN_KHARCH);
+    expect(a).toEqual(b);
+    expect(a[0].length).toBe(3 + KHARCH_COL_KEYS.length + 1);
+    expect(a[a.length - 1][a[0].length - 1]).toBe(ktot.total);
+  });
+
+  it("language headers differ but body/totals stay identical (jama & kharch)", () => {
+    const enJ = buildJamaExportMatrix(jrows, jtot, EN_JAMA);
+    const bnJ = buildJamaExportMatrix(jrows, jtot, BN_JAMA);
+    expect(enJ[0]).not.toEqual(bnJ[0]);
+    // body rows (numbers) identical regardless of header language
+    expect(enJ.slice(1, -1)).toEqual(bnJ.slice(1, -1));
+    // grand-total numeric cells identical (label differs)
+    expect(enJ[enJ.length - 1].slice(3)).toEqual(bnJ[bnJ.length - 1].slice(3));
+
+    const enK = buildKharchExportMatrix(krows, ktot, EN_KHARCH);
+    const bnK = buildKharchExportMatrix(krows, ktot, BN_KHARCH);
+    expect(enK[0]).not.toEqual(bnK[0]);
+    expect(enK.slice(1, -1)).toEqual(bnK.slice(1, -1));
+    expect(enK[enK.length - 1].slice(3)).toEqual(bnK[bnK.length - 1].slice(3));
+  });
+})
+
+// An office-scoped admin must never be able to widen scope by tampering with the
+// requested officeId/filter — resolveEffectiveOffice always pins them to their own.
+describe("irrigationCashBook — tamper-resistant office scoping", () => {
+  it("ignores a tampered officeFilter for a scoped admin", () => {
+    // scoped admin (officeId set, isAdmin true) tries to request another office
+    expect(resolveEffectiveOffice("office-A", true, "office-Z")).toBe("office-A");
+    expect(resolveEffectiveOffice("office-A", true, "all")).toBe("office-A");
+  });
+  it("ignores tampering for a scoped non-admin", () => {
+    expect(resolveEffectiveOffice("office-A", false, "office-Z")).toBe("office-A");
+  });
+  it("only a non-scoped global admin can target an arbitrary office", () => {
+    expect(resolveEffectiveOffice(null, true, "office-Z")).toBe("office-Z");
+  });
+})

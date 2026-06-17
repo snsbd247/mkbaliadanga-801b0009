@@ -54,8 +54,7 @@ type DetailState = {
   total: number;
 } | null;
 
-type Preset = { name: string; from: string; to: string; officeFilter: string };
-const PRESET_KEY = "irr_cashbook_presets";
+type Preset = { id: string; name: string; from: string; to: string; officeFilter: string };
 
 export default function IrrigationCashBook() {
   const branding = useBranding();
@@ -77,9 +76,7 @@ export default function IrrigationCashBook() {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<DetailState>(null);
-  const [presets, setPresets] = useState<Preset[]>(() => {
-    try { return JSON.parse(localStorage.getItem(PRESET_KEY) || "[]"); } catch { return []; }
-  });
+  const [presets, setPresets] = useState<Preset[]>([]);
 
   // The effective office: scoped users are locked to theirs; non-scoped admins may pick.
   const effectiveOffice = resolveEffectiveOffice(officeId, isAdmin, officeFilter);
@@ -243,12 +240,27 @@ export default function IrrigationCashBook() {
 
   const handlePrint = () => { logExport("PDF"); window.print(); };
 
-  const savePreset = () => {
+  const loadPresets = async () => {
+    if (!user?.id) return;
+    const { data } = await sb.from("irrigation_cashbook_presets")
+      .select("id,name,date_from,date_to,office_filter")
+      .eq("user_id", user.id).order("name");
+    setPresets((data ?? []).map((p: any) => ({
+      id: p.id, name: p.name, from: p.date_from, to: p.date_to, officeFilter: p.office_filter,
+    })));
+  };
+
+  useEffect(() => { loadPresets(); }, [user?.id]);
+
+  const savePreset = async () => {
+    if (!user?.id) return;
     const name = window.prompt(rt("Preset name", "প্রিসেটের নাম"));
     if (!name) return;
-    const next = [...presets.filter((p) => p.name !== name), { name, from, to, officeFilter }];
-    setPresets(next);
-    localStorage.setItem(PRESET_KEY, JSON.stringify(next));
+    const { error: upErr } = await sb.from("irrigation_cashbook_presets").upsert({
+      user_id: user.id, name, date_from: from, date_to: to, office_filter: officeFilter,
+    }, { onConflict: "user_id,name" });
+    if (upErr) { toast.error(upErr.message); return; }
+    await loadPresets();
     toast.success(rt("Preset saved", "প্রিসেট সংরক্ষিত হয়েছে"));
   };
   const applyPreset = (name: string) => {
@@ -256,10 +268,11 @@ export default function IrrigationCashBook() {
     if (!p) return;
     setFrom(p.from); setTo(p.to); setOfficeFilter(p.officeFilter);
   };
-  const deletePreset = (name: string) => {
-    const next = presets.filter((p) => p.name !== name);
-    setPresets(next);
-    localStorage.setItem(PRESET_KEY, JSON.stringify(next));
+  const deletePreset = async (name: string) => {
+    const p = presets.find((x) => x.name === name);
+    if (!p) return;
+    await sb.from("irrigation_cashbook_presets").delete().eq("id", p.id);
+    await loadPresets();
   };
 
 

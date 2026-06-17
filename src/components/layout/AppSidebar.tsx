@@ -114,7 +114,8 @@ export function AppSidebar() {
         { url: "/reports/irrigation-statement", icon: ScrollText, label: lang === "bn" ? "জমা খরচ হিসাব (সেচ)" : "Cash Statement (Irrigation)", permKey: "cashbook" },
         { url: "/reports/society-statement", icon: ScrollText, label: lang === "bn" ? "জমা খরচ হিসাব (সমিতি)" : "Cash Statement (Society)", permKey: "cashbook" },
         { url: "/reports/society-cashbook", icon: ScrollText, label: lang === "bn" ? "আয়-ব্যয় ক্যাশ বহি (সমিতি)" : "Income-Expense Cash Book (Society)", permKey: "cashbook" },
-        { url: "/reports/irrigation-cashbook", icon: ScrollText, label: lang === "bn" ? "সেচ আয়-ব্যয় ক্যাশ বহি" : "Irrigation Income-Expense Cash Book", permKey: "cashbook" },
+       { url: "/reports/irrigation-cashbook", icon: ScrollText, label: lang === "bn" ? "সেচ আয়-ব্যয় ক্যাশ বহি" : "Irrigation Income-Expense Cash Book", permKey: "cashbook" },
+       { url: "/reports/irrigation-cashbook-audit", icon: ScrollText, label: lang === "bn" ? "সেচ ক্যাশ বহি এক্সপোর্ট অডিট" : "Irrigation Cash Book Export Audit", permKey: "cashbook" },
 
         { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
       ],
