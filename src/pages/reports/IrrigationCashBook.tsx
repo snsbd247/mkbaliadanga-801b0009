@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Printer, FileSpreadsheet } from "lucide-react";
+import { Printer, FileSpreadsheet, FileDown, Languages } from "lucide-react";
+import * as XLSX from "xlsx";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
@@ -55,6 +56,10 @@ export default function IrrigationCashBook() {
   const branding = useBranding();
   const { officeId, isAdmin } = useAuth();
   const { lang, tx } = useLang();
+  // Per-report language override — switches display only, never the data mapping.
+  const [reportLang, setReportLang] = useState<"bn" | "en">(lang === "en" ? "en" : "bn");
+  const rlang = reportLang;
+  const rt = (en: string, bn: string) => (rlang === "bn" ? bn : en);
 
   const today = new Date();
   const fyStartYear = today.getMonth() + 1 >= 7 ? today.getFullYear() : today.getFullYear() - 1;
@@ -125,37 +130,37 @@ export default function IrrigationCashBook() {
   const kharchTot = useMemo(() => sumIrrKharch(kharchRows), [kharchRows]);
   const hasData = jamaRows.length + kharchRows.length > 0;
 
-  const project = lang === "bn"
+  const project = rlang === "bn"
     ? (branding.company_name_bn || branding.company_name || "সেচ প্রকল্প")
     : (branding.company_name || branding.company_name_bn || "Irrigation Project");
-  const formatMoney = lang === "bn" ? bnMoney : enMoney;
-  const formatDate = lang === "bn" ? bnDate : enDate;
-  const formatText = (s: string) => (lang === "bn" ? bnText(s) : s);
+  const formatMoney = rlang === "bn" ? bnMoney : enMoney;
+  const formatDate = rlang === "bn" ? bnDate : enDate;
+  const formatText = (s: string) => (rlang === "bn" ? bnText(s) : s);
 
   // Column definitions (key + label) drive both rendering and the drill-down modal.
   const JAMA_COLS: { key: keyof IrrJamaRow; label: string }[] = [
-    { key: "sechCharge", label: tx("Irrigation charge", "সেচ চার্জ") },
-    { key: "nalaCharge", label: tx("Canal charge", "নালা চার্জ") },
-    { key: "maintenance", label: tx("Maintenance", "রক্ষণাবেক্ষণ") },
-    { key: "lateFee", label: tx("Late fee", "বিলম্ব ফি") },
-    { key: "bankWithdraw", label: tx("Bank withdrawal", "ব্যাংকে উত্তোলন") },
-    { key: "pond", label: tx("Pond", "পুকুর") },
-    { key: "misc", label: tx("Miscellaneous", "বিবিধ") },
+    { key: "sechCharge", label: rt("Irrigation charge", "সেচ চার্জ") },
+    { key: "nalaCharge", label: rt("Canal charge", "নালা চার্জ") },
+    { key: "maintenance", label: rt("Maintenance", "রক্ষণাবেক্ষণ") },
+    { key: "lateFee", label: rt("Late fee", "বিলম্ব ফি") },
+    { key: "bankWithdraw", label: rt("Bank withdrawal", "ব্যাংকে উত্তোলন") },
+    { key: "pond", label: rt("Pond", "পুকুর") },
+    { key: "misc", label: rt("Miscellaneous", "বিবিধ") },
   ];
   const KHARCH_COLS: { key: keyof IrrKharchRow; label: string }[] = [
-    { key: "labor", label: tx("Labor", "শ্রমিক") },
-    { key: "partsBuy", label: tx("Parts purchase", "যন্ত্রাংশ ক্রয়") },
-    { key: "partsRepair", label: tx("Parts repair", "যন্ত্রাংশ মেরামত") },
-    { key: "transport", label: tx("Transport", "যাতায়াত") },
-    { key: "hospitality", label: tx("Hospitality", "আপ্যায়ন") },
-    { key: "publicity", label: tx("Publicity", "প্রচার") },
-    { key: "salary", label: tx("Salary & allowance", "বেতন ও ভাতা") },
-    { key: "electricity", label: tx("Electricity bill", "বিদ্যুৎ বিল") },
-    { key: "stationery", label: tx("Stationery", "স্টেশনারি") },
-    { key: "officeRent", label: tx("Office rent", "অফিস ভাড়া") },
-    { key: "motor", label: tx("Motor rent", "মোটর বাঁধা") },
-    { key: "bankDeposit", label: tx("Bank deposit", "ব্যাংক জমা") },
-    { key: "misc", label: tx("Miscellaneous", "বিবিধ") },
+    { key: "labor", label: rt("Labor", "শ্রমিক") },
+    { key: "partsBuy", label: rt("Parts purchase", "যন্ত্রাংশ ক্রয়") },
+    { key: "partsRepair", label: rt("Parts repair", "যন্ত্রাংশ মেরামত") },
+    { key: "transport", label: rt("Transport", "যাতায়াত") },
+    { key: "hospitality", label: rt("Hospitality", "আপ্যায়ন") },
+    { key: "publicity", label: rt("Publicity", "প্রচার") },
+    { key: "salary", label: rt("Salary & allowance", "বেতন ও ভাতা") },
+    { key: "electricity", label: rt("Electricity bill", "বিদ্যুৎ বিল") },
+    { key: "stationery", label: rt("Stationery", "স্টেশনারি") },
+    { key: "officeRent", label: rt("Office rent", "অফিস ভাড়া") },
+    { key: "motor", label: rt("Motor rent", "মোটর বাঁধা") },
+    { key: "bankDeposit", label: rt("Bank deposit", "ব্যাংক জমা") },
+    { key: "misc", label: rt("Miscellaneous", "বিবিধ") },
   ];
 
   const showJamaDetail = (key: keyof IrrJamaRow, label: string) => {
@@ -169,21 +174,43 @@ export default function IrrigationCashBook() {
     setDetail({ title: label, rows, total: rows.reduce((a, r) => a + r.amount, 0) });
   };
 
+  const fileBase = `${rt("irrigation-cashbook", "সেচ-আয়-ব্যয়-ক্যাশবহি")}-${from}_${to}`;
+
+  // Build a matrix (header + rows + grand total) for one section, matching the on-screen columns.
+  const jamaMatrix = () => {
+    const head = [rt("Date", "তারিখ"), rt("Receipt no", "রশিদ নং"), rt("Received from", "কাহার নিকট হতে"),
+      ...JAMA_COLS.map((c) => c.label), rt("Total", "মোট")];
+    const body = jamaRows.map((r) => [r.date, r.receiptNo, r.name, ...JAMA_COLS.map((c) => Number(r[c.key]) || ""), r.total]);
+    const tot = [rt("Grand total", "সর্বমোট"), "", "", ...JAMA_COLS.map((c) => Number(jamaTot[c.key]) || ""), jamaTot.total];
+    return [head, ...body, tot];
+  };
+  const kharchMatrix = () => {
+    const head = [rt("Date", "তারিখ"), rt("Voucher no", "ভাউচার নং"), rt("Purpose of expense", "কি বাবদ খরচ"),
+      ...KHARCH_COLS.map((c) => c.label), rt("Total", "মোট")];
+    const body = kharchRows.map((r) => [r.date, r.voucherNo, r.name, ...KHARCH_COLS.map((c) => Number(r[c.key]) || ""), r.total]);
+    const tot = [rt("Grand total", "সর্বমোট"), "", "", ...KHARCH_COLS.map((c) => Number(kharchTot[c.key]) || ""), kharchTot.total];
+    return [head, ...body, tot];
+  };
+
   const exportCsv = () => {
-    downloadCsv(`${tx("irrigation-cashbook", "সেচ-আয়-ব্যয়-ক্যাশবহি")}-${from}_${to}`, jamaRows, [
-      { header: tx("Date", "তারিখ"), accessor: (r) => r.date },
-      { header: tx("Receipt no", "রশিদ নং"), accessor: (r) => r.receiptNo },
-      { header: tx("Received from", "কাহার নিকট হতে"), accessor: (r) => r.name },
-      { header: tx("Irrigation charge", "সেচ চার্জ"), accessor: (r) => r.sechCharge || "" },
-      { header: tx("Canal charge", "নালা চার্জ"), accessor: (r) => r.nalaCharge || "" },
-      { header: tx("Maintenance", "রক্ষণাবেক্ষণ"), accessor: (r) => r.maintenance || "" },
-      { header: tx("Late fee", "বিলম্ব ফি"), accessor: (r) => r.lateFee || "" },
-      { header: tx("Bank withdrawal", "ব্যাংকে উত্তোলন"), accessor: (r) => r.bankWithdraw || "" },
-      { header: tx("Pond", "পুকুর"), accessor: (r) => r.pond || "" },
-      { header: tx("Miscellaneous", "বিবিধ"), accessor: (r) => r.misc || "" },
-      { header: tx("Total", "মোট"), accessor: (r) => r.total },
+    downloadCsv(fileBase, jamaRows, [
+      { header: rt("Date", "তারিখ"), accessor: (r) => r.date },
+      { header: rt("Receipt no", "রশিদ নং"), accessor: (r) => r.receiptNo },
+      { header: rt("Received from", "কাহার নিকট হতে"), accessor: (r) => r.name },
+      ...JAMA_COLS.map((c) => ({ header: c.label, accessor: (r: IrrJamaRow) => Number(r[c.key]) || "" })),
+      { header: rt("Total", "মোট"), accessor: (r) => r.total },
     ]);
   };
+
+  const exportExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const wsJama = XLSX.utils.aoa_to_sheet([[project], [`${formatDate(from)} - ${formatDate(to)}`], [], ...jamaMatrix()]);
+    const wsKharch = XLSX.utils.aoa_to_sheet([[project], [`${formatDate(from)} - ${formatDate(to)}`], [], ...kharchMatrix()]);
+    XLSX.utils.book_append_sheet(wb, wsJama, rt("Income", "জমা"));
+    XLSX.utils.book_append_sheet(wb, wsKharch, rt("Expense", "খরচ"));
+    XLSX.writeFile(wb, `${fileBase}.xlsx`);
+  };
+
 
   return (
     <div className="space-y-4">
@@ -205,8 +232,14 @@ export default function IrrigationCashBook() {
           </div>
         )}
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
+          <Button variant="outline" onClick={() => setReportLang((p) => (p === "bn" ? "en" : "bn"))}>
+            <Languages className="h-4 w-4 mr-1" /> {reportLang === "bn" ? "English" : "বাংলা"}
+          </Button>
+          <Button variant="outline" onClick={exportExcel} disabled={loading || !hasData}>
             <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+          </Button>
+          <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
+            <FileDown className="h-4 w-4 mr-1" /> CSV
           </Button>
           <Button onClick={() => window.print()} disabled={loading || !hasData}>
             <Printer className="h-4 w-4 mr-1" /> {tx("Print", "প্রিন্ট")}
@@ -222,22 +255,22 @@ export default function IrrigationCashBook() {
         <div className="bn-cb-header text-center font-bold text-base mb-1">
           {project}
           <span className="ml-2 font-normal text-sm">
-            {lang === "bn" ? toBnDigits(`${formatDate(from)} - ${formatDate(to)}`) : `${formatDate(from)} - ${formatDate(to)}`}
+            {rlang === "bn" ? toBnDigits(`${formatDate(from)} - ${formatDate(to)}`) : `${formatDate(from)} - ${formatDate(to)}`}
           </span>
         </div>
 
         <div className="bn-cb-cols grid grid-cols-2 gap-3 items-start">
           {/* জমা */}
-          <section aria-label={tx("Income section", "জমা অংশ")}>
-            <div className="text-center mb-1"><h2 className="text-base font-bold">{tx("Income", "জমা")}</h2></div>
-            <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={tx("Income cash book", "জমা ক্যাশ বহি")}>
+          <section aria-label={rt("Income section", "জমা অংশ")}>
+            <div className="text-center mb-1"><h2 className="text-base font-bold">{rt("Income", "জমা")}</h2></div>
+            <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={rt("Income cash book", "জমা ক্যাশ বহি")}>
               <thead>
                 <tr>
-                  <th className="border border-black p-0.5">{tx("Date", "তারিখ")}</th>
-                  <th className="border border-black p-0.5">{tx("Receipt no", "রশিদ নং")}</th>
-                  <th className="border border-black p-0.5">{tx("Received from", "কাহার নিকট হতে")}</th>
+                  <th className="border border-black p-0.5">{rt("Date", "তারিখ")}</th>
+                  <th className="border border-black p-0.5">{rt("Receipt no", "রশিদ নং")}</th>
+                  <th className="border border-black p-0.5">{rt("Received from", "কাহার নিকট হতে")}</th>
                   {JAMA_COLS.map((c) => <th key={c.key} className="border border-black p-0.5">{c.label}</th>)}
-                  <th className="border border-black p-0.5">{tx("Total", "মোট")}</th>
+                  <th className="border border-black p-0.5">{rt("Total", "মোট")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -250,9 +283,9 @@ export default function IrrigationCashBook() {
                     <td className="border border-black p-0.5 text-right">{formatMoney(r.total)}</td>
                   </tr>
                 ))}
-                {jamaRows.length === 0 && <tr><td colSpan={11} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
+                {jamaRows.length === 0 && <tr><td colSpan={11} className="border border-black p-3 text-center">{rt("No data", "তথ্য নেই")}</td></tr>}
                 <tr className="font-bold">
-                  <td colSpan={3} className="border border-black p-0.5 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+                  <td colSpan={3} className="border border-black p-0.5 text-right">{rt("Grand total=", "সর্বমোট=")}</td>
                   {JAMA_COLS.map((c) => (
                     <td key={c.key} className="border border-black p-0.5 text-right cursor-pointer hover:bg-yellow-100 print:cursor-auto" onClick={() => showJamaDetail(c.key, c.label)}>{formatMoney(Number(jamaTot[c.key]))}</td>
                   ))}
@@ -263,16 +296,16 @@ export default function IrrigationCashBook() {
           </section>
 
           {/* খরচ */}
-          <section aria-label={tx("Expense section", "খরচ অংশ")}>
-            <div className="text-center mb-1"><h2 className="text-base font-bold">{tx("Expense", "খরচ")}</h2></div>
-            <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={tx("Expense cash book", "খরচ ক্যাশ বহি")}>
+          <section aria-label={rt("Expense section", "খরচ অংশ")}>
+            <div className="text-center mb-1"><h2 className="text-base font-bold">{rt("Expense", "খরচ")}</h2></div>
+            <table className="w-full border-collapse text-[10px] bn-cb-table" aria-label={rt("Expense cash book", "খরচ ক্যাশ বহি")}>
               <thead>
                 <tr>
-                  <th className="border border-black p-0.5">{tx("Date", "তারিখ")}</th>
-                  <th className="border border-black p-0.5">{tx("Voucher no", "ভাউচার নং")}</th>
-                  <th className="border border-black p-0.5">{tx("Purpose of expense", "কি বাবদ খরচ")}</th>
+                  <th className="border border-black p-0.5">{rt("Date", "তারিখ")}</th>
+                  <th className="border border-black p-0.5">{rt("Voucher no", "ভাউচার নং")}</th>
+                  <th className="border border-black p-0.5">{rt("Purpose of expense", "কি বাবদ খরচ")}</th>
                   {KHARCH_COLS.map((c) => <th key={c.key} className="border border-black p-0.5">{c.label}</th>)}
-                  <th className="border border-black p-0.5">{tx("Total", "মোট")}</th>
+                  <th className="border border-black p-0.5">{rt("Total", "মোট")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -285,9 +318,9 @@ export default function IrrigationCashBook() {
                     <td className="border border-black p-0.5 text-right">{formatMoney(r.total)}</td>
                   </tr>
                 ))}
-                {kharchRows.length === 0 && <tr><td colSpan={17} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
+                {kharchRows.length === 0 && <tr><td colSpan={17} className="border border-black p-3 text-center">{rt("No data", "তথ্য নেই")}</td></tr>}
                 <tr className="font-bold">
-                  <td colSpan={3} className="border border-black p-0.5 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+                  <td colSpan={3} className="border border-black p-0.5 text-right">{rt("Grand total=", "সর্বমোট=")}</td>
                   {KHARCH_COLS.map((c) => (
                     <td key={c.key} className="border border-black p-0.5 text-right cursor-pointer hover:bg-yellow-100 print:cursor-auto" onClick={() => showKharchDetail(c.key, c.label)}>{formatMoney(Number(kharchTot[c.key]))}</td>
                   ))}
@@ -299,23 +332,23 @@ export default function IrrigationCashBook() {
         </div>
 
         <div className="bn-cb-footer hidden print:flex justify-between text-[10px] mt-2 pt-1 border-t border-black">
-          <span>{tx("Total income", "মোট জমা")}: {formatMoney(jamaTot.total)}</span>
-          <span>{tx("Total expense", "মোট খরচ")}: {formatMoney(kharchTot.total)}</span>
-          <span>{tx("Balance", "জের")}: {formatMoney(jamaTot.total - kharchTot.total)}</span>
+          <span>{rt("Total income", "মোট জমা")}: {formatMoney(jamaTot.total)}</span>
+          <span>{rt("Total expense", "মোট খরচ")}: {formatMoney(kharchTot.total)}</span>
+          <span>{rt("Balance", "জের")}: {formatMoney(jamaTot.total - kharchTot.total)}</span>
         </div>
       </div>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{detail?.title} — {tx("transactions", "লেনদেন")}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{detail?.title} — {rt("transactions", "লেনদেন")}</DialogTitle></DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-1">{tx("Date", "তারিখ")}</th>
-                  <th className="text-left p-1">{tx("Ref", "নং")}</th>
-                  <th className="text-left p-1">{tx("Name", "নাম")}</th>
-                  <th className="text-right p-1">{tx("Amount", "টাকা")}</th>
+                  <th className="text-left p-1">{rt("Date", "তারিখ")}</th>
+                  <th className="text-left p-1">{rt("Ref", "নং")}</th>
+                  <th className="text-left p-1">{rt("Name", "নাম")}</th>
+                  <th className="text-right p-1">{rt("Amount", "টাকা")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,12 +360,12 @@ export default function IrrigationCashBook() {
                     <td className="p-1 text-right">{formatMoney(r.amount)}</td>
                   </tr>
                 ))}
-                {detail && detail.rows.length === 0 && <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">{tx("No transactions", "কোনো লেনদেন নেই")}</td></tr>}
+                {detail && detail.rows.length === 0 && <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">{rt("No transactions", "কোনো লেনদেন নেই")}</td></tr>}
               </tbody>
               {detail && detail.rows.length > 0 && (
                 <tfoot>
                   <tr className="font-bold border-t">
-                    <td colSpan={3} className="p-1 text-right">{tx("Total", "মোট")}</td>
+                    <td colSpan={3} className="p-1 text-right">{rt("Total", "মোট")}</td>
                     <td className="p-1 text-right">{formatMoney(detail.total)}</td>
                   </tr>
                 </tfoot>
