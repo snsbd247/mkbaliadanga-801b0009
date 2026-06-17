@@ -46,6 +46,7 @@ type Action = "reset" | "import" | "both";
 
 export default function DemoManager() {
   const { t, tx } = useLang();
+  const { user } = useAuth();
   const [action, setAction] = useState<Action>("both");
   const [size, setSize] = useState(50);
   const [selected, setSelected] = useState<string[]>(MODULE_KEYS.map((m) => m.id));
