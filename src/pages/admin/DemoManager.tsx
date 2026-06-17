@@ -24,7 +24,8 @@ import { DEMO_PRESETS, type DemoModule } from "@/lib/demoPresets";
 import { formatId5 } from "@/lib/idFormat";
 import { downloadCashReportBackup, fetchCashReportCounts, type CashCountRow } from "@/lib/cashReportBackup";
 import { logDemoRun } from "@/lib/demoOpsAudit";
-import { downloadCashReportSummaryPdf } from "@/lib/cashReportSummaryPdf";
+import { downloadCashReportSummaryPdf, downloadCashReportSummaryCsv } from "@/lib/cashReportSummaryPdf";
+import { getBackupSchedule, setBackupSchedule, maybeScheduledBackup, type BackupSchedule } from "@/lib/cashReportSchedule";
 import { useAuth } from "@/auth/AuthProvider";
 
 const MODULE_KEYS = [
@@ -77,6 +78,7 @@ export default function DemoManager() {
   const [transactional, setTransactional] = useState(true);
   const [rowCountReport, setRowCountReport] = useState<any>(null);
   const [backupFirst, setBackupFirst] = useState(true);
+  const [schedule, setSchedule] = useState<BackupSchedule>(getBackupSchedule());
   const [cashValidation, setCashValidation] = useState<CashCountRow[] | null>(null);
 
   // logs + filters
@@ -140,15 +142,21 @@ export default function DemoManager() {
     }
     // Auto safety backup of cash-report tables before seeding/resetting them.
     let backupStatus: "skipped" | "ok" | "failed" = "skipped";
-    if (backupFirst && selected.includes("cashbook")) {
-      try {
-        const r = await downloadCashReportBackup();
-        backupStatus = "ok";
-        toast.success(`ক্যাশ-রিপোর্ট ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি)`);
-      } catch (e: any) {
-        backupStatus = "failed";
-        toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
-        return; // do not proceed if the safety backup failed
+    if (selected.includes("cashbook")) {
+      // Scheduled (daily/weekly) snapshot, independent of the manual toggle.
+      const sched = await maybeScheduledBackup();
+      if (sched.status === "ok") { backupStatus = "ok"; toast.success(`নির্ধারিত ব্যাকআপ নেওয়া হয়েছে (${sched.rows} সারি)`); }
+      if (sched.status === "failed") toast.error(`নির্ধারিত ব্যাকআপ ব্যর্থ: ${sched.error}`);
+      if (backupFirst) {
+        try {
+          const r = await downloadCashReportBackup();
+          backupStatus = "ok";
+          toast.success(`ক্যাশ-রিপোর্ট ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি)`);
+        } catch (e: any) {
+          backupStatus = "failed";
+          toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
+          return; // do not proceed if the safety backup failed
+        }
       }
     }
     setPreviewOpen(false);
@@ -317,6 +325,17 @@ export default function DemoManager() {
             <Checkbox checked={backupFirst} onCheckedChange={(v) => setBackupFirst(!!v)} />
             <span>{tx("Auto JSON backup of cash-report tables before seeding (Cash Book module)", "seed-এর আগে ক্যাশ-রিপোর্ট টেবিলের স্বয়ংক্রিয় JSON ব্যাকআপ (Cash Book মডিউল)")}</span>
           </label>
+          <div className="flex items-center gap-2 text-sm">
+            <span>{tx("Scheduled auto-backup before seeding", "seed-এর আগে নির্ধারিত স্বয়ংক্রিয় ব্যাকআপ")}</span>
+            <Select value={schedule} onValueChange={(v) => { setSchedule(v as BackupSchedule); setBackupSchedule(v as BackupSchedule); }}>
+              <SelectTrigger className="w-[140px] h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="off">{tx("Off", "বন্ধ")}</SelectItem>
+                <SelectItem value="daily">{tx("Daily", "দৈনিক")}</SelectItem>
+                <SelectItem value="weekly">{tx("Weekly", "সাপ্তাহিক")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
@@ -663,7 +682,7 @@ export default function DemoManager() {
             <CardTitle className="text-base">{tx("Cash-Report Summary", "ক্যাশ-রিপোর্ট সারাংশ")}</CardTitle>
             <CardDescription>{tx("Download a PDF with row counts, mismatch warnings and Cash Book / Hand Cash / Cash Statement totals.", "Row count, mismatch warning ও Cash Book / Hand Cash / Cash Statement totals সহ PDF নামান।")}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={async () => {
               const tid = toast.loading(tx("Generating PDF…", "PDF তৈরি হচ্ছে…"));
               try {
@@ -672,6 +691,15 @@ export default function DemoManager() {
               } catch (e: any) { toast.error(e?.message ?? "Failed", { id: tid }); }
             }}>
               {tx("Download PDF Summary", "PDF সারাংশ নামান")}
+            </Button>
+            <Button size="sm" variant="outline" onClick={async () => {
+              const tid = toast.loading(tx("Generating CSV…", "CSV তৈরি হচ্ছে…"));
+              try {
+                await downloadCashReportSummaryCsv({ source: "DemoManager", modules: selected, counts: cashValidation });
+                toast.success(tx("CSV downloaded", "CSV নামানো হয়েছে"), { id: tid });
+              } catch (e: any) { toast.error(e?.message ?? "Failed", { id: tid }); }
+            }}>
+              {tx("Download CSV Summary", "CSV সারাংশ নামান")}
             </Button>
           </CardContent>
         </Card>

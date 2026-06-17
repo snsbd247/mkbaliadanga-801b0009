@@ -11,7 +11,8 @@ import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
 import { fetchCashReportCounts, flagCashMismatches, downloadCashReportBackup, getLastSnapshot, restoreCashReportBackup, type CashCountRow, type CashSnapshot } from "@/lib/cashReportBackup";
 import { logDemoRun } from "@/lib/demoOpsAudit";
-import { downloadCashReportSummaryPdf } from "@/lib/cashReportSummaryPdf";
+import { downloadCashReportSummaryPdf, downloadCashReportSummaryCsv } from "@/lib/cashReportSummaryPdf";
+import { getBackupSchedule, setBackupSchedule, maybeScheduledBackup, type BackupSchedule } from "@/lib/cashReportSchedule";
 import { useRef } from "react";
 
 type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "cash_only" | "all";
@@ -43,6 +44,7 @@ export default function QuickSeed() {
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [size, setSize] = useState(50);
   const [backupFirst, setBackupFirst] = useState(true);
+  const [schedule, setSchedule] = useState<BackupSchedule>(getBackupSchedule());
   const [cashValidation, setCashValidation] = useState<CashCountRow[] | null>(null);
   const [restoring, setRestoring] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -50,7 +52,12 @@ export default function QuickSeed() {
   const CASH_KEYS = ["cashbook", "cash_only", "all", "year_ops", "recent_features"];
 
   const maybeBackup = async (key: string): Promise<"skipped" | "ok" | "failed"> => {
-    if (!backupFirst || !CASH_KEYS.includes(key)) return "skipped";
+    if (!CASH_KEYS.includes(key)) return "skipped";
+    // Scheduled (daily/weekly) auto-snapshot, independent of the manual toggle.
+    const sched = await maybeScheduledBackup(officeId);
+    if (sched.status === "ok") toast.success(`নির্ধারিত ব্যাকআপ নেওয়া হয়েছে (${sched.rows} সারি)`);
+    if (sched.status === "failed") toast.error(`নির্ধারিত ব্যাকআপ ব্যর্থ: ${sched.error}`);
+    if (!backupFirst) return sched.status === "ok" ? "ok" : "skipped";
     try {
       const r = await downloadCashReportBackup(officeId);
       toast.success(`ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি, ${r.tables} টেবিল)`);
@@ -142,6 +149,16 @@ export default function QuickSeed() {
     }
   };
 
+  const downloadSummaryCsv = async () => {
+    const tid = toast.loading("CSV সারাংশ তৈরি হচ্ছে…");
+    try {
+      await downloadCashReportSummaryCsv({ source: "QuickSeed", modules: ["cashbook"], officeId, counts: cashValidation });
+      toast.success("CSV ডাউনলোড হয়েছে", { id: tid });
+    } catch (e: any) {
+      toast.error(`CSV ব্যর্থ: ${e?.message ?? "Failed"}`, { id: tid });
+    }
+  };
+
 
 
 
@@ -197,6 +214,19 @@ export default function QuickSeed() {
               <input type="checkbox" checked={backupFirst} onChange={(e) => setBackupFirst(e.target.checked)} />
               <ShieldCheck className="h-3.5 w-3.5" /> seed-এর আগে ব্যাকআপ
             </label>
+            <label className="flex items-center gap-1 text-xs text-muted-foreground" title="নির্ধারিত সময় পর পর seed-এর আগে স্বয়ংক্রিয় ব্যাকআপ স্ন্যাপশট">
+              নির্ধারিত ব্যাকআপ
+              <select
+                value={schedule}
+                onChange={(e) => { const v = e.target.value as BackupSchedule; setSchedule(v); setBackupSchedule(v); }}
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+              >
+                <option value="off">বন্ধ</option>
+                <option value="daily">দৈনিক</option>
+                <option value="weekly">সাপ্তাহিক</option>
+              </select>
+            </label>
+
             <label className="text-xs text-muted-foreground">Size</label>
             <input
               type="number"
@@ -287,6 +317,9 @@ export default function QuickSeed() {
               </Button>
               <Button size="sm" variant="outline" onClick={downloadSummary}>
                 <FileText className="h-4 w-4 mr-1" /> PDF সারাংশ
+              </Button>
+              <Button size="sm" variant="outline" onClick={downloadSummaryCsv}>
+                <FileText className="h-4 w-4 mr-1" /> CSV সারাংশ
               </Button>
               <input
                 ref={fileRef} type="file" accept="application/json" className="hidden"

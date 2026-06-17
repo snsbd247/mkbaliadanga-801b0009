@@ -228,6 +228,7 @@ export function AppSidebar() {
         { url: "/backup", icon: Database, label: t("backup"), developerOnly: true },
         { url: "/admin/demo-manager", icon: Database, label: t("demoManager" as any), developerOnly: true },
         { url: "/admin/quick-seed", icon: Database, label: "Quick Seed", developerOnly: true },
+        { url: "/admin/demo-ops-audit", icon: ScrollText, label: lang === "bn" ? "ডেমো অপারেশন অডিট" : "Demo Operations Audit", developerOnly: true },
         { url: "/admin/developer-updates", icon: RefreshCw, label: t("developerUpdates" as any), developerOnly: true },
       ],
     },
