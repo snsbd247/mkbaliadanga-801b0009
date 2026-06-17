@@ -204,7 +204,7 @@ export default function SocietyCashBook() {
                 <th rowSpan={2} className="border border-black p-1">কাহাকে প্রদত্ত হইল</th>
                 <th rowSpan={2} className="border border-black p-1">জমানত ফেরত</th>
                 <th rowSpan={2} className="border border-black p-1">ব্যাংক জমা</th>
-                <th colSpan={3} className="border border-black p-1 text-center">কি বাবদ (ON ACCOUNT OF)</th>
+                <th colSpan={3} className="border border-black p-1 text-center">কি বাবদ</th>
                 <th rowSpan={2} className="border border-black p-1">মোট</th>
               </tr>
               <tr>
