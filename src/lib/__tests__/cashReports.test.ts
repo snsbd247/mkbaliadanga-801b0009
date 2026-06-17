@@ -64,7 +64,7 @@ describe("cash reports — society statement totals", () => {
     expect(stmt.totalIncome).toBe(500 + 1200 + 800 + 200 + 50 + 100);
   });
   it("aggregates society expense lines incl. loan disbursement & salary split", () => {
-    expect(stmt.totalExpense).toBe(600 + 300 + 1000 + 400 + 150);
+    expect(stmt.totalExpense).toBe(600 + 50 + 300 + 1000 + 400 + 150); // incl. bank interest deposit
   });
   it("balances: grandIncome equals grandExpense", () => {
     expect(stmt.grandIncome).toBe(stmt.grandExpense);
