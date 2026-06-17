@@ -1123,6 +1123,13 @@ export default function FarmerDetail() {
                       </div>
                     )}
 
+                    {/* Calculation breakdown: land size × rate → amount + rounding */}
+                    {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && land.land_size > 0 && (() => {
+                      const matched = resolveRateForLand(rateMap, land as any);
+                      const rate = matched ? Number(matched.rate_per_shotok) : 0;
+                      return <LandAmountBreakdown landSize={land.land_size} rate={rate} label={tx("Irrigation", "সেচ")} />;
+                    })()}
+
                     {/* 5. Patwari */}
                     {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
                       <div>
