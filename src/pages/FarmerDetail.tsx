@@ -1206,7 +1206,13 @@ export default function FarmerDetail() {
                   {partialCount > 0 && <Badge variant="default" className="bg-amber-500 hover:bg-amber-500">{tx("Partially Paid", "আংশিক পরিশোধিত")}: {partialCount}</Badge>}
                   <Badge variant="destructive">{tx("Due", "বকেয়া")}: {dueCount}</Badge>
                   {noneCount > 0 && <Badge variant="secondary">{tx("No invoice", "ইনভয়েস নেই")}: {noneCount}</Badge>}
-                  <div className="ml-auto">
+                  <div className="ml-auto flex items-center gap-2">
+                    <Input
+                      value={noteSearch}
+                      onChange={(e) => setNoteSearch(e.target.value)}
+                      placeholder={tx("Search by note…", "নোট দিয়ে খুঁজুন…")}
+                      className="h-8 w-[180px] text-xs"
+                    />
                     <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
                       <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
