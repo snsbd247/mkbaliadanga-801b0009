@@ -22,6 +22,8 @@ const MONTHS_BN = ["জানুয়ারি", "ফেব্রুয়া�
 
 export default function HandCash() {
   const { user, isAdmin, isSuper, officeId } = useAuth();
+  const { tx, lang } = useLang();
+  const MONTHS = lang === "bn" ? MONTHS_BN : ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const today = new Date();
 
   const [year, setYear] = useState(today.getFullYear());
