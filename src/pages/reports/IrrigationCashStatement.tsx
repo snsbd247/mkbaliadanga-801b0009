@@ -79,6 +79,25 @@ export default function IrrigationCashStatement() {
   const rowCount = Math.max(incomeLines.length, expenseLines.length);
   const society = branding.company_name_bn || branding.company_name || "সমবায় সমিতি";
 
+  const exportCsv = () => {
+    const rows = [
+      ...incomeLines.map((l) => ({ section: "জমা", desc: l.label, amount: l.amount })),
+      ...expenseLines.map((l) => ({ section: "খরচ", desc: l.label, amount: l.amount })),
+      { section: "মোট", desc: "মোট আয়", amount: totalIncome },
+      { section: "মোট", desc: "মোট ব্যয়", amount: totalExpense },
+      { section: "তহবিল", desc: "আগত তহবিল", amount: openingFund },
+      { section: "তহবিল", desc: "হস্তমজুদ তহবিল", amount: closingFund },
+      { section: "সর্বমোট", desc: "সর্বমোট (জমা)", amount: grandIncome },
+      { section: "সর্বমোট", desc: "সর্বমোট (খরচ)", amount: grandExpense },
+    ];
+    downloadCsv(`সেচ-জমা-খরচ-${from}_${to}`, rows, [
+      { header: "বিভাগ", accessor: (r) => r.section },
+      { header: "বিবরন", accessor: (r) => r.desc },
+      { header: "টাকা", accessor: (r) => Number(r.amount || 0).toFixed(2) },
+    ]);
+  };
+
+
   return (
     <div className="space-y-4">
       <PageHeader title="জমা খরচ হিসাব (সেচ)" description="অডিট রিপোর্ট — জমা ও খরচের পূর্ণাঙ্গ বিবরণ" />
