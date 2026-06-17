@@ -232,8 +232,14 @@ export default function IrrigationCashBook() {
           </div>
         )}
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
+          <Button variant="outline" onClick={() => setReportLang((p) => (p === "bn" ? "en" : "bn"))}>
+            <Languages className="h-4 w-4 mr-1" /> {reportLang === "bn" ? "English" : "বাংলা"}
+          </Button>
+          <Button variant="outline" onClick={exportExcel} disabled={loading || !hasData}>
             <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+          </Button>
+          <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
+            <FileDown className="h-4 w-4 mr-1" /> CSV
           </Button>
           <Button onClick={() => window.print()} disabled={loading || !hasData}>
             <Printer className="h-4 w-4 mr-1" /> {tx("Print", "প্রিন্ট")}
