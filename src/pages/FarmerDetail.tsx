@@ -53,11 +53,8 @@ type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?:
 
 const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "" };
 
-// Show land size exactly as entered (up to 3 decimals), without forcing 2-decimal rounding.
-const fmtLand = (v: any) => {
-  const n = Number(v || 0);
-  return n.toLocaleString("en-US", { maximumFractionDigits: 3 });
-};
+// Show land size exactly as entered (up to 3 decimals) via the shared utility.
+const fmtLand = (v: any) => formatLand(v);
 
 function pickCurrentSeason(seasons: any[]) {
   const today = new Date();
