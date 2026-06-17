@@ -223,12 +223,16 @@ describe("irrigationCashBook — XLSX / CSV / PDF parity", () => {
     const enJ = buildJamaExportMatrix(jrows, jtot, EN_JAMA);
     const bnJ = buildJamaExportMatrix(jrows, jtot, BN_JAMA);
     expect(enJ[0]).not.toEqual(bnJ[0]);
-    expect(enJ.slice(1)).toEqual(bnJ.slice(1)); // body + grand total numbers unchanged
+    // body rows (numbers) identical regardless of header language
+    expect(enJ.slice(1, -1)).toEqual(bnJ.slice(1, -1));
+    // grand-total numeric cells identical (label differs)
+    expect(enJ[enJ.length - 1].slice(3)).toEqual(bnJ[bnJ.length - 1].slice(3));
 
     const enK = buildKharchExportMatrix(krows, ktot, EN_KHARCH);
     const bnK = buildKharchExportMatrix(krows, ktot, BN_KHARCH);
     expect(enK[0]).not.toEqual(bnK[0]);
-    expect(enK.slice(1)).toEqual(bnK.slice(1));
+    expect(enK.slice(1, -1)).toEqual(bnK.slice(1, -1));
+    expect(enK[enK.length - 1].slice(3)).toEqual(bnK[bnK.length - 1].slice(3));
   });
 })
 
