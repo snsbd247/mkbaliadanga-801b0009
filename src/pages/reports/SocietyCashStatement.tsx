@@ -1,4 +1,3 @@
-// i18n-ignore-file — fixed Bengali audit statement (সমিতির জমা খরচ হিসাব)
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -13,6 +12,7 @@ import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
 import { computeSocietyStatement, computeBankSummary, incomeDrillDownUrl, expenseDrillDownUrl, incomingDrillDownUrl, type Line } from "@/lib/societyCashStatement";
 import { Link } from "react-router-dom";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = supabase as any;
 
@@ -29,9 +29,20 @@ function bnDate(iso: string): string {
   return toBnDigits(`${d}.${m}.${y}`);
 }
 
+function enMoney(n: number): string {
+  return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function enDate(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export default function SocietyCashStatement() {
   const branding = useBranding();
   const { officeId } = useAuth();
+  const { lang, tx } = useLang();
 
   const today = new Date();
   const fyStartYear = today.getMonth() + 1 >= 7 ? today.getFullYear() : today.getFullYear() - 1;
@@ -41,7 +52,7 @@ export default function SocietyCashStatement() {
   const [data, setData] = useState<any>({ savings: [], loanPayments: [], bankTx: [], officeIncomes: [], expenses: [], loansIssued: [], bankAccounts: [] });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { document.title = "জমা খরচ হিসাব (সমিতি)"; }, []);
+  useEffect(() => { document.title = tx("Cash Statement (Society)", "জমা খরচ হিসাব (সমিতি)"); }, [lang]);
 
   useEffect(() => {
     setLoading(true);
@@ -72,12 +83,16 @@ export default function SocietyCashStatement() {
     })();
   }, [from, to, officeId]);
 
-  const stmt = useMemo(() => computeSocietyStatement({ ...data, opening }), [data, opening]);
+  const stmt = useMemo(() => computeSocietyStatement({ ...data, opening }, lang), [data, opening, lang]);
   const bankSummary = useMemo(() => computeBankSummary(data.bankAccounts ?? [], data.bankTxAll ?? []), [data]);
 
   const { incomeLines, expenseLines, totalIncome, totalExpense, openingFund, grandIncome, closingFund, grandExpense } = stmt;
   const rowCount = Math.max(incomeLines.length, expenseLines.length);
-  const society = branding.company_name_bn || branding.company_name || "সমবায় সমিতি";
+  const society = lang === "bn"
+    ? (branding.company_name_bn || branding.company_name || "সমবায় সমিতি")
+    : (branding.company_name || branding.company_name_bn || "Cooperative Society");
+  const formatMoney = lang === "bn" ? bnMoney : enMoney;
+  const formatDate = lang === "bn" ? bnDate : enDate;
 
   const bankTotals = bankSummary.reduce((a, r) => ({
     opening: a.opening + r.opening, interest: a.interest + r.interest, charge: a.charge + r.charge,
@@ -86,19 +101,19 @@ export default function SocietyCashStatement() {
 
   const exportCsv = () => {
     const rows = [
-      ...incomeLines.map((l: Line) => ({ section: "জমা", desc: l.label, amount: l.amount })),
-      ...expenseLines.map((l: Line) => ({ section: "খরচ", desc: l.label, amount: l.amount })),
-      { section: "মোট", desc: "মোট আয়", amount: totalIncome },
-      { section: "মোট", desc: "মোট ব্যয়", amount: totalExpense },
-      { section: "তহবিল", desc: "আগত তহবিল", amount: openingFund },
-      { section: "তহবিল", desc: "হস্তমজুদ তহবিল", amount: closingFund },
-      { section: "সর্বমোট", desc: "সর্বমোট (জমা)", amount: grandIncome },
-      { section: "সর্বমোট", desc: "সর্বমোট (খরচ)", amount: grandExpense },
+      ...incomeLines.map((l: Line) => ({ section: tx("Income", "জমা"), desc: l.label, amount: l.amount })),
+      ...expenseLines.map((l: Line) => ({ section: tx("Expense", "খরচ"), desc: l.label, amount: l.amount })),
+      { section: tx("Total", "মোট"), desc: tx("Total income", "মোট আয়"), amount: totalIncome },
+      { section: tx("Total", "মোট"), desc: tx("Total expense", "মোট ব্যয়"), amount: totalExpense },
+      { section: tx("Fund", "তহবিল"), desc: tx("Opening fund", "আগত তহবিল"), amount: openingFund },
+      { section: tx("Fund", "তহবিল"), desc: tx("Cash in hand fund", "হস্তমজুদ তহবিল"), amount: closingFund },
+      { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (income)", "সর্বমোট (জমা)"), amount: grandIncome },
+      { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (expense)", "সর্বমোট (খরচ)"), amount: grandExpense },
     ];
-    downloadCsv(`সমিতি-জমা-খরচ-${from}_${to}`, rows, [
-      { header: "বিভাগ", accessor: (r) => r.section },
-      { header: "বিবরন", accessor: (r) => r.desc },
-      { header: "টাকা", accessor: (r) => Number(r.amount || 0).toFixed(2) },
+    downloadCsv(`${tx("society-cash-statement", "সমিতি-জমা-খরচ")}-${from}_${to}`, rows, [
+      { header: tx("Section", "বিভাগ"), accessor: (r) => r.section },
+      { header: tx("Description", "বিবরন"), accessor: (r) => r.desc },
+      { header: tx("Amount", "টাকা"), accessor: (r) => Number(r.amount || 0).toFixed(2) },
     ]);
   };
 
