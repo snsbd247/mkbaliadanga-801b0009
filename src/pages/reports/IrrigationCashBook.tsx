@@ -174,21 +174,43 @@ export default function IrrigationCashBook() {
     setDetail({ title: label, rows, total: rows.reduce((a, r) => a + r.amount, 0) });
   };
 
+  const fileBase = `${rt("irrigation-cashbook", "সেচ-আয়-ব্যয়-ক্যাশবহি")}-${from}_${to}`;
+
+  // Build a matrix (header + rows + grand total) for one section, matching the on-screen columns.
+  const jamaMatrix = () => {
+    const head = [rt("Date", "তারিখ"), rt("Receipt no", "রশিদ নং"), rt("Received from", "কাহার নিকট হতে"),
+      ...JAMA_COLS.map((c) => c.label), rt("Total", "মোট")];
+    const body = jamaRows.map((r) => [r.date, r.receiptNo, r.name, ...JAMA_COLS.map((c) => Number(r[c.key]) || ""), r.total]);
+    const tot = [rt("Grand total", "সর্বমোট"), "", "", ...JAMA_COLS.map((c) => Number(jamaTot[c.key]) || ""), jamaTot.total];
+    return [head, ...body, tot];
+  };
+  const kharchMatrix = () => {
+    const head = [rt("Date", "তারিখ"), rt("Voucher no", "ভাউচার নং"), rt("Purpose of expense", "কি বাবদ খরচ"),
+      ...KHARCH_COLS.map((c) => c.label), rt("Total", "মোট")];
+    const body = kharchRows.map((r) => [r.date, r.voucherNo, r.name, ...KHARCH_COLS.map((c) => Number(r[c.key]) || ""), r.total]);
+    const tot = [rt("Grand total", "সর্বমোট"), "", "", ...KHARCH_COLS.map((c) => Number(kharchTot[c.key]) || ""), kharchTot.total];
+    return [head, ...body, tot];
+  };
+
   const exportCsv = () => {
-    downloadCsv(`${tx("irrigation-cashbook", "সেচ-আয়-ব্যয়-ক্যাশবহি")}-${from}_${to}`, jamaRows, [
-      { header: tx("Date", "তারিখ"), accessor: (r) => r.date },
-      { header: tx("Receipt no", "রশিদ নং"), accessor: (r) => r.receiptNo },
-      { header: tx("Received from", "কাহার নিকট হতে"), accessor: (r) => r.name },
-      { header: tx("Irrigation charge", "সেচ চার্জ"), accessor: (r) => r.sechCharge || "" },
-      { header: tx("Canal charge", "নালা চার্জ"), accessor: (r) => r.nalaCharge || "" },
-      { header: tx("Maintenance", "রক্ষণাবেক্ষণ"), accessor: (r) => r.maintenance || "" },
-      { header: tx("Late fee", "বিলম্ব ফি"), accessor: (r) => r.lateFee || "" },
-      { header: tx("Bank withdrawal", "ব্যাংকে উত্তোলন"), accessor: (r) => r.bankWithdraw || "" },
-      { header: tx("Pond", "পুকুর"), accessor: (r) => r.pond || "" },
-      { header: tx("Miscellaneous", "বিবিধ"), accessor: (r) => r.misc || "" },
-      { header: tx("Total", "মোট"), accessor: (r) => r.total },
+    downloadCsv(fileBase, jamaRows, [
+      { header: rt("Date", "তারিখ"), accessor: (r) => r.date },
+      { header: rt("Receipt no", "রশিদ নং"), accessor: (r) => r.receiptNo },
+      { header: rt("Received from", "কাহার নিকট হতে"), accessor: (r) => r.name },
+      ...JAMA_COLS.map((c) => ({ header: c.label, accessor: (r: IrrJamaRow) => Number(r[c.key]) || "" })),
+      { header: rt("Total", "মোট"), accessor: (r) => r.total },
     ]);
   };
+
+  const exportExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const wsJama = XLSX.utils.aoa_to_sheet([[project], [`${formatDate(from)} - ${formatDate(to)}`], [], ...jamaMatrix()]);
+    const wsKharch = XLSX.utils.aoa_to_sheet([[project], [`${formatDate(from)} - ${formatDate(to)}`], [], ...kharchMatrix()]);
+    XLSX.utils.book_append_sheet(wb, wsJama, rt("Income", "জমা"));
+    XLSX.utils.book_append_sheet(wb, wsKharch, rt("Expense", "খরচ"));
+    XLSX.writeFile(wb, `${fileBase}.xlsx`);
+  };
+
 
   return (
     <div className="space-y-4">
