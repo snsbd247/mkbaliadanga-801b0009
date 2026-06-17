@@ -682,7 +682,7 @@ export default function DemoManager() {
             <CardTitle className="text-base">{tx("Cash-Report Summary", "ক্যাশ-রিপোর্ট সারাংশ")}</CardTitle>
             <CardDescription>{tx("Download a PDF with row counts, mismatch warnings and Cash Book / Hand Cash / Cash Statement totals.", "Row count, mismatch warning ও Cash Book / Hand Cash / Cash Statement totals সহ PDF নামান।")}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={async () => {
               const tid = toast.loading(tx("Generating PDF…", "PDF তৈরি হচ্ছে…"));
               try {
@@ -692,6 +692,16 @@ export default function DemoManager() {
             }}>
               {tx("Download PDF Summary", "PDF সারাংশ নামান")}
             </Button>
+            <Button size="sm" variant="outline" onClick={async () => {
+              const tid = toast.loading(tx("Generating CSV…", "CSV তৈরি হচ্ছে…"));
+              try {
+                await downloadCashReportSummaryCsv({ source: "DemoManager", modules: selected, counts: cashValidation });
+                toast.success(tx("CSV downloaded", "CSV নামানো হয়েছে"), { id: tid });
+              } catch (e: any) { toast.error(e?.message ?? "Failed", { id: tid }); }
+            }}>
+              {tx("Download CSV Summary", "CSV সারাংশ নামান")}
+            </Button>
+          </CardContent>
           </CardContent>
         </Card>
       )}
