@@ -130,7 +130,8 @@ export default function SocietyCashStatement() {
           </h2>
         </div>
 
-        <table className="w-full border-collapse text-sm bn-table">
+        <table className="w-full border-collapse text-sm bn-table" aria-label="সমিতির জমা ও খরচ হিসাব">
+          <caption className="sr-only">সমিতির জমা ও খরচের দুই-কলাম হিসাব</caption>
           <thead>
             <tr>
               <th colSpan={3} className="border border-black p-1 text-center font-bold">জমা</th>
