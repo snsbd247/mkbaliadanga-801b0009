@@ -103,19 +103,19 @@ export function AppSidebar() {
 
     // ── Cash & Payments ──
     {
-      key: "cash", icon: Banknote, label: t("cashAndPayments"),
+      key: "cash", icon: Banknote, label: "ক্যাশ ও পেমেন্ট",
       children: [
-        { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
-        { url: "/payments/combined", icon: Receipt, label: (t("combinedPayment" as any) as string) || "সম্মিলিত পেমেন্ট", permKey: "payments" },
-        { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
-        { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
+        { url: "/payments", icon: Receipt, label: "পেমেন্ট", permKey: "payments" },
+        { url: "/payments/combined", icon: Receipt, label: "সম্মিলিত পেমেন্ট", permKey: "payments" },
+        { url: "/scan", icon: ScanLine, label: "QR স্ক্যান", permKey: "payments" },
+        { url: "/cashbook", icon: BookOpen, label: "ক্যাশ বহি", permKey: "cashbook" },
         { url: "/hand-cash", icon: Banknote, label: "হ্যান্ড ক্যাশ", permKey: "cashbook" },
         { url: "/cash-audit", icon: ScrollText, label: "ক্যাশ অডিট", permKey: "cashbook" },
         { url: "/reports/irrigation-statement", icon: ScrollText, label: "জমা খরচ হিসাব (সেচ)", permKey: "cashbook" },
         { url: "/reports/society-statement", icon: ScrollText, label: "জমা খরচ হিসাব (সমিতি)", permKey: "cashbook" },
         { url: "/reports/society-cashbook", icon: ScrollText, label: "আয়-ব্যয় ক্যাশ বহি (সমিতি)", permKey: "cashbook" },
 
-        { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
+        { url: "/approvals", icon: ClipboardCheck, label: "অনুমোদন", permKey: "approvals" },
       ],
     },
 
