@@ -131,8 +131,34 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           land_type_id: sourceLand.land_type_id ?? null,
           patwari_id: sourceLand.patwari_id ?? null,
         };
-        const { data: nl, error: nlErr } = await supabase.from("lands").insert(newLandPayload).select("id").single();
-        if (nlErr) throw nlErr;
+        // If this recipient already has an active land row with the same dag_no,
+        // merging into it avoids the (farmer_id, dag_no) unique-constraint clash
+        // (e.g. reclaiming borga land back to its real owner who already owns it).
+        const dagNo = (sourceLand.dag_no ?? "").trim();
+        let landId: string;
+        if (dagNo) {
+          const { data: existing } = await supabase.from("lands")
+            .select("id, land_size")
+            .eq("farmer_id", r.farmer_id)
+            .eq("dag_no", dagNo)
+            .is("deleted_at", null)
+            .maybeSingle();
+          if (existing) {
+            const { error: upErr } = await supabase.from("lands")
+              .update({ land_size: Number(existing.land_size || 0) + area } as any)
+              .eq("id", existing.id);
+            if (upErr) throw upErr;
+            landId = existing.id;
+          } else {
+            const { data: nl, error: nlErr } = await supabase.from("lands").insert(newLandPayload).select("id").single();
+            if (nlErr) throw nlErr;
+            landId = nl!.id;
+          }
+        } else {
+          const { data: nl, error: nlErr } = await supabase.from("lands").insert(newLandPayload).select("id").single();
+          if (nlErr) throw nlErr;
+          landId = nl!.id;
+        }
 
         const { error: rcErr } = await supabase.from("land_transfer_recipients").insert({
           transfer_id: transferId,
