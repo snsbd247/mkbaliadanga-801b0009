@@ -113,18 +113,27 @@ export default function Payments() {
     const invId = irrAlloc?.reference_id ?? null;
     setEditInvoiceId(invId);
     let mouza = "", land_size = 0, owner = "", delay = 0, landId: string | null = null;
+    let baseline: EditBaseline | null = null;
     if (invId) {
       const { data: inv } = await supabase.from("irrigation_invoices")
-        .select("land_id,owner_farmer_id,delay_fee,lands(mouza,land_size)").eq("id", invId).maybeSingle();
+        .select("land_id,owner_farmer_id,delay_fee,payable_amount,due_amount,paid_amount,lands(mouza,land_size)").eq("id", invId).maybeSingle();
       if (inv) {
         landId = (inv as any).land_id ?? null;
         owner = (inv as any).owner_farmer_id ?? "";
         delay = Number((inv as any).delay_fee || 0);
         mouza = (inv as any).lands?.mouza ?? "";
         land_size = Number((inv as any).lands?.land_size || 0);
+        baseline = {
+          payable_amount: Number((inv as any).payable_amount || 0),
+          due_amount: Number((inv as any).due_amount || 0),
+          paid_amount: Number((inv as any).paid_amount || 0),
+          delay_fee: delay,
+          amount: Number(p.amount || 0),
+        };
       }
     }
     setEditLandId(landId);
+    setEditBaseline(baseline);
     setEditForm({ mouza, land_size, owner_farmer_id: owner, delay_fee: delay, amount: Number(p.amount || 0), note: p.note ?? "", reason: "" });
     setEditLoading(false);
   }
