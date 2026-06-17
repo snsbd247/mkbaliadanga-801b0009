@@ -30,12 +30,14 @@ type ExpenseRow = {
 
 export default function ExpensesReport() {
   const { t } = useLang();
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [params] = useSearchParams();
+  const [from, setFrom] = useState(params.get("from") ?? "");
+  const [to, setTo] = useState(params.get("to") ?? "");
   const [head, setHead] = useState(ALL);
   const [method, setMethod] = useState(ALL);
   const [rows, setRows] = useState<ExpenseRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const fromStatement = !!(params.get("from") || params.get("to") || params.get("stream"));
 
   useEffect(() => {
     document.title = `${t("expensesReport")} — ${t("appName")}`;
