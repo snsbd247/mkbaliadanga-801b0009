@@ -340,15 +340,15 @@ export default function IrrigationCashBook() {
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{detail?.title} — {tx("transactions", "লেনদেন")}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{detail?.title} — {rt("transactions", "লেনদেন")}</DialogTitle></DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-1">{tx("Date", "তারিখ")}</th>
-                  <th className="text-left p-1">{tx("Ref", "নং")}</th>
-                  <th className="text-left p-1">{tx("Name", "নাম")}</th>
-                  <th className="text-right p-1">{tx("Amount", "টাকা")}</th>
+                  <th className="text-left p-1">{rt("Date", "তারিখ")}</th>
+                  <th className="text-left p-1">{rt("Ref", "নং")}</th>
+                  <th className="text-left p-1">{rt("Name", "নাম")}</th>
+                  <th className="text-right p-1">{rt("Amount", "টাকা")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -360,12 +360,12 @@ export default function IrrigationCashBook() {
                     <td className="p-1 text-right">{formatMoney(r.amount)}</td>
                   </tr>
                 ))}
-                {detail && detail.rows.length === 0 && <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">{tx("No transactions", "কোনো লেনদেন নেই")}</td></tr>}
+                {detail && detail.rows.length === 0 && <tr><td colSpan={4} className="p-3 text-center text-muted-foreground">{rt("No transactions", "কোনো লেনদেন নেই")}</td></tr>}
               </tbody>
               {detail && detail.rows.length > 0 && (
                 <tfoot>
                   <tr className="font-bold border-t">
-                    <td colSpan={3} className="p-1 text-right">{tx("Total", "মোট")}</td>
+                    <td colSpan={3} className="p-1 text-right">{rt("Total", "মোট")}</td>
                     <td className="p-1 text-right">{formatMoney(detail.total)}</td>
                   </tr>
                 </tfoot>
