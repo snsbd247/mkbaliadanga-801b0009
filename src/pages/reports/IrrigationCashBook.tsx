@@ -283,9 +283,9 @@ export default function IrrigationCashBook() {
                     <td className="border border-black p-0.5 text-right">{formatMoney(r.total)}</td>
                   </tr>
                 ))}
-                {jamaRows.length === 0 && <tr><td colSpan={11} className="border border-black p-3 text-center">{tx("No data", "তথ্য নেই")}</td></tr>}
+                {jamaRows.length === 0 && <tr><td colSpan={11} className="border border-black p-3 text-center">{rt("No data", "তথ্য নেই")}</td></tr>}
                 <tr className="font-bold">
-                  <td colSpan={3} className="border border-black p-0.5 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+                  <td colSpan={3} className="border border-black p-0.5 text-right">{rt("Grand total=", "সর্বমোট=")}</td>
                   {JAMA_COLS.map((c) => (
                     <td key={c.key} className="border border-black p-0.5 text-right cursor-pointer hover:bg-yellow-100 print:cursor-auto" onClick={() => showJamaDetail(c.key, c.label)}>{formatMoney(Number(jamaTot[c.key]))}</td>
                   ))}
