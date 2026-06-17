@@ -268,6 +268,11 @@ const MODULES: Module[] = [
       { bn: "অন্য ট্যাবে গিয়ে ফিরে এলে আর পেজ refresh হবে না (window-focus refetch বন্ধ)।", en: "Returning from another browser tab no longer reloads the page (window-focus refetch disabled)." },
       { bn: "ফার্মার প্রোফাইল থেকে Edit করে Save করলে এখন প্রোফাইলেই ফিরবে — list-এ যাবে না।", en: "Editing a farmer from their profile now returns to the profile after Save — not the list." },
       { bn: "Lands ফর্মে village/ward/union ছাড়াই Save করা যায় (validation শিথিল)।", en: "Lands form now saves without village/ward/union (validation relaxed)." },
+      { bn: "সেচ আয়-ব্যয় ক্যাশ বহি Excel ও CSV এক্সপোর্ট — PDF-এর সমান কলাম/মোট, বাংলা/English হেডার টোগল।", en: "Irrigation Income-Expense Cash Book now exports to Excel and CSV — same columns/totals as PDF, with Bangla/English header toggle." },
+      { bn: "অফিস-স্কোপড অ্যাডমিন শুধু নিজের অফিসের ডাটাই ফিল্টার/এক্সপোর্ট করতে পারবেন; প্রতিটি এক্সপোর্ট অডিট লগে থাকে।", en: "Office-scoped admins can only filter/export their own office data; every export is recorded in the audit log." },
+      { bn: "সেচ ক্যাশ বহির সেভড ফিল্টার প্রিসেট এখন ডাটাবেজে — ডিভাইসজুড়ে সিঙ্ক হয়।", en: "Irrigation cash book saved filter presets are now stored in the database — synced across devices." },
+      { bn: "Quick Seed/Demo Manager এখন ক্যাশ বহি ও হ্যান্ড ক্যাশ ডেমো ডাটা সিড করে, সিডের আগে অটো-ব্যাকআপ, রো-কাউন্ট ভ্যালিডেশন ও PDF সারাংশসহ।", en: "Quick Seed/Demo Manager now seed Cash Book and Hand Cash demo data, with auto-backup before seeding, row-count validation and a PDF summary." },
+      { bn: "ক্যাশ-রিপোর্ট ব্যাকআপ থেকে Restore ও Quick Seed/DemoManager রান অডিট লগ যোগ হয়েছে।", en: "Added Restore from cash-report backup and an audit log for Quick Seed/DemoManager runs." },
     ],
   },
 ];
