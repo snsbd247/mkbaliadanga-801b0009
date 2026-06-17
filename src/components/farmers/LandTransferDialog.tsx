@@ -146,7 +146,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
             .maybeSingle();
           if (existing) {
             const { error: upErr } = await supabase.from("lands")
-              .update({ land_size: Number(existing.land_size || 0) + area } as any)
+              .update({ land_size: normalizeLandSize(Number(existing.land_size || 0) + area) } as any)
               .eq("id", existing.id);
             if (upErr) throw upErr;
             landId = existing.id;
