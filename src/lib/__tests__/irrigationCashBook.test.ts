@@ -117,3 +117,73 @@ describe("irrigationCashBook — edge cases", () => {
     expect(sumIrrKharch([]).total).toBe(0);
   });
 });
+
+import {
+  buildJamaExportMatrix, buildKharchExportMatrix, resolveEffectiveOffice,
+  JAMA_COL_KEYS, KHARCH_COL_KEYS,
+} from "../irrigationCashBook";
+
+const EN_JAMA = {
+  date: "Date", receiptNo: "Receipt no", receivedFrom: "Received from", total: "Total", grandTotal: "Grand total",
+  cols: ["Irrigation charge", "Canal charge", "Maintenance", "Late fee", "Bank withdrawal", "Pond", "Miscellaneous"],
+};
+const BN_JAMA = {
+  date: "তারিখ", receiptNo: "রশিদ নং", receivedFrom: "কাহার নিকট হতে", total: "মোট", grandTotal: "সর্বমোট",
+  cols: ["সেচ চার্জ", "নালা চার্জ", "রক্ষণাবেক্ষণ", "বিলম্ব ফি", "ব্যাংকে উত্তোলন", "পুকুর", "বিবিধ"],
+};
+const EN_KHARCH = {
+  date: "Date", voucherNo: "Voucher no", purpose: "Purpose", total: "Total", grandTotal: "Grand total",
+  cols: ["Labor", "Parts purchase", "Parts repair", "Transport", "Hospitality", "Publicity", "Salary",
+    "Electricity", "Stationery", "Office rent", "Motor", "Bank deposit", "Miscellaneous"],
+};
+
+describe("irrigationCashBook — export matrices", () => {
+  const jrows = buildIrrJamaRows(fixture, "bn");
+  const jtot = sumIrrJama(jrows);
+  const krows = buildIrrKharchRows(fixture, "bn");
+  const ktot = sumIrrKharch(krows);
+
+  it("jama matrix has header + rows + grand total", () => {
+    const m = buildJamaExportMatrix(jrows, jtot, EN_JAMA);
+    expect(m.length).toBe(jrows.length + 2);
+    // header columns = 3 fixed + col keys + total
+    expect(m[0].length).toBe(3 + JAMA_COL_KEYS.length + 1);
+  });
+
+  it("jama header reflects language (en vs bn) without changing data", () => {
+    const en = buildJamaExportMatrix(jrows, jtot, EN_JAMA);
+    const bn = buildJamaExportMatrix(jrows, jtot, BN_JAMA);
+    expect(en[0]).toContain("Irrigation charge");
+    expect(bn[0]).toContain("সেচ চার্জ");
+    // body rows identical regardless of header language
+    expect(en.slice(1, -1)).toEqual(bn.slice(1, -1));
+  });
+
+  it("jama grand-total row matches summed totals", () => {
+    const m = buildJamaExportMatrix(jrows, jtot, EN_JAMA);
+    const grand = m[m.length - 1];
+    expect(grand[grand.length - 1]).toBe(jtot.total);
+    expect(grand[3]).toBe(jtot.sechCharge); // first data column
+  });
+
+  it("kharch matrix columns and totals are consistent", () => {
+    const m = buildKharchExportMatrix(krows, ktot, EN_KHARCH);
+    expect(m[0].length).toBe(3 + KHARCH_COL_KEYS.length + 1);
+    const grand = m[m.length - 1];
+    expect(grand[grand.length - 1]).toBe(ktot.total);
+  });
+});
+
+describe("irrigationCashBook — office scoping for exports", () => {
+  it("locks scoped users to their own office regardless of filter", () => {
+    expect(resolveEffectiveOffice("office-A", false, "all")).toBe("office-A");
+    expect(resolveEffectiveOffice("office-A", true, "office-B")).toBe("office-A");
+  });
+  it("lets non-scoped admins choose an office or all", () => {
+    expect(resolveEffectiveOffice(null, true, "office-B")).toBe("office-B");
+    expect(resolveEffectiveOffice(null, true, "all")).toBe(null);
+  });
+  it("non-admin without office gets null (no cross-office data)", () => {
+    expect(resolveEffectiveOffice(null, false, "office-B")).toBe(null);
+  });
+});
