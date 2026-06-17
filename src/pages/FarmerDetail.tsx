@@ -1784,6 +1784,12 @@ export default function FarmerDetail() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>{tx("Note (optional)", "নোট (ঐচ্ছিক)")}</Label>
+              <Textarea disabled={editSaving} rows={2} value={editForm.notes}
+                onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+                placeholder={tx("e.g. disputed land, partial owner, special remark", "যেমন: বিরোধপূর্ণ জমি, আংশিক মালিক, বিশেষ মন্তব্য")} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" disabled={editSaving} onClick={() => setEditLand(null)}>{t("cancel")}</Button>
