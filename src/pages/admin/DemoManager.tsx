@@ -142,15 +142,21 @@ export default function DemoManager() {
     }
     // Auto safety backup of cash-report tables before seeding/resetting them.
     let backupStatus: "skipped" | "ok" | "failed" = "skipped";
-    if (backupFirst && selected.includes("cashbook")) {
-      try {
-        const r = await downloadCashReportBackup();
-        backupStatus = "ok";
-        toast.success(`ক্যাশ-রিপোর্ট ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি)`);
-      } catch (e: any) {
-        backupStatus = "failed";
-        toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
-        return; // do not proceed if the safety backup failed
+    if (selected.includes("cashbook")) {
+      // Scheduled (daily/weekly) snapshot, independent of the manual toggle.
+      const sched = await maybeScheduledBackup();
+      if (sched.status === "ok") { backupStatus = "ok"; toast.success(`নির্ধারিত ব্যাকআপ নেওয়া হয়েছে (${sched.rows} সারি)`); }
+      if (sched.status === "failed") toast.error(`নির্ধারিত ব্যাকআপ ব্যর্থ: ${sched.error}`);
+      if (backupFirst) {
+        try {
+          const r = await downloadCashReportBackup();
+          backupStatus = "ok";
+          toast.success(`ক্যাশ-রিপোর্ট ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি)`);
+        } catch (e: any) {
+          backupStatus = "failed";
+          toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
+          return; // do not proceed if the safety backup failed
+        }
       }
     }
     setPreviewOpen(false);
