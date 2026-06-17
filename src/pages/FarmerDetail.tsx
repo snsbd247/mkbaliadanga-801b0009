@@ -50,10 +50,11 @@ import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 import { formatLand, parseLandInput } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
+import { Textarea } from "@/components/ui/textarea";
 
 type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "", notes: "" };
 
 // Show land size exactly as entered (up to 3 decimals) via the shared utility.
 const fmtLand = (v: any) => formatLand(v);
@@ -82,6 +83,7 @@ export default function FarmerDetail() {
   const [lands, setLands] = useState<LandRow[]>([]);
   const [ownerNames, setOwnerNames] = useState<Record<string, string>>({});
   const [landNotes, setLandNotes] = useState<Record<string, string[]>>({});
+  const [landSelfNotes, setLandSelfNotes] = useState<Record<string, string>>({});
   const [savings, setSavings] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
   const [viewLoan, setViewLoan] = useState<any | null>(null);
@@ -203,18 +205,29 @@ export default function FarmerDetail() {
     // Per-land notes from active land relations (Phase 4 — show in lands list)
     const landIdsForNotes = Array.from(new Set(((l.data as any) ?? []).map((x: any) => x.id).filter(Boolean)));
     if (landIdsForNotes.length) {
-      const { data: rels } = await supabase.from("land_relations")
-        .select("land_id,note")
-        .in("land_id", landIdsForNotes as string[])
-        .is("deleted_at", null)
-        .is("valid_to", null);
+      const [{ data: rels }, { data: selfRows }] = await Promise.all([
+        supabase.from("land_relations")
+          .select("land_id,note")
+          .in("land_id", landIdsForNotes as string[])
+          .is("deleted_at", null)
+          .is("valid_to", null),
+        supabase.from("lands")
+          .select("id,notes")
+          .in("id", landIdsForNotes as string[]),
+      ]);
       const nmap: Record<string, string[]> = {};
       (rels ?? []).forEach((r: any) => {
         const txt = (r.note ?? "").trim();
         if (txt) (nmap[r.land_id] ||= []).push(txt);
       });
+      const selfMap: Record<string, string> = {};
+      (selfRows ?? []).forEach((r: any) => {
+        const txt = (r.notes ?? "").trim();
+        if (txt) { selfMap[r.id] = txt; (nmap[r.id] ||= []).unshift(txt); }
+      });
       setLandNotes(nmap);
-    } else setLandNotes({});
+      setLandSelfNotes(selfMap);
+    } else { setLandNotes({}); setLandSelfNotes({}); }
 
     // Load borga lands where THIS farmer is the owner (given out to sharecroppers)
     try {
@@ -631,6 +644,7 @@ export default function FarmerDetail() {
         field_type: land.field_type as any,
         owner_farmer_id: land.owner_type === "borgadar" ? land.owner_farmer_id : null,
         patwari_id: land.patwari_id || null,
+        notes: land.notes?.trim() || null,
       } as any);
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved")); setOpenLand(false);
@@ -678,6 +692,7 @@ export default function FarmerDetail() {
       field_type: (row.field_type as any) ?? "medium_land",
       owner_farmer_id: ((row as any).owner_farmer_id as string) ?? "",
       patwari_id: ((row as any).patwari_id as string) ?? "",
+      notes: ((row as any).notes as string) ?? landSelfNotes[row.id] ?? "",
     });
     setEditLocErr(null);
     // Hydrate full location chain so LocationPicker preselects the saved values.
@@ -743,6 +758,7 @@ export default function FarmerDetail() {
         owner_type: editForm.owner_type as any,
         field_type: editForm.field_type as any,
         patwari_id: editForm.patwari_id || null,
+        notes: editForm.notes?.trim() || null,
       } as any).eq("id", editLand.id).select("id");
       if (error) { toast.error(error.message); return; }
       if (!data || data.length === 0) {
@@ -1146,6 +1162,14 @@ export default function FarmerDetail() {
                         </Select>
                       </div>
                     )}
+
+                    {/* Per-land note (shown later in the lands list) */}
+                    <div>
+                      <Label>{tx("Note (optional)", "নোট (ঐচ্ছিক)")}</Label>
+                      <Textarea disabled={savingLand} rows={2} value={land.notes}
+                        onChange={e => setLand({ ...land, notes: e.target.value })}
+                        placeholder={tx("e.g. disputed land, partial owner, special remark", "যেমন: বিরোধপূর্ণ জমি, আংশিক মালিক, বিশেষ মন্তব্য")} />
+                    </div>
                   </div>
                   <DialogFooter><Button variant="outline" disabled={savingLand} onClick={() => setOpenLand(false)}>{t("cancel")}</Button><Button onClick={addLand} disabled={savingLand}>{savingLand ? "…" : t("save")}</Button></DialogFooter>
                 </DialogContent>
@@ -1759,6 +1783,12 @@ export default function FarmerDetail() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>{tx("Note (optional)", "নোট (ঐচ্ছিক)")}</Label>
+              <Textarea disabled={editSaving} rows={2} value={editForm.notes}
+                onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+                placeholder={tx("e.g. disputed land, partial owner, special remark", "যেমন: বিরোধপূর্ণ জমি, আংশিক মালিক, বিশেষ মন্তব্য")} />
             </div>
           </div>
           <DialogFooter>
