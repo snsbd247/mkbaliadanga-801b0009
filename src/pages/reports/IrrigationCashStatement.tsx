@@ -154,7 +154,7 @@ export default function IrrigationCashStatement() {
           </tbody>
         </table>
 
-        <div className="grid grid-cols-4 gap-4 mt-16 text-center text-xs">
+        <div className="bn-sign-block grid grid-cols-4 gap-4 mt-16 text-center text-xs">
           {["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"].map((role) => (
             <div key={role}>
               <div className="border-t border-black pt-1 font-semibold">{role}</div>
