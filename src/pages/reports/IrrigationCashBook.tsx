@@ -287,17 +287,39 @@ export default function IrrigationCashBook() {
           <Button variant="outline" onClick={() => setReportLang((p) => (p === "bn" ? "en" : "bn"))}>
             <Languages className="h-4 w-4 mr-1" /> {reportLang === "bn" ? "English" : "বাংলা"}
           </Button>
-          <Button variant="outline" onClick={exportExcel} disabled={loading || !hasData}>
+          <Button variant="outline" onClick={exportExcel} disabled={loading || exporting || !hasData}>
             <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
           </Button>
-          <Button variant="outline" onClick={exportCsv} disabled={loading || !hasData}>
+          <Button variant="outline" onClick={exportCsv} disabled={loading || exporting || !hasData}>
             <FileDown className="h-4 w-4 mr-1" /> CSV
           </Button>
-          <Button onClick={() => window.print()} disabled={loading || !hasData}>
+          <Button onClick={handlePrint} disabled={loading || exporting || !hasData}>
             <Printer className="h-4 w-4 mr-1" /> {tx("Print", "প্রিন্ট")}
           </Button>
         </div>
-        {loading && <span className="text-sm text-muted-foreground">{tx("Loading…", "লোড হচ্ছে…")}</span>}
+
+        {/* Saved filter presets (date range + office) */}
+        <div className="basis-full flex flex-wrap items-end gap-2">
+          <div>
+            <Label>{tx("Presets", "প্রিসেট")}</Label>
+            <Select value="" onValueChange={applyPreset}>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder={tx("Apply a preset", "প্রিসেট প্রয়োগ করুন")} /></SelectTrigger>
+              <SelectContent>
+                {presets.length === 0 && <SelectItem value="__none" disabled>{tx("No presets saved", "কোনো প্রিসেট নেই")}</SelectItem>}
+                {presets.map((p) => <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" size="sm" onClick={savePreset}>{tx("Save current", "বর্তমান সংরক্ষণ")}</Button>
+          {presets.map((p) => (
+            <button key={p.name} type="button" onClick={() => deletePreset(p.name)}
+              className="text-xs text-destructive underline">
+              {tx("Delete", "মুছুন")} “{p.name}”
+            </button>
+          ))}
+        </div>
+
+        {(loading || exporting) && <span className="text-sm text-muted-foreground">{exporting ? tx("Generating file…", "ফাইল তৈরি হচ্ছে…") : tx("Loading…", "লোড হচ্ছে…")}</span>}
         {error && <span className="text-sm text-destructive">{error}</span>}
         {!loading && !error && !hasData && <span className="text-sm text-destructive">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</span>}
         {!loading && hasData && <span className="text-xs text-muted-foreground basis-full">{tx("Tip: click any total to see the underlying transactions.", "টিপস: যেকোনো মোট-এ ক্লিক করে অন্তর্নিহিত লেনদেন দেখুন।")}</span>}
