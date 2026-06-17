@@ -678,6 +678,7 @@ export default function FarmerDetail() {
       field_type: (row.field_type as any) ?? "medium_land",
       owner_farmer_id: ((row as any).owner_farmer_id as string) ?? "",
       patwari_id: ((row as any).patwari_id as string) ?? "",
+      notes: ((row as any).notes as string) ?? landSelfNotes[row.id] ?? "",
     });
     setEditLocErr(null);
     // Hydrate full location chain so LocationPicker preselects the saved values.
