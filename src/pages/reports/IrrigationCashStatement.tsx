@@ -1,4 +1,3 @@
-// i18n-ignore-file — fixed Bengali audit statement (সেচ জমা খরচ হিসাব)
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,7 @@ import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { computeStatement, incomeDrillDownUrl, expenseDrillDownUrl, type Line } from "@/lib/irrigationCashStatement";
 import { downloadCsv } from "@/lib/csvExport";
+import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = supabase as any;
 
@@ -30,9 +30,20 @@ function bnDate(iso: string): string {
   return toBnDigits(`${d}.${m}.${y}`);
 }
 
+function enMoney(n: number): string {
+  return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function enDate(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export default function IrrigationCashStatement() {
   const branding = useBranding();
   const { officeId } = useAuth();
+  const { lang, tx } = useLang();
 
   // Default to the running Bangladeshi fiscal year (Jul 1 – Jun 30).
   const today = new Date();
@@ -44,7 +55,7 @@ export default function IrrigationCashStatement() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { document.title = "জমা খরচ হিসাব (সেচ)"; }, []);
+  useEffect(() => { document.title = tx("Cash Statement (Irrigation)", "জমা খরচ হিসাব (সেচ)"); }, [lang]);
 
   useEffect(() => {
     setLoading(true);
@@ -73,28 +84,32 @@ export default function IrrigationCashStatement() {
     incomeLines, expenseLines, totalIncome, totalExpense,
     openingFund, grandIncome, closingFund, grandExpense,
   } = useMemo(
-    () => computeStatement(receipts, expenses, opening),
-    [receipts, expenses, opening],
+    () => computeStatement(receipts, expenses, opening, lang),
+    [receipts, expenses, opening, lang],
   );
 
   const rowCount = Math.max(incomeLines.length, expenseLines.length);
-  const society = branding.company_name_bn || branding.company_name || "সমবায় সমিতি";
+  const society = lang === "bn"
+    ? (branding.company_name_bn || branding.company_name || "সমবায় সমিতি")
+    : (branding.company_name || branding.company_name_bn || "Cooperative Society");
+  const formatMoney = lang === "bn" ? bnMoney : enMoney;
+  const formatDate = lang === "bn" ? bnDate : enDate;
 
   const exportCsv = () => {
     const rows = [
-      ...incomeLines.map((l) => ({ section: "জমা", desc: l.label, amount: l.amount })),
-      ...expenseLines.map((l) => ({ section: "খরচ", desc: l.label, amount: l.amount })),
-      { section: "মোট", desc: "মোট আয়", amount: totalIncome },
-      { section: "মোট", desc: "মোট ব্যয়", amount: totalExpense },
-      { section: "তহবিল", desc: "আগত তহবিল", amount: openingFund },
-      { section: "তহবিল", desc: "হস্তমজুদ তহবিল", amount: closingFund },
-      { section: "সর্বমোট", desc: "সর্বমোট (জমা)", amount: grandIncome },
-      { section: "সর্বমোট", desc: "সর্বমোট (খরচ)", amount: grandExpense },
+      ...incomeLines.map((l) => ({ section: tx("Income", "জমা"), desc: l.label, amount: l.amount })),
+      ...expenseLines.map((l) => ({ section: tx("Expense", "খরচ"), desc: l.label, amount: l.amount })),
+      { section: tx("Total", "মোট"), desc: tx("Total income", "মোট আয়"), amount: totalIncome },
+      { section: tx("Total", "মোট"), desc: tx("Total expense", "মোট ব্যয়"), amount: totalExpense },
+      { section: tx("Fund", "তহবিল"), desc: tx("Opening fund", "আগত তহবিল"), amount: openingFund },
+      { section: tx("Fund", "তহবিল"), desc: tx("Cash in hand fund", "হস্তমজুদ তহবিল"), amount: closingFund },
+      { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (income)", "সর্বমোট (জমা)"), amount: grandIncome },
+      { section: tx("Grand total", "সর্বমোট"), desc: tx("Grand total (expense)", "সর্বমোট (খরচ)"), amount: grandExpense },
     ];
-    downloadCsv(`সেচ-জমা-খরচ-${from}_${to}`, rows, [
-      { header: "বিভাগ", accessor: (r) => r.section },
-      { header: "বিবরন", accessor: (r) => r.desc },
-      { header: "টাকা", accessor: (r) => Number(r.amount || 0).toFixed(2) },
+    downloadCsv(`${tx("irrigation-cash-statement", "সেচ-জমা-খরচ")}-${from}_${to}`, rows, [
+      { header: tx("Section", "বিভাগ"), accessor: (r) => r.section },
+      { header: tx("Description", "বিবরন"), accessor: (r) => r.desc },
+      { header: tx("Amount", "টাকা"), accessor: (r) => Number(r.amount || 0).toFixed(2) },
     ]);
   };
 
