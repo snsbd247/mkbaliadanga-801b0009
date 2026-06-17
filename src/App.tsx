@@ -39,6 +39,7 @@ import CashAudit from "./pages/CashAudit";
 import IrrigationCashStatement from "./pages/reports/IrrigationCashStatement";
 import SocietyCashStatement from "./pages/reports/SocietyCashStatement";
 import SocietyCashBook from "./pages/reports/SocietyCashBook";
+import IrrigationCashBook from "./pages/reports/IrrigationCashBook";
 
 import HandCash from "./pages/HandCash";
 import Statement from "./pages/Statement";
