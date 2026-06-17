@@ -154,8 +154,8 @@ export default function CashAudit() {
     return { lines, totalIncome, totalExpense };
   }
 
-  const irrigation = useMemo(() => buildLines("irrigation"), [receipts, expenses]);
-  const savings = useMemo(() => buildLines("savings"), [receipts, expenses]);
+  const irrigation = useMemo(() => buildLines("irrigation"), [receipts, expenses, lang]);
+  const savings = useMemo(() => buildLines("savings"), [receipts, expenses, lang]);
 
   function streamTitle(stream: Stream) {
     return stream === "irrigation" ? tx("Irrigation Audit", "সেচ অডিট") : tx("Savings Audit", "সেভিং অডিট");
