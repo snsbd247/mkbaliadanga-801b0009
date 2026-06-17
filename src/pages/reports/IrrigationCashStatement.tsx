@@ -165,53 +165,53 @@ export default function IrrigationCashStatement() {
               const exp = expenseLines[i];
               return (
                 <tr key={i}>
-                  <td className="border border-black p-1 text-center">{inc ? toBnDigits(String(i + 1).padStart(2, "0")) : ""}</td>
+                  <td className="border border-black p-1 text-center">{inc ? (lang === "bn" ? toBnDigits(String(i + 1).padStart(2, "0")) : String(i + 1).padStart(2, "0")) : ""}</td>
                   <td className="border border-black p-1">{inc?.label ?? ""}</td>
-                  <td className="border border-black p-1 text-right">{inc ? bnMoney(inc.amount) : ""}</td>
-                  <td className="border border-black p-1 text-center">{exp ? toBnDigits(String(i + 1).padStart(2, "0")) : ""}</td>
+                  <td className="border border-black p-1 text-right">{inc ? formatMoney(inc.amount) : ""}</td>
+                  <td className="border border-black p-1 text-center">{exp ? (lang === "bn" ? toBnDigits(String(i + 1).padStart(2, "0")) : String(i + 1).padStart(2, "0")) : ""}</td>
                   <td className="border border-black p-1">{exp?.label ?? ""}</td>
-                  <td className="border border-black p-1 text-right">{exp ? bnMoney(exp.amount) : ""}</td>
+                  <td className="border border-black p-1 text-right">{exp ? formatMoney(exp.amount) : ""}</td>
                 </tr>
               );
             })}
             {rowCount === 0 && (
-              <tr><td colSpan={6} className="border border-black p-3 text-center">এই সময়ে কোনো তথ্য নেই</td></tr>
+              <tr><td colSpan={6} className="border border-black p-3 text-center">{tx("No data in this period", "এই সময়ে কোনো তথ্য নেই")}</td></tr>
             )}
             <tr className="font-bold">
-              <td colSpan={2} className="border border-black p-1 text-right">মোট আয়=</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Total income=", "মোট আয়=")}</td>
               <td className="border border-black p-1 text-right">
                 <Link
                   to={incomeDrillDownUrl(from, to)}
-                  aria-label={`সেচ আয়ের পেমেন্ট রেকর্ড দেখুন (${from} থেকে ${to})`}
+                  aria-label={tx(`View irrigation income payment records (${from} to ${to})`, `সেচ আয়ের পেমেন্ট রেকর্ড দেখুন (${from} থেকে ${to})`)}
                   className="underline print:no-underline print:text-black text-blue-700 print:pointer-events-none"
-                >{bnMoney(totalIncome)}</Link>
+                >{formatMoney(totalIncome)}</Link>
               </td>
-              <td colSpan={2} className="border border-black p-1 text-right">মোট ব্যয়=</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Total expense=", "মোট ব্যয়=")}</td>
               <td className="border border-black p-1 text-right">
                 <Link
                   to={expenseDrillDownUrl(from, to)}
-                  aria-label={`সেচ খরচের রেকর্ড দেখুন (${from} থেকে ${to})`}
+                  aria-label={tx(`View irrigation expense records (${from} to ${to})`, `সেচ খরচের রেকর্ড দেখুন (${from} থেকে ${to})`)}
                   className="underline print:no-underline print:text-black text-blue-700 print:pointer-events-none"
-                >{bnMoney(totalExpense)}</Link>
+                >{formatMoney(totalExpense)}</Link>
               </td>
             </tr>
             <tr className="font-bold">
-              <td colSpan={2} className="border border-black p-1 text-right">আগত তহবিল=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(openingFund)}</td>
-              <td colSpan={2} className="border border-black p-1 text-right">হস্তমজুদ তহবিল=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(closingFund)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Opening fund=", "আগত তহবিল=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(openingFund)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Cash in hand fund=", "হস্তমজুদ তহবিল=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(closingFund)}</td>
             </tr>
             <tr className="font-bold">
-              <td colSpan={2} className="border border-black p-1 text-right">সর্বমোট=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(grandIncome)}</td>
-              <td colSpan={2} className="border border-black p-1 text-right">সর্বমোট=</td>
-              <td className="border border-black p-1 text-right">{bnMoney(grandExpense)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(grandIncome)}</td>
+              <td colSpan={2} className="border border-black p-1 text-right">{tx("Grand total=", "সর্বমোট=")}</td>
+              <td className="border border-black p-1 text-right">{formatMoney(grandExpense)}</td>
             </tr>
           </tbody>
         </table>
 
         <div className="bn-sign-block grid grid-cols-4 gap-4 mt-16 text-center text-xs">
-          {["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"].map((role) => (
+          {(lang === "bn" ? ["অডিট অফিসার", "সভাপতি", "সম্পাদক", "কোষাধক্ষ্য"] : ["Audit Officer", "President", "Secretary", "Treasurer"]).map((role) => (
             <div key={role}>
               <div className="border-t border-black pt-1 font-semibold">{role}</div>
               <div className="leading-tight mt-0.5">{society}</div>
@@ -220,11 +220,11 @@ export default function IrrigationCashStatement() {
         </div>
 
         <div className="bn-sign-block mt-10 text-sm">
-          <div className="font-semibold mb-6">ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ</div>
+          <div className="font-semibold mb-6">{tx("Management committee members' signatures:", "ব্যবস্থাপনা কমিটির সদস্যদের স্বাক্ষর ঃ")}</div>
           <div className="grid grid-cols-3 gap-8">
-            <div>১।</div>
-            <div>২।</div>
-            <div>৩।</div>
+            <div>{tx("1.", "১।")}</div>
+            <div>{tx("2.", "২।")}</div>
+            <div>{tx("3.", "৩।")}</div>
           </div>
         </div>
       </div>
