@@ -105,6 +105,7 @@ import DuplicateReceiptAudit from "./pages/admin/DuplicateReceiptAudit";
 import FarmerLoginAudit from "./pages/admin/FarmerLoginAudit";
 import DemoManager from "./pages/admin/DemoManager";
 import QuickSeed from "./pages/admin/QuickSeed";
+import DemoOpsAudit from "./pages/admin/DemoOpsAudit";
 import Patwaris from "./pages/admin/Patwaris";
 import PatwariDetail from "./pages/admin/PatwariDetail";
 import FarmerStatement from "./pages/FarmerStatement";
