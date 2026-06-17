@@ -72,17 +72,29 @@ async function fetchAll(table: string, officeId?: string | null) {
   return all;
 }
 
-// Take a JSON snapshot of the cash-report tables and trigger a browser download.
-// Used as an automatic safety backup before running cash-module demo seeds.
-export async function downloadCashReportBackup(officeId?: string | null): Promise<{ tables: number; rows: number }> {
+export type CashSnapshot = {
+  kind: "cash-report-backup";
+  created_at: string;
+  officeId: string | null;
+  tables: Record<string, any[]>;
+};
+
+const LAST_SNAPSHOT_KEY = "cash_report_last_backup";
+
+export async function buildCashReportSnapshot(officeId?: string | null): Promise<CashSnapshot> {
   const snapshot: Record<string, any[]> = {};
-  let total = 0;
   for (const table of CASH_REPORT_TABLES) {
-    const rows = await fetchAll(table, officeId);
-    snapshot[table] = rows;
-    total += rows.length;
+    snapshot[table] = await fetchAll(table, officeId);
   }
-  const payload = { kind: "cash-report-backup", created_at: new Date().toISOString(), officeId: officeId ?? null, tables: snapshot };
+  return { kind: "cash-report-backup", created_at: new Date().toISOString(), officeId: officeId ?? null, tables: snapshot };
+}
+
+// Take a JSON snapshot of the cash-report tables, remember it as the "last backup",
+// and trigger a browser download. Used as a safety backup before cash-module seeds.
+export async function downloadCashReportBackup(officeId?: string | null): Promise<{ tables: number; rows: number }> {
+  const payload = await buildCashReportSnapshot(officeId);
+  const total = Object.values(payload.tables).reduce((s, r) => s + r.length, 0);
+  try { localStorage.setItem(LAST_SNAPSHOT_KEY, JSON.stringify(payload)); } catch { /* too large for localStorage — file download still works */ }
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -94,3 +106,47 @@ export async function downloadCashReportBackup(officeId?: string | null): Promis
   URL.revokeObjectURL(url);
   return { tables: CASH_REPORT_TABLES.length, rows: total };
 }
+
+export function getLastSnapshot(): CashSnapshot | null {
+  try {
+    const raw = localStorage.getItem(LAST_SNAPSHOT_KEY);
+    return raw ? (JSON.parse(raw) as CashSnapshot) : null;
+  } catch { return null; }
+}
+
+export type RestoreResult = {
+  restored: { table: string; rows: number; failed: number }[];
+  totalRestored: number;
+  verification: CashCountRow[];
+  verified: boolean; // every restored table's count >= snapshot row count
+};
+
+// Restore a snapshot by upserting rows back (by id), then re-count to verify.
+export async function restoreCashReportBackup(snapshot: CashSnapshot): Promise<RestoreResult> {
+  const restored: RestoreResult["restored"] = [];
+  for (const table of CASH_REPORT_TABLES) {
+    const rows = snapshot.tables?.[table] ?? [];
+    let failed = 0;
+    if (rows.length) {
+      for (let i = 0; i < rows.length; i += 500) {
+        const slice = rows.slice(i, i + 500);
+        const { error } = await sb.from(table).upsert(slice, { onConflict: "id" });
+        if (error) failed += slice.length;
+      }
+    }
+    restored.push({ table, rows: rows.length, failed });
+  }
+  const verification = await fetchCashReportCounts(snapshot.officeId);
+  const verified = CASH_REPORT_TABLES.every((table) => {
+    const want = (snapshot.tables?.[table] ?? []).length;
+    const got = verification.find((v) => v.table === table)?.count ?? 0;
+    return got >= want;
+  });
+  return {
+    restored,
+    totalRestored: restored.reduce((s, r) => s + (r.rows - r.failed), 0),
+    verification,
+    verified,
+  };
+}
+

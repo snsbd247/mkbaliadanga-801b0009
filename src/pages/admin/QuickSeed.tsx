@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen, Wallet, ShieldCheck } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Building2, Package, Users, Map, CalendarDays, PiggyBank, Landmark, Droplets, Zap, Banknote, CalendarRange, Receipt, UserCog, Sparkles, BookOpen, Wallet, ShieldCheck, Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { seedDemoAssets } from "@/lib/assetDemoSeed";
-import { fetchCashReportCounts, flagCashMismatches, downloadCashReportBackup, type CashCountRow } from "@/lib/cashReportBackup";
+import { fetchCashReportCounts, flagCashMismatches, downloadCashReportBackup, getLastSnapshot, restoreCashReportBackup, type CashCountRow, type CashSnapshot } from "@/lib/cashReportBackup";
+import { logDemoRun } from "@/lib/demoOpsAudit";
+import { downloadCashReportSummaryPdf } from "@/lib/cashReportSummaryPdf";
+import { useRef } from "react";
 
 type ModuleKey = "office" | "asset" | "farmers" | "lands" | "patwari" | "seasons" | "savings" | "loans" | "irrigation" | "expenses" | "bank" | "cashbook" | "cash_only" | "all";
 
@@ -35,42 +38,49 @@ const MODULES: { key: ModuleKey; title: string; desc: string; icon: any; modules
 const ALL_OPS_MODULES = ["locations", "settings", "accounting", "farmers", "irrigation", "loans", "savings", "expenses", "bank", "cashbook"];
 
 export default function QuickSeed() {
-  const { officeId } = useAuth();
+  const { officeId, user } = useAuth();
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [size, setSize] = useState(50);
   const [backupFirst, setBackupFirst] = useState(true);
   const [cashValidation, setCashValidation] = useState<CashCountRow[] | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const CASH_KEYS = ["cashbook", "cash_only", "all", "year_ops", "recent_features"];
 
-  const maybeBackup = async (key: string) => {
-    if (!backupFirst || !CASH_KEYS.includes(key)) return;
+  const maybeBackup = async (key: string): Promise<"skipped" | "ok" | "failed"> => {
+    if (!backupFirst || !CASH_KEYS.includes(key)) return "skipped";
     try {
       const r = await downloadCashReportBackup(officeId);
       toast.success(`ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি, ${r.tables} টেবিল)`);
+      return "ok";
     } catch (e: any) {
       toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
+      return "failed";
     }
   };
 
-  const validateCash = async (key: string) => {
-    if (!CASH_KEYS.includes(key)) return;
+  const validateCash = async (key: string): Promise<CashCountRow[] | null> => {
+    if (!CASH_KEYS.includes(key)) return null;
     try {
       const rows = await fetchCashReportCounts(officeId);
       setCashValidation(rows);
       const bad = flagCashMismatches(rows);
       if (bad.length) toast.warning(`${bad.length} টি cash-report টেবিল খালি`);
-    } catch { /* validation best-effort */ }
+      return rows;
+    } catch { return null; }
   };
 
   const runEdge = async (key: string, modules: string[], monthsBack?: number) => {
     setStatus((s) => ({ ...s, [key]: "running" }));
     setMsg((m) => ({ ...m, [key]: "" }));
+    let backupStatus: "skipped" | "ok" | "failed" = "skipped";
+    let validation: CashCountRow[] | null = null;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Please sign in");
-      await maybeBackup(key);
+      backupStatus = await maybeBackup(key);
       const body: any = { action: "import", modules, size, confirm: "RESET", transactional: true };
       if (monthsBack && monthsBack > 1) body.monthsBack = monthsBack;
       const { data, error } = await supabase.functions.invoke("demo-reset", { body });
@@ -80,14 +90,59 @@ export default function QuickSeed() {
       const summary = Object.entries(counts).map(([k, v]) => `${k}: ${v}`).join(", ") || "ডাটা যোগ হয়েছে";
       setStatus((s) => ({ ...s, [key]: "ok" }));
       setMsg((m) => ({ ...m, [key]: summary }));
-      await validateCash(key);
+      validation = await validateCash(key);
+      await logDemoRun(user, { source: "QuickSeed", action: key, modules, size, success: true, backupStatus, validation });
       toast.success(`${key}: ডামি ডাটা তৈরি হয়েছে`);
     } catch (e: any) {
       setStatus((s) => ({ ...s, [key]: "err" }));
       setMsg((m) => ({ ...m, [key]: e?.message ?? "Failed" }));
+      await logDemoRun(user, { source: "QuickSeed", action: key, modules, size, success: false, errorMessage: e?.message, backupStatus, validation });
       toast.error(`${key}: ${e?.message ?? "Failed"}`);
     }
   };
+
+  const doRestore = async (snapshot: CashSnapshot) => {
+    setRestoring(true);
+    const tid = toast.loading("ব্যাকআপ থেকে restore হচ্ছে…");
+    try {
+      const r = await restoreCashReportBackup(snapshot);
+      setCashValidation(r.verification);
+      if (r.verified) toast.success(`Restore সম্পন্ন — ${r.totalRestored} সারি, row-count মিলেছে`, { id: tid });
+      else toast.warning(`Restore হয়েছে (${r.totalRestored} সারি) কিন্তু কিছু row-count মেলেনি`, { id: tid });
+    } catch (e: any) {
+      toast.error(`Restore ব্যর্থ: ${e?.message ?? "Failed"}`, { id: tid });
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const restoreFromLast = async () => {
+    const snap = getLastSnapshot();
+    if (!snap) { toast.error("কোনো সাম্প্রতিক ব্যাকআপ snapshot নেই (এই ব্রাউজারে)"); return; }
+    await doRestore(snap);
+  };
+
+  const restoreFromFile = async (file: File) => {
+    try {
+      const snap = JSON.parse(await file.text()) as CashSnapshot;
+      if (snap?.kind !== "cash-report-backup" || !snap.tables) throw new Error("Invalid backup file");
+      await doRestore(snap);
+    } catch (e: any) {
+      toast.error(`ফাইল পড়া যায়নি: ${e?.message ?? "Invalid"}`);
+    }
+  };
+
+  const downloadSummary = async () => {
+    const tid = toast.loading("PDF সারাংশ তৈরি হচ্ছে…");
+    try {
+      await downloadCashReportSummaryPdf({ source: "QuickSeed", modules: ["cashbook"], officeId, counts: cashValidation });
+      toast.success("PDF ডাউনলোড হয়েছে", { id: tid });
+    } catch (e: any) {
+      toast.error(`PDF ব্যর্থ: ${e?.message ?? "Failed"}`, { id: tid });
+    }
+  };
+
+
 
 
   const runAsset = async (key: string) => {
@@ -223,9 +278,25 @@ export default function QuickSeed() {
               ))}
             </div>
             <p className="text-[10px] text-muted-foreground mt-2">* required টেবিল — খালি হলে mismatch হিসেবে flag হয়।</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button size="sm" variant="outline" onClick={restoreFromLast} disabled={restoring}>
+                <ShieldCheck className="h-4 w-4 mr-1" /> শেষ ব্যাকআপ থেকে Restore
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={restoring}>
+                <Upload className="h-4 w-4 mr-1" /> ফাইল থেকে Restore
+              </Button>
+              <Button size="sm" variant="outline" onClick={downloadSummary}>
+                <FileText className="h-4 w-4 mr-1" /> PDF সারাংশ
+              </Button>
+              <input
+                ref={fileRef} type="file" accept="application/json" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) restoreFromFile(f); e.currentTarget.value = ""; }}
+              />
+            </div>
           </CardContent>
         </Card>
       )}
+
 
 
 

@@ -22,7 +22,10 @@ import * as XLSX from "xlsx";
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
 import { DEMO_PRESETS, type DemoModule } from "@/lib/demoPresets";
 import { formatId5 } from "@/lib/idFormat";
-import { downloadCashReportBackup } from "@/lib/cashReportBackup";
+import { downloadCashReportBackup, fetchCashReportCounts, type CashCountRow } from "@/lib/cashReportBackup";
+import { logDemoRun } from "@/lib/demoOpsAudit";
+import { downloadCashReportSummaryPdf } from "@/lib/cashReportSummaryPdf";
+import { useAuth } from "@/auth/AuthProvider";
 
 const MODULE_KEYS = [
   { id: "locations", tk: "dmModLocations" },
@@ -43,6 +46,7 @@ type Action = "reset" | "import" | "both";
 
 export default function DemoManager() {
   const { t, tx } = useLang();
+  const { user } = useAuth();
   const [action, setAction] = useState<Action>("both");
   const [size, setSize] = useState(50);
   const [selected, setSelected] = useState<string[]>(MODULE_KEYS.map((m) => m.id));
@@ -73,6 +77,7 @@ export default function DemoManager() {
   const [transactional, setTransactional] = useState(true);
   const [rowCountReport, setRowCountReport] = useState<any>(null);
   const [backupFirst, setBackupFirst] = useState(true);
+  const [cashValidation, setCashValidation] = useState<CashCountRow[] | null>(null);
 
   // logs + filters
   const [logs, setLogs] = useState<any[]>([]);
@@ -134,11 +139,14 @@ export default function DemoManager() {
       return;
     }
     // Auto safety backup of cash-report tables before seeding/resetting them.
+    let backupStatus: "skipped" | "ok" | "failed" = "skipped";
     if (backupFirst && selected.includes("cashbook")) {
       try {
         const r = await downloadCashReportBackup();
+        backupStatus = "ok";
         toast.success(`ক্যাশ-রিপোর্ট ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি)`);
       } catch (e: any) {
+        backupStatus = "failed";
         toast.error(`ব্যাকআপ ব্যর্থ: ${e?.message ?? "Failed"}`);
         return; // do not proceed if the safety backup failed
       }
@@ -220,10 +228,16 @@ export default function DemoManager() {
       }
 
       if (succeeded) toast.success(`✓ ${t("dmOpDone" as any)}`);
+      let validation: CashCountRow[] | null = null;
+      if (selected.includes("cashbook")) {
+        try { validation = await fetchCashReportCounts(); setCashValidation(validation); } catch { /* best-effort */ }
+      }
+      await logDemoRun(user, { source: "DemoManager", action, modules: selected, size, success: succeeded, backupStatus, validation });
       await loadLogs();
     } catch (e: any) {
       toast.error(e?.message ?? t("dmFailedGeneric" as any));
       setLastResult({ error: e?.message });
+      await logDemoRun(user, { source: "DemoManager", action, modules: selected, size, success: false, errorMessage: e?.message, backupStatus, validation: null });
       await loadLogs();
     } finally {
       setLoading(false);
@@ -639,6 +653,26 @@ export default function DemoManager() {
               </tbody>
               </table>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {(rowCountReport || cashValidation) && !loading && (
+        <Card className="border-primary/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">{tx("Cash-Report Summary", "ক্যাশ-রিপোর্ট সারাংশ")}</CardTitle>
+            <CardDescription>{tx("Download a PDF with row counts, mismatch warnings and Cash Book / Hand Cash / Cash Statement totals.", "Row count, mismatch warning ও Cash Book / Hand Cash / Cash Statement totals সহ PDF নামান।")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button size="sm" variant="outline" onClick={async () => {
+              const tid = toast.loading(tx("Generating PDF…", "PDF তৈরি হচ্ছে…"));
+              try {
+                await downloadCashReportSummaryPdf({ source: "DemoManager", modules: selected, counts: cashValidation });
+                toast.success(tx("PDF downloaded", "PDF নামানো হয়েছে"), { id: tid });
+              } catch (e: any) { toast.error(e?.message ?? "Failed", { id: tid }); }
+            }}>
+              {tx("Download PDF Summary", "PDF সারাংশ নামান")}
+            </Button>
           </CardContent>
         </Card>
       )}
