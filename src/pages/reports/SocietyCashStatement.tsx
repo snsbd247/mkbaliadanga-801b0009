@@ -212,7 +212,7 @@ export default function SocietyCashStatement() {
         {bankSummary.length > 0 && (
           <div className="bn-sign-block mt-10">
             <div className="font-semibold mb-2 text-sm">পর্যবেক্ষণ ঃ (ব্যাংক হিসাব) ঃ নিরীক্ষাকালে সমিতিতে নিম্নরূপ ব্যাংক হিসাব পরিলক্ষিত হলো।</div>
-            <table className="w-full border-collapse text-xs bn-table">
+            <table className="w-full border-collapse text-xs bn-table" aria-label="ব্যাংক হিসাব সারসংক্ষেপ">
               <thead>
                 <tr>
                   <th className="border border-black p-1 w-10">ক্রঃনং</th>
