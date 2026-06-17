@@ -1237,7 +1237,7 @@ export default function FarmerDetail() {
                             </div>
                           ) : null}
                         </TableCell>
-                        <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                         <TableCell className="text-xs">
                           {l.owner_type === "owner"
@@ -1320,7 +1320,7 @@ export default function FarmerDetail() {
                     return (
                       <TableRow className="bg-muted/40 font-semibold">
                         <TableCell colSpan={2} className="text-right">{label} ({tx("Subtotal", "উপ-মোট")})</TableCell>
-                        <TableCell className="text-right">{sizeSum.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmtLand(sizeSum)}</TableCell>
                         <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(amtSum)}</TableCell>
                         <TableCell />
@@ -1354,7 +1354,7 @@ export default function FarmerDetail() {
                     out.push(
                       <TableRow key="grand" className="bg-muted/70 font-bold border-t-2">
                         <TableCell colSpan={2} className="text-right">{tx("Grand Total", "সর্বমোট")}</TableCell>
-                        <TableCell className="text-right">{totalSize.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmtLand(totalSize)}</TableCell>
                         <TableCell colSpan={5} />
                         <TableCell className="text-right">{money(totalAmt)}</TableCell>
                         <TableCell />
@@ -1399,7 +1399,7 @@ export default function FarmerDetail() {
                     <TableRow key={l.id}>
                       <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
                       <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
-                      <TableCell className="text-right">{Number(l.land_size).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
                       <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                       <TableCell className="text-right">{money(landInvMap[l.id]?.paid ?? 0)}</TableCell>
                     </TableRow>
