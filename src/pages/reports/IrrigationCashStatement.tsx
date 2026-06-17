@@ -10,28 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
+import { computeStatement, type Line } from "@/lib/irrigationCashStatement";
 
 const sb = supabase as any;
-
-// Income receipt kinds that belong to the irrigation (সেচ) cash stream.
-// Farmer payments whose kind belongs to the irrigation (সেচ) cash stream.
-const IRRIGATION_PAYMENT_KINDS = new Set(["irrigation", "bigha_rent", "pond", "crop_sale", "scrap"]);
-const KIND_LABEL: Record<string, string> = {
-  irrigation: "সেচ চার্জ আদায় (বকেয়া সহ)",
-  bigha_rent: "ভাড়ী বিক্রয়",
-  pond: "পুকুর, সবজি আয়",
-  crop_sale: "ফসল বিক্রয়",
-  scrap: "ভাঙ্গারি বিক্রয়",
-};
-// Farmer-less office incomes (stream = sech) line labels.
-const OFFICE_INCOME_LABEL: Record<string, string> = {
-  scrap: "ভাঙ্গারি বিক্রয়",
-  hawlat: "হাওলাত গ্রহণ",
-  grant: "অনুদান",
-  other: "বিবিধ আয়",
-};
-
-type Line = { label: string; amount: number };
 
 // Bengali money: comma grouping + two decimals + Bengali digits.
 function bnMoney(n: number): string {
