@@ -106,10 +106,16 @@ export default function IrrigationCashStatement() {
         <div><Label>শুরুর তারিখ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
         <div><Label>শেষ তারিখ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
         <div><Label>আগত তহবিল (টাকা)</Label><Input type="number" className="w-40" value={opening || ""} onChange={(e) => setOpening(+e.target.value)} /></div>
-        <div className="ml-auto">
-          <Button onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" /> প্রিন্ট / PDF</Button>
+        <div className="ml-auto flex gap-2">
+          <Button variant="outline" onClick={exportCsv} disabled={loading || rowCount === 0}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV
+          </Button>
+          <Button onClick={() => window.print()} disabled={loading || rowCount === 0}>
+            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট / PDF
+          </Button>
         </div>
         {loading && <span className="text-sm text-muted-foreground">লোড হচ্ছে…</span>}
+        {!loading && rowCount === 0 && <span className="text-sm text-destructive">এই সময়ে কোনো তথ্য নেই</span>}
       </Card>
 
       <div className="bn-statement bg-white text-black p-6 mx-auto" style={{ maxWidth: "900px" }}>
