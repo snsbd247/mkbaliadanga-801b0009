@@ -103,12 +103,12 @@ export function AppSidebar() {
 
     // ── Cash & Payments ──
     {
-      key: "cash", icon: Banknote, label: "ক্যাশ ও পেমেন্ট",
+      key: "cash", icon: Banknote, label: t("cashAndPayments"),
       children: [
-        { url: "/payments", icon: Receipt, label: "পেমেন্ট", permKey: "payments" },
-        { url: "/payments/combined", icon: Receipt, label: "সম্মিলিত পেমেন্ট", permKey: "payments" },
-        { url: "/scan", icon: ScanLine, label: "QR স্ক্যান", permKey: "payments" },
-        { url: "/cashbook", icon: BookOpen, label: "ক্যাশ বহি", permKey: "cashbook" },
+        { url: "/payments", icon: Receipt, label: t("payments"), permKey: "payments" },
+        { url: "/payments/combined", icon: Receipt, label: t("combinedPayment" as any), permKey: "payments" },
+        { url: "/scan", icon: ScanLine, label: t("scanQr"), permKey: "payments" },
+        { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
         { url: "/hand-cash", icon: Banknote, label: "হ্যান্ড ক্যাশ", permKey: "cashbook" },
         { url: "/cash-audit", icon: ScrollText, label: "ক্যাশ অডিট", permKey: "cashbook" },
         { url: "/reports/irrigation-statement", icon: ScrollText, label: "জমা খরচ হিসাব (সেচ)", permKey: "cashbook" },
