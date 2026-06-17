@@ -643,6 +643,7 @@ export default function FarmerDetail() {
         field_type: land.field_type as any,
         owner_farmer_id: land.owner_type === "borgadar" ? land.owner_farmer_id : null,
         patwari_id: land.patwari_id || null,
+        notes: land.notes?.trim() || null,
       } as any);
       if (error) { toast.error(error.message); return; }
       toast.success(t("saved")); setOpenLand(false);
