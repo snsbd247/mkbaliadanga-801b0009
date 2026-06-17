@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
-import { Download, FileText, IdCard, Languages, Search, ExternalLink } from "lucide-react";
+import { Download, FileText, IdCard, Languages, Search, ExternalLink, Compass } from "lucide-react";
 
 type Lang = "bn" | "en";
 
