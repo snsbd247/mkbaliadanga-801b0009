@@ -11,6 +11,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
+import { normalizeLandSize } from "@/lib/landMath";
 
 type Props = {
   open: boolean;
