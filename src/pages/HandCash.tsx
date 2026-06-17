@@ -37,7 +37,7 @@ export default function HandCash() {
   const lastDay = new Date(year, month, 0).getDate();
   const mTo = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-  useEffect(() => { document.title = "হ্যান্ড ক্যাশ — MK Baliadanga"; }, []);
+  useEffect(() => { document.title = `${tx("Hand Cash", "হ্যান্ড ক্যাশ")} — MK Baliadanga`; }, [lang]);
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [year, month]);
 
   async function load() {
