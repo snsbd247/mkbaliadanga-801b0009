@@ -236,7 +236,9 @@ const MODULES: Module[] = [
       { bn: "\"Backup first\" টোগল চালু রাখলে সিডের আগে পুরো ক্যাশ-রিপোর্ট ব্যাকআপ ডাউনলোড হয়।", en: "Keep the \"Backup first\" toggle on to download a full cash-report backup before seeding." },
       { bn: "সিডের পর ভ্যালিডেশন স্ক্রিনে প্রতি টেবিলের রো-কাউন্ট ও mismatch সতর্কতা দেখায়।", en: "After seeding, the validation screen shows per-table row counts and flags mismatches." },
       { bn: "\"Restore from last backup\" বা ফাইল আপলোড করে সর্বশেষ স্ন্যাপশট থেকে ক্যাশ ডাটা ফিরিয়ে আনুন।", en: "Restore cash data from the last snapshot via \"Restore from last backup\" or by uploading a file." },
-      { bn: "প্রতিটি Quick Seed/DemoManager রান অডিট লগে (ইউজার, সময়, মডিউল, ব্যাকআপ ও ভ্যালিডেশন) রেকর্ড হয়।", en: "Every Quick Seed/DemoManager run is recorded in the audit log (user, time, modules, backup and validation)." },
+      { bn: "সিডের পর PDF বা CSV সারাংশ নামান — রো-কাউন্ট, mismatch সতর্কতা ও Cash Book/Hand Cash/Cash Statement মোট থাকে (বাংলা/English অনুযায়ী)।", en: "Download a PDF or CSV summary after seeding — row counts, mismatch warnings and Cash Book/Hand Cash/Cash Statement totals (localized to Bangla/English)." },
+      { bn: "\"নির্ধারিত ব্যাকআপ\" দৈনিক/সাপ্তাহিক সেট করলে সিডের আগে নির্দিষ্ট সময় পর পর স্বয়ংক্রিয় স্ন্যাপশট নেওয়া হয়।", en: "Set \"Scheduled backup\" to daily/weekly to auto-take a snapshot before seeding once the interval elapses." },
+      { bn: "প্রতিটি Quick Seed/DemoManager রান অডিট লগে (ইউজার, সময়, মডিউল, ব্যাকআপ ও ভ্যালিডেশন) রেকর্ড হয় — সাইডবার → Admin → Demo Operations Audit এ ফিল্টার করে দেখুন।", en: "Every Quick Seed/DemoManager run is recorded in the audit log (user, time, modules, backup and validation) — filter it at Sidebar → Admin → Demo Operations Audit." },
     ],
   },
   {
