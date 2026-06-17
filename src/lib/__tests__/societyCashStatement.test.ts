@@ -1,5 +1,28 @@
 import { describe, it, expect } from "vitest";
-import { computeSocietyStatement, computeBankSummary } from "@/lib/societyCashStatement";
+import {
+  computeSocietyStatement,
+  computeBankSummary,
+  incomeDrillDownUrl,
+  expenseDrillDownUrl,
+  incomingDrillDownUrl,
+} from "@/lib/societyCashStatement";
+
+describe("society audit drill-down links", () => {
+  const from = "2025-07-01";
+  const to = "2026-06-30";
+
+  it("income link scopes to savings stream for the selected range", () => {
+    expect(incomeDrillDownUrl(from, to)).toBe(`/savings?stream=saving&from=${from}&to=${to}`);
+  });
+
+  it("expense link scopes to savings expenses for the selected range", () => {
+    expect(expenseDrillDownUrl(from, to)).toBe(`/reports/expenses?stream=savings&from=${from}&to=${to}`);
+  });
+
+  it("incoming-funds link scopes to bank report for the selected range", () => {
+    expect(incomingDrillDownUrl(from, to)).toBe(`/reports/bank?stream=saving&from=${from}&to=${to}`);
+  });
+});
 
 describe("computeSocietyStatement (সমিতির জমা খরচ হিসাব)", () => {
   it("groups income/expense lines from backend rows and balances grand totals", () => {
