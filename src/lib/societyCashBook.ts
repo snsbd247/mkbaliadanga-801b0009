@@ -48,6 +48,7 @@ export type LoanFarmerMap = Record<string, string>;  // loan_id -> farmer_id
 const n = (v: number | string | null | undefined) => Number(v || 0);
 const SALARY_HEADS = ["salary", "বেতন", "ভাতা"];
 const isSalary = (h?: string | null) => !!h && SALARY_HEADS.some((s) => h.toLowerCase().includes(s.toLowerCase()));
+type ReportLang = "en" | "bn";
 
 export type CashBookInput = {
   savings: SavingsTxn[];
@@ -60,7 +61,7 @@ export type CashBookInput = {
   loanFarmers?: LoanFarmerMap;
 };
 
-export function buildJamaRows(input: CashBookInput): JamaRow[] {
+export function buildJamaRows(input: CashBookInput, lang: ReportLang = "bn"): JamaRow[] {
   const { savings = [], loanPayments = [], bankTx = [], officeIncomes = [], farmerNames = {}, loanFarmers = {} } = input;
   const rows: JamaRow[] = [];
 
@@ -89,7 +90,7 @@ export function buildJamaRows(input: CashBookInput): JamaRow[] {
     if (b.txn_type !== "withdraw") continue;
     const amt = n(b.amount);
     rows.push({
-      date: b.txn_date, receiptNo: b.reference_no ?? "", name: "ব্যাংক উত্তোলন",
+      date: b.txn_date, receiptNo: b.reference_no ?? "", name: lang === "bn" ? "ব্যাংক উত্তোলন" : "Bank withdrawal",
       share: 0, savings: 0, bankWithdraw: amt, loanPrincipal: 0, loanInterest: 0, form: 0, misc: 0, total: amt,
     });
   }
@@ -105,7 +106,7 @@ export function buildJamaRows(input: CashBookInput): JamaRow[] {
   return rows.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function buildKharchRows(input: CashBookInput): KharchRow[] {
+export function buildKharchRows(input: CashBookInput, _lang: ReportLang = "bn"): KharchRow[] {
   const { savings = [], expenses = [], loansIssued = [], farmerNames = {} } = input;
   const rows: KharchRow[] = [];
 
