@@ -1104,7 +1104,7 @@ export default function FarmerDetail() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <Label>{t("landSize")} ({t("decimal" as any)}) <span className="text-destructive">*</span></Label>
-                          <Input disabled={savingLand} type="number" step="0.01" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} />
+                          <Input disabled={savingLand} type="number" step="0.001" value={land.land_size} onChange={e => setLand({ ...land, land_size: +e.target.value })} />
                         </div>
                         <div>
                           <Label>{t("fieldType")}</Label>
@@ -1715,7 +1715,7 @@ export default function FarmerDetail() {
                   );
                 })()}
               </div>
-              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.01" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
+              <div><Label>{t("landSize")}</Label><Input disabled={editSaving} type="number" step="0.001" value={editForm.land_size} onChange={e => setEditForm({ ...editForm, land_size: +e.target.value })} /></div>
               <div><Label>{t("ownerType")}</Label>
                 <Select value={editForm.owner_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, owner_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
