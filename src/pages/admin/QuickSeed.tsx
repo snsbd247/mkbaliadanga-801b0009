@@ -44,6 +44,7 @@ export default function QuickSeed() {
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [size, setSize] = useState(50);
   const [backupFirst, setBackupFirst] = useState(true);
+  const [schedule, setSchedule] = useState<BackupSchedule>(getBackupSchedule());
   const [cashValidation, setCashValidation] = useState<CashCountRow[] | null>(null);
   const [restoring, setRestoring] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -51,7 +52,12 @@ export default function QuickSeed() {
   const CASH_KEYS = ["cashbook", "cash_only", "all", "year_ops", "recent_features"];
 
   const maybeBackup = async (key: string): Promise<"skipped" | "ok" | "failed"> => {
-    if (!backupFirst || !CASH_KEYS.includes(key)) return "skipped";
+    if (!CASH_KEYS.includes(key)) return "skipped";
+    // Scheduled (daily/weekly) auto-snapshot, independent of the manual toggle.
+    const sched = await maybeScheduledBackup(officeId);
+    if (sched.status === "ok") toast.success(`নির্ধারিত ব্যাকআপ নেওয়া হয়েছে (${sched.rows} সারি)`);
+    if (sched.status === "failed") toast.error(`নির্ধারিত ব্যাকআপ ব্যর্থ: ${sched.error}`);
+    if (!backupFirst) return sched.status === "ok" ? "ok" : "skipped";
     try {
       const r = await downloadCashReportBackup(officeId);
       toast.success(`ব্যাকআপ নেওয়া হয়েছে (${r.rows} সারি, ${r.tables} টেবিল)`);
