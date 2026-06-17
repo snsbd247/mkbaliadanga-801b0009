@@ -1803,9 +1803,10 @@ export default function FarmerDetail() {
             </div>
             <div>
               <Label>{tx("Note (optional)", "নোট (ঐচ্ছিক)")}</Label>
-              <Textarea disabled={editSaving} rows={2} value={editForm.notes}
-                onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+              <Textarea disabled={editSaving} rows={2} value={editForm.notes} maxLength={2000}
+                onChange={e => setEditForm({ ...editForm, notes: e.target.value.slice(0, 2000) })}
                 placeholder={tx("e.g. disputed land, partial owner, special remark", "যেমন: বিরোধপূর্ণ জমি, আংশিক মালিক, বিশেষ মন্তব্য")} />
+              <div className="text-[10px] text-muted-foreground text-right">{(editForm.notes ?? "").length}/2000</div>
             </div>
           </div>
           <DialogFooter>
