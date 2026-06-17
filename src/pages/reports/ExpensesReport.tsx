@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -30,12 +31,14 @@ type ExpenseRow = {
 
 export default function ExpensesReport() {
   const { t } = useLang();
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [params] = useSearchParams();
+  const [from, setFrom] = useState(params.get("from") ?? "");
+  const [to, setTo] = useState(params.get("to") ?? "");
   const [head, setHead] = useState(ALL);
   const [method, setMethod] = useState(ALL);
   const [rows, setRows] = useState<ExpenseRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const fromStatement = !!(params.get("from") || params.get("to") || params.get("stream"));
 
   useEffect(() => {
     document.title = `${t("expensesReport")} — ${t("appName")}`;
@@ -121,6 +124,14 @@ export default function ExpensesReport() {
         title={t("expensesReport")}
         description={t("expensesReportDesc")}
       />
+
+      {fromStatement && (
+        <div className="mb-4 rounded-md border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-foreground">
+          সেচ জমা খরচ হিসাব থেকে ফিল্টার প্রয়োগ করা হয়েছে — সেচ খরচ
+          {(from || to) && <> ({from || "…"} → {to || "…"})</>}
+        </div>
+      )}
+
 
       <Card className="p-4 mb-4">
         <div className="grid gap-3 md:grid-cols-5">
