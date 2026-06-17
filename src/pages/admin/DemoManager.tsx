@@ -227,10 +227,16 @@ export default function DemoManager() {
       }
 
       if (succeeded) toast.success(`✓ ${t("dmOpDone" as any)}`);
+      let validation: CashCountRow[] | null = null;
+      if (selected.includes("cashbook")) {
+        try { validation = await fetchCashReportCounts(); setCashValidation(validation); } catch { /* best-effort */ }
+      }
+      await logDemoRun(user, { source: "DemoManager", action, modules: selected, size, success: succeeded, backupStatus, validation });
       await loadLogs();
     } catch (e: any) {
       toast.error(e?.message ?? t("dmFailedGeneric" as any));
       setLastResult({ error: e?.message });
+      await logDemoRun(user, { source: "DemoManager", action, modules: selected, size, success: false, errorMessage: e?.message, backupStatus, validation: null });
       await loadLogs();
     } finally {
       setLoading(false);
