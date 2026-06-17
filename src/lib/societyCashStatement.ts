@@ -80,6 +80,24 @@ export function computeSocietyStatement(input: SocietyInput) {
   return { incomeLines, expenseLines, totalIncome, totalExpense, openingFund, grandIncome, closingFund, grandExpense };
 }
 
+// Drill-down URL builders for the society audit statement, scoped to the
+// selected date range. Income → savings module, expense → savings expenses,
+// incoming funds → bank transactions.
+export function incomeDrillDownUrl(from: string, to: string): string {
+  const p = new URLSearchParams({ stream: "saving", from, to });
+  return `/savings?${p.toString()}`;
+}
+
+export function expenseDrillDownUrl(from: string, to: string): string {
+  const p = new URLSearchParams({ stream: "savings", from, to });
+  return `/reports/expenses?${p.toString()}`;
+}
+
+export function incomingDrillDownUrl(from: string, to: string): string {
+  const p = new URLSearchParams({ stream: "saving", from, to });
+  return `/reports/bank?${p.toString()}`;
+}
+
 export function computeBankSummary(accounts: BankAccountRow[], txns: BankTxRow[]): BankSummaryRow[] {
   return accounts.map((a) => {
     const t = txns.filter((x) => x.bank_account_id === a.id);
