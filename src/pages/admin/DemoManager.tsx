@@ -325,6 +325,17 @@ export default function DemoManager() {
             <Checkbox checked={backupFirst} onCheckedChange={(v) => setBackupFirst(!!v)} />
             <span>{tx("Auto JSON backup of cash-report tables before seeding (Cash Book module)", "seed-এর আগে ক্যাশ-রিপোর্ট টেবিলের স্বয়ংক্রিয় JSON ব্যাকআপ (Cash Book মডিউল)")}</span>
           </label>
+          <div className="flex items-center gap-2 text-sm">
+            <span>{tx("Scheduled auto-backup before seeding", "seed-এর আগে নির্ধারিত স্বয়ংক্রিয় ব্যাকআপ")}</span>
+            <Select value={schedule} onValueChange={(v) => { setSchedule(v as BackupSchedule); setBackupSchedule(v as BackupSchedule); }}>
+              <SelectTrigger className="w-[140px] h-8"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="off">{tx("Off", "বন্ধ")}</SelectItem>
+                <SelectItem value="daily">{tx("Daily", "দৈনিক")}</SelectItem>
+                <SelectItem value="weekly">{tx("Weekly", "সাপ্তাহিক")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
