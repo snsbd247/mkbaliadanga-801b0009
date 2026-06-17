@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
-import { Download, FileText, IdCard, Languages, Search, ExternalLink } from "lucide-react";
+import { Download, FileText, IdCard, Languages, Search, ExternalLink, Compass } from "lucide-react";
 
 type Lang = "bn" | "en";
 
@@ -236,7 +236,9 @@ const MODULES: Module[] = [
       { bn: "\"Backup first\" টোগল চালু রাখলে সিডের আগে পুরো ক্যাশ-রিপোর্ট ব্যাকআপ ডাউনলোড হয়।", en: "Keep the \"Backup first\" toggle on to download a full cash-report backup before seeding." },
       { bn: "সিডের পর ভ্যালিডেশন স্ক্রিনে প্রতি টেবিলের রো-কাউন্ট ও mismatch সতর্কতা দেখায়।", en: "After seeding, the validation screen shows per-table row counts and flags mismatches." },
       { bn: "\"Restore from last backup\" বা ফাইল আপলোড করে সর্বশেষ স্ন্যাপশট থেকে ক্যাশ ডাটা ফিরিয়ে আনুন।", en: "Restore cash data from the last snapshot via \"Restore from last backup\" or by uploading a file." },
-      { bn: "প্রতিটি Quick Seed/DemoManager রান অডিট লগে (ইউজার, সময়, মডিউল, ব্যাকআপ ও ভ্যালিডেশন) রেকর্ড হয়।", en: "Every Quick Seed/DemoManager run is recorded in the audit log (user, time, modules, backup and validation)." },
+      { bn: "সিডের পর PDF বা CSV সারাংশ নামান — রো-কাউন্ট, mismatch সতর্কতা ও Cash Book/Hand Cash/Cash Statement মোট থাকে (বাংলা/English অনুযায়ী)।", en: "Download a PDF or CSV summary after seeding — row counts, mismatch warnings and Cash Book/Hand Cash/Cash Statement totals (localized to Bangla/English)." },
+      { bn: "\"নির্ধারিত ব্যাকআপ\" দৈনিক/সাপ্তাহিক সেট করলে সিডের আগে নির্দিষ্ট সময় পর পর স্বয়ংক্রিয় স্ন্যাপশট নেওয়া হয়।", en: "Set \"Scheduled backup\" to daily/weekly to auto-take a snapshot before seeding once the interval elapses." },
+      { bn: "প্রতিটি Quick Seed/DemoManager রান অডিট লগে (ইউজার, সময়, মডিউল, ব্যাকআপ ও ভ্যালিডেশন) রেকর্ড হয় — সাইডবার → Admin → Demo Operations Audit এ ফিল্টার করে দেখুন।", en: "Every Quick Seed/DemoManager run is recorded in the audit log (user, time, modules, backup and validation) — filter it at Sidebar → Admin → Demo Operations Audit." },
     ],
   },
   {
@@ -304,12 +306,36 @@ const REPORTS_GUIDE = {
 export default function Help() {
   const [lang, setLang] = useState<Lang>("bn");
   const [q, setQ] = useState("");
+  const [openItems, setOpenItems] = useState<string[]>([]);
+  const scrolledHash = useRef<string>("");
   const filtered = useMemo(
     () => MODULES.filter((m) => (m.title[lang] + m.intro[lang]).toLowerCase().includes(q.toLowerCase())),
     [q, lang]
   );
 
+  // Deep-link support: /help#cashReports opens & scrolls to that manual section.
+  useEffect(() => {
+    const applyHash = () => {
+      const id = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+      if (!id || !MODULES.some((m) => m.id === id)) return;
+      setOpenItems((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      scrolledHash.current = id;
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
+
+  // Scroll to the targeted section once it is rendered/open.
+  useEffect(() => {
+    const id = scrolledHash.current;
+    if (!id || !openItems.includes(id)) return;
+    const el = document.getElementById(`help-${id}`);
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); scrolledHash.current = ""; }
+  }, [openItems, filtered]);
+
   const tx = (bn: string, en: string) => (lang === "bn" ? bn : en);
+
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6 max-w-5xl">
@@ -337,6 +363,13 @@ export default function Help() {
             onClick={() => setLang("en")}
           >
             <Languages className="h-4 w-4 mr-1" /> English
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => window.dispatchEvent(new Event("open-onboarding"))}
+          >
+            <Compass className="h-4 w-4 mr-1" /> {tx("ওয়াকথ্রু চালু করুন", "Start Walkthrough")}
           </Button>
           <Button asChild size="sm">
             <a href="/help/user-manual-v5.pdf" download>
@@ -396,9 +429,9 @@ export default function Help() {
             />
           </div>
 
-          <Accordion type="multiple" className="space-y-2">
+          <Accordion type="multiple" className="space-y-2" value={openItems} onValueChange={setOpenItems}>
             {filtered.map((m) => (
-              <AccordionItem key={m.id} value={m.id} className="border rounded-lg px-3 bg-card">
+              <AccordionItem key={m.id} id={`help-${m.id}`} value={m.id} className="border rounded-lg px-3 bg-card scroll-mt-20">
                 <AccordionTrigger className="text-left">
                   <span className="font-medium">{m.title[lang]}</span>
                 </AccordionTrigger>
@@ -422,6 +455,7 @@ export default function Help() {
             ))}
           </Accordion>
         </TabsContent>
+
 
         {/* ── REPORTS ── */}
         <TabsContent value="reports" className="mt-4">

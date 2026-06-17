@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, HelpCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const sb = supabase as any;
 
@@ -92,6 +93,11 @@ export default function IrrigationExportAudit() {
       <PageHeader
         title={tx("Cash Book Export Audit", "সেচ ক্যাশ বহি এক্সপোর্ট অডিট")}
         description={tx("Track who exported the irrigation cash book, when, for which office and period", "কে, কখন, কোন অফিস ও সময়ের জন্য সেচ ক্যাশ বহি এক্সপোর্ট করেছে তা দেখুন")}
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link to="/help#exportAudit"><HelpCircle className="h-4 w-4 mr-1" /> {tx("Manual", "ম্যানুয়াল")}</Link>
+          </Button>
+        }
       />
 
       <Card className="p-3 flex flex-wrap items-end gap-3">
