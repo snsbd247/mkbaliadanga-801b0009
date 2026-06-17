@@ -702,7 +702,6 @@ export default function DemoManager() {
               {tx("Download CSV Summary", "CSV সারাংশ নামান")}
             </Button>
           </CardContent>
-          </CardContent>
         </Card>
       )}
 
