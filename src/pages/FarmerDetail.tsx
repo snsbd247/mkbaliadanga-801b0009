@@ -614,12 +614,9 @@ export default function FarmerDetail() {
 
   async function addLand() {
     setLandLocErr(null);
-    // Require location: division → district → upazila → mouza (village not used on lands form)
+    // Only Mouza is required for land location.
     const loc = landLoc as any;
-    if (!loc.division_id) { setLandLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-    if (!loc.district_id) { setLandLocErr({ level: "district", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-    if (!loc.upazila_id)  { setLandLocErr({ level: "upazila",  message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-    if (!loc.mouza_id)    { setLandLocErr({ level: "mouza",    message: t("mouzaRequired" as any) }); return; }
+    if (!loc.mouza_name || !String(loc.mouza_name).trim()) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "মৌজা দিন" }); return; }
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
     let canonicalDag = land.dag_no.trim();
     if (land.owner_type === "owner") {
@@ -736,10 +733,7 @@ export default function FarmerDetail() {
     const prevSize = Number(editLand.land_size ?? 0);
     try {
       const el = editLoc as any;
-      if (!el.division_id) { setEditLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-      if (!el.district_id) { setEditLocErr({ level: "district", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-      if (!el.upazila_id)  { setEditLocErr({ level: "upazila",  message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-      if (!el.mouza_id)    { setEditLocErr({ level: "mouza",    message: t("mouzaRequired" as any) || "Mouza required" }); return; }
+      if (!el.mouza_name || !String(el.mouza_name).trim()) { setEditLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "মৌজা দিন" }); return; }
       let canonicalDag = editForm.dag_no.trim();
       let dagNumbers: string[] = canonicalDag ? [canonicalDag] : [];
       if (editForm.owner_type === "owner") {
@@ -1088,14 +1082,13 @@ export default function FarmerDetail() {
                     {/* 2b. Location picker — for owner: manual entry; for borgadar: shown auto-filled (still editable) */}
                     {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
                       <div>
-                        <Label className="text-sm font-medium mb-2 block">{t("location" as any) || "Location"}</Label>
-                        <LocationPicker
-                          value={landLoc}
-                          onChange={(v) => { setLandLoc(v); if (landLocErr) setLandLocErr(null); }}
-                          errorLevel={landLocErr?.level ?? null}
-                          errorMessage={landLocErr?.message ?? null}
-                          showVillage={false}
+                        <Label className="text-sm font-medium mb-2 block">{t("mouza" as any) || "মৌজা"} <span className="text-destructive">*</span></Label>
+                        <Input
+                          value={(landLoc as any).mouza_name ?? ""}
+                          placeholder={t("mouza" as any) || "মৌজা"}
+                          onChange={(e) => { setLandLoc({ mouza_name: e.target.value } as any); if (landLocErr) setLandLocErr(null); }}
                         />
+                        {landLocErr?.message && <p className="text-xs text-destructive mt-1">{landLocErr.message}</p>}
                       </div>
                     )}
 
@@ -1746,9 +1739,13 @@ export default function FarmerDetail() {
           <DialogHeader><DialogTitle>{t("pgEditLand")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium mb-2 block">{t("pgLocation")}</Label>
-              <LocationPicker value={editLoc} onChange={(v) => { setEditLoc(v); if (editLocErr) setEditLocErr(null); }}
-                errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} showVillage={false} />
+              <Label className="text-sm font-medium mb-2 block">{t("mouza" as any) || "মৌজা"} <span className="text-destructive">*</span></Label>
+              <Input
+                value={(editLoc as any).mouza_name ?? ""}
+                placeholder={t("mouza" as any) || "মৌজা"}
+                onChange={(e) => { setEditLoc({ mouza_name: e.target.value } as any); if (editLocErr) setEditLocErr(null); }}
+              />
+              {editLocErr?.message && <p className="text-xs text-destructive mt-1">{editLocErr.message}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
