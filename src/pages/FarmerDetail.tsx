@@ -614,12 +614,9 @@ export default function FarmerDetail() {
 
   async function addLand() {
     setLandLocErr(null);
-    // Require location: division → district → upazila → mouza (village not used on lands form)
+    // Only Mouza is required for land location.
     const loc = landLoc as any;
-    if (!loc.division_id) { setLandLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-    if (!loc.district_id) { setLandLocErr({ level: "district", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-    if (!loc.upazila_id)  { setLandLocErr({ level: "upazila",  message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-    if (!loc.mouza_id)    { setLandLocErr({ level: "mouza",    message: t("mouzaRequired" as any) }); return; }
+    if (!loc.mouza_name || !String(loc.mouza_name).trim()) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "মৌজা দিন" }); return; }
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
     let canonicalDag = land.dag_no.trim();
     if (land.owner_type === "owner") {
