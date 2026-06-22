@@ -119,6 +119,11 @@ export interface BnReceiptData {
 const fmt2 = (n: number) =>
   new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 
+// জমির পরিমাণ: . এর পর সবসময় ৪ ডিজিট (e.g. 0.3300 একর)
+const fmt4 = (n: number) =>
+  new Intl.NumberFormat("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4, useGrouping: false }).format(n || 0);
+
+
 function fmtDate(d: string | Date): string {
   const date = new Date(d);
   return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
