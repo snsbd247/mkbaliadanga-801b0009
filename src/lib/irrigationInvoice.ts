@@ -42,9 +42,30 @@ const n = (v: any): number => {
 };
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
+export const SHATAK_PER_BIGHA = 33;
+export type CalculationBasis = "per_shotok" | "per_bigha" | "flat" | "custom";
+
+/** Base irrigation charge respecting the category's calculation basis. */
+export function baseIrrigationAmount(land_size_shotok: number, rate: number, basis: CalculationBasis = "per_shotok"): number {
+  const land = n(land_size_shotok);
+  const r = n(rate);
+  switch (basis) {
+    case "flat":
+      return r2(r);
+    case "per_bigha":
+      return r2((land / SHATAK_PER_BIGHA) * r);
+    case "per_shotok":
+    case "custom":
+    default:
+      return r2(land * r);
+  }
+}
+
 export interface InvoiceCalcInput {
   land_size_shotok: number;
   rate_per_shotok: number;
+  /** Category calculation basis; defaults to per_shotok. */
+  basis?: CalculationBasis;
   settings: ChargeSettings;
   due_date: string | Date;        // ISO date
   as_of?: string | Date;          // for delay-fee calc; defaults to today
