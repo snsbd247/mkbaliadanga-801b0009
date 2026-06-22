@@ -1136,6 +1136,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             calc = calcInvoice({
               land_size_shotok: billedArea,
               rate_per_shotok: appliedRate,
+              basis: row.resolved?.basis,
               settings: row.settings,
               due_date: dueDate,
               as_of: new Date().toISOString().slice(0, 10),
