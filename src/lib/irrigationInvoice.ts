@@ -2,7 +2,10 @@
  * Irrigation Invoice domain logic — pure functions + Supabase helpers.
  *
  * Charge model (per-office settings stored in `irrigation_charge_settings`):
- *   irrigation_amount = rate_per_shotok × land_size_shotok
+ *   irrigation_amount depends on the category calculation basis:
+ *     per_shotok / custom → rate × land_size_shotok
+ *     per_bigha           → rate × (land_size_shotok / 33)
+ *     flat                → rate (fixed fee, area-independent)
  *   maintenance       = irrigation_amount × maintenance_percent / 100
  *   canal             = irrigation_amount × canal_percent / 100
  *   delay_fee         = (irrigation+maintenance+canal) × delay_fee_percent / 100   (only if overdue past grace_days and auto_apply_delay_fee)
@@ -39,9 +42,30 @@ const n = (v: any): number => {
 };
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
+export const SHATAK_PER_BIGHA = 33;
+export type CalculationBasis = "per_shotok" | "per_bigha" | "flat" | "custom";
+
+/** Base irrigation charge respecting the category's calculation basis. */
+export function baseIrrigationAmount(land_size_shotok: number, rate: number, basis: CalculationBasis = "per_shotok"): number {
+  const land = n(land_size_shotok);
+  const r = n(rate);
+  switch (basis) {
+    case "flat":
+      return r2(r);
+    case "per_bigha":
+      return r2((land / SHATAK_PER_BIGHA) * r);
+    case "per_shotok":
+    case "custom":
+    default:
+      return r2(land * r);
+  }
+}
+
 export interface InvoiceCalcInput {
   land_size_shotok: number;
   rate_per_shotok: number;
+  /** Category calculation basis; defaults to per_shotok. */
+  basis?: CalculationBasis;
   settings: ChargeSettings;
   due_date: string | Date;        // ISO date
   as_of?: string | Date;          // for delay-fee calc; defaults to today
@@ -63,9 +87,7 @@ export interface InvoiceCalcResult {
 }
 
 export function calcInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
-  const land = n(input.land_size_shotok);
-  const rate = n(input.rate_per_shotok);
-  const irrigation = r2(land * rate);
+  const irrigation = baseIrrigationAmount(input.land_size_shotok, input.rate_per_shotok, input.basis ?? "per_shotok");
   const maintenance = r2((irrigation * n(input.settings.maintenance_percent)) / 100);
   const canal = r2((irrigation * n(input.settings.canal_percent)) / 100);
   const other = r2(n(input.other_charge));
