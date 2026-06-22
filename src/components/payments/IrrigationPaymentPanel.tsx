@@ -38,8 +38,11 @@ type Invoice = {
   maintenance_amount: number;
   canal_amount: number;
   other_charge: number;
+  season_rate?: number | null;
+  land_type_name?: string | null;
+  irrigation_category_name?: string | null;
   seasons?: { name: string | null; year: number | null; status: string | null } | null;
-  lands?: { mouza: string | null; land_size: number | null } | null;
+  lands?: { mouza: string | null; land_size: number | null; dag_no: string | null } | null;
   owner?: { name_bn: string | null; name_en: string | null } | null;
 };
 
