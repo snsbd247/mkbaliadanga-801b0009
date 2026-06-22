@@ -2,7 +2,10 @@
  * Irrigation Invoice domain logic — pure functions + Supabase helpers.
  *
  * Charge model (per-office settings stored in `irrigation_charge_settings`):
- *   irrigation_amount = rate_per_shotok × land_size_shotok
+ *   irrigation_amount depends on the category calculation basis:
+ *     per_shotok / custom → rate × land_size_shotok
+ *     per_bigha           → rate × (land_size_shotok / 33)
+ *     flat                → rate (fixed fee, area-independent)
  *   maintenance       = irrigation_amount × maintenance_percent / 100
  *   canal             = irrigation_amount × canal_percent / 100
  *   delay_fee         = (irrigation+maintenance+canal) × delay_fee_percent / 100   (only if overdue past grace_days and auto_apply_delay_fee)
