@@ -1745,9 +1745,13 @@ export default function FarmerDetail() {
           <DialogHeader><DialogTitle>{t("pgEditLand")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium mb-2 block">{t("pgLocation")}</Label>
-              <LocationPicker value={editLoc} onChange={(v) => { setEditLoc(v); if (editLocErr) setEditLocErr(null); }}
-                errorLevel={editLocErr?.level ?? null} errorMessage={editLocErr?.message ?? null} showVillage={false} />
+              <Label className="text-sm font-medium mb-2 block">{t("mouza" as any) || "মৌজা"} <span className="text-destructive">*</span></Label>
+              <Input
+                value={(editLoc as any).mouza_name ?? ""}
+                placeholder={t("mouza" as any) || "মৌজা"}
+                onChange={(e) => { setEditLoc({ mouza_name: e.target.value } as any); if (editLocErr) setEditLocErr(null); }}
+              />
+              {editLocErr?.message && <p className="text-xs text-destructive mt-1">{editLocErr.message}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
