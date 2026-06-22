@@ -951,6 +951,16 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
+  // Land-type (elevation) filter — only selected field types are invoiced.
+  const [fieldTypes, setFieldTypes] = useState<Set<string>>(
+    () => new Set(["high_land", "medium_land", "low_land"]),
+  );
+  const toggleFieldType = (ft: string) =>
+    setFieldTypes((prev) => {
+      const next = new Set(prev);
+      next.has(ft) ? next.delete(ft) : next.add(ft);
+      return next;
+    });
 
   const [manualOpen, setManualOpen] = useState(false);
 
@@ -1025,7 +1035,12 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       // a newly generated season. Delay fee is added separately at payment time.
       const settings = { ...rawSettings, auto_apply_delay_fee: false };
 
-      const eligible = (lands ?? []).filter((l: any) => Number(l.land_size) > 0 && !skip.has(l.id));
+      const eligible = (lands ?? []).filter(
+        (l: any) =>
+          Number(l.land_size) > 0 &&
+          !skip.has(l.id) &&
+          (fieldTypes.size === 0 || !l.field_type || fieldTypes.has(l.field_type)),
+      );
 
       const previewArr: any[] = [];
       let noRate = 0;
@@ -1310,6 +1325,26 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           <div className="flex items-center gap-2">
             <Switch checked={skipExisting} onCheckedChange={setSkipExisting} id="skip" />
             <Label htmlFor="skip">{tx("Skip already-created invoices (prevent duplicates)", "আগে তৈরি হওয়া ইনভয়েস বাদ দিন (ডুপ্লিকেট প্রতিরোধ)")}</Label>
+          </div>
+          <div className="space-y-1">
+            <Label>{tx("Land type filter (only selected are invoiced)", "জমির ধরন ফিল্টার (শুধু নির্বাচিতগুলো ইনভয়েস হবে)")}</Label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { code: "high_land", label: tx("High", "উঁচু") },
+                { code: "medium_land", label: tx("Medium", "মাঝারি") },
+                { code: "low_land", label: tx("Low", "নিচু") },
+              ].map((ft) => (
+                <Button
+                  key={ft.code}
+                  type="button"
+                  size="sm"
+                  variant={fieldTypes.has(ft.code) ? "default" : "outline"}
+                  onClick={() => toggleFieldType(ft.code)}
+                >
+                  {ft.label}
+                </Button>
+              ))}
+            </div>
           </div>
           <div className="flex gap-2">
             <Button onClick={preview} disabled={busy || !seasonId}>
