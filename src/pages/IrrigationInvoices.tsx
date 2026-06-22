@@ -1326,6 +1326,26 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             <Switch checked={skipExisting} onCheckedChange={setSkipExisting} id="skip" />
             <Label htmlFor="skip">{tx("Skip already-created invoices (prevent duplicates)", "আগে তৈরি হওয়া ইনভয়েস বাদ দিন (ডুপ্লিকেট প্রতিরোধ)")}</Label>
           </div>
+          <div className="space-y-1">
+            <Label>{tx("Land type filter (only selected are invoiced)", "জমির ধরন ফিল্টার (শুধু নির্বাচিতগুলো ইনভয়েস হবে)")}</Label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { code: "high_land", label: tx("High", "উঁচু") },
+                { code: "medium_land", label: tx("Medium", "মাঝারি") },
+                { code: "low_land", label: tx("Low", "নিচু") },
+              ].map((ft) => (
+                <Button
+                  key={ft.code}
+                  type="button"
+                  size="sm"
+                  variant={fieldTypes.has(ft.code) ? "default" : "outline"}
+                  onClick={() => toggleFieldType(ft.code)}
+                >
+                  {ft.label}
+                </Button>
+              ))}
+            </div>
+          </div>
           <div className="flex gap-2">
             <Button onClick={preview} disabled={busy || !seasonId}>
               <Sparkles className="h-4 w-4 mr-1" /> {tx("Preview", "প্রিভিউ")}
