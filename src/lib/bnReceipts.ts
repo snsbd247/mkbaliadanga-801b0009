@@ -345,7 +345,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       if (d.savings_deposit_total != null) rows.push([lang === "bn" ? "মোট জমা:" : "Total deposited:", fmt2(Number(d.savings_deposit_total))]);
     } else {
       const ll = getLoanLabels(lang);
-      const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+      const mouzaLabel = t.mouza; // loan: plain label, no irrigation custom-label leak
       if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
       if (d.description) rows.push([ll.desc, d.description]);
       if (d.outstanding != null) rows.push([ll.outstanding, fmt2(Number(d.outstanding))]);
