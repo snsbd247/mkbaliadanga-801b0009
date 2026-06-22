@@ -366,7 +366,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       const receiptNo = await nextUnifiedReceiptNo(officeId, "IRR", paymentId).catch(() => autoReceiptNo("IRR", paymentId));
       const [{ data: farmer }, { data: company }] = await Promise.all([
-        supabase.from("farmers").select("name_bn,name_en,member_no,village,mobile,office_id").eq("id", farmerId).maybeSingle(),
+        supabase.from("farmers").select("name_bn,name_en,member_no,father_name,village,mobile,office_id").eq("id", farmerId).maybeSingle(),
         supabase.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
       ]);
       const farmerName = (farmer?.name_bn || farmer?.name_en || "").trim();
@@ -375,6 +375,37 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
       const receiptMouza = sorted.find((inv: any) => inv.lands?.mouza)?.lands?.mouza ?? null;
       const receiptLandSize = sorted.reduce((s, inv: any) => s + Number(inv.lands?.land_size || 0), 0) || null;
+
+      // ---- Official রশিদ enriched fields ----
+      const rep = (sorted[0] ?? previousInvoices[0]) as Invoice | undefined;
+      // জমির ধরন: ধান হলে উচু/নিচু/মাঝারি, নাহলে ক্যাটেগরি (পুকুর/সবজি/ভর্তি ফি ইত্যাদি)
+      const fieldTypeBn = resolveFieldTypeLabel({
+        categoryName: rep?.irrigation_category_name,
+        landTypeName: rep?.land_type_name,
+        seasonName: rep?.seasons?.name,
+      });
+      // চার্জ রেট (একর); বিঘা = একর রেট ÷ ৩৩ (lib auto-computes)
+      const ratePerAcre = rep?.season_rate != null ? Number(rep.season_rate) : null;
+      // দাগ নং — সব সংশ্লিষ্ট জমির দাগ একত্রে
+      const dagAll = Array.from(new Set(
+        [...sorted, ...previousInvoices]
+          .map((inv) => (inv.lands?.dag_no ?? "").trim())
+          .filter(Boolean)
+          .flatMap((s) => s.split(/[,;\s]+/))
+          .filter(Boolean),
+      )).join(", ") || null;
+      // জরিমানা আলাদা: হাল (চলতি) ও বকেয়া (গত সিজন)
+      const currentPenalty = totalDelay;
+      const currentChargeBase = sorted.reduce(
+        (s, inv) => s + Math.max(0, Number(inv.due_amount || 0) - Number(inv.delay_fee || 0)), 0,
+      );
+      const duePenalty = previousInvoices.reduce((s, inv) => s + Number(inv.delay_fee || 0), 0);
+      const dueChargeBase = Math.max(0, previousDueTotal - duePenalty);
+      // মালিক নিজে কিনা (বর্গা না হলে নিজ)
+      const isBorga = [...sorted, ...previousInvoices].some((inv) => inv.is_borga);
+      const ownerName = rep?.owner ? (lang === "bn" ? rep.owner.name_bn : rep.owner.name_en) || rep.owner.name_bn || rep.owner.name_en : null;
+      const memberSummary = `${farmer?.member_no ?? "—"}/${ownerName ? "" : "N/A"}`.replace(/\/$/, "/N/A");
+
 
       // Receipt — never blocks payment; failure → retry queue
       const receiptResult = await safeWithRetry(
