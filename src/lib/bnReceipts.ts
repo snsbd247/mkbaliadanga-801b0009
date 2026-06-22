@@ -409,8 +409,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
 
     <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:38px;font-size:13px;gap:12px;">
       <div style="text-align:left;">
-        <div style="border-top:0;padding-top:0;">${t.memberSig}</div>
-        <div style="margin-top:18px;font-weight:600;">${d.farmer.name}</div>
+        <div style="border-top:0;padding-top:0;">${isIrrigationStd ? (lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature") : t.memberSig}</div>
+        <div style="margin-top:18px;font-weight:600;">${isIrrigationStd ? "" : d.farmer.name}</div>
       </div>
       ${qrDataUrl && tpl.qr_placement !== "none" ? `
       <div style="text-align:center;">
