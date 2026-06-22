@@ -733,10 +733,7 @@ export default function FarmerDetail() {
     const prevSize = Number(editLand.land_size ?? 0);
     try {
       const el = editLoc as any;
-      if (!el.division_id) { setEditLocErr({ level: "division", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-      if (!el.district_id) { setEditLocErr({ level: "district", message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-      if (!el.upazila_id)  { setEditLocErr({ level: "upazila",  message: t("locationInvalidMissingParent" as any) || "Please complete the location" }); return; }
-      if (!el.mouza_id)    { setEditLocErr({ level: "mouza",    message: t("mouzaRequired" as any) || "Mouza required" }); return; }
+      if (!el.mouza_name || !String(el.mouza_name).trim()) { setEditLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "মৌজা দিন" }); return; }
       let canonicalDag = editForm.dag_no.trim();
       let dagNumbers: string[] = canonicalDag ? [canonicalDag] : [];
       if (editForm.owner_type === "owner") {
