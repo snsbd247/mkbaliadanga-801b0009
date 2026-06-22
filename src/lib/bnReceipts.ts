@@ -88,6 +88,16 @@ export interface BnReceiptData {
   collected_from_outstanding?: number | null;  // বকেয়া থেকে সংগৃহীত
   remark?: string | null;                      // রিমার্ক/নোট
 
+  /** Irrigation receipt — extra layout fields matching the official রশিদ design */
+  village_union?: string | null;               // ইউনিয়ন (shown with গ্রাম)
+  member_summary?: string | null;              // কৃষক এবং মালিক সভ্য সদস্য (e.g. "১৯০০/ N/A")
+  rate_per_bigha?: number | null;              // বিঘা রেট (defaults to rate ÷ 33)
+  current_penalty?: number | null;             // হাল-এর জরিমানা (defaults to penalty_amount)
+  due_penalty?: number | null;                 // বকেয়ার জরিমানা
+  holding_description?: string | null;         // হোল্ডিং এর বিবরন
+  /** When true only the "নিজ/মালিক" label shows for owner (no name/father/etc.). */
+  owner_self?: boolean;
+
   /** Office income (no farmer): forces জমি/মৌজা rows to locked "N/A" and skips charge rows. */
   office_income?: boolean;
 
