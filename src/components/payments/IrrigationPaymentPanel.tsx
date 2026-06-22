@@ -447,7 +447,6 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           collected_amount: grandTotal,
           remark: specialPermission ? `${tx("Special permission until", "বিশেষ অনুমতি — পরিশোধের তারিখ")}: ${promiseDate}${promiseRemarks ? " — " + promiseRemarks : ""}` : (note || null),
           verify_url: `${window.location.origin}/r/${receiptNo}`,
-          verify_url: `${window.location.origin}/r/${receiptNo}`,
         }, "both"),
         { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
       );
