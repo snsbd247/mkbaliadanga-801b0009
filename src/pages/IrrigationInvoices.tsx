@@ -1357,9 +1357,14 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                 </Button>
               ))}
             </div>
+            {fieldTypes.size === 0 && (
+              <p className="text-xs text-destructive">
+                {tx("Select at least one land type to preview.", "প্রিভিউ করতে অন্তত একটি জমির ধরন নির্বাচন করুন।")}
+              </p>
+            )}
           </div>
           <div className="flex gap-2">
-            <Button onClick={preview} disabled={busy || !seasonId}>
+            <Button onClick={preview} disabled={busy || !seasonId || fieldTypes.size === 0}>
               <Sparkles className="h-4 w-4 mr-1" /> {tx("Preview", "প্রিভিউ")}
             </Button>
             {previewRows && previewRows.length > 0 && (
