@@ -951,6 +951,16 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
+  // Land-type (elevation) filter — only selected field types are invoiced.
+  const [fieldTypes, setFieldTypes] = useState<Set<string>>(
+    () => new Set(["high_land", "medium_land", "low_land"]),
+  );
+  const toggleFieldType = (ft: string) =>
+    setFieldTypes((prev) => {
+      const next = new Set(prev);
+      next.has(ft) ? next.delete(ft) : next.add(ft);
+      return next;
+    });
 
   const [manualOpen, setManualOpen] = useState(false);
 
