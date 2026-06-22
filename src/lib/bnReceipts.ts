@@ -252,84 +252,113 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
 
   const rows: Array<[string, string]> = [];
-  // কৃষকের নাম এবং কৃষক সদস্য নং: name - member_no - owner_type - voter/savings ref
-  const memberRefSuffix = d.farmer.member_type_bn || d.farmer.member_ref_no
-    ? ` - ${[d.farmer.member_type_bn, d.farmer.member_ref_no].filter(Boolean).join(" ")}`.trimEnd()
-    : "";
-  rows.push([
-    t.farmerLine,
-    `${d.farmer.name}${d.farmer.member_no ? " - " + d.farmer.member_no : ""}${d.farmer.owner_type_bn ? " - " + d.farmer.owner_type_bn : ""}${memberRefSuffix}`,
-  ]);
-  rows.push([t.villageLine, `${d.farmer.village ?? "—"}${d.farmer.mobile ? " / " + d.farmer.mobile : ""}`]);
-  if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
+  const isIrrigationStd = d.kind === "irrigation" && !d.office_income;
 
-  if (d.office_income) {
-    // Farmer-less office income receipt: জমি ও মৌজা সবসময় locked "N/A".
-    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
-    rows.push([mouzaLabel, "N/A"]);
-    rows.push([t.landOwner, "N/A"]);
-  } else if (d.kind === "irrigation") {
-    // Always show land owner row — fallback to "তথ্য পাওয়া যায়নি" / "Not available" when missing
-    rows.push([
-      t.landOwner,
-      d.land_owner_label && d.land_owner_label.trim()
-        ? d.land_owner_label
-        : (lang === "bn" ? "তথ্য পাওয়া যায়নি" : "Not available"),
-    ]);
-    // Land size stored in শতক; show বিঘা · কাঠা · শতক so users can cross-check (1 বিঘা = 33 শতক = 20 কাঠা).
-    const sizeLabel: string | null = landSizeLabel(d.farmer.land_size, lang);
+  if (isIrrigationStd) {
+    // ===== Official "সেচ চার্জ ও বিবিধ আদায় রশিদ" layout (A5, fixed row order) =====
     const layout = getReceiptLayoutSettings();
-    const { mouza: mouzaLabel, dag: dagLabel } = getIrrigationLabels(lang);
+    const { dag: dagLabel } = getIrrigationLabels(lang);
+    const selfLabel = lang === "bn" ? "নিজ/মালিক" : "Self/Owner";
+
+    // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি (মালিক নিজে হলে শুধু নিজ/মালিক)
+    const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + d.farmer.member_no : ""}`;
+    const ownerPart = d.owner_self
+      ? selfLabel
+      : (d.land_owner_label && d.land_owner_label.trim() ? d.land_owner_label.trim() : selfLabel);
+    rows.push([t.farmerLine, `${idPart}/${ownerPart}`]);
+    // 2. পিতার/স্বামীর নাম
+    rows.push([t.fatherLine, d.farmer.father_or_husband ?? "—"]);
+    // 3. গ্রাম/মহল্লা/মোবাইল নং (গ্রাম এর সাথে ইউনিয়ন)
+    const villageParts = [d.farmer.village, d.village_union].filter(Boolean).join(",");
+    rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + d.farmer.mobile : ""}`]);
+    // 4. কৃষক এবং মালিক সভ্য সদস্য
+    if (d.member_summary) rows.push([t.memberLine, d.member_summary]);
+    // 5. মৌজা
+    if (d.farmer.mouza) rows.push([t.mouza, d.farmer.mouza]);
+    // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট ÷ ৩৩)
+    if (d.farmer.field_type_bn || d.rate != null) {
+      const ratePerAcre = d.rate != null ? Number(d.rate) : null;
+      const ratePerBigha = d.rate_per_bigha != null
+        ? Number(d.rate_per_bigha)
+        : (ratePerAcre != null ? ratePerAcre / 33 : null);
+      const unit = lang === "bn" ? "টাকা" : "";
+      const rateText = ratePerAcre != null ? `${fmt2(ratePerAcre)}${unit}/${fmt2(ratePerBigha ?? 0)}${unit}` : "";
+      rows.push([t.landKind, [d.farmer.field_type_bn, rateText].filter(Boolean).join("/ ")]);
+    }
+    // 7. দাগ নং (একাধিক হতে পারে)
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
     const dagFormatted = dagTokens.join(dagSeparatorHtml(layout.dagSeparator));
-    const mouzaParts = [d.farmer.mouza, sizeLabel].filter(Boolean) as string[];
-    if (mouzaParts.length) rows.push([mouzaLabel, mouzaParts.join(" / ")]);
     if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
-    if (d.farmer.field_type_bn) rows.push([t.landKind, d.farmer.field_type_bn]);
-    if (tpl.show_charge_row && d.rate != null) rows.push([t.rate, fmt2(Number(d.rate))]);
-    if (tpl.show_charge_row && d.charge_amount != null) rows.push([t.charge, fmt2(Number(d.charge_amount))]);
-    rows.push([t.due, fmt2(Number(d.total_outstanding ?? d.previous_due ?? 0))]);
-    if (d.collected_from_outstanding != null)
-      rows.push([t.collectedFromDue, fmt2(Number(d.collected_from_outstanding))]);
-    if (tpl.show_charge_row && d.current_season_charge != null)
-      rows.push([t.currentCharge, fmt2(Number(d.current_season_charge))]);
-    // জরিমানা / বিলম্ব ফি — show_penalty_row চালু থাকলে সবসময় আলাদা ঘরে (০ হলেও)।
-    if (tpl.show_penalty_row) rows.push([t.penalty, fmt2(Number(d.penalty_amount ?? 0))]);
-    if (tpl.show_charge_row && (d.maintenance_charge != null || d.canal_charge != null)) {
-      const extras = [d.maintenance_charge, d.canal_charge]
-        .map((n) => fmt2(Number(n ?? 0)))
-        .join(" / ");
-      rows.push([t.extraCharges, extras]);
+    // 8. জমির পরিমাণ — একর (শতক ÷ ১০০), . এর পর ৪ ডিজিট
+    if (d.farmer.land_size != null) {
+      const acre = Number(d.farmer.land_size) / 100;
+      rows.push([t.landSize, `${fmt4(acre)} ${lang === "bn" ? "একর" : "acre"}`]);
     }
-    if (d.patwari_name) rows.push([t.patwari, `${d.patwari_name}${d.patwari_mobile ? " (" + d.patwari_mobile + ")" : ""}`]);
-  } else if (d.kind === "savings") {
-    const sl = getSavingsLabels(lang);
-    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
-    if (d.savings_account_no) rows.push([lang === "bn" ? "সঞ্চয়ী হিসাব নং:" : "Savings A/C No:", String(d.savings_account_no)]);
-    if (d.savings_category_bn) rows.push([lang === "bn" ? "ক্যাটাগরি:" : "Category:", d.savings_category_bn]);
-    if (d.savings_opening_date) rows.push([lang === "bn" ? "হিসাব খোলার তারিখ:" : "Account opened:", fmtDate(d.savings_opening_date)]);
-    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
-    if (d.description) rows.push([sl.desc, d.description]);
-    if (d.savings_balance_before != null) rows.push([lang === "bn" ? "পূর্বের স্থিতি:" : "Balance before:", fmt2(Number(d.savings_balance_before))]);
-    if (d.outstanding != null) rows.push([sl.balance, fmt2(Number(d.outstanding))]);
-    if (d.savings_balance_after != null) rows.push([lang === "bn" ? "নতুন স্থিতি:" : "New balance:", fmt2(Number(d.savings_balance_after))]);
-    if (d.savings_deposit_total != null) rows.push([lang === "bn" ? "মোট জমা:" : "Total deposited:", fmt2(Number(d.savings_deposit_total))]);
+    // 9. চার্জের পরিমাণ (হাল)/জরিমানা — চলতি সিজনের জমি
+    const halCharge = Number(d.current_season_charge ?? 0);
+    const halPenalty = Number(d.current_penalty ?? d.penalty_amount ?? 0);
+    rows.push([t.currentCharge, `${fmt2(halCharge)}/${fmt2(halPenalty)}`]);
+    // 10. চার্জের পরিমাণ (বকেয়া)/জরিমানা — গত সিজনের জমি
+    const dueCharge = Number(d.total_outstanding ?? d.previous_due ?? 0);
+    const duePenalty = Number(d.due_penalty ?? 0);
+    rows.push([t.due, `${fmt2(dueCharge)}/${fmt2(duePenalty)}`]);
+    // 11. মোট আদায়ের পরিমাণ (জরিমানা সহ)
+    rows.push([t.totalIrr, fmt2(d.collected_amount)]);
+    // 12. কথায়
+    if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(d.collected_amount)}।`]);
+    // 13. হোল্ডিং এর বিবরন / পাটুয়ারীর নাম ও মোবা নং
+    const holdingParts = [
+      (d.holding_description ?? d.remark ?? "").trim() || null,
+      d.patwari_name ? `${d.patwari_name}${d.patwari_mobile ? "-" + d.patwari_mobile : ""}` : null,
+    ].filter(Boolean).join(" / ");
+    if (holdingParts) rows.push([t.holding, holdingParts]);
   } else {
-    const ll = getLoanLabels(lang);
-    const { mouza: mouzaLabel } = getIrrigationLabels(lang);
-    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
-    if (d.description) rows.push([ll.desc, d.description]);
-    if (d.outstanding != null) rows.push([ll.outstanding, fmt2(Number(d.outstanding))]);
+    // কৃষকের নাম এবং কৃষক সদস্য নং: name - member_no - owner_type - voter/savings ref
+    const memberRefSuffix = d.farmer.member_type_bn || d.farmer.member_ref_no
+      ? ` - ${[d.farmer.member_type_bn, d.farmer.member_ref_no].filter(Boolean).join(" ")}`.trimEnd()
+      : "";
+    rows.push([
+      t.farmerLine,
+      `${d.farmer.name}${d.farmer.member_no ? " - " + d.farmer.member_no : ""}${d.farmer.owner_type_bn ? " - " + d.farmer.owner_type_bn : ""}${memberRefSuffix}`,
+    ]);
+    rows.push([t.villageLine, `${d.farmer.village ?? "—"}${d.farmer.mobile ? " / " + d.farmer.mobile : ""}`]);
+    if (d.farmer.father_or_husband) rows.push([t.fatherLine, d.farmer.father_or_husband]);
+
+    if (d.office_income) {
+      // Farmer-less office income receipt: জমি ও মৌজা সবসময় locked "N/A".
+      const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+      rows.push([mouzaLabel, "N/A"]);
+      rows.push([t.landOwner, "N/A"]);
+    } else if (d.kind === "savings") {
+      const sl = getSavingsLabels(lang);
+      const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+      if (d.savings_account_no) rows.push([lang === "bn" ? "সঞ্চয়ী হিসাব নং:" : "Savings A/C No:", String(d.savings_account_no)]);
+      if (d.savings_category_bn) rows.push([lang === "bn" ? "ক্যাটাগরি:" : "Category:", d.savings_category_bn]);
+      if (d.savings_opening_date) rows.push([lang === "bn" ? "হিসাব খোলার তারিখ:" : "Account opened:", fmtDate(d.savings_opening_date)]);
+      if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
+      if (d.description) rows.push([sl.desc, d.description]);
+      if (d.savings_balance_before != null) rows.push([lang === "bn" ? "পূর্বের স্থিতি:" : "Balance before:", fmt2(Number(d.savings_balance_before))]);
+      if (d.outstanding != null) rows.push([sl.balance, fmt2(Number(d.outstanding))]);
+      if (d.savings_balance_after != null) rows.push([lang === "bn" ? "নতুন স্থিতি:" : "New balance:", fmt2(Number(d.savings_balance_after))]);
+      if (d.savings_deposit_total != null) rows.push([lang === "bn" ? "মোট জমা:" : "Total deposited:", fmt2(Number(d.savings_deposit_total))]);
+    } else {
+      const ll = getLoanLabels(lang);
+      const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+      if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
+      if (d.description) rows.push([ll.desc, d.description]);
+      if (d.outstanding != null) rows.push([ll.outstanding, fmt2(Number(d.outstanding))]);
+    }
+
+    const totalLabel = d.kind === "savings" ? t.totalSav : d.kind === "loan" ? t.totalLoan : t.totalIrr;
+    const amountText = lang === "bn"
+      ? `${fmt2(d.collected_amount)} (${bnAmountInWords(d.collected_amount)})`
+      : `${fmt2(d.collected_amount)}`;
+    rows.push([totalLabel, amountText]);
+    if (d.office_income && (d.remark ?? "").trim()) {
+      rows.push([t.remark, String(d.remark).trim()]);
+    }
   }
 
-  const totalLabel = d.kind === "savings" ? t.totalSav : d.kind === "loan" ? t.totalLoan : t.totalIrr;
-  const amountText = lang === "bn"
-    ? `${fmt2(d.collected_amount)} (${bnAmountInWords(d.collected_amount)})`
-    : `${fmt2(d.collected_amount)}`;
-  rows.push([totalLabel, amountText]);
-  if ((d.kind === "irrigation" || d.office_income) && (d.remark ?? "").trim()) {
-    rows.push([t.remark, String(d.remark).trim()]);
-  }
 
   const pad = getRowSpacingForKind(d.kind);
   const tableRows = rows.map(([k, v]) => `
