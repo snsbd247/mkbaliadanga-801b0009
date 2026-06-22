@@ -163,7 +163,7 @@ const STR = {
     remainingLoan: "অবশিষ্ট ঋণ:",
     totalSav: "জমাকৃত পরিমাণ:",
     totalLoan: "প্রাপ্ত কিস্তি:",
-    totalIrr: "সংগৃহীত পরিমাণ:",
+    totalIrr: "মোট আদায়ের পরিমাণ:",
     remark: "রিমার্ক/নোট:",
     memberSig: "সদস্যের স্বাক্ষর",
     collectorSig: "আদায়কারীর স্বাক্ষর",
@@ -203,7 +203,7 @@ const STR = {
     remainingLoan: "Loan outstanding:",
     totalSav: "Amount deposited:",
     totalLoan: "Installment received:",
-    totalIrr: "Amount collected:",
+    totalIrr: "Total collected:",
     remark: "Remark / Note:",
     memberSig: "Member signature",
     collectorSig: "Collector signature",
@@ -258,6 +258,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // ===== Official "সেচ চার্জ ও বিবিধ আদায় রশিদ" layout (A5, fixed row order) =====
     const layout = getReceiptLayoutSettings();
     const { dag: dagLabel } = getIrrigationLabels(lang);
+    // মৌজা: custom override থাকলে সেটি, নাহলে নতুন ডিফল্ট "মৌজা:"
+    const mouzaLabel = ((lang === "bn" ? layout.mouzaLabelBn : layout.mouzaLabelEn) || "").trim() || t.mouza;
     const selfLabel = lang === "bn" ? "নিজ/মালিক" : "Self/Owner";
 
     // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি (মালিক নিজে হলে শুধু নিজ/মালিক)
@@ -274,7 +276,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // 4. কৃষক এবং মালিক সভ্য সদস্য
     if (d.member_summary) rows.push([t.memberLine, d.member_summary]);
     // 5. মৌজা
-    if (d.farmer.mouza) rows.push([t.mouza, d.farmer.mouza]);
+    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
     // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট ÷ ৩৩)
     if (d.farmer.field_type_bn || d.rate != null) {
       const ratePerAcre = d.rate != null ? Number(d.rate) : null;
@@ -331,7 +333,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       rows.push([t.landOwner, "N/A"]);
     } else if (d.kind === "savings") {
       const sl = getSavingsLabels(lang);
-      const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+      const mouzaLabel = t.mouza; // savings: plain label, no irrigation custom-label leak
       if (d.savings_account_no) rows.push([lang === "bn" ? "সঞ্চয়ী হিসাব নং:" : "Savings A/C No:", String(d.savings_account_no)]);
       if (d.savings_category_bn) rows.push([lang === "bn" ? "ক্যাটাগরি:" : "Category:", d.savings_category_bn]);
       if (d.savings_opening_date) rows.push([lang === "bn" ? "হিসাব খোলার তারিখ:" : "Account opened:", fmtDate(d.savings_opening_date)]);
@@ -343,7 +345,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       if (d.savings_deposit_total != null) rows.push([lang === "bn" ? "মোট জমা:" : "Total deposited:", fmt2(Number(d.savings_deposit_total))]);
     } else {
       const ll = getLoanLabels(lang);
-      const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+      const mouzaLabel = t.mouza; // loan: plain label, no irrigation custom-label leak
       if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
       if (d.description) rows.push([ll.desc, d.description]);
       if (d.outstanding != null) rows.push([ll.outstanding, fmt2(Number(d.outstanding))]);
@@ -361,10 +363,13 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
 
 
   const pad = getRowSpacingForKind(d.kind);
+  // Consistent wrapping for both Bangla and English long values (dag lists,
+  // long remarks, holding text) so cells never overflow the A5 page width.
+  const cellWrap = "word-break:break-word;overflow-wrap:anywhere;white-space:pre-line;line-height:1.35;";
   const tableRows = rows.map(([k, v]) => `
     <tr>
-      <td style="padding:${pad}px 8px;vertical-align:top;width:38%;color:#111;">${k}</td>
-      <td style="padding:${pad}px 8px;vertical-align:top;color:#111;white-space:pre-line;">${v}</td>
+      <td style="padding:${pad}px 8px;vertical-align:top;width:38%;color:#111;${cellWrap}">${k}</td>
+      <td style="padding:${pad}px 8px;vertical-align:top;color:#111;${cellWrap}">${v}</td>
     </tr>`).join("");
 
   const fontFamily = lang === "bn"
