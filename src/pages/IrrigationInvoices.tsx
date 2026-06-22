@@ -276,6 +276,18 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   async function bulkDownload(copy: InvoiceCopy) {
     const items = filtered.filter((r: any) => selected.has(r.id));
     if (!items.length) return toast.error(tx("Select invoices first", "প্রথমে ইনভয়েস নির্বাচন করুন"));
+    // Consistency check: the PDF will contain exactly the selected rows.
+    // Warn if that differs from what the current filter shows on screen.
+    if (items.length !== filtered.length) {
+      const ok = await confirm({
+        title: tx("Row count mismatch", "সারির সংখ্যা মিলছে না"),
+        description: tx(
+          `The list shows ${filtered.length} invoices but the PDF will contain ${items.length}. Continue?`,
+          `তালিকায় ${filtered.length} টি ইনভয়েস দেখাচ্ছে কিন্তু PDF-এ থাকবে ${items.length} টি। চালিয়ে যাবেন?`,
+        ),
+      });
+      if (!ok) return;
+    }
     if (items.length > 50) {
       const ok = await confirm({
         title: tx("Large batch", "বড় ব্যাচ"),
