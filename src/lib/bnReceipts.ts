@@ -203,7 +203,7 @@ const STR = {
     remainingLoan: "Loan outstanding:",
     totalSav: "Amount deposited:",
     totalLoan: "Installment received:",
-    totalIrr: "Amount collected:",
+    totalIrr: "Total collected:",
     remark: "Remark / Note:",
     memberSig: "Member signature",
     collectorSig: "Collector signature",
