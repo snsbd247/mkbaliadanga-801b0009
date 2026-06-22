@@ -333,7 +333,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       rows.push([t.landOwner, "N/A"]);
     } else if (d.kind === "savings") {
       const sl = getSavingsLabels(lang);
-      const { mouza: mouzaLabel } = getIrrigationLabels(lang);
+      const mouzaLabel = t.mouza; // savings: plain label, no irrigation custom-label leak
       if (d.savings_account_no) rows.push([lang === "bn" ? "সঞ্চয়ী হিসাব নং:" : "Savings A/C No:", String(d.savings_account_no)]);
       if (d.savings_category_bn) rows.push([lang === "bn" ? "ক্যাটাগরি:" : "Category:", d.savings_category_bn]);
       if (d.savings_opening_date) rows.push([lang === "bn" ? "হিসাব খোলার তারিখ:" : "Account opened:", fmtDate(d.savings_opening_date)]);
