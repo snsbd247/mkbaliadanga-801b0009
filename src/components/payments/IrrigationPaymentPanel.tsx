@@ -404,7 +404,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       // মালিক নিজে কিনা (বর্গা না হলে নিজ)
       const isBorga = [...sorted, ...previousInvoices].some((inv) => inv.is_borga);
       const ownerName = rep?.owner ? (lang === "bn" ? rep.owner.name_bn : rep.owner.name_en) || rep.owner.name_bn || rep.owner.name_en : null;
-      const memberSummary = `${farmer?.member_no ?? "—"}/${ownerName ? "" : "N/A"}`.replace(/\/$/, "/N/A");
+      const memberSummary = `${farmer?.member_no ?? "N/A"}/${(isBorga && ownerName) ? ownerName : "N/A"}`;
 
 
       // Receipt — never blocks payment; failure → retry queue
