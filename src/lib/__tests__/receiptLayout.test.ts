@@ -32,26 +32,28 @@ function rowFor(html: string, label: string): string {
 }
 
 describe("irrigation receipt layout", () => {
-  it("BN: mouza row has size but no dag tokens; dag row has all tokens", () => {
+  it("BN: mouza row holds only mouza; land size shown separately in একর; dag row has all tokens", () => {
     const html = buildReceiptCopyHtmlForTest(baseData, "farmer", "bn");
-    const mouza = rowFor(html, "মৌজা / জমির পরিমান:");
+    const mouza = rowFor(html, "মৌজা:");
+    const size = rowFor(html, "জমির পরিমাণ:");
     const dag = rowFor(html, "দাগ নং:");
     expect(mouza).toContain("Baliadanga");
-    expect(mouza).toContain("বিঘা");
     expect(mouza).not.toContain("123");
-    expect(mouza).not.toContain("124/A");
+    expect(size).toContain("একর");
+    expect(size).toContain("0.3300"); // 33 শতক ÷ 100 = 0.33 একর, ৪ ডিজিট
     expect(dag).toContain("123");
     expect(dag).toContain("124/A");
     expect(dag).toContain("125-B");
   });
 
-  it("EN: mouza row has size but no dag tokens; dag row has all tokens", () => {
+  it("EN: mouza row holds only mouza; land size shown in acre; dag row has all tokens", () => {
     const html = buildReceiptCopyHtmlForTest(baseData, "farmer", "en");
-    const mouza = rowFor(html, "Mouza / Land size:");
+    const mouza = rowFor(html, "Mouza:");
+    const size = rowFor(html, "Land size:");
     const dag = rowFor(html, "Dag no:");
     expect(mouza).toContain("Baliadanga");
-    expect(mouza).toContain("bigha");
     expect(mouza).not.toContain("124/A");
+    expect(size).toContain("acre");
     expect(dag).toContain("123");
     expect(dag).toContain("124/A");
     expect(dag).toContain("125-B");

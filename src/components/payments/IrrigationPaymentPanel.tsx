@@ -367,9 +367,15 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       const receiptNo = await nextUnifiedReceiptNo(officeId, "IRR", paymentId).catch(() => autoReceiptNo("IRR", paymentId));
       const [{ data: farmer }, { data: company }] = await Promise.all([
-        supabase.from("farmers").select("name_bn,name_en,member_no,father_name,village,mobile,office_id").eq("id", farmerId).maybeSingle(),
+        supabase.from("farmers").select("name_bn,name_en,member_no,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
         supabase.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
       ]);
+      // ইউনিয়ন: farmers.union_id থেকে unions লুকআপ টেবিল হতে নাম স্বয়ংক্রিয়ভাবে আনা
+      let unionName: string | null = null;
+      if (farmer?.union_id) {
+        const { data: u } = await supabase.from("unions").select("name_bn,name").eq("id", farmer.union_id).maybeSingle();
+        unionName = (lang === "bn" ? u?.name_bn : u?.name) || u?.name_bn || u?.name || null;
+      }
       const farmerName = (farmer?.name_bn || farmer?.name_en || "").trim();
       const totalDelay = sorted.reduce((s, inv) => s + (delayFee[inv.id] ?? Number(inv.delay_fee || 0)), 0);
       const totalMaint = sorted.reduce((s, inv) => s + Number(inv.maintenance_amount || 0), 0);
@@ -430,6 +436,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             field_type_bn: simplifiedReceipt ? null : fieldTypeBn,
             dag_no: simplifiedReceipt ? null : dagAll,
           },
+          village_union: simplifiedReceipt ? null : unionName,
           rate: simplifiedReceipt ? null : ratePerAcre,
           member_summary: simplifiedReceipt ? null : memberSummary,
           owner_self: simplifiedReceipt ? undefined : !isBorga,
