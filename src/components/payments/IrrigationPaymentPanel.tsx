@@ -16,6 +16,7 @@ import { Loader2, AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
+import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
