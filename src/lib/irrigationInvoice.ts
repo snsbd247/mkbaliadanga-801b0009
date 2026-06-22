@@ -87,9 +87,7 @@ export interface InvoiceCalcResult {
 }
 
 export function calcInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
-  const land = n(input.land_size_shotok);
-  const rate = n(input.rate_per_shotok);
-  const irrigation = r2(land * rate);
+  const irrigation = baseIrrigationAmount(input.land_size_shotok, input.rate_per_shotok, input.basis ?? "per_shotok");
   const maintenance = r2((irrigation * n(input.settings.maintenance_percent)) / 100);
   const canal = r2((irrigation * n(input.settings.canal_percent)) / 100);
   const other = r2(n(input.other_charge));
