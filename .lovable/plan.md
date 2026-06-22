@@ -1,45 +1,58 @@
-# Payment Module Improvements
+# সেচ, পেমেন্ট, ক্যাশবুক ও রিপোর্ট মডিউল ফাইনালাইজেশন
 
-Seven related changes to the সেচ (irrigation) and সেভিং (savings) payment flow. Grouped by area. Each is isolated so other modules (loan, cashbook, bank, report) stay untouched.
+এটি বড় কাজ, তাই **৭টি ধাপে** ভাগ করা হলো। প্রতি ধাপ আলাদাভাবে টেস্ট ও ডেলিভার হবে যাতে অন্য কোনো মডিউল ভেঙে না যায়। প্রতিটি ধাপ শেষে আপনি যাচাই করবেন, তারপর পরের ধাপে যাবো।
 
-## 1. Richer info when selecting farmer's সেচ dues
-When a farmer is selected for payment, the due list will also show, per due row:
-- মালিকের নাম (owner name) — already loaded via `owner:farmers!owner_farmer_id`
-- মৌজা (mouza) and জমির পরিমান (land size) — already loaded via `lands(mouza,land_size)`
-- টাকা (due amount) — shown
-So staff can confirm details with the farmer before collecting. This is a UI-only change in `IrrigationPaymentPanel.tsx` (add owner/mouza columns to the due table).
+---
 
-## 2. No rounding on land size (only money rounds)
-Land amounts like `1.99` must stay exactly as entered — never rounded. Money keeps rounding. Audit land-entry inputs/format helpers to ensure `1.99` is preserved end-to-end (entry, storage, receipt). Only `money()`/rounding helpers apply to currency.
+## ধাপ ১ — Season Rate ও জমির ধরন সম্প্রসারণ
+বর্তমানে আছে: উঁচু / নিচু / মাঝারি। নতুন যোগ হবে: **পুকুর, ভর্তি ফি, বিঘাত, সবজি/ক্রিয়া ফসল**।
 
-## 3. Auto-fill due amount on selection
-When a farmer's due land is selected, its outstanding amount auto-populates so staff only press Pay/Confirm — no manual typing. In the structured panel the total is already auto-computed (`grandTotal`); we will verify the Quick/legacy entry path also auto-fills and remove the manual amount requirement there.
+- সিজন রেট কনফিগারেশনে নতুন ক্যাটেগরি যোগ (irrigation_categories / category_rates)।
+- প্রতিটি ক্যাটেগরির জন্য আলাদা রেট ও হিসাবের একক (একর/বিঘা/পুকুর-ভিত্তিক/ফিক্সড ফি)।
+- রসিদে জমির ধরন সঠিক লেবেলে দেখাবে (`irrigationLandType.ts` আপডেট)।
 
-## 4. Admin-only post-payment receipt edit
-Admins can edit a paid receipt's মৌজা, মালিক, জমির পরিমান, টাকা, জরিমানা after payment (to fix mistakes). Requires:
-- A single serialized list of all paid receipts (সেচ + সেভিং) in one place.
-- An admin edit dialog updating the receipt + linked records, writing an audit log entry of old/new values.
+## ধাপ ২ — Mouza Simplification ও Dag Number
+- ফার্মার/জমি ফর্মে Division→Village চেইন বাদ, শুধু **Mouza** ব্যবহার।
+- Dag Number **আনলিমিটেড** — একাধিক ড্যাগ সংরক্ষণ ও রসিদে প্রদর্শন।
+- বিদ্যমান ডেটা মাইগ্রেশন: প্রয়োজনে Village→Mouza ম্যাপিং (পুরোনো ডেটা নষ্ট হবে না)।
 
-## 5. সেচ জরিমানা (penalty) entry field
-Add an explicit জরিমানা input in the সেচ payment flow (the structured panel has delay-fee override; we will surface a clear penalty field that flows into `penalty_amount`/`delay_fee`).
+## ধাপ ৩ — বর্গা (Barga) Due Logic
+- মালিকের জমির বর্গা অংশ → বর্গাদারের নামে ডিউ; অবশিষ্ট → মালিকের নামে ডিউ।
+- জমি এডিট করলে ডিউ স্বয়ংক্রিয় পুনঃহিসাব।
+- একই জমি একাধিক **Active** বর্গাদারে দেওয়া নিষেধ (ভ্যালিডেশন)।
+- Invoice-পরবর্তী জমি Transfer হলে ডিউ নতুন মালিক/বর্গাদারে স্থানান্তর; পুরাতনের কাছে শূন্য।
 
-## 6. Receipt void/cancel (admin) + report visibility
-Admin can fully void a paid receipt. On void:
-- Receipt is marked cancelled; the released serial can be reused by the next farmer OR remain permanently voided (your choice — see question).
-- Collection report shows voided receipts flagged as বাতিল.
+## ধাপ ৪ — Invoice Generation, Filter ও Due হিসাব
+- Invoice জেনারেট ফিল্টার: উঁচু/নিচু/মাঝারি/পুকুর/ভর্তি ফি/বিঘাত/সবজি — নির্বাচিতগুলোই Invoice হবে।
+- **Double-due fix**: Invoice জেনারেটের পর Total Due দ্বিগুণ দেখাবে না।
+- Season Rule: নতুন সিজনে আগের সিজন Paid হোক বা না হোক Invoice জেনারেট করা যাবে।
+- Due/Paid ফিল্টার: Season Wise, Due, Paid, Partial, Invoice Wise, Receipt Wise।
 
-## 7. Savings Combination Payment — receipt option
-Add a receipt (field) option to the existing savings Combination Payment so it can print/download a রশিদ like other flows.
+## ধাপ ৫ — Receipt, Paid History ও Receipt Number
+- **Due Invoice-এ রসিদ ডাউনলোড বন্ধ**; শুধু Payment হলে ডাউনলোড।
+- পুরোনো "Paid Land" অপশন বাদ → নতুন **Paid History**: Season, Receipt No, Amount, Collection Date, Download।
+- Receipt Number নতুন করে **১ থেকে** শুরু।
+- Profile-এ দেখাবে: Own Land, Barga Land, Mouza, Dag No, Land Area, Due, Paid History।
 
-## Database changes (require approval)
-- Receipt void: add `cancelled_at`, `cancelled_by`, `cancel_reason` to the receipts/payments tables.
-- Admin receipt edit audit: reuse existing `audit_logs`.
-- Confirm `irrigation_invoices`/`receipts` already expose penalty fields (they do: `delay_fee`, `penalty_amount`).
+## ধাপ ৬ — Payment, Approval, Edit/Cancel
+- Profile → **Pay Now** সরাসরি Irrigation Payment-এ (Combination নয়)।
+- Approval দরকার: Loan Disbursement, Withdrawal, Office Payout। দরকার নেই: Irrigation/Savings/Share Collection।
+- Admin Receipt Edit (Mouza, Amount, Land Area, Fine ইত্যাদি) → সব Audit Log-এ।
+- Admin Receipt **Cancel** → Status=Cancelled, রিপোর্ট/কালেকশনে গণনা হবে না, Audit Log-এ থাকবে।
 
-## Open questions
-1. Voided serial: reuse for the next farmer, or keep the number permanently voided (gap in sequence)?
-2. Item 4/6 "admin": super_admin + admin both, or super_admin only?
-3. Should item 1's extra info also appear on the printed receipt, or only on-screen during collection?
+## ধাপ ৭ — Cash Book, Report ও Historical Entry
+- দুটি আলাদা Cash Book: **Irrigation** ও **Savings/Cooperative**; কলাম: Date, Voucher No, Description, Income, Expense, Balance (running balance)।
+- Report ফিল্টার: Only Irrigation / Only Savings / Combined।
+- Footer Summary: Total Irrigation, Savings, Loan, Profit, Grand Total।
+- Cancelled রসিদ রিপোর্টে বাদ।
+- **Historical Receipt Entry** স্ক্রিন: পুরোনো রসিদ এন্ট্রি (Farmer/Owner/Bargadar প্রোফাইল + Paid History-তে যোগ, নতুন ফরম্যাটে ডাউনলোড)। Data entry fields: Farmer ID/Name, Father, Village, Mobile, Owner ID, Mouza, Land Area, Rate, Land Type, Dag No, Total Charge, Receipt No, Collection Date (Patwari ফাঁকা)।
 
-## Suggested order
-Start with the low-risk UI items (1, 2, 3, 5), then the DB-backed items (4, 6), then savings (7). I can implement them incrementally so each is verifiable before the next.
+---
+
+## কারিগরি নোট (ডেভেলপার)
+- **DB**: `irrigation_categories`/`irrigation_category_rates` সম্প্রসারণ; `lands.mouza`+একাধিক dag; বর্গা সম্পর্কের জন্য `land_relations` ব্যবহার; `irrigation_invoices`/`receipts`-এ `status` (open/partial/paid/cancelled) ও cancel/edit audit ক্ষেত্র; receipt counter রিসেট। প্রতিটি নতুন টেবিলে GRANT + RLS।
+- **Frontend**: `IrrigationInvoices.tsx`, `IrrigationPaymentPanel.tsx`, `Profile.tsx`, `Cashbook.tsx`, `Reports.tsx`/`IrrigationReports.tsx`, নতুন Historical Entry পেজ।
+- দুটি ক্যাশ স্ট্রিম (সেচ vs সেভিং) আলাদা থাকবে — মেমোরি অনুযায়ী।
+- প্রতিটি ধাপে বিদ্যমান টেস্ট চালানো হবে; রিগ্রেশন এড়াতে নতুন এজ-কেস টেস্ট যোগ হবে।
+
+প্রথমে **ধাপ ১** থেকে শুরু করবো। অনুমোদন দিলে এগোই।
