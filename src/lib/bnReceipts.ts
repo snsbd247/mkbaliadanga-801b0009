@@ -497,9 +497,18 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
     const pageH = pdf.internal.pageSize.getHeight();
     const innerW = pageW - opts.margins.l - opts.margins.r;
     const innerH = pageH - opts.margins.t - opts.margins.b;
-    const imgH = (canvas.height * innerW) / canvas.width;
-    const finalH = Math.min(imgH, innerH);
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", opts.margins.l, opts.margins.t, innerW, finalH);
+    // Fit the rendered receipt inside ONE page without distortion. If the
+    // content is taller than the printable area (long text / many dag rows),
+    // scale it down proportionally so it never overflows to a second page.
+    let drawW = innerW;
+    let drawH = (canvas.height * innerW) / canvas.width;
+    if (drawH > innerH) {
+      const scale = innerH / drawH;
+      drawH = innerH;
+      drawW = innerW * scale;
+    }
+    const offsetX = opts.margins.l + (innerW - drawW) / 2;
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", offsetX, opts.margins.t, drawW, drawH);
     return pdf;
   } finally {
     node.remove();

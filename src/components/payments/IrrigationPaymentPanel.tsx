@@ -16,6 +16,7 @@ import { Loader2, AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
+import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
 import { autoReceiptNo } from "@/lib/receiptNo";
@@ -38,8 +39,11 @@ type Invoice = {
   maintenance_amount: number;
   canal_amount: number;
   other_charge: number;
+  season_rate?: number | null;
+  land_type_name?: string | null;
+  irrigation_category_name?: string | null;
   seasons?: { name: string | null; year: number | null; status: string | null } | null;
-  lands?: { mouza: string | null; land_size: number | null } | null;
+  lands?: { mouza: string | null; land_size: number | null; dag_no: string | null } | null;
   owner?: { name_bn: string | null; name_en: string | null } | null;
 };
 
@@ -81,7 +85,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const [{ data: act }, { data: invs }] = await Promise.all([
         supabase.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("irrigation_invoices")
-          .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,seasons(name,year,status),lands(mouza,land_size),owner:farmers!owner_farmer_id(name_bn,name_en)")
+          .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no),owner:farmers!owner_farmer_id(name_bn,name_en)")
           .eq("farmer_id", farmerId)
           .is("deleted_at", null)
           .neq("invoice_status", "cancelled")
@@ -363,7 +367,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       const receiptNo = await nextUnifiedReceiptNo(officeId, "IRR", paymentId).catch(() => autoReceiptNo("IRR", paymentId));
       const [{ data: farmer }, { data: company }] = await Promise.all([
-        supabase.from("farmers").select("name_bn,name_en,member_no,village,mobile,office_id").eq("id", farmerId).maybeSingle(),
+        supabase.from("farmers").select("name_bn,name_en,member_no,father_name,village,mobile,office_id").eq("id", farmerId).maybeSingle(),
         supabase.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
       ]);
       const farmerName = (farmer?.name_bn || farmer?.name_en || "").trim();
@@ -372,6 +376,37 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const totalCanal = sorted.reduce((s, inv) => s + Number(inv.canal_amount || 0), 0);
       const receiptMouza = sorted.find((inv: any) => inv.lands?.mouza)?.lands?.mouza ?? null;
       const receiptLandSize = sorted.reduce((s, inv: any) => s + Number(inv.lands?.land_size || 0), 0) || null;
+
+      // ---- Official রশিদ enriched fields ----
+      const rep = (sorted[0] ?? previousInvoices[0]) as Invoice | undefined;
+      // জমির ধরন: ধান হলে উচু/নিচু/মাঝারি, নাহলে ক্যাটেগরি (পুকুর/সবজি/ভর্তি ফি ইত্যাদি)
+      const fieldTypeBn = resolveFieldTypeLabel({
+        categoryName: rep?.irrigation_category_name,
+        landTypeName: rep?.land_type_name,
+        seasonName: rep?.seasons?.name,
+      });
+      // চার্জ রেট (একর); বিঘা = একর রেট ÷ ৩৩ (lib auto-computes)
+      const ratePerAcre = rep?.season_rate != null ? Number(rep.season_rate) : null;
+      // দাগ নং — সব সংশ্লিষ্ট জমির দাগ একত্রে
+      const dagAll = Array.from(new Set(
+        [...sorted, ...previousInvoices]
+          .map((inv) => (inv.lands?.dag_no ?? "").trim())
+          .filter(Boolean)
+          .flatMap((s) => s.split(/[,;\s]+/))
+          .filter(Boolean),
+      )).join(", ") || null;
+      // জরিমানা আলাদা: হাল (চলতি) ও বকেয়া (গত সিজন)
+      const currentPenalty = totalDelay;
+      const currentChargeBase = sorted.reduce(
+        (s, inv) => s + Math.max(0, Number(inv.due_amount || 0) - Number(inv.delay_fee || 0)), 0,
+      );
+      const duePenalty = previousInvoices.reduce((s, inv) => s + Number(inv.delay_fee || 0), 0);
+      const dueChargeBase = Math.max(0, previousDueTotal - duePenalty);
+      // মালিক নিজে কিনা (বর্গা না হলে নিজ)
+      const isBorga = [...sorted, ...previousInvoices].some((inv) => inv.is_borga);
+      const ownerName = rep?.owner ? (lang === "bn" ? rep.owner.name_bn : rep.owner.name_en) || rep.owner.name_bn || rep.owner.name_en : null;
+      const memberSummary = `${farmer?.member_no ?? "N/A"}/${(isBorga && ownerName) ? ownerName : "N/A"}`;
+
 
       // Receipt — never blocks payment; failure → retry queue
       const receiptResult = await safeWithRetry(
@@ -384,10 +419,28 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           company_name_bn: company?.company_name_bn ?? undefined,
           logo_url: company?.logo_url ?? null,
           org: company ?? null,
-          farmer: { name: farmerName, member_no: farmer?.member_no ?? null, village: farmer?.village ?? null, mobile: farmer?.mobile ?? null, mouza: receiptMouza, land_size: receiptLandSize },
-          current_season_charge: simplifiedReceipt ? null : Number(currentCollected || 0),
+          farmer: {
+            name: farmerName,
+            member_no: farmer?.member_no ?? null,
+            father_or_husband: farmer?.father_name ?? null,
+            village: farmer?.village ?? null,
+            mobile: farmer?.mobile ?? null,
+            mouza: receiptMouza,
+            land_size: receiptLandSize,
+            field_type_bn: simplifiedReceipt ? null : fieldTypeBn,
+            dag_no: simplifiedReceipt ? null : dagAll,
+          },
+          rate: simplifiedReceipt ? null : ratePerAcre,
+          member_summary: simplifiedReceipt ? null : memberSummary,
+          owner_self: simplifiedReceipt ? undefined : !isBorga,
+          land_owner_label: simplifiedReceipt ? null : (isBorga ? ownerName : null),
+          // হাল (চলতি সিজন) চার্জ + জরিমানা
+          current_season_charge: simplifiedReceipt ? null : currentChargeBase,
+          current_penalty: simplifiedReceipt ? null : currentPenalty,
           collected_from_outstanding: simplifiedReceipt ? null : Number(previousCollected || 0),
-          total_outstanding: simplifiedReceipt ? null : previousDueTotal,
+          // বকেয়া (গত সিজন) চার্জ + জরিমানা
+          total_outstanding: simplifiedReceipt ? null : dueChargeBase,
+          due_penalty: simplifiedReceipt ? null : duePenalty,
           penalty_amount: simplifiedReceipt ? null : totalDelay,
           maintenance_charge: simplifiedReceipt ? null : totalMaint,
           canal_charge: simplifiedReceipt ? null : totalCanal,
@@ -437,7 +490,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       onPaid?.();
       // re-trigger load
       const { data: invs } = await supabase.from("irrigation_invoices")
-        .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,seasons(name,year,status),lands(mouza,land_size),owner:farmers!owner_farmer_id(name_bn,name_en)")
+        .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no),owner:farmers!owner_farmer_id(name_bn,name_en)")
         .eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled").gt("due_amount", 0)
         .order("due_date", { ascending: true });
       setInvoices((invs ?? []) as any);
