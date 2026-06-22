@@ -8,8 +8,11 @@ beforeEach(() => {
   setReceiptLayoutSettings(DEFAULT_RECEIPT_LAYOUT);
 });
 
+function esc(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 function rowFor(html: string, label: string): string {
-  const re = new RegExp(`<tr>[\\s\\S]*?<td[^>]*>${label.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}</td>[\\s\\S]*?<td[^>]*>([\\s\\S]*?)</td>[\\s\\S]*?</tr>`);
+  const re = new RegExp(`<td[^>]*>${esc(label)}</td>\\s*<td[^>]*>([\\s\\S]*?)</td>`);
   const m = html.match(re);
   return m ? m[1] : "";
 }
