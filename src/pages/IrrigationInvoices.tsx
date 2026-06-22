@@ -1035,7 +1035,12 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       // a newly generated season. Delay fee is added separately at payment time.
       const settings = { ...rawSettings, auto_apply_delay_fee: false };
 
-      const eligible = (lands ?? []).filter((l: any) => Number(l.land_size) > 0 && !skip.has(l.id));
+      const eligible = (lands ?? []).filter(
+        (l: any) =>
+          Number(l.land_size) > 0 &&
+          !skip.has(l.id) &&
+          (fieldTypes.size === 0 || !l.field_type || fieldTypes.has(l.field_type)),
+      );
 
       const previewArr: any[] = [];
       let noRate = 0;
