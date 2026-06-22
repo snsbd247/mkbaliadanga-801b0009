@@ -1088,14 +1088,13 @@ export default function FarmerDetail() {
                     {/* 2b. Location picker — for owner: manual entry; for borgadar: shown auto-filled (still editable) */}
                     {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
                       <div>
-                        <Label className="text-sm font-medium mb-2 block">{t("location" as any) || "Location"}</Label>
-                        <LocationPicker
-                          value={landLoc}
-                          onChange={(v) => { setLandLoc(v); if (landLocErr) setLandLocErr(null); }}
-                          errorLevel={landLocErr?.level ?? null}
-                          errorMessage={landLocErr?.message ?? null}
-                          showVillage={false}
+                        <Label className="text-sm font-medium mb-2 block">{t("mouza" as any) || "মৌজা"} <span className="text-destructive">*</span></Label>
+                        <Input
+                          value={(landLoc as any).mouza_name ?? ""}
+                          placeholder={t("mouza" as any) || "মৌজা"}
+                          onChange={(e) => { setLandLoc({ mouza_name: e.target.value } as any); if (landLocErr) setLandLocErr(null); }}
                         />
+                        {landLocErr?.message && <p className="text-xs text-destructive mt-1">{landLocErr.message}</p>}
                       </div>
                     )}
 
