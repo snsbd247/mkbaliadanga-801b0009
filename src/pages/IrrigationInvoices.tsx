@@ -276,6 +276,18 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   async function bulkDownload(copy: InvoiceCopy) {
     const items = filtered.filter((r: any) => selected.has(r.id));
     if (!items.length) return toast.error(tx("Select invoices first", "প্রথমে ইনভয়েস নির্বাচন করুন"));
+    // Consistency check: the PDF will contain exactly the selected rows.
+    // Warn if that differs from what the current filter shows on screen.
+    if (items.length !== filtered.length) {
+      const ok = await confirm({
+        title: tx("Row count mismatch", "সারির সংখ্যা মিলছে না"),
+        description: tx(
+          `The list shows ${filtered.length} invoices but the PDF will contain ${items.length}. Continue?`,
+          `তালিকায় ${filtered.length} টি ইনভয়েস দেখাচ্ছে কিন্তু PDF-এ থাকবে ${items.length} টি। চালিয়ে যাবেন?`,
+        ),
+      });
+      if (!ok) return;
+    }
     if (items.length > 50) {
       const ok = await confirm({
         title: tx("Large batch", "বড় ব্যাচ"),
@@ -1345,9 +1357,14 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                 </Button>
               ))}
             </div>
+            {fieldTypes.size === 0 && (
+              <p className="text-xs text-destructive">
+                {tx("Select at least one land type to preview.", "প্রিভিউ করতে অন্তত একটি জমির ধরন নির্বাচন করুন।")}
+              </p>
+            )}
           </div>
           <div className="flex gap-2">
-            <Button onClick={preview} disabled={busy || !seasonId}>
+            <Button onClick={preview} disabled={busy || !seasonId || fieldTypes.size === 0}>
               <Sparkles className="h-4 w-4 mr-1" /> {tx("Preview", "প্রিভিউ")}
             </Button>
             {previewRows && previewRows.length > 0 && (
