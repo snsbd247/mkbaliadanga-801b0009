@@ -17,6 +17,7 @@ import { Upload, Download, AlertTriangle, CheckCircle2, Loader2, FileSpreadsheet
 import { toast } from "sonner";
 import { downloadCsvTemplate } from "@/lib/importTemplates";
 import { validateDagNumbers, formatDagNumbers } from "@/lib/dagNumbers";
+import { SHATAK_PER_KATHA, SHATAK_PER_BIGHA } from "@/lib/landUnits";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
