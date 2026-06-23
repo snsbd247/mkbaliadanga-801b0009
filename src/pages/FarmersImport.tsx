@@ -102,8 +102,8 @@ export default function FarmersImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const headers = [...COLUMNS];
     const sample = [
-      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
-      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
+      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Rahima", "1234567890", "01711000000", "Bagbari", "Baliadanga", "Sadar", "Tangail", "Md. Sabuj", "01911000000", "Son"],
+      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "Mst. Hasna", "9876543210", "01811000000", "Char Bhabanipur", "Baliadanga", "Sadar", "Tangail", "", "", ""],
     ];
     if (format === "csv") {
       const csv = [headers, ...sample]
@@ -123,9 +123,17 @@ export default function FarmersImport() {
       ["is_voter", "No", "true হলে voter/savings number আলাদা নয় — Farmer ID-ই ব্যবহৃত হবে।"],
       ["name_en", "Yes", "ইংরেজী নাম"],
       ["name_bn", "No", "বাংলা নাম"],
-      ["father_name", "No", ""],
+      ["father_name", "No", "পিতার নাম"],
+      ["mother_name", "No", "মাতার নাম"],
+      ["nid", "No", "জাতীয় পরিচয়পত্র নম্বর (শুধু সংখ্যা)"],
       ["mobile", "No", "11-digit BD number, e.g. 017XXXXXXXX"],
       ["village", "No", "Free-text গ্রাম"],
+      ["post_office", "No", "ডাকঘর"],
+      ["upazila", "No", "উপজেলা"],
+      ["district", "No", "জেলা"],
+      ["nominee_name", "No", "নমিনির নাম"],
+      ["nominee_mobile", "No", "নমিনির মোবাইল"],
+      ["nominee_relation", "No", "নমিনির সম্পর্ক (যেমন: ছেলে, স্ত্রী)"],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Farmers");
