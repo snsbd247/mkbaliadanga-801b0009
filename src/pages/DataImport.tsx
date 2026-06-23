@@ -423,13 +423,25 @@ export default function DataImport() {
             const dv = validateDagNumbers(dagRaw);
             if (!dv.ok) throw new Error(`dag_no: ${(dv as any).error}`);
             const canonicalDag = dv.values.join(", ");
-            next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag } };
+            // Convert land_size to canonical শতক (shotok) based on land_size_unit
+            const unit = String(raw.land_size_unit ?? "shotok").trim().toLowerCase();
+            const UNIT_TO_SHOTOK: Record<string, number> = {
+              shotok: 1, shatak: 1, decimal: 1, "": 1,
+              katha: SHATAK_PER_KATHA, kattah: SHATAK_PER_KATHA,
+              bigha: SHATAK_PER_BIGHA,
+              acre: 100, ekor: 100,
+            };
+            if (!(unit in UNIT_TO_SHOTOK)) {
+              throw new Error(`land_size_unit must be one of: shotok, katha, bigha, acre (got "${unit}")`);
+            }
+            const sizeShotok = Number(raw.land_size) * UNIT_TO_SHOTOK[unit];
+            next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag, land_size_shotok: sizeShotok } };
             table = "lands";
             payload = {
               farmer_id: f.id,
               office_id: f.office_id,
               dag_no: canonicalDag,
-              land_size: Number(raw.land_size),
+              land_size: sizeShotok,
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
