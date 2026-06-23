@@ -48,6 +48,8 @@ import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 import { PaidLandHistory } from "@/components/PaidLandHistory";
 import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
+import { ReceiptPreviewModal } from "@/components/irrigation/ReceiptPreviewModal";
+import { buildPaidHistory, type PaidHistoryRow } from "@/lib/irrigationReceiptHistory";
 import { formatLand, parseLandInput } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 import { LandNoteCell } from "@/components/farmers/LandNoteCell";
@@ -100,6 +102,8 @@ export default function FarmerDetail() {
   const [landInvoices, setLandInvoices] = useState<Record<string, any[]>>({});
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
+  const [receiptRow, setReceiptRow] = useState<PaidHistoryRow | null>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
