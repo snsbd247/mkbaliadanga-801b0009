@@ -1888,6 +1888,13 @@ export default function FarmerDetail() {
           {viewLoan && <LoanStatement loanId={viewLoan.id} />}
         </DialogContent>
       </Dialog>
+      <ReceiptPreviewModal
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        row={receiptRow}
+        payable={receiptRow?.amount ?? 0}
+        farmerName={farmer?.name_bn ?? farmer?.name_en}
+      />
     </>
 
   );
