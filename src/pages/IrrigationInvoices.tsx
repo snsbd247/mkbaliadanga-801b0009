@@ -1405,6 +1405,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                     <TableHead>{tx("Billed to", "বিল প্রাপক")}</TableHead>
                     <TableHead>{tx("Source", "উৎস")}</TableHead>
                     <TableHead className="text-right">{tx("Rate", "রেট")}</TableHead>
+                    <TableHead>{tx("Calculation", "হিসাব")}</TableHead>
                     <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
                     <TableHead>{tx("Manual override", "ম্যানুয়াল ওভাররাইড")}</TableHead>
                   </TableRow>
