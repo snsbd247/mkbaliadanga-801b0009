@@ -486,6 +486,16 @@ async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: st
       invoice_status: isPaid ? "paid" : isPartial ? "partial_paid" : "generated",
       land_type_id: l.land_type_id,
       season_rate: rate,
+      // Freeze the billed land area on the invoice so later land edits never
+      // retroactively change this (past-season) invoice's displayed area.
+      calculation_snapshot: {
+        rate_per_shotok: rate,
+        land_size_shotok: size,
+        parcel_size_shotok: size,
+        billed_area_shotok: size,
+        is_borga_split: false,
+        generated_at: today.toISOString(),
+      },
     };
   });
 
