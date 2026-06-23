@@ -3,7 +3,7 @@ import {
   validateBargaSplit,
   type BargaValidationInput,
 } from "@/lib/irrigationBargaValidation";
-import { useLanguage } from "@/i18n/LanguageProvider";
+import { useLang } from "@/i18n/LanguageProvider";
 
 interface Props {
   input: BargaValidationInput;
@@ -17,8 +17,8 @@ interface Props {
  * Renders nothing when the split reconciles.
  */
 export function BargaReconciliationPanel({ input, lang }: Props) {
-  const { language } = useLanguage();
-  const active: "bn" | "en" = lang ?? (language === "en" ? "en" : "bn");
+  const { lang: uiLang } = useLang();
+  const active: "bn" | "en" = lang ?? (uiLang === "en" ? "en" : "bn");
   const errors = validateBargaSplit(input);
   if (errors.length === 0) return null;
 
