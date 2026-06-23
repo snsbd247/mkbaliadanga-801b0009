@@ -44,6 +44,18 @@ import { OfficeIncomeTab } from "@/pages/irrigation/OfficeIncomeTab";
 
 type Invoice = any;
 
+/**
+ * Land area that was billed on this invoice, frozen at generation time.
+ * Always prefer the snapshot so that editing a farmer's land later (e.g. .33 → .40)
+ * does NOT retroactively change the area shown on past-season invoices/receipts.
+ */
+function invoiceLandSize(inv: any): number | undefined {
+  const snap = inv?.calculation_snapshot;
+  const v = snap?.billed_area_shotok ?? snap?.land_size_shotok ?? snap?.parcel_size_shotok;
+  if (v != null && Number(v) > 0) return Number(v);
+  return inv?.lands?.land_size;
+}
+
 const STATUS_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "outline",
   generated: "secondary",
@@ -241,7 +253,10 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       land: {
         mouza: inv.lands?.mouza,
         dag_no: inv.lands?.dag_no,
-        land_size: inv.lands?.land_size,
+        // Use the land area frozen on the invoice at generation time, NOT the
+        // farmer's current (possibly edited) land — past seasons must keep their
+        // original area even after the land is later increased.
+        land_size: invoiceLandSize(inv),
       },
       season: inv.seasons,
     };
@@ -509,7 +524,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   </TableCell>
                   <TableCell className="text-xs">
                     {r.lands?.mouza ? `${r.lands.mouza} • ` : ""}Dag {formatDagNumbers(r.lands?.dag_no) || "—"}<br />
-                    {formatLandSize(r.lands?.land_size, "short")}
+                    {formatLandSize(invoiceLandSize(r), "short")}
                   </TableCell>
                   <TableCell className="text-xs">{r.seasons?.name ?? r.seasons?.type} {r.seasons?.year}</TableCell>
                   <TableCell className="text-right">{money(r.payable_amount)}</TableCell>
@@ -846,7 +861,7 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
         <div className="space-y-2 text-sm">
           <Row k={tx("Farmer", "কৃষক")} v={`${inv.farmers?.name_bn ?? inv.farmers?.name_en} (${inv.farmers?.farmer_code})`} />
           <Row k={tx("Type", "ধরন")} v={inv.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "নিজ মালিক")}`} />
-          <Row k={tx("Land", "জমি")} v={`${inv.lands?.mouza ?? ""} • Dag ${formatDagNumbers(inv.lands?.dag_no) || "—"} • ${formatLandSize(inv.lands?.land_size)}`} />
+          <Row k={tx("Land", "জমি")} v={`${inv.lands?.mouza ?? ""} • Dag ${formatDagNumbers(inv.lands?.dag_no) || "—"} • ${formatLandSize(invoiceLandSize(inv))}`} />
           <Row k={tx("Land type", "জমির ধরন")} v={inv.land_type_name ?? "—"} />
           <Row k={tx("Season", "সিজন")} v={`${inv.seasons?.name ?? inv.seasons?.type} ${inv.seasons?.year}`} />
           <Row k={tx("Season rate / shotok", "সিজন রেট/শতক")} v={inv.season_rate != null ? money(inv.season_rate) : "—"} />
