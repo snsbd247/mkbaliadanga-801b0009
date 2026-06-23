@@ -978,16 +978,32 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
-  // Land-type (elevation) filter — only selected field types are invoiced.
-  const [fieldTypes, setFieldTypes] = useState<Set<string>>(
-    () => new Set(["high_land", "medium_land", "low_land"]),
-  );
+  // Land-type filter — only selected land types are invoiced. Keyed by land_type_id.
+  const [landTypeList, setLandTypeList] = useState<Array<{ id: string; code: string | null; name_bn: string | null; name_en: string | null }>>([]);
+  const [fieldTypes, setFieldTypes] = useState<Set<string>>(() => new Set());
   const toggleFieldType = (ft: string) =>
     setFieldTypes((prev) => {
       const next = new Set(prev);
       next.has(ft) ? next.delete(ft) : next.add(ft);
       return next;
     });
+  // Legacy lands store an elevation enum (field_type) instead of land_type_id.
+  const CODE_TO_FIELD_TYPE: Record<string, string> = { HIGH: "high_land", MEDIUM: "medium_land", LOW: "low_land" };
+
+  // Load active land types and select them all by default.
+  useEffect(() => {
+    supabase
+      .from("land_types" as any)
+      .select("id,code,name_bn,name_en")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("sort_order")
+      .then(({ data }: any) => {
+        const list = (data as any[]) ?? [];
+        setLandTypeList(list);
+        setFieldTypes(new Set(list.map((lt: any) => lt.id)));
+      });
+  }, []);
 
   const [manualOpen, setManualOpen] = useState(false);
 
@@ -1062,12 +1078,25 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       // a newly generated season. Delay fee is added separately at payment time.
       const settings = { ...rawSettings, auto_apply_delay_fee: false };
 
+      // Fallback elevation enums for legacy lands that have no land_type_id.
+      const selectedFieldTypeFallback = new Set(
+        landTypeList
+          .filter((lt) => fieldTypes.has(lt.id) && lt.code && CODE_TO_FIELD_TYPE[lt.code])
+          .map((lt) => CODE_TO_FIELD_TYPE[lt.code as string]),
+      );
+      const matchesLandTypeFilter = (l: any) => {
+        if (fieldTypes.size === 0) return false;
+        if (l.land_type_id) return fieldTypes.has(l.land_type_id);
+        // Legacy land without land_type_id → match by elevation enum.
+        return !l.field_type || selectedFieldTypeFallback.size === 0 || selectedFieldTypeFallback.has(l.field_type);
+      };
       const eligible = (lands ?? []).filter(
         (l: any) =>
           Number(l.land_size) > 0 &&
           !skip.has(l.id) &&
-          (fieldTypes.size === 0 || !l.field_type || fieldTypes.has(l.field_type)),
+          matchesLandTypeFilter(l),
       );
+
 
       const previewArr: any[] = [];
       let noRate = 0;
@@ -1358,19 +1387,23 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           <div className="space-y-1">
             <Label>{tx("Land type filter (only selected are invoiced)", "জমির ধরন ফিল্টার (শুধু নির্বাচিতগুলো ইনভয়েস হবে)")}</Label>
             <div className="flex flex-wrap gap-2">
-              {[
-                { code: "high_land", label: tx("High", "উঁচু") },
-                { code: "medium_land", label: tx("Medium", "মাঝারি") },
-                { code: "low_land", label: tx("Low", "নিচু") },
-              ].map((ft) => (
+              <Button type="button" size="sm" variant="ghost"
+                onClick={() => setFieldTypes(new Set(landTypeList.map((lt) => lt.id)))}>
+                {tx("All", "সব")}
+              </Button>
+              <Button type="button" size="sm" variant="ghost"
+                onClick={() => setFieldTypes(new Set())}>
+                {tx("None", "কোনোটি নয়")}
+              </Button>
+              {landTypeList.map((lt) => (
                 <Button
-                  key={ft.code}
+                  key={lt.id}
                   type="button"
                   size="sm"
-                  variant={fieldTypes.has(ft.code) ? "default" : "outline"}
-                  onClick={() => toggleFieldType(ft.code)}
+                  variant={fieldTypes.has(lt.id) ? "default" : "outline"}
+                  onClick={() => toggleFieldType(lt.id)}
                 >
-                  {ft.label}
+                  {lt.name_bn || lt.name_en || lt.code}
                 </Button>
               ))}
             </div>
