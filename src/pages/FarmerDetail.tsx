@@ -1123,6 +1123,7 @@ export default function FarmerDetail() {
                               disabled={savingLand}
                               value={land.dag_no}
                               onChange={e => { setLand({ ...land, dag_no: e.target.value }); if (landDagDupErr) setLandDagDupErr(null); }}
+                              onBlur={e => { const norm = normalizeDagInput(e.target.value); if (norm && norm !== land.dag_no) setLand({ ...land, dag_no: norm }); }}
                               placeholder="123, 124/A, 125-B"
                               aria-invalid={!!liveErr || !!landDagDupErr}
                               className={(liveErr || landDagDupErr) ? "border-destructive focus-visible:ring-destructive" : undefined}
@@ -1131,7 +1132,7 @@ export default function FarmerDetail() {
                               <p className="text-xs text-destructive mt-1">{liveErr} — {tx("Please separate with commas; only digits/letters/", "দয়া করে কমা দিয়ে আলাদা করুন এবং শুধু সংখ্যা/অক্ষর/")}<code>/</code>/<code>-</code>{tx(" allowed.", " ব্যবহার করুন।")}</p>
                             ) : (
                               <p className="text-xs text-muted-foreground mt-1">
-                                {tx("Separate multiple Dag numbers with comma (,). Example:", "একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। উদাহরণ:")} <code>123, 124/A, 125-B</code>
+                                {tx("Separate multiple Dag numbers with comma (,). Allowed: digits, letters, ", "একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। অনুমোদিত: সংখ্যা, অক্ষর, ")}<code>/</code> {tx("and", "ও")} <code>-</code> {tx("(max 32 chars each). Examples:", "(প্রতিটি সর্বোচ্চ ৩২ অক্ষর)। উদাহরণ:")} <code>123</code>, <code>124/A</code>, <code>1-250</code>
                                 {preview && preview !== land.dag_no.trim() && <> — {tx("will be saved as:", "সংরক্ষণে রূপান্তরিত হবে:")} <strong>{preview}</strong></>}
                               </p>
                             )}
