@@ -1078,12 +1078,25 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       // a newly generated season. Delay fee is added separately at payment time.
       const settings = { ...rawSettings, auto_apply_delay_fee: false };
 
+      // Fallback elevation enums for legacy lands that have no land_type_id.
+      const selectedFieldTypeFallback = new Set(
+        landTypeList
+          .filter((lt) => fieldTypes.has(lt.id) && lt.code && CODE_TO_FIELD_TYPE[lt.code])
+          .map((lt) => CODE_TO_FIELD_TYPE[lt.code as string]),
+      );
+      const matchesLandTypeFilter = (l: any) => {
+        if (fieldTypes.size === 0) return false;
+        if (l.land_type_id) return fieldTypes.has(l.land_type_id);
+        // Legacy land without land_type_id → match by elevation enum.
+        return !l.field_type || selectedFieldTypeFallback.size === 0 || selectedFieldTypeFallback.has(l.field_type);
+      };
       const eligible = (lands ?? []).filter(
         (l: any) =>
           Number(l.land_size) > 0 &&
           !skip.has(l.id) &&
-          (fieldTypes.size === 0 || !l.field_type || fieldTypes.has(l.field_type)),
+          matchesLandTypeFilter(l),
       );
+
 
       const previewArr: any[] = [];
       let noRate = 0;
