@@ -719,6 +719,7 @@ export default function Farmers() {
             </Alert>
           )}
           <LocationPicker
+            mouzaOnly
             value={pickLocation(f)}
             onChange={(loc) => setF({ ...f, ...loc })}
             errorLevel={(err?.level as any) ?? null}
