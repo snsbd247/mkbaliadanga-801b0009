@@ -44,6 +44,18 @@ import { OfficeIncomeTab } from "@/pages/irrigation/OfficeIncomeTab";
 
 type Invoice = any;
 
+/**
+ * Land area that was billed on this invoice, frozen at generation time.
+ * Always prefer the snapshot so that editing a farmer's land later (e.g. .33 → .40)
+ * does NOT retroactively change the area shown on past-season invoices/receipts.
+ */
+function invoiceLandSize(inv: any): number | undefined {
+  const snap = inv?.calculation_snapshot;
+  const v = snap?.billed_area_shotok ?? snap?.land_size_shotok ?? snap?.parcel_size_shotok;
+  if (v != null && Number(v) > 0) return Number(v);
+  return inv?.lands?.land_size;
+}
+
 const STATUS_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "outline",
   generated: "secondary",
