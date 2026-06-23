@@ -1648,6 +1648,20 @@ export default function FarmerDetail() {
                   <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
                   <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mr-2"
+                      onClick={() => {
+                        const [row] = buildPaidHistory(Number(p.amount || 0), [
+                          { receipt_no: p.receipt_no, amount: Number(p.amount || 0), paid_at: p.created_at, method: p.method },
+                        ], { kind: "IRR", seed: p.id });
+                        setReceiptRow(row);
+                        setReceiptOpen(true);
+                      }}
+                    >
+                      {tx("Preview", "প্রিভিউ")}
+                    </Button>
                     <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={(c) => reprintReceipt(p, c)} />
                     {isSuper && <DeleteButton onConfirm={() => deletePayment(p)} title={t("delete")} />}
                   </TableCell>
