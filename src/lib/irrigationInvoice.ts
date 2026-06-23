@@ -61,6 +61,52 @@ export function baseIrrigationAmount(land_size_shotok: number, rate: number, bas
   }
 }
 
+export interface CalcBreakdown {
+  basis: CalculationBasis;
+  /** Land size in শতক (shotok). */
+  land_shotok: number;
+  /** Land size in বিঘা (= shotok / 33). */
+  land_bigha: number;
+  /** Bigha conversion factor (shotok per bigha). */
+  bigha_factor: number;
+  rate: number;
+  amount: number;
+  /** Human-readable formula string in Bangla and English. */
+  formula_en: string;
+  formula_bn: string;
+}
+
+/** Describe how the base irrigation amount is computed (for Preview UI). */
+export function describeBaseCalculation(
+  land_size_shotok: number,
+  rate: number,
+  basis: CalculationBasis = "per_shotok",
+): CalcBreakdown {
+  const land = n(land_size_shotok);
+  const r = n(rate);
+  const bigha = r2(land / SHATAK_PER_BIGHA);
+  const amount = baseIrrigationAmount(land, r, basis);
+  let formula_en: string;
+  let formula_bn: string;
+  switch (basis) {
+    case "flat":
+      formula_en = `Flat fee = ${amount}`;
+      formula_bn = `নির্দিষ্ট ফি = ${amount}`;
+      break;
+    case "per_bigha":
+      formula_en = `${land} শতক ÷ ${SHATAK_PER_BIGHA} = ${bigha} bigha × ${r}/bigha = ${amount}`;
+      formula_bn = `${land} শতক ÷ ${SHATAK_PER_BIGHA} = ${bigha} বিঘা × ${r}/বিঘা = ${amount}`;
+      break;
+    case "per_shotok":
+    case "custom":
+    default:
+      formula_en = `${land} shotok × ${r}/shotok = ${amount}`;
+      formula_bn = `${land} শতক × ${r}/শতক = ${amount}`;
+      break;
+  }
+  return { basis, land_shotok: land, land_bigha: bigha, bigha_factor: SHATAK_PER_BIGHA, rate: r, amount, formula_en, formula_bn };
+}
+
 export interface InvoiceCalcInput {
   land_size_shotok: number;
   rate_per_shotok: number;
