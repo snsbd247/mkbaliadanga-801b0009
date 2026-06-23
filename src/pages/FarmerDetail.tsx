@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 
 import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
 import { parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
-import { validateDagNumbers } from "@/lib/dagNumbers";
+import { validateDagNumbers, findDuplicateDagInMouza } from "@/lib/dagNumbers";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
@@ -619,10 +619,21 @@ export default function FarmerDetail() {
     if (!loc.mouza_name || !String(loc.mouza_name).trim()) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "মৌজা দিন" }); return; }
     if (!land.dag_no.trim()) return toast.error(t("dagRequired" as any));
     let canonicalDag = land.dag_no.trim();
+    let dagTokens: string[] = [canonicalDag];
     if (land.owner_type === "owner") {
       const dv = validateDagNumbers(land.dag_no);
       if (dv.ok === false) return toast.error(dv.error);
       canonicalDag = dv.values.join(", ");
+      dagTokens = dv.values;
+    }
+    // Prevent duplicate Dag within the same Mouza (across existing land records).
+    {
+      let dq = supabase.from("lands").select("dag_no,mouza_id,mouza").is("deleted_at", null);
+      const mid = (landLoc as any).mouza_id;
+      dq = mid ? dq.eq("mouza_id", mid) : dq.eq("mouza", String(loc.mouza_name).trim());
+      const { data: sameMouza } = await dq;
+      const dup = findDuplicateDagInMouza(dagTokens, (sameMouza ?? []).map((r: any) => r.dag_no));
+      if (dup) return toast.error((t("dagDuplicateInMouza" as any) || "এই মৌজায় দাগ নাম্বার আগে থেকেই আছে") + `: "${dup}"`);
     }
     if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
