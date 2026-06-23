@@ -44,7 +44,12 @@ type RowState = {
   action: "insert" | "update" | null;
 };
 
-const COLUMNS = ["farmer_id", "is_voter", "name_en", "name_bn", "father_name", "mobile", "village"] as const;
+const COLUMNS = [
+  "farmer_id", "is_voter", "name_en", "name_bn",
+  "father_name", "mother_name", "nid", "mobile",
+  "village", "post_office", "upazila", "district",
+  "nominee_name", "nominee_mobile", "nominee_relation",
+] as const;
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
   const isText = /\.(csv|txt|tsv)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
