@@ -615,6 +615,7 @@ export default function FarmerDetail() {
 
   async function addLand() {
     setLandLocErr(null);
+    setLandDagDupErr(null);
     // Only Mouza is required for land location.
     const loc = landLoc as any;
     if (!loc.mouza_name || !String(loc.mouza_name).trim()) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "মৌজা দিন" }); return; }
