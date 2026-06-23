@@ -1122,10 +1122,10 @@ export default function FarmerDetail() {
                             <Input
                               disabled={savingLand}
                               value={land.dag_no}
-                              onChange={e => setLand({ ...land, dag_no: e.target.value })}
+                              onChange={e => { setLand({ ...land, dag_no: e.target.value }); if (landDagDupErr) setLandDagDupErr(null); }}
                               placeholder="123, 124/A, 125-B"
-                              aria-invalid={!!liveErr}
-                              className={liveErr ? "border-destructive focus-visible:ring-destructive" : undefined}
+                              aria-invalid={!!liveErr || !!landDagDupErr}
+                              className={(liveErr || landDagDupErr) ? "border-destructive focus-visible:ring-destructive" : undefined}
                             />
                             {liveErr ? (
                               <p className="text-xs text-destructive mt-1">{liveErr} — {tx("Please separate with commas; only digits/letters/", "দয়া করে কমা দিয়ে আলাদা করুন এবং শুধু সংখ্যা/অক্ষর/")}<code>/</code>/<code>-</code>{tx(" allowed.", " ব্যবহার করুন।")}</p>
