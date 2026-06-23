@@ -140,6 +140,19 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
   };
 
   const villageErr = errorLevel === "village";
+
+  if (mouzaOnly) {
+    return (
+      <div className={"grid grid-cols-1 sm:grid-cols-2 gap-3 " + (className ?? "")}>
+        {renderSelect("mouza", labels?.mouza ?? "Mouza", mouzas, value.mouza_id, true, loading.mou,
+          (v, row) => set({
+            mouza_id: v, mouza_name: row?.name ?? null,
+            division_id: null, district_id: null, upazila_id: null,
+          }))}
+      </div>
+    );
+  }
+
   return (
     <div className={"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 " + (className ?? "")}>
       {renderSelect("division", labels?.division ?? "Division", divisions, value.division_id, true, loading.div,
