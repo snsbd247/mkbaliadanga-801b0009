@@ -19,7 +19,7 @@ import { money, fmtDate } from "@/lib/format";
 import { formatLandSize } from "@/lib/irrigationCalc";
 import { matchesDagSearch, formatDagNumbers } from "@/lib/dagNumbers";
 import {
-  calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer, resolveBillingSplits,
+  calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer, resolveBillingSplits, describeBaseCalculation,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
@@ -1405,6 +1405,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                     <TableHead>{tx("Billed to", "বিল প্রাপক")}</TableHead>
                     <TableHead>{tx("Source", "উৎস")}</TableHead>
                     <TableHead className="text-right">{tx("Rate", "রেট")}</TableHead>
+                    <TableHead>{tx("Calculation", "হিসাব")}</TableHead>
                     <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
                     <TableHead>{tx("Manual override", "ম্যানুয়াল ওভাররাইড")}</TableHead>
                   </TableRow>
@@ -1427,6 +1428,16 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                               : <Badge variant="outline" className="text-xs">{tx("Standard", "স্ট্যান্ডার্ড")}</Badge>}
                         </TableCell>
                         <TableCell className="text-right text-xs">{money(Number(r.manualRate) > 0 ? Number(r.manualRate) : r.rate)}</TableCell>
+                        <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          {(() => {
+                            const bd = describeBaseCalculation(
+                              r.billedArea > 0 ? r.billedArea : Number(r.land.land_size),
+                              Number(r.manualRate) > 0 ? Number(r.manualRate) : r.rate,
+                              r.resolved?.basis,
+                            );
+                            return tx(bd.formula_en, bd.formula_bn);
+                          })()}
+                        </TableCell>
                         <TableCell className="text-right font-semibold">{money(r.calc.payable_amount)}</TableCell>
                         <TableCell>
                           {allowManual ? (
