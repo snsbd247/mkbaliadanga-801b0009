@@ -978,16 +978,32 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
   const [prevDueWarning, setPrevDueWarning] = useState<{ farmers: number; total: number } | null>(null);
   const [skippedNoRate, setSkippedNoRate] = useState(0);
   const [skipExisting, setSkipExisting] = useState(true);
-  // Land-type (elevation) filter — only selected field types are invoiced.
-  const [fieldTypes, setFieldTypes] = useState<Set<string>>(
-    () => new Set(["high_land", "medium_land", "low_land"]),
-  );
+  // Land-type filter — only selected land types are invoiced. Keyed by land_type_id.
+  const [landTypeList, setLandTypeList] = useState<Array<{ id: string; code: string | null; name_bn: string | null; name_en: string | null }>>([]);
+  const [fieldTypes, setFieldTypes] = useState<Set<string>>(() => new Set());
   const toggleFieldType = (ft: string) =>
     setFieldTypes((prev) => {
       const next = new Set(prev);
       next.has(ft) ? next.delete(ft) : next.add(ft);
       return next;
     });
+  // Legacy lands store an elevation enum (field_type) instead of land_type_id.
+  const CODE_TO_FIELD_TYPE: Record<string, string> = { HIGH: "high_land", MEDIUM: "medium_land", LOW: "low_land" };
+
+  // Load active land types and select them all by default.
+  useEffect(() => {
+    supabase
+      .from("land_types" as any)
+      .select("id,code,name_bn,name_en")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("sort_order")
+      .then(({ data }: any) => {
+        const list = (data as any[]) ?? [];
+        setLandTypeList(list);
+        setFieldTypes(new Set(list.map((lt: any) => lt.id)));
+      });
+  }, []);
 
   const [manualOpen, setManualOpen] = useState(false);
 
