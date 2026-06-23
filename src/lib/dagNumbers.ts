@@ -112,3 +112,22 @@ export function matchesDagSearch(dag_no: string | null | undefined, query: strin
     (t) => parts.some((p) => p.includes(t)) || haystack.includes(t),
   );
 }
+
+/**
+ * Given the dag tokens being saved and the list of dag_no strings already
+ * registered in the same Mouza, return the first token that collides
+ * (case-insensitive). Returns null when there is no conflict.
+ */
+export function findDuplicateDagInMouza(
+  incoming: string[],
+  existingDagStrings: Array<string | null | undefined>,
+): string | null {
+  const existing = new Set<string>();
+  for (const s of existingDagStrings) {
+    for (const t of parseDagNumbers(s)) existing.add(t.toLowerCase());
+  }
+  for (const t of incoming) {
+    if (existing.has(t.toLowerCase())) return t;
+  }
+  return null;
+}
