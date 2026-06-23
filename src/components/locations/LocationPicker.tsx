@@ -32,12 +32,15 @@ interface Props {
   errorMessage?: string | null;
   labels?: Partial<Record<PickerLevel, string>>;
   showVillage?: boolean;
+  /** When true, hide the Division→Upazila chain and show only a single Mouza select. */
+  mouzaOnly?: boolean;
 }
 
 /**
  * Cascading picker: division → district → upazila → mouza (+ optional village text).
+ * In `mouzaOnly` mode it collapses to a single flat Mouza select.
  */
-export function LocationPicker({ value, onChange, className, errorLevel = null, errorMessage = null, labels, showVillage = true }: Props) {
+export function LocationPicker({ value, onChange, className, errorLevel = null, errorMessage = null, labels, showVillage = true, mouzaOnly = false }: Props) {
   const [divisions, setDivisions] = useState<Row[]>([]);
   const [districts, setDistricts] = useState<Row[]>([]);
   const [upazilas, setUpazilas] = useState<Row[]>([]);
@@ -46,11 +49,20 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
   const [loading, setLoading] = useState({ div: false, dis: false, upa: false, mou: false });
   const setL = (k: keyof typeof loading, v: boolean) => setLoading((s) => ({ ...s, [k]: v }));
 
+  // mouzaOnly: load the full active mouza list once (no parent filtering).
   useEffect(() => {
+    if (!mouzaOnly) return;
+    setL("mou", true);
+    supabase.from("mouzas").select("id,name,name_bn").eq("is_active", true).order("name")
+      .then(({ data }) => { setMouzas((data as any) ?? []); setL("mou", false); });
+  }, [mouzaOnly]);
+
+  useEffect(() => {
+    if (mouzaOnly) return;
     setL("div", true);
     supabase.from("divisions").select("id,name,name_bn").eq("is_active", true).order("name")
       .then(({ data }) => { setDivisions((data as any) ?? []); setL("div", false); });
-  }, []);
+  }, [mouzaOnly]);
 
   useEffect(() => {
     if (!value.division_id) { setDistricts([]); return; }
