@@ -524,7 +524,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                   </TableCell>
                   <TableCell className="text-xs">
                     {r.lands?.mouza ? `${r.lands.mouza} • ` : ""}Dag {formatDagNumbers(r.lands?.dag_no) || "—"}<br />
-                    {formatLandSize(r.lands?.land_size, "short")}
+                    {formatLandSize(invoiceLandSize(r), "short")}
                   </TableCell>
                   <TableCell className="text-xs">{r.seasons?.name ?? r.seasons?.type} {r.seasons?.year}</TableCell>
                   <TableCell className="text-right">{money(r.payable_amount)}</TableCell>
