@@ -48,6 +48,8 @@ import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
 import { PaidLandHistory } from "@/components/PaidLandHistory";
 import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
+import { ReceiptPreviewModal } from "@/components/irrigation/ReceiptPreviewModal";
+import { buildPaidHistory, type PaidHistoryRow } from "@/lib/irrigationReceiptHistory";
 import { formatLand, parseLandInput } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 import { LandNoteCell } from "@/components/farmers/LandNoteCell";
@@ -100,6 +102,8 @@ export default function FarmerDetail() {
   const [landInvoices, setLandInvoices] = useState<Record<string, any[]>>({});
   const [share, setShare] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
+  const [receiptRow, setReceiptRow] = useState<PaidHistoryRow | null>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
   const [activeSeasonName, setActiveSeasonName] = useState<string>("");
   const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
@@ -1644,6 +1648,20 @@ export default function FarmerDetail() {
                   <TableCell className="text-right tabular-nums font-mono">{money(p.amount)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{p.offices?.name ?? "-"}</TableCell>
                   <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mr-2"
+                      onClick={() => {
+                        const [row] = buildPaidHistory(Number(p.amount || 0), [
+                          { receipt_no: p.receipt_no, amount: Number(p.amount || 0), paid_at: p.created_at, method: p.method },
+                        ], { kind: "IRR", seed: p.id });
+                        setReceiptRow(row);
+                        setReceiptOpen(true);
+                      }}
+                    >
+                      {tx("Preview", "প্রিভিউ")}
+                    </Button>
                     <ReceiptCopyMenu size="sm" label={t("pgDownload" as any)} onSelect={(c) => reprintReceipt(p, c)} />
                     {isSuper && <DeleteButton onConfirm={() => deletePayment(p)} title={t("delete")} />}
                   </TableCell>
@@ -1870,6 +1888,13 @@ export default function FarmerDetail() {
           {viewLoan && <LoanStatement loanId={viewLoan.id} />}
         </DialogContent>
       </Dialog>
+      <ReceiptPreviewModal
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        row={receiptRow}
+        payable={receiptRow?.amount ?? 0}
+        farmerName={farmer?.name_bn ?? farmer?.name_en}
+      />
     </>
 
   );
