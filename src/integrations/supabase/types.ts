@@ -3073,6 +3073,7 @@ export type Database = {
       }
       irrigation_season_rates: {
         Row: {
+          calculation_basis: string
           created_at: string
           created_by: string | null
           id: string
@@ -3083,6 +3084,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          calculation_basis?: string
           created_at?: string
           created_by?: string | null
           id?: string
@@ -3093,6 +3095,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          calculation_basis?: string
           created_at?: string
           created_by?: string | null
           id?: string
