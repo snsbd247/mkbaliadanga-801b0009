@@ -146,13 +146,67 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
   const villageErr = errorLevel === "village";
 
   if (mouzaOnly) {
+    const isErr = errorLevel === "mouza";
+    const label = labels?.mouza ?? "Mouza";
+    const selected = mouzas.find((m) => m.id === value.mouza_id);
     return (
       <div className={"grid grid-cols-1 sm:grid-cols-2 gap-3 " + (className ?? "")}>
-        {renderSelect("mouza", labels?.mouza ?? "Mouza", mouzas, value.mouza_id, true, loading.mou,
-          (v, row) => set({
-            mouza_id: v, mouza_name: row?.name ?? null,
-            division_id: null, district_id: null, upazila_id: null,
-          }))}
+        <div data-level="mouza">
+          <Label className={"text-xs " + (isErr ? "text-destructive" : "")}>{label}{isErr ? " *" : ""}</Label>
+          <Popover open={mouzaOpen} onOpenChange={setMouzaOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={mouzaOpen}
+                aria-invalid={isErr || undefined}
+                data-testid="loc-select-mouza"
+                disabled={loading.mou}
+                className={cn("w-full justify-between font-normal", isErr && "border-destructive ring-2 ring-destructive/40")}
+              >
+                {loading.mou ? (
+                  <span className="flex items-center text-muted-foreground"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Loading…</span>
+                ) : (
+                  <span className={cn(!selected && "text-muted-foreground")}>
+                    {selected ? `${selected.name}${selected.name_bn ? ` (${selected.name_bn})` : ""}` : "—"}
+                  </span>
+                )}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <Command>
+                <CommandInput placeholder={label} />
+                <CommandList>
+                  <CommandEmpty>
+                    {mouzas.length === 0 ? (labels?.mouza ? `${label}: —` : "No Mouza available") : "No match"}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {mouzas.map((m) => (
+                      <CommandItem
+                        key={m.id}
+                        value={`${m.name} ${m.name_bn ?? ""}`}
+                        onSelect={() => {
+                          set({ mouza_id: m.id, mouza_name: m.name, division_id: null, district_id: null, upazila_id: null });
+                          setMouzaOpen(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", value.mouza_id === m.id ? "opacity-100" : "opacity-0")} />
+                        {m.name}{m.name_bn ? ` (${m.name_bn})` : ""}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {isErr && errorMessage && (
+            <p id="loc-err-mouza" role="alert" data-testid="loc-err-mouza" className="mt-1 text-xs text-destructive">{errorMessage}</p>
+          )}
+          {!loading.mou && mouzas.length === 0 && (
+            <p className="mt-1 text-xs text-muted-foreground">No Mouza configured — add from Settings → Mouza.</p>
+          )}
+        </div>
       </div>
     );
   }
