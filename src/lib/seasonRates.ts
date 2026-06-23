@@ -5,6 +5,7 @@ export type RateRow = {
   land_type_code: string;
   land_type_name: string;
   rate_per_shotok: number;
+  calculation_basis?: string;
   office_id: string | null;
 };
 
@@ -16,13 +17,14 @@ export async function loadSeasonRateMap(season_id: string, office_id?: string | 
   if (!season_id) return [];
   const { data } = await supabase
     .from("irrigation_season_rates" as any)
-    .select("land_type_id, rate_per_shotok, office_id, land_types(id, code, name, name_bn)")
+    .select("land_type_id, rate_per_shotok, calculation_basis, office_id, land_types(id, code, name, name_bn)")
     .eq("irrigation_season_id", season_id);
   const rows = ((data as any[]) ?? []).map((r) => ({
     land_type_id: r.land_type_id,
     land_type_code: r.land_types?.code ?? "",
     land_type_name: r.land_types?.name_bn || r.land_types?.name || r.land_types?.code || "",
     rate_per_shotok: Number(r.rate_per_shotok),
+    calculation_basis: r.calculation_basis ?? "per_shotok",
     office_id: r.office_id,
   }));
   // Office-scoped overrides globals → dedupe by land_type_id, prefer office match.
