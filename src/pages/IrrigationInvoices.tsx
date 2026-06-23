@@ -19,7 +19,7 @@ import { money, fmtDate } from "@/lib/format";
 import { formatLandSize } from "@/lib/irrigationCalc";
 import { matchesDagSearch, formatDagNumbers } from "@/lib/dagNumbers";
 import {
-  calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer, resolveBillingSplits,
+  calcInvoice, getChargeSettings, generateInvoiceNo, resolveBilledFarmer, resolveBillingSplits, describeBaseCalculation,
   DEFAULT_SETTINGS, type ChargeSettings, type InvoiceStatus,
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
