@@ -125,6 +125,7 @@ export default function FarmerDetail() {
   const [land, setLand] = useState({ ...EMPTY_LAND });
   const [landLoc, setLandLoc] = useState<LocationValue>({});
   const [landLocErr, setLandLocErr] = useState<{ level: any; message: string } | null>(null);
+  const [landDagDupErr, setLandDagDupErr] = useState<string | null>(null);
   const [savingLand, setSavingLand] = useState(false);
   const [ownerLands, setOwnerLands] = useState<any[]>([]);
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
@@ -614,6 +615,7 @@ export default function FarmerDetail() {
 
   async function addLand() {
     setLandLocErr(null);
+    setLandDagDupErr(null);
     // Only Mouza is required for land location.
     const loc = landLoc as any;
     if (!loc.mouza_name || !String(loc.mouza_name).trim()) { setLandLocErr({ level: "mouza", message: t("mouzaRequired" as any) || "মৌজা দিন" }); return; }
@@ -633,7 +635,12 @@ export default function FarmerDetail() {
       dq = mid ? dq.eq("mouza_id", mid) : dq.eq("mouza", String(loc.mouza_name).trim());
       const { data: sameMouza } = await dq;
       const dup = findDuplicateDagInMouza(dagTokens, (sameMouza ?? []).map((r: any) => r.dag_no));
-      if (dup) return toast.error((t("dagDuplicateInMouza" as any) || "এই মৌজায় দাগ নাম্বার আগে থেকেই আছে") + `: "${dup}"`);
+      if (dup) {
+        const msg = (t("dagDuplicateInMouza" as any) || "এই মৌজায় দাগ নাম্বার আগে থেকেই আছে") + `: "${dup}"`;
+        setLandDagDupErr(msg);
+        toast.error(msg);
+        return;
+      }
     }
     if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
@@ -1115,10 +1122,10 @@ export default function FarmerDetail() {
                             <Input
                               disabled={savingLand}
                               value={land.dag_no}
-                              onChange={e => setLand({ ...land, dag_no: e.target.value })}
+                              onChange={e => { setLand({ ...land, dag_no: e.target.value }); if (landDagDupErr) setLandDagDupErr(null); }}
                               placeholder="123, 124/A, 125-B"
-                              aria-invalid={!!liveErr}
-                              className={liveErr ? "border-destructive focus-visible:ring-destructive" : undefined}
+                              aria-invalid={!!liveErr || !!landDagDupErr}
+                              className={(liveErr || landDagDupErr) ? "border-destructive focus-visible:ring-destructive" : undefined}
                             />
                             {liveErr ? (
                               <p className="text-xs text-destructive mt-1">{liveErr} — {tx("Please separate with commas; only digits/letters/", "দয়া করে কমা দিয়ে আলাদা করুন এবং শুধু সংখ্যা/অক্ষর/")}<code>/</code>/<code>-</code>{tx(" allowed.", " ব্যবহার করুন।")}</p>
@@ -1128,6 +1135,7 @@ export default function FarmerDetail() {
                                 {preview && preview !== land.dag_no.trim() && <> — {tx("will be saved as:", "সংরক্ষণে রূপান্তরিত হবে:")} <strong>{preview}</strong></>}
                               </p>
                             )}
+                            {landDagDupErr && <p role="alert" className="text-xs text-destructive mt-1">{landDagDupErr}</p>}
                           </div>
                         </div>
                       );
