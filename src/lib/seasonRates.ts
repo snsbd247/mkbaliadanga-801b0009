@@ -17,7 +17,7 @@ export async function loadSeasonRateMap(season_id: string, office_id?: string | 
   if (!season_id) return [];
   const { data } = await supabase
     .from("irrigation_season_rates" as any)
-    .select("land_type_id, rate_per_shotok, office_id, land_types(id, code, name, name_bn)")
+    .select("land_type_id, rate_per_shotok, calculation_basis, office_id, land_types(id, code, name, name_bn)")
     .eq("irrigation_season_id", season_id);
   const rows = ((data as any[]) ?? []).map((r) => ({
     land_type_id: r.land_type_id,
