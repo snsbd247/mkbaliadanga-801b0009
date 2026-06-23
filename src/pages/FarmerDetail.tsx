@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 
 import { LocationPicker, type LocationValue } from "@/components/locations/LocationPicker";
 import { parseLocationDbError, type LocationLevel } from "@/lib/locationValidation";
-import { validateDagNumbers, findDuplicateDagInMouza } from "@/lib/dagNumbers";
+import { validateDagNumbers, findDuplicateDagInMouza, normalizeDagInput } from "@/lib/dagNumbers";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
