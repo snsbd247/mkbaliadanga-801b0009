@@ -251,6 +251,7 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
   const { tx } = useLang();
   const [landTypes, setLandTypes] = useState<LandType[]>([]);
   const [rates, setRates] = useState<Record<string, number>>({}); // land_type_id -> rate
+  const [bases, setBases] = useState<Record<string, string>>({}); // land_type_id -> calculation_basis
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -258,12 +259,17 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
     (async () => {
       const [{ data: lt }, { data: rs }] = await Promise.all([
         supabase.from("land_types" as any).select("id,code,name,name_bn").eq("is_active", true).is("deleted_at", null).order("sort_order"),
-        supabase.from("irrigation_season_rates" as any).select("land_type_id,rate_per_shotok").eq("irrigation_season_id", season.id).is("office_id", null),
+        supabase.from("irrigation_season_rates" as any).select("land_type_id,rate_per_shotok,calculation_basis").eq("irrigation_season_id", season.id).is("office_id", null),
       ]);
       setLandTypes((lt as any) ?? []);
       const m: Record<string, number> = {};
-      for (const r of (rs as any[]) ?? []) m[r.land_type_id] = Number(r.rate_per_shotok);
+      const b: Record<string, string> = {};
+      for (const r of (rs as any[]) ?? []) {
+        m[r.land_type_id] = Number(r.rate_per_shotok);
+        b[r.land_type_id] = r.calculation_basis ?? "per_shotok";
+      }
       setRates(m);
+      setBases(b);
     })();
   }, [open, season?.id]);
 
@@ -275,6 +281,7 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
         irrigation_season_id: season.id,
         land_type_id: lt.id,
         rate_per_shotok: Number(rates[lt.id] ?? 0),
+        calculation_basis: bases[lt.id] ?? "per_shotok",
         office_id: null,
       }));
       await supabase.from("irrigation_season_rates" as any).delete().eq("irrigation_season_id", season.id).is("office_id", null);
