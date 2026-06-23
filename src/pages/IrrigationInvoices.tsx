@@ -1387,19 +1387,23 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
           <div className="space-y-1">
             <Label>{tx("Land type filter (only selected are invoiced)", "জমির ধরন ফিল্টার (শুধু নির্বাচিতগুলো ইনভয়েস হবে)")}</Label>
             <div className="flex flex-wrap gap-2">
-              {[
-                { code: "high_land", label: tx("High", "উঁচু") },
-                { code: "medium_land", label: tx("Medium", "মাঝারি") },
-                { code: "low_land", label: tx("Low", "নিচু") },
-              ].map((ft) => (
+              <Button type="button" size="sm" variant="ghost"
+                onClick={() => setFieldTypes(new Set(landTypeList.map((lt) => lt.id)))}>
+                {tx("All", "সব")}
+              </Button>
+              <Button type="button" size="sm" variant="ghost"
+                onClick={() => setFieldTypes(new Set())}>
+                {tx("None", "কোনোটি নয়")}
+              </Button>
+              {landTypeList.map((lt) => (
                 <Button
-                  key={ft.code}
+                  key={lt.id}
                   type="button"
                   size="sm"
-                  variant={fieldTypes.has(ft.code) ? "default" : "outline"}
-                  onClick={() => toggleFieldType(ft.code)}
+                  variant={fieldTypes.has(lt.id) ? "default" : "outline"}
+                  onClick={() => toggleFieldType(lt.id)}
                 >
-                  {ft.label}
+                  {lt.name_bn || lt.name_en || lt.code}
                 </Button>
               ))}
             </div>
