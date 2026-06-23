@@ -241,7 +241,10 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       land: {
         mouza: inv.lands?.mouza,
         dag_no: inv.lands?.dag_no,
-        land_size: inv.lands?.land_size,
+        // Use the land area frozen on the invoice at generation time, NOT the
+        // farmer's current (possibly edited) land — past seasons must keep their
+        // original area even after the land is later increased.
+        land_size: invoiceLandSize(inv),
       },
       season: inv.seasons,
     };
