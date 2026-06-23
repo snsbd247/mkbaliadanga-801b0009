@@ -23,23 +23,22 @@ const parcels = [
     settings,
     relations: [{ sharecropper_farmer_id: "SC1", area_decimal: 40 }],
     paid_amount: 200,
+    farmer_names: { OWNER1: "Owner One", SC1: "Cropper One" },
   },
 ] as any;
 
-const names: Record<string, string> = { OWNER1: "Owner One", SC1: "Cropper One" };
-
 test("Barga Due export rows match UI report numbers", () => {
-  const report = buildBargaReport(parcels, names);
-  const exportRows = bargaReportToExportRows(report, names);
+  const report = buildBargaReport(parcels);
+  const exportRows = bargaReportToExportRows(report);
 
   expect(report.rows.length).toBe(exportRows.length);
 
   report.rows.forEach((ui, i) => {
     const ex = exportRows[i];
     // Money columns must match exactly between UI and export.
-    expect(Number(ex.payable)).toBeCloseTo(ui.payable_amount, 2);
-    expect(Number(ex.paid)).toBeCloseTo(ui.paid_amount, 2);
-    expect(Number(ex.due)).toBeCloseTo(ui.due_amount, 2);
+    expect(Number(ex.payable_amount)).toBeCloseTo(ui.payable_amount, 2);
+    expect(Number(ex.paid_amount)).toBeCloseTo(ui.paid_amount, 2);
+    expect(Number(ex.due_amount)).toBeCloseTo(ui.due_amount, 2);
   });
 
   // Reconciliation: per-row dues sum to the report total.
