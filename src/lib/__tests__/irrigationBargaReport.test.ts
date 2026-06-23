@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { buildBargaReport } from "../irrigationBargaReport";
 import { allocatePaymentToBarga } from "../irrigationBargaAllocation";
 import { validateBargaSplit } from "../irrigationBargaValidation";
-import type { ChargeSettings } from "../irrigationInvoice";
+import { DEFAULT_SETTINGS } from "../irrigationInvoice";
 
-const settings: ChargeSettings = {} as ChargeSettings;
+const settings = DEFAULT_SETTINGS;
 
 const parcel = {
   land_id: "L1",
