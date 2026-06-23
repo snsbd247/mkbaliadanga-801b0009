@@ -5,9 +5,9 @@ type Tpl = { columns: string[]; sample: Record<string, any>; instructions?: stri
 
 const TEMPLATES: Record<string, Tpl> = {
   lands: {
-    columns: ["account_number", "dag_no", "land_size", "owner_type", "field_type", "mouza"],
-    sample: { account_number: "10001", dag_no: "123, 124/A, 125-B", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
-    instructions: "dag_no can hold multiple dag numbers per land — comma separated, canonical format like \"123, 124/A, 125-B\" (only digits/letters/'/'/'-' allowed). owner_type = owner|borgadar. field_type = high_land|medium_land|low_land.",
+    columns: ["account_number", "dag_no", "land_size", "land_size_unit", "owner_type", "field_type", "mouza"],
+    sample: { account_number: "10001", dag_no: "123, 124/A, 125-B", land_size: 33, land_size_unit: "shotok", owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
+    instructions: "land_size stored as শতক (shotok). land_size_unit = shotok|katha|bigha|acre (default shotok); katha/bigha/acre auto-converted (1 বিঘা=33 শতক=20 কাঠা, 1 একর≈100 শতক). dag_no can hold multiple dag numbers per land — comma separated, canonical format like \"123, 124/A, 125-B\" (only digits/letters/'/'/'-' allowed). owner_type = owner|borgadar. field_type = high_land|medium_land|low_land.",
   },
   land_relations: {
     columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
