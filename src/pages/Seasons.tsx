@@ -310,15 +310,24 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
         </p>
         <div className="space-y-2 max-h-[420px] overflow-y-auto">
           {landTypes.map((lt) => (
-            <div key={lt.id} className="grid grid-cols-2 gap-3 items-center">
+            <div key={lt.id} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
               <Label>{lt.name_bn || lt.name}</Label>
               <Input
                 type="number"
                 min="0"
                 step="0.01"
+                className="w-24"
                 value={rates[lt.id] ?? 0}
                 onChange={(e) => setRates({ ...rates, [lt.id]: Number(e.target.value) })}
               />
+              <Select value={bases[lt.id] ?? "per_shotok"} onValueChange={(v) => setBases({ ...bases, [lt.id]: v })}>
+                <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="per_shotok">{tx("per shotok", "প্রতি শতক")}</SelectItem>
+                  <SelectItem value="per_bigha">{tx("per bigha", "প্রতি বিঘা")}</SelectItem>
+                  <SelectItem value="flat">{tx("flat fee", "নির্দিষ্ট ফি")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           ))}
           {landTypes.length === 0 && (
