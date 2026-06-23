@@ -5,6 +5,7 @@ export type RateRow = {
   land_type_code: string;
   land_type_name: string;
   rate_per_shotok: number;
+  calculation_basis: string;
   office_id: string | null;
 };
 
