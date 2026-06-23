@@ -635,7 +635,12 @@ export default function FarmerDetail() {
       dq = mid ? dq.eq("mouza_id", mid) : dq.eq("mouza", String(loc.mouza_name).trim());
       const { data: sameMouza } = await dq;
       const dup = findDuplicateDagInMouza(dagTokens, (sameMouza ?? []).map((r: any) => r.dag_no));
-      if (dup) return toast.error((t("dagDuplicateInMouza" as any) || "এই মৌজায় দাগ নাম্বার আগে থেকেই আছে") + `: "${dup}"`);
+      if (dup) {
+        const msg = (t("dagDuplicateInMouza" as any) || "এই মৌজায় দাগ নাম্বার আগে থেকেই আছে") + `: "${dup}"`;
+        setLandDagDupErr(msg);
+        toast.error(msg);
+        return;
+      }
     }
     if (!(land.land_size > 0)) return toast.error(t("landSizeRequired" as any));
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
