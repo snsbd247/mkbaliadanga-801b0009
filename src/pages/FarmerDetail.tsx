@@ -125,6 +125,7 @@ export default function FarmerDetail() {
   const [land, setLand] = useState({ ...EMPTY_LAND });
   const [landLoc, setLandLoc] = useState<LocationValue>({});
   const [landLocErr, setLandLocErr] = useState<{ level: any; message: string } | null>(null);
+  const [landDagDupErr, setLandDagDupErr] = useState<string | null>(null);
   const [savingLand, setSavingLand] = useState(false);
   const [ownerLands, setOwnerLands] = useState<any[]>([]);
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
