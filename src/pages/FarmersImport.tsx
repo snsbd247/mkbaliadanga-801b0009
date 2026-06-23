@@ -44,7 +44,12 @@ type RowState = {
   action: "insert" | "update" | null;
 };
 
-const COLUMNS = ["farmer_id", "is_voter", "name_en", "name_bn", "father_name", "mobile", "village"] as const;
+const COLUMNS = [
+  "farmer_id", "is_voter", "name_en", "name_bn",
+  "father_name", "mother_name", "nid", "mobile",
+  "village", "post_office", "upazila", "district",
+  "nominee_name", "nominee_mobile", "nominee_relation",
+] as const;
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
   const isText = /\.(csv|txt|tsv)$/i.test(file.name) || file.type === "text/csv" || file.type === "text/plain";
@@ -97,8 +102,8 @@ export default function FarmersImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const headers = [...COLUMNS];
     const sample = [
-      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "01711000000", "Bagbari"],
-      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "01811000000", "Char Bhabanipur"],
+      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Rahima", "1234567890", "01711000000", "Bagbari", "Baliadanga", "Sadar", "Tangail", "Md. Sabuj", "01911000000", "Son"],
+      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "Mst. Hasna", "9876543210", "01811000000", "Char Bhabanipur", "Baliadanga", "Sadar", "Tangail", "", "", ""],
     ];
     if (format === "csv") {
       const csv = [headers, ...sample]
@@ -118,9 +123,17 @@ export default function FarmersImport() {
       ["is_voter", "No", "true হলে voter/savings number আলাদা নয় — Farmer ID-ই ব্যবহৃত হবে।"],
       ["name_en", "Yes", "ইংরেজী নাম"],
       ["name_bn", "No", "বাংলা নাম"],
-      ["father_name", "No", ""],
+      ["father_name", "No", "পিতার নাম"],
+      ["mother_name", "No", "মাতার নাম"],
+      ["nid", "No", "জাতীয় পরিচয়পত্র নম্বর (শুধু সংখ্যা)"],
       ["mobile", "No", "11-digit BD number, e.g. 017XXXXXXXX"],
       ["village", "No", "Free-text গ্রাম"],
+      ["post_office", "No", "ডাকঘর"],
+      ["upazila", "No", "উপজেলা"],
+      ["district", "No", "জেলা"],
+      ["nominee_name", "No", "নমিনির নাম"],
+      ["nominee_mobile", "No", "নমিনির মোবাইল"],
+      ["nominee_relation", "No", "নমিনির সম্পর্ক (যেমন: ছেলে, স্ত্রী)"],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Farmers");
@@ -191,14 +204,27 @@ export default function FarmersImport() {
       const rawVoter = String(r.raw.is_voter ?? r.raw.voter_number ?? "").trim().toLowerCase();
       const isVoter = ["1", "true", "yes", "y", "হ্যাঁ"].includes(rawVoter) || !!String(r.raw.voter_number ?? "").trim();
 
+      const str = (v: any) => (v != null && String(v).trim() !== "" ? String(v).trim() : null);
       const basePayload: any = {
-        name_en:     String(r.raw.name_en ?? "").trim(),
-        name_bn:     r.raw.name_bn     ? String(r.raw.name_bn).trim()     : null,
-        father_name: r.raw.father_name ? String(r.raw.father_name).trim() : null,
-        mobile:      r.raw.mobile      ? String(r.raw.mobile).trim()      : null,
-        village:     r.raw.village     ? String(r.raw.village).trim()     : null,
+        name_en:          String(r.raw.name_en ?? "").trim(),
+        name_bn:          str(r.raw.name_bn),
+        father_name:      str(r.raw.father_name),
+        mother_name:      str(r.raw.mother_name),
+        nid:              str(r.raw.nid),
+        mobile:           str(r.raw.mobile),
+        village:          str(r.raw.village),
+        post_office:      str(r.raw.post_office),
+        upazila:          str(r.raw.upazila),
+        district:         str(r.raw.district),
+        nominee_name:     str(r.raw.nominee_name),
+        nominee_mobile:   str(r.raw.nominee_mobile),
+        nominee_relation: str(r.raw.nominee_relation),
         ...(hasVoterInput ? { is_voter: isVoter } : {}),
       };
+      // Drop null-valued keys so an UPDATE never wipes existing data with blanks
+      Object.keys(basePayload).forEach((k) => {
+        if (basePayload[k] === null) delete basePayload[k];
+      });
 
       try {
         if (farmerId) {

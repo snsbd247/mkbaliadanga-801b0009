@@ -17,6 +17,7 @@ import { Upload, Download, AlertTriangle, CheckCircle2, Loader2, FileSpreadsheet
 import { toast } from "sonner";
 import { downloadCsvTemplate } from "@/lib/importTemplates";
 import { validateDagNumbers, formatDagNumbers } from "@/lib/dagNumbers";
+import { SHATAK_PER_KATHA, SHATAK_PER_BIGHA } from "@/lib/landUnits";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
@@ -56,8 +57,8 @@ type RowResult = {
 
 const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any> }> = {
   lands: {
-    columns: ["account_number", "dag_no", "land_size", "owner_type", "field_type", "mouza"],
-    sample: { account_number: "10001", dag_no: "123, 124/A", land_size: 0.33, owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
+    columns: ["account_number", "dag_no", "land_size", "land_size_unit", "owner_type", "field_type", "mouza"],
+    sample: { account_number: "10001", dag_no: "123, 124/A", land_size: 33, land_size_unit: "shotok", owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
   },
   land_relations: {
     columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
@@ -179,7 +180,8 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
     ["Column", "Required", "Format / Notes"],
     ["account_number", "Yes", "Farmer Voter / Savings A/C No (5 digits)."],
     ["dag_no", "Yes", "One or more dag numbers, comma separated. Canonical: \"123, 124/A, 125-B\". Allowed chars per token: digits, letters, '/', '-' (max 32). No duplicates."],
-    ["land_size", "Yes", "Decimal (acre/decimal as per office unit). > 0."],
+    ["land_size", "Yes", "Land area number. > 0. Stored as শতক (shotok)."],
+    ["land_size_unit", "No", "shotok | katha | bigha | acre (default: shotok). katha/bigha/acre values are auto-converted to শতক. 1 বিঘা = 33 শতক = 20 কাঠা, 1 একর ≈ 100 শতক."],
     ["owner_type", "No", "owner | borgadar (default: owner)"],
     ["field_type", "No", "high_land | medium_land | low_land (default: medium_land)"],
     ["mouza", "No", "Free text mouza name."],
@@ -422,13 +424,25 @@ export default function DataImport() {
             const dv = validateDagNumbers(dagRaw);
             if (!dv.ok) throw new Error(`dag_no: ${(dv as any).error}`);
             const canonicalDag = dv.values.join(", ");
-            next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag } };
+            // Convert land_size to canonical শতক (shotok) based on land_size_unit
+            const unit = String(raw.land_size_unit ?? "shotok").trim().toLowerCase();
+            const UNIT_TO_SHOTOK: Record<string, number> = {
+              shotok: 1, shatak: 1, decimal: 1, "": 1,
+              katha: SHATAK_PER_KATHA, kattah: SHATAK_PER_KATHA,
+              bigha: SHATAK_PER_BIGHA,
+              acre: 100, ekor: 100,
+            };
+            if (!(unit in UNIT_TO_SHOTOK)) {
+              throw new Error(`land_size_unit must be one of: shotok, katha, bigha, acre (got "${unit}")`);
+            }
+            const sizeShotok = Number(raw.land_size) * UNIT_TO_SHOTOK[unit];
+            next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag, land_size_shotok: sizeShotok } };
             table = "lands";
             payload = {
               farmer_id: f.id,
               office_id: f.office_id,
               dag_no: canonicalDag,
-              land_size: Number(raw.land_size),
+              land_size: sizeShotok,
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
