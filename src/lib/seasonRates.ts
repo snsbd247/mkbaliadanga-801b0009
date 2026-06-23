@@ -24,6 +24,7 @@ export async function loadSeasonRateMap(season_id: string, office_id?: string | 
     land_type_code: r.land_types?.code ?? "",
     land_type_name: r.land_types?.name_bn || r.land_types?.name || r.land_types?.code || "",
     rate_per_shotok: Number(r.rate_per_shotok),
+    calculation_basis: r.calculation_basis ?? "per_shotok",
     office_id: r.office_id,
   }));
   // Office-scoped overrides globals → dedupe by land_type_id, prefer office match.
