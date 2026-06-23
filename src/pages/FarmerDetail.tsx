@@ -1135,6 +1135,7 @@ export default function FarmerDetail() {
                                 {preview && preview !== land.dag_no.trim() && <> — {tx("will be saved as:", "সংরক্ষণে রূপান্তরিত হবে:")} <strong>{preview}</strong></>}
                               </p>
                             )}
+                            {landDagDupErr && <p role="alert" className="text-xs text-destructive mt-1">{landDagDupErr}</p>}
                           </div>
                         </div>
                       );
