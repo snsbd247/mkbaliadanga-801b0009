@@ -204,14 +204,27 @@ export default function FarmersImport() {
       const rawVoter = String(r.raw.is_voter ?? r.raw.voter_number ?? "").trim().toLowerCase();
       const isVoter = ["1", "true", "yes", "y", "হ্যাঁ"].includes(rawVoter) || !!String(r.raw.voter_number ?? "").trim();
 
+      const str = (v: any) => (v != null && String(v).trim() !== "" ? String(v).trim() : null);
       const basePayload: any = {
-        name_en:     String(r.raw.name_en ?? "").trim(),
-        name_bn:     r.raw.name_bn     ? String(r.raw.name_bn).trim()     : null,
-        father_name: r.raw.father_name ? String(r.raw.father_name).trim() : null,
-        mobile:      r.raw.mobile      ? String(r.raw.mobile).trim()      : null,
-        village:     r.raw.village     ? String(r.raw.village).trim()     : null,
+        name_en:          String(r.raw.name_en ?? "").trim(),
+        name_bn:          str(r.raw.name_bn),
+        father_name:      str(r.raw.father_name),
+        mother_name:      str(r.raw.mother_name),
+        nid:              str(r.raw.nid),
+        mobile:           str(r.raw.mobile),
+        village:          str(r.raw.village),
+        post_office:      str(r.raw.post_office),
+        upazila:          str(r.raw.upazila),
+        district:         str(r.raw.district),
+        nominee_name:     str(r.raw.nominee_name),
+        nominee_mobile:   str(r.raw.nominee_mobile),
+        nominee_relation: str(r.raw.nominee_relation),
         ...(hasVoterInput ? { is_voter: isVoter } : {}),
       };
+      // Drop null-valued keys so an UPDATE never wipes existing data with blanks
+      Object.keys(basePayload).forEach((k) => {
+        if (basePayload[k] === null) delete basePayload[k];
+      });
 
       try {
         if (farmerId) {
