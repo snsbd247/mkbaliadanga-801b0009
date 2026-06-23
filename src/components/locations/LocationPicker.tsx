@@ -49,6 +49,8 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
   const [districts, setDistricts] = useState<Row[]>([]);
   const [upazilas, setUpazilas] = useState<Row[]>([]);
   const [mouzas, setMouzas] = useState<Row[]>([]);
+  const [mouzaOpen, setMouzaOpen] = useState(false);
+
 
   const [loading, setLoading] = useState({ div: false, dis: false, upa: false, mou: false });
   const setL = (k: keyof typeof loading, v: boolean) => setLoading((s) => ({ ...s, [k]: v }));
