@@ -291,6 +291,7 @@ const App = () => (
                 <Route path="/reports/society-statement" element={<RequirePerm module="cashbook"><SocietyCashStatement /></RequirePerm>} />
                 <Route path="/reports/society-cashbook" element={<RequirePerm module="cashbook"><SocietyCashBook /></RequirePerm>} />
                 <Route path="/reports/irrigation-cashbook" element={<RequirePerm module="cashbook"><IrrigationCashBook /></RequirePerm>} />
+                <Route path="/reports/irrigation-cashbook-ledger" element={<RequirePerm module="cashbook"><IrrigationCashBookLedger /></RequirePerm>} />
                 <Route path="/reports/irrigation-cashbook-audit" element={<RequirePerm module="cashbook"><IrrigationExportAudit /></RequirePerm>} />
 
                 <Route path="/statement" element={<RequirePerm module="savings"><Statement /></RequirePerm>} />
