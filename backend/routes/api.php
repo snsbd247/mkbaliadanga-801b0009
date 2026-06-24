@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FarmerAuthController;
 use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\GeoController;
 use App\Http\Controllers\IrrigationInvoiceController;
@@ -174,4 +175,13 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::post('/qr/issue', [QrController::class, 'issue'])->middleware('permission:qr.manage');
     Route::delete('/qr/{qr}', [QrController::class, 'revoke'])->middleware('permission:qr.manage');
     Route::post('/qr/resolve', [QrController::class, 'resolve'])->middleware('permission:qr.view');
+});
+
+// ── Farmer portal (self-service: code login or phone + OTP) ───────────
+Route::prefix('farmer')->group(function () {
+    Route::post('/auth/login', [FarmerAuthController::class, 'login']);
+    Route::post('/auth/request-otp', [FarmerAuthController::class, 'requestOtp']);
+    Route::post('/auth/verify-otp', [FarmerAuthController::class, 'verifyOtp']);
+
+    Route::middleware('auth:sanctum')->get('/me', [FarmerAuthController::class, 'me']);
 });
