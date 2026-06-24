@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // ── Receipts ────────────────────────────────────────────────
         Route::get('/receipts', [ReceiptController::class, 'index'])->middleware('permission:receipts.view');
+        Route::post('/receipts/preview-number', [ReceiptController::class, 'previewNumber'])->middleware('permission:receipts.view');
         Route::get('/receipts/{receipt}', [ReceiptController::class, 'show'])->middleware('permission:receipts.view');
         Route::post('/receipts/{receipt}/void', [ReceiptController::class, 'void'])->middleware('permission:receipts.delete');
     });
