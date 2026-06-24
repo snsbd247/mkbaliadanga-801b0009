@@ -13,6 +13,7 @@ use App\Http\Controllers\LandController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LoanPlanController;
 use App\Http\Controllers\OfficeController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SavingsController;
 use App\Http\Controllers\SeasonController;
@@ -140,4 +141,12 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::get('/assets', [AssetController::class, 'index'])->middleware('permission:assets.view');
     Route::post('/assets', [AssetController::class, 'store'])->middleware('permission:assets.manage');
     Route::put('/assets/{asset}', [AssetController::class, 'update'])->middleware('permission:assets.manage');
+});
+
+// ── Financial reports ────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
+    Route::get('/reports/trial-balance', [ReportController::class, 'trialBalance'])->middleware('permission:accounting.view');
+    Route::get('/reports/profit-loss', [ReportController::class, 'profitAndLoss'])->middleware('permission:accounting.view');
+    Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])->middleware('permission:accounting.view');
+    Route::get('/reports/cashbook', [ReportController::class, 'cashbook'])->middleware('permission:accounting.view');
 });
