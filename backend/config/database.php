@@ -25,6 +25,23 @@ return [
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
+
+        // Read-only legacy source (Supabase/PostgreSQL) used by the
+        // `migrate:legacy` data importer. Configure PG_* in .env.
+        'pgsql_legacy' => [
+            'driver' => 'pgsql',
+            'url' => env('PG_URL'),
+            'host' => env('PG_HOST', '127.0.0.1'),
+            'port' => env('PG_PORT', '5432'),
+            'database' => env('PG_DATABASE', 'postgres'),
+            'username' => env('PG_USERNAME', 'postgres'),
+            'password' => env('PG_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('PG_SSLMODE', 'require'),
+        ],
     ],
 
     'migrations' => [
