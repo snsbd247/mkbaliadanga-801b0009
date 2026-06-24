@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Models\Receipt;
+use App\Services\ReceiptNumberService;
 use Illuminate\Http\Request;
 
 class ReceiptController extends Controller
@@ -27,6 +28,28 @@ class ReceiptController extends Controller
     public function show(Receipt $receipt)
     {
         return response()->json($receipt);
+    }
+
+    /** Reserve and return the next receipt number for concurrency health checks. */
+    public function previewNumber(Request $r, ReceiptNumberService $numbers)
+    {
+        $data = $r->validate([
+            'kind' => 'nullable|in:monthly,unified',
+        ]);
+
+        $officeId = $r->attributes->get('scope_office_id') ?: $r->user()?->office_id;
+
+        if (!$officeId) {
+            return response()->json(['message' => 'Office scope is required.'], 422);
+        }
+
+        $number = $numbers->next($officeId, $data['kind'] ?? 'monthly');
+
+        return response()->json([
+            'receipt_no' => $number,
+            'number' => $number,
+            'reserved' => true,
+        ]);
     }
 
     /** Void a receipt (keeps the number reserved, marks the linked payment void). */

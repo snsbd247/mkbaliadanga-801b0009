@@ -20,6 +20,8 @@
     "i18n:unused:warn": "node scripts/i18n-unused.mjs --warn",
     "i18n:unused:ci": "node scripts/i18n-unused.mjs --fail --threshold=412",
     "i18n:prune": "node scripts/i18n-prune.mjs",
+    "api:healthcheck": "node scripts/api-healthcheck.mjs",
+    "data:migrate:mysql": "node scripts/migrate-supabase-to-laravel.mjs",
     "e2e:responsive": "playwright test e2e/responsive-overlap.spec.ts",
     "e2e:responsive:report": "node scripts/responsive-report.mjs",
     "ci": "npm run i18n:check && npm run i18n:unused:ci && npm run test"

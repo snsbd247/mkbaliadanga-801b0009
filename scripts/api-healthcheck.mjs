@@ -51,7 +51,7 @@ async function call(method, path, { token, body } = {}) {
 async function login(username, password) {
   // Backend accepts username or email on the same field.
   const r = await call("POST", "/auth/login", {
-    body: { username, email: username, password },
+    body: { identifier: username, username, email: username, password },
   });
   return r.ok ? r.data?.token || r.data?.access_token : null;
 }
@@ -70,12 +70,12 @@ async function login(username, password) {
   record("auth: wrong password rejected", !bad);
 
   // 3) AUTH — protected route requires token
-  const noTok = await call("GET", "/me");
-  record("auth: /me without token is 401", noTok.status === 401);
+  const noTok = await call("GET", "/auth/me");
+  record("auth: /auth/me without token is 401", noTok.status === 401);
 
-  // 4) AUTH — /me with token works
-  const me = await call("GET", "/me", { token });
-  record("auth: /me with token returns user", me.ok && !!me.data);
+  // 4) AUTH — /auth/me with token works
+  const me = await call("GET", "/auth/me", { token });
+  record("auth: /auth/me with token returns user", me.ok && !!me.data);
   const adminOffice = me.data?.office_id ?? me.data?.user?.office_id;
 
   // 5) OFFICE-SCOPING — admin can list farmers
@@ -86,7 +86,7 @@ async function login(username, password) {
   if (SCOPE_USER && SCOPE_PASS) {
     const sToken = await login(SCOPE_USER, SCOPE_PASS);
     if (sToken) {
-      const sMe = await call("GET", "/me", { token: sToken });
+      const sMe = await call("GET", "/auth/me", { token: sToken });
       const sOffice = sMe.data?.office_id ?? sMe.data?.user?.office_id;
       const sFarmers = await call("GET", "/farmers?per_page=50", { token: sToken });
       const rows = sFarmers.data?.data ?? sFarmers.data ?? [];
