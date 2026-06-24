@@ -116,6 +116,24 @@ export function LandRelations({ farmerId }: Props) {
           return;
         }
       }
+      // ১.১: একই জমি একাধিক Active বর্গাদারের কাছে দেওয়া যাবে না
+      if (form.sharecropper_farmer_id) {
+        const { data: activeSc } = await supabase.from("land_relations")
+          .select("id")
+          .eq("land_id", form.land_id)
+          .not("sharecropper_farmer_id", "is", null)
+          .is("valid_to", null)
+          .is("deleted_at", null)
+          .limit(1);
+        if (activeSc && activeSc.length) {
+          toast.error(tx(
+            "This parcel already has an active sharecropper — only one active sharecropper is allowed per parcel.",
+            "এই জমিতে ইতিমধ্যে একজন সক্রিয় বর্গাদার আছেন — একই জমি একাধিক সক্রিয় বর্গাদারের কাছে দেওয়া যাবে না।",
+          ));
+          setSaving(false);
+          return;
+        }
+      }
       const { error } = await supabase.from("land_relations").insert({
         land_id: form.land_id,
         owner_farmer_id: form.owner_farmer_id,
