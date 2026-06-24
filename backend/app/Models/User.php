@@ -68,6 +68,10 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission): bool
     {
-        return in_array($permission, $this->permissionList(), true);
+        $permissions = $this->permissionList();
+
+        // Wildcard (super admin) grants everything.
+        return in_array('*', $permissions, true)
+            || in_array($permission, $permissions, true);
     }
 }
