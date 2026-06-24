@@ -105,3 +105,39 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::post('/irrigation-invoices', [IrrigationInvoiceController::class, 'store'])->middleware('permission:irrigation.manage');
     Route::delete('/irrigation-invoices/{invoice}', [IrrigationInvoiceController::class, 'destroy'])->middleware('permission:irrigation.manage');
 });
+
+// ── Batch 4: Savings / Loan / Share + Accounting + Assets ─────────────
+Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
+    // Savings (also serves /share-collection in frontend)
+    Route::get('/savings', [SavingsController::class, 'index'])->middleware('permission:savings.view');
+    Route::get('/savings/{saving}', [SavingsController::class, 'show'])->middleware('permission:savings.view');
+    Route::post('/savings', [SavingsController::class, 'store'])->middleware('permission:savings.manage');
+    Route::post('/savings/{saving}/deposit', [SavingsController::class, 'deposit'])->middleware('permission:savings.manage');
+    Route::post('/savings/{saving}/withdraw', [SavingsController::class, 'withdraw'])->middleware('permission:savings.manage');
+
+    // Loan plans
+    Route::get('/loan-plans', [LoanPlanController::class, 'index'])->middleware('permission:loans.view');
+    Route::post('/loan-plans', [LoanPlanController::class, 'store'])->middleware('permission:loans.manage');
+    Route::put('/loan-plans/{loanPlan}', [LoanPlanController::class, 'update'])->middleware('permission:loans.manage');
+    Route::delete('/loan-plans/{loanPlan}', [LoanPlanController::class, 'destroy'])->middleware('permission:loans.manage');
+
+    // Loans
+    Route::get('/loans', [LoanController::class, 'index'])->middleware('permission:loans.view');
+    Route::get('/loans/{loan}', [LoanController::class, 'show'])->middleware('permission:loans.view');
+    Route::post('/loans', [LoanController::class, 'store'])->middleware('permission:loans.manage');
+    Route::post('/loans/{loan}/repay', [LoanController::class, 'repay'])->middleware('permission:loans.manage');
+
+    // Accounting — chart of accounts
+    Route::get('/accounts', [AccountController::class, 'index'])->middleware('permission:accounting.view');
+    Route::post('/accounts', [AccountController::class, 'store'])->middleware('permission:accounting.manage');
+    Route::put('/accounts/{account}', [AccountController::class, 'update'])->middleware('permission:accounting.manage');
+
+    // Accounting — journals
+    Route::get('/journals', [JournalController::class, 'index'])->middleware('permission:accounting.view');
+    Route::post('/journals', [JournalController::class, 'store'])->middleware('permission:accounting.manage');
+
+    // Assets
+    Route::get('/assets', [AssetController::class, 'index'])->middleware('permission:assets.view');
+    Route::post('/assets', [AssetController::class, 'store'])->middleware('permission:assets.manage');
+    Route::put('/assets/{asset}', [AssetController::class, 'update'])->middleware('permission:assets.manage');
+});
