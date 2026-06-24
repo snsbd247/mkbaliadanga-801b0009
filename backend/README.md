@@ -4,12 +4,19 @@ Laravel 11 + Sanctum token auth + MySQL 8 backend that replaces the
 Supabase/PostgreSQL layer. Authorization is done in middleware
 (`CheckPermission`, `BranchScope`) instead of Postgres RLS/GRANT.
 
-## Status
+## Status — complete
 
-- **Step 2 (done):** skeleton, Sanctum auth (`/api/login`, `/api/me`, `/api/logout`),
-  users/roles/offices migrations, super admin seeder (`ismail162` / `Admin@123`).
-- Module migrations/controllers (farmers, lands, irrigation, savings, accounting,
-  assets) are added in later steps.
+All modules implemented and matched to the React frontend API contract:
+
+- **Auth & Admin:** Sanctum login/me/logout, logout-all, password forgot/reset,
+  Users, Roles/Permissions, Offices, Audit logs.
+- **Farmer portal:** code login + phone/OTP login (`/api/farmer/auth/*`, `/api/farmer/me`).
+- **Modules:** Farmers, Lands, Geo, Irrigation (seasons/rates/invoices),
+  Savings, Loans/Loan plans, Accounting (chart of accounts + double-entry journals),
+  Assets, Payments (multi-allocation receipts), SMS, QR tokens.
+- **Reports:** trial balance, profit & loss, balance sheet, cashbook.
+- **Data migration:** `php artisan migrate:legacy` imports existing Supabase data.
+- **Seeders:** all module permissions + super admin (`ismail162` / `Admin@123`).
 
 ## Local setup
 

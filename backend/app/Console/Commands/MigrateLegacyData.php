@@ -50,6 +50,10 @@ class MigrateLegacyData extends Command
         'journal_entries' => 'journal_entries',
         'journal_entry_lines' => 'journal_lines',
         'assets' => 'assets',
+        'payments' => 'payments',
+        'payment_allocations' => 'payment_allocations',
+        'sms_logs' => 'sms_logs',
+        'qr_tokens' => 'qr_tokens',
     ];
 
     public function handle(): int
