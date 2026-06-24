@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -45,25 +45,37 @@ class User extends Authenticatable
         return $this->belongsTo(Office::class);
     }
 
-    public function roles(): HasMany
+    public function roles(): BelongsToMany
     {
-        return $this->hasMany(UserRole::class);
+        return $this->belongsToMany(Role::class, 'user_roles');
+    }
+
+    /** @return array<int, string> role names */
+    public function roleNames(): array
+    {
+        return $this->roles()->pluck('name')->all();
     }
 
     /**
-     * Flat list of permission identifiers granted to this user via their roles.
+     * Flat list of permission keys granted via this user's roles.
      *
      * @return array<int, string>
      */
     public function permissionList(): array
     {
-        return UserRole::query()
-            ->where('user_id', $this->id)
-            ->join('role_permissions', 'role_permissions.role', '=', 'user_roles.role')
-            ->pluck('role_permissions.permission')
+        return Permission::query()
+            ->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id')
+            ->join('user_roles', 'user_roles.role_id', '=', 'role_permissions.role_id')
+            ->where('user_roles.user_id', $this->id)
+            ->pluck('permissions.key')
             ->unique()
             ->values()
             ->all();
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return in_array($role, $this->roleNames(), true);
     }
 
     public function hasPermission(string $permission): bool
