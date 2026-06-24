@@ -37,3 +37,18 @@ php artisan serve   # http://127.0.0.1:8000
 
 All primary/foreign keys are `CHAR(36)` UUIDs to preserve relationships when
 migrating existing Supabase data.
+
+## Legacy data migration (Supabase → MySQL)
+
+After `php artisan migrate --seed`, import existing data:
+
+```bash
+# set PG_* in .env (Supabase Postgres connection), then:
+php artisan migrate:legacy             # import all mapped tables (FK-safe order)
+php artisan migrate:legacy --only=farmers,lands
+php artisan migrate:legacy --truncate  # wipe targets before import
+```
+
+UUID `id`s are preserved (upsert on `id`), so the command is idempotent and
+re-runnable. Unmapped source columns are folded into each target's `extra`
+JSON column when present.
