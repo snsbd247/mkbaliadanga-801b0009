@@ -4,9 +4,12 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\GeoController;
+use App\Http\Controllers\IrrigationInvoiceController;
+use App\Http\Controllers\IrrigationRateController;
 use App\Http\Controllers\LandController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SeasonController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -74,4 +77,25 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::post('/lands', [LandController::class, 'store'])->middleware('permission:lands.manage');
     Route::put('/lands/{land}', [LandController::class, 'update'])->middleware('permission:lands.manage');
     Route::delete('/lands/{land}', [LandController::class, 'destroy'])->middleware('permission:lands.manage');
+});
+
+// ── Batch 3: Irrigation (সেচ) ─────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
+    // Seasons
+    Route::get('/seasons', [SeasonController::class, 'index'])->middleware('permission:irrigation.view');
+    Route::post('/seasons', [SeasonController::class, 'store'])->middleware('permission:irrigation.manage');
+    Route::put('/seasons/{season}', [SeasonController::class, 'update'])->middleware('permission:irrigation.manage');
+    Route::post('/seasons/{season}/activate', [SeasonController::class, 'activate'])->middleware('permission:irrigation.manage');
+
+    // Irrigation rates
+    Route::get('/irrigation-rates', [IrrigationRateController::class, 'index'])->middleware('permission:irrigation.view');
+    Route::post('/irrigation-rates', [IrrigationRateController::class, 'store'])->middleware('permission:irrigation.manage');
+    Route::put('/irrigation-rates/{irrigationRate}', [IrrigationRateController::class, 'update'])->middleware('permission:irrigation.manage');
+    Route::delete('/irrigation-rates/{irrigationRate}', [IrrigationRateController::class, 'destroy'])->middleware('permission:irrigation.manage');
+
+    // Irrigation invoices
+    Route::get('/irrigation-invoices', [IrrigationInvoiceController::class, 'index'])->middleware('permission:irrigation.view');
+    Route::get('/irrigation-invoices/{invoice}', [IrrigationInvoiceController::class, 'show'])->middleware('permission:irrigation.view');
+    Route::post('/irrigation-invoices', [IrrigationInvoiceController::class, 'store'])->middleware('permission:irrigation.manage');
+    Route::delete('/irrigation-invoices/{invoice}', [IrrigationInvoiceController::class, 'destroy'])->middleware('permission:irrigation.manage');
 });
