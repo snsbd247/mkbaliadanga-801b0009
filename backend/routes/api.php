@@ -12,6 +12,7 @@ use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LandController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LoanPlanController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
@@ -152,4 +153,12 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::get('/reports/profit-loss', [ReportController::class, 'profitAndLoss'])->middleware('permission:accounting.view');
     Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])->middleware('permission:accounting.view');
     Route::get('/reports/cashbook', [ReportController::class, 'cashbook'])->middleware('permission:accounting.view');
+});
+
+// ── Payments + Receipts (multi-allocation) ────────────────────────────
+Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
+    Route::get('/payments', [PaymentController::class, 'index'])->middleware('permission:payments.view');
+    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('permission:payments.view');
+    Route::post('/payments', [PaymentController::class, 'store'])->middleware('permission:payments.manage');
+    Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->middleware('permission:payments.manage');
 });
