@@ -1,14 +1,20 @@
 <?php
 
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\GeoController;
 use App\Http\Controllers\IrrigationInvoiceController;
 use App\Http\Controllers\IrrigationRateController;
+use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LandController;
+use App\Http\Controllers\LoanController;
+use App\Http\Controllers\LoanPlanController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SavingsController;
 use App\Http\Controllers\SeasonController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
