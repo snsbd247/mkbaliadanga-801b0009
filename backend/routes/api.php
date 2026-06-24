@@ -51,3 +51,27 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     // Audit logs
     Route::get('/audit-logs', [AuditController::class, 'index'])->middleware('permission:audit.view');
 });
+
+// ── Batch 2: Farmers / Lands / Geo ────────────────────────────────────
+Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
+    // Geo lookups (read-only reference data)
+    Route::get('/geo/divisions', [GeoController::class, 'divisions']);
+    Route::get('/geo/districts', [GeoController::class, 'districts']);
+    Route::get('/geo/upazilas', [GeoController::class, 'upazilas']);
+    Route::get('/geo/unions', [GeoController::class, 'unions']);
+    Route::get('/geo/mouzas', [GeoController::class, 'mouzas']);
+    Route::get('/land-types', [GeoController::class, 'landTypes']);
+
+    // Farmers
+    Route::get('/farmers', [FarmerController::class, 'index'])->middleware('permission:farmers.view');
+    Route::get('/farmers/{farmer}', [FarmerController::class, 'show'])->middleware('permission:farmers.view');
+    Route::post('/farmers', [FarmerController::class, 'store'])->middleware('permission:farmers.manage');
+    Route::put('/farmers/{farmer}', [FarmerController::class, 'update'])->middleware('permission:farmers.manage');
+    Route::delete('/farmers/{farmer}', [FarmerController::class, 'destroy'])->middleware('permission:farmers.manage');
+
+    // Lands
+    Route::get('/lands', [LandController::class, 'index'])->middleware('permission:lands.view');
+    Route::post('/lands', [LandController::class, 'store'])->middleware('permission:lands.manage');
+    Route::put('/lands/{land}', [LandController::class, 'update'])->middleware('permission:lands.manage');
+    Route::delete('/lands/{land}', [LandController::class, 'destroy'])->middleware('permission:lands.manage');
+});
