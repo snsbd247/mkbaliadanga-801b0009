@@ -3,7 +3,11 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\GeoController;
+use App\Http\Controllers\IrrigationInvoiceController;
 use App\Http\Controllers\LandController;
+use App\Http\Controllers\LoanController;
+use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\SavingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,5 +50,27 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/lands',         [LandController::class, 'store'])->middleware('permission:lands.add');
         Route::put('/lands/{land}',   [LandController::class, 'update'])->middleware('permission:lands.edit');
         Route::delete('/lands/{land}', [LandController::class, 'destroy'])->middleware('permission:lands.delete');
+        Route::delete('/lands/{land}', [LandController::class, 'destroy'])->middleware('permission:lands.delete');
+
+        // ── Irrigation ──────────────────────────────────────────────
+        Route::get('/irrigation/invoices', [IrrigationInvoiceController::class, 'index'])->middleware('permission:irrigation.view');
+        Route::get('/irrigation/invoices/{invoice}', [IrrigationInvoiceController::class, 'show'])->middleware('permission:irrigation.view');
+        Route::post('/irrigation/invoices', [IrrigationInvoiceController::class, 'store'])->middleware('permission:irrigation.add');
+        Route::post('/irrigation/invoices/{invoice}/collect', [IrrigationInvoiceController::class, 'collect'])->middleware('permission:irrigation.edit');
+
+        // ── Savings ─────────────────────────────────────────────────
+        Route::get('/savings/transactions', [SavingsController::class, 'index'])->middleware('permission:savings.view');
+        Route::post('/savings/transactions', [SavingsController::class, 'store'])->middleware('permission:savings.add');
+
+        // ── Loans ───────────────────────────────────────────────────
+        Route::get('/loans', [LoanController::class, 'index'])->middleware('permission:loans.view');
+        Route::get('/loans/{loan}', [LoanController::class, 'show'])->middleware('permission:loans.view');
+        Route::post('/loans', [LoanController::class, 'store'])->middleware('permission:loans.add');
+        Route::post('/loans/{loan}/collect', [LoanController::class, 'collect'])->middleware('permission:loans.edit');
+
+        // ── Receipts ────────────────────────────────────────────────
+        Route::get('/receipts', [ReceiptController::class, 'index'])->middleware('permission:receipts.view');
+        Route::get('/receipts/{receipt}', [ReceiptController::class, 'show'])->middleware('permission:receipts.view');
+        Route::post('/receipts/{receipt}/void', [ReceiptController::class, 'void'])->middleware('permission:receipts.delete');
     });
 });
