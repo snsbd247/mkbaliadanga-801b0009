@@ -71,6 +71,73 @@ class AuthController extends Controller
         return response()->json(['message' => 'লগ আউট সম্পন্ন হয়েছে।']);
     }
 
+    /**
+     * POST /api/auth/logout-all — revoke every token for the user.
+     */
+    public function logoutAll(Request $request): JsonResponse
+    {
+        $request->user()->tokens()->delete();
+
+        return response()->json(['message' => 'সব ডিভাইস থেকে লগ আউট হয়েছে।']);
+    }
+
+    /**
+     * POST /api/auth/password/forgot — issue a single-use reset token.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email']]);
+
+        $user = User::where('email', $data['email'])->first();
+        $payload = ['message' => 'রিসেট নির্দেশনা পাঠানো হয়েছে (যদি অ্যাকাউন্ট থাকে)।'];
+
+        if ($user) {
+            $token = \Illuminate\Support\Str::random(64);
+            \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                ['token' => Hash::make($token), 'created_at' => now()]
+            );
+            // No mailer configured: expose token only in non-production for delivery via app/SMS.
+            if (config('app.debug')) {
+                $payload['token'] = $token;
+            }
+        }
+
+        return response()->json($payload);
+    }
+
+    /**
+     * POST /api/auth/password/reset — consume token and set new password.
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $record = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', $data['email'])->first();
+
+        if (! $record || ! Hash::check($data['token'], $record->token)) {
+            throw ValidationException::withMessages(['token' => ['টোকেন অবৈধ বা মেয়াদোত্তীর্ণ।']]);
+        }
+
+        if (now()->diffInMinutes($record->created_at) > 60) {
+            throw ValidationException::withMessages(['token' => ['টোকেনের মেয়াদ শেষ হয়েছে।']]);
+        }
+
+        $user = User::where('email', $data['email'])->firstOrFail();
+        $user->update(['password' => Hash::make($data['password'])]);
+        $user->tokens()->delete();
+
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', $data['email'])->delete();
+
+        return response()->json(['message' => 'পাসওয়ার্ড পরিবর্তন হয়েছে।']);
+    }
+
     private function userPayload(User $user): array
     {
         return [
