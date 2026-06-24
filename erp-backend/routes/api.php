@@ -3,7 +3,11 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\GeoController;
+use App\Http\Controllers\IrrigationInvoiceController;
 use App\Http\Controllers\LandController;
+use App\Http\Controllers\LoanController;
+use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\SavingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
