@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FarmerController;
+use App\Http\Controllers\GeoController;
+use App\Http\Controllers\LandController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
