@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+
+class Upazila extends Model
+{
+    use HasUuids;
+    protected $keyType = 'string';
+    public $incrementing = false;
+    protected $fillable = ['district_id', 'name', 'bn_name', 'extra'];
+    protected $casts = ['extra' => 'array'];
+}
