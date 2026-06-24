@@ -74,7 +74,7 @@ export function PaidLandHistory({ farmerId }: Props) {
     try {
       const branding = await loadBranding().catch(() => null as any);
       await downloadBnReceiptPdf({
-        kind: "IRR",
+        kind: "irrigation",
         receipt_no: r.receipt_no,
         date: r.paid_on ?? new Date().toISOString(),
         company_name_bn: branding?.company_name_bn ?? null,
