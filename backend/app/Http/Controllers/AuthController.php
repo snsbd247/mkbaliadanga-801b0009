@@ -17,28 +17,33 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'login' => ['required', 'string'],
+            // Frontend sends `identifier`; accept `login` as a fallback alias.
+            'identifier' => ['required_without:login', 'string'],
+            'login' => ['required_without:identifier', 'string'],
             'password' => ['required', 'string'],
+            'device' => ['sometimes', 'string'],
         ]);
 
+        $identifier = $data['identifier'] ?? $data['login'];
+
         $user = User::query()
-            ->where('username', $data['login'])
-            ->orWhere('email', $data['login'])
+            ->where('username', $identifier)
+            ->orWhere('email', $identifier)
             ->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'login' => ['ভুল ইউজারনেম বা পাসওয়ার্ড।'],
+                'identifier' => ['ভুল ইউজারনেম বা পাসওয়ার্ড।'],
             ]);
         }
 
         if (! $user->is_active) {
             throw ValidationException::withMessages([
-                'login' => ['এই অ্যাকাউন্টটি নিষ্ক্রিয়।'],
+                'identifier' => ['এই অ্যাকাউন্টটি নিষ্ক্রিয়।'],
             ]);
         }
 
-        $token = $user->createToken('api')->plainTextToken;
+        $token = $user->createToken($data['device'] ?? 'web')->plainTextToken;
 
         return response()->json([
             'token' => $token,
