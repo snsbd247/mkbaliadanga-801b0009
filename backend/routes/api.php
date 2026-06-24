@@ -13,6 +13,8 @@ use App\Http\Controllers\LandController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LoanPlanController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\QrController;
+use App\Http\Controllers\SmsController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
@@ -161,4 +163,15 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('permission:payments.view');
     Route::post('/payments', [PaymentController::class, 'store'])->middleware('permission:payments.manage');
     Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->middleware('permission:payments.manage');
+});
+
+// ── SMS + QR tokens ───────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
+    Route::get('/sms/logs', [SmsController::class, 'index'])->middleware('permission:sms.view');
+    Route::post('/sms/send', [SmsController::class, 'send'])->middleware('permission:sms.manage');
+    Route::post('/sms/retry', [SmsController::class, 'retry'])->middleware('permission:sms.manage');
+
+    Route::post('/qr/issue', [QrController::class, 'issue'])->middleware('permission:qr.manage');
+    Route::delete('/qr/{qr}', [QrController::class, 'revoke'])->middleware('permission:qr.manage');
+    Route::post('/qr/resolve', [QrController::class, 'resolve'])->middleware('permission:qr.view');
 });
