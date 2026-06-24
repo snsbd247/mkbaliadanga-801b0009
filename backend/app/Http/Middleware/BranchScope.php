@@ -9,10 +9,9 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Office (branch) scoping replacement for Postgres RLS.
  *
- * Injects the authenticated user's office_id onto the request so that
- * controllers/queries can scope data to the current office. A super admin
- * (role "super_admin") bypasses scoping and may pass ?office_id=... to view
- * a specific office.
+ * A super admin (role "super_admin") bypasses scoping and may pass
+ * ?office_id=... to view a specific office; everyone else is locked to
+ * their own office_id.
  */
 class BranchScope
 {
@@ -24,10 +23,7 @@ class BranchScope
             return response()->json(['message' => 'অনুমোদিত নয়।'], 401);
         }
 
-        $isSuperAdmin = $user->roles()->where('role', 'super_admin')->exists();
-
-        if ($isSuperAdmin) {
-            // Super admin may optionally narrow to a single office.
+        if ($user->hasRole('super_admin')) {
             $request->attributes->set('scope_office_id', $request->query('office_id'));
             $request->attributes->set('is_super_admin', true);
         } else {
