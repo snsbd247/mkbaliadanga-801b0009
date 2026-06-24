@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Office;
-use App\Models\RolePermission;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
-use App\Models\UserRole;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -20,6 +20,19 @@ class SuperAdminSeeder extends Seeder
             ['id' => (string) Str::uuid(), 'name' => 'প্রধান কার্যালয়', 'is_active' => true],
         );
 
+        // Wildcard permission + super_admin role.
+        $wildcard = Permission::query()->firstOrCreate(
+            ['key' => '*'],
+            ['id' => (string) Str::uuid(), 'module' => 'system', 'description' => 'All permissions'],
+        );
+
+        $role = Role::query()->firstOrCreate(
+            ['name' => 'super_admin'],
+            ['id' => (string) Str::uuid(), 'description' => 'Super Administrator'],
+        );
+
+        $role->permissions()->syncWithoutDetaching([$wildcard->id]);
+
         // Super admin account (ismail162 / Admin@123).
         $admin = User::query()->updateOrCreate(
             ['username' => 'ismail162'],
@@ -33,15 +46,6 @@ class SuperAdminSeeder extends Seeder
             ],
         );
 
-        UserRole::query()->firstOrCreate([
-            'user_id' => $admin->id,
-            'role' => 'super_admin',
-        ]);
-
-        // super_admin gets the wildcard permission.
-        RolePermission::query()->firstOrCreate([
-            'role' => 'super_admin',
-            'permission' => '*',
-        ]);
+        $admin->roles()->syncWithoutDetaching([$role->id]);
     }
 }

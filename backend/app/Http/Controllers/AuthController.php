@@ -81,7 +81,7 @@ class AuthController extends Controller
             'phone' => $user->phone,
             'office_id' => $user->office_id,
             'is_active' => $user->is_active,
-            'roles' => $user->roles()->pluck('role'),
+            'roles' => $user->roleNames(),
             'permissions' => $user->permissionList(),
         ];
     }
