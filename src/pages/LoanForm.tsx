@@ -23,6 +23,9 @@ const EMPTY = {
   interest_enabled: true, issued_on: new Date().toISOString().slice(0, 10), note: "",
 };
 
+type Party = { name: string; father_name: string; village: string; mobile: string; nid: string };
+const emptyParty = (): Party => ({ name: "", father_name: "", village: "", mobile: "", nid: "" });
+
 export default function LoanForm() {
   const { tx } = useLang();
   const { user, officeId } = useAuth();
