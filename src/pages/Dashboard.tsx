@@ -127,6 +127,7 @@ export default function Dashboard() {
       
       { label: t("totalSavings"), value: money(totalSavings), icon: Wallet, href: "/savings" },
       { label: t("shareBalance"), value: money(sum(sharesData, "balance")), icon: Coins, href: "/share-collection" },
+      { label: t("loanOutstanding"), value: money(totalLoan), icon: HandCoins, tone: "danger", href: "/loans" },
       
       { label: t("totalIrrigationCollection"), value: money(irrCollection), icon: Droplets, href: "/reports/collections" },
       { label: t("todayCollection"), value: money(todayCollect), icon: CalendarClock, tone: "success", href: "/payments?period=today" },
