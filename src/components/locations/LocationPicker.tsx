@@ -22,7 +22,7 @@ export type LocationValue = {
   village_id?: string | null;
 };
 
-type Row = { id: string; name: string; name_bn?: string | null };
+type Row = { id: string; name: string; name_bn?: string | null; upazila_id?: string | null };
 
 const NONE = "__none__";
 
