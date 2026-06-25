@@ -170,31 +170,54 @@ export default function LoanForm() {
     title: string,
     list: Party[],
     setList: React.Dispatch<React.SetStateAction<Party[]>>,
+    fieldErrors: PartyFieldError[],
+    clearErrors: () => void,
   ) {
-    const upd = (i: number, key: keyof Party, v: string) =>
+    const upd = (i: number, key: keyof Party, v: string) => {
       setList(arr => arr.map((p, idx) => (idx === i ? { ...p, [key]: v } : p)));
+      clearErrors();
+    };
+    const errFor = (i: number, field: "name" | "nid") => fieldErrors.find(e => e.index === i && e.field === field);
+    const msg = (code: PartyFieldError["code"]) =>
+      code === "empty" ? tx("Name is required", "নাম আবশ্যক")
+      : code === "invalid_nid" ? tx("NID must be 10, 13 or 17 digits", "এনআইডি ১০, ১৩ বা ১৭ সংখ্যার হতে হবে")
+      : tx("Duplicate entry", "ডুপ্লিকেট এন্ট্রি");
     return (
       <div className="rounded-md border p-3 space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-medium">{title}</Label>
-          <Button type="button" variant="outline" size="sm" onClick={() => setList(arr => [...arr, emptyParty()])}>
+          <Button type="button" variant="outline" size="sm" onClick={() => { setList(arr => [...arr, emptyParty()]); clearErrors(); }}>
             <Plus className="h-4 w-4 mr-1" />{tx("Add", "যোগ করুন")}
           </Button>
         </div>
         {list.length === 0 && <p className="text-xs text-muted-foreground">{tx("None added", "কেউ যোগ করা হয়নি")}</p>}
-        {list.map((p, i) => (
-          <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-md bg-muted/40 p-2">
-            <Input placeholder={tx("Name", "নাম")} value={p.name} onChange={e => upd(i, "name", e.target.value)} />
-            <Input placeholder={tx("Father's name", "পিতার নাম")} value={p.father_name} onChange={e => upd(i, "father_name", e.target.value)} />
-            <Input placeholder={tx("Village", "গ্রাম")} value={p.village} onChange={e => upd(i, "village", e.target.value)} />
-            <Input placeholder={tx("Mobile", "মোবাইল")} value={p.mobile} onChange={e => upd(i, "mobile", e.target.value)} />
-            <Input placeholder={tx("NID", "এনআইডি")} value={p.nid} onChange={e => upd(i, "nid", e.target.value)} />
-            <Button type="button" variant="ghost" size="sm" className="text-destructive justify-self-start"
-              onClick={() => setList(arr => arr.filter((_, idx) => idx !== i))}>
-              <Trash2 className="h-4 w-4 mr-1" />{tx("Remove", "মুছুন")}
-            </Button>
-          </div>
-        ))}
+        {list.map((p, i) => {
+          const nameErr = errFor(i, "name");
+          const nidErr = errFor(i, "nid");
+          return (
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-md bg-muted/40 p-2">
+              <div>
+                <Input placeholder={tx("Name", "নাম")} value={p.name} aria-invalid={!!nameErr}
+                  className={nameErr ? "border-destructive ring-1 ring-destructive/40" : ""}
+                  onChange={e => upd(i, "name", e.target.value)} />
+                {nameErr && <p className="text-xs text-destructive mt-1">{msg(nameErr.code)}</p>}
+              </div>
+              <Input placeholder={tx("Father's name", "পিতার নাম")} value={p.father_name} onChange={e => upd(i, "father_name", e.target.value)} />
+              <Input placeholder={tx("Village", "গ্রাম")} value={p.village} onChange={e => upd(i, "village", e.target.value)} />
+              <Input placeholder={tx("Mobile", "মোবাইল")} value={p.mobile} onChange={e => upd(i, "mobile", e.target.value)} />
+              <div>
+                <Input placeholder={tx("NID", "এনআইডি")} value={p.nid} aria-invalid={!!nidErr}
+                  className={nidErr ? "border-destructive ring-1 ring-destructive/40" : ""}
+                  onChange={e => upd(i, "nid", e.target.value)} />
+                {nidErr && <p className="text-xs text-destructive mt-1">{msg(nidErr.code)}</p>}
+              </div>
+              <Button type="button" variant="ghost" size="sm" className="text-destructive justify-self-start"
+                onClick={() => { setList(arr => arr.filter((_, idx) => idx !== i)); clearErrors(); }}>
+                <Trash2 className="h-4 w-4 mr-1" />{tx("Remove", "মুছুন")}
+              </Button>
+            </div>
+          );
+        })}
       </div>
     );
   }
