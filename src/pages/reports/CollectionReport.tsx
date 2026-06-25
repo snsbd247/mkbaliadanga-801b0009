@@ -234,7 +234,6 @@ export default function CollectionReport() {
       let vdQ: any = supabase
         .from("payments")
         .select("id,receipt_no,amount,voided_at,void_reason,collected_by,farmer_id,farmers(name_en,farmer_code,member_no)")
-        .eq("status", "voided" as any)
         .not("voided_at", "is", null)
         .order("voided_at", { ascending: false });
       if (from) vdQ = vdQ.gte("voided_at", from);
