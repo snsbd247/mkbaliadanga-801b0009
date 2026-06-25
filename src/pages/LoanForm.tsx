@@ -131,17 +131,7 @@ export default function LoanForm() {
         issued_on: form.issued_on,
         note: form.note || null,
       };
-      const buildRows = (loanId: string) => {
-        const mk = (p: Party, role: string) => ({
-          loan_id: loanId, role, name: p.name.trim(),
-          father_name: p.father_name.trim() || null, village: p.village.trim() || null,
-          mobile: p.mobile.trim() || null, nid: p.nid.trim() || null, office_id: officeId ?? null,
-        });
-        return [
-          ...guarantors.filter(p => p.name.trim()).map(p => mk(p, "guarantor")),
-          ...nominees.filter(p => p.name.trim()).map(p => mk(p, "nominee")),
-        ];
-      };
+      const buildRows = (loanId: string) => buildPartyRows(loanId, guarantors, nominees, officeId ?? null);
       if (isEdit) {
         const { error } = await supabase.from("loans").update(payload).eq("id", id);
         if (error) throw error;
