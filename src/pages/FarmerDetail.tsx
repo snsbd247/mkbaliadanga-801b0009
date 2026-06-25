@@ -1548,6 +1548,7 @@ export default function FarmerDetail() {
                 <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
                 <TableHead>{tx("Latest Invoice", "সর্বশেষ ইনভয়েস")}</TableHead>
                 <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
+                <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {borgaOut.length === 0 && (
