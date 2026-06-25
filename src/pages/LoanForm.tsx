@@ -59,9 +59,9 @@ export default function LoanForm() {
           setStatus(l.status ?? "pending");
         }
         const { data: parties } = await supabase.from("loan_guarantors").select("*").eq("loan_id", id);
-        const toParty = (r: any): Party => ({ name: r.name ?? "", father_name: r.father_name ?? "", village: r.village ?? "", mobile: r.mobile ?? "", nid: r.nid ?? "" });
-        setGuarantors((parties ?? []).filter((r: any) => (r.role ?? "guarantor") === "guarantor").map(toParty));
-        setNominees((parties ?? []).filter((r: any) => r.role === "nominee").map(toParty));
+        const split = splitParties(parties as any);
+        setGuarantors(split.guarantors);
+        setNominees(split.nominees);
       }
     })();
   }, [id]);
