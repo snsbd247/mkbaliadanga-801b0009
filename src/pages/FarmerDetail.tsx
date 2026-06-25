@@ -244,14 +244,38 @@ export default function FarmerDetail() {
         .eq("owner_type", "borgadar")
         .order("created_at");
       const rows = (bout as any[]) ?? [];
-      const tenantIds = Array.from(new Set(rows.map((r) => r.farmer_id).filter(Boolean)));
+
+      // Also include borga relationships recorded as land transfers (transfer_type = borga_transfer)
+      const { data: borgaTransfers } = await supabase.from("land_transfers")
+        .select("id,source_dag_no,source_mouza,source_land_size,transferred_at,recipients:land_transfer_recipients(id,area_decimal,new_land_id,recipient_farmer_id,recipient_farmer:farmers!land_transfer_recipients_recipient_farmer_id_fkey(id,name_en,name_bn,farmer_code,mobile))")
+        .eq("source_farmer_id", id!)
+        .eq("transfer_type", "borga_transfer")
+        .order("transferred_at", { ascending: false });
+
+      const transferRows: any[] = [];
+      (borgaTransfers ?? []).forEach((tr: any) => {
+        (tr.recipients ?? []).forEach((rc: any) => {
+          transferRows.push({
+            id: rc.new_land_id || `${tr.id}:${rc.id}`,
+            dag_no: tr.source_dag_no,
+            mouza: tr.source_mouza,
+            land_size: rc.area_decimal,
+            farmer_id: rc.recipient_farmer_id,
+            _invoice_land_id: rc.new_land_id,
+            _tenant: rc.recipient_farmer,
+          });
+        });
+      });
+
+      const combined = [...rows, ...transferRows];
+      const tenantIds = Array.from(new Set(combined.map((r) => r.farmer_id).filter(Boolean)));
       const tenantMap: Record<string, any> = {};
       if (tenantIds.length) {
         const { data: tenants } = await supabase.from("farmers")
           .select("id,name_en,name_bn,farmer_code,mobile").in("id", tenantIds as string[]);
         (tenants ?? []).forEach((t: any) => { tenantMap[t.id] = t; });
       }
-      const landIds = rows.map((r) => r.id);
+      const landIds = combined.map((r) => r._invoice_land_id ?? r.id).filter(Boolean);
       const invMap: Record<string, any> = {};
       if (landIds.length) {
         const { data: invs } = await supabase.from("irrigation_invoices")
@@ -261,8 +285,14 @@ export default function FarmerDetail() {
           .order("generated_at", { ascending: false });
         (invs ?? []).forEach((iv: any) => { if (!invMap[iv.land_id]) invMap[iv.land_id] = iv; });
       }
-      setBorgaOut(rows.map((r) => ({ ...r, tenant: tenantMap[r.farmer_id], latest_invoice: invMap[r.id] })));
+      setBorgaOut(combined.map((r) => ({
+        ...r,
+        tenant: r._tenant ? { ...r._tenant, ...(tenantMap[r.farmer_id] ?? {}) } : tenantMap[r.farmer_id],
+        latest_invoice: invMap[r._invoice_land_id ?? r.id],
+      })));
     } catch { setBorgaOut([]); }
+
+
 
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
