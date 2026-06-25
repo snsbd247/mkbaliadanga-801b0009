@@ -16,6 +16,7 @@ import { usePermission } from "@/hooks/usePermission";
 import { money, fmtDate } from "@/lib/format";
 import { LumpSumDiscountDialog } from "@/components/loans/LumpSumDiscountDialog";
 import { isLumpSum } from "@/lib/lumpSumLoan";
+import { exportTablePDF, exportExcel } from "@/lib/exports";
 
 export default function Loans() {
   const { tx, lang } = useLang();
