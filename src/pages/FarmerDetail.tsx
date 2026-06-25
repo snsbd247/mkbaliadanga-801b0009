@@ -34,6 +34,7 @@ import { ReceiptSettingsButton } from "@/components/receipts/ReceiptSettingsButt
 import IrrigationInvoicesTab from "@/components/farmers/IrrigationInvoicesTab";
 import FarmerLandHistoryTab from "@/components/farmers/FarmerLandHistoryTab";
 import FarmerNotesTab from "@/components/farmers/FarmerNotesTab";
+import OwnLandsTab from "@/components/farmers/OwnLandsTab";
 import LandTransferDialog from "@/components/farmers/LandTransferDialog";
 import LandTransferHistoryTab from "@/components/farmers/LandTransferHistoryTab";
 import { useReceiptRenderArgs } from "@/lib/receiptOptions";
