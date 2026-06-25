@@ -73,10 +73,12 @@ export default function Dashboard() {
 
     const totalSavings = sum(savingsData.filter(s => s.status === "approved" && s.type === "deposit"), "amount") -
                          sum(savingsData.filter(s => s.status === "approved" && s.type === "withdraw"), "amount");
-    const totalLoan = sum(loansData.filter(l => l.status === "approved"), "total_payable");
+    const loanPaid = (l: any) => (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+    const loanOutstanding = (l: any) => Math.max(0, Number(l.total_payable || 0) - loanPaid(l));
+    const totalLoan = loansData.filter(l => l.status === "approved").reduce((s, l) => s + loanOutstanding(l), 0);
     const irrCollection = sum(irrData, "paid_amount");
     const irrigationDue = sum(irrData, "due_amount");
-    const loanDue = sum(loansData.filter(l => l.status === "approved"), "total_payable");
+    const loanDue = totalLoan;
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
     const now = new Date();
