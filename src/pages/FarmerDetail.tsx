@@ -285,14 +285,13 @@ export default function FarmerDetail() {
           .order("generated_at", { ascending: false });
         (invs ?? []).forEach((iv: any) => { if (!invMap[iv.land_id]) invMap[iv.land_id] = iv; });
       }
-      const _bo = combined.map((r) => ({
+      setBorgaOut(combined.map((r) => ({
         ...r,
         tenant: r._tenant ? { ...r._tenant, ...(tenantMap[r.farmer_id] ?? {}) } : tenantMap[r.farmer_id],
         latest_invoice: invMap[r._invoice_land_id ?? r.id],
-      }));
-      console.log("[BORGA_DEBUG] combined=", combined.length, "bo=", _bo.length);
-      setBorgaOut(_bo);
-    } catch (e) { console.log("[BORGA_DEBUG] catch", e); setBorgaOut([]); }
+      })));
+    } catch { setBorgaOut([]); }
+
 
 
 
