@@ -2722,6 +2722,13 @@ export type Database = {
             referencedRelation: "irrigation_invoices"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "irrigation_invoice_payments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
         ]
       }
       irrigation_invoices: {
