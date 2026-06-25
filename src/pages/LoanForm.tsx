@@ -106,25 +106,15 @@ export default function LoanForm() {
     if (Object.keys(errs).length) return;
 
     // Validate guarantors & nominees: required name, NID format, no duplicates.
-    const validateParties = (list: Party[], label: string): string | null => {
-      const seen = new Set<string>();
-      for (let i = 0; i < list.length; i++) {
-        const p = list[i];
-        const hasAny = p.name.trim() || p.father_name.trim() || p.village.trim() || p.mobile.trim() || p.nid.trim();
-        if (!hasAny) continue;
-        if (!p.name.trim()) return `${label} #${i + 1}: ${tx("Name is required", "নাম আবশ্যক")}`;
-        const nid = p.nid.trim();
-        if (nid && !/^\d{10}$|^\d{13}$|^\d{17}$/.test(nid))
-          return `${label} #${i + 1}: ${tx("NID must be 10, 13 or 17 digits", "এনআইডি ১০, ১৩ বা ১৭ সংখ্যার হতে হবে")}`;
-        const key = `${p.name.trim().toLowerCase()}|${nid}`;
-        if (seen.has(key)) return `${label} #${i + 1}: ${tx("Duplicate entry", "ডুপ্লিকেট এন্ট্রি")}`;
-        seen.add(key);
-      }
-      return null;
-    };
-    const gErr = validateParties(guarantors, tx("Guarantor", "গ্যারান্টার"));
-    const nErr = validateParties(nominees, tx("Nominee", "নমিনি"));
-    if (gErr || nErr) { toast.error(gErr || nErr!); return; }
+    const ge = validateParties(guarantors);
+    const ne = validateParties(nominees);
+    setGErrors(ge);
+    setNErrors(ne);
+    if (ge.length || ne.length) {
+      toast.error(tx("Fix guarantor/nominee errors", "গ্যারান্টার/নমিনি তথ্য ঠিক করুন"));
+      return;
+    }
+
 
     const elig = await guardSavingsLoan(form.farmer_id, "loan", tx);
     if (!elig.ok) { setErrors({ farmer_id: elig.reason }); return; }
