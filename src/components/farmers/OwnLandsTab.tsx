@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileDown, FileText, FileSpreadsheet, History, ArrowUpDown, Plus } from "lucide-react";
 import { money } from "@/lib/format";
-import { EditButton, DeleteButton } from "@/components/ui/action-buttons";
+import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
 
 type SeasonStatus = { state: "none" | "paid" | "partial" | "due"; payable: number; paid: number; due: number };
 
