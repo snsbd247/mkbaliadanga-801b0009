@@ -1502,6 +1502,7 @@ export default function FarmerDetail() {
             downloadLandInvoices={downloadLandInvoices}
             openEdit={openEdit}
             onDelete={setDelTarget}
+            borgaOut={borgaOut}
           />
         </TabsContent>
 
