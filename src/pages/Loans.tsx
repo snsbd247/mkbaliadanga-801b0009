@@ -29,7 +29,7 @@ export default function Loans() {
   useEffect(() => { document.title = `${tx("Loans", "ঋণ")} — MK Baliadanga`; load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from("loans").select("*, farmers(name_en,name_bn,farmer_code,member_no), loan_plans(name,name_bn,installment_type), loan_payments(amount,principal_amount)").is("deleted_at", null).order("created_at", { ascending: false });
+    const { data } = await supabase.from("loans").select("*, farmers(name_en,name_bn,farmer_code,member_no), loan_plans(name,name_bn,installment_type), loan_payments(amount,principal_amount), loan_guarantors(name,role)").is("deleted_at", null).order("created_at", { ascending: false });
     setRows(data ?? []);
   }
 
