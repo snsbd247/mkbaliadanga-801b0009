@@ -22,7 +22,7 @@ export type LocationValue = {
   village_id?: string | null;
 };
 
-type Row = { id: string; name: string; name_bn?: string | null };
+type Row = { id: string; name: string; name_bn?: string | null; upazila_id?: string | null };
 
 const NONE = "__none__";
 
@@ -56,12 +56,28 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
   const setL = (k: keyof typeof loading, v: boolean) => setLoading((s) => ({ ...s, [k]: v }));
 
   // mouzaOnly: load the full active mouza list once (no parent filtering).
+  // Also make sure the currently-selected mouza is present even if it has been
+  // de-activated, otherwise editing an existing record would show an empty
+  // selection and silently drop the saved location.
   useEffect(() => {
     if (!mouzaOnly) return;
+    let cancelled = false;
     setL("mou", true);
-    supabase.from("mouzas").select("id,name,name_bn").eq("is_active", true).order("name")
-      .then(({ data }) => { setMouzas((data as any) ?? []); setL("mou", false); });
-  }, [mouzaOnly]);
+    (async () => {
+      const { data } = await supabase.from("mouzas")
+        .select("id,name,name_bn,upazila_id").eq("is_active", true).order("name");
+      let list = ((data as any[]) ?? []) as Row[];
+      const cur = value.mouza_id;
+      if (cur && !list.some((m) => m.id === cur)) {
+        const { data: one } = await supabase.from("mouzas")
+          .select("id,name,name_bn,upazila_id").eq("id", cur).maybeSingle();
+        if (one) list = [one as any, ...list];
+      }
+      if (!cancelled) { setMouzas(list); setL("mou", false); }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mouzaOnly, value.mouza_id]);
 
   useEffect(() => {
     if (mouzaOnly) return;
@@ -188,9 +204,24 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
                       <CommandItem
                         key={m.id}
                         value={`${m.name} ${m.name_bn ?? ""}`}
-                        onSelect={() => {
-                          set({ mouza_id: m.id, mouza_name: m.name, division_id: null, district_id: null, upazila_id: null });
+                        onSelect={async () => {
                           setMouzaOpen(false);
+                          // Resolve the parent chain (upazila → district → division)
+                          // so the saved record keeps a complete, consistent location.
+                          let upazila_id: string | null = m.upazila_id ?? null;
+                          let district_id: string | null = null;
+                          let division_id: string | null = null;
+                          if (upazila_id) {
+                            const { data: up } = await supabase.from("upazilas")
+                              .select("district_id").eq("id", upazila_id).maybeSingle();
+                            district_id = (up as any)?.district_id ?? null;
+                            if (district_id) {
+                              const { data: di } = await supabase.from("districts")
+                                .select("division_id").eq("id", district_id).maybeSingle();
+                              division_id = (di as any)?.division_id ?? null;
+                            }
+                          }
+                          set({ mouza_id: m.id, mouza_name: m.name, upazila_id, district_id, division_id });
                         }}
                       >
                         <Check className={cn("mr-2 h-4 w-4", value.mouza_id === m.id ? "opacity-100" : "opacity-0")} />
