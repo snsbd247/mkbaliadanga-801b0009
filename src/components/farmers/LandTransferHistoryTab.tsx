@@ -10,6 +10,7 @@ const TYPE_LABEL: Record<string, [string, string]> = {
   inheritance: ["Inheritance", "উত্তরাধিকার"],
   sale: ["Sale", "বিক্রয়"],
   borga_transfer: ["Borga Transfer", "বর্গা পরিবর্তন"],
+  borga_return: ["Borga Return", "বর্গা ফেরত"],
   split: ["Split", "বিভাজন"],
   other: ["Other", "অন্যান্য"],
 };

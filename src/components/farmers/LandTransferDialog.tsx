@@ -37,6 +37,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
   const [saving, setSaving] = useState(false);
 
   const isReclaim = !!reclaimOwnerId;
+  const isBorgaGive = !isReclaim && transferType === "borga_transfer";
 
   useEffect(() => {
     if (open) {
@@ -97,7 +98,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
       const { data: tr, error: trErr } = await supabase.from("land_transfers").insert({
         source_land_id: sourceLand.id,
         source_farmer_id: sourceFarmerId,
-        transfer_type: transferType,
+        transfer_type: isReclaim ? "borga_return" : transferType,
         remark: remark.trim() || null,
         transferred_at: transferredOn,
         office_id: sourceLand.office_id ?? officeId ?? null,
@@ -121,9 +122,9 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           mouza: sourceLand.mouza ?? null,
           dag_no: sourceLand.dag_no ?? null,
           land_size: area,
-          owner_type: isReclaim ? "owner" : sourceLand.owner_type,
+          owner_type: isReclaim ? "owner" : (isBorgaGive ? "borgadar" : sourceLand.owner_type),
           field_type: sourceLand.field_type,
-          owner_farmer_id: isReclaim ? null : (sourceLand.owner_type === "borgadar" ? sourceLand.owner_farmer_id : null),
+          owner_farmer_id: isReclaim ? null : (isBorgaGive ? sourceFarmerId : (sourceLand.owner_type === "borgadar" ? sourceLand.owner_farmer_id : null)),
           office_id: sourceLand.office_id ?? officeId ?? null,
           division_id: sourceLand.division_id ?? null,
           district_id: sourceLand.district_id ?? null,
@@ -170,9 +171,24 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         if (rcErr) throw rcErr;
       }
 
-      // Archive source land (history preserved via land_transfers; row not modified except deleted_at)
-      const { error: delErr } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
-      if (delErr) throw delErr;
+      // Giving borga: the OWNER keeps the parcel — only reduce its size by the area
+      // given out. Archive only if nothing remains. Sale/inheritance archive fully.
+      if (isBorgaGive) {
+        const remaining = normalizeLandSize(totalLand - effectiveSum);
+        if (remaining > 0.0001) {
+          const { error: upErr } = await supabase.from("lands")
+            .update({ land_size: remaining } as any).eq("id", sourceLand.id);
+          if (upErr) throw upErr;
+        } else {
+          const { error: delErr } = await supabase.from("lands")
+            .update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
+          if (delErr) throw delErr;
+        }
+      } else {
+        // Archive source land (history preserved via land_transfers; row not modified except deleted_at)
+        const { error: delErr } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
+        if (delErr) throw delErr;
+      }
 
       toast.success(tx("Land transferred", "জমি হস্তান্তরিত"));
       onOpenChange(false);
@@ -192,7 +208,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           <div className="space-y-3 text-sm">
             <div className="rounded-md bg-muted p-2 text-xs">
               {tx("Source", "মূল")}: <b>{sourceLand.dag_no}</b> — {sourceLand.mouza ?? "—"} — <b>{totalLand.toFixed(2)}</b> {tx("decimal", "শতক")}
-              <div className="text-muted-foreground mt-1">{tx("The original land row will be archived. New land rows will be created for each recipient. History is preserved.", "মূল জমির রেকর্ড আর্কাইভ হবে। প্রতিটি প্রাপকের জন্য নতুন জমির রেকর্ড তৈরি হবে। ইতিহাস অপরিবর্তিত থাকবে।")}</div>
+              <div className="text-muted-foreground mt-1">{isBorgaGive ? tx("Borga: the owner keeps this parcel — only the given-out area moves to the sharecropper. The remaining area stays with the owner.", "বর্গা: মালিক এই জমির মালিকানা রাখবেন — শুধু বর্গা দেওয়া অংশ বর্গাদারের কাছে যাবে। অবশিষ্ট অংশ মালিকের কাছেই থাকবে।") : tx("The original land row will be archived. New land rows will be created for each recipient. History is preserved.", "মূল জমির রেকর্ড আর্কাইভ হবে। প্রতিটি প্রাপকের জন্য নতুন জমির রেকর্ড তৈরি হবে। ইতিহাস অপরিবর্তিত থাকবে।")}</div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -245,7 +261,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
               <div className="mt-2 text-xs text-muted-foreground">
                 {tx("Allocated", "বরাদ্দ")}: <b>{effectiveSum.toFixed(2)}</b> / {totalLand.toFixed(2)} {tx("decimal", "শতক")}
                 {!equalSplit && effectiveSum > totalLand && <span className="text-destructive ml-2">{tx("(over-allocated)", "(অতিরিক্ত)")}</span>}
-                {effectiveSum < totalLand && <span className="ml-2">{tx("Remaining will be lost.", "অবশিষ্ট হারিয়ে যাবে।")}</span>}
+                {effectiveSum < totalLand && <span className="ml-2">{isBorgaGive ? tx("Remaining stays with the owner.", "অবশিষ্ট অংশ মালিকের কাছে থাকবে।") : tx("Remaining will be lost.", "অবশিষ্ট হারিয়ে যাবে।")}</span>}
               </div>
             </div>
 

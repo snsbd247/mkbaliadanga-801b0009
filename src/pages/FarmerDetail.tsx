@@ -1548,10 +1548,11 @@ export default function FarmerDetail() {
                 <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
                 <TableHead>{tx("Latest Invoice", "সর্বশেষ ইনভয়েস")}</TableHead>
                 <TableHead>{tx("Status", "স্ট্যাটাস")}</TableHead>
+                <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {borgaOut.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                     {tx("No sharecropped lands", "কোনো বর্গা জমি নেই")}
                   </TableCell></TableRow>
                 )}
@@ -1579,6 +1580,12 @@ export default function FarmerDetail() {
                         {inv ? (
                           <Badge variant={due <= 0 ? "default" : "destructive"}>{status}</Badge>
                         ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                          onClick={() => setReclaimLand({ ...l, owner_farmer_id: id })}>
+                          {tx("Reclaim", "ফেরত")}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
