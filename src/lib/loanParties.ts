@@ -72,14 +72,26 @@ export function validateParties(list: Party[]): PartyFieldError[] {
   return errors;
 }
 
+/** An insertable loan_guarantors row (name guaranteed present). */
+export type InsertablePartyRow = {
+  loan_id: string;
+  role: PartyRole;
+  name: string;
+  father_name: string | null;
+  village: string | null;
+  mobile: string | null;
+  nid: string | null;
+  office_id: string | null;
+};
+
 /** Build insertable loan_guarantors rows for a loan (drops empty rows). */
 export function buildPartyRows(
   loanId: string,
   guarantors: Party[],
   nominees: Party[],
   officeId: string | null,
-): Array<PartyRow & { loan_id: string; office_id: string | null }> {
-  const mk = (p: Party, role: PartyRole) => ({
+): InsertablePartyRow[] {
+  const mk = (p: Party, role: PartyRole): InsertablePartyRow => ({
     loan_id: loanId,
     role,
     name: p.name.trim(),
