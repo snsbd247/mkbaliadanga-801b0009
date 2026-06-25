@@ -40,6 +40,8 @@ export default function LoanForm() {
   const [errors, setErrors] = useState<{ farmer_id?: string; principal?: string; interest_rate?: string; issued_on?: string }>({});
   const [guarantors, setGuarantors] = useState<Party[]>([]);
   const [nominees, setNominees] = useState<Party[]>([]);
+  const [gErrors, setGErrors] = useState<PartyFieldError[]>([]);
+  const [nErrors, setNErrors] = useState<PartyFieldError[]>([]);
 
   useEffect(() => {
     document.title = `${isEdit ? tx("Edit Loan", "ঋণ এডিট") : tx("Issue Loan", "ঋণ ইস্যু")} — MK Baliadanga`;
