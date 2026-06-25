@@ -267,6 +267,44 @@ export default function OwnLandsTab({
           )}
         </>
       )}
+
+      <div className="border-t mt-2">
+        <div className="px-3 py-2 text-sm font-medium">
+          {tx("Sharecropped by others", "অন্যরা বর্গা চাষ করছেন")}
+          <span className="text-xs text-muted-foreground font-normal ml-2">
+            {tx("Own lands the owner does not farm — farmed by sharecroppers", "মালিক নিজে চাষ করেন না — বর্গাদাররা চাষ করছেন")}
+          </span>
+        </div>
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
+            <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+            <TableHead className="text-right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</TableHead>
+            <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {borgaOut.length === 0 ? (
+              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                {tx("No sharecropped lands", "কোনো বর্গা জমি নেই")}
+              </TableCell></TableRow>
+            ) : borgaOut.map((l) => (
+              <TableRow key={l.id}>
+                <TableCell>{l.dag_no || (l.dag_numbers || []).join(", ") || "—"}</TableCell>
+                <TableCell>{l.mouza_name || l.mouza || "—"}</TableCell>
+                <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
+                <TableCell className="text-xs">
+                  {l.tenant ? (
+                    <Link to={`/farmers/${l.tenant.id}`} className="underline text-primary">
+                      {l.tenant.name_bn || l.tenant.name_en}
+                      {l.tenant.farmer_code ? <span className="text-muted-foreground"> ({l.tenant.farmer_code})</span> : null}
+                    </Link>
+                  ) : "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </Card>
   );
 }
