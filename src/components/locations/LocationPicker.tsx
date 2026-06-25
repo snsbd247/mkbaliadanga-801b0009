@@ -240,6 +240,21 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
             <p className="mt-1 text-xs text-muted-foreground">No Mouza configured — add from Settings → Mouza.</p>
           )}
         </div>
+        {showVillage && (
+          <div data-level="village">
+            <Label className={"text-xs " + (villageErr ? "text-destructive" : "")}>{labels?.village ?? "Village"}</Label>
+            <Input
+              value={value.village ?? ""}
+              onChange={(e) => set({ village: e.target.value || null })}
+              placeholder="Village name"
+              data-testid="loc-input-village"
+              className={villageErr ? "border-destructive ring-2 ring-destructive/40" : ""}
+            />
+            {villageErr && errorMessage && (
+              <p id="loc-err-village" role="alert" className="mt-1 text-xs text-destructive">{errorMessage}</p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
