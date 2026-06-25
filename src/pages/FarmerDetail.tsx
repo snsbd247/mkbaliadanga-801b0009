@@ -968,7 +968,7 @@ export default function FarmerDetail() {
             {farmer.status === "inactive" ? tx("Activate", "সক্রিয় করুন") : tx("Make Inactive", "নিষ্ক্রিয় করুন")}
           </Button>
           <Button variant="outline" onClick={openFarmerEdit}><Pencil className="h-4 w-4 mr-1" />{t("edit")}</Button>
-          <Button variant="outline" onClick={() => nav(`/payments/combined?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
+          <Button variant="outline" onClick={() => nav(`/payments?farmer=${farmer.id}`)}><Receipt className="h-4 w-4 mr-1" />{t("payNow")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/card`)}><IdCard className="h-4 w-4 mr-1" />{t("pgPrintCard")}</Button>
           <Button variant="outline" onClick={() => nav(`/farmers/${farmer.id}/report?print=1`)}><Printer className="h-4 w-4 mr-1" />{t("print")}</Button>
           <Button onClick={() => nav(`/farmers/${farmer.id}/report`)}>
