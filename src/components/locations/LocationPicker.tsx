@@ -56,12 +56,28 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
   const setL = (k: keyof typeof loading, v: boolean) => setLoading((s) => ({ ...s, [k]: v }));
 
   // mouzaOnly: load the full active mouza list once (no parent filtering).
+  // Also make sure the currently-selected mouza is present even if it has been
+  // de-activated, otherwise editing an existing record would show an empty
+  // selection and silently drop the saved location.
   useEffect(() => {
     if (!mouzaOnly) return;
+    let cancelled = false;
     setL("mou", true);
-    supabase.from("mouzas").select("id,name,name_bn").eq("is_active", true).order("name")
-      .then(({ data }) => { setMouzas((data as any) ?? []); setL("mou", false); });
-  }, [mouzaOnly]);
+    (async () => {
+      const { data } = await supabase.from("mouzas")
+        .select("id,name,name_bn,upazila_id").eq("is_active", true).order("name");
+      let list = ((data as any[]) ?? []) as Row[];
+      const cur = value.mouza_id;
+      if (cur && !list.some((m) => m.id === cur)) {
+        const { data: one } = await supabase.from("mouzas")
+          .select("id,name,name_bn,upazila_id").eq("id", cur).maybeSingle();
+        if (one) list = [one as any, ...list];
+      }
+      if (!cancelled) { setMouzas(list); setL("mou", false); }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mouzaOnly, value.mouza_id]);
 
   useEffect(() => {
     if (mouzaOnly) return;
