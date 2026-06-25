@@ -294,6 +294,8 @@ export default function FarmerDetail() {
 
 
 
+
+
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
     const inv = await supabase
       .from("irrigation_invoices")
