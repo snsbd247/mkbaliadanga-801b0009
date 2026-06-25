@@ -78,15 +78,65 @@ export default function Loans() {
     return (r.loan_payments ?? []).reduce((s: number, p: any) => s + (Number(p.principal_amount ?? 0) > 0 ? Number(p.principal_amount) : Number(p.amount ?? 0)), 0);
   }
 
+  const partyNames = (r: any, role: "guarantor" | "nominee") =>
+    (r.loan_guarantors ?? [])
+      .filter((x: any) => (role === "guarantor" ? (x.role ?? "guarantor") === "guarantor" : x.role === "nominee"))
+      .map((x: any) => x.name).filter(Boolean).join(", ");
+
+  function buildExportRows() {
+    return filtered.map(r => {
+      const due = Math.max(0, Number(r.principal ?? 0) - paidPrincipal(r));
+      const nm = lang === "bn" ? (r.farmers?.name_bn || r.farmers?.name_en) : r.farmers?.name_en;
+      return {
+        member: nm ?? "",
+        memberNo: r.farmers?.member_no || r.farmers?.farmer_code || "",
+        issued: fmtDate(r.issued_on),
+        principal: Number(r.principal ?? 0),
+        principalDue: due,
+        status: r.status,
+        guarantors: partyNames(r, "guarantor"),
+        nominees: partyNames(r, "nominee"),
+      };
+    });
+  }
+
+  const tabLabel = tab === "pending" ? tx("Pending", "অপেক্ষমাণ") : tab === "approved" ? tx("Approved", "অনুমোদিত") : tx("All", "সব");
+  const reportTitle = `${tx("Loans", "ঋণ")} — ${tabLabel}`;
+
+  async function exportPdf() {
+    const head = [tx("Member", "সদস্য"), tx("Member No", "সদস্য নং"), tx("Issued", "ইস্যু"), tx("Principal", "আসল"), tx("Principal Due", "আসল বাকি"), tx("Status", "অবস্থা"), tx("Guarantors", "গ্যারান্টার"), tx("Nominees", "নমিনি")];
+    const body = buildExportRows().map(r => [r.member, r.memberNo, r.issued, money(r.principal), money(r.principalDue), r.status, r.guarantors, r.nominees]);
+    await exportTablePDF(reportTitle, head, body, undefined, { landscape: true });
+  }
+
+  function exportXlsx() {
+    const rows = buildExportRows().map(r => ({
+      [tx("Member", "সদস্য")]: r.member,
+      [tx("Member No", "সদস্য নং")]: r.memberNo,
+      [tx("Issued", "ইস্যু")]: r.issued,
+      [tx("Principal", "আসল")]: r.principal,
+      [tx("Principal Due", "আসল বাকি")]: r.principalDue,
+      [tx("Status", "অবস্থা")]: r.status,
+      [tx("Guarantors", "গ্যারান্টার")]: r.guarantors,
+      [tx("Nominees", "নমিনি")]: r.nominees,
+    }));
+    exportExcel(reportTitle, tx("Loans", "ঋণ"), rows);
+  }
+
   return (
     <>
       <PageHeader
         title={tx("Loans", "ঋণ")}
         description={tx("Issue and manage member loans", "সদস্যদের ঋণ ইস্যু ও পরিচালনা")}
         actions={
-          <Button size="sm" onClick={() => navigate("/loans/new")}><Plus className="h-4 w-4 mr-1" />{tx("Issue Loan", "ঋণ ইস্যু")}</Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={exportPdf} disabled={filtered.length === 0}><FileDown className="h-4 w-4 mr-1" />PDF</Button>
+            <Button size="sm" variant="outline" onClick={exportXlsx} disabled={filtered.length === 0}><Sheet className="h-4 w-4 mr-1" />Excel</Button>
+            <Button size="sm" onClick={() => navigate("/loans/new")}><Plus className="h-4 w-4 mr-1" />{tx("Issue Loan", "ঋণ ইস্যু")}</Button>
+          </div>
         }
       />
+
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
