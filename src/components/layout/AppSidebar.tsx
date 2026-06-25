@@ -169,31 +169,43 @@ export function AppSidebar() {
       ],
     },
 
-    // ── Reports ──
+    // ── Reports: Collection / সংগ্রহ ও বিবরণী ──
     {
-      key: "reports", icon: BarChart3, label: t("reports"),
+      key: "reports", icon: BarChart3, label: lang === "bn" ? "রিপোর্ট (সংগ্রহ)" : "Reports (Collection)",
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
         { url: "/reports/bank", icon: FileBarChart, label: "ব্যাংক রিপোর্ট", permKey: "reports" },
-       { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
-       { url: "/reports/receipt-register", icon: FileBarChart, label: t("monthlyReceiptRegister" as any) || "Monthly Receipt Register", permKey: "reports" },
-       { url: "/reports/officer-summary", icon: FileBarChart, label: t("officerSummary" as any) || "Officer Summary", permKey: "reports" },
+        { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
+        { url: "/reports/receipt-register", icon: FileBarChart, label: t("monthlyReceiptRegister" as any) || "Monthly Receipt Register", permKey: "reports" },
+        { url: "/reports/officer-summary", icon: FileBarChart, label: t("officerSummary" as any) || "Officer Summary", permKey: "reports" },
         { url: "/reports/rate-source", icon: FileBarChart, label: t("rateSourceReport" as any), permKey: "reports" },
-        { url: "/reports/override-audit", icon: FileBarChart, label: t("overrideAudit" as any), permKey: "reports" },
-        { url: "/reports/receipt-audit", icon: FileBarChart, label: t("receiptAudit" as any), permKey: "reports" },
         { url: "/reports/farmer-statement", icon: FileBarChart, label: t("farmerStatement"), permKey: "reports" },
         { url: "/reports/expenses", icon: FileBarChart, label: t("expensesReport"), permKey: "reports" },
         { url: "/reports/invoices", icon: FileBarChart, label: t("invoicesReport" as any), permKey: "reports" },
         { url: "/irrigation-reports", icon: FileBarChart, label: t("irrigationRevenueCollection" as any), permKey: "reports" },
-        { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
-       { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
-       { url: "/reports/cultivation-history", icon: FileBarChart, label: t("cultivationHistoryReport"), permKey: "reports" },
-      
-      { url: "/reports/irrigation-category", icon: FileBarChart, label: t("irrigationCategoryReport"), permKey: "reports" },
+        { url: "/reports/cultivation-history", icon: FileBarChart, label: t("cultivationHistoryReport"), permKey: "reports" },
+        { url: "/reports/irrigation-category", icon: FileBarChart, label: t("irrigationCategoryReport"), permKey: "reports" },
+      ],
+    },
 
+    // ── Reports: Dues / বকেয়া ──
+    {
+      key: "reportsDue", icon: AlertTriangle, label: lang === "bn" ? "রিপোর্ট (বকেয়া)" : "Reports (Dues)",
+      children: [
+        { url: "/reports/irrigation-due", icon: AlertTriangle, label: t("irrigationDueReport"), permKey: "reports" },
+        { url: "/reports/promise-due", icon: AlertTriangle, label: t("promiseDueReport" as any) || "Promise Due", permKey: "reports" },
         { url: "/dues", icon: AlertTriangle, label: t("dues"), permKey: "reports" },
         { url: "/dues-audit", icon: AlertTriangle, label: t("duesAudit"), permKey: "reports" },
+      ],
+    },
+
+    // ── Reports: Audit / অডিট ──
+    {
+      key: "reportsAudit", icon: ScrollText, label: lang === "bn" ? "রিপোর্ট (অডিট)" : "Reports (Audit)",
+      children: [
+        { url: "/reports/override-audit", icon: FileBarChart, label: t("overrideAudit" as any), permKey: "reports" },
+        { url: "/reports/receipt-audit", icon: FileBarChart, label: t("receiptAudit" as any), permKey: "reports" },
         { url: "/reports/farmer-rejections", icon: AlertTriangle, label: t("rejectedFarmerSubmissions"), permKey: "farmers" },
       ],
     },
