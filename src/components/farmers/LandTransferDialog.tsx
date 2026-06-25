@@ -37,6 +37,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
   const [saving, setSaving] = useState(false);
 
   const isReclaim = !!reclaimOwnerId;
+  const isBorgaGive = !isReclaim && transferType === "borga_transfer";
 
   useEffect(() => {
     if (open) {
