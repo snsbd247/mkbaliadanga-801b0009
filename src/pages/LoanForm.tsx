@@ -38,6 +38,8 @@ export default function LoanForm() {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string>("pending");
   const [errors, setErrors] = useState<{ farmer_id?: string; principal?: string; interest_rate?: string; issued_on?: string }>({});
+  const [guarantors, setGuarantors] = useState<Party[]>([]);
+  const [nominees, setNominees] = useState<Party[]>([]);
 
   useEffect(() => {
     document.title = `${isEdit ? tx("Edit Loan", "ঋণ এডিট") : tx("Issue Loan", "ঋণ ইস্যু")} — MK Baliadanga`;
@@ -54,9 +56,14 @@ export default function LoanForm() {
           });
           setStatus(l.status ?? "pending");
         }
+        const { data: parties } = await supabase.from("loan_guarantors").select("*").eq("loan_id", id);
+        const toParty = (r: any): Party => ({ name: r.name ?? "", father_name: r.father_name ?? "", village: r.village ?? "", mobile: r.mobile ?? "", nid: r.nid ?? "" });
+        setGuarantors((parties ?? []).filter((r: any) => (r.role ?? "guarantor") === "guarantor").map(toParty));
+        setNominees((parties ?? []).filter((r: any) => r.role === "nominee").map(toParty));
       }
     })();
   }, [id]);
+
 
   const selectedPlan = useMemo(() => plans.find(p => p.id === form.plan_id) || null, [plans, form.plan_id]);
   const lumpSum = isLumpSum(selectedPlan?.installment_type);
