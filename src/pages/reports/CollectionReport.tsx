@@ -240,7 +240,7 @@ export default function CollectionReport() {
       if (from) vdQ = vdQ.gte("voided_at", from);
       if (to) vdQ = vdQ.lte("voided_at", to + "T23:59:59");
       if (farmerId !== ALL) vdQ = vdQ.eq("farmer_id", farmerId);
-      if (effectiveUserId) vdQ = vdQ.eq("created_by", effectiveUserId);
+      if (effectiveUserId) vdQ = vdQ.eq("collected_by", effectiveUserId);
       const { data: vd } = await vdQ;
       for (const r of vd ?? []) {
         const fn = nameForFarmer((r as any).farmers);
