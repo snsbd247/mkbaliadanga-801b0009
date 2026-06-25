@@ -120,6 +120,19 @@ export default function Loans() {
                       <TableCell>{fmtDate(r.issued_on)}</TableCell>
                       <TableCell className="text-right font-mono">{money(r.principal)}</TableCell>
                       <TableCell className="text-right font-mono">{money(due)}</TableCell>
+                      <TableCell className="text-xs">
+                        {(() => {
+                          const g = (r.loan_guarantors ?? []).filter((x: any) => (x.role ?? "guarantor") === "guarantor").map((x: any) => x.name).filter(Boolean);
+                          const n = (r.loan_guarantors ?? []).filter((x: any) => x.role === "nominee").map((x: any) => x.name).filter(Boolean);
+                          if (!g.length && !n.length) return <span className="text-muted-foreground">—</span>;
+                          return (
+                            <div className="space-y-0.5">
+                              {g.length > 0 && <div><span className="text-muted-foreground">{tx("G", "গ্যা")}:</span> {g.join(", ")}</div>}
+                              {n.length > 0 && <div><span className="text-muted-foreground">{tx("N", "নমি")}:</span> {n.join(", ")}</div>}
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "pending" ? "secondary" : "outline"}>{r.status}</Badge></TableCell>
                       <TableCell className="text-right space-x-1">
                         {r.status === "approved" && (
