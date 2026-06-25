@@ -1552,7 +1552,7 @@ export default function FarmerDetail() {
               </TableRow></TableHeader>
               <TableBody>
                 {borgaOut.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                     {tx("No sharecropped lands", "কোনো বর্গা জমি নেই")}
                   </TableCell></TableRow>
                 )}
