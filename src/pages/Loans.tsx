@@ -102,6 +102,7 @@ export default function Loans() {
                 <TableHead>{tx("Issued", "ইস্যু")}</TableHead>
                 <TableHead className="text-right">{tx("Principal", "আসল")}</TableHead>
                 <TableHead className="text-right">{tx("Principal Due", "আসল বাকি")}</TableHead>
+                <TableHead>{tx("Guarantor / Nominee", "গ্যারান্টার / নমিনি")}</TableHead>
                 <TableHead>{tx("Status", "অবস্থা")}</TableHead>
                 <TableHead className="text-right">{tx("Actions", "কার্যক্রম")}</TableHead>
               </TableRow></TableHeader>
