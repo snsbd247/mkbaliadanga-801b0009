@@ -17,14 +17,14 @@ import { money } from "@/lib/format";
 import { guardSavingsLoan } from "@/lib/memberEligibility";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { isLumpSum, lumpSumSchedule, validateLumpSumInterest } from "@/lib/lumpSumLoan";
+import {
+  type Party, type PartyFieldError, emptyParty, splitParties, validateParties, buildPartyRows,
+} from "@/lib/loanParties";
 
 const EMPTY = {
   farmer_id: "", plan_id: "", principal: 0, interest_rate: 9,
   interest_enabled: true, issued_on: new Date().toISOString().slice(0, 10), note: "",
 };
-
-type Party = { name: string; father_name: string; village: string; mobile: string; nid: string };
-const emptyParty = (): Party => ({ name: "", father_name: "", village: "", mobile: "", nid: "" });
 
 export default function LoanForm() {
   const { tx } = useLang();
