@@ -233,7 +233,7 @@ export default function CollectionReport() {
       // collection report reflects "<receipt_no> বাতিল".
       let vdQ: any = supabase
         .from("payments")
-        .select("id,receipt_no,amount,voided_at,void_reason,created_by,farmer_id,farmers(name_en,farmer_code,member_no)")
+        .select("id,receipt_no,amount,voided_at,void_reason,collected_by,farmer_id,farmers(name_en,farmer_code,member_no)")
         .eq("status", "voided" as any)
         .not("voided_at", "is", null)
         .order("voided_at", { ascending: false });
