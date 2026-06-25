@@ -204,9 +204,24 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
                       <CommandItem
                         key={m.id}
                         value={`${m.name} ${m.name_bn ?? ""}`}
-                        onSelect={() => {
-                          set({ mouza_id: m.id, mouza_name: m.name, division_id: null, district_id: null, upazila_id: null });
+                        onSelect={async () => {
                           setMouzaOpen(false);
+                          // Resolve the parent chain (upazila → district → division)
+                          // so the saved record keeps a complete, consistent location.
+                          let upazila_id: string | null = m.upazila_id ?? null;
+                          let district_id: string | null = null;
+                          let division_id: string | null = null;
+                          if (upazila_id) {
+                            const { data: up } = await supabase.from("upazilas")
+                              .select("district_id").eq("id", upazila_id).maybeSingle();
+                            district_id = (up as any)?.district_id ?? null;
+                            if (district_id) {
+                              const { data: di } = await supabase.from("districts")
+                                .select("division_id").eq("id", district_id).maybeSingle();
+                              division_id = (di as any)?.division_id ?? null;
+                            }
+                          }
+                          set({ mouza_id: m.id, mouza_name: m.name, upazila_id, district_id, division_id });
                         }}
                       >
                         <Check className={cn("mr-2 h-4 w-4", value.mouza_id === m.id ? "opacity-100" : "opacity-0")} />
