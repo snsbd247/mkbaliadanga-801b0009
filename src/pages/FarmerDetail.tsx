@@ -1034,6 +1034,7 @@ export default function FarmerDetail() {
       <Tabs defaultValue="lands">
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
+          <TabsTrigger value="own_lands">{tx("Own Lands", "নিজের জমি")}</TabsTrigger>
           
           <TabsTrigger value="land_history">{tx("Land History", "ভূমির ইতিহাস")}</TabsTrigger>
           <TabsTrigger value="land_transfers">{tx("Transfer History", "হস্তান্তর ইতিহাস")}</TabsTrigger>
@@ -1484,6 +1485,79 @@ export default function FarmerDetail() {
             </Table>
           </Card>
 
+        </TabsContent>
+
+        <TabsContent value="own_lands">
+          <Card>
+            <div className="px-3 py-2 text-sm font-medium border-b">
+              {tx("Own Lands", "নিজের জমি")} — {tx("Lands owned by this farmer", "এই কৃষকের নিজের জমিসমূহ")}
+            </div>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>{t("pgLocation")}</TableHead>
+                <TableHead>{t("dagNo")}</TableHead>
+                <TableHead className="text-right">{t("landSize")}</TableHead>
+                <TableHead>{t("ownerType")}</TableHead>
+                <TableHead>{tx("Owner", "মালিক")}</TableHead>
+                <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
+                <TableHead>{t("fieldType")}</TableHead>
+                <TableHead className="text-right">{tx("Rate / Shotok", "রেট/শতক")}</TableHead>
+                <TableHead className="text-right">{tx("Total Amount", "মোট টাকা")}</TableHead>
+                <TableHead>{tx("Irrigation Charge", "সেচ চার্জ")}</TableHead>
+                <TableHead>{tx("Payment Status", "পেমেন্ট স্ট্যাটাস")}</TableHead>
+                <TableHead className="text-right">{t("actions")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {(() => {
+                  const ownRows = lands.filter((l) => l.owner_type === "owner");
+                  if (ownRows.length === 0) {
+                    return <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>;
+                  }
+                  return ownRows.map((l: any) => {
+                    const matched = resolveRateForLand(rateMap, l);
+                    const rate = matched ? Number(matched.rate_per_shotok) : 0;
+                    const total = rate * Number(l.land_size || 0);
+                    const m = landSeasonStatus(l.id);
+                    const isDue = m.due > 0.005;
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
+                        <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
+                        <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
+                        <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                        <TableCell className="text-xs"><span className="text-muted-foreground">{tx("Self-owned", "নিজ মালিক")}</span></TableCell>
+                        <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
+                        <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell>
+                          {m.state === "none"
+                            ? <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>
+                            : (
+                              <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => downloadLandInvoices(l.id)}>
+                                <FileDown className="h-3.5 w-3.5" />
+                                {isDue ? tx("Invoice", "ইনভয়েস") : tx("Receipt", "রসিদ")}
+                              </Button>
+                            )}
+                        </TableCell>
+                        <TableCell>
+                          {m.state === "none"
+                            ? <span className="text-muted-foreground text-xs">—</span>
+                            : isDue
+                              ? <Badge variant="destructive">{tx("Due", "বকেয়া")} {money(m.due)}</Badge>
+                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("Paid", "পরিশোধিত")}</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <EditButton onClick={() => openEdit(l)} title={t("edit")} />
+                          <DeleteButton onClick={() => setDelTarget(l)} title={t("delete")} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </Card>
         </TabsContent>
 
         <TabsContent value="land_history">
