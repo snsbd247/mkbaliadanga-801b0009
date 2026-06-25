@@ -17,14 +17,14 @@ import { money } from "@/lib/format";
 import { guardSavingsLoan } from "@/lib/memberEligibility";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { isLumpSum, lumpSumSchedule, validateLumpSumInterest } from "@/lib/lumpSumLoan";
+import {
+  type Party, type PartyFieldError, emptyParty, splitParties, validateParties, buildPartyRows,
+} from "@/lib/loanParties";
 
 const EMPTY = {
   farmer_id: "", plan_id: "", principal: 0, interest_rate: 9,
   interest_enabled: true, issued_on: new Date().toISOString().slice(0, 10), note: "",
 };
-
-type Party = { name: string; father_name: string; village: string; mobile: string; nid: string };
-const emptyParty = (): Party => ({ name: "", father_name: "", village: "", mobile: "", nid: "" });
 
 export default function LoanForm() {
   const { tx } = useLang();
@@ -40,6 +40,8 @@ export default function LoanForm() {
   const [errors, setErrors] = useState<{ farmer_id?: string; principal?: string; interest_rate?: string; issued_on?: string }>({});
   const [guarantors, setGuarantors] = useState<Party[]>([]);
   const [nominees, setNominees] = useState<Party[]>([]);
+  const [gErrors, setGErrors] = useState<PartyFieldError[]>([]);
+  const [nErrors, setNErrors] = useState<PartyFieldError[]>([]);
 
   useEffect(() => {
     document.title = `${isEdit ? tx("Edit Loan", "ঋণ এডিট") : tx("Issue Loan", "ঋণ ইস্যু")} — MK Baliadanga`;
@@ -57,9 +59,9 @@ export default function LoanForm() {
           setStatus(l.status ?? "pending");
         }
         const { data: parties } = await supabase.from("loan_guarantors").select("*").eq("loan_id", id);
-        const toParty = (r: any): Party => ({ name: r.name ?? "", father_name: r.father_name ?? "", village: r.village ?? "", mobile: r.mobile ?? "", nid: r.nid ?? "" });
-        setGuarantors((parties ?? []).filter((r: any) => (r.role ?? "guarantor") === "guarantor").map(toParty));
-        setNominees((parties ?? []).filter((r: any) => r.role === "nominee").map(toParty));
+        const split = splitParties(parties as any);
+        setGuarantors(split.guarantors);
+        setNominees(split.nominees);
       }
     })();
   }, [id]);
@@ -104,25 +106,15 @@ export default function LoanForm() {
     if (Object.keys(errs).length) return;
 
     // Validate guarantors & nominees: required name, NID format, no duplicates.
-    const validateParties = (list: Party[], label: string): string | null => {
-      const seen = new Set<string>();
-      for (let i = 0; i < list.length; i++) {
-        const p = list[i];
-        const hasAny = p.name.trim() || p.father_name.trim() || p.village.trim() || p.mobile.trim() || p.nid.trim();
-        if (!hasAny) continue;
-        if (!p.name.trim()) return `${label} #${i + 1}: ${tx("Name is required", "নাম আবশ্যক")}`;
-        const nid = p.nid.trim();
-        if (nid && !/^\d{10}$|^\d{13}$|^\d{17}$/.test(nid))
-          return `${label} #${i + 1}: ${tx("NID must be 10, 13 or 17 digits", "এনআইডি ১০, ১৩ বা ১৭ সংখ্যার হতে হবে")}`;
-        const key = `${p.name.trim().toLowerCase()}|${nid}`;
-        if (seen.has(key)) return `${label} #${i + 1}: ${tx("Duplicate entry", "ডুপ্লিকেট এন্ট্রি")}`;
-        seen.add(key);
-      }
-      return null;
-    };
-    const gErr = validateParties(guarantors, tx("Guarantor", "গ্যারান্টার"));
-    const nErr = validateParties(nominees, tx("Nominee", "নমিনি"));
-    if (gErr || nErr) { toast.error(gErr || nErr!); return; }
+    const ge = validateParties(guarantors);
+    const ne = validateParties(nominees);
+    setGErrors(ge);
+    setNErrors(ne);
+    if (ge.length || ne.length) {
+      toast.error(tx("Fix guarantor/nominee errors", "গ্যারান্টার/নমিনি তথ্য ঠিক করুন"));
+      return;
+    }
+
 
     const elig = await guardSavingsLoan(form.farmer_id, "loan", tx);
     if (!elig.ok) { setErrors({ farmer_id: elig.reason }); return; }
@@ -139,17 +131,7 @@ export default function LoanForm() {
         issued_on: form.issued_on,
         note: form.note || null,
       };
-      const buildRows = (loanId: string) => {
-        const mk = (p: Party, role: string) => ({
-          loan_id: loanId, role, name: p.name.trim(),
-          father_name: p.father_name.trim() || null, village: p.village.trim() || null,
-          mobile: p.mobile.trim() || null, nid: p.nid.trim() || null, office_id: officeId ?? null,
-        });
-        return [
-          ...guarantors.filter(p => p.name.trim()).map(p => mk(p, "guarantor")),
-          ...nominees.filter(p => p.name.trim()).map(p => mk(p, "nominee")),
-        ];
-      };
+      const buildRows = (loanId: string) => buildPartyRows(loanId, guarantors, nominees, officeId ?? null);
       if (isEdit) {
         const { error } = await supabase.from("loans").update(payload).eq("id", id);
         if (error) throw error;
@@ -188,31 +170,54 @@ export default function LoanForm() {
     title: string,
     list: Party[],
     setList: React.Dispatch<React.SetStateAction<Party[]>>,
+    fieldErrors: PartyFieldError[],
+    clearErrors: () => void,
   ) {
-    const upd = (i: number, key: keyof Party, v: string) =>
+    const upd = (i: number, key: keyof Party, v: string) => {
       setList(arr => arr.map((p, idx) => (idx === i ? { ...p, [key]: v } : p)));
+      clearErrors();
+    };
+    const errFor = (i: number, field: "name" | "nid") => fieldErrors.find(e => e.index === i && e.field === field);
+    const msg = (code: PartyFieldError["code"]) =>
+      code === "empty" ? tx("Name is required", "নাম আবশ্যক")
+      : code === "invalid_nid" ? tx("NID must be 10, 13 or 17 digits", "এনআইডি ১০, ১৩ বা ১৭ সংখ্যার হতে হবে")
+      : tx("Duplicate entry", "ডুপ্লিকেট এন্ট্রি");
     return (
       <div className="rounded-md border p-3 space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-medium">{title}</Label>
-          <Button type="button" variant="outline" size="sm" onClick={() => setList(arr => [...arr, emptyParty()])}>
+          <Button type="button" variant="outline" size="sm" onClick={() => { setList(arr => [...arr, emptyParty()]); clearErrors(); }}>
             <Plus className="h-4 w-4 mr-1" />{tx("Add", "যোগ করুন")}
           </Button>
         </div>
         {list.length === 0 && <p className="text-xs text-muted-foreground">{tx("None added", "কেউ যোগ করা হয়নি")}</p>}
-        {list.map((p, i) => (
-          <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-md bg-muted/40 p-2">
-            <Input placeholder={tx("Name", "নাম")} value={p.name} onChange={e => upd(i, "name", e.target.value)} />
-            <Input placeholder={tx("Father's name", "পিতার নাম")} value={p.father_name} onChange={e => upd(i, "father_name", e.target.value)} />
-            <Input placeholder={tx("Village", "গ্রাম")} value={p.village} onChange={e => upd(i, "village", e.target.value)} />
-            <Input placeholder={tx("Mobile", "মোবাইল")} value={p.mobile} onChange={e => upd(i, "mobile", e.target.value)} />
-            <Input placeholder={tx("NID", "এনআইডি")} value={p.nid} onChange={e => upd(i, "nid", e.target.value)} />
-            <Button type="button" variant="ghost" size="sm" className="text-destructive justify-self-start"
-              onClick={() => setList(arr => arr.filter((_, idx) => idx !== i))}>
-              <Trash2 className="h-4 w-4 mr-1" />{tx("Remove", "মুছুন")}
-            </Button>
-          </div>
-        ))}
+        {list.map((p, i) => {
+          const nameErr = errFor(i, "name");
+          const nidErr = errFor(i, "nid");
+          return (
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-md bg-muted/40 p-2">
+              <div>
+                <Input placeholder={tx("Name", "নাম")} value={p.name} aria-invalid={!!nameErr}
+                  className={nameErr ? "border-destructive ring-1 ring-destructive/40" : ""}
+                  onChange={e => upd(i, "name", e.target.value)} />
+                {nameErr && <p className="text-xs text-destructive mt-1">{msg(nameErr.code)}</p>}
+              </div>
+              <Input placeholder={tx("Father's name", "পিতার নাম")} value={p.father_name} onChange={e => upd(i, "father_name", e.target.value)} />
+              <Input placeholder={tx("Village", "গ্রাম")} value={p.village} onChange={e => upd(i, "village", e.target.value)} />
+              <Input placeholder={tx("Mobile", "মোবাইল")} value={p.mobile} onChange={e => upd(i, "mobile", e.target.value)} />
+              <div>
+                <Input placeholder={tx("NID", "এনআইডি")} value={p.nid} aria-invalid={!!nidErr}
+                  className={nidErr ? "border-destructive ring-1 ring-destructive/40" : ""}
+                  onChange={e => upd(i, "nid", e.target.value)} />
+                {nidErr && <p className="text-xs text-destructive mt-1">{msg(nidErr.code)}</p>}
+              </div>
+              <Button type="button" variant="ghost" size="sm" className="text-destructive justify-self-start"
+                onClick={() => { setList(arr => arr.filter((_, idx) => idx !== i)); clearErrors(); }}>
+                <Trash2 className="h-4 w-4 mr-1" />{tx("Remove", "মুছুন")}
+              </Button>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -252,8 +257,8 @@ export default function LoanForm() {
           </div>
           <div><Label>{tx("Issued On", "ইস্যু তারিখ")}</Label><Input type="date" value={form.issued_on} onChange={e => { setForm({ ...form, issued_on: e.target.value }); setErrors(er => ({ ...er, issued_on: undefined })); }} aria-invalid={!!errors.issued_on} />{errors.issued_on && <p className="text-sm text-destructive mt-1">{errors.issued_on}</p>}</div>
           <div><Label>{tx("Note", "নোট")}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
-          {renderParty(tx("Guarantors", "গ্যারান্টার"), guarantors, setGuarantors)}
-          {renderParty(tx("Extra Nominees", "অতিরিক্ত নমিনি"), nominees, setNominees)}
+          {renderParty(tx("Guarantors", "গ্যারান্টার"), guarantors, setGuarantors, gErrors, () => setGErrors([]))}
+          {renderParty(tx("Extra Nominees", "অতিরিক্ত নমিনি"), nominees, setNominees, nErrors, () => setNErrors([]))}
           {lumpSum && schedule.length > 0 && (
             <div className="rounded-md border p-3">
               <div className="text-sm font-medium mb-2">{tx("Repayment Schedule (lump sum at end of term)", "পরিশোধ সূচি (মেয়াদ শেষে একবারে)")}</div>
