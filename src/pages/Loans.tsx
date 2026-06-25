@@ -29,7 +29,7 @@ export default function Loans() {
   useEffect(() => { document.title = `${tx("Loans", "ঋণ")} — MK Baliadanga`; load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from("loans").select("*, farmers(name_en,name_bn,farmer_code,member_no), loan_plans(name,name_bn,installment_type), loan_payments(amount,principal_amount)").is("deleted_at", null).order("created_at", { ascending: false });
+    const { data } = await supabase.from("loans").select("*, farmers(name_en,name_bn,farmer_code,member_no), loan_plans(name,name_bn,installment_type), loan_payments(amount,principal_amount), loan_guarantors(name,role)").is("deleted_at", null).order("created_at", { ascending: false });
     setRows(data ?? []);
   }
 
@@ -102,6 +102,7 @@ export default function Loans() {
                 <TableHead>{tx("Issued", "ইস্যু")}</TableHead>
                 <TableHead className="text-right">{tx("Principal", "আসল")}</TableHead>
                 <TableHead className="text-right">{tx("Principal Due", "আসল বাকি")}</TableHead>
+                <TableHead>{tx("Guarantor / Nominee", "গ্যারান্টার / নমিনি")}</TableHead>
                 <TableHead>{tx("Status", "অবস্থা")}</TableHead>
                 <TableHead className="text-right">{tx("Actions", "কার্যক্রম")}</TableHead>
               </TableRow></TableHeader>
@@ -119,6 +120,19 @@ export default function Loans() {
                       <TableCell>{fmtDate(r.issued_on)}</TableCell>
                       <TableCell className="text-right font-mono">{money(r.principal)}</TableCell>
                       <TableCell className="text-right font-mono">{money(due)}</TableCell>
+                      <TableCell className="text-xs">
+                        {(() => {
+                          const g = (r.loan_guarantors ?? []).filter((x: any) => (x.role ?? "guarantor") === "guarantor").map((x: any) => x.name).filter(Boolean);
+                          const n = (r.loan_guarantors ?? []).filter((x: any) => x.role === "nominee").map((x: any) => x.name).filter(Boolean);
+                          if (!g.length && !n.length) return <span className="text-muted-foreground">—</span>;
+                          return (
+                            <div className="space-y-0.5">
+                              {g.length > 0 && <div><span className="text-muted-foreground">{tx("G", "গ্যা")}:</span> {g.join(", ")}</div>}
+                              {n.length > 0 && <div><span className="text-muted-foreground">{tx("N", "নমি")}:</span> {n.join(", ")}</div>}
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell><Badge variant={r.status === "approved" ? "default" : r.status === "pending" ? "secondary" : "outline"}>{r.status}</Badge></TableCell>
                       <TableCell className="text-right space-x-1">
                         {r.status === "approved" && (
@@ -143,7 +157,7 @@ export default function Loans() {
                     </TableRow>
                   );
                 })}
-                {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{tx("No loans", "কোনো ঋণ নেই")}</TableCell></TableRow>}
+                {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">{tx("No loans", "কোনো ঋণ নেই")}</TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>

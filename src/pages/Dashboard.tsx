@@ -57,7 +57,7 @@ export default function Dashboard() {
       supabase.from("farmers").select("id,status,is_voter").is("deleted_at", null),
       inV(supabase.from("savings_transactions").select("type,amount,status,farmer_id").is("deleted_at", null)),
       inV(supabase.from("shares").select("balance,farmer_id")),
-      inV(supabase.from("loans").select("principal,total_payable,status,farmer_id").is("deleted_at", null)),
+      inV(supabase.from("loans").select("principal,total_payable,status,farmer_id,loan_payments(amount)").is("deleted_at", null)),
       inV(supabase.from("irrigation_invoices").select("payable_amount,paid_amount,due_amount,due_date,farmer_id").is("deleted_at", null).neq("invoice_status", "cancelled")),
       inV(supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8)),
       inV(supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw")),
@@ -73,10 +73,12 @@ export default function Dashboard() {
 
     const totalSavings = sum(savingsData.filter(s => s.status === "approved" && s.type === "deposit"), "amount") -
                          sum(savingsData.filter(s => s.status === "approved" && s.type === "withdraw"), "amount");
-    const totalLoan = sum(loansData.filter(l => l.status === "approved"), "total_payable");
+    const loanPaid = (l: any) => (l.loan_payments ?? []).reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+    const loanOutstanding = (l: any) => Math.max(0, Number(l.total_payable || 0) - loanPaid(l));
+    const totalLoan = loansData.filter(l => l.status === "approved").reduce((s, l) => s + loanOutstanding(l), 0);
     const irrCollection = sum(irrData, "paid_amount");
     const irrigationDue = sum(irrData, "due_amount");
-    const loanDue = sum(loansData.filter(l => l.status === "approved"), "total_payable");
+    const loanDue = totalLoan;
     const todayCollect = sum(paymentsData.filter(p => p.created_at?.slice(0, 10) === today), "amount");
     const monthStart = today.slice(0, 7) + "-01";
     const now = new Date();
