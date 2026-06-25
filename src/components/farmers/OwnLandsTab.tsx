@@ -156,155 +156,192 @@ export default function OwnLandsTab({
   }
 
   const allOwn = enriched.length;
+  const totalSize = enriched.reduce((s, r) => s + Number(r.l.land_size || 0), 0);
+  const totalAmount = enriched.reduce((s, r) => s + r.total, 0);
+  const totalDue = enriched.reduce((s, r) => s + (r.m.state === "none" ? 0 : r.m.due), 0);
+  const borgaSize = borgaOut.reduce((s, l) => s + Number(l.land_size || 0), 0);
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-center gap-2 p-3 border-b">
-        <span className="text-sm font-medium">{tx("Own Lands", "নিজের জমি")}</span>
-        <Badge variant="secondary">{tx("Total", "মোট")}: {allOwn}</Badge>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Input
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder={tx("Search location, dag, patwari…", "অবস্থান, দাগ, পাটুয়ারি খুঁজুন…")}
-            className="h-8 w-[220px] text-xs"
-          />
-          <Button size="sm" variant="outline" disabled={allOwn === 0} onClick={exportPdf}>
-            <FileText className="h-4 w-4 mr-1" />PDF
-          </Button>
-          <Button size="sm" variant="outline" disabled={allOwn === 0} onClick={exportExcel}>
-            <FileSpreadsheet className="h-4 w-4 mr-1" />Excel
-          </Button>
+    <div className="space-y-4">
+      {/* ===== Own lands the farmer cultivates ===== */}
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b bg-muted/30">
+          <div>
+            <h3 className="text-sm font-semibold">{tx("Own Lands", "নিজের জমি")}</h3>
+            <p className="text-xs text-muted-foreground">
+              {tx("Lands owned and cultivated by this farmer", "এই কৃষকের নিজ মালিকানাধীন জমি")}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder={tx("Search location, dag, patwari…", "অবস্থান, দাগ, পাটুয়ারি খুঁজুন…")}
+              className="h-8 w-[220px] text-xs"
+            />
+            <Button size="sm" variant="outline" disabled={allOwn === 0} onClick={exportPdf}>
+              <FileText className="h-4 w-4 mr-1" />PDF
+            </Button>
+            <Button size="sm" variant="outline" disabled={allOwn === 0} onClick={exportExcel}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" />Excel
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {allOwn === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-          <Plus className="h-8 w-8 text-muted-foreground/50" />
-          <p className="text-sm font-medium">{tx("No own lands", "নিজের কোনো জমি নেই")}</p>
-          <p className="text-xs text-muted-foreground">
-            {tx("This farmer has no lands they personally own.", "এই কৃষকের নিজ মালিকানাধীন কোনো জমি নেই।")}
-          </p>
-        </div>
-      ) : (
-        <>
-          <Table>
-            <TableHeader><TableRow>
-              <Th k="location">{tx("Location", "অবস্থান")}</Th>
-              <Th k="dag_no">{tx("Dag No", "দাগ নং")}</Th>
-              <Th k="land_size" align="right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</Th>
-              <TableHead>{tx("Owner Type", "মালিকানার ধরন")}</TableHead>
-              <TableHead>{tx("Owner", "মালিক")}</TableHead>
-              <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
-              <Th k="field_type">{tx("Field Type", "জমির শ্রেণি")}</Th>
-              <Th k="rate" align="right">{tx("Rate / Shotok", "রেট/শতক")}</Th>
-              <Th k="total" align="right">{tx("Total Amount", "মোট টাকা")}</Th>
-              <TableHead>{tx("Irrigation Charge", "সেচ চার্জ")}</TableHead>
-              <Th k="status">{tx("Payment Status", "পেমেন্ট স্ট্যাটাস")}</Th>
-              <TableHead className="text-right">{tx("Actions", "অ্যাকশন")}</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {pageRows.length === 0 ? (
-                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
-              ) : pageRows.map(({ l, rate, total, m, location }) => {
-                const isDue = m.due > 0.005;
-                return (
-                  <TableRow key={l.id}>
-                    <TableCell className="text-xs max-w-md whitespace-normal">{location}</TableCell>
-                    <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
-                    <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
-                    <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
-                    <TableCell className="text-xs"><span className="text-muted-foreground">{tx("Self-owned", "নিজ মালিক")}</span></TableCell>
-                    <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
-                    <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell>
-                      {m.state === "none"
-                        ? <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>
-                        : (
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => downloadLandInvoices(l.id)}>
-                            <FileDown className="h-3.5 w-3.5" />
-                            {isDue ? tx("Invoice", "ইনভয়েস") : tx("Receipt", "রসিদ")}
+        {allOwn > 0 && (
+          <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b text-xs">
+            <Badge variant="secondary">{tx("Plots", "জমি")}: {allOwn}</Badge>
+            <Badge variant="secondary">{tx("Total Size", "মোট জমি")}: {fmtLand(totalSize)}</Badge>
+            <Badge variant="secondary">{tx("Total Amount", "মোট টাকা")}: {money(totalAmount)}</Badge>
+            {totalDue > 0.005
+              ? <Badge variant="destructive">{tx("Due", "বকেয়া")}: {money(totalDue)}</Badge>
+              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("All Paid", "সব পরিশোধিত")}</Badge>}
+          </div>
+        )}
+
+        {allOwn === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+            <Plus className="h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm font-medium">{tx("No own lands", "নিজের কোনো জমি নেই")}</p>
+            <p className="text-xs text-muted-foreground">
+              {tx("This farmer has no lands they personally own.", "এই কৃষকের নিজ মালিকানাধীন কোনো জমি নেই।")}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow className="bg-muted/40">
+                  <Th k="location">{tx("Location", "অবস্থান")}</Th>
+                  <Th k="dag_no">{tx("Dag No", "দাগ নং")}</Th>
+                  <Th k="land_size" align="right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</Th>
+                  <TableHead>{tx("Owner Type", "মালিকানার ধরন")}</TableHead>
+                  <TableHead>{tx("Owner", "মালিক")}</TableHead>
+                  <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
+                  <Th k="field_type">{tx("Field Type", "জমির শ্রেণি")}</Th>
+                  <Th k="rate" align="right">{tx("Rate / Shotok", "রেট/শতক")}</Th>
+                  <Th k="total" align="right">{tx("Total Amount", "মোট টাকা")}</Th>
+                  <TableHead>{tx("Irrigation Charge", "সেচ চার্জ")}</TableHead>
+                  <Th k="status">{tx("Payment Status", "পেমেন্ট স্ট্যাটাস")}</Th>
+                  <TableHead className="text-right">{tx("Actions", "অ্যাকশন")}</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {pageRows.length === 0 ? (
+                    <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                  ) : pageRows.map(({ l, rate, total, m, location }) => {
+                    const isDue = m.due > 0.005;
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell className="text-xs max-w-md whitespace-normal">{location}</TableCell>
+                        <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
+                        <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
+                        <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                        <TableCell className="text-xs"><span className="text-muted-foreground">{tx("Self-owned", "নিজ মালিক")}</span></TableCell>
+                        <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
+                        <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell>
+                          {m.state === "none"
+                            ? <span className="text-muted-foreground text-xs">{tx("No invoice", "ইনভয়েস নেই")}</span>
+                            : (
+                              <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => downloadLandInvoices(l.id)}>
+                                <FileDown className="h-3.5 w-3.5" />
+                                {isDue ? tx("Invoice", "ইনভয়েস") : tx("Receipt", "রসিদ")}
+                              </Button>
+                            )}
+                        </TableCell>
+                        <TableCell>
+                          {m.state === "none"
+                            ? <span className="text-muted-foreground text-xs">—</span>
+                            : isDue
+                              ? <Badge variant="destructive">{statusLabel(m.state)} {money(m.due)}</Badge>
+                              : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{statusLabel(m.state)}</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1" title={tx("Irrigation / Payment history", "সেচ / পেমেন্ট ইতিহাস")}>
+                            <Link to={`/lands/${l.id}`}><History className="h-3.5 w-3.5" />{tx("History", "ইতিহাস")}</Link>
                           </Button>
-                        )}
-                    </TableCell>
-                    <TableCell>
-                      {m.state === "none"
-                        ? <span className="text-muted-foreground text-xs">—</span>
-                        : isDue
-                          ? <Badge variant="destructive">{statusLabel(m.state)} {money(m.due)}</Badge>
-                          : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{statusLabel(m.state)}</Badge>}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1" title={tx("Irrigation / Payment history", "সেচ / পেমেন্ট ইতিহাস")}>
-                        <Link to={`/lands/${l.id}`}><History className="h-3.5 w-3.5" />{tx("History", "ইতিহাস")}</Link>
-                      </Button>
-                      <EditButton onClick={() => openEdit(l)} title={t("edit")} />
-                      <DeleteButton onClick={() => onDelete(l)} title={t("delete")} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                          <EditButton onClick={() => openEdit(l)} title={t("edit")} />
+                          <DeleteButton onClick={() => onDelete(l)} title={t("delete")} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between gap-2 p-3 border-t text-xs">
-              <span className="text-muted-foreground">
-                {tx("Showing", "দেখানো হচ্ছে")} {(curPage - 1) * PAGE_SIZE + 1}–{Math.min(curPage * PAGE_SIZE, filtered.length)} / {filtered.length}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-7 px-2" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)}>
-                  {tx("Previous", "পূর্ববর্তী")}
-                </Button>
-                <span>{curPage} / {totalPages}</span>
-                <Button size="sm" variant="outline" className="h-7 px-2" disabled={curPage >= totalPages} onClick={() => setPage(curPage + 1)}>
-                  {tx("Next", "পরবর্তী")}
-                </Button>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-2 p-3 border-t text-xs">
+                <span className="text-muted-foreground">
+                  {tx("Showing", "দেখানো হচ্ছে")} {(curPage - 1) * PAGE_SIZE + 1}–{Math.min(curPage * PAGE_SIZE, filtered.length)} / {filtered.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="h-7 px-2" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)}>
+                    {tx("Previous", "পূর্ববর্তী")}
+                  </Button>
+                  <span>{curPage} / {totalPages}</span>
+                  <Button size="sm" variant="outline" className="h-7 px-2" disabled={curPage >= totalPages} onClick={() => setPage(curPage + 1)}>
+                    {tx("Next", "পরবর্তী")}
+                  </Button>
+                </div>
               </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      {/* ===== Own lands sharecropped by others ===== */}
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-4 border-b bg-muted/30">
+          <div>
+            <h3 className="text-sm font-semibold">{tx("Sharecropped by others", "অন্যরা বর্গা চাষ করছেন")}</h3>
+            <p className="text-xs text-muted-foreground">
+              {tx("Own lands the owner does not farm — cultivated by sharecroppers", "মালিক নিজে চাষ করেন না — বর্গাদাররা চাষ করছেন")}
+            </p>
+          </div>
+          {borgaOut.length > 0 && (
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant="secondary">{tx("Plots", "জমি")}: {borgaOut.length}</Badge>
+              <Badge variant="secondary">{tx("Total Size", "মোট জমি")}: {fmtLand(borgaSize)}</Badge>
             </div>
           )}
-        </>
-      )}
-
-      <div className="border-t mt-2">
-        <div className="px-3 py-2 text-sm font-medium">
-          {tx("Sharecropped by others", "অন্যরা বর্গা চাষ করছেন")}
-          <span className="text-xs text-muted-foreground font-normal ml-2">
-            {tx("Own lands the owner does not farm — farmed by sharecroppers", "মালিক নিজে চাষ করেন না — বর্গাদাররা চাষ করছেন")}
-          </span>
         </div>
-        <Table>
-          <TableHeader><TableRow>
-            <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
-            <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
-            <TableHead className="text-right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</TableHead>
-            <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
-          </TableRow></TableHeader>
-          <TableBody>
-            {borgaOut.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">
-                {tx("No sharecropped lands", "কোনো বর্গা জমি নেই")}
-              </TableCell></TableRow>
-            ) : borgaOut.map((l) => (
-              <TableRow key={l.id}>
-                <TableCell>{l.dag_no || (l.dag_numbers || []).join(", ") || "—"}</TableCell>
-                <TableCell>{l.mouza_name || l.mouza || "—"}</TableCell>
-                <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
-                <TableCell className="text-xs">
-                  {l.tenant ? (
-                    <Link to={`/farmers/${l.tenant.id}`} className="underline text-primary">
-                      {l.tenant.name_bn || l.tenant.name_en}
-                      {l.tenant.farmer_code ? <span className="text-muted-foreground"> ({l.tenant.farmer_code})</span> : null}
-                    </Link>
-                  ) : "—"}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </Card>
+        {borgaOut.length === 0 ? (
+          <div className="py-8 text-center text-xs text-muted-foreground">
+            {tx("No sharecropped lands", "কোনো বর্গা জমি নেই")}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow className="bg-muted/40">
+                <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
+                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead className="text-right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</TableHead>
+                <TableHead>{tx("Sharecropper", "বর্গাদার")}</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {borgaOut.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell>{l.dag_no || (l.dag_numbers || []).join(", ") || "—"}</TableCell>
+                    <TableCell>{l.mouza_name || l.mouza || "—"}</TableCell>
+                    <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
+                    <TableCell className="text-xs">
+                      {l.tenant ? (
+                        <Link to={`/farmers/${l.tenant.id}`} className="underline text-primary">
+                          {l.tenant.name_bn || l.tenant.name_en}
+                          {l.tenant.farmer_code ? <span className="text-muted-foreground"> ({l.tenant.farmer_code})</span> : null}
+                        </Link>
+                      ) : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }
