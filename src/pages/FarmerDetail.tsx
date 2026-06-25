@@ -45,7 +45,7 @@ import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { formatId5 } from "@/lib/idFormat";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { toFarmerUpdatePayload } from "@/lib/farmerUpdateMapper";
-import { PaidLandHistory } from "@/components/PaidLandHistory";
+
 import { LoanStatement } from "@/components/LoanStatement";
 import { downloadIrrigationInvoicePdf, loadInvoiceSettings } from "@/lib/irrigationInvoicePdf";
 import { ReceiptPreviewModal } from "@/components/irrigation/ReceiptPreviewModal";
@@ -1034,7 +1034,7 @@ export default function FarmerDetail() {
       <Tabs defaultValue="lands">
         <TabsList>
           <TabsTrigger value="lands">{t("lands")}</TabsTrigger>
-          <TabsTrigger value="paid_lands">{tx("Paid Lands", "পরিশোধিত জমি")}</TabsTrigger>
+          
           <TabsTrigger value="land_history">{tx("Land History", "ভূমির ইতিহাস")}</TabsTrigger>
           <TabsTrigger value="land_transfers">{tx("Transfer History", "হস্তান্তর ইতিহাস")}</TabsTrigger>
           {borgaOut.length > 0 && <TabsTrigger value="owned_borga">{tx("Owned (Borga)", "মালিকানাধীন জমি")}</TabsTrigger>}
@@ -1486,10 +1486,13 @@ export default function FarmerDetail() {
 
         </TabsContent>
 
-        <TabsContent value="paid_lands">
-          <Card>
+        <TabsContent value="land_history">
+          <Card className="mb-4">
             <div className="p-3 border-b font-medium">
-              {tx("Lands with fully paid irrigation charge", "যে জমিগুলোর সেচ চার্জ সম্পূর্ণ পরিশোধিত")}
+              {tx("Give Borga / Transfer / Distribute Land", "জমি বর্গা / হস্তান্তর / বণ্টন করুন")}
+              <div className="text-xs text-muted-foreground font-normal mt-1">
+                {tx("Select a land below to give it on borga to a sharecropper, sell/transfer it to a new owner, or distribute it among heirs.", "নিচ থেকে জমি নির্বাচন করে বর্গাদারকে বর্গা দিন, নতুন মালিকের কাছে বিক্রি/হস্তান্তর করুন, অথবা উত্তরাধিকারীদের মাঝে বণ্টন করুন।")}
+              </div>
             </div>
             <Table>
               <TableHeader><TableRow>
@@ -1497,37 +1500,32 @@ export default function FarmerDetail() {
                 <TableHead>{t("dagNo")}</TableHead>
                 <TableHead className="text-right">{t("landSize")}</TableHead>
                 <TableHead>{t("ownerType")}</TableHead>
-                <TableHead className="text-right">{tx("Paid Amount", "পরিশোধিত টাকা")}</TableHead>
+                <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {(() => {
-                  const paidLands = lands.filter((l) => {
-                    const m = landInvMap[l.id];
-                    return m && m.count > 0 && m.due <= 0.005;
-                  });
-                  if (paidLands.length === 0) {
-                    return <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{tx("No fully paid lands", "কোনো সম্পূর্ণ পরিশোধিত জমি নেই")}</TableCell></TableRow>;
-                  }
-                  return paidLands.map((l) => (
-                    <TableRow key={l.id}>
-                      <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
-                      <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
-                      <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
-                      <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
-                      <TableCell className="text-right">{money(landInvMap[l.id]?.paid ?? 0)}</TableCell>
-                    </TableRow>
-                  ));
-                })()}
+                {lands.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">{tx("No lands", "কোনো জমি নেই")}</TableCell></TableRow>
+                ) : lands.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="text-xs max-w-md whitespace-normal">{buildLocLine(l)}</TableCell>
+                    <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
+                    <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
+                    <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setTransferLand(l)}>
+                        {tx("Transfer / Borga", "হস্তান্তর / বর্গা")}
+                      </Button>
+                      {l.owner_type === "borgadar" && l.owner_farmer_id && (
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setReclaimLand(l)}>
+                          {tx("Reclaim", "ফেরত")}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </Card>
-          <div className="mt-4">
-            <PaidLandHistory farmerId={id!} />
-          </div>
-        </TabsContent>
-
-
-        <TabsContent value="land_history">
           <FarmerLandHistoryTab farmerId={id!} />
         </TabsContent>
 
