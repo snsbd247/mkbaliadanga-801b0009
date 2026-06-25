@@ -2722,6 +2722,13 @@ export type Database = {
             referencedRelation: "irrigation_invoices"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "irrigation_invoice_payments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
         ]
       }
       irrigation_invoices: {
@@ -6688,7 +6695,7 @@ export type Database = {
         | "overdue"
         | "cancelled"
       irrigation_basis: "per_size" | "per_day" | "per_hour"
-      loan_installment_type: "daily" | "weekly" | "monthly"
+      loan_installment_type: "daily" | "weekly" | "monthly" | "lump_sum"
       loan_payment_status: "pending" | "approved" | "rejected"
       loan_penalty_type: "percentage" | "fixed"
       loan_status:
@@ -6880,7 +6887,7 @@ export const Constants = {
         "cancelled",
       ],
       irrigation_basis: ["per_size", "per_day", "per_hour"],
-      loan_installment_type: ["daily", "weekly", "monthly"],
+      loan_installment_type: ["daily", "weekly", "monthly", "lump_sum"],
       loan_payment_status: ["pending", "approved", "rejected"],
       loan_penalty_type: ["percentage", "fixed"],
       loan_status: [

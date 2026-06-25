@@ -233,14 +233,13 @@ export default function CollectionReport() {
       // collection report reflects "<receipt_no> বাতিল".
       let vdQ: any = supabase
         .from("payments")
-        .select("id,receipt_no,amount,voided_at,void_reason,created_by,farmer_id,farmers(name_en,farmer_code,member_no)")
-        .eq("status", "voided" as any)
+        .select("id,receipt_no,amount,voided_at,void_reason,collected_by,farmer_id,farmers(name_en,farmer_code,member_no)")
         .not("voided_at", "is", null)
         .order("voided_at", { ascending: false });
       if (from) vdQ = vdQ.gte("voided_at", from);
       if (to) vdQ = vdQ.lte("voided_at", to + "T23:59:59");
       if (farmerId !== ALL) vdQ = vdQ.eq("farmer_id", farmerId);
-      if (effectiveUserId) vdQ = vdQ.eq("created_by", effectiveUserId);
+      if (effectiveUserId) vdQ = vdQ.eq("collected_by", effectiveUserId);
       const { data: vd } = await vdQ;
       for (const r of vd ?? []) {
         const fn = nameForFarmer((r as any).farmers);
@@ -251,8 +250,8 @@ export default function CollectionReport() {
           farmer_id: (r as any).farmer_id ?? null,
           farmer_code: fn.code,
           farmer_name: fn.name,
-          user_id: (r as any).created_by,
-          user_name: nameForUser((r as any).created_by),
+          user_id: (r as any).collected_by,
+          user_name: nameForUser((r as any).collected_by),
           ref_id: r.id,
           receipt_no: (r as any).receipt_no ?? null,
           voided: true,

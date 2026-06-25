@@ -23,7 +23,7 @@ export function LumpSumDueCard({ officeId }: { officeId?: string | null }) {
         .select("id,principal,next_due_on,office_id,farmers(name_en,name_bn,member_no),loan_plans!inner(installment_type),loan_payments(principal_amount,amount)")
         .is("deleted_at", null)
         .eq("loan_plans.installment_type", "lump_sum")
-        .in("status", ["approved", "active", "disbursed"]);
+        .in("status", ["approved", "overdue"]);
       if (officeId) q = q.eq("office_id", officeId);
       const { data } = await q;
       const due = (data ?? [])
