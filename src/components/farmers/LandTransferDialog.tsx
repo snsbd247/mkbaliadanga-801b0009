@@ -97,7 +97,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
       const { data: tr, error: trErr } = await supabase.from("land_transfers").insert({
         source_land_id: sourceLand.id,
         source_farmer_id: sourceFarmerId,
-        transfer_type: transferType,
+        transfer_type: isReclaim ? "borga_return" : transferType,
         remark: remark.trim() || null,
         transferred_at: transferredOn,
         office_id: sourceLand.office_id ?? officeId ?? null,
@@ -121,9 +121,9 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           mouza: sourceLand.mouza ?? null,
           dag_no: sourceLand.dag_no ?? null,
           land_size: area,
-          owner_type: isReclaim ? "owner" : sourceLand.owner_type,
+          owner_type: isReclaim ? "owner" : (isBorgaGive ? "borgadar" : sourceLand.owner_type),
           field_type: sourceLand.field_type,
-          owner_farmer_id: isReclaim ? null : (sourceLand.owner_type === "borgadar" ? sourceLand.owner_farmer_id : null),
+          owner_farmer_id: isReclaim ? null : (isBorgaGive ? sourceFarmerId : (sourceLand.owner_type === "borgadar" ? sourceLand.owner_farmer_id : null)),
           office_id: sourceLand.office_id ?? officeId ?? null,
           division_id: sourceLand.division_id ?? null,
           district_id: sourceLand.district_id ?? null,
@@ -170,9 +170,24 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         if (rcErr) throw rcErr;
       }
 
-      // Archive source land (history preserved via land_transfers; row not modified except deleted_at)
-      const { error: delErr } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
-      if (delErr) throw delErr;
+      // Giving borga: the OWNER keeps the parcel — only reduce its size by the area
+      // given out. Archive only if nothing remains. Sale/inheritance archive fully.
+      if (isBorgaGive) {
+        const remaining = normalizeLandSize(totalLand - effectiveSum);
+        if (remaining > 0.0001) {
+          const { error: upErr } = await supabase.from("lands")
+            .update({ land_size: remaining } as any).eq("id", sourceLand.id);
+          if (upErr) throw upErr;
+        } else {
+          const { error: delErr } = await supabase.from("lands")
+            .update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
+          if (delErr) throw delErr;
+        }
+      } else {
+        // Archive source land (history preserved via land_transfers; row not modified except deleted_at)
+        const { error: delErr } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
+        if (delErr) throw delErr;
+      }
 
       toast.success(tx("Land transferred", "জমি হস্তান্তরিত"));
       onOpenChange(false);
