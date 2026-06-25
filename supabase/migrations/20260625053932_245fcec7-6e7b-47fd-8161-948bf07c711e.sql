@@ -1,0 +1,1 @@
+ALTER TYPE public.loan_installment_type ADD VALUE IF NOT EXISTS 'lump_sum';

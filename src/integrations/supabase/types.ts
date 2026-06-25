@@ -6695,7 +6695,7 @@ export type Database = {
         | "overdue"
         | "cancelled"
       irrigation_basis: "per_size" | "per_day" | "per_hour"
-      loan_installment_type: "daily" | "weekly" | "monthly"
+      loan_installment_type: "daily" | "weekly" | "monthly" | "lump_sum"
       loan_payment_status: "pending" | "approved" | "rejected"
       loan_penalty_type: "percentage" | "fixed"
       loan_status:
@@ -6887,7 +6887,7 @@ export const Constants = {
         "cancelled",
       ],
       irrigation_basis: ["per_size", "per_day", "per_hour"],
-      loan_installment_type: ["daily", "weekly", "monthly"],
+      loan_installment_type: ["daily", "weekly", "monthly", "lump_sum"],
       loan_payment_status: ["pending", "approved", "rejected"],
       loan_penalty_type: ["percentage", "fixed"],
       loan_status: [
