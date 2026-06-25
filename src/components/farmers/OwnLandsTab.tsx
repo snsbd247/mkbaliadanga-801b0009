@@ -32,13 +32,14 @@ interface Props {
   downloadLandInvoices: (landId: string) => void;
   openEdit: (land: any) => void;
   onDelete: (land: any) => void;
+  borgaOut?: any[];
 }
 
 const PAGE_SIZE = 10;
 
 export default function OwnLandsTab({
   lands, loading, rateMap, resolveRateForLand, landSeasonStatus, buildLocLine,
-  fmtLand, t, tx, farmer, downloadLandInvoices, openEdit, onDelete,
+  fmtLand, t, tx, farmer, downloadLandInvoices, openEdit, onDelete, borgaOut = [],
 }: Props) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("dag_no");
