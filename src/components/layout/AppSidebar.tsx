@@ -111,14 +111,20 @@ export function AppSidebar() {
         { url: "/cashbook", icon: BookOpen, label: t("cashbook"), permKey: "cashbook" },
         { url: "/hand-cash", icon: Banknote, label: lang === "bn" ? "হ্যান্ড ক্যাশ" : "Hand Cash", permKey: "cashbook" },
         { url: "/cash-audit", icon: ScrollText, label: lang === "bn" ? "ক্যাশ অডিট" : "Cash Audit", permKey: "cashbook" },
+        { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
+      ],
+    },
+
+    // ── Cash Statements & Ledgers / ক্যাশ বহি ও বিবরণী ──
+    {
+      key: "cashStatements", icon: BookOpen, label: lang === "bn" ? "ক্যাশ বহি ও বিবরণী" : "Cash Statements & Ledgers",
+      children: [
         { url: "/reports/irrigation-statement", icon: ScrollText, label: lang === "bn" ? "জমা খরচ হিসাব (সেচ)" : "Cash Statement (Irrigation)", permKey: "cashbook" },
         { url: "/reports/society-statement", icon: ScrollText, label: lang === "bn" ? "জমা খরচ হিসাব (সমিতি)" : "Cash Statement (Society)", permKey: "cashbook" },
         { url: "/reports/society-cashbook", icon: ScrollText, label: lang === "bn" ? "আয়-ব্যয় ক্যাশ বহি (সমিতি)" : "Income-Expense Cash Book (Society)", permKey: "cashbook" },
-       { url: "/reports/irrigation-cashbook", icon: ScrollText, label: lang === "bn" ? "সেচ আয়-ব্যয় ক্যাশ বহি" : "Irrigation Income-Expense Cash Book", permKey: "cashbook" },
-       { url: "/reports/irrigation-cashbook-ledger", icon: BookOpen, label: lang === "bn" ? "ক্যাশ বুক (লেজার)" : "Cash Book (Ledger)", permKey: "cashbook" },
-       { url: "/reports/irrigation-cashbook-audit", icon: ScrollText, label: lang === "bn" ? "সেচ ক্যাশ বহি এক্সপোর্ট অডিট" : "Irrigation Cash Book Export Audit", permKey: "cashbook" },
-
-        { url: "/approvals", icon: ClipboardCheck, label: t("approvals"), permKey: "approvals" },
+        { url: "/reports/irrigation-cashbook", icon: ScrollText, label: lang === "bn" ? "সেচ আয়-ব্যয় ক্যাশ বহি" : "Irrigation Income-Expense Cash Book", permKey: "cashbook" },
+        { url: "/reports/irrigation-cashbook-ledger", icon: BookOpen, label: lang === "bn" ? "ক্যাশ বুক (লেজার)" : "Cash Book (Ledger)", permKey: "cashbook" },
+        { url: "/reports/irrigation-cashbook-audit", icon: ScrollText, label: lang === "bn" ? "সেচ ক্যাশ বহি এক্সপোর্ট অডিট" : "Irrigation Cash Book Export Audit", permKey: "cashbook" },
       ],
     },
 
