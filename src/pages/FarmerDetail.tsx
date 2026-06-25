@@ -1581,6 +1581,12 @@ export default function FarmerDetail() {
                           <Badge variant={due <= 0 ? "default" : "destructive"}>{status}</Badge>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                          onClick={() => setReclaimLand({ ...l, owner_farmer_id: id })}>
+                          {tx("Reclaim", "ফেরত")}
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
