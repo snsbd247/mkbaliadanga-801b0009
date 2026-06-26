@@ -1064,7 +1064,7 @@ export default function Payments() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>{tx("Mouza", "মৌজা")}</Label>
-                    <Input value={editForm.mouza} onChange={(e) => setEditForm(f => ({ ...f, mouza: e.target.value }))} />
+                    <MouzaSelect value={editForm.mouza} onChange={(v) => setEditForm(f => ({ ...f, mouza: v }))} />
                   </div>
                   <div>
                     <Label>{tx("Land size", "জমির পরিমাণ")}</Label>
