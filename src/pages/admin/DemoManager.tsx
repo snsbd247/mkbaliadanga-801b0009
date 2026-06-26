@@ -27,6 +27,7 @@ import { logDemoRun } from "@/lib/demoOpsAudit";
 import { downloadCashReportSummaryPdf, downloadCashReportSummaryCsv } from "@/lib/cashReportSummaryPdf";
 import { getBackupSchedule, setBackupSchedule, maybeScheduledBackup, type BackupSchedule } from "@/lib/cashReportSchedule";
 import { useAuth } from "@/auth/AuthProvider";
+import LandTransferVerifyCard from "@/components/admin/LandTransferVerifyCard";
 
 const MODULE_KEYS = [
   { id: "locations", tk: "dmModLocations" },
@@ -752,6 +753,10 @@ export default function DemoManager() {
           </CardContent>
         </Card>
       )}
+
+      {!loading && <LandTransferVerifyCard />}
+
+
 
       {seedLog.length > 0 && !loading && (
         <Card>

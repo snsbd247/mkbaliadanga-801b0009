@@ -84,7 +84,7 @@ describe("demoPresets — buildRowCountReport (no module empty after seed)", () 
   it("marks ok when actual > 0", () => {
     const counts = {
       farmers: 10, lands: 10, patwaris: 4, land_relations: 2,
-      land_history: 5, land_transfers: 2, land_change_log: 2,
+      land_history: 5, land_transfers: 2, land_transfer_recipients: 2, land_change_log: 2,
       farmer_notes: 3, voter_audit_logs: 1, public_payment_intents: 1,
     };
     const rows = buildRowCountReport(["farmers"], counts);
