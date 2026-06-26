@@ -305,7 +305,7 @@ export default function FarmerDetail() {
         tenant: r._tenant ? { ...r._tenant, ...(tenantMap[r.farmer_id] ?? {}) } : tenantMap[r.farmer_id],
         latest_invoice: invMap[r._invoice_land_id ?? r.id],
       })));
-    } catch { setBorgaOut([]); }
+    } catch { setBorgaOut([]); setBorgaGivenMap({}); }
 
 
 
