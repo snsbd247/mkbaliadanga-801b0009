@@ -337,12 +337,12 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         ? Number(d.rate_per_bigha)
         : (ratePerAcre != null ? ratePerAcre / 33 : null);
       const unit = lang === "bn" ? "টাকা" : "";
-      const rateText = ratePerAcre != null ? `${moneyText(ratePerAcre, lang, unit)}/${moneyText(ratePerBigha ?? 0, lang, unit)}` : "";
+      const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
       rows.push([t.landKind, [d.farmer.field_type_bn, rateText].filter(Boolean).join("/ ")]);
     }
-    // 7. দাগ নং (একাধিক হতে পারে)
+    // 7. দাগ নং (একাধিক হতে পারে) — ডেমো অনুযায়ী ডট-সেপারেটেড
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
-    const dagFormatted = digits(dagTokens.join(dagSeparatorHtml(layout.dagSeparator)), lang);
+    const dagFormatted = digits(dagTokens.join("."), lang);
     if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
     // 8. জমির পরিমাণ — একর (শতক ÷ ১০০), . এর পর ৪ ডিজিট
     if (d.farmer.land_size != null) {
