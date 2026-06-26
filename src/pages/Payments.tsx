@@ -980,6 +980,12 @@ export default function Payments() {
                             };
                           }
 
+                          // বিবিধ আদায় (হাওলাত/ব্যাংক/দান/বিবিধ): জমি-সম্পর্কিত সারি বাদ, শুধু bill_info ধরন দেখাবে।
+                          const miscLabels: Record<string, string> = {
+                            hawlat: "হাওলাত", bank: "ব্যাংক", donation: "অনুদান", misc: "বিবিধ",
+                          };
+                          const catBn = miscLabels[(p.category as string) ?? ""] ?? null;
+                          const isMiscCollection = kind === "irrigation" && !!catBn;
                           const rd: BnReceiptData = {
                             kind,
                             company_name: brand.company_name,
@@ -988,7 +994,8 @@ export default function Payments() {
                             org: receiptArgs.org,
                             receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
                             date: p.created_at,
-                            bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
+                            misc_collection: isMiscCollection || undefined,
+                            bill_info: kind === "irrigation" ? (catBn ?? "সেচ চার্জ") : undefined,
                             farmer: {
                               name: p.farmers?.name_bn || p.farmers?.name_en || "—",
                               member_no: p.farmers?.member_no ?? p.farmers?.farmer_code ?? null,
