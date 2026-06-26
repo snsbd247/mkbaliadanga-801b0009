@@ -754,6 +754,10 @@ export default function DemoManager() {
         </Card>
       )}
 
+      {!loading && <LandTransferVerifyCard />}
+
+
+
       {seedLog.length > 0 && !loading && (
         <Card>
           <CardHeader>
