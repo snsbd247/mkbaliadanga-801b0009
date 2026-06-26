@@ -761,6 +761,7 @@ export default function FarmerDetail() {
         land_size: land.land_size,
         owner_type: land.owner_type as any,
         field_type: land.field_type as any,
+        land_type_id: land.land_type_id || null,
         owner_farmer_id: land.owner_type === "borgadar" ? land.owner_farmer_id : null,
         patwari_id: land.patwari_id || null,
         notes: land.notes?.trim() || null,
