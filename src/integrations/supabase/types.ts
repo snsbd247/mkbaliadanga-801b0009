@@ -1346,6 +1346,7 @@ export type Database = {
           company_name: string
           company_name_bn: string | null
           default_loan_interest: number
+          editor_signature_url: string | null
           email: string | null
           fiscal_year_start_month: number
           id: number
@@ -1370,6 +1371,7 @@ export type Database = {
           company_name?: string
           company_name_bn?: string | null
           default_loan_interest?: number
+          editor_signature_url?: string | null
           email?: string | null
           fiscal_year_start_month?: number
           id?: number
@@ -1394,6 +1396,7 @@ export type Database = {
           company_name?: string
           company_name_bn?: string | null
           default_loan_interest?: number
+          editor_signature_url?: string | null
           email?: string | null
           fiscal_year_start_month?: number
           id?: number

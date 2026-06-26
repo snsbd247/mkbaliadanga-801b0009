@@ -15,11 +15,12 @@ import { buildReceiptCopyHtmlForTest } from "@/lib/bnReceipts";
 import BanglaFontSelector from "@/components/settings/BanglaFontSelector";
 
 export default function Settings() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { isSuper, rolesLoaded } = useAuth();
   const brand = useBranding();
   const [form, setForm] = useState<any>(brand);
   const [logo, setLogo] = useState<File | null>(null);
+  const [signature, setSignature] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { document.title = `${t("settings")} — ${t("appName")}`; }, [t]);
@@ -38,10 +39,19 @@ export default function Settings() {
       if (up.error) { setBusy(false); return toast.error(up.error.message); }
       logo_url = supabase.storage.from("branding").getPublicUrl(path).data.publicUrl;
     }
+    let editor_signature_url = form.editor_signature_url;
+    if (signature) {
+      const ext = signature.name.split(".").pop();
+      const path = `editor-signature-${Date.now()}.${ext}`;
+      const up = await supabase.storage.from("branding").upload(path, signature, { upsert: true });
+      if (up.error) { setBusy(false); return toast.error(up.error.message); }
+      editor_signature_url = supabase.storage.from("branding").getPublicUrl(path).data.publicUrl;
+    }
     const { error } = await supabase.from("company_settings").update({
       company_name: form.company_name,
       company_name_bn: form.company_name_bn,
       logo_url,
+      editor_signature_url,
       email: form.email,
       mobile: form.mobile,
       address: form.address,
@@ -59,6 +69,7 @@ export default function Settings() {
     toast.success(t("saved"));
     notifyBrandingChange();
     setLogo(null);
+    setSignature(null);
   }
 
   return (
@@ -96,6 +107,13 @@ export default function Settings() {
               <Input type="file" accept="image/*" onChange={e => setLogo(e.target.files?.[0] ?? null)} />
               {form.logo_url && !logo && <img src={form.logo_url} className="mt-2 h-14 w-14 rounded object-cover" alt="logo" />}
             </div>
+            <div>
+              <Label>{lang === "bn" ? "সম্পাদকের স্বাক্ষর" : "Editor signature"}</Label>
+              <Input type="file" accept="image/*" onChange={e => setSignature(e.target.files?.[0] ?? null)} />
+              {form.editor_signature_url && !signature && <img src={form.editor_signature_url} className="mt-2 h-12 rounded border bg-white object-contain px-2" alt="signature" />}
+              <p className="mt-1 text-xs text-muted-foreground">{lang === "bn" ? "আপলোড করলে রশিদে আদায়কারীর স্বাক্ষরের জায়গায় অটো বসবে।" : "Auto-placed on receipts where the collector signs."}</p>
+            </div>
+
             <div className="sm:col-span-2 border-t pt-4 mt-2">
               <h3 className="font-semibold mb-2">{t("irrigationPenalty")}</h3>
               <div className="grid gap-3 sm:grid-cols-3">
