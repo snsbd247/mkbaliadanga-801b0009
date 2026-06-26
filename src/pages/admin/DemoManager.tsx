@@ -755,7 +755,7 @@ export default function DemoManager() {
         </Card>
       )}
 
-      {!loading && <LandTransferVerifyCard />}
+      {!loading && <LandTransferVerifyCard autoRunKey={integrityAutoKey} />}
 
 
 
