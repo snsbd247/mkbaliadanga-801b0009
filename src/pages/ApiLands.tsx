@@ -42,7 +42,7 @@ export default function ApiLands() {
                       <div><Label>Dag No</Label><Input value={form.dag_no} onChange={e => setForm({ ...form, dag_no: e.target.value })} /></div>
                     </div>
                     <div><Label>Area (decimal)</Label><Input type="number" step="0.01" value={form.area_decimal} onChange={e => setForm({ ...form, area_decimal: Number(e.target.value) })} /></div>
-                    <div><Label>Mouza</Label><Input value={form.mouza} onChange={e => setForm({ ...form, mouza: e.target.value })} /></div>
+                    <div><Label>Mouza</Label><MouzaSelect value={form.mouza} onChange={v => setForm({ ...form, mouza: v })} /></div>
                     <Button className="w-full" onClick={submit} disabled={create.isPending}>Save</Button>
                   </div>
                 </DialogContent>
