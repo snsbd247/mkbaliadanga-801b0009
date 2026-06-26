@@ -139,14 +139,35 @@ export default function LandTransferVerifyCard({ autoRunKey }: { autoRunKey?: nu
       const ids = Array.from(landIds);
       for (let i = 0; i < ids.length; i += 200) {
         const { data } = await sb.from("lands")
-          .select("id,farmer_id,dag_no,land_size,deleted_at")
+          .select("id,farmer_id,dag_no,land_size,deleted_at,owner_type")
           .in("id", ids.slice(i, i + 200));
         lands = lands.concat(data ?? []);
       }
       setProgress(85);
 
-      const input = { transfers: transfers ?? [], recipients, lands };
+      // Unified borga model: load active land_relations for source lands and
+      // any orphaned owner_type='borgadar' land rows.
+      let relations: any[] = [];
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data } = await sb.from("land_relations")
+          .select("id,land_id,owner_farmer_id,sharecropper_farmer_id,area_decimal,valid_to,deleted_at")
+          .in("land_id", ids.slice(i, i + 200));
+        relations = relations.concat(data ?? []);
+      }
+      const { data: borgadarLands } = await sb.from("lands")
+        .select("id,farmer_id,dag_no,land_size,deleted_at,owner_type")
+        .eq("owner_type", "borgadar")
+        .is("deleted_at", null);
+
+      const input = {
+        transfers: transfers ?? [],
+        recipients,
+        lands,
+        relations,
+        borgadarLands: borgadarLands ?? [],
+      };
       const v = checkLandTransferIntegrity(input);
+
       const s = summarizeIntegrity(input, v);
       setViolations(v);
       setSummary(s);
@@ -223,11 +244,11 @@ export default function LandTransferVerifyCard({ autoRunKey }: { autoRunKey?: nu
           {isAdmin && (
             <>
               <Button size="sm" variant="outline" disabled={!violations}
-                onClick={() => exportIntegrityExcel(violations ?? [], summary)}>
+                onClick={() => { if (!isAdmin) { toast.error(tx("Not authorized to export", "এক্সপোর্ট করার অনুমতি নেই")); return; } exportIntegrityExcel(violations ?? [], summary); }}>
                 <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
               </Button>
               <Button size="sm" variant="outline" disabled={!violations}
-                onClick={() => exportIntegrityPdf(violations ?? [], summary)}>
+                onClick={() => { if (!isAdmin) { toast.error(tx("Not authorized to export", "এক্সপোর্ট করার অনুমতি নেই")); return; } exportIntegrityPdf(violations ?? [], summary); }}>
                 <FileText className="h-4 w-4 mr-1" /> PDF
               </Button>
               <Button size="sm" variant="ghost" asChild>
