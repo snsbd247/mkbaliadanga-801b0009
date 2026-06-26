@@ -73,8 +73,8 @@ export const DEMO_PRESETS: DemoPreset[] = [
     id: "recent_features", label_en: "Recent Features Showcase (May 2026)",
     label_bn: "সাম্প্রতিক ফিচার ডেমো (মে ২০২৬)",
     size: 25, modules: ALL_MODULES, monthsBack: 2,
-    description_en: "Small dataset with Hawlat/Bank irrigation payments, multi-loan members, QR-verifiable receipts and combined payment samples.",
-    description_bn: "ছোট ডেটাসেট — Hawlat/Bank সেচ পেমেন্ট, multi-loan member, QR-verify রসিদ ও combined payment স্যাম্পল।",
+    description_en: "Small dataset with Hawlat/Bank irrigation payments, multi-loan members, QR-verifiable receipts, borga (owner/sharecropper) invoices, current-season penalty + carried-forward due, demo logo & editor signature — reproduces the sample A5-landscape irrigation receipt 100%.",
+    description_bn: "ছোট ডেটাসেট — Hawlat/Bank সেচ পেমেন্ট, multi-loan member, QR-verify রসিদ, বর্গা (মালিক/বর্গাদার) ইনভয়েস, হাল জরিমানা + পূর্ব বকেয়া, ডেমো লোগো ও সম্পাদকের স্বাক্ষর — স্যাম্পল A5 ল্যান্ডস্কেপ সেচ রশিদ ১০০% রিপ্রোডিউস করে।",
   },
   {
     id: "patwari_workflow", label_en: "Patwari Workflow Demo",
