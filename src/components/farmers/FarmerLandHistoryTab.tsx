@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -129,7 +130,7 @@ export default function FarmerLandHistoryTab({ farmerId }: Props) {
                     <SelectContent>{SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>{tx("Mouza", "মৌজা")}</Label><Input value={f.mouza} onChange={e => setF({ ...f, mouza: e.target.value })} disabled={!isAdmin} title={!isAdmin ? tx("Only admin can edit Mouza", "শুধু অ্যাডমিন মৌজা পরিবর্তন করতে পারে") : undefined} /></div>
+                <div><Label>{tx("Mouza", "মৌজা")}</Label><MouzaSelect value={f.mouza} onChange={v => setF({ ...f, mouza: v })} disabled={!isAdmin} /></div>
                 <div><Label>{tx("Dag No", "দাগ নম্বর")}</Label><Input value={f.dag_no} onChange={e => setF({ ...f, dag_no: e.target.value })} disabled={!isAdmin} title={!isAdmin ? tx("Only admin can edit Dag No", "শুধু অ্যাডমিন দাগ পরিবর্তন করতে পারে") : undefined} /></div>
                 <div><Label>{tx("Land Size (Shotok)", "জমির পরিমাণ (শতক)")}</Label><Input type="number" step="0.001" value={f.land_size || ""} onChange={e => setF({ ...f, land_size: +e.target.value })} disabled={!isAdmin} title={!isAdmin ? tx("Only admin can edit land size", "শুধু অ্যাডমিন জমির পরিমাণ পরিবর্তন করতে পারে") : undefined} /></div>
                 <div><Label>{tx("Owner Type", "মালিকানা ধরন")}</Label>

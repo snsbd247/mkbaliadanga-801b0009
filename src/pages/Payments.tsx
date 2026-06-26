@@ -5,6 +5,7 @@ import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -1064,7 +1065,7 @@ export default function Payments() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>{tx("Mouza", "মৌজা")}</Label>
-                    <Input value={editForm.mouza} onChange={(e) => setEditForm(f => ({ ...f, mouza: e.target.value }))} />
+                    <MouzaSelect value={editForm.mouza} onChange={(v) => setEditForm(f => ({ ...f, mouza: v }))} />
                   </div>
                   <div>
                     <Label>{tx("Land size", "জমির পরিমাণ")}</Label>

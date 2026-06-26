@@ -4,6 +4,7 @@ import { useLands, useCreateLand, useDeleteLand } from "@/hooks/useCatalogApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -42,7 +43,7 @@ export default function ApiLands() {
                       <div><Label>Dag No</Label><Input value={form.dag_no} onChange={e => setForm({ ...form, dag_no: e.target.value })} /></div>
                     </div>
                     <div><Label>Area (decimal)</Label><Input type="number" step="0.01" value={form.area_decimal} onChange={e => setForm({ ...form, area_decimal: Number(e.target.value) })} /></div>
-                    <div><Label>Mouza</Label><Input value={form.mouza} onChange={e => setForm({ ...form, mouza: e.target.value })} /></div>
+                    <div><Label>Mouza</Label><MouzaSelect value={form.mouza} onChange={v => setForm({ ...form, mouza: v })} /></div>
                     <Button className="w-full" onClick={submit} disabled={create.isPending}>Save</Button>
                   </div>
                 </DialogContent>

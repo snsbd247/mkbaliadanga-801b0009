@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -99,7 +100,7 @@ export default function LandHistory() {
                     <SelectContent>{SEASONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Mouza</Label><Input value={f.mouza} onChange={e => setF({ ...f, mouza: e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit Mouza" : undefined} /></div>
+                <div><Label>Mouza</Label><MouzaSelect value={f.mouza} onChange={v => setF({ ...f, mouza: v })} disabled={!isAdmin} /></div>
                 <div><Label>Dag No</Label><Input value={f.dag_no} onChange={e => setF({ ...f, dag_no: e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit Dag No" : undefined} /></div>
                 <div><Label>Land Size (শতক)</Label><Input type="number" step="0.001" value={f.land_size || ""} onChange={e => setF({ ...f, land_size: +e.target.value })} disabled={!isAdmin} title={!isAdmin ? "Only admin can edit land size" : undefined} /></div>
                 <div><Label>Owner Type</Label>
