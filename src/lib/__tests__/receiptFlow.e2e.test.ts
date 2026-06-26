@@ -95,9 +95,11 @@ describe("Receipt flow E2E (print + download for all kinds)", () => {
     expect(lastHtml).not.toContain("ঋণের কিস্তি গ্রহণের রশিদ");
   });
 
-  it("custom margins are honoured by the PDF", async () => {
-    const rno = autoReceiptNo("IRR", "x", new Date("2026-05-06"));
-    await downloadBnReceiptPdf(payload("irrigation", rno), "both", {
+  it("custom margins are honoured by the PDF (non-irrigation)", async () => {
+    // Irrigation is permanently locked to A5 landscape + fixed margins, so custom
+    // margins are validated on a savings receipt where they still apply.
+    const rno = autoReceiptNo("SAV", "x", new Date("2026-05-06"));
+    await downloadBnReceiptPdf(payload("savings", rno), "both", {
       margins: { t: 20, r: 15, b: 20, l: 15 },
     });
     // jsPDF.addImage(jpegData, "JPEG", x=margin.l, y=margin.t, width, height)

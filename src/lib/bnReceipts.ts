@@ -9,6 +9,21 @@ import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf"
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
+
+/**
+ * Permanently locked page configuration for the official "সেচ চার্জ ও বিবিধ আদায় রশিদ".
+ * A5 landscape + fixed margins. User/profile receipt settings (A4/portrait) can NEVER
+ * override this — both the on-screen preview and the generated PDF use these values.
+ */
+export const IRRIGATION_RECEIPT_PAGE = {
+  paper: "a5" as const,
+  orientation: "l" as const,
+  margins: { t: 8, r: 8, b: 8, l: 8 },
+  /** Render width (px) for html2canvas that yields the A5-landscape aspect. */
+  renderWidthPx: 1040,
+  /** A5 landscape aspect ratio (210mm / 148mm) for preview containers. */
+  aspectRatio: 210 / 148,
+} as const;
 export type ReceiptCopy = "both" | "farmer" | "office";
 export type ReceiptLang = "bn" | "en";
 
@@ -562,7 +577,7 @@ function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLa
   // Official irrigation receipt is A5 *landscape*, so render in a landscape-proportioned
   // container; everything else stays at the A4-portrait width.
   const isOfficialIrrigation = d.kind === "irrigation" && !d.office_income;
-  const wrapWidth = isOfficialIrrigation ? 1040 : 794;
+  const wrapWidth = isOfficialIrrigation ? IRRIGATION_RECEIPT_PAGE.renderWidthPx : 794;
   wrap.style.cssText = `position:fixed;left:-10000px;top:0;width:${wrapWidth}px;background:#fff;`;
   // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় একটিমাত্র কপি (কৃষক/অফিস আলাদা নয়), copy যাই আসুক।
   if (isOfficialIrrigation) {
@@ -618,8 +633,9 @@ async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: Recei
   // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় FIXED A5 landscape।
   // User/profile receipt settings (A4/portrait) irrigation official receipt-কে override করতে পারবে না।
   if (data.kind === "irrigation" && !data.office_income) {
-    opts.paper = "a5";
-    opts.orientation = "l";
+    opts.paper = IRRIGATION_RECEIPT_PAGE.paper;
+    opts.orientation = IRRIGATION_RECEIPT_PAGE.orientation;
+    opts.margins = { ...IRRIGATION_RECEIPT_PAGE.margins };
   }
   let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
   try { tpl = { ...tpl, ...(await loadReceiptTemplate()) }; } catch { /* use defaults */ }
