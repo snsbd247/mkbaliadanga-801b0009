@@ -964,6 +964,7 @@ export default function Payments() {
                                 field_type_bn: fieldTypeBn,
                                 owner_type_bn: primaryCharge?.is_borga ? "বর্গাদার" : "মালিক",
                               },
+                              owner_self: isSelf,
                               land_owner_label: isSelf
                                 ? "নিজ"
                                 : ownerFarmer
