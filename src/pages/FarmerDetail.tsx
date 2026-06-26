@@ -239,71 +239,119 @@ export default function FarmerDetail() {
       setLandSelfNotes(selfMap);
     } else { setLandNotes({}); setLandSelfNotes({}); }
 
-    // Load borga lands where THIS farmer is the owner (given out to sharecroppers)
+    // ── Borga (sharecropping) — single source of truth: land_relations ──
+    // The owner ALWAYS keeps the full land row. Borga is recorded as a
+    // land_relations row (owner's land + sharecropper + area). Irrigation is
+    // split per land (owner pays the remaining self-cultivated area, the
+    // sharecropper pays the borga area) — see get_land_billing_split.
     try {
-      const { data: bout } = await (supabase.from as any)("lands_with_location")
-        .select("*")
-        .eq("owner_farmer_id", id!)
-        .eq("owner_type", "borgadar")
-        .order("created_at");
-      const rows = (bout as any[]) ?? [];
+      const ownAllRows = ((l.data as any) ?? []).filter((x: any) => x.owner_type === "owner");
+      const ownById: Record<string, any> = {};
+      ownAllRows.forEach((x: any) => { ownById[x.id] = x; });
+      const ownerLandIds = ownAllRows.map((x: any) => x.id);
 
-      // Also include borga relationships recorded as land transfers (transfer_type = borga_transfer)
-      const { data: borgaTransfers } = await supabase.from("land_transfers")
-        .select("id,source_land_id,source_dag_no,source_mouza,source_land_size,transferred_at,recipients:land_transfer_recipients(id,area_decimal,new_land_id,recipient_farmer_id,recipient_farmer:farmers!land_transfer_recipients_recipient_farmer_id_fkey(id,name_en,name_bn,farmer_code,mobile))")
-        .eq("source_farmer_id", id!)
-        .eq("transfer_type", "borga_transfer")
-        .order("transferred_at", { ascending: false });
-
-      // Map: owner's source land id -> total area currently given out as borga.
-      // Used to show total / given / remaining and to bill irrigation on the
-      // remaining (self-cultivated) area only.
+      // (A) Borga GIVEN OUT — relations on this farmer's own land rows.
       const givenMap: Record<string, number> = {};
-      (borgaTransfers ?? []).forEach((tr: any) => {
-        if (!tr.source_land_id) return;
-        const sum = (tr.recipients ?? []).reduce((s: number, rc: any) => s + Number(rc.area_decimal || 0), 0);
-        givenMap[tr.source_land_id] = (givenMap[tr.source_land_id] || 0) + sum;
-      });
-      setBorgaGivenMap(givenMap);
-
-
-      const transferRows: any[] = [];
-      (borgaTransfers ?? []).forEach((tr: any) => {
-        (tr.recipients ?? []).forEach((rc: any) => {
-          transferRows.push({
-            id: rc.new_land_id || `${tr.id}:${rc.id}`,
-            dag_no: tr.source_dag_no,
-            mouza: tr.source_mouza,
-            land_size: rc.area_decimal,
-            farmer_id: rc.recipient_farmer_id,
-            _invoice_land_id: rc.new_land_id,
-            _tenant: rc.recipient_farmer,
+      const outRows: any[] = [];
+      if (ownerLandIds.length) {
+        const { data: relsOut } = await supabase.from("land_relations")
+          .select("id,land_id,sharecropper_farmer_id,area_decimal,share_percentage")
+          .in("land_id", ownerLandIds as string[])
+          .not("sharecropper_farmer_id", "is", null)
+          .is("deleted_at", null)
+          .is("valid_to", null);
+        (relsOut ?? []).forEach((r: any) => {
+          const parent = ownById[r.land_id];
+          const parentSize = Number(parent?.land_size || 0);
+          const area = Number(r.area_decimal ?? (parentSize * Number(r.share_percentage || 0) / 100)) || 0;
+          givenMap[r.land_id] = (givenMap[r.land_id] || 0) + area;
+          outRows.push({
+            id: r.id,
+            _relation_id: r.id,
+            _land_id: r.land_id,
+            _sharecropper_id: r.sharecropper_farmer_id,
+            _invoice_land_id: r.land_id,
+            dag_no: parent?.dag_no ?? null,
+            mouza: parent?.mouza_name ?? parent?.mouza ?? null,
+            land_size: Number(area.toFixed(3)),
+            farmer_id: r.sharecropper_farmer_id,
           });
         });
-      });
+      }
+      setBorgaGivenMap(givenMap);
 
-      const combined = [...rows, ...transferRows];
-      const tenantIds = Array.from(new Set(combined.map((r) => r.farmer_id).filter(Boolean)));
+      // (B) Borga TAKEN IN — relations where THIS farmer is the sharecropper.
+      // Show the owner's land in this farmer's profile (read-only) so the same
+      // parcel appears in BOTH profiles.
+      const { data: relsIn } = await supabase.from("land_relations")
+        .select("id,land_id,owner_farmer_id,area_decimal,share_percentage")
+        .eq("sharecropper_farmer_id", id!)
+        .is("deleted_at", null)
+        .is("valid_to", null);
+      const inParentIds = Array.from(new Set((relsIn ?? []).map((r: any) => r.land_id).filter(Boolean)));
+      const inRows: any[] = [];
+      if (inParentIds.length) {
+        const { data: parents } = await (supabase.from as any)("lands_with_location")
+          .select("*").in("id", inParentIds as string[]);
+        const pById: Record<string, any> = {};
+        (parents ?? []).forEach((p: any) => { pById[p.id] = p; });
+        (relsIn ?? []).forEach((r: any) => {
+          const p = pById[r.land_id];
+          if (!p) return;
+          const area = Number(r.area_decimal ?? (Number(p.land_size || 0) * Number(r.share_percentage || 0) / 100)) || 0;
+          inRows.push({
+            ...p,
+            id: r.land_id,
+            land_size: Number(area.toFixed(3)),
+            owner_type: "borgadar",
+            owner_farmer_id: r.owner_farmer_id,
+            _borga_in: true,
+            _relation_id: r.id,
+          });
+        });
+      }
+      // Merge borga-in rows into the lands list and resolve owner names.
+      if (inRows.length) {
+        setLands((prev: any[]) => {
+          const existing = new Set(prev.map((x) => x.id));
+          const add = inRows.filter((x) => !existing.has(x.id));
+          return [...prev, ...add];
+        });
+        const inOwnerIds = Array.from(new Set(inRows.map((r) => r.owner_farmer_id).filter(Boolean)));
+        const { data: ow } = await supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", inOwnerIds as string[]);
+        setOwnerNames((prev) => {
+          const next = { ...prev };
+          (ow ?? []).forEach((o: any) => { next[o.id] = o.name_bn || o.name_en || o.farmer_code || "—"; });
+          return next;
+        });
+      }
+
+      // Tenant details + latest borga invoice for the Owned-(Borga) tab.
+      const tenantIds = Array.from(new Set(outRows.map((r) => r.farmer_id).filter(Boolean)));
       const tenantMap: Record<string, any> = {};
       if (tenantIds.length) {
         const { data: tenants } = await supabase.from("farmers")
           .select("id,name_en,name_bn,farmer_code,mobile").in("id", tenantIds as string[]);
         (tenants ?? []).forEach((t: any) => { tenantMap[t.id] = t; });
       }
-      const landIds = combined.map((r) => r._invoice_land_id ?? r.id).filter(Boolean);
+      const outLandIds = Array.from(new Set(outRows.map((r) => r._invoice_land_id).filter(Boolean)));
       const invMap: Record<string, any> = {};
-      if (landIds.length) {
+      if (outLandIds.length) {
         const { data: invs } = await supabase.from("irrigation_invoices")
-          .select("land_id,generated_at,payable_amount,paid_amount,due_amount")
-          .in("land_id", landIds as string[])
+          .select("land_id,farmer_id,generated_at,payable_amount,paid_amount,due_amount")
+          .in("land_id", outLandIds as string[])
+          .eq("is_borga", true)
           .is("deleted_at", null)
           .order("generated_at", { ascending: false });
-        (invs ?? []).forEach((iv: any) => { if (!invMap[iv.land_id]) invMap[iv.land_id] = iv; });
+        (invs ?? []).forEach((iv: any) => {
+          const key = `${iv.land_id}:${iv.farmer_id}`;
+          if (!invMap[key]) invMap[key] = iv;
+        });
       }
-      setBorgaOut(combined.map((r) => ({
+      setBorgaOut(outRows.map((r) => ({
         ...r,
-        tenant: r._tenant ? { ...r._tenant, ...(tenantMap[r.farmer_id] ?? {}) } : tenantMap[r.farmer_id],
-        latest_invoice: invMap[r._invoice_land_id ?? r.id],
+        tenant: tenantMap[r.farmer_id],
+        latest_invoice: invMap[`${r._invoice_land_id}:${r.farmer_id}`],
       })));
     } catch { setBorgaOut([]); setBorgaGivenMap({}); }
 
