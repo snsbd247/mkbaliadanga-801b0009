@@ -1262,15 +1262,12 @@ export default function FarmerDetail() {
                         </div>
                         <div>
                           <Label>{t("fieldType")}</Label>
-                          <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="high_land">{t("highLand")}</SelectItem>
-                              <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
-                              <SelectItem value="low_land">{t("lowLand")}</SelectItem>
-                              <SelectItem value="other">{t("other")}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <LandTypeSelect
+                            landTypeId={land.land_type_id}
+                            fieldType={land.field_type}
+                            disabled={savingLand}
+                            onChange={(id, ft) => setLand({ ...land, land_type_id: id, field_type: ft })}
+                          />
                         </div>
                       </div>
                     )}
