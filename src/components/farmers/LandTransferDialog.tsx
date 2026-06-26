@@ -139,16 +139,29 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         const dagNo = (sourceLand.dag_no ?? "").trim();
         let landId: string;
         if (dagNo) {
+          // Look for ANY land row (active or soft-deleted) for this recipient with
+          // the same dag_no. The unique index is partial on deleted_at IS NULL, but
+          // reviving an archived parcel keeps history clean and avoids duplicates.
           const { data: existing } = await supabase.from("lands")
-            .select("id, land_size")
+            .select("id, land_size, deleted_at")
             .eq("farmer_id", r.farmer_id)
             .eq("dag_no", dagNo)
-            .is("deleted_at", null)
+            .order("deleted_at", { ascending: true, nullsFirst: true })
+            .limit(1)
             .maybeSingle();
           if (existing) {
+            const wasDeleted = !!(existing as any).deleted_at;
+            // Reviving a returned parcel: replace size with the reclaimed area.
+            // Merging into an active parcel: add the area on top.
+            const nextSize = wasDeleted ? area : normalizeLandSize(Number(existing.land_size || 0) + area);
+            const upd: any = { land_size: nextSize };
+            if (wasDeleted) {
+              upd.deleted_at = null;
+              upd.owner_type = newLandPayload.owner_type;
+              upd.owner_farmer_id = newLandPayload.owner_farmer_id;
+            }
             const { error: upErr } = await supabase.from("lands")
-              .update({ land_size: normalizeLandSize(Number(existing.land_size || 0) + area) } as any)
-              .eq("id", existing.id);
+              .update(upd).eq("id", existing.id);
             if (upErr) throw upErr;
             landId = existing.id;
           } else {
