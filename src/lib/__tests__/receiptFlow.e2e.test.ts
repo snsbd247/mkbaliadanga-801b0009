@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 let lastHtml = "";
 let lastSaveName = "";
+let lastPdfOptions: any = null;
 const addImage = vi.fn();
 
 vi.mock("html2canvas", () => ({
@@ -15,6 +16,7 @@ vi.mock("html2canvas", () => ({
 }));
 vi.mock("jspdf", () => ({
   default: class {
+    constructor(options: any) { lastPdfOptions = options; }
     internal = { pageSize: { getWidth: () => 210, getHeight: () => 297 } };
     addImage = (...a: any[]) => addImage(...a);
     save = (n: string) => { lastSaveName = n; };
@@ -37,7 +39,7 @@ function payload(kind: BnReceiptData["kind"], rno: string, extra: Partial<BnRece
 }
 
 describe("Receipt flow E2E (print + download for all kinds)", () => {
-  beforeEach(() => { lastHtml = ""; lastSaveName = ""; addImage.mockReset(); });
+  beforeEach(() => { lastHtml = ""; lastSaveName = ""; lastPdfOptions = null; addImage.mockReset(); });
 
   const kinds: Array<{ k: BnReceiptData["kind"]; pfx: "SAV" | "LOAN" | "IRR" }> = [
     { k: "savings", pfx: "SAV" },
@@ -97,5 +99,14 @@ describe("Receipt flow E2E (print + download for all kinds)", () => {
     expect(args[2]).toBe(15); // x = left margin
     expect(args[3]).toBe(20); // y = top margin
     expect(args[4]).toBe(210 - 15 - 15); // inner width
+  });
+
+  it("official irrigation receipt always forces A5 landscape, even if user settings are A4 portrait", async () => {
+    const rno = autoReceiptNo("IRR", "x", new Date("2026-05-06"));
+    await downloadBnReceiptPdf(payload("irrigation", rno), "both", {
+      paper: "a4",
+      orientation: "p",
+    });
+    expect(lastPdfOptions).toMatchObject({ unit: "mm", format: "a5", orientation: "l" });
   });
 });
