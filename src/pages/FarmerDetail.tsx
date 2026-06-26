@@ -875,6 +875,7 @@ export default function FarmerDetail() {
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
         field_type: editForm.field_type as any,
+        land_type_id: editForm.land_type_id || null,
         patwari_id: editForm.patwari_id || null,
         notes: editForm.notes?.trim() || null,
       } as any).eq("id", editLand.id).select("id");
