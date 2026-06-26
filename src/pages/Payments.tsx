@@ -1021,6 +1021,8 @@ export default function Payments() {
                               ? {
                                   owner_self: irrEnriched.owner_self,
                                   land_owner_label: irrEnriched.land_owner_label,
+                                  rate: irrEnriched.rate,
+                                  member_summary: irrEnriched.member_summary,
                                   current_season_charge: irrEnriched.current_season_charge,
                                   penalty_amount: irrEnriched.penalty_amount,
                                   maintenance_charge: irrEnriched.maintenance_charge,
