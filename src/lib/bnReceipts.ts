@@ -258,22 +258,43 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
 
   const rows: Array<[string, string]> = [];
-  const isIrrigationStd = d.kind === "irrigation" && !d.office_income;
+  const isMisc = d.kind === "irrigation" && !!d.misc_collection && !d.office_income;
+  const isIrrigationStd = d.kind === "irrigation" && !d.office_income && !d.misc_collection;
 
-  if (isIrrigationStd) {
+  if (isMisc) {
+    // ===== বিবিধ আদায় (হাওলাত/ভাংড়ী/অনুদান/বিবিধ) — জমি সম্পর্কিত কোনো সারি নয় =====
+    // 1. নাম
+    rows.push([lang === "bn" ? "নাম:" : "Name:", d.farmer.name || "—"]);
+    // 2. পিতার/স্বামীর নাম
+    rows.push([t.fatherLine, d.farmer.father_or_husband ?? "—"]);
+    // 3. গ্রাম + ইউনিয়ন / মোবাইল
+    const villageParts = [d.farmer.village, d.village_union].filter(Boolean).join(",");
+    rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + d.farmer.mobile : ""}`]);
+    // 4. টাকা (মোট আদায়)
+    rows.push([t.totalIrr, fmt2(d.collected_amount)]);
+    // 5. কথায়
+    if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(d.collected_amount)}।`]);
+    // 6. নোট
+    const note = (d.remark ?? d.holding_description ?? "").trim();
+    if (note) rows.push([t.remark, note]);
+  } else if (isIrrigationStd) {
     // ===== Official "সেচ চার্জ ও বিবিধ আদায় রশিদ" layout (A5, fixed row order) =====
     const layout = getReceiptLayoutSettings();
     const { dag: dagLabel } = getIrrigationLabels(lang);
     // মৌজা: custom override থাকলে সেটি, নাহলে নতুন ডিফল্ট "মৌজা:"
     const mouzaLabel = ((lang === "bn" ? layout.mouzaLabelBn : layout.mouzaLabelEn) || "").trim() || t.mouza;
-    const selfLabel = lang === "bn" ? "নিজ/মালিক" : "Self/Owner";
 
-    // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি (মালিক নিজে হলে শুধু নিজ/মালিক)
+    // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি
+    //    মালিক নিজে হলে শুধু মালিকের নাম; বর্গাদার হলে "বর্গাদার নাম / মালিকের নাম"।
     const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + d.farmer.member_no : ""}`;
-    const ownerPart = d.owner_self
-      ? selfLabel
-      : (d.land_owner_label && d.land_owner_label.trim() ? d.land_owner_label.trim() : selfLabel);
-    rows.push([t.farmerLine, `${idPart}/${ownerPart}`]);
+    if (d.owner_self) {
+      rows.push([t.farmerLine, idPart]);
+    } else {
+      const ownerPart = (d.land_owner_label && d.land_owner_label.trim())
+        ? d.land_owner_label.trim()
+        : idPart;
+      rows.push([t.farmerLine, `${idPart}/${ownerPart}`]);
+    }
     // 2. পিতার/স্বামীর নাম
     rows.push([t.fatherLine, d.farmer.father_or_husband ?? "—"]);
     // 3. গ্রাম/মহল্লা/মোবাইল নং (গ্রাম এর সাথে ইউনিয়ন)
@@ -310,10 +331,12 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const dueCharge = Number(d.total_outstanding ?? d.previous_due ?? 0);
     const duePenalty = Number(d.due_penalty ?? 0);
     rows.push([t.due, `${fmt2(dueCharge)}/${fmt2(duePenalty)}`]);
-    // 11. মোট আদায়ের পরিমাণ (জরিমানা সহ)
-    rows.push([t.totalIrr, fmt2(d.collected_amount)]);
+    // 11. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা)
+    const totalDue = halCharge + halPenalty + dueCharge + duePenalty;
+    const totalIrr = totalDue > 0 ? totalDue : Number(d.collected_amount ?? 0);
+    rows.push([t.totalIrr, fmt2(totalIrr)]);
     // 12. কথায়
-    if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(d.collected_amount)}।`]);
+    if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)}।`]);
     // 13. হোল্ডিং এর বিবরন / পাটুয়ারীর নাম ও মোবা নং
     const holdingParts = [
       (d.holding_description ?? d.remark ?? "").trim() || null,
