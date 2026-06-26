@@ -220,9 +220,13 @@ export default function FarmersImport() {
         post_office:      str(r.raw.post_office),
         upazila:          str(r.raw.upazila),
         district:         str(r.raw.district),
+        division:         str(r.raw.division),
+        address:          str(r.raw.address),
         nominee_name:     str(r.raw.nominee_name),
         nominee_mobile:   str(r.raw.nominee_mobile),
         nominee_relation: str(r.raw.nominee_relation),
+        nominee_nid:      str(r.raw.nominee_nid),
+        nominee_address:  str(r.raw.nominee_address),
         ...(hasVoterInput ? { is_voter: isVoter } : {}),
       };
       // Drop null-valued keys so an UPDATE never wipes existing data with blanks
