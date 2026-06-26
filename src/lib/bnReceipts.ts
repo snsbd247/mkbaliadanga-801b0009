@@ -149,6 +149,13 @@ function moneyText(n: number | null | undefined, lang: ReceiptLang, suffix = "")
   return `${digits(value, lang)}${suffix}`;
 }
 
+/** Official irrigation receipt money: whole-number when integer (no grouping, no decimals), else 2 decimals. */
+function moneyInt(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
+  const v = Number(n ?? 0);
+  const s = Number.isInteger(v) ? String(v) : v.toFixed(2);
+  return `${digits(s, lang)}${suffix}`;
+}
+
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
   return digits(fmt4(Number(n ?? 0)), lang);
 }
