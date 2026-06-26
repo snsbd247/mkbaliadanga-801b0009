@@ -41,7 +41,7 @@ const PAGE_SIZE = 10;
 
 export default function OwnLandsTab({
   lands, loading, rateMap, resolveRateForLand, landSeasonStatus, buildLocLine,
-  fmtLand, t, tx, farmer, downloadLandInvoices, openEdit, onDelete, borgaOut = [],
+  fmtLand, t, tx, farmer, downloadLandInvoices, openEdit, onDelete, borgaOut = [], borgaGivenMap = {},
 }: Props) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("dag_no");
