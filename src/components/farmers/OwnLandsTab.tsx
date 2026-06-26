@@ -231,7 +231,10 @@ export default function OwnLandsTab({
                 <TableHeader><TableRow className="bg-muted/40">
                   <Th k="location">{tx("Location", "অবস্থান")}</Th>
                   <Th k="dag_no">{tx("Dag No", "দাগ নং")}</Th>
-                  <Th k="land_size" align="right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</Th>
+                  <Th k="land_size" align="right">{tx("Total Size", "মোট জমি")}</Th>
+                  <TableHead className="text-right">{tx("Borga Given", "বর্গা দেওয়া")}</TableHead>
+                  <TableHead className="text-right">{tx("Remaining (self)", "অবশিষ্ট (নিজ)")}</TableHead>
+
                   <TableHead>{tx("Owner Type", "মালিকানার ধরন")}</TableHead>
                   <TableHead>{tx("Owner", "মালিক")}</TableHead>
                   <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
