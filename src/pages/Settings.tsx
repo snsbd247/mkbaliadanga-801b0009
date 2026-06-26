@@ -69,6 +69,7 @@ export default function Settings() {
     toast.success(t("saved"));
     notifyBrandingChange();
     setLogo(null);
+    setSignature(null);
   }
 
   return (
