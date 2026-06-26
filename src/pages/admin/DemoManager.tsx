@@ -237,7 +237,7 @@ export default function DemoManager() {
         }
       }
 
-      if (succeeded) toast.success(`✓ ${t("dmOpDone" as any)}`);
+      if (succeeded) { toast.success(`✓ ${t("dmOpDone" as any)}`); setIntegrityAutoKey((k) => k + 1); }
       let validation: CashCountRow[] | null = null;
       if (selected.includes("cashbook")) {
         try { validation = await fetchCashReportCounts(); setCashValidation(validation); } catch { /* best-effort */ }
