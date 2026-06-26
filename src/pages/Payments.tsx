@@ -23,6 +23,7 @@ import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo, peekMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
