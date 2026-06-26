@@ -644,13 +644,13 @@ export default function FarmerDetail() {
       }
     }
 
-    // Field type Bangla label
-    const fieldTypeBn = ({
+    // Field type Bangla label — prefer the catalogue name, fall back to the legacy enum.
+    const fieldTypeBn = landTypeLabel(landTypeRows, (land as any)?.land_type_id, land?.field_type) || (({
       high_land: tx("High land", "উঁচু জমি"),
       medium_land: tx("Medium land", "মাঝারি জমি"),
       low_land: tx("Low land", "নিচু জমি"),
       other: tx("Other", "অন্যান্য"),
-    } as Record<string, string>)[land?.field_type as string] ?? null;
+    } as Record<string, string>)[land?.field_type as string] ?? null);
 
     // Full ledger outstanding for this farmer (sum of due across all open invoices)
     const { data: dueRows } = await supabase
