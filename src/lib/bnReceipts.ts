@@ -101,6 +101,12 @@ export interface BnReceiptData {
   /** Office income (no farmer): forces জমি/মৌজা rows to locked "N/A" and skips charge rows. */
   office_income?: boolean;
 
+  /**
+   * বিবিধ আদায় (হাওলাত/ভাংড়ী/অনুদান/বিবিধ): জমি/মৌজা/দাগ/চার্জ সারি বাদ —
+   * শুধু নাম, পিতা, গ্রাম+ইউনিয়ন/মোবাইল, টাকা, নোট দেখাবে। bill_info = আদায়ের ধরন।
+   */
+  misc_collection?: boolean;
+
   collected_amount: number;
   collector_signature_url?: string | null;
   office_collector_signature_url?: string | null;
