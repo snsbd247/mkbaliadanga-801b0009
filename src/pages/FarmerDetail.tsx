@@ -1958,15 +1958,12 @@ export default function FarmerDetail() {
                 </Select>
               </div>
               <div><Label>{t("fieldType")}</Label>
-                <Select value={editForm.field_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, field_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high_land">{t("highLand")}</SelectItem>
-                    <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
-                    <SelectItem value="low_land">{t("lowLand")}</SelectItem>
-                    <SelectItem value="other">{t("other")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <LandTypeSelect
+                  landTypeId={editForm.land_type_id}
+                  fieldType={editForm.field_type}
+                  disabled={editSaving}
+                  onChange={(id, ft) => setEditForm({ ...editForm, land_type_id: id, field_type: ft })}
+                />
               </div>
             </div>
             <div>
