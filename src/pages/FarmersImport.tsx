@@ -47,8 +47,8 @@ type RowState = {
 const COLUMNS = [
   "farmer_id", "is_voter", "name_en", "name_bn",
   "father_name", "mother_name", "nid", "mobile",
-  "village", "post_office", "upazila", "district",
-  "nominee_name", "nominee_mobile", "nominee_relation",
+  "village", "post_office", "upazila", "district", "division", "address",
+  "nominee_name", "nominee_mobile", "nominee_relation", "nominee_nid", "nominee_address",
 ] as const;
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
