@@ -125,6 +125,9 @@ export const MODULE_VERIFY: Record<DemoModule, ModuleVerifyEntry[]> = {
     { table: "irrigation_charge_settings", page: "/irrigation-rates",    page_label: "Irrigation Rates", required: true },
     { table: "irrigation_season_rates",    page: "/irrigation-rates",    page_label: "Irrigation Rates", required: true },
     { table: "irrigation_invoices",        page: "/irrigation-invoices", page_label: "Irrigation Invoices", required: true },
+    { table: "irrigation_charges",         page: "/irrigation-invoices", page_label: "Irrigation Charges", required: false },
+    { table: "irrigation_invoice_payments",page: "/irrigation-invoices", page_label: "Irrigation Payments", required: false },
+    { table: "irrigation_due_promises",    page: "/irrigation-invoices", page_label: "Due Promises", required: false },
     { table: "seasons",                    page: "/seasons",             page_label: "Seasons", required: true },
   ],
   loans: [
@@ -133,12 +136,14 @@ export const MODULE_VERIFY: Record<DemoModule, ModuleVerifyEntry[]> = {
     { table: "loans",                     page: "/loans",      page_label: "Loans", required: true },
     { table: "loan_installments",         page: "/loans",      page_label: "Loans (Installments)", required: true },
     { table: "loan_payments",             page: "/loans",      page_label: "Loans (Payments)", required: false },
+    { table: "loan_guarantors",           page: "/loans",      page_label: "ঋণের জামিনদার (Guarantors)", required: false },
   ],
   savings: [
     { table: "savings_plans",         page: "/savings", page_label: "Savings", required: true },
     { table: "savings_transactions",  page: "/savings", page_label: "Savings (Tx)", required: true },
     { table: "shares",                page: "/share-collection", page_label: "Share Collection", required: false },
     { table: "farmer_savings_plans",  page: "/savings", page_label: "Savings (Plans)", required: false },
+    { table: "savings_yearly_opening",page: "/savings", page_label: "সঞ্চয় ওপেনিং ব্যালেন্স", required: false },
   ],
   expenses: [
     { table: "expenses", page: "/payments", page_label: "Payments / Expenses", required: true },
