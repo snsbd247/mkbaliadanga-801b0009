@@ -56,10 +56,11 @@ import { formatLand, parseLandInput } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 import { LandNoteCell } from "@/components/farmers/LandNoteCell";
 import { Textarea } from "@/components/ui/textarea";
+import { LandTypeSelect, useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
 
-type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
+type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null; land_type_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "", notes: "" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", land_type_id: "" as string, owner_farmer_id: "" as string | "", patwari_id: "" as string | "", notes: "" };
 
 // Show land size exactly as entered (up to 3 decimals) via the shared utility.
 const fmtLand = (v: any) => formatLand(v);
@@ -134,6 +135,7 @@ export default function FarmerDetail() {
   const [landDagDupErr, setLandDagDupErr] = useState<string | null>(null);
   const [savingLand, setSavingLand] = useState(false);
   const [ownerLands, setOwnerLands] = useState<any[]>([]);
+  const { rows: landTypeRows } = useLandTypes();
   const [ownerLandsLoading, setOwnerLandsLoading] = useState(false);
   const [patwaris, setPatwaris] = useState<any[]>([]);
   const [transferLand, setTransferLand] = useState<any | null>(null);
@@ -159,7 +161,7 @@ export default function FarmerDetail() {
     setOwnerLandsLoading(true);
     let qb = supabase
       .from("lands_with_location")
-      .select("id,dag_no,land_size,field_type,division_id,district_id,upazila_id,mouza_id,mouza_name,office_id")
+      .select("id,dag_no,land_size,field_type,land_type_id,division_id,district_id,upazila_id,mouza_id,mouza_name,office_id")
       .eq("farmer_id", land.owner_farmer_id)
       .eq("owner_type", "owner");
     if (farmer?.office_id) qb = qb.eq("office_id", farmer.office_id);
@@ -642,13 +644,13 @@ export default function FarmerDetail() {
       }
     }
 
-    // Field type Bangla label
-    const fieldTypeBn = ({
+    // Field type Bangla label — prefer the catalogue name, fall back to the legacy enum.
+    const fieldTypeBn = landTypeLabel(landTypeRows, (land as any)?.land_type_id, land?.field_type) || (({
       high_land: tx("High land", "উঁচু জমি"),
       medium_land: tx("Medium land", "মাঝারি জমি"),
       low_land: tx("Low land", "নিচু জমি"),
       other: tx("Other", "অন্যান্য"),
-    } as Record<string, string>)[land?.field_type as string] ?? null;
+    } as Record<string, string>)[land?.field_type as string] ?? null);
 
     // Full ledger outstanding for this farmer (sum of due across all open invoices)
     const { data: dueRows } = await supabase
@@ -759,6 +761,7 @@ export default function FarmerDetail() {
         land_size: land.land_size,
         owner_type: land.owner_type as any,
         field_type: land.field_type as any,
+        land_type_id: land.land_type_id || null,
         owner_farmer_id: land.owner_type === "borgadar" ? land.owner_farmer_id : null,
         patwari_id: land.patwari_id || null,
         notes: land.notes?.trim() || null,
@@ -807,6 +810,7 @@ export default function FarmerDetail() {
       land_size: Number(row.land_size ?? 0),
       owner_type: (row.owner_type as any) ?? "owner",
       field_type: (row.field_type as any) ?? "medium_land",
+      land_type_id: ((row as any).land_type_id as string) ?? "",
       owner_farmer_id: ((row as any).owner_farmer_id as string) ?? "",
       patwari_id: ((row as any).patwari_id as string) ?? "",
       notes: ((row as any).notes as string) ?? landSelfNotes[row.id] ?? "",
@@ -871,6 +875,7 @@ export default function FarmerDetail() {
         land_size: editForm.land_size,
         owner_type: editForm.owner_type as any,
         field_type: editForm.field_type as any,
+        land_type_id: editForm.land_type_id || null,
         patwari_id: editForm.patwari_id || null,
         notes: editForm.notes?.trim() || null,
       } as any).eq("id", editLand.id).select("id");
@@ -1172,6 +1177,7 @@ export default function FarmerDetail() {
                                 dag_no: v,
                                 land_size: Number(src.land_size ?? 0),
                                 field_type: src.field_type ?? land.field_type,
+                                land_type_id: src.land_type_id ?? land.land_type_id,
                               });
                               setLandLoc({
                                 division_id: src.division_id ?? null,
@@ -1256,15 +1262,12 @@ export default function FarmerDetail() {
                         </div>
                         <div>
                           <Label>{t("fieldType")}</Label>
-                          <Select value={land.field_type} disabled={savingLand} onValueChange={v => setLand({ ...land, field_type: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="high_land">{t("highLand")}</SelectItem>
-                              <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
-                              <SelectItem value="low_land">{t("lowLand")}</SelectItem>
-                              <SelectItem value="other">{t("other")}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <LandTypeSelect
+                            landTypeId={land.land_type_id}
+                            fieldType={land.field_type}
+                            disabled={savingLand}
+                            onChange={(id, ft) => setLand({ ...land, land_type_id: id, field_type: ft })}
+                          />
                         </div>
                       </div>
                     )}
@@ -1427,7 +1430,7 @@ export default function FarmerDetail() {
                               ) : "—")}
                         </TableCell>
                         <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
+                        <TableCell>{landTypeLabel(landTypeRows, (l as any).land_type_id, l.field_type) || t((l.field_type as any) ?? "")}</TableCell>
                         <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>
@@ -1955,15 +1958,12 @@ export default function FarmerDetail() {
                 </Select>
               </div>
               <div><Label>{t("fieldType")}</Label>
-                <Select value={editForm.field_type} disabled={editSaving} onValueChange={v => setEditForm({ ...editForm, field_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high_land">{t("highLand")}</SelectItem>
-                    <SelectItem value="medium_land">{t("mediumLand")}</SelectItem>
-                    <SelectItem value="low_land">{t("lowLand")}</SelectItem>
-                    <SelectItem value="other">{t("other")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <LandTypeSelect
+                  landTypeId={editForm.land_type_id}
+                  fieldType={editForm.field_type}
+                  disabled={editSaving}
+                  onChange={(id, ft) => setEditForm({ ...editForm, land_type_id: id, field_type: ft })}
+                />
               </div>
             </div>
             <div>
