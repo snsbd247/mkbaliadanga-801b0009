@@ -1,22 +1,49 @@
 // Live land-transfer integrity report for the Demo Manager.
 // Fetches transfers, recipients and the referenced lands, then runs the pure
 // checker in src/lib/landTransferIntegrity.ts and renders the result.
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, RefreshCw, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, Loader2, FileSpreadsheet, FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 import {
   checkLandTransferIntegrity, summarizeIntegrity,
   type IntegrityViolation, type IntegritySummary,
 } from "@/lib/landTransferIntegrity";
+import { exportIntegrityExcel, exportIntegrityPdf } from "@/lib/landTransferIntegrityExport";
 
 const sb = supabase as any;
 
-export default function LandTransferVerifyCard() {
+/** Record an admin notification + audit log when integrity errors are found. */
+async function reportViolations(errors: IntegrityViolation[]) {
+  try {
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth?.user?.id ?? null;
+    await sb.from("system_audit_logs").insert({
+      user_id: uid,
+      module: "land_transfers",
+      action_type: "integrity_violation",
+      new_data: { count: errors.length, violations: errors.slice(0, 50) },
+    });
+    if (uid) {
+      await sb.from("notifications").insert({
+        user_id: uid,
+        kind: "warning",
+        title: `জমি হস্তান্তর যাচাই: ${errors.length} টি ত্রুটি`,
+        body: errors.slice(0, 5).map((e) => `${e.code} (${e.transfer_id.slice(0, 8)})`).join(", "),
+        link: errors[0]?.farmer_id ? `/farmers/${errors[0].farmer_id}` : "/admin/demo",
+      });
+    }
+  } catch {
+    /* best-effort — never block the report */
+  }
+}
+
+export default function LandTransferVerifyCard({ autoRunKey }: { autoRunKey?: number | string }) {
   const { tx } = useLang();
   const [loading, setLoading] = useState(false);
   const [violations, setViolations] = useState<IntegrityViolation[] | null>(null);
@@ -51,14 +78,25 @@ export default function LandTransferVerifyCard() {
       const v = checkLandTransferIntegrity(input);
       setViolations(v);
       setSummary(summarizeIntegrity(input, v));
-      if (!v.length) toast.success(tx("All land transfers are consistent.", "সব জমি হস্তান্তর সঠিক আছে।"));
-      else toast.warning(`${v.length} ${tx("issue(s) found", "টি সমস্যা পাওয়া গেছে")}`);
+      if (!v.length) {
+        toast.success(tx("All land transfers are consistent.", "সব জমি হস্তান্তর সঠিক আছে।"));
+      } else {
+        toast.warning(`${v.length} ${tx("issue(s) found", "টি সমস্যা পাওয়া গেছে")}`);
+        const errs = v.filter((x) => x.severity === "error");
+        if (errs.length) await reportViolations(errs);
+      }
     } catch (err: any) {
       toast.error(err?.message ?? "Failed");
     } finally {
       setLoading(false);
     }
   };
+
+  // Auto-run when the parent signals a finished demo import (changed autoRunKey).
+  useEffect(() => {
+    if (autoRunKey !== undefined && autoRunKey !== "" && autoRunKey !== 0) run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRunKey]);
 
   return (
     <Card className="border-primary/40">
@@ -76,10 +114,20 @@ export default function LandTransferVerifyCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Button size="sm" variant="outline" onClick={run} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-          {tx("Run verification", "যাচাই চালান")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={run} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+            {tx("Run verification", "যাচাই চালান")}
+          </Button>
+          <Button size="sm" variant="outline" disabled={!violations}
+            onClick={() => exportIntegrityExcel(violations ?? [], summary)}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+          </Button>
+          <Button size="sm" variant="outline" disabled={!violations}
+            onClick={() => exportIntegrityPdf(violations ?? [], summary)}>
+            <FileText className="h-4 w-4 mr-1" /> PDF
+          </Button>
+        </div>
 
         {summary && (
           <div className="flex flex-wrap gap-2 text-xs">
@@ -101,6 +149,7 @@ export default function LandTransferVerifyCard() {
                   <th className="p-2 text-left">{tx("Severity", "মাত্রা")}</th>
                   <th className="p-2 text-left">{tx("Transfer", "হস্তান্তর")}</th>
                   <th className="p-2 text-left">{tx("Issue", "সমস্যা")}</th>
+                  <th className="p-2 text-left">{tx("Link", "লিঙ্ক")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,6 +162,18 @@ export default function LandTransferVerifyCard() {
                     </td>
                     <td className="p-2 font-mono text-[10px]">{v.transfer_id.slice(0, 8)}</td>
                     <td className="p-2">{tx(v.message_en, v.message_bn)}{v.detail ? <span className="text-muted-foreground"> · {v.detail.slice(0, 8)}</span> : null}</td>
+                    <td className="p-2">
+                      {(v.recipient_farmer_id || v.farmer_id) && (
+                        <Link
+                          to={`/farmers/${v.recipient_farmer_id || v.farmer_id}`}
+                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                          target="_blank" rel="noreferrer"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          {tx("Open farmer", "কৃষক খুলুন")}
+                        </Link>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
