@@ -564,6 +564,12 @@ function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLa
   const isOfficialIrrigation = d.kind === "irrigation" && !d.office_income;
   const wrapWidth = isOfficialIrrigation ? 1040 : 794;
   wrap.style.cssText = `position:fixed;left:-10000px;top:0;width:${wrapWidth}px;background:#fff;`;
+  // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় একটিমাত্র কপি (কৃষক/অফিস আলাদা নয়), copy যাই আসুক।
+  if (isOfficialIrrigation) {
+    wrap.innerHTML = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl, tpl);
+    document.body.appendChild(wrap);
+    return wrap;
+  }
   const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl, tpl);
   const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl, tpl);
   if (copy === "farmer") wrap.innerHTML = farmerCopy;
