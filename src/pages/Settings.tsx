@@ -20,6 +20,7 @@ export default function Settings() {
   const brand = useBranding();
   const [form, setForm] = useState<any>(brand);
   const [logo, setLogo] = useState<File | null>(null);
+  const [signature, setSignature] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { document.title = `${t("settings")} — ${t("appName")}`; }, [t]);
