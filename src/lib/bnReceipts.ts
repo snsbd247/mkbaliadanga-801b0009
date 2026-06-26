@@ -312,7 +312,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
 
     // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি
     //    মালিক নিজে হলে শুধু মালিকের নাম; বর্গাদার হলে "বর্গাদার নাম / মালিকের নাম"।
-    const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + d.farmer.member_no : ""}`;
+    const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + digits(String(d.farmer.member_no), lang) : ""}`;
     if (d.owner_self) {
       rows.push([t.farmerLine, idPart]);
     } else {
