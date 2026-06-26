@@ -187,6 +187,19 @@ export function checkLandTransferIntegrity(input: IntegrityInput): IntegrityViol
     }
   }
 
+  // Enrich each violation with farmer / recipient ids for deep-linking.
+  const transferById = new Map(transfers.map((t) => [t.id, t]));
+  const recipientById = new Map(recipients.map((r) => [r.id, r]));
+  for (const v of out) {
+    const t = transferById.get(v.transfer_id);
+    v.farmer_id = t?.source_farmer_id ?? null;
+    const rc = v.detail ? recipientById.get(v.detail) : undefined;
+    if (rc) {
+      v.recipient_id = rc.id;
+      v.recipient_farmer_id = rc.recipient_farmer_id ?? null;
+    }
+  }
+
   return out;
 }
 
