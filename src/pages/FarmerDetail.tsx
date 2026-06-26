@@ -510,12 +510,14 @@ export default function FarmerDetail() {
       ...extra,
     };
   }
-  function commonReceipt(): Pick<BnReceiptData, "company_name" | "company_name_bn" | "logo_url" | "org"> {
+  function commonReceipt(): Pick<BnReceiptData, "company_name" | "company_name_bn" | "logo_url" | "org" | "collector_signature_url" | "office_collector_signature_url"> {
     return {
       company_name: brand.company_name,
       company_name_bn: brand.company_name_bn,
       logo_url: brand.logo_url ?? null,
       org: receiptArgs.org,
+      collector_signature_url: receiptArgs.signatureUrl,
+      office_collector_signature_url: receiptArgs.signatureUrl,
     };
   }
 
