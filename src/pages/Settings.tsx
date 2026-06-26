@@ -15,7 +15,7 @@ import { buildReceiptCopyHtmlForTest } from "@/lib/bnReceipts";
 import BanglaFontSelector from "@/components/settings/BanglaFontSelector";
 
 export default function Settings() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { isSuper, rolesLoaded } = useAuth();
   const brand = useBranding();
   const [form, setForm] = useState<any>(brand);
