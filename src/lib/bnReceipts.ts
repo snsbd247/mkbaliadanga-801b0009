@@ -352,21 +352,21 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // 9. চার্জের পরিমাণ (হাল)/জরিমানা — চলতি সিজনের জমি
     const halCharge = Number(d.current_season_charge ?? 0);
     const halPenalty = Number(d.current_penalty ?? d.penalty_amount ?? 0);
-    rows.push([t.currentCharge, `${moneyText(halCharge, lang)}/${moneyText(halPenalty, lang)}`]);
+    rows.push([t.currentCharge, `${moneyInt(halCharge, lang, "৳")}/${moneyInt(halPenalty, lang, "৳")}`]);
     // 10. চার্জের পরিমাণ (বকেয়া)/জরিমানা — গত সিজনের জমি
     const dueCharge = Number(d.total_outstanding ?? d.previous_due ?? 0);
     const duePenalty = Number(d.due_penalty ?? 0);
-    rows.push([t.due, `${moneyText(dueCharge, lang)}/${moneyText(duePenalty, lang)}`]);
+    rows.push([t.due, `${moneyInt(dueCharge, lang, "৳")}/${moneyInt(duePenalty, lang, "৳")}`]);
     // 11. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা)
     const totalDue = halCharge + halPenalty + dueCharge + duePenalty;
     const totalIrr = totalDue > 0 ? totalDue : Number(d.collected_amount ?? 0);
-    rows.push([t.totalIrr, moneyText(totalIrr, lang)]);
+    rows.push([t.totalIrr, moneyInt(totalIrr, lang, "৳")]);
     // 12. কথায়
-    if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)}।`]);
+    if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)} মাত্র।`]);
     // 13. হোল্ডিং এর বিবরন / পাটুয়ারীর নাম ও মোবা নং
     const holdingParts = [
       (d.holding_description ?? d.remark ?? "").trim() || null,
-      d.patwari_name ? `${d.patwari_name}${d.patwari_mobile ? "-" + d.patwari_mobile : ""}` : null,
+      d.patwari_name ? `${d.patwari_name}${d.patwari_mobile ? "-" + digits(String(d.patwari_mobile), lang) : ""}` : null,
     ].filter(Boolean).join(" / ");
     if (holdingParts) rows.push([t.holding, holdingParts]);
   } else {
