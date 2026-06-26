@@ -105,6 +105,7 @@ import IdReview from "./pages/admin/IdReview";
 import DuplicateReceiptAudit from "./pages/admin/DuplicateReceiptAudit";
 import FarmerLoginAudit from "./pages/admin/FarmerLoginAudit";
 import DemoManager from "./pages/admin/DemoManager";
+import IntegrityRuns from "./pages/admin/IntegrityRuns";
 import QuickSeed from "./pages/admin/QuickSeed";
 import DemoOpsAudit from "./pages/admin/DemoOpsAudit";
 import Patwaris from "./pages/admin/Patwaris";
