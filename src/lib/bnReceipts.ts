@@ -615,10 +615,11 @@ function resolveOpts(o?: ReceiptOptions) {
 
 async function renderPdf(data: BnReceiptData, copy: ReceiptCopy, options?: ReceiptOptions): Promise<jsPDF> {
   const opts = resolveOpts(options);
-  // সেচ চার্জ ও বিবিধ আদায় রশিদ: A5 এর বেশি পেজ নয় — landscape A5 তে সব তথ্য এক পৃষ্ঠায়।
-  if (data.kind === "irrigation" && !data.office_income && !options?.paper) {
+  // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় FIXED A5 landscape।
+  // User/profile receipt settings (A4/portrait) irrigation official receipt-কে override করতে পারবে না।
+  if (data.kind === "irrigation" && !data.office_income) {
     opts.paper = "a5";
-    if (!options?.orientation) opts.orientation = "l";
+    opts.orientation = "l";
   }
   let tpl: ReceiptTemplate = { ...DEFAULT_TEMPLATE };
   try { tpl = { ...tpl, ...(await loadReceiptTemplate()) }; } catch { /* use defaults */ }
