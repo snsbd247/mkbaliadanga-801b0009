@@ -956,7 +956,15 @@ export default function Payments() {
                             const land = primaryCharge?.lands;
                             const ownerFarmer = land?.farmers;
                             const isSelf = !primaryCharge?.is_borga && (!land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner");
-                            const fieldTypeBn = ({ high_land: tx("High land","উঁচু জমি"), medium_land: tx("Medium land","মাঝারি জমি"), low_land: tx("Low land","নিচু জমি"), other: tx("Other","অন্যান্য") } as Record<string, string>)[land?.field_type as string] ?? null;
+                            // জমির ধরন: ক্যাটালগ/সিজন থেকে; নাহলে লিগ্যাসি enum.
+                            const fieldTypeBn = resolveFieldTypeLabel({
+                              categoryName: primaryCharge?.irrigation_category_name,
+                              landTypeName: primaryCharge?.land_type_name,
+                              seasonName: primaryCharge?.seasons?.name,
+                            }) || (({ high_land: tx("High land","উঁচু জমি"), medium_land: tx("Medium land","মাঝারি জমি"), low_land: tx("Low land","নিচু জমি"), other: tx("Other","অন্যান্য") } as Record<string, string>)[land?.field_type as string] ?? null);
+                            const ratePerAcre = primaryCharge?.season_rate != null ? Number(primaryCharge.season_rate) : null;
+                            const ownerName = ownerFarmer ? (ownerFarmer.name_bn || ownerFarmer.name_en) : null;
+                            const memberSummary = `${p.farmers?.member_no ?? "N/A"}/${(primaryCharge?.is_borga && ownerName) ? ownerName : "N/A"}`;
                             irrEnriched = {
                               farmerExtras: {
                                 mouza: land?.mouza ?? null,
@@ -965,6 +973,8 @@ export default function Payments() {
                                 field_type_bn: fieldTypeBn,
                                 owner_type_bn: primaryCharge?.is_borga ? "বর্গাদার" : "মালিক",
                               },
+                              rate: ratePerAcre,
+                              member_summary: memberSummary,
                               owner_self: isSelf,
                               land_owner_label: isSelf
                                 ? "নিজ"
