@@ -184,24 +184,19 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         if (rcErr) throw rcErr;
       }
 
-      // Giving borga: the OWNER keeps the parcel — only reduce its size by the area
-      // given out. Archive only if nothing remains. Sale/inheritance archive fully.
+      // Giving borga: the OWNER keeps the FULL parcel intact. The given-out area is
+      // tracked via land_transfers + the borgadar land row. The owner's land row is
+      // NOT shrunk and NOT archived — so the owner's profile always shows the whole
+      // parcel (total / borga-given / remaining-self). Irrigation is billed per land
+      // using the remaining self-cultivated area for the owner.
       if (isBorgaGive) {
-        const remaining = normalizeLandSize(totalLand - effectiveSum);
-        if (remaining > 0.0001) {
-          const { error: upErr } = await supabase.from("lands")
-            .update({ land_size: remaining } as any).eq("id", sourceLand.id);
-          if (upErr) throw upErr;
-        } else {
-          const { error: delErr } = await supabase.from("lands")
-            .update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
-          if (delErr) throw delErr;
-        }
+        // Intentionally no mutation of the owner's source land row.
       } else {
         // Archive source land (history preserved via land_transfers; row not modified except deleted_at)
         const { error: delErr } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
         if (delErr) throw delErr;
       }
+
 
       toast.success(tx("Land transferred", "জমি হস্তান্তরিত"));
       onOpenChange(false);
