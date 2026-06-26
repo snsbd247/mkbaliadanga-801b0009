@@ -89,6 +89,7 @@ export function useReceiptOptions() {
 export function useReceiptRenderArgs(): {
   options: ReceiptOptions;
   org: { name?: string | null; name_bn?: string | null; address?: string | null; mobile?: string | null; email?: string | null; registration_no?: string | null };
+  signatureUrl: string | null;
 } {
   const opts = useReceiptOptions();
   const brand = useBranding();
