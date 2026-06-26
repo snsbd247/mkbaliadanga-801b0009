@@ -23,6 +23,7 @@ import { DeleteButton } from "@/components/ui/action-icon-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
+import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo, peekMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
@@ -941,7 +942,7 @@ export default function Payments() {
                             if (refIds.length) {
                               const { data: invs } = await supabase
                                 .from("irrigation_invoices")
-                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
+                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
                                 .in("id", refIds);
                               primaryCharge = (invs ?? [])[0] ?? null;
                               const { data: allDues } = await supabase
@@ -955,7 +956,15 @@ export default function Payments() {
                             const land = primaryCharge?.lands;
                             const ownerFarmer = land?.farmers;
                             const isSelf = !primaryCharge?.is_borga && (!land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner");
-                            const fieldTypeBn = ({ high_land: tx("High land","উঁচু জমি"), medium_land: tx("Medium land","মাঝারি জমি"), low_land: tx("Low land","নিচু জমি"), other: tx("Other","অন্যান্য") } as Record<string, string>)[land?.field_type as string] ?? null;
+                            // জমির ধরন: ক্যাটালগ/সিজন থেকে; নাহলে লিগ্যাসি enum.
+                            const fieldTypeBn = resolveFieldTypeLabel({
+                              categoryName: primaryCharge?.irrigation_category_name,
+                              landTypeName: primaryCharge?.land_type_name,
+                              seasonName: primaryCharge?.seasons?.name,
+                            }) || (({ high_land: tx("High land","উঁচু জমি"), medium_land: tx("Medium land","মাঝারি জমি"), low_land: tx("Low land","নিচু জমি"), other: tx("Other","অন্যান্য") } as Record<string, string>)[land?.field_type as string] ?? null);
+                            const ratePerAcre = primaryCharge?.season_rate != null ? Number(primaryCharge.season_rate) : null;
+                            const ownerName = ownerFarmer ? (ownerFarmer.name_bn || ownerFarmer.name_en) : null;
+                            const memberSummary = `${p.farmers?.member_no ?? "N/A"}/${(primaryCharge?.is_borga && ownerName) ? ownerName : "N/A"}`;
                             irrEnriched = {
                               farmerExtras: {
                                 mouza: land?.mouza ?? null,
@@ -964,6 +973,8 @@ export default function Payments() {
                                 field_type_bn: fieldTypeBn,
                                 owner_type_bn: primaryCharge?.is_borga ? "বর্গাদার" : "মালিক",
                               },
+                              rate: ratePerAcre,
+                              member_summary: memberSummary,
                               owner_self: isSelf,
                               land_owner_label: isSelf
                                 ? "নিজ"
@@ -1010,6 +1021,8 @@ export default function Payments() {
                               ? {
                                   owner_self: irrEnriched.owner_self,
                                   land_owner_label: irrEnriched.land_owner_label,
+                                  rate: irrEnriched.rate,
+                                  member_summary: irrEnriched.member_summary,
                                   current_season_charge: irrEnriched.current_season_charge,
                                   penalty_amount: irrEnriched.penalty_amount,
                                   maintenance_charge: irrEnriched.maintenance_charge,
