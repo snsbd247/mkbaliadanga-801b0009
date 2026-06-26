@@ -73,6 +73,12 @@ export type IntegrityViolation = {
   message_en: string;
   message_bn: string;
   detail?: string;
+  /** Source farmer of the offending transfer — used for deep-linking. */
+  farmer_id?: string | null;
+  /** Recipient farmer (when the violation is recipient-specific). */
+  recipient_farmer_id?: string | null;
+  /** Offending recipient row id (when applicable). */
+  recipient_id?: string | null;
 };
 
 export type IntegrityInput = {
@@ -178,6 +184,19 @@ export function checkLandTransferIntegrity(input: IntegrityInput): IntegrityViol
       push(t.id, "area_exceeds_source", "error",
         `Allocated area ${areaSum.toFixed(2)} exceeds source ${Number(t.source_land_size).toFixed(2)}`,
         `বরাদ্দকৃত পরিমাণ ${areaSum.toFixed(2)} উৎস ${Number(t.source_land_size).toFixed(2)} ছাড়িয়ে গেছে`);
+    }
+  }
+
+  // Enrich each violation with farmer / recipient ids for deep-linking.
+  const transferById = new Map(transfers.map((t) => [t.id, t]));
+  const recipientById = new Map(recipients.map((r) => [r.id, r]));
+  for (const v of out) {
+    const t = transferById.get(v.transfer_id);
+    v.farmer_id = t?.source_farmer_id ?? null;
+    const rc = v.detail ? recipientById.get(v.detail) : undefined;
+    if (rc) {
+      v.recipient_id = rc.id;
+      v.recipient_farmer_id = rc.recipient_farmer_id ?? null;
     }
   }
 

@@ -53,6 +53,7 @@ export default function DemoManager() {
   const [size, setSize] = useState(50);
   const [selected, setSelected] = useState<string[]>(MODULE_KEYS.map((m) => m.id));
   const [loading, setLoading] = useState(false);
+  const [integrityAutoKey, setIntegrityAutoKey] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [preview, setPreview] = useState<any>(null);
   const [confirmText, setConfirmText] = useState("");
@@ -236,7 +237,7 @@ export default function DemoManager() {
         }
       }
 
-      if (succeeded) toast.success(`✓ ${t("dmOpDone" as any)}`);
+      if (succeeded) { toast.success(`✓ ${t("dmOpDone" as any)}`); setIntegrityAutoKey((k) => k + 1); }
       let validation: CashCountRow[] | null = null;
       if (selected.includes("cashbook")) {
         try { validation = await fetchCashReportCounts(); setCashValidation(validation); } catch { /* best-effort */ }
@@ -754,7 +755,7 @@ export default function DemoManager() {
         </Card>
       )}
 
-      {!loading && <LandTransferVerifyCard />}
+      {!loading && <LandTransferVerifyCard autoRunKey={integrityAutoKey} />}
 
 
 
