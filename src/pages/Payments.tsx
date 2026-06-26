@@ -942,7 +942,7 @@ export default function Payments() {
                             if (refIds.length) {
                               const { data: invs } = await supabase
                                 .from("irrigation_invoices")
-                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
+                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
                                 .in("id", refIds);
                               primaryCharge = (invs ?? [])[0] ?? null;
                               const { data: allDues } = await supabase
