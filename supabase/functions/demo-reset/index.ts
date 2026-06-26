@@ -1580,7 +1580,7 @@ async function seedSettings(admin: any, officeId?: string) {
     id: 1, company_name: "Smart Irrigation Cooperative", company_name_bn: "স্মার্ট সেচ সমবায়",
     address: "Baliadanga, Rangpur", mobile: "01700000000", email: "demo@example.com",
     registration_no: "COOP-2018-0451",
-    logo_url: demoLogo, show_logo: true, editor_signature_url: demoSignature,
+    logo_url: demoLogo, editor_signature_url: demoSignature,
     default_loan_interest: 12,
     penalty_type: "percent", penalty_value: 2, penalty_grace_days: 30,
     fiscal_year_start_month: 7,
