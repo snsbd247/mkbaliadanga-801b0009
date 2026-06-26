@@ -1907,10 +1907,10 @@ export default function FarmerDetail() {
           <div className="space-y-3">
             <div>
               <Label className="text-sm font-medium mb-2 block">{t("mouza" as any) || "মৌজা"} <span className="text-destructive">*</span></Label>
-              <Input
+              <MouzaSelect
                 value={(editLoc as any).mouza_name ?? ""}
                 placeholder={t("mouza" as any) || "মৌজা"}
-                onChange={(e) => { setEditLoc({ mouza_name: e.target.value } as any); if (editLocErr) setEditLocErr(null); }}
+                onChange={(name) => { setEditLoc({ mouza_name: name } as any); if (editLocErr) setEditLocErr(null); }}
               />
               {editLocErr?.message && <p className="text-xs text-destructive mt-1">{editLocErr.message}</p>}
             </div>
