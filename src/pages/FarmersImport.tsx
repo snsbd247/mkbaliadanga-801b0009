@@ -47,8 +47,8 @@ type RowState = {
 const COLUMNS = [
   "farmer_id", "is_voter", "name_en", "name_bn",
   "father_name", "mother_name", "nid", "mobile",
-  "village", "post_office", "upazila", "district",
-  "nominee_name", "nominee_mobile", "nominee_relation",
+  "village", "post_office", "upazila", "district", "division", "address",
+  "nominee_name", "nominee_mobile", "nominee_relation", "nominee_nid", "nominee_address",
 ] as const;
 
 function readBookFromFile(file: File): Promise<XLSX.WorkBook> {
@@ -102,8 +102,8 @@ export default function FarmersImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const headers = [...COLUMNS];
     const sample = [
-      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Rahima", "1234567890", "01711000000", "Bagbari", "Baliadanga", "Sadar", "Tangail", "Md. Sabuj", "01911000000", "Son"],
-      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "Mst. Hasna", "9876543210", "01811000000", "Char Bhabanipur", "Baliadanga", "Sadar", "Tangail", "", "", ""],
+      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Rahima", "1234567890", "01711000000", "Bagbari", "Baliadanga", "Sadar", "Tangail", "Dhaka", "গ্রামঃ বাগবাড়ী, ডাকঘরঃ বালিয়াডাঙ্গা", "Md. Sabuj", "01911000000", "Son", "1234567890123", "Bagbari, Baliadanga"],
+      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "Mst. Hasna", "9876543210", "01811000000", "Char Bhabanipur", "Baliadanga", "Sadar", "Tangail", "Dhaka", "", "", "", "", "", ""],
     ];
     if (format === "csv") {
       const csv = [headers, ...sample]
@@ -119,21 +119,25 @@ export default function FarmersImport() {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
     const notes = XLSX.utils.aoa_to_sheet([
       ["Column", "Required", "Notes"],
-      ["farmer_id", "No", "5-digit padded code (e.g. 00001). 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে। existing হলে UPDATE, খালি হলে নতুন তৈরি হবে।"],
-      ["is_voter", "No", "true হলে voter/savings number আলাদা নয় — Farmer ID-ই ব্যবহৃত হবে।"],
-      ["name_en", "Yes", "ইংরেজী নাম"],
+      ["farmer_id", "No", "৫-ডিজিট padded কোড (যেমন 00001)। 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে। existing হলে UPDATE, খালি হলে নতুন তৈরি হবে।"],
+      ["is_voter", "No", "true/হ্যাঁ/1 হলে voter/savings নম্বর আলাদা নয় — Farmer ID-ই ব্যবহৃত হবে।"],
+      ["name_en", "Yes", "ইংরেজী নাম (আবশ্যক)"],
       ["name_bn", "No", "বাংলা নাম"],
       ["father_name", "No", "পিতার নাম"],
       ["mother_name", "No", "মাতার নাম"],
       ["nid", "No", "জাতীয় পরিচয়পত্র নম্বর (শুধু সংখ্যা)"],
-      ["mobile", "No", "11-digit BD number, e.g. 017XXXXXXXX"],
+      ["mobile", "No", "১১-ডিজিট BD নম্বর, যেমন 017XXXXXXXX"],
       ["village", "No", "Free-text গ্রাম"],
       ["post_office", "No", "ডাকঘর"],
       ["upazila", "No", "উপজেলা"],
       ["district", "No", "জেলা"],
+      ["division", "No", "বিভাগ"],
+      ["address", "No", "সম্পূর্ণ ঠিকানা (free-text)"],
       ["nominee_name", "No", "নমিনির নাম"],
       ["nominee_mobile", "No", "নমিনির মোবাইল"],
       ["nominee_relation", "No", "নমিনির সম্পর্ক (যেমন: ছেলে, স্ত্রী)"],
+      ["nominee_nid", "No", "নমিনির জাতীয় পরিচয়পত্র নম্বর"],
+      ["nominee_address", "No", "নমিনির ঠিকানা"],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Farmers");
@@ -216,9 +220,13 @@ export default function FarmersImport() {
         post_office:      str(r.raw.post_office),
         upazila:          str(r.raw.upazila),
         district:         str(r.raw.district),
+        division:         str(r.raw.division),
+        address:          str(r.raw.address),
         nominee_name:     str(r.raw.nominee_name),
         nominee_mobile:   str(r.raw.nominee_mobile),
         nominee_relation: str(r.raw.nominee_relation),
+        nominee_nid:      str(r.raw.nominee_nid),
+        nominee_address:  str(r.raw.nominee_address),
         ...(hasVoterInput ? { is_voter: isVoter } : {}),
       };
       // Drop null-valued keys so an UPDATE never wipes existing data with blanks
