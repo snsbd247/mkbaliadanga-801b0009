@@ -206,7 +206,10 @@ export default function OwnLandsTab({
           <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b text-xs">
             <Badge variant="secondary">{tx("Plots", "জমি")}: {allOwn}</Badge>
             <Badge variant="secondary">{tx("Total Size", "মোট জমি")}: {fmtLand(totalSize)}</Badge>
+            {totalGiven > 0.005 && <Badge variant="secondary">{tx("Borga Given", "বর্গা দেওয়া")}: {fmtLand(totalGiven)}</Badge>}
+            {totalGiven > 0.005 && <Badge variant="secondary">{tx("Remaining (self)", "অবশিষ্ট (নিজ)")}: {fmtLand(totalRemaining)}</Badge>}
             <Badge variant="secondary">{tx("Total Amount", "মোট টাকা")}: {money(totalAmount)}</Badge>
+
             {totalDue > 0.005
               ? <Badge variant="destructive">{tx("Due", "বকেয়া")}: {money(totalDue)}</Badge>
               : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("All Paid", "সব পরিশোধিত")}</Badge>}
