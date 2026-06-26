@@ -1,50 +1,37 @@
-# Plan: ডেমো ইম্পোর্ট-কে এখন পর্যন্ত করা সব ফিচারের সাথে সিঙ্ক করা
-
 ## লক্ষ্য
-ডেমো ইম্পোর্ট চালালেই যেন এখন পর্যন্ত বানানো **সব ফিচার** (বিশেষত নতুন A5 ল্যান্ডস্কেপ সেচ রশিদ) সম্পূর্ণ ডেটাসহ তৈরি হয় — অর্থাৎ ইম্পোর্টের পর কোনো invoice খুলে রশিদ প্রিন্ট করলে স্যাম্পলের মতো ১০০% মিলে যায় এবং প্রতিটি মডিউল বাস্তব ডেটা দেখায়।
+সব ডেমো প্রিসেটের জন্য `demo-reset` চালিয়ে যাচাই করা যে — (১) রিসিপ্ট ১০০% পূর্ণ আসে, (২) A5 ল্যান্ডস্কেপ লেআউট স্যাম্পলের সাথে মেলে, (৩) প্রতি প্রিসেটে mismatch রিপোর্ট হয়, (৪) Farmer-wise ও Irrigation রিপোর্টের PDF/Excel এক্সপোর্ট ঠিক, (৫) Super Admin/Admin/Staff তিন রোলে ড্যাশবোর্ড, pending approvals ও pending withdrawals ঠিক দেখায়।
 
-## এখন কী আছে (যাচাই করা)
-- `src/lib/demoPresets.ts` — preset তালিকা + প্রতি মডিউলের verify টেবিল ম্যাপ।
-- `supabase/functions/demo-reset/index.ts` — আসল seeder (farmers, lands, borga relations, irrigation invoices/payments, loans+guarantors, savings, bank, cashbook, expenses, assets, land history/transfer/change-log)।
-- বেশিরভাগ টেবিল ইতিমধ্যে seed হয়, কিন্তু **নতুন রশিদের জন্য দরকারি কিছু ফিল্ড/রো অনুপস্থিত**।
+⚠️ গুরুত্বপূর্ণ: `demo-reset` ডেটা মুছে নতুন seed করে। তাই এটা **শুধু demo/preview environment-এ** চালাব, প্রোডাকশন ডেটায় নয়। শুরুর আগে আপনার অনুমতি দরকার।
 
-## ফাঁক (যা ঠিক করতে হবে)
+## ধাপসমূহ
 
-### ১. সেচ ইনভয়েস — রশিদের সব ফিল্ড seed করা
-বর্তমান `seedIrrigationInvoices` যা বাদ দিচ্ছে, রশিদে এগুলো লাগে:
-- `land_type_name` ও `irrigation_category_name` (এখন শুধু `land_type_id`) → রশিদের "জমির ধরন" রো।
-- `mouza` / `dag_no` — lands-এ আছে কিন্তু invoice select-এ আনা হয় না; রশিদ enrich path-এ লাগে।
-- বর্গা invoice (`is_borga` সবসময় false) — অন্তত কিছু invoice borga করে দিতে হবে যাতে রশিদে "বর্গাদার / মালিক" ডিসপ্লে টেস্ট হয়।
-- গত সিজনের **বকেয়া + বকেয়ার জরিমানা** এবং **হাল সিজনের জরিমানা** — কিছু invoice-এ due_charge/penalty বসাতে হবে যাতে রশিদের জরিমানা/বকেয়া/মোট রো বাস্তব দেখায়।
-- holding/member তথ্য (`member_no`) invoice path-এ পৌঁছানো নিশ্চিত করা।
+### ১) প্রতি-প্রিসেট demo-reset + row-count যাচাই (স্বয়ংক্রিয়)
+- একটি স্ক্রিপ্ট দিয়ে প্রতিটি প্রিসেট (`small, medium, large, year_ops, loans_only, savings_only, irrigation_only, recent_features, patwari_workflow`) আলাদা করে `demo-reset` invoke করব।
+- প্রতিটির পর `buildRowCountReport` লজিক দিয়ে `MODULE_VERIFY`-এর সব টেবিলের actual row count মিলিয়ে দেখব — কোন `required` টেবিল খালি থাকলে = **mismatch**।
+- আউটপুট: প্রিসেট-ভিত্তিক পাস/ফেল টেবিল (কোন প্রিসেটে কোন টেবিল mismatch)।
 
-### ২. দুই সিজন তৈরি করা
-এক সিজন (গত) আংশিক unpaid → চলতি সিজনে বকেয়া+জরিমানা দেখানোর জন্য, আরেক সিজন (চলতি) হাল চার্জের জন্য। এখন কার্যত এক সিজন seed হয়।
+### ২) রিসিপ্ট ১০০% পূর্ণতা যাচাই
+- seed হওয়া `irrigation_invoices` থেকে একটি বর্গা ও একটি owner ইনভয়েস নিয়ে রিসিপ্ট পেলোড তৈরি করে যাচাই করব সব ফিল্ড আসছে: সভ্য সদস্য (কৃষক/মালিক), মৌজা, জমির ধরন + চার্জ রেট (একর/বিঘা), দাগ নং, জমির পরিমাণ (৪ দশমিক), হাল/বকেয়া চার্জ+জরিমানা, মোট, স্বাক্ষর, QR।
 
-### ৩. `irrigation_due_promises` seed করা
-verify-list-এ আছে কিন্তু seeder এটা ভরে না — কিছু due promise রো যোগ করা।
+### ৩) A5 ল্যান্ডস্কেপ লেআউট স্বয়ংক্রিয় তুলনা
+- বিদ্যমান `irrigationReceiptSampleQa.test.ts` সম্প্রসারণ: Playwright দিয়ে রিসিপ্ট রেন্ডার করে স্যাম্পল ইমেজের aspect ratio (210/148 ল্যান্ডস্কেপ), রো ক্রম, রঙ (লাল/নীল) ও ফিল্ড পজিশন তুলনা করব। mismatch হলে diff স্ন্যাপশট সেভ হবে।
 
-### ৪. সম্পাদকের স্বাক্ষর / লোগো / QR ডেমো অ্যাসেট
-রশিদের নিচে অটো-স্বাক্ষর, হেডার লোগো ও QR — `company_settings`/receipt settings-এ ডেমো ভ্যালু (placeholder image) seed করা, যাতে ইম্পোর্টের পরই রশিদ পূর্ণরূপে দেখায়।
+### ৪) রিপোর্ট এক্সপোর্ট যাচাই
+- Farmer-wise রিপোর্ট ও Irrigation রিপোর্ট — দুটোর PDF ও Excel এক্সপোর্ট কোডপথ ডেমো ডেটায় চালিয়ে ফাইল জেনারেট হয় কিনা ও কন্টেন্ট খালি নয় তা যাচাই (Playwright/unit)।
 
-### ৫. preset metadata আপডেট
-- "Full 1-Year Operational Demo" preset-এ উপরের নতুন ডেটা (two-season, borga, due+penalty, due_promises, signature) অন্তর্ভুক্ত করা।
-- `recent_features` preset-এর বর্ণনা হালনাগাদ — "১০০% স্যাম্পল রশিদ রিপ্রোডিউসিবল" যোগ করা।
-
-### ৬. verify ম্যাপ সম্পূর্ণ করা
-`MODULE_VERIFY`-তে যেসব নতুন টেবিল missing (যেমন `irrigation_due_promises` required করা উচিত কিনা, signature settings) তা মিলিয়ে নেওয়া।
-
-### ৭. টেস্ট
-- বিদ্যমান `demoPresets.test.ts` আপডেট।
-- নতুন একটি টেস্ট: seeded irrigation invoice-এ রশিদের প্রতিটি required ফিল্ড (land_type_name, mouza, dag_no, season_rate, due/penalty, borga display) non-null — যাতে ভবিষ্যতে demo রিগ্রেস না করে।
-
-## টেকনিক্যাল নোট (ডেভেলপার-অংশ)
-- `demoPresets.ts` ও edge function `demo-reset/index.ts` দুটোতেই পরিবর্তন mirror করতে হবে (Deno isolation, ফাইলের হেডারেই লেখা)।
-- কোনো বিদ্যমান মডিউল না ভাঙা — শুধু seeder-এ ফিল্ড/রো যোগ ও দুই-সিজন লজিক; স্কিমা পরিবর্তন লাগলে নতুন migration (GRANT সহ)।
-- পরিবর্তনের পর edge function রি-ডিপ্লয় করতে হবে।
+### ৫) রোল-ভিত্তিক ড্যাশবোর্ড যাচাই
+- Super Admin (`ismail162`), একটি Admin ও একটি Staff রোলের ইউজারে লগইন করে Playwright দিয়ে: ড্যাশবোর্ড কার্ড, pending approvals, ও pending withdrawals সঠিক দেখায় কিনা স্ক্রিনশটসহ যাচাই।
 
 ## ডেলিভারেবল
-ডেমো ইম্পোর্ট করলে: সব মডিউলে ডেটা + অন্তত একটি invoice যা খুলে প্রিন্ট করলে আপনার দেওয়া স্যাম্পলের সাথে ১০০% মিলবে (বর্গা, জরিমানা, বকেয়া, মৌজা, দাগ, জমির ধরন, স্বাক্ষর, QR সহ)।
+- প্রিসেট-ভিত্তিক mismatch রিপোর্ট (টেবিল আকারে)
+- রিসিপ্ট লেআউট QA পাস/ফেল + diff স্ন্যাপশট
+- রিপোর্ট এক্সপোর্ট যাচাই ফল
+- ৩ রোলের ড্যাশবোর্ড স্ক্রিনশট
 
----
-**এটা শুধু প্ল্যান। আপনি বললে কোন অংশ আগে করব / সব একসাথে করব জানান।**
+## টেকনিক্যাল নোট
+- demo-reset edge function `supabase.functions.invoke('demo-reset', { body: { preset } })` দিয়ে কল হবে; row counts `read_query`/psql select দিয়ে গুনব।
+- কোনো প্রোডাকশন টেবিল স্কিমা বদলাব না; শুধু seed + read।
+
+## আপনার সিদ্ধান্ত দরকার
+1. আমি কি **এখন সব প্রিসেটে demo-reset চালাব** (ডেটা রিফ্রেশ হবে), নাকি শুধু একটি প্রিসেট (যেমন `recent_features`) দিয়ে শুরু করব?
+2. রোল যাচাইয়ের জন্য Admin ও Staff টেস্ট-ইউজারের ক্রেডেনশিয়াল আছে কি, নাকি আমি ডেমো ইউজার বানিয়ে নেব?
