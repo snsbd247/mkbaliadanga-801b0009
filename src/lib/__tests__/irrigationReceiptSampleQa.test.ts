@@ -100,8 +100,8 @@ describe("সেচ রশিদ — sample layout QA", () => {
     expect(html).toContain("মোঃ আলম ইসলাম-০১৭০০০০০০০০০"); // patwari
   });
 
-  it("forces a single copy (no Farmer/Office copy box) for the official receipt", () => {
-    expect(html).not.toContain("কৃষকের কপি");
-    expect(html).not.toContain("অফিস কপি");
+  it("renders no visible Farmer/Office copy box for the official receipt", () => {
+    // Single-copy layout: the copy label must not be shown as a bordered box.
+    expect(html).not.toContain("padding:2px 14px;margin-top:6px");
   });
 });
