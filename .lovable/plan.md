@@ -1,44 +1,58 @@
-# Farmer Profile Tabs + Borga Lifecycle
+# প্ল্যান: বর্গা/ট্রান্সফারে মালিকের জমি দৃশ্যমান রাখা + জমি-ভিত্তিক সেচ হিসাব
 
-## Goal
-Lock the farmer profile to the 11 tabs you listed and make the **Land History** tab the single place to (a) give a parcel on borga, (b) sell/transfer a parcel to a new owner, (c) distribute a parcel among heirs, and (d) take borga back — all without ever corrupting earlier records.
+## লক্ষ্য (আপনার চাহিদা অনুযায়ী)
+- জমির **মূল মালিকের প্রোফাইলে তার নিজের পুরো জমি সবসময় দেখাবে** — বর্গা দিলেও, এমনকি পুরো জমি বর্গা দিলেও।
+- বর্গা দেওয়া অংশ **বর্গাদারের প্রোফাইলেও** দেখাবে।
+- মালিকের প্রোফাইলে প্রতিটি জমির জন্য দেখাবে: **মোট জমি / বর্গা দেওয়া / অবশিষ্ট (নিজে চাষ)**।
+- **সেচ চার্জ হবে জমির উপর, চাষকারী অনুযায়ী**: ১০ শতকের মধ্যে ৫ বর্গা দিলে — মালিক ৫ শতকের সেচ দেবে, বর্গাদার ৫ শতকের সেচ দেবে। পুরো বর্গা দিলে পুরোটাই বর্গাদারের সেচ।
 
-## Tab list (final)
-1. Lands — unchanged
-2. ~~Paid Land~~ — removed (already gone; will confirm)
-3. Land History — reworked (see below)
-4. Transfer History — shows all land movements (unchanged display)
-5. Savings · 6. Loans · 7. Statement · 8. Irrigation · 9. Payments · 10. Share Balance · 11. Notes — all unchanged
+## বর্তমান সমস্যা
+এখন বর্গা দিলে মালিকের জমির রেকর্ড **ছোট করে ফেলা হয়** (১০ → ৫) এবং বর্গাদারের জন্য আলাদা রেকর্ড তৈরি হয়। ফলে মালিকের প্রোফাইলে মূল ১০ শতক আর দেখা যায় না, শুধু অবশিষ্ট ৫ দেখায়। পুরো জমি বর্গা দিলে মালিকের কাছে কিছুই থাকে না।
 
-## Land History actions (the real work)
-The action dialog gets 4 explicit modes instead of the current generic one:
+## নতুন ডেটা মডেল (মূল পরিবর্তন)
+বর্গা দেওয়ার সময় মালিকের `lands` রেকর্ড **আর ছোট করা হবে না** — পুরো `land_size` অক্ষত থাকবে। বর্গা-আউট অংশ আলাদাভাবে হিসাব রাখা হবে:
 
-### A. Give Borga (বর্গা দেওয়া)
-- Owner picks one of their parcels + a sharecropper + the borga area (e.g. 800 of 1200 shotok).
-- Owner **keeps** the parcel; only `land_size` is reduced by the borga area (remaining 400 stays with owner). Owner's parcel is NOT deleted.
-- A new `lands` row is created for the sharecropper: `owner_type='borgadar'`, `owner_farmer_id = owner`, `land_size = borga area`. This makes the parcel appear in the **sharecropper's profile**.
-- One `land_transfers` row (`transfer_type='borga_transfer'`) + recipient row records the event for history.
+- বর্গাদারের জন্য `owner_type = 'borgadar'`, `owner_farmer_id = মূল মালিক`, `land_size = বর্গা দেওয়া অংশ` সহ একটি রেকর্ড তৈরি/আপডেট হবে (যেমন আছে)।
+- মালিকের জমির **"বর্গা দেওয়া পরিমাণ"** = ঐ জমির active `land_transfers (borga_transfer)` থেকে যোগফল (যা ইতিমধ্যে আছে), অথবা মালিকের জমির সাথে লিঙ্ক করা সক্রিয় বর্গাদার-রেকর্ডের যোগফল।
+- **অবশিষ্ট (নিজে চাষ)** = `land_size − বর্গা দেওয়া`।
 
-### B. Reclaim Borga (বর্গা ফেরত)
-- From the owner's Land History, the active borga-out parcels are listed with a "ফেরত" button.
-- Reclaim merges the borga area back into the owner's parcel (or recreates it), archives the sharecropper's borgadar parcel via `deleted_at`, and writes a `borga_return` transfer record.
-- **Prior records are never edited** — the original `borga_transfer` row stays intact; the return is a separate event. History therefore shows: given out → returned.
+কোনো নতুন টেবিল লাগবে না; বিদ্যমান `lands` + `land_transfers` + `land_transfer_recipients` দিয়েই হবে।
 
-### C. Sell / Transfer ownership (বিক্রি / হস্তান্তর)
-- Existing behavior kept: source parcel archived (`deleted_at`), new owner parcel created (`owner_type='owner'`), `transfer_type='sale'`.
+## সেচ হিসাবের নিয়ম (জমি-ভিত্তিক)
+সেচ ইনভয়েস/চার্জ তৈরির সময় **billable area** হিসাব হবে:
+- **মালিকের জমি**: billable = `land_size − (active বর্গা-আউট যোগফল)` → শুধু নিজে চাষ করা অংশের সেচ।
+- **বর্গাদারের জমি**: billable = ঐ রেকর্ডের `land_size` → বর্গা অংশের সেচ।
+- পুরো বর্গা দিলে মালিকের billable = ০ (সেচ চার্জ নেই), পুরোটা বর্গাদারের।
 
-### D. Distribute among heirs (বণ্টন)
-- Existing equal/custom split kept: source archived, one new `owner` parcel per heir, `transfer_type='inheritance'`. Equal-split of 1400 shotok across 3 heirs already supported.
+## কাজের ধাপ
 
-## Technical notes
-- `LandTransferDialog.tsx`: add a `mode` selector (`borga` | `sale` | `inheritance` | `reclaim`). Branch the submit logic:
-  - borga: do NOT archive source; decrement source `land_size`; recipient parcel `owner_type='borgadar'`, `owner_farmer_id=sourceFarmerId`; single recipient.
-  - reclaim: locate sharecropper's borgadar parcel, `deleted_at` it, add area back to owner parcel, write `borga_return` transfer.
-  - sale/inheritance: keep current archive-and-clone path.
-- Add `'borga_return'` to `TYPE_LABEL` in `LandTransferHistoryTab.tsx`.
-- `FarmerDetail.tsx`: in Land History tab, derive the borga-out list (active `lands` where `owner_farmer_id = this farmer` and `owner_type='borgadar'`, grouped by sharecropper) and render Reclaim buttons there. Keep the existing "Owned (Borga)" view consistent with this source of truth.
-- Keep the existing transfer-back guard (cannot reverse a sale to a prior owner), but it must NOT block borga returns.
-- No schema migration expected — `lands` (`owner_type`, `owner_farmer_id`, `deleted_at`, `land_size`), `land_transfers`, and `land_transfer_recipients` already support this. Confirm during build; add a migration only if `borga_return` needs a constraint relaxed.
+### ১. ট্রান্সফার লজিক (`LandTransferDialog.tsx`)
+- `isBorgaGive` ক্ষেত্রে মালিকের জমির `land_size` কমানো বন্ধ করা হবে — রেকর্ড পূর্ণ অক্ষত থাকবে, archive হবে না।
+- বর্গাদার রেকর্ড তৈরি/মার্জ আগের মতোই থাকবে।
+- বর্গা ফেরত (reclaim/borga_return) এ মালিকের জমি অক্ষতই থাকে, শুধু বর্গাদার রেকর্ড কমে/মুছে।
+- বিক্রি/উত্তরাধিকার/স্প্লিট আগের মতোই (মালিকের কাছ থেকে সরাসরি হস্তান্তর, পুরোনো রেকর্ড archive)।
 
-## Out of scope
-Savings, Loans, Statement, Irrigation, Payments, Share Balance, Notes, and the Lands tab are untouched.
+### ২. সেচ বিলেবল-এরিয়া হেল্পার
+- একটি কেন্দ্রীয় হেল্পার (`src/lib/irrigationBargaAllocation.ts` ইতিমধ্যে আছে) ব্যবহার/আপডেট করে প্রতি জমির billable area বের করা।
+- সেচ ইনভয়েস জেনারেশন (`irrigationInvoiceGeneration.ts`) ও চার্জ ক্যালকুলেশন এই billable area ব্যবহার করবে — full size নয়।
+
+### ৩. মালিকের প্রোফাইল UI (`OwnLandsTab.tsx` / Lands ট্যাব)
+- প্রতিটি নিজের জমির সারিতে নতুন কলাম: **মোট / বর্গা দেওয়া / অবশিষ্ট (নিজ)**।
+- সারাংশ ব্যাজে: মোট জমি, মোট বর্গা দেওয়া, মোট অবশিষ্ট।
+- সেচ চার্জ কলাম অবশিষ্ট (নিজ) অংশের ভিত্তিতে দেখাবে।
+- পুরো বর্গা দেওয়া জমিও তালিকায় থাকবে (বর্গা = মোট, অবশিষ্ট = ০ ব্যাজ সহ)।
+
+### ৪. বর্গাদারের প্রোফাইল
+- আগের মতোই বর্গাদার জমি দেখাবে; নিশ্চিত করা হবে সেচ চার্জ ঐ অংশের ভিত্তিতে।
+
+### ৫. সামঞ্জস্য যাচাই
+- বিদ্যমান integrity ইঞ্জিন (`landTransferIntegrity.ts`) আপডেট: এখন নিয়ম হবে "মালিক জমি = পূর্ণ size, বর্গা-আউট ≤ size", area-conservation চেক নতুন মডেল অনুযায়ী।
+- রিগ্রেশন টেস্ট আপডেট/যোগ যাতে অন্য মডিউল না ভাঙে।
+
+## মডিউল না-ভাঙার সতর্কতা
+- পরিবর্তন শুধু বর্গা (`borga_transfer`/`borga_return`) পথে সীমাবদ্ধ — বিক্রি/উত্তরাধিকার/স্প্লিট অপরিবর্তিত।
+- বিদ্যমান বর্গা ডেটা (যেগুলোতে মালিকের জমি ইতিমধ্যে ছোট করা) এর জন্য একটি এককালীন ডেটা-পুনর্গঠন স্ক্রিপ্ট/মাইগ্রেশন লাগবে কিনা — আপনার ডেটা যাচাই করে সিদ্ধান্ত (নিচে প্রশ্ন)।
+
+## আপনার সিদ্ধান্ত দরকার
+1. **পুরাতন বর্গা ডেটা**: ইতিমধ্যে যেসব জমির size ছোট করা হয়েছে, সেগুলো স্বয়ংক্রিয়ভাবে পুরো size-এ পুনর্গঠন করব, নাকি শুধু নতুন বর্গা থেকে এই নিয়ম চালু হবে?
+2. **সেচ চার্জ আগের ইনভয়েস**: ইতিমধ্যে তৈরি হওয়া সেচ ইনভয়েস পুনঃগণনা করব, নাকি শুধু নতুন ইনভয়েস থেকে নতুন নিয়ম?
