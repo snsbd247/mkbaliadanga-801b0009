@@ -139,6 +139,8 @@ export default function FarmerDetail() {
   const [reclaimLand, setReclaimLand] = useState<any | null>(null);
   // Lands owned by this farmer that are given out to sharecroppers (borga)
   const [borgaOut, setBorgaOut] = useState<any[]>([]);
+  const [borgaGivenMap, setBorgaGivenMap] = useState<Record<string, number>>({});
+
 
   // Load patwaris for assignment
   useEffect(() => {
