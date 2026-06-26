@@ -161,7 +161,7 @@ export default function FarmerDetail() {
     setOwnerLandsLoading(true);
     let qb = supabase
       .from("lands_with_location")
-      .select("id,dag_no,land_size,field_type,division_id,district_id,upazila_id,mouza_id,mouza_name,office_id")
+      .select("id,dag_no,land_size,field_type,land_type_id,division_id,district_id,upazila_id,mouza_id,mouza_name,office_id")
       .eq("farmer_id", land.owner_farmer_id)
       .eq("owner_type", "owner");
     if (farmer?.office_id) qb = qb.eq("office_id", farmer.office_id);
