@@ -366,7 +366,7 @@ async function seedLands(admin: any, officeId: string, farmers: any[], landTypes
       owner_farmer_id: f.id,
     };
   });
-  const { data, error } = await admin.from("lands").insert(lands).select("id, farmer_id, land_size, land_type_id, office_id");
+  const { data, error } = await admin.from("lands").insert(lands).select("id, farmer_id, land_size, land_type_id, office_id, dag_no, mouza_id, field_type, owner_type, owner_farmer_id");
   if (error) throw new Error(`lands: ${error.message}`);
   return data ?? [];
 }
@@ -1352,9 +1352,12 @@ async function seedPublicPaymentIntents(admin: any, officeId: string, farmers: a
 }
 
 // ---- Land Transfers (inheritance / sale / borga / split) ----
+// Mirrors LandTransferDialog: snapshots source info, creates recipient land rows,
+// and archives/decrements the source land so transfers show up in BOTH profiles.
 async function seedLandTransfers(admin: any, officeId: string, lands: any[], farmers: any[]): Promise<number> {
   const voters = farmers.filter((f: any) => f.is_voter);
   if (!lands.length || voters.length < 2) return 0;
+  // inheritance = উত্তরাধিকার, sale = বিক্রি, borga_transfer = বর্গা, split = সন্তানদের ভাগ
   const types = ["inheritance", "sale", "borga_transfer", "split"];
   const today = new Date();
   const daysAgo = (d: number) => new Date(today.getTime() - d * 86400000).toISOString().slice(0, 10);
@@ -1364,6 +1367,11 @@ async function seedLandTransfers(admin: any, officeId: string, lands: any[], far
   for (let i = 0; i < sample.length; i++) {
     const l = sample[i];
     const ttype = types[i % types.length];
+    const isBorga = ttype === "borga_transfer";
+    const area = Number(l.land_size ?? l.size ?? 1);
+
+    // Source owner snapshot
+    const owner = farmers.find((f: any) => f.id === l.farmer_id);
     const { data: tr, error: trErr } = await admin.from("land_transfers").insert({
       source_land_id: l.id,
       source_farmer_id: l.farmer_id,
@@ -1371,26 +1379,59 @@ async function seedLandTransfers(admin: any, officeId: string, lands: any[], far
       remark: `Demo ${ttype} transfer #${i + 1}`,
       office_id: officeId,
       transferred_at: daysAgo(30 + i * 7),
+      source_dag_no: l.dag_no ?? null,
+      source_mouza: l.mouza_id ?? null,
+      source_land_size: area,
+      source_owner_name: owner?.name_bn || owner?.name_en || null,
+      source_owner_code: owner?.member_no ?? owner?.farmer_code ?? null,
     }).select("id").single();
     if (trErr || !tr) continue;
-    // 1–2 recipients
-    const recipients = ttype === "split" ? 2 : 1;
-    const area = Number(l.land_size ?? l.size ?? 1);
-    const each = +(area / recipients).toFixed(3);
-    const rows: any[] = [];
-    for (let r = 0; r < recipients; r++) {
-      const recipient = voters.find((v: any) => v.id !== l.farmer_id && !rows.some((x) => x.recipient_farmer_id === v.id));
-      if (!recipient) continue;
-      rows.push({
+
+    // 1–2 recipients (split distributes to 2 children)
+    const recipientCount = ttype === "split" ? 2 : 1;
+    const each = +(area / recipientCount).toFixed(3);
+    const picked: any[] = [];
+    for (let r = 0; r < recipientCount; r++) {
+      const recipient = voters.find((v: any) => v.id !== l.farmer_id && !picked.some((x) => x.id === v.id));
+      if (recipient) picked.push(recipient);
+    }
+    if (!picked.length) continue;
+
+    for (const recipient of picked) {
+      const eachArea = Math.max(0.001, each);
+      // Create the recipient's land row (cloned from source)
+      const { data: nl, error: nlErr } = await admin.from("lands").insert({
+        farmer_id: recipient.id,
+        land_size: eachArea,
+        mouza_id: l.mouza_id ?? null,
+        dag_no: l.dag_no ?? null,
+        land_type_id: l.land_type_id ?? null,
+        field_type: l.field_type ?? null,
+        owner_type: isBorga ? "borgadar" : "owner",
+        owner_farmer_id: isBorga ? l.farmer_id : null,
+        office_id: officeId,
+      }).select("id").single();
+      if (nlErr || !nl) continue;
+      const { error: rErr } = await admin.from("land_transfer_recipients").insert({
         transfer_id: tr.id,
         recipient_farmer_id: recipient.id,
-        new_land_id: null,
-        area_decimal: Math.max(0.001, each),
+        new_land_id: nl.id,
+        area_decimal: eachArea,
       });
+      if (!rErr) count += 1;
     }
-    if (rows.length) {
-      const { error: rErr } = await admin.from("land_transfer_recipients").insert(rows);
-      if (!rErr) count += rows.length;
+
+    // Adjust the source land: borga keeps remaining size; others archive fully.
+    const givenSum = +(each * picked.length).toFixed(3);
+    if (isBorga) {
+      const remaining = +(area - givenSum).toFixed(3);
+      if (remaining > 0.0001) {
+        await admin.from("lands").update({ land_size: remaining }).eq("id", l.id);
+      } else {
+        await admin.from("lands").update({ deleted_at: new Date().toISOString() }).eq("id", l.id);
+      }
+    } else {
+      await admin.from("lands").update({ deleted_at: new Date().toISOString() }).eq("id", l.id);
     }
     count += 1;
   }
