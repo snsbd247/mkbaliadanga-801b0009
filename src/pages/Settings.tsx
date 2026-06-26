@@ -39,10 +39,19 @@ export default function Settings() {
       if (up.error) { setBusy(false); return toast.error(up.error.message); }
       logo_url = supabase.storage.from("branding").getPublicUrl(path).data.publicUrl;
     }
+    let editor_signature_url = form.editor_signature_url;
+    if (signature) {
+      const ext = signature.name.split(".").pop();
+      const path = `editor-signature-${Date.now()}.${ext}`;
+      const up = await supabase.storage.from("branding").upload(path, signature, { upsert: true });
+      if (up.error) { setBusy(false); return toast.error(up.error.message); }
+      editor_signature_url = supabase.storage.from("branding").getPublicUrl(path).data.publicUrl;
+    }
     const { error } = await supabase.from("company_settings").update({
       company_name: form.company_name,
       company_name_bn: form.company_name_bn,
       logo_url,
+      editor_signature_url,
       email: form.email,
       mobile: form.mobile,
       address: form.address,
