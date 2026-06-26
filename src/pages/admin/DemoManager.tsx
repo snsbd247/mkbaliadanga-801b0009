@@ -53,6 +53,7 @@ export default function DemoManager() {
   const [size, setSize] = useState(50);
   const [selected, setSelected] = useState<string[]>(MODULE_KEYS.map((m) => m.id));
   const [loading, setLoading] = useState(false);
+  const [integrityAutoKey, setIntegrityAutoKey] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [preview, setPreview] = useState<any>(null);
   const [confirmText, setConfirmText] = useState("");
