@@ -9,6 +9,21 @@ import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf"
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
 export type ReceiptKind = "irrigation" | "savings" | "loan";
+
+/**
+ * Permanently locked page configuration for the official "সেচ চার্জ ও বিবিধ আদায় রশিদ".
+ * A5 landscape + fixed margins. User/profile receipt settings (A4/portrait) can NEVER
+ * override this — both the on-screen preview and the generated PDF use these values.
+ */
+export const IRRIGATION_RECEIPT_PAGE = {
+  paper: "a5" as const,
+  orientation: "l" as const,
+  margins: { t: 8, r: 8, b: 8, l: 8 },
+  /** Render width (px) for html2canvas that yields the A5-landscape aspect. */
+  renderWidthPx: 1040,
+  /** A5 landscape aspect ratio (210mm / 148mm) for preview containers. */
+  aspectRatio: 210 / 148,
+} as const;
 export type ReceiptCopy = "both" | "farmer" | "office";
 export type ReceiptLang = "bn" | "en";
 
