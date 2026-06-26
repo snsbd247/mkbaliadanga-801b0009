@@ -366,7 +366,7 @@ async function seedLands(admin: any, officeId: string, farmers: any[], landTypes
       owner_farmer_id: f.id,
     };
   });
-  const { data, error } = await admin.from("lands").insert(lands).select("id, farmer_id, land_size, land_type_id, office_id");
+  const { data, error } = await admin.from("lands").insert(lands).select("id, farmer_id, land_size, land_type_id, office_id, dag_no, mouza_id, field_type, owner_type, owner_farmer_id");
   if (error) throw new Error(`lands: ${error.message}`);
   return data ?? [];
 }
