@@ -60,11 +60,16 @@ export default function OwnLandsTab({
       .map((l) => {
         const matched = resolveRateForLand(rateMap, l);
         const rate = matched ? Number(matched.rate_per_shotok) : 0;
-        const total = rate * Number(l.land_size || 0);
+        const size = Number(l.land_size || 0);
+        const given = Math.min(size, Math.max(0, Number(borgaGivenMap[l.id] || 0)));
+        const selfArea = Math.max(0, +(size - given).toFixed(3));
+        // Irrigation is billed on the self-cultivated (remaining) area only.
+        const total = rate * selfArea;
         const m = landSeasonStatus(l.id);
-        return { l, rate, total, m, location: buildLocLine(l) };
+        return { l, rate, total, m, location: buildLocLine(l), size, given, selfArea };
       });
-  }, [lands, rateMap, resolveRateForLand, landSeasonStatus, buildLocLine]);
+  }, [lands, rateMap, resolveRateForLand, landSeasonStatus, buildLocLine, borgaGivenMap]);
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
