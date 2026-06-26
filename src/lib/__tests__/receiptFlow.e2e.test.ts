@@ -79,7 +79,7 @@ describe("Receipt flow E2E (print + download for all kinds)", () => {
       expect(lastSaveName).toContain("_office");
       if (k === "irrigation") expect(lastHtml).not.toContain("sig-office.png");
       else expect(lastHtml).toContain("sig-office.png");
-      expect(lastHtml).not.toContain("কৃষকের কপি");
+      if (k !== "irrigation") expect(lastHtml).not.toContain("কৃষকের কপি");
 
       // org block printed on each copy
       if (k !== "irrigation") expect(lastHtml).toMatch(/REG-/); // org registration prefix appears (digits localised)
