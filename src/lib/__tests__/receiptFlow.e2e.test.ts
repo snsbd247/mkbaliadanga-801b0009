@@ -56,8 +56,14 @@ describe("Receipt flow E2E (print + download for all kinds)", () => {
       await downloadBnReceiptPdf(payload(k, rno), "both");
       expect(lastSaveName).toContain(rno);
       expect(lastHtml).toContain("কৃষকের কপি");
-      expect(lastHtml).toContain("অফিস কপি");
-      expect(lastHtml).toContain('data-sig="placeholder"'); // no signature provided
+      if (k === "irrigation") {
+        // Official irrigation receipt is a single A5 landscape copy, never farmer+office split.
+        expect(lastHtml).not.toContain("অফিস কপি");
+        expect(lastHtml).toContain("আদায়কারীর স্বাক্ষর");
+      } else {
+        expect(lastHtml).toContain("অফিস কপি");
+        expect(lastHtml).toContain('data-sig="placeholder"'); // no signature provided
+      }
 
       // farmer-only
       await downloadBnReceiptPdf(payload(k, rno), "farmer");
@@ -71,11 +77,12 @@ describe("Receipt flow E2E (print + download for all kinds)", () => {
         "office",
       );
       expect(lastSaveName).toContain("_office");
-      expect(lastHtml).toContain("sig-office.png");
+      if (k === "irrigation") expect(lastHtml).not.toContain("sig-office.png");
+      else expect(lastHtml).toContain("sig-office.png");
       expect(lastHtml).not.toContain("কৃষকের কপি");
 
       // org block printed on each copy
-      expect(lastHtml).toMatch(/REG-/); // org registration prefix appears (digits localised)
+      if (k !== "irrigation") expect(lastHtml).toMatch(/REG-/); // org registration prefix appears (digits localised)
     });
   }
 
