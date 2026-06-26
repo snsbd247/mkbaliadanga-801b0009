@@ -151,19 +151,27 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
             .maybeSingle();
           if (existing) {
             const wasDeleted = !!(existing as any).deleted_at;
-            // Reviving a returned parcel: replace size with the reclaimed area.
-            // Merging into an active parcel: add the area on top.
-            const nextSize = wasDeleted ? area : normalizeLandSize(Number(existing.land_size || 0) + area);
-            const upd: any = { land_size: nextSize };
-            if (wasDeleted) {
-              upd.deleted_at = null;
-              upd.owner_type = newLandPayload.owner_type;
-              upd.owner_farmer_id = newLandPayload.owner_farmer_id;
+            if (isReclaim && !wasDeleted) {
+              // New model: the owner never lost the parcel during borga — their land
+              // row is already at full size. Reclaiming only archives the borgadar row
+              // (handled below). Do NOT add the area back, or it would double-count.
+              landId = existing.id;
+            } else {
+              // Reviving a returned parcel: replace size with the reclaimed area.
+              // Merging into an active parcel: add the area on top.
+              const nextSize = wasDeleted ? area : normalizeLandSize(Number(existing.land_size || 0) + area);
+              const upd: any = { land_size: nextSize };
+              if (wasDeleted) {
+                upd.deleted_at = null;
+                upd.owner_type = newLandPayload.owner_type;
+                upd.owner_farmer_id = newLandPayload.owner_farmer_id;
+              }
+              const { error: upErr } = await supabase.from("lands")
+                .update(upd).eq("id", existing.id);
+              if (upErr) throw upErr;
+              landId = existing.id;
             }
-            const { error: upErr } = await supabase.from("lands")
-              .update(upd).eq("id", existing.id);
-            if (upErr) throw upErr;
-            landId = existing.id;
+
           } else {
             const { data: nl, error: nlErr } = await supabase.from("lands").insert(newLandPayload).select("id").single();
             if (nlErr) throw nlErr;
@@ -184,24 +192,19 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         if (rcErr) throw rcErr;
       }
 
-      // Giving borga: the OWNER keeps the parcel — only reduce its size by the area
-      // given out. Archive only if nothing remains. Sale/inheritance archive fully.
+      // Giving borga: the OWNER keeps the FULL parcel intact. The given-out area is
+      // tracked via land_transfers + the borgadar land row. The owner's land row is
+      // NOT shrunk and NOT archived — so the owner's profile always shows the whole
+      // parcel (total / borga-given / remaining-self). Irrigation is billed per land
+      // using the remaining self-cultivated area for the owner.
       if (isBorgaGive) {
-        const remaining = normalizeLandSize(totalLand - effectiveSum);
-        if (remaining > 0.0001) {
-          const { error: upErr } = await supabase.from("lands")
-            .update({ land_size: remaining } as any).eq("id", sourceLand.id);
-          if (upErr) throw upErr;
-        } else {
-          const { error: delErr } = await supabase.from("lands")
-            .update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
-          if (delErr) throw delErr;
-        }
+        // Intentionally no mutation of the owner's source land row.
       } else {
         // Archive source land (history preserved via land_transfers; row not modified except deleted_at)
         const { error: delErr } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
         if (delErr) throw delErr;
       }
+
 
       toast.success(tx("Land transferred", "জমি হস্তান্তরিত"));
       onOpenChange(false);

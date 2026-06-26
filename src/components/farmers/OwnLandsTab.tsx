@@ -33,13 +33,15 @@ interface Props {
   openEdit: (land: any) => void;
   onDelete: (land: any) => void;
   borgaOut?: any[];
+  /** Map of owner land id -> total area currently given out as borga. */
+  borgaGivenMap?: Record<string, number>;
 }
 
 const PAGE_SIZE = 10;
 
 export default function OwnLandsTab({
   lands, loading, rateMap, resolveRateForLand, landSeasonStatus, buildLocLine,
-  fmtLand, t, tx, farmer, downloadLandInvoices, openEdit, onDelete, borgaOut = [],
+  fmtLand, t, tx, farmer, downloadLandInvoices, openEdit, onDelete, borgaOut = [], borgaGivenMap = {},
 }: Props) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("dag_no");
@@ -58,11 +60,16 @@ export default function OwnLandsTab({
       .map((l) => {
         const matched = resolveRateForLand(rateMap, l);
         const rate = matched ? Number(matched.rate_per_shotok) : 0;
-        const total = rate * Number(l.land_size || 0);
+        const size = Number(l.land_size || 0);
+        const given = Math.min(size, Math.max(0, Number(borgaGivenMap[l.id] || 0)));
+        const selfArea = Math.max(0, +(size - given).toFixed(3));
+        // Irrigation is billed on the self-cultivated (remaining) area only.
+        const total = rate * selfArea;
         const m = landSeasonStatus(l.id);
-        return { l, rate, total, m, location: buildLocLine(l) };
+        return { l, rate, total, m, location: buildLocLine(l), size, given, selfArea };
       });
-  }, [lands, rateMap, resolveRateForLand, landSeasonStatus, buildLocLine]);
+  }, [lands, rateMap, resolveRateForLand, landSeasonStatus, buildLocLine, borgaGivenMap]);
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -102,7 +109,9 @@ export default function OwnLandsTab({
     i + 1,
     r.location || "-",
     r.l.dag_no ?? "-",
-    Number(Number(r.l.land_size || 0).toFixed(3)),
+    Number(r.size.toFixed(3)),
+    Number(r.given.toFixed(3)),
+    Number(r.selfArea.toFixed(3)),
     t((r.l.owner_type as any) ?? ""),
     tx("Self-owned", "নিজ মালিক"),
     r.l.patwari_name_bn || r.l.patwari_name || "-",
@@ -115,11 +124,13 @@ export default function OwnLandsTab({
 
   const headerLabels = [
     "#", tx("Location", "অবস্থান"), tx("Dag No", "দাগ নং"),
-    tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)"), tx("Owner Type", "মালিকানার ধরন"),
+    tx("Total Size", "মোট জমি"), tx("Borga Given", "বর্গা দেওয়া"), tx("Remaining (self)", "অবশিষ্ট (নিজ)"),
+    tx("Owner Type", "মালিকানার ধরন"),
     tx("Owner", "মালিক"), tx("Patwari", "পাটুয়ারি"), tx("Field Type", "জমির শ্রেণি"),
     tx("Rate / Shotok", "রেট/শতক"), tx("Total Amount", "মোট টাকা"),
     tx("Irrigation Charge Due", "সেচ চার্জ বকেয়া"), tx("Payment Status", "পেমেন্ট স্ট্যাটাস"),
   ];
+
 
   const exportPdf = () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
@@ -156,10 +167,13 @@ export default function OwnLandsTab({
   }
 
   const allOwn = enriched.length;
-  const totalSize = enriched.reduce((s, r) => s + Number(r.l.land_size || 0), 0);
+  const totalSize = enriched.reduce((s, r) => s + r.size, 0);
+  const totalGiven = enriched.reduce((s, r) => s + r.given, 0);
+  const totalRemaining = enriched.reduce((s, r) => s + r.selfArea, 0);
   const totalAmount = enriched.reduce((s, r) => s + r.total, 0);
   const totalDue = enriched.reduce((s, r) => s + (r.m.state === "none" ? 0 : r.m.due), 0);
   const borgaSize = borgaOut.reduce((s, l) => s + Number(l.land_size || 0), 0);
+
 
   return (
     <div className="space-y-4">
@@ -192,7 +206,10 @@ export default function OwnLandsTab({
           <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b text-xs">
             <Badge variant="secondary">{tx("Plots", "জমি")}: {allOwn}</Badge>
             <Badge variant="secondary">{tx("Total Size", "মোট জমি")}: {fmtLand(totalSize)}</Badge>
+            {totalGiven > 0.005 && <Badge variant="secondary">{tx("Borga Given", "বর্গা দেওয়া")}: {fmtLand(totalGiven)}</Badge>}
+            {totalGiven > 0.005 && <Badge variant="secondary">{tx("Remaining (self)", "অবশিষ্ট (নিজ)")}: {fmtLand(totalRemaining)}</Badge>}
             <Badge variant="secondary">{tx("Total Amount", "মোট টাকা")}: {money(totalAmount)}</Badge>
+
             {totalDue > 0.005
               ? <Badge variant="destructive">{tx("Due", "বকেয়া")}: {money(totalDue)}</Badge>
               : <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600">{tx("All Paid", "সব পরিশোধিত")}</Badge>}
@@ -214,7 +231,10 @@ export default function OwnLandsTab({
                 <TableHeader><TableRow className="bg-muted/40">
                   <Th k="location">{tx("Location", "অবস্থান")}</Th>
                   <Th k="dag_no">{tx("Dag No", "দাগ নং")}</Th>
-                  <Th k="land_size" align="right">{tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)")}</Th>
+                  <Th k="land_size" align="right">{tx("Total Size", "মোট জমি")}</Th>
+                  <TableHead className="text-right">{tx("Borga Given", "বর্গা দেওয়া")}</TableHead>
+                  <TableHead className="text-right">{tx("Remaining (self)", "অবশিষ্ট (নিজ)")}</TableHead>
+
                   <TableHead>{tx("Owner Type", "মালিকানার ধরন")}</TableHead>
                   <TableHead>{tx("Owner", "মালিক")}</TableHead>
                   <TableHead>{tx("Patwari", "পাটুয়ারি")}</TableHead>
@@ -227,14 +247,21 @@ export default function OwnLandsTab({
                 </TableRow></TableHeader>
                 <TableBody>
                   {pageRows.length === 0 ? (
-                    <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
-                  ) : pageRows.map(({ l, rate, total, m, location }) => {
+                    <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                  ) : pageRows.map(({ l, rate, total, m, location, size, given, selfArea }) => {
                     const isDue = m.due > 0.005;
                     return (
                       <TableRow key={l.id}>
                         <TableCell className="text-xs max-w-md whitespace-normal">{location}</TableCell>
                         <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
-                        <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
+                        <TableCell className="text-right">{fmtLand(size)}</TableCell>
+                        <TableCell className="text-right">
+                          {given > 0.005
+                            ? <Badge variant="secondary" className="font-normal">{fmtLand(given)}</Badge>
+                            : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{fmtLand(selfArea)}</TableCell>
+
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                         <TableCell className="text-xs"><span className="text-muted-foreground">{tx("Self-owned", "নিজ মালিক")}</span></TableCell>
                         <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>

@@ -139,6 +139,8 @@ export default function FarmerDetail() {
   const [reclaimLand, setReclaimLand] = useState<any | null>(null);
   // Lands owned by this farmer that are given out to sharecroppers (borga)
   const [borgaOut, setBorgaOut] = useState<any[]>([]);
+  const [borgaGivenMap, setBorgaGivenMap] = useState<Record<string, number>>({});
+
 
   // Load patwaris for assignment
   useEffect(() => {
@@ -248,10 +250,22 @@ export default function FarmerDetail() {
 
       // Also include borga relationships recorded as land transfers (transfer_type = borga_transfer)
       const { data: borgaTransfers } = await supabase.from("land_transfers")
-        .select("id,source_dag_no,source_mouza,source_land_size,transferred_at,recipients:land_transfer_recipients(id,area_decimal,new_land_id,recipient_farmer_id,recipient_farmer:farmers!land_transfer_recipients_recipient_farmer_id_fkey(id,name_en,name_bn,farmer_code,mobile))")
+        .select("id,source_land_id,source_dag_no,source_mouza,source_land_size,transferred_at,recipients:land_transfer_recipients(id,area_decimal,new_land_id,recipient_farmer_id,recipient_farmer:farmers!land_transfer_recipients_recipient_farmer_id_fkey(id,name_en,name_bn,farmer_code,mobile))")
         .eq("source_farmer_id", id!)
         .eq("transfer_type", "borga_transfer")
         .order("transferred_at", { ascending: false });
+
+      // Map: owner's source land id -> total area currently given out as borga.
+      // Used to show total / given / remaining and to bill irrigation on the
+      // remaining (self-cultivated) area only.
+      const givenMap: Record<string, number> = {};
+      (borgaTransfers ?? []).forEach((tr: any) => {
+        if (!tr.source_land_id) return;
+        const sum = (tr.recipients ?? []).reduce((s: number, rc: any) => s + Number(rc.area_decimal || 0), 0);
+        givenMap[tr.source_land_id] = (givenMap[tr.source_land_id] || 0) + sum;
+      });
+      setBorgaGivenMap(givenMap);
+
 
       const transferRows: any[] = [];
       (borgaTransfers ?? []).forEach((tr: any) => {
@@ -291,7 +305,7 @@ export default function FarmerDetail() {
         tenant: r._tenant ? { ...r._tenant, ...(tenantMap[r.farmer_id] ?? {}) } : tenantMap[r.farmer_id],
         latest_invoice: invMap[r._invoice_land_id ?? r.id],
       })));
-    } catch { setBorgaOut([]); }
+    } catch { setBorgaOut([]); setBorgaGivenMap({}); }
 
 
 
@@ -1503,6 +1517,8 @@ export default function FarmerDetail() {
             openEdit={openEdit}
             onDelete={setDelTarget}
             borgaOut={borgaOut}
+            borgaGivenMap={borgaGivenMap}
+
           />
         </TabsContent>
 
