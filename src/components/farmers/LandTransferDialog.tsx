@@ -151,19 +151,27 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
             .maybeSingle();
           if (existing) {
             const wasDeleted = !!(existing as any).deleted_at;
-            // Reviving a returned parcel: replace size with the reclaimed area.
-            // Merging into an active parcel: add the area on top.
-            const nextSize = wasDeleted ? area : normalizeLandSize(Number(existing.land_size || 0) + area);
-            const upd: any = { land_size: nextSize };
-            if (wasDeleted) {
-              upd.deleted_at = null;
-              upd.owner_type = newLandPayload.owner_type;
-              upd.owner_farmer_id = newLandPayload.owner_farmer_id;
+            if (isReclaim && !wasDeleted) {
+              // New model: the owner never lost the parcel during borga — their land
+              // row is already at full size. Reclaiming only archives the borgadar row
+              // (handled below). Do NOT add the area back, or it would double-count.
+              landId = existing.id;
+            } else {
+              // Reviving a returned parcel: replace size with the reclaimed area.
+              // Merging into an active parcel: add the area on top.
+              const nextSize = wasDeleted ? area : normalizeLandSize(Number(existing.land_size || 0) + area);
+              const upd: any = { land_size: nextSize };
+              if (wasDeleted) {
+                upd.deleted_at = null;
+                upd.owner_type = newLandPayload.owner_type;
+                upd.owner_farmer_id = newLandPayload.owner_farmer_id;
+              }
+              const { error: upErr } = await supabase.from("lands")
+                .update(upd).eq("id", existing.id);
+              if (upErr) throw upErr;
+              landId = existing.id;
             }
-            const { error: upErr } = await supabase.from("lands")
-              .update(upd).eq("id", existing.id);
-            if (upErr) throw upErr;
-            landId = existing.id;
+
           } else {
             const { data: nl, error: nlErr } = await supabase.from("lands").insert(newLandPayload).select("id").single();
             if (nlErr) throw nlErr;
