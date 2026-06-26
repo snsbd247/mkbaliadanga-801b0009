@@ -448,9 +448,21 @@ async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: st
   if (!seasonId) return 0;
   // Load lands with their owner + type
   const { data: lands } = await admin.from("lands")
-    .select("id, farmer_id, owner_farmer_id, land_size, land_type_id, office_id")
+    .select("id, farmer_id, owner_farmer_id, land_size, land_type_id, office_id, dag_no")
     .eq("office_id", officeId);
   if (!lands?.length) return 0;
+
+  // Land-type names (for receipt "জমির ধরন" row) + borga lands (for owner/borgadar display)
+  const { data: ltRows } = await admin.from("land_types")
+    .select("id, name_bn, name").eq("office_id", officeId);
+  const ltNameMap = new Map<string, string>(
+    (ltRows ?? []).map((r: any) => [r.id, r.name_bn || r.name || ""]),
+  );
+  const { data: relRows } = await admin.from("land_relations")
+    .select("land_id, sharecropper_farmer_id").eq("office_id", officeId);
+  const borgaMap = new Map<string, string>(
+    (relRows ?? []).map((r: any) => [r.land_id, r.sharecropper_farmer_id]),
+  );
 
   const rateMap = new Map(landTypes.map((lt) => [lt.id, lt.rate]));
   const today = new Date();
@@ -463,28 +475,39 @@ async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: st
     const irrigation = +(rate * size).toFixed(2);
     const maintenance = +(irrigation * 0.05).toFixed(2);
     const canal = +(irrigation * 0.03).toFixed(2);
-    const payable = +(irrigation + maintenance + canal).toFixed(2);
+    // Current-season penalty (হাল জরিমানা) on every 3rd invoice
+    const hasPenalty = i % 3 === 2;
+    const delayFee = hasPenalty ? +(irrigation * 0.02).toFixed(2) : 0;
+    // Carried-forward due from last season (বকেয়া) on every 5th invoice
+    const previousDue = i % 5 === 0 ? +(irrigation * 0.5).toFixed(2) : 0;
+    const payable = +(irrigation + maintenance + canal + delayFee + previousDue).toFixed(2);
     const isPaid = i % 4 === 0;
     const isPartial = i % 4 === 1;
     const paid = isPaid ? payable : isPartial ? +(payable * 0.5).toFixed(2) : 0;
+    const sharecropper = borgaMap.get(l.id) ?? null;
+    const isBorga = !!sharecropper;
     return {
       invoice_no: `INV-${ts}-${String(i + 1).padStart(4, "0")}`,
       office_id: officeId,
       season_id: seasonId,
       land_id: l.id,
       owner_farmer_id: l.owner_farmer_id ?? l.farmer_id,
-      farmer_id: l.farmer_id,
-      is_borga: false,
+      // For borga lands the sharecropper (বর্গাদার) is the paying farmer
+      farmer_id: isBorga ? sharecropper : l.farmer_id,
+      is_borga: isBorga,
       irrigation_amount: irrigation,
       maintenance_amount: maintenance,
       canal_amount: canal,
-      delay_fee: 0, other_charge: 0,
+      delay_fee: delayFee, other_charge: 0,
+      previous_due_amount: previousDue,
       payable_amount: payable,
       paid_amount: paid,
       due_amount: +(payable - paid).toFixed(2),
       due_date: dueDate,
       invoice_status: isPaid ? "paid" : isPartial ? "partial_paid" : "generated",
       land_type_id: l.land_type_id,
+      land_type_name: ltNameMap.get(l.land_type_id) ?? null,
+      irrigation_category_name: ltNameMap.get(l.land_type_id) ?? null,
       season_rate: rate,
       // Freeze the billed land area on the invoice so later land edits never
       // retroactively change this (past-season) invoice's displayed area.
@@ -493,11 +516,12 @@ async function seedIrrigationInvoices(admin: any, officeId: string, seasonId: st
         land_size_shotok: size,
         parcel_size_shotok: size,
         billed_area_shotok: size,
-        is_borga_split: false,
+        is_borga_split: isBorga,
         generated_at: today.toISOString(),
       },
     };
   });
+
 
   const { data: ins, error } = await admin.from("irrigation_invoices").insert(invoices).select("id, paid_amount, irrigation_amount, maintenance_amount, canal_amount, office_id");
   if (error) throw new Error(`irrigation_invoices: ${error.message}`);
