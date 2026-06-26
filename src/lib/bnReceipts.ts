@@ -135,6 +135,24 @@ function fmtDate(d: string | Date): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
+function fmtOfficialDate(d: string | Date, lang: ReceiptLang): string {
+  const date = new Date(d);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear());
+  const value = `${day}/${month}/${year}`;
+  return lang === "bn" ? `${toBnDigits(value)} ইং` : value;
+}
+
+function moneyText(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
+  const value = fmt2(Number(n ?? 0));
+  return `${digits(value, lang)}${suffix}`;
+}
+
+function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
+  return digits(fmt4(Number(n ?? 0)), lang);
+}
+
 const STR = {
   bn: {
     titleIrr: "সেচ চার্জ ও বিবিধ আদায় রশিদ",
@@ -253,9 +271,10 @@ function orgBlock(
 
 function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | null | undefined, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean, tpl: ReceiptTemplate = DEFAULT_TEMPLATE): string {
   const t = STR[lang];
+  const officialIrrigationReceipt = d.kind === "irrigation" && !d.office_income;
   const logo = d.logo_url
-    ? `<img src="${d.logo_url}" crossorigin="anonymous" style="height:60px;display:block;margin:0 auto 4px;" />`
-    : `<div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#b91c1c;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
+    ? `<img src="${d.logo_url}" crossorigin="anonymous" style="${officialIrrigationReceipt ? "max-width:215px;height:64px;object-fit:contain;object-position:left center;" : "height:60px;display:block;margin:0 auto 4px;"}" />`
+    : `<div style="height:60px;display:flex;align-items:center;${officialIrrigationReceipt ? "justify-content:flex-start;text-align:left;" : "justify-content:center;"}font-size:18px;font-weight:700;color:#b91c1c;">${(lang === "bn" ? d.company_name_bn ?? d.company_name : d.company_name ?? d.company_name_bn) ?? ""}</div>`;
 
   const rows: Array<[string, string]> = [];
   const isMisc = d.kind === "irrigation" && !!d.misc_collection && !d.office_income;
@@ -311,30 +330,30 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         ? Number(d.rate_per_bigha)
         : (ratePerAcre != null ? ratePerAcre / 33 : null);
       const unit = lang === "bn" ? "টাকা" : "";
-      const rateText = ratePerAcre != null ? `${fmt2(ratePerAcre)}${unit}/${fmt2(ratePerBigha ?? 0)}${unit}` : "";
+      const rateText = ratePerAcre != null ? `${moneyText(ratePerAcre, lang, unit)}/${moneyText(ratePerBigha ?? 0, lang, unit)}` : "";
       rows.push([t.landKind, [d.farmer.field_type_bn, rateText].filter(Boolean).join("/ ")]);
     }
     // 7. দাগ নং (একাধিক হতে পারে)
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
-    const dagFormatted = dagTokens.join(dagSeparatorHtml(layout.dagSeparator));
+    const dagFormatted = digits(dagTokens.join(dagSeparatorHtml(layout.dagSeparator)), lang);
     if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
     // 8. জমির পরিমাণ — একর (শতক ÷ ১০০), . এর পর ৪ ডিজিট
     if (d.farmer.land_size != null) {
       const acre = Number(d.farmer.land_size) / 100;
-      rows.push([t.landSize, `${fmt4(acre)} ${lang === "bn" ? "একর" : "acre"}`]);
+      rows.push([t.landSize, `${fixed4Text(acre, lang)} ${lang === "bn" ? "একর" : "acre"}`]);
     }
     // 9. চার্জের পরিমাণ (হাল)/জরিমানা — চলতি সিজনের জমি
     const halCharge = Number(d.current_season_charge ?? 0);
     const halPenalty = Number(d.current_penalty ?? d.penalty_amount ?? 0);
-    rows.push([t.currentCharge, `${fmt2(halCharge)}/${fmt2(halPenalty)}`]);
+    rows.push([t.currentCharge, `${moneyText(halCharge, lang)}/${moneyText(halPenalty, lang)}`]);
     // 10. চার্জের পরিমাণ (বকেয়া)/জরিমানা — গত সিজনের জমি
     const dueCharge = Number(d.total_outstanding ?? d.previous_due ?? 0);
     const duePenalty = Number(d.due_penalty ?? 0);
-    rows.push([t.due, `${fmt2(dueCharge)}/${fmt2(duePenalty)}`]);
+    rows.push([t.due, `${moneyText(dueCharge, lang)}/${moneyText(duePenalty, lang)}`]);
     // 11. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা)
     const totalDue = halCharge + halPenalty + dueCharge + duePenalty;
     const totalIrr = totalDue > 0 ? totalDue : Number(d.collected_amount ?? 0);
-    rows.push([t.totalIrr, fmt2(totalIrr)]);
+    rows.push([t.totalIrr, moneyText(totalIrr, lang)]);
     // 12. কথায়
     if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)}।`]);
     // 13. হোল্ডিং এর বিবরন / পাটুয়ারীর নাম ও মোবা নং
@@ -415,6 +434,75 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
          <div style="transform:rotate(-30deg);font-size:64px;font-weight:800;color:rgba(0,0,0,0.07);white-space:nowrap;letter-spacing:6px;font-family:${fontFamily};">${wmText}</div>
        </div>` : "";
+
+  if (officialIrrigationReceipt) {
+    const red = "#ff0000";
+    const blue = "#4a90e2";
+    const officialRows = rows.map(([k, v]) => {
+      const label = k === t.farmerLine
+        ? `<span style="color:${red};">কৃষকের নাম ও আইডি</span><span style="color:${blue};">/মালিকের নাম ও আইডি</span>`
+        : k === t.landKind
+          ? `<span style="color:${red};">জমির ধরন</span><span style="color:${blue};">/ চার্জ রেট (একর/বিঘা)</span>`
+          : k;
+      const value = k === t.farmerLine
+        ? (() => {
+            const parts = String(v).split("/");
+            return parts.length > 1
+              ? `<span style="color:${red};">${parts[0]}</span><span style="color:${blue};">/${parts.slice(1).join("/")}</span>`
+              : `<span style="color:${red};">${v}</span>`;
+          })()
+        : k === t.landKind
+          ? (() => {
+              const parts = String(v).split("/ ");
+              return parts.length > 1
+                ? `<span style="color:${red};">${parts[0]}</span><span style="color:${blue};">/${parts.slice(1).join("/ ")}</span>`
+                : `<span style="color:${red};">${v}</span>`;
+            })()
+          : v;
+      return `
+        <tr>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;${cellWrap}">${label}</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;${cellWrap}">${value}</td>
+        </tr>`;
+    }).join("");
+
+    return `
+    <div style="position:relative;font-family:${fontFamily};color:#111;padding:48px 48px 42px;min-height:650px;box-sizing:border-box;" data-receipt-copy="${copyLabel}">
+      ${watermark}
+      <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
+        <div style="padding-top:16px;">${logo}</div>
+        <div style="text-align:center;padding-top:24px;">
+          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;border-bottom:2px solid #111;padding-bottom:1px;">${titleFor(d.kind, lang)}</div>
+        </div>
+        <div style="text-align:right;padding-top:14px;">
+          ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" />` : ""}
+        </div>
+      </div>
+
+      <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
+        <div>
+          <div>${t.receiptNo} ${digits(d.receipt_no, lang)}</div>
+          ${d.bill_info ? `<div>${t.billInfo} ${d.bill_info}</div>` : ""}
+        </div>
+        <div style="white-space:nowrap;padding-top:30px;">${t.date} ${fmtOfficialDate(d.date, lang)}</div>
+      </div>
+
+      <table style="position:relative;z-index:1;width:100%;border:2px solid #111;border-collapse:collapse;margin-top:14px;table-layout:fixed;">
+        <tbody>${officialRows}</tbody>
+      </table>
+
+      <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;margin-top:54px;font-size:19px;line-height:1.2;">
+        <div style="border-top:1px solid #111;padding-top:2px;min-width:260px;">${lang === "bn" ? "সদস্যের স্বাক্ষর/প্রদানকারীর স্বাক্ষর" : "Member / Payer signature"}</div>
+        <div style="text-align:right;min-width:170px;">
+          ${signatureUrl
+            ? `<img src="${signatureUrl}" crossorigin="anonymous" style="height:34px;margin:0 0 2px auto;display:block;" data-sig="filled" />`
+            : ""}
+          <div style="border-top:1px solid #111;padding-top:2px;">${t.collectorSig}</div>
+        </div>
+      </div>
+    </div>`;
+  }
 
   return `
   <div style="position:relative;font-family:${fontFamily};color:#111;padding:18px 22px;" data-receipt-copy="${copyLabel}">
