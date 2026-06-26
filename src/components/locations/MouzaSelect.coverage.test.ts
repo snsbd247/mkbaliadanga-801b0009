@@ -33,8 +33,10 @@ describe("Mouza field coverage", () => {
 
   it("does not bind a free-text <Input> to a mouza value/handler", () => {
     const offenders: string[] = [];
+    // Capital <Input> (shadcn) whose value/onChange binds to a mouza identifier.
+    // Excludes search boxes (value={search}) and label settings (lowercase <input>).
     const inputMouza =
-      /<Input\b[^>]*\b(value|onChange|placeholder|name|id)\s*=\s*[^>]*mouza/i;
+      /<Input\b[^>]*\b(value|onChange)\s*=\s*\{[^}]*mouza/;
 
     for (const f of files) {
       if (f.endsWith("MouzaSelect.tsx")) continue;
