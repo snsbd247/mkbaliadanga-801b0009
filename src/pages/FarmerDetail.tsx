@@ -1517,6 +1517,8 @@ export default function FarmerDetail() {
             openEdit={openEdit}
             onDelete={setDelTarget}
             borgaOut={borgaOut}
+            borgaGivenMap={borgaGivenMap}
+
           />
         </TabsContent>
 
