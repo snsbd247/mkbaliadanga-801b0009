@@ -33,6 +33,8 @@ interface Props {
   openEdit: (land: any) => void;
   onDelete: (land: any) => void;
   borgaOut?: any[];
+  /** Map of owner land id -> total area currently given out as borga. */
+  borgaGivenMap?: Record<string, number>;
 }
 
 const PAGE_SIZE = 10;
