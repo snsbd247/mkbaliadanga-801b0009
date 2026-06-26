@@ -248,10 +248,22 @@ export default function FarmerDetail() {
 
       // Also include borga relationships recorded as land transfers (transfer_type = borga_transfer)
       const { data: borgaTransfers } = await supabase.from("land_transfers")
-        .select("id,source_dag_no,source_mouza,source_land_size,transferred_at,recipients:land_transfer_recipients(id,area_decimal,new_land_id,recipient_farmer_id,recipient_farmer:farmers!land_transfer_recipients_recipient_farmer_id_fkey(id,name_en,name_bn,farmer_code,mobile))")
+        .select("id,source_land_id,source_dag_no,source_mouza,source_land_size,transferred_at,recipients:land_transfer_recipients(id,area_decimal,new_land_id,recipient_farmer_id,recipient_farmer:farmers!land_transfer_recipients_recipient_farmer_id_fkey(id,name_en,name_bn,farmer_code,mobile))")
         .eq("source_farmer_id", id!)
         .eq("transfer_type", "borga_transfer")
         .order("transferred_at", { ascending: false });
+
+      // Map: owner's source land id -> total area currently given out as borga.
+      // Used to show total / given / remaining and to bill irrigation on the
+      // remaining (self-cultivated) area only.
+      const givenMap: Record<string, number> = {};
+      (borgaTransfers ?? []).forEach((tr: any) => {
+        if (!tr.source_land_id) return;
+        const sum = (tr.recipients ?? []).reduce((s: number, rc: any) => s + Number(rc.area_decimal || 0), 0);
+        givenMap[tr.source_land_id] = (givenMap[tr.source_land_id] || 0) + sum;
+      });
+      setBorgaGivenMap(givenMap);
+
 
       const transferRows: any[] = [];
       (borgaTransfers ?? []).forEach((tr: any) => {
