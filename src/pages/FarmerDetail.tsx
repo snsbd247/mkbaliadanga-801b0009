@@ -1201,10 +1201,10 @@ export default function FarmerDetail() {
                     {(land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && (
                       <div>
                         <Label className="text-sm font-medium mb-2 block">{t("mouza" as any) || "মৌজা"} <span className="text-destructive">*</span></Label>
-                        <Input
+                        <MouzaSelect
                           value={(landLoc as any).mouza_name ?? ""}
                           placeholder={t("mouza" as any) || "মৌজা"}
-                          onChange={(e) => { setLandLoc({ mouza_name: e.target.value } as any); if (landLocErr) setLandLocErr(null); }}
+                          onChange={(name) => { setLandLoc({ mouza_name: name } as any); if (landLocErr) setLandLocErr(null); }}
                         />
                         {landLocErr?.message && <p className="text-xs text-destructive mt-1">{landLocErr.message}</p>}
                       </div>
