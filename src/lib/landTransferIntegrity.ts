@@ -54,7 +54,20 @@ export type LandRow = {
   dag_no: string | null;
   land_size: number | null;
   deleted_at: string | null;
+  owner_type?: string | null;
 };
+
+/** Active borga relation on an owner's land (single source of truth model). */
+export type LandRelationRow = {
+  id: string;
+  land_id: string | null;
+  owner_farmer_id: string | null;
+  sharecropper_farmer_id: string | null;
+  area_decimal: number | null;
+  valid_to: string | null;
+  deleted_at: string | null;
+};
+
 
 export type IntegrityViolation = {
   transfer_id: string;
@@ -68,7 +81,11 @@ export type IntegrityViolation = {
     | "recipient_land_archived"
     | "area_exceeds_source"
     | "recipient_equals_source"
-    | "source_land_missing";
+    | "source_land_missing"
+    | "borga_no_relation"
+    | "borga_source_archived"
+    | "relation_exceeds_owner"
+    | "orphan_borgadar_land";
   severity: "error" | "warning";
   message_en: string;
   message_bn: string;
@@ -85,6 +102,12 @@ export type IntegrityInput = {
   transfers: TransferRow[];
   recipients: TransferRecipientRow[];
   lands: LandRow[];
+  /** Active borga relations (single source of truth). When provided, borga
+   *  transfers are validated against relations instead of new land rows. */
+  relations?: LandRelationRow[];
+  /** Active owner_type='borgadar' land rows — these should NOT exist in the
+   *  unified model and are flagged as orphans when provided. */
+  borgadarLands?: LandRow[];
 };
 
 export type IntegritySummary = {
@@ -100,14 +123,24 @@ const EPSILON = 0.01;
 
 /** Validate all transfers; returns a flat list of violations (empty = clean). */
 export function checkLandTransferIntegrity(input: IntegrityInput): IntegrityViolation[] {
-  const { transfers, recipients, lands } = input;
+  const { transfers, recipients, lands, relations, borgadarLands } = input;
   const landById = new Map(lands.map((l) => [l.id, l]));
+  const useRelations = Array.isArray(relations);
+  // Active relations grouped by source land id.
+  const relByLand = new Map<string, LandRelationRow[]>();
+  for (const rel of relations ?? []) {
+    if (rel.deleted_at || rel.valid_to || !rel.land_id) continue;
+    const arr = relByLand.get(rel.land_id) ?? [];
+    arr.push(rel);
+    relByLand.set(rel.land_id, arr);
+  }
   const recByTransfer = new Map<string, TransferRecipientRow[]>();
   for (const r of recipients) {
     const arr = recByTransfer.get(r.transfer_id) ?? [];
     arr.push(r);
     recByTransfer.set(r.transfer_id, arr);
   }
+
 
   const out: IntegrityViolation[] = [];
   const push = (
@@ -119,6 +152,9 @@ export function checkLandTransferIntegrity(input: IntegrityInput): IntegrityViol
 
   for (const t of transfers) {
     const type = t.transfer_type as LandTransferType;
+    // In the unified model, an active borga lives as a land_relation on the
+    // owner's (intact) land — not as a new land row.
+    const borgaViaRelation = useRelations && type === "borga_transfer";
     if (!KNOWN_TRANSFER_TYPES.includes(type)) {
       push(t.id, "unknown_type", "error",
         `Unknown transfer type "${t.transfer_type}"`,
@@ -146,11 +182,30 @@ export function checkLandTransferIntegrity(input: IntegrityInput): IntegrityViol
         "উৎস জমির রেকর্ড পাওয়া যায়নি (স্ন্যাপশটে ইতিহাস সংরক্ষিত)");
     }
 
+    // Unified borga model: the owner's source land must stay ACTIVE (intact).
+    if (borgaViaRelation && t.source_land_id) {
+      const src = landById.get(t.source_land_id);
+      if (src && src.deleted_at) {
+        push(t.id, "borga_source_archived", "error",
+          "Borga source land was archived — owner must keep the full parcel",
+          "বর্গার উৎস জমি আর্কাইভ হয়েছে — মালিকের কাছে পুরো জমি থাকা উচিত");
+      }
+    }
+
     let areaSum = 0;
     for (const rc of recs) {
       const area = Number(rc.area_decimal ?? 0);
       areaSum += area;
-      if (!rc.new_land_id) {
+      if (borgaViaRelation) {
+        // Validate against an active land_relation instead of a new land row.
+        const rels = t.source_land_id ? (relByLand.get(t.source_land_id) ?? []) : [];
+        const matched = rels.find((r) => r.sharecropper_farmer_id === rc.recipient_farmer_id);
+        if (!matched) {
+          push(t.id, "borga_no_relation", "error",
+            "No active borga relation for this sharecropper",
+            "এই বর্গাদারের জন্য সক্রিয় বর্গা সম্পর্ক নেই", rc.id);
+        }
+      } else if (!rc.new_land_id) {
         push(t.id, "recipient_no_land", "error",
           "Recipient has no created land row",
           "প্রাপকের জন্য নতুন জমি তৈরি হয়নি", rc.id);
@@ -186,6 +241,39 @@ export function checkLandTransferIntegrity(input: IntegrityInput): IntegrityViol
         `বরাদ্দকৃত পরিমাণ ${areaSum.toFixed(2)} উৎস ${Number(t.source_land_size).toFixed(2)} ছাড়িয়ে গেছে`);
     }
   }
+
+  // Relation-level: total active borga on a land must not exceed its size.
+  if (useRelations) {
+    for (const [landId, rels] of relByLand) {
+      const land = landById.get(landId);
+      if (!land || land.land_size == null) continue;
+      const sum = rels.reduce((a, r) => a + (Number(r.area_decimal) || 0), 0);
+      if (sum > Number(land.land_size) + EPSILON) {
+        out.push({
+          transfer_id: `land:${landId}`,
+          code: "relation_exceeds_owner",
+          severity: "error",
+          message_en: `Borga relations ${sum.toFixed(2)} exceed owner land ${Number(land.land_size).toFixed(2)}`,
+          message_bn: `বর্গা সম্পর্ক ${sum.toFixed(2)} মালিকের জমি ${Number(land.land_size).toFixed(2)} ছাড়িয়ে গেছে`,
+          farmer_id: land.farmer_id ?? null,
+        });
+      }
+    }
+  }
+
+  // Orphan borgadar land rows should not exist in the unified model.
+  for (const b of borgadarLands ?? []) {
+    if (b.deleted_at) continue;
+    out.push({
+      transfer_id: `borgadar:${b.id}`,
+      code: "orphan_borgadar_land",
+      severity: "error",
+      message_en: `Orphan borgadar land row (dag ${b.dag_no ?? "—"}) — should be a land_relation`,
+      message_bn: `অনাথ বর্গাদার জমির রেকর্ড (দাগ ${b.dag_no ?? "—"}) — land_relation হওয়া উচিত`,
+      farmer_id: b.farmer_id ?? null,
+    });
+  }
+
 
   // Enrich each violation with farmer / recipient ids for deep-linking.
   const transferById = new Map(transfers.map((t) => [t.id, t]));

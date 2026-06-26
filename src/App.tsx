@@ -106,6 +106,7 @@ import DuplicateReceiptAudit from "./pages/admin/DuplicateReceiptAudit";
 import FarmerLoginAudit from "./pages/admin/FarmerLoginAudit";
 import DemoManager from "./pages/admin/DemoManager";
 import IntegrityRuns from "./pages/admin/IntegrityRuns";
+import BillingSplitPreview from "./pages/BillingSplitPreview";
 import QuickSeed from "./pages/admin/QuickSeed";
 import DemoOpsAudit from "./pages/admin/DemoOpsAudit";
 import Patwaris from "./pages/admin/Patwaris";
@@ -334,6 +335,7 @@ const App = () => (
                 <Route path="/admin/quick-seed" element={<RequireDeveloper><QuickSeed /></RequireDeveloper>} />
                 <Route path="/admin/demo-ops-audit" element={<RequireDeveloper><DemoOpsAudit /></RequireDeveloper>} />
                 <Route path="/admin/integrity-runs" element={<RequireRole roles={["admin","super_admin"]}><IntegrityRuns /></RequireRole>} />
+                <Route path="/irrigation/billing-split" element={<RequireRole roles={["admin","super_admin"]}><BillingSplitPreview /></RequireRole>} />
                 <Route path="/admin/patwaris" element={<RequireRole roles={["admin","super_admin"]}><Patwaris /></RequireRole>} />
                 <Route path="/admin/patwaris/:id" element={<RequireRole roles={["admin","super_admin"]}><PatwariDetail /></RequireRole>} />
                 <Route path="/admin/developer-updates" element={<RequireDeveloper><DeveloperUpdates /></RequireDeveloper>} />

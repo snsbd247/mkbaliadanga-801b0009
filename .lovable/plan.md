@@ -1,58 +1,33 @@
-# প্ল্যান: বর্গা/ট্রান্সফারে মালিকের জমি দৃশ্যমান রাখা + জমি-ভিত্তিক সেচ হিসাব
+# Billing Split Preview, Integrity & Access Control
 
-## লক্ষ্য (আপনার চাহিদা অনুযায়ী)
-- জমির **মূল মালিকের প্রোফাইলে তার নিজের পুরো জমি সবসময় দেখাবে** — বর্গা দিলেও, এমনকি পুরো জমি বর্গা দিলেও।
-- বর্গা দেওয়া অংশ **বর্গাদারের প্রোফাইলেও** দেখাবে।
-- মালিকের প্রোফাইলে প্রতিটি জমির জন্য দেখাবে: **মোট জমি / বর্গা দেওয়া / অবশিষ্ট (নিজে চাষ)**।
-- **সেচ চার্জ হবে জমির উপর, চাষকারী অনুযায়ী**: ১০ শতকের মধ্যে ৫ বর্গা দিলে — মালিক ৫ শতকের সেচ দেবে, বর্গাদার ৫ শতকের সেচ দেবে। পুরো বর্গা দিলে পুরোটাই বর্গাদারের সেচ।
+Five related additions across the irrigation/land-transfer and admin areas. All work reuses existing helpers (`resolveBillingSplits`, `get_land_billing_split` RPC, `checkLandTransferIntegrity`, `usePermissions`, `RequireRole`) so no schema changes are needed.
 
-## বর্তমান সমস্যা
-এখন বর্গা দিলে মালিকের জমির রেকর্ড **ছোট করে ফেলা হয়** (১০ → ৫) এবং বর্গাদারের জন্য আলাদা রেকর্ড তৈরি হয়। ফলে মালিকের প্রোফাইলে মূল ১০ শতক আর দেখা যায় না, শুধু অবশিষ্ট ৫ দেখায়। পুরো জমি বর্গা দিলে মালিকের কাছে কিছুই থাকে না।
+## 1. Billing Split Preview page
+A new page to verify owner-remainder vs borga-area charges before submitting payments.
 
-## নতুন ডেটা মডেল (মূল পরিবর্তন)
-বর্গা দেওয়ার সময় মালিকের `lands` রেকর্ড **আর ছোট করা হবে না** — পুরো `land_size` অক্ষত থাকবে। বর্গা-আউট অংশ আলাদাভাবে হিসাব রাখা হবে:
+- New route `/irrigation/billing-split` (gated by `RequireRole roles={["admin","super_admin"]}` plus `usePermissions().can("irrigation")`).
+- Page (`src/pages/BillingSplitPreview.tsx`): pick a season + farmer (or land), call `resolveBillingSplits(land_id, as_of)` for each of the farmer's lands, and render a table:
+  - Land (dag/mouza), Total area, Borga-given area, Owner remainder, per-sharecropper area, computed charge per party using the active season rate.
+  - Totals row; a clear note that this is a preview only (no writes).
+- Add a "Billing Split Preview" link in the irrigation section nav/menu.
 
-- বর্গাদারের জন্য `owner_type = 'borgadar'`, `owner_farmer_id = মূল মালিক`, `land_size = বর্গা দেওয়া অংশ` সহ একটি রেকর্ড তৈরি/আপডেট হবে (যেমন আছে)।
-- মালিকের জমির **"বর্গা দেওয়া পরিমাণ"** = ঐ জমির active `land_transfers (borga_transfer)` থেকে যোগফল (যা ইতিমধ্যে আছে), অথবা মালিকের জমির সাথে লিঙ্ক করা সক্রিয় বর্গাদার-রেকর্ডের যোগফল।
-- **অবশিষ্ট (নিজে চাষ)** = `land_size − বর্গা দেওয়া`।
+## 2. Stronger demo seeding + integrity report
+- Extend the Demo Manager seeding so borga/transfer scenarios populate `land_relations` (owner intact) rather than separate borgadar `lands` rows, matching the new single-source-of-truth model.
+- Add post-import assertions in `LandTransferVerifyCard` that validate the `land_relations` model: each borga has a relation on a live owner land, owner area is never shrunk, no orphan borgadar land rows, relation areas ≤ owner land size. Surface these as extra integrity checks in the existing report + run log.
 
-কোনো নতুন টেবিল লাগবে না; বিদ্যমান `lands` + `land_transfers` + `land_transfer_recipients` দিয়েই হবে।
+## 3. Role-gate export PDF/Excel generation
+- In `LandTransferVerifyCard` and `IntegrityRuns`, wrap the Excel/PDF export buttons and the export handlers with an Admin/Super-Admin check (`isAdmin || isSuper`). Non-authorized users see the buttons disabled/hidden and the handler returns early with a toast.
 
-## সেচ হিসাবের নিয়ম (জমি-ভিত্তিক)
-সেচ ইনভয়েস/চার্জ তৈরির সময় **billable area** হিসাব হবে:
-- **মালিকের জমি**: billable = `land_size − (active বর্গা-আউট যোগফল)` → শুধু নিজে চাষ করা অংশের সেচ।
-- **বর্গাদারের জমি**: billable = ঐ রেকর্ডের `land_size` → বর্গা অংশের সেচ।
-- পুরো বর্গা দিলে মালিকের billable = ০ (সেচ চার্জ নেই), পুরোটা বর্গাদারের।
+## 4. Filters on the admin run-log page
+`src/pages/admin/IntegrityRuns.tsx` gets a filter bar:
+- Office (Select from offices), Run type (auto/manual), Status (completed/failed), and date-from / date-to inputs.
+- Filtering applied client-side over the loaded rows (and passed to the query `limit`), with a Reset button.
 
-## কাজের ধাপ
+## 5. Access control for deep links
+- Confirm `/admin/integrity-runs` stays behind `RequireRole`. Add the same `RequireRole` wrapper to the new billing-split route.
+- Export handlers (used by both the card and run-log, including any future detail deep link) re-check role at call time so a direct/deep link cannot trigger generation for unauthorized roles.
 
-### ১. ট্রান্সফার লজিক (`LandTransferDialog.tsx`)
-- `isBorgaGive` ক্ষেত্রে মালিকের জমির `land_size` কমানো বন্ধ করা হবে — রেকর্ড পূর্ণ অক্ষত থাকবে, archive হবে না।
-- বর্গাদার রেকর্ড তৈরি/মার্জ আগের মতোই থাকবে।
-- বর্গা ফেরত (reclaim/borga_return) এ মালিকের জমি অক্ষতই থাকে, শুধু বর্গাদার রেকর্ড কমে/মুছে।
-- বিক্রি/উত্তরাধিকার/স্প্লিট আগের মতোই (মালিকের কাছ থেকে সরাসরি হস্তান্তর, পুরোনো রেকর্ড archive)।
-
-### ২. সেচ বিলেবল-এরিয়া হেল্পার
-- একটি কেন্দ্রীয় হেল্পার (`src/lib/irrigationBargaAllocation.ts` ইতিমধ্যে আছে) ব্যবহার/আপডেট করে প্রতি জমির billable area বের করা।
-- সেচ ইনভয়েস জেনারেশন (`irrigationInvoiceGeneration.ts`) ও চার্জ ক্যালকুলেশন এই billable area ব্যবহার করবে — full size নয়।
-
-### ৩. মালিকের প্রোফাইল UI (`OwnLandsTab.tsx` / Lands ট্যাব)
-- প্রতিটি নিজের জমির সারিতে নতুন কলাম: **মোট / বর্গা দেওয়া / অবশিষ্ট (নিজ)**।
-- সারাংশ ব্যাজে: মোট জমি, মোট বর্গা দেওয়া, মোট অবশিষ্ট।
-- সেচ চার্জ কলাম অবশিষ্ট (নিজ) অংশের ভিত্তিতে দেখাবে।
-- পুরো বর্গা দেওয়া জমিও তালিকায় থাকবে (বর্গা = মোট, অবশিষ্ট = ০ ব্যাজ সহ)।
-
-### ৪. বর্গাদারের প্রোফাইল
-- আগের মতোই বর্গাদার জমি দেখাবে; নিশ্চিত করা হবে সেচ চার্জ ঐ অংশের ভিত্তিতে।
-
-### ৫. সামঞ্জস্য যাচাই
-- বিদ্যমান integrity ইঞ্জিন (`landTransferIntegrity.ts`) আপডেট: এখন নিয়ম হবে "মালিক জমি = পূর্ণ size, বর্গা-আউট ≤ size", area-conservation চেক নতুন মডেল অনুযায়ী।
-- রিগ্রেশন টেস্ট আপডেট/যোগ যাতে অন্য মডিউল না ভাঙে।
-
-## মডিউল না-ভাঙার সতর্কতা
-- পরিবর্তন শুধু বর্গা (`borga_transfer`/`borga_return`) পথে সীমাবদ্ধ — বিক্রি/উত্তরাধিকার/স্প্লিট অপরিবর্তিত।
-- বিদ্যমান বর্গা ডেটা (যেগুলোতে মালিকের জমি ইতিমধ্যে ছোট করা) এর জন্য একটি এককালীন ডেটা-পুনর্গঠন স্ক্রিপ্ট/মাইগ্রেশন লাগবে কিনা — আপনার ডেটা যাচাই করে সিদ্ধান্ত (নিচে প্রশ্ন)।
-
-## আপনার সিদ্ধান্ত দরকার
-1. **পুরাতন বর্গা ডেটা**: ইতিমধ্যে যেসব জমির size ছোট করা হয়েছে, সেগুলো স্বয়ংক্রিয়ভাবে পুরো size-এ পুনর্গঠন করব, নাকি শুধু নতুন বর্গা থেকে এই নিয়ম চালু হবে?
-2. **সেচ চার্জ আগের ইনভয়েস**: ইতিমধ্যে তৈরি হওয়া সেচ ইনভয়েস পুনঃগণনা করব, নাকি শুধু নতুন ইনভয়েস থেকে নতুন নিয়ম?
+## Technical notes
+- No DB migration required — all data already exists in `land_relations`, `land_transfer_integrity_runs`, `offices`, and the `get_land_billing_split` RPC.
+- Reuse `exportIntegrityExcel`/`exportIntegrityPdf` unchanged; only their call sites get role checks.
+- Permission source of truth: `useAuth().isAdmin/isSuper` and `usePermissions().can("irrigation")`.
