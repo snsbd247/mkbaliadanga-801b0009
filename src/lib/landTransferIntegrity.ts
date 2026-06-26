@@ -73,6 +73,12 @@ export type IntegrityViolation = {
   message_en: string;
   message_bn: string;
   detail?: string;
+  /** Source farmer of the offending transfer — used for deep-linking. */
+  farmer_id?: string | null;
+  /** Recipient farmer (when the violation is recipient-specific). */
+  recipient_farmer_id?: string | null;
+  /** Offending recipient row id (when applicable). */
+  recipient_id?: string | null;
 };
 
 export type IntegrityInput = {
