@@ -1568,10 +1568,19 @@ async function seedAccounts(admin: any) {
 }
 
 async function seedSettings(admin: any, officeId?: string) {
+  // Self-contained demo logo + editor signature (inline SVG data URIs) so a
+  // freshly imported demo prints a fully-populated receipt (logo, QR, signature).
+  const demoLogo = "data:image/svg+xml;utf8," + encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><circle cx='60' cy='60' r='56' fill='#0f766e'/><text x='60' y='72' font-size='44' fill='#fff' text-anchor='middle' font-family='sans-serif'>সে</text></svg>`,
+  );
+  const demoSignature = "data:image/svg+xml;utf8," + encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='60'><path d='M5 45 C30 5, 50 55, 75 25 S120 5, 150 40' stroke='#1d4ed8' stroke-width='3' fill='none'/><text x='100' y='58' font-size='12' fill='#555' text-anchor='middle' font-family='sans-serif'>সম্পাদক</text></svg>`,
+  );
   const { error: csErr } = await admin.from("company_settings").upsert({
     id: 1, company_name: "Smart Irrigation Cooperative", company_name_bn: "স্মার্ট সেচ সমবায়",
     address: "Baliadanga, Rangpur", mobile: "01700000000", email: "demo@example.com",
     registration_no: "COOP-2018-0451",
+    logo_url: demoLogo, show_logo: true, editor_signature_url: demoSignature,
     default_loan_interest: 12,
     penalty_type: "percent", penalty_value: 2, penalty_grace_days: 30,
     fiscal_year_start_month: 7,
@@ -1584,6 +1593,7 @@ async function seedSettings(admin: any, officeId?: string) {
     pdf_footer_show_address: true, pdf_footer_show_contact: true,
   });
   if (csErr) console.warn("[demo-reset] company_settings:", csErr.message);
+
   await admin.from("card_settings").upsert({ id: 1 });
   // SMS settings — disabled by default for demo, but template fields populated
   await admin.from("sms_settings").upsert({
