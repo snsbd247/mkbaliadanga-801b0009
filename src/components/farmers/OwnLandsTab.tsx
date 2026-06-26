@@ -247,14 +247,21 @@ export default function OwnLandsTab({
                 </TableRow></TableHeader>
                 <TableBody>
                   {pageRows.length === 0 ? (
-                    <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
-                  ) : pageRows.map(({ l, rate, total, m, location }) => {
+                    <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+                  ) : pageRows.map(({ l, rate, total, m, location, size, given, selfArea }) => {
                     const isDue = m.due > 0.005;
                     return (
                       <TableRow key={l.id}>
                         <TableCell className="text-xs max-w-md whitespace-normal">{location}</TableCell>
                         <TableCell><Link to={`/lands/${l.id}`} className="underline">{l.dag_no}</Link></TableCell>
-                        <TableCell className="text-right">{fmtLand(l.land_size)}</TableCell>
+                        <TableCell className="text-right">{fmtLand(size)}</TableCell>
+                        <TableCell className="text-right">
+                          {given > 0.005
+                            ? <Badge variant="secondary" className="font-normal">{fmtLand(given)}</Badge>
+                            : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{fmtLand(selfArea)}</TableCell>
+
                         <TableCell>{t((l.owner_type as any) ?? "")}</TableCell>
                         <TableCell className="text-xs"><span className="text-muted-foreground">{tx("Self-owned", "নিজ মালিক")}</span></TableCell>
                         <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
