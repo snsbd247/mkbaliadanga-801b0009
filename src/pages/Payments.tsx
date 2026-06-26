@@ -1021,6 +1021,8 @@ export default function Payments() {
                               : {}),
                             collected_amount: Number(p.amount),
                             description,
+                            collector_signature_url: receiptArgs.signatureUrl,
+                            office_collector_signature_url: receiptArgs.signatureUrl,
                             verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
                           };
                           return rd;
