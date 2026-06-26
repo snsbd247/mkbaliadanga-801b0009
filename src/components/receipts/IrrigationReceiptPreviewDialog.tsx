@@ -39,8 +39,8 @@ export function IrrigationReceiptPreviewDialog({ open, onOpenChange, data, copy 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
-        <DialogHeader><DialogTitle>{tx("Irrigation receipt preview", "সেচ রসিদ প্রিভিউ")}</DialogTitle></DialogHeader>
-        <div className="h-[60vh] w-full overflow-hidden rounded-md border bg-muted">
+        <DialogHeader><DialogTitle>{tx("Irrigation receipt preview (A5 landscape)", "সেচ রসিদ প্রিভিউ (A5 ল্যান্ডস্কেপ)")}</DialogTitle></DialogHeader>
+        <div className="mx-auto w-full max-w-2xl overflow-hidden rounded-md border bg-muted" style={{ aspectRatio: "210 / 148" }}>
           {loading || !url
             ? <div className="flex h-full items-center justify-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" />{tx("Rendering…", "তৈরি হচ্ছে…")}</div>
             : <iframe title="receipt-preview" src={url} className="h-full w-full" />}
