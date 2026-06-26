@@ -56,10 +56,11 @@ import { formatLand, parseLandInput } from "@/lib/landMath";
 import { LandAmountBreakdown } from "@/components/LandAmountBreakdown";
 import { LandNoteCell } from "@/components/farmers/LandNoteCell";
 import { Textarea } from "@/components/ui/textarea";
+import { LandTypeSelect, useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
 
-type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null };
+type LandRow = LandExportRow & { id: string; mouza_id?: string | null; ward_id?: string | null; owner_farmer_id?: string | null; land_type_id?: string | null };
 
-const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", owner_farmer_id: "" as string | "", patwari_id: "" as string | "", notes: "" };
+const EMPTY_LAND = { dag_no: "", land_size: 0, owner_type: "owner", field_type: "medium_land", land_type_id: "" as string, owner_farmer_id: "" as string | "", patwari_id: "" as string | "", notes: "" };
 
 // Show land size exactly as entered (up to 3 decimals) via the shared utility.
 const fmtLand = (v: any) => formatLand(v);
