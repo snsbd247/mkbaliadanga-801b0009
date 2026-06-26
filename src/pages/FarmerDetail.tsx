@@ -1177,6 +1177,7 @@ export default function FarmerDetail() {
                                 dag_no: v,
                                 land_size: Number(src.land_size ?? 0),
                                 field_type: src.field_type ?? land.field_type,
+                                land_type_id: src.land_type_id ?? land.land_type_id,
                               });
                               setLandLoc({
                                 division_id: src.division_id ?? null,
