@@ -111,5 +111,6 @@ export function useReceiptRenderArgs(): {
       email: (brand as any).email ?? null,
       registration_no: (brand as any).registration_no ?? null,
     },
+    signatureUrl: (brand as any).editor_signature_url ?? null,
   };
 }
