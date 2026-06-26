@@ -964,6 +964,7 @@ export default function Payments() {
                                 field_type_bn: fieldTypeBn,
                                 owner_type_bn: primaryCharge?.is_borga ? "বর্গাদার" : "মালিক",
                               },
+                              owner_self: isSelf,
                               land_owner_label: isSelf
                                 ? "নিজ"
                                 : ownerFarmer
@@ -1000,6 +1001,7 @@ export default function Payments() {
                             },
                             ...(kind === "irrigation"
                               ? {
+                                  owner_self: irrEnriched.owner_self,
                                   land_owner_label: irrEnriched.land_owner_label,
                                   current_season_charge: irrEnriched.current_season_charge,
                                   penalty_amount: irrEnriched.penalty_amount,
