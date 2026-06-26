@@ -167,10 +167,13 @@ export default function OwnLandsTab({
   }
 
   const allOwn = enriched.length;
-  const totalSize = enriched.reduce((s, r) => s + Number(r.l.land_size || 0), 0);
+  const totalSize = enriched.reduce((s, r) => s + r.size, 0);
+  const totalGiven = enriched.reduce((s, r) => s + r.given, 0);
+  const totalRemaining = enriched.reduce((s, r) => s + r.selfArea, 0);
   const totalAmount = enriched.reduce((s, r) => s + r.total, 0);
   const totalDue = enriched.reduce((s, r) => s + (r.m.state === "none" ? 0 : r.m.due), 0);
   const borgaSize = borgaOut.reduce((s, l) => s + Number(l.land_size || 0), 0);
+
 
   return (
     <div className="space-y-4">
