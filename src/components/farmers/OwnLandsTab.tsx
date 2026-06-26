@@ -109,7 +109,9 @@ export default function OwnLandsTab({
     i + 1,
     r.location || "-",
     r.l.dag_no ?? "-",
-    Number(Number(r.l.land_size || 0).toFixed(3)),
+    Number(r.size.toFixed(3)),
+    Number(r.given.toFixed(3)),
+    Number(r.selfArea.toFixed(3)),
     t((r.l.owner_type as any) ?? ""),
     tx("Self-owned", "নিজ মালিক"),
     r.l.patwari_name_bn || r.l.patwari_name || "-",
@@ -122,11 +124,13 @@ export default function OwnLandsTab({
 
   const headerLabels = [
     "#", tx("Location", "অবস্থান"), tx("Dag No", "দাগ নং"),
-    tx("Land Size (Decimal)", "জমির পরিমাণ (শতক)"), tx("Owner Type", "মালিকানার ধরন"),
+    tx("Total Size", "মোট জমি"), tx("Borga Given", "বর্গা দেওয়া"), tx("Remaining (self)", "অবশিষ্ট (নিজ)"),
+    tx("Owner Type", "মালিকানার ধরন"),
     tx("Owner", "মালিক"), tx("Patwari", "পাটুয়ারি"), tx("Field Type", "জমির শ্রেণি"),
     tx("Rate / Shotok", "রেট/শতক"), tx("Total Amount", "মোট টাকা"),
     tx("Irrigation Charge Due", "সেচ চার্জ বকেয়া"), tx("Payment Status", "পেমেন্ট স্ট্যাটাস"),
   ];
+
 
   const exportPdf = () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
