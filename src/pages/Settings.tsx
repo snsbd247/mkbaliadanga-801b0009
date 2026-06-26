@@ -76,6 +76,19 @@ export default function Settings() {
   return (
     <>
       <PageHeader title={t("settings")} description={t("branding")} />
+      <Card className="max-w-2xl p-6 mb-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <Label className="text-base">{lang === "bn" ? "ভাষা" : "Language"}</Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {lang === "bn"
+                ? "ইন্টারফেসের ভাষা নির্বাচন করুন। নির্বাচন আপনার জন্য সংরক্ষিত থাকবে।"
+                : "Choose the interface language. Your choice is saved for you."}
+            </p>
+          </div>
+          <LanguageToggle />
+        </div>
+      </Card>
       <Card className="max-w-2xl p-6">
         <div className="grid gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
