@@ -3683,6 +3683,68 @@ export type Database = {
           },
         ]
       }
+      land_transfer_integrity_runs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_from: string | null
+          date_to: string | null
+          error_count: number
+          error_message: string | null
+          id: string
+          office_id: string | null
+          run_type: string
+          status: string
+          summary: Json | null
+          total_transfers: number
+          updated_at: string
+          violations: Json | null
+          warning_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          error_count?: number
+          error_message?: string | null
+          id?: string
+          office_id?: string | null
+          run_type?: string
+          status?: string
+          summary?: Json | null
+          total_transfers?: number
+          updated_at?: string
+          violations?: Json | null
+          warning_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          error_count?: number
+          error_message?: string | null
+          id?: string
+          office_id?: string | null
+          run_type?: string
+          status?: string
+          summary?: Json | null
+          total_transfers?: number
+          updated_at?: string
+          violations?: Json | null
+          warning_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "land_transfer_integrity_runs_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       land_transfer_recipients: {
         Row: {
           area_decimal: number
