@@ -623,7 +623,7 @@ export default function FarmerDetail() {
       toast.error(e?.message ?? tx("Failed to generate PDF", "পিডিএফ তৈরি ব্যর্থ"));
     }
   }
-  async function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
+  async function printIrrigation(i: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "farmer") {
     const land = (lands || []).find((x: any) => x.id === i.land_id) as any;
     const pw = i.patwaris ?? null;
 

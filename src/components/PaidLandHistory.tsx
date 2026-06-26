@@ -142,7 +142,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         collected_from_outstanding: r.previous_collected || null,
         collected_amount: r.amount,
         verify_url: `${window.location.origin}/r/${r.receipt_no}`,
-      });
+      }, "farmer");
     } catch (e: any) {
       toast.error(e?.message ?? tx("Receipt download failed", "রসিদ ডাউনলোড ব্যর্থ"));
     }
