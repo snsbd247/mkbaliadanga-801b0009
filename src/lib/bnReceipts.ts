@@ -483,7 +483,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;border-bottom:2px solid #111;padding-bottom:1px;">${titleFor(d.kind, lang)}</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
-          ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" />` : ""}
+          ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>` : ""}
         </div>
       </div>
 
@@ -559,7 +559,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
 
 function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLayout: "one-line" | "two-line", orgSize: "sm" | "md" | "lg", qrDataUrl?: string | null, showVerifyUrl?: boolean, tpl: ReceiptTemplate = DEFAULT_TEMPLATE): HTMLDivElement {
   const wrap = document.createElement("div");
-  wrap.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;";
+  // Official irrigation receipt is A5 *landscape*, so render in a landscape-proportioned
+  // container; everything else stays at the A4-portrait width.
+  const isOfficialIrrigation = d.kind === "irrigation" && !d.office_income;
+  const wrapWidth = isOfficialIrrigation ? 1040 : 794;
+  wrap.style.cssText = `position:fixed;left:-10000px;top:0;width:${wrapWidth}px;background:#fff;`;
   const farmerCopy = copyHtml(d, STR[lang].farmerCopy, d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl, tpl);
   const officeCopy = copyHtml(d, STR[lang].officeCopy, d.office_collector_signature_url ?? d.collector_signature_url, lang, orgLayout, orgSize, qrDataUrl, showVerifyUrl, tpl);
   if (copy === "farmer") wrap.innerHTML = farmerCopy;
