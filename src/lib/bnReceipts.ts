@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { toBnDigits, bnAmountInWords } from "@/lib/bnNumber";
 import { parseDagNumbers } from "@/lib/dagNumbers";
 
-import { getReceiptLayoutSettings, dagSeparatorHtml, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation } from "@/lib/receiptLayoutSettings";
+import { getReceiptLayoutSettings, getIrrigationLabels, getRowSpacingForKind, getSavingsLabels, getLoanLabels, getDefaultPaperSize, getDefaultOrientation } from "@/lib/receiptLayoutSettings";
 import { DEFAULT_TEMPLATE, type ReceiptTemplate } from "@/lib/paymentReceiptPdf";
 import { loadReceiptTemplate } from "@/lib/receiptTemplate";
 
@@ -147,6 +147,13 @@ function fmtOfficialDate(d: string | Date, lang: ReceiptLang): string {
 function moneyText(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
   const value = fmt2(Number(n ?? 0));
   return `${digits(value, lang)}${suffix}`;
+}
+
+/** Official irrigation receipt money: whole-number when integer (no grouping, no decimals), else 2 decimals. */
+function moneyInt(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
+  const v = Number(n ?? 0);
+  const s = Number.isInteger(v) ? String(v) : v.toFixed(2);
+  return `${digits(s, lang)}${suffix}`;
 }
 
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
@@ -305,7 +312,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
 
     // 1. কৃষকের নাম ও আইডি / মালিকের নাম ও আইডি
     //    মালিক নিজে হলে শুধু মালিকের নাম; বর্গাদার হলে "বর্গাদার নাম / মালিকের নাম"।
-    const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + d.farmer.member_no : ""}`;
+    const idPart = `${d.farmer.name}${d.farmer.member_no ? "-" + digits(String(d.farmer.member_no), lang) : ""}`;
     if (d.owner_self) {
       rows.push([t.farmerLine, idPart]);
     } else {
@@ -318,9 +325,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.fatherLine, d.farmer.father_or_husband ?? "—"]);
     // 3. গ্রাম/মহল্লা/মোবাইল নং (গ্রাম এর সাথে ইউনিয়ন)
     const villageParts = [d.farmer.village, d.village_union].filter(Boolean).join(",");
-    rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + d.farmer.mobile : ""}`]);
+    rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + digits(String(d.farmer.mobile), lang) : ""}`]);
     // 4. কৃষক এবং মালিক সভ্য সদস্য
-    if (d.member_summary) rows.push([t.memberLine, d.member_summary]);
+    if (d.member_summary) rows.push([t.memberLine, digits(String(d.member_summary), lang)]);
     // 5. মৌজা
     if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
     // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট ÷ ৩৩)
@@ -330,12 +337,12 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
         ? Number(d.rate_per_bigha)
         : (ratePerAcre != null ? ratePerAcre / 33 : null);
       const unit = lang === "bn" ? "টাকা" : "";
-      const rateText = ratePerAcre != null ? `${moneyText(ratePerAcre, lang, unit)}/${moneyText(ratePerBigha ?? 0, lang, unit)}` : "";
+      const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
       rows.push([t.landKind, [d.farmer.field_type_bn, rateText].filter(Boolean).join("/ ")]);
     }
-    // 7. দাগ নং (একাধিক হতে পারে)
+    // 7. দাগ নং (একাধিক হতে পারে) — ডেমো অনুযায়ী ডট-সেপারেটেড
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
-    const dagFormatted = digits(dagTokens.join(dagSeparatorHtml(layout.dagSeparator)), lang);
+    const dagFormatted = digits(dagTokens.join("."), lang);
     if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
     // 8. জমির পরিমাণ — একর (শতক ÷ ১০০), . এর পর ৪ ডিজিট
     if (d.farmer.land_size != null) {
@@ -345,21 +352,21 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // 9. চার্জের পরিমাণ (হাল)/জরিমানা — চলতি সিজনের জমি
     const halCharge = Number(d.current_season_charge ?? 0);
     const halPenalty = Number(d.current_penalty ?? d.penalty_amount ?? 0);
-    rows.push([t.currentCharge, `${moneyText(halCharge, lang)}/${moneyText(halPenalty, lang)}`]);
+    rows.push([t.currentCharge, `${moneyInt(halCharge, lang, "৳")}/${moneyInt(halPenalty, lang, "৳")}`]);
     // 10. চার্জের পরিমাণ (বকেয়া)/জরিমানা — গত সিজনের জমি
     const dueCharge = Number(d.total_outstanding ?? d.previous_due ?? 0);
     const duePenalty = Number(d.due_penalty ?? 0);
-    rows.push([t.due, `${moneyText(dueCharge, lang)}/${moneyText(duePenalty, lang)}`]);
+    rows.push([t.due, `${moneyInt(dueCharge, lang, "৳")}/${moneyInt(duePenalty, lang, "৳")}`]);
     // 11. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা)
     const totalDue = halCharge + halPenalty + dueCharge + duePenalty;
     const totalIrr = totalDue > 0 ? totalDue : Number(d.collected_amount ?? 0);
-    rows.push([t.totalIrr, moneyText(totalIrr, lang)]);
+    rows.push([t.totalIrr, moneyInt(totalIrr, lang, "৳")]);
     // 12. কথায়
-    if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)}।`]);
+    if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)} মাত্র।`]);
     // 13. হোল্ডিং এর বিবরন / পাটুয়ারীর নাম ও মোবা নং
     const holdingParts = [
       (d.holding_description ?? d.remark ?? "").trim() || null,
-      d.patwari_name ? `${d.patwari_name}${d.patwari_mobile ? "-" + d.patwari_mobile : ""}` : null,
+      d.patwari_name ? `${d.patwari_name}${d.patwari_mobile ? "-" + digits(String(d.patwari_mobile), lang) : ""}` : null,
     ].filter(Boolean).join(" / ");
     if (holdingParts) rows.push([t.holding, holdingParts]);
   } else {
