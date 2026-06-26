@@ -325,9 +325,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.fatherLine, d.farmer.father_or_husband ?? "—"]);
     // 3. গ্রাম/মহল্লা/মোবাইল নং (গ্রাম এর সাথে ইউনিয়ন)
     const villageParts = [d.farmer.village, d.village_union].filter(Boolean).join(",");
-    rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + d.farmer.mobile : ""}`]);
+    rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + digits(String(d.farmer.mobile), lang) : ""}`]);
     // 4. কৃষক এবং মালিক সভ্য সদস্য
-    if (d.member_summary) rows.push([t.memberLine, d.member_summary]);
+    if (d.member_summary) rows.push([t.memberLine, digits(String(d.member_summary), lang)]);
     // 5. মৌজা
     if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
     // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট ÷ ৩৩)
