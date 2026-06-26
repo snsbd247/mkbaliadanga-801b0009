@@ -1633,9 +1633,12 @@ function estimateImport(modules: string[], size: number) {
     c["asset_alerts"] = 4; c["asset_damage_reports"] = 2;
     c["asset_scan_logs"] = 12; c["asset_audit_logs"] = 9;
   }
+  if (modules.includes("irrigation")) { c["irrigation_invoice_payments"] = Math.ceil(size / 2); }
   if (modules.includes("farmers")) {
     c["farmer_notes"] = 10;
     c["land_history"] = size;
+    c["land_transfers"] = Math.ceil(size / 5);
+    c["land_change_log"] = Math.ceil(size / 5);
     c["voter_audit_logs"] = 5;
     c["public_payment_intents"] = 8;
   }
