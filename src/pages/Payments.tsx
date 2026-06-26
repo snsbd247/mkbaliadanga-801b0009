@@ -1029,7 +1029,7 @@ export default function Payments() {
                         };
                         const doDownload = async (copy: ReceiptCopy) =>
                           downloadBnReceiptPdf(await buildReceiptData(), copy, receiptArgs.options);
-                        const doPreview = async () => setPreview({ data: await buildReceiptData(), copy: "both" });
+                        const doPreview = async () => setPreview({ data: await buildReceiptData(), copy: kind === "irrigation" ? "farmer" : "both" });
                         return (
                           <>
                             <button
@@ -1037,9 +1037,9 @@ export default function Payments() {
                               hidden
                               aria-hidden="true"
                               data-auto-print={p.id}
-                              onClick={() => doDownload("both")}
+                              onClick={() => doDownload(kind === "irrigation" ? "farmer" : "both")}
                             />
-                            <span data-receipt-menu><ReceiptCopyMenu onSelect={doDownload} onPreview={kind === "irrigation" ? doPreview : undefined} title={t("printReceipt") || "Print Receipt"} /></span>
+                            <span data-receipt-menu><ReceiptCopyMenu singleCopy={kind === "irrigation"} onSelect={doDownload} onPreview={kind === "irrigation" ? doPreview : undefined} title={t("printReceipt") || "Print Receipt"} /></span>
                           </>
                         );
                       })()}
