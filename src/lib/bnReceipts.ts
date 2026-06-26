@@ -577,7 +577,7 @@ function buildHtml(d: BnReceiptData, copy: ReceiptCopy, lang: ReceiptLang, orgLa
   // Official irrigation receipt is A5 *landscape*, so render in a landscape-proportioned
   // container; everything else stays at the A4-portrait width.
   const isOfficialIrrigation = d.kind === "irrigation" && !d.office_income;
-  const wrapWidth = isOfficialIrrigation ? 1040 : 794;
+  const wrapWidth = isOfficialIrrigation ? IRRIGATION_RECEIPT_PAGE.renderWidthPx : 794;
   wrap.style.cssText = `position:fixed;left:-10000px;top:0;width:${wrapWidth}px;background:#fff;`;
   // সেচ চার্জ ও বিবিধ আদায় রশিদ: সবসময় একটিমাত্র কপি (কৃষক/অফিস আলাদা নয়), copy যাই আসুক।
   if (isOfficialIrrigation) {
