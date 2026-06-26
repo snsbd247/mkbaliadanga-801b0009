@@ -63,6 +63,46 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
 
   async function submit() {
     if (!sourceLand) return;
+
+    // ── Reclaim borga: close the active land_relations row. The owner's land row
+    // was never shrunk during borga, so nothing else changes. The reclaim is
+    // recorded as a borga_return transfer for history.
+    if (isReclaim) {
+      setSaving(true);
+      try {
+        const relId = (sourceLand as any)._relation_id;
+        const landId = (sourceLand as any)._land_id ?? sourceLand.id;
+        const today = new Date().toISOString().slice(0, 10);
+        if (relId) {
+          const { error: relErr } = await supabase.from("land_relations")
+            .update({ deleted_at: new Date().toISOString(), valid_to: today } as any)
+            .eq("id", relId);
+          if (relErr) throw relErr;
+        }
+        const { error: trErr } = await supabase.from("land_transfers").insert({
+          source_land_id: landId,
+          source_farmer_id: (sourceLand as any)._sharecropper_id ?? sourceFarmerId,
+          transfer_type: "borga_return",
+          remark: remark.trim() || null,
+          transferred_at: transferredOn,
+          office_id: sourceLand.office_id ?? officeId ?? null,
+          created_by: user?.id ?? null,
+          source_dag_no: sourceLand.dag_no ?? null,
+          source_mouza: sourceLand.mouza ?? null,
+          source_land_size: Number(sourceLand.land_size) || null,
+        } as any);
+        if (trErr) throw trErr;
+        toast.success(tx("Land reclaimed", "জমি ফেরত নেওয়া হয়েছে"));
+        onOpenChange(false);
+        onDone();
+      } catch (e: any) {
+        toast.error(e.message || String(e));
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     if (recipients.length === 0) return toast.error(tx("Add at least one recipient", "অন্তত একজন প্রাপক যোগ করুন"));
     if (recipients.some(r => !r.farmer_id)) return toast.error(tx("Select farmer for each recipient", "প্রতিটি প্রাপকের জন্য কৃষক নির্বাচন করুন"));
     if (new Set(recipients.map(r => r.farmer_id)).size !== recipients.length) return toast.error(tx("Recipients must be unique", "প্রাপকগণ অনন্য হতে হবে"));
@@ -85,7 +125,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           if (tr.source_farmer_id) blocked.add(tr.source_farmer_id);
         }
       }
-      const reversing = !isReclaim && recipients.find(r => blocked.has(r.farmer_id));
+      const reversing = !isBorgaGive && recipients.find(r => blocked.has(r.farmer_id));
       if (reversing) {
         setSaving(false);
         return toast.error(tx("Cannot transfer back to a previous owner of this land.", "এই জমি আগের মালিক/বর্গাদারে ফেরত transfer করা যাবে না।"));
@@ -98,7 +138,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
       const { data: tr, error: trErr } = await supabase.from("land_transfers").insert({
         source_land_id: sourceLand.id,
         source_farmer_id: sourceFarmerId,
-        transfer_type: isReclaim ? "borga_return" : transferType,
+        transfer_type: transferType,
         remark: remark.trim() || null,
         transferred_at: transferredOn,
         office_id: sourceLand.office_id ?? officeId ?? null,
@@ -113,18 +153,48 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
 
       const transferId = tr!.id;
 
-      // Create new land rows for each recipient (clone fields) + transfer recipient records
       for (let i = 0; i < recipients.length; i++) {
         const r = recipients[i];
         const area = normalizeLandSize(effectiveAreas[i]);
+
+        if (isBorgaGive) {
+          // Borga: the OWNER keeps the full parcel intact. Record the given-out
+          // area as a land_relations row on the owner's land — this is the single
+          // source of truth for both display (shown in BOTH profiles) and
+          // irrigation splitting (owner pays remainder, sharecropper pays borga).
+          const { error: relErr } = await supabase.from("land_relations").insert({
+            land_id: sourceLand.id,
+            owner_farmer_id: sourceFarmerId,
+            sharecropper_farmer_id: r.farmer_id,
+            area_decimal: area,
+            share_percentage: totalLand > 0 ? +(((area / totalLand) * 100).toFixed(4)) : 0,
+            valid_from: transferredOn,
+            office_id: sourceLand.office_id ?? officeId ?? null,
+            created_by: user?.id ?? null,
+            note: remark.trim() || null,
+          } as any);
+          if (relErr) throw relErr;
+
+          const { error: rcErr } = await supabase.from("land_transfer_recipients").insert({
+            transfer_id: transferId,
+            recipient_farmer_id: r.farmer_id,
+            new_land_id: null,
+            area_decimal: area,
+          } as any);
+          if (rcErr) throw rcErr;
+          continue;
+        }
+
+        // Non-borga transfer (sale / inheritance / split / other): create new land
+        // rows for each recipient (clone fields) + transfer recipient records.
         const newLandPayload: any = {
           farmer_id: r.farmer_id,
           mouza: sourceLand.mouza ?? null,
           dag_no: sourceLand.dag_no ?? null,
           land_size: area,
-          owner_type: isReclaim ? "owner" : (isBorgaGive ? "borgadar" : sourceLand.owner_type),
+          owner_type: sourceLand.owner_type,
           field_type: sourceLand.field_type,
-          owner_farmer_id: isReclaim ? null : (isBorgaGive ? sourceFarmerId : (sourceLand.owner_type === "borgadar" ? sourceLand.owner_farmer_id : null)),
+          owner_farmer_id: sourceLand.owner_type === "borgadar" ? sourceLand.owner_farmer_id : null,
           office_id: sourceLand.office_id ?? officeId ?? null,
           division_id: sourceLand.division_id ?? null,
           district_id: sourceLand.district_id ?? null,
@@ -133,15 +203,9 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           land_type_id: sourceLand.land_type_id ?? null,
           patwari_id: sourceLand.patwari_id ?? null,
         };
-        // If this recipient already has an active land row with the same dag_no,
-        // merging into it avoids the (farmer_id, dag_no) unique-constraint clash
-        // (e.g. reclaiming borga land back to its real owner who already owns it).
         const dagNo = (sourceLand.dag_no ?? "").trim();
         let landId: string;
         if (dagNo) {
-          // Look for ANY land row (active or soft-deleted) for this recipient with
-          // the same dag_no. The unique index is partial on deleted_at IS NULL, but
-          // reviving an archived parcel keeps history clean and avoids duplicates.
           const { data: existing } = await supabase.from("lands")
             .select("id, land_size, deleted_at")
             .eq("farmer_id", r.farmer_id)
@@ -151,27 +215,16 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
             .maybeSingle();
           if (existing) {
             const wasDeleted = !!(existing as any).deleted_at;
-            if (isReclaim && !wasDeleted) {
-              // New model: the owner never lost the parcel during borga — their land
-              // row is already at full size. Reclaiming only archives the borgadar row
-              // (handled below). Do NOT add the area back, or it would double-count.
-              landId = existing.id;
-            } else {
-              // Reviving a returned parcel: replace size with the reclaimed area.
-              // Merging into an active parcel: add the area on top.
-              const nextSize = wasDeleted ? area : normalizeLandSize(Number(existing.land_size || 0) + area);
-              const upd: any = { land_size: nextSize };
-              if (wasDeleted) {
-                upd.deleted_at = null;
-                upd.owner_type = newLandPayload.owner_type;
-                upd.owner_farmer_id = newLandPayload.owner_farmer_id;
-              }
-              const { error: upErr } = await supabase.from("lands")
-                .update(upd).eq("id", existing.id);
-              if (upErr) throw upErr;
-              landId = existing.id;
+            const nextSize = wasDeleted ? area : normalizeLandSize(Number(existing.land_size || 0) + area);
+            const upd: any = { land_size: nextSize };
+            if (wasDeleted) {
+              upd.deleted_at = null;
+              upd.owner_type = newLandPayload.owner_type;
+              upd.owner_farmer_id = newLandPayload.owner_farmer_id;
             }
-
+            const { error: upErr } = await supabase.from("lands").update(upd).eq("id", existing.id);
+            if (upErr) throw upErr;
+            landId = existing.id;
           } else {
             const { data: nl, error: nlErr } = await supabase.from("lands").insert(newLandPayload).select("id").single();
             if (nlErr) throw nlErr;
@@ -192,18 +245,13 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         if (rcErr) throw rcErr;
       }
 
-      // Giving borga: the OWNER keeps the FULL parcel intact. The given-out area is
-      // tracked via land_transfers + the borgadar land row. The owner's land row is
-      // NOT shrunk and NOT archived — so the owner's profile always shows the whole
-      // parcel (total / borga-given / remaining-self). Irrigation is billed per land
-      // using the remaining self-cultivated area for the owner.
-      if (isBorgaGive) {
-        // Intentionally no mutation of the owner's source land row.
-      } else {
-        // Archive source land (history preserved via land_transfers; row not modified except deleted_at)
+      // Borga keeps the owner's land row intact. Non-borga transfers move the
+      // whole parcel out, so the source land row is archived (history preserved).
+      if (!isBorgaGive) {
         const { error: delErr } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
         if (delErr) throw delErr;
       }
+
 
 
       toast.success(tx("Land transferred", "জমি হস্তান্তরিত"));
