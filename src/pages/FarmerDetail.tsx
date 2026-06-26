@@ -1430,7 +1430,7 @@ export default function FarmerDetail() {
                               ) : "—")}
                         </TableCell>
                         <TableCell className="text-xs">{l.patwari_name_bn || l.patwari_name || <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell>{t((l.field_type as any) ?? "")}</TableCell>
+                        <TableCell>{landTypeLabel(landTypeRows, (l as any).land_type_id, l.field_type) || t((l.field_type as any) ?? "")}</TableCell>
                         <TableCell className="text-right">{rate ? money(rate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell className="text-right">{rate ? money(total) : <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>
