@@ -1616,8 +1616,8 @@ function estimateImport(modules: string[], size: number) {
   if (modules.includes("accounting")) c["accounts"] = 12;
   if (modules.includes("farmers")) { c["farmers"] = size; c["lands"] = size; c["patwaris"] = Math.max(4, Math.ceil(size / 12)); c["land_relations"] = Math.ceil(size / 7); }
   if (modules.includes("irrigation")) { c["seasons"] = 1; c["irrigation_charge_settings"] = 1; c["irrigation_season_rates"] = 3; c["irrigation_charges"] = size; c["irrigation_invoices"] = size; }
-  if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 3; c["loan_delay_fee_settings"] = 1; c["loans"] = n; c["loan_installments"] = n * 12; c["loan_payments"] = n * 3; }
-  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 3; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); c["farmer_savings_plans"] = Math.ceil(n * 0.5); }
+  if (modules.includes("loans")) { const n = Math.ceil(size * 0.4); c["loan_plans"] = 3; c["loan_delay_fee_settings"] = 1; c["loans"] = n; c["loan_installments"] = n * 12; c["loan_payments"] = n * 3; c["loan_guarantors"] = n; }
+  if (modules.includes("savings")) { const n = Math.ceil(size * 0.6); c["savings_plans"] = 3; c["savings_transactions"] = n + Math.ceil(n / 4); c["shares"] = Math.ceil(size * 0.5); c["farmer_savings_plans"] = Math.ceil(n * 0.5); c["savings_yearly_opening"] = Math.ceil(size * 0.5); }
   if (modules.includes("accounting")) c["accounting_periods"] = 1;
   if (modules.includes("irrigation") && modules.includes("farmers")) c["irrigation_due_promises"] = 5;
   if (modules.includes("expenses")) c["expenses"] = 3;
@@ -1633,9 +1633,12 @@ function estimateImport(modules: string[], size: number) {
     c["asset_alerts"] = 4; c["asset_damage_reports"] = 2;
     c["asset_scan_logs"] = 12; c["asset_audit_logs"] = 9;
   }
+  if (modules.includes("irrigation")) { c["irrigation_invoice_payments"] = Math.ceil(size / 2); }
   if (modules.includes("farmers")) {
     c["farmer_notes"] = 10;
     c["land_history"] = size;
+    c["land_transfers"] = Math.ceil(size / 5);
+    c["land_change_log"] = Math.ceil(size / 5);
     c["voter_audit_logs"] = 5;
     c["public_payment_intents"] = 8;
   }
@@ -1674,6 +1677,9 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
     { table: "patwaris",               page: "/admin/patwaris",  page_label: "Patwaris",         required: false },
     { table: "land_relations",         page: "/farmers",         page_label: "Farmers (Borga)",  required: false },
     { table: "land_history",           page: "/land-history",    page_label: "ভূমির ইতিহাস (Land History)", required: false },
+    { table: "land_transfers",         page: "/farmers",         page_label: "জমি হস্তান্তর (Land Transfers)", required: false },
+    { table: "land_change_log",        page: "/farmers",         page_label: "জমি পরিবর্তন লগ (Land Change Log)", required: false },
+    { table: "farmer_notes",           page: "/farmers",         page_label: "ফার্মার নোট (Farmer Notes)", required: false },
     { table: "voter_audit_logs",       page: "/voter-history",   page_label: "Voter Cancel/Reactivate History", required: false },
     { table: "public_payment_intents", page: "/admin/public-payments", page_label: "পাবলিক পেমেন্ট অনুরোধ", required: false },
   ],
@@ -1681,6 +1687,9 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
     { table: "irrigation_charge_settings", page: "/irrigation-rates",    page_label: "Irrigation Rates",    required: true },
     { table: "irrigation_season_rates",    page: "/irrigation-rates",    page_label: "Irrigation Rates",    required: true },
     { table: "irrigation_invoices",        page: "/irrigation-invoices", page_label: "Irrigation Invoices", required: true },
+    { table: "irrigation_charges",         page: "/irrigation-invoices", page_label: "Irrigation Charges",  required: false },
+    { table: "irrigation_invoice_payments",page: "/irrigation-invoices", page_label: "Irrigation Payments", required: false },
+    { table: "irrigation_due_promises",    page: "/irrigation-invoices", page_label: "Due Promises",        required: false },
     { table: "seasons",                    page: "/seasons",             page_label: "Seasons",             required: true },
   ],
   loans: [
@@ -1689,12 +1698,14 @@ const MODULE_VERIFY: Record<string, { table: string; page: string; page_label: s
     { table: "loans",                   page: "/loans",                      page_label: "Loans",                required: true },
     { table: "loan_installments",       page: "/loans",                      page_label: "Loans (Installments)", required: true },
     { table: "loan_payments",           page: "/loans",                      page_label: "Loans (Payments)",     required: false },
+    { table: "loan_guarantors",         page: "/loans",                      page_label: "ঋণের জামিনদার (Guarantors)", required: false },
   ],
   savings: [
-    { table: "savings_plans",        page: "/savings",          page_label: "Savings",          required: true },
-    { table: "savings_transactions", page: "/savings",          page_label: "Savings (Tx)",     required: true },
-    { table: "shares",               page: "/share-collection", page_label: "Share Collection", required: false },
-    { table: "farmer_savings_plans", page: "/savings",          page_label: "Savings (Plans)",  required: false },
+    { table: "savings_plans",         page: "/savings",          page_label: "Savings",          required: true },
+    { table: "savings_transactions",  page: "/savings",          page_label: "Savings (Tx)",     required: true },
+    { table: "shares",                page: "/share-collection", page_label: "Share Collection", required: false },
+    { table: "farmer_savings_plans",  page: "/savings",          page_label: "Savings (Plans)",  required: false },
+    { table: "savings_yearly_opening",page: "/savings",          page_label: "সঞ্চয় ওপেনিং ব্যালেন্স", required: false },
   ],
   expenses: [
     { table: "expenses", page: "/payments", page_label: "Payments / Expenses", required: true },
