@@ -978,7 +978,30 @@ export default function DataImport() {
 
       setRows([...next]);
       const ok = next.filter((x) => x.status === "ok").length;
-      const er = next.filter((x) => x.status === "error").length;
+      let er = next.filter((x) => x.status === "error").length;
+      const duplicates = next.filter((x) => x.status === "error" && /Duplicate of row/.test(x.message ?? "")).length;
+
+      // Atomic mode: if any row failed during a real run, roll back everything inserted.
+      let rolledBack = false;
+      if (!dryRun && atomicMode && er > 0 && insertedRecords.length > 0) {
+        const byTable = new Map<string, string[]>();
+        insertedRecords.forEach(({ table, id }) => {
+          const arr = byTable.get(table) ?? [];
+          arr.push(id);
+          byTable.set(table, arr);
+        });
+        for (const [table, ids] of byTable) {
+          await supabase.from(table as any).delete().in("id", ids);
+        }
+        rolledBack = true;
+        for (let i = 0; i < next.length; i++) {
+          if (next[i].status === "ok" && next[i].resolved?.record_id) {
+            next[i] = { ...next[i], status: "error", message: "Rolled back (atomic import — another row failed)" };
+          }
+        }
+        setRows([...next]);
+        er = next.filter((x) => x.status === "error").length;
+      }
 
       // Ledger verification + audit log (only on real run)
       if (!dryRun) {
