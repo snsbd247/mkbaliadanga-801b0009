@@ -422,8 +422,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const billInfo = Array.from(new Set(
         allReceiptInvoices
           .map((inv) => {
-            const season = [inv.seasons?.name, inv.seasons?.year].filter(Boolean).join("-");
-            return [season, inv.irrigation_category_name].filter(Boolean).join("/");
+            return inv.seasons?.name || inv.irrigation_category_name || inv.land_type_name || null;
           })
           .filter(Boolean),
       )).join("/") || tx("Irrigation charge", "সেচ চার্জ");
