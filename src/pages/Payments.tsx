@@ -941,13 +941,14 @@ export default function Payments() {
                             const refIds = irrAllocs.map((a: any) => a.reference_id).filter(Boolean);
                             const collectedFromOutstanding = irrAllocs.reduce((s: number, a: any) => s + Number(a.amount || 0), 0) || Number(p.amount || 0);
                             let primaryCharge: any = null;
+                            let invoiceRows: any[] = [];
                             let totalOutstanding = 0;
                             if (refIds.length) {
                               const { data: invs } = await supabase
                                 .from("irrigation_invoices")
                                 .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
                                 .in("id", refIds);
-                              const invoiceRows = invs ?? [];
+                              invoiceRows = invs ?? [];
                               primaryCharge = invoiceRows[0] ?? null;
                               const { data: allDues } = await supabase
                                 .from("irrigation_invoices")
