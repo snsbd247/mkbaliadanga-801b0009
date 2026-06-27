@@ -471,12 +471,13 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.totalIrr, moneyInt(totalIrr, lang, "৳")]);
     // 12. কথায়
     if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)} মাত্র।`]);
-    // 13. হোল্ডিং এর বিবরন / পাটুয়ারীর নাম ও মোবা নং
-    const holdingParts = [
-      (d.holding_description ?? d.remark ?? "").trim() || null,
-      d.patwari_name ? `${d.patwari_name}${d.patwari_mobile ? "-" + digits(String(d.patwari_mobile), lang) : ""}` : null,
-    ].filter(Boolean).join(" / ");
-    if (holdingParts) rows.push([t.holding, holdingParts]);
+    // 13. হোল্ডিং এর বিবরন / পাটুয়ারীর নাম ও মোবা নং (সবসময় দেখাবে)
+    const holdingDesc = (d.holding_description ?? d.remark ?? "").trim() || null;
+    const patwariText = d.patwari_name
+      ? `${d.patwari_name}${d.patwari_mobile ? "-" + digits(String(d.patwari_mobile), lang) : ""}`
+      : null;
+    const holdingParts = [holdingDesc, patwariText].filter(Boolean).join(" / ");
+    rows.push([t.holding, holdingParts || "—"]);
   } else {
     // কৃষকের নাম এবং কৃষক সদস্য নং: name - member_no - owner_type - voter/savings ref
     const memberRefSuffix = d.farmer.member_type_bn || d.farmer.member_ref_no
