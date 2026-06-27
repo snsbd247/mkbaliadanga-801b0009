@@ -364,28 +364,24 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const villageParts = [d.farmer.village, d.village_union].filter(Boolean).join(",");
     rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + digits(String(d.farmer.mobile), lang) : ""}`]);
     // 4. কৃষক এবং মালিক সভ্য সদস্য
-    if (d.member_summary) rows.push([t.memberLine, digits(String(d.member_summary), lang)]);
+    rows.push([t.memberLine, d.member_summary ? digits(String(d.member_summary), lang) : "—"]);
     // 5. মৌজা
-    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
+    rows.push([mouzaLabel, d.farmer.mouza || "—"]);
     // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট ÷ ৩৩)
-    if (d.farmer.field_type_bn || d.rate != null) {
-      const ratePerAcre = d.rate != null ? Number(d.rate) : null;
-      const ratePerBigha = d.rate_per_bigha != null
-        ? Number(d.rate_per_bigha)
-        : (ratePerAcre != null ? ratePerAcre / 33 : null);
-      const unit = lang === "bn" ? "টাকা" : "";
-      const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
-      rows.push([t.landKind, [d.farmer.field_type_bn, rateText].filter(Boolean).join("/ ")]);
-    }
+    const ratePerAcre = d.rate != null ? Number(d.rate) : null;
+    const ratePerBigha = d.rate_per_bigha != null
+      ? Number(d.rate_per_bigha)
+      : (ratePerAcre != null ? ratePerAcre / 33 : null);
+    const unit = lang === "bn" ? "টাকা" : "";
+    const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
+    rows.push([t.landKind, [d.farmer.field_type_bn, rateText].filter(Boolean).join("/ ") || "—"]);
     // 7. দাগ নং (একাধিক হতে পারে) — ডেমো অনুযায়ী ডট-সেপারেটেড
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
     const dagFormatted = digits(dagTokens.join("."), lang);
-    if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
+    rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted || "—"}</span>`]);
     // 8. জমির পরিমাণ — একর (শতক ÷ ১০০), . এর পর ৪ ডিজিট
-    if (d.farmer.land_size != null) {
-      const acre = Number(d.farmer.land_size) / 100;
-      rows.push([t.landSize, `${fixed4Text(acre, lang)} ${lang === "bn" ? "একর" : "acre"}`]);
-    }
+    const acre = d.farmer.land_size != null ? Number(d.farmer.land_size) / 100 : null;
+    rows.push([t.landSize, acre != null ? `${fixed4Text(acre, lang)} ${lang === "bn" ? "একর" : "acre"}` : "—"]);
     // 9. চার্জের পরিমাণ (হাল)/জরিমানা — চলতি সিজনের জমি
     const halCharge = Number(d.current_season_charge ?? 0);
     const halPenalty = Number(d.current_penalty ?? d.penalty_amount ?? 0);
