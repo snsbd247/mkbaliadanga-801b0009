@@ -53,7 +53,7 @@ describe("irrigation receipt edge cases (overflow prevention)", () => {
   it("renders all dag tokens for a very long dag list", () => {
     const html = buildReceiptCopyHtmlForTest(base, "farmer", "bn");
     const dag = rowFor(html, "দাগ নং:");
-    for (const tok of ["1", "264", "247", "2852"]) expect(dag).toContain(tok);
+    for (const tok of ["১", "২৬৪", "২৪৭", "২৮৫২"]) expect(dag).toContain(tok);
   });
 
   it("applies consistent wrapping/line-height to every cell so long text cannot overflow", () => {
