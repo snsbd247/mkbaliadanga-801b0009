@@ -47,6 +47,7 @@ type Invoice = {
     mouza: string | null;
     land_size: number | null;
     dag_no: string | null;
+    field_type?: string | null;
     notes?: string | null;
     patwaris?: { name: string | null; name_bn: string | null; mobile: string | null } | null;
   } | null;
@@ -91,7 +92,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const [{ data: act }, { data: invs }] = await Promise.all([
         supabase.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("irrigation_invoices")
-          .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)")
+          .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)")
           .eq("farmer_id", farmerId)
           .is("deleted_at", null)
           .neq("invoice_status", "cancelled")
@@ -399,7 +400,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             categoryName: inv.irrigation_category_name,
             landTypeName: inv.land_type_name,
             seasonName: inv.seasons?.name,
-          }))
+          }) || (({ high_land: tx("High land", "উঁচু জমি"), medium_land: tx("Medium land", "মাঝারি জমি"), low_land: tx("Low land", "নিচু জমি"), other: tx("Other", "অন্যান্য") } as Record<string, string>)[inv.lands?.field_type as string] ?? null))
           .filter(Boolean) as string[],
       )).join("/") || null;
       // চার্জ রেট (একর); বিঘা রেট lib-এ acre × 33/100 হিসেবে অটো হবে।

@@ -960,7 +960,8 @@ export default function Payments() {
                             }
                             const land = primaryCharge?.lands;
                             const ownerFarmer = land?.owner;
-                            const isSelf = !primaryCharge?.is_borga && (!land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner");
+                            const anyBorga = (invoiceRows as any[]).some((inv) => !!inv?.is_borga);
+                            const isSelf = !anyBorga;
                             // জমির ধরন: ক্যাটালগ/সিজন থেকে; নাহলে লিগ্যাসি enum.
                             const fieldTypeBn = Array.from(new Set((invoiceRows as any[]).map((inv) => (
                               resolveFieldTypeLabel({
@@ -972,7 +973,7 @@ export default function Payments() {
                             const ratePerAcre = normalizeIrrigationRatePerAcre(primaryCharge?.season_rate, primaryCharge?.irrigation_amount, primaryCharge?.lands?.land_size);
                             const ownerName = ownerFarmer ? (ownerFarmer.name_bn || ownerFarmer.name_en) : null;
                             const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
-                            const memberSummary = `${p.farmers?.member_no ?? p.farmers?.farmer_code ?? "N/A"}/${(primaryCharge?.is_borga && ownerMember) ? ownerMember : "N/A"}`;
+                            const memberSummary = `${p.farmers?.member_no ?? p.farmers?.farmer_code ?? "N/A"}/${(anyBorga && ownerMember) ? ownerMember : "N/A"}`;
                             const mouza = (invoiceRows as any[]).find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null;
                             const dagNo = Array.from(new Set((invoiceRows as any[])
                               .map((inv) => (inv?.lands?.dag_no ?? "").trim())
@@ -994,7 +995,7 @@ export default function Payments() {
                                 dag_no: dagNo,
                                 land_size: landSize,
                                 field_type_bn: fieldTypeBn,
-                                owner_type_bn: primaryCharge?.is_borga ? "বর্গাদার" : "মালিক",
+                                owner_type_bn: anyBorga ? "বর্গাদার" : "মালিক",
                               },
                               bill_info: billInfo,
                               rate: ratePerAcre,
