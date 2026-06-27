@@ -26,6 +26,7 @@ import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seaso
 import { resolveIrrigationRate, type CategoryRateInput } from "@/lib/irrigationRateResolver";
 import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
+import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
@@ -119,11 +120,18 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const { confirm } = useConfirm();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
-  const [seasonId, setSeasonId] = useState("all");
-  const [officeId, setOfficeId] = useState("all");
-  const [mouza, setMouza] = useState("all");
-  const [status, setStatus] = useState<string>("all");
-  const [search, setSearch] = useState("");
+  const persisted = useMemo<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("irr_invoice_filters") || "{}"); } catch { return {}; }
+  }, []);
+  const [seasonId, setSeasonId] = useState(persisted.seasonId ?? "all");
+  const [officeId, setOfficeId] = useState(persisted.officeId ?? "all");
+  const [mouza, setMouza] = useState(persisted.mouza ?? "all");
+  const [status, setStatus] = useState<string>(persisted.status ?? "all");
+  const [search, setSearch] = useState(persisted.search ?? "");
+
+  useEffect(() => {
+    localStorage.setItem("irr_invoice_filters", JSON.stringify({ seasonId, officeId, mouza, status, search }));
+  }, [seasonId, officeId, mouza, status, search]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [editInv, setEditInv] = useState<Invoice | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
@@ -411,6 +419,35 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     setSelected(s);
   }
 
+  async function exportFilteredPdf() {
+    if (!filtered.length) return toast.error(tx("No invoices to export", "এক্সপোর্ট করার মতো ইনভয়েস নেই"));
+    const head = [
+      tx("Invoice", "ইনভয়েস"),
+      tx("Farmer", "কৃষক"),
+      tx("Mouza", "মৌজা"),
+      tx("Season", "সিজন"),
+      tx("Payable", "প্রদেয়"),
+      tx("Paid", "পরিশোধিত"),
+      tx("Due", "বকেয়া"),
+      tx("Status", "স্ট্যাটাস"),
+    ];
+    const body = (filtered as any[])
+      .filter((r) => r.invoice_status !== "carried_forward")
+      .map((r) => [
+        r.invoice_no ?? "—",
+        r.farmers?.name_bn || r.farmers?.name_en || "—",
+        r.lands?.mouza ?? "—",
+        `${r.seasons?.name ?? r.seasons?.type ?? ""} ${r.seasons?.year ?? ""}`.trim(),
+        money(r.payable_amount),
+        money(r.paid_amount),
+        money(r.due_amount),
+        statusLabel(tx, r.invoice_status),
+      ]);
+    body.push(["", "", "", tx("Grand total", "সর্বমোট"), money(grandTotals.payable), money(grandTotals.paid), money(grandTotals.due), ""]);
+    await exportTablePDF(tx("Irrigation Invoices", "সেচ ইনভয়েস"), head, body, undefined, { landscape: true });
+  }
+
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-3">
@@ -478,6 +515,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             </Button>
             <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(filtered, "irrigation-invoices.xlsx", lang)} disabled={!filtered.length}>
               <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+            </Button>
+            <Button size="sm" variant="outline" onClick={exportFilteredPdf} disabled={!filtered.length}>
+              <Printer className="h-4 w-4 mr-1" /> PDF
             </Button>
           </div>
         </div>
