@@ -12,10 +12,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
+import { useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
 
 export default function LandDetail() {
   const { id } = useParams();
   const { t } = useLang();
+  const { rows: landTypeRows } = useLandTypes();
   const [loading, setLoading] = useState(true);
   const [land, setLand] = useState<any>(null);
   const [loc, setLoc] = useState<any>(null);
@@ -68,7 +70,7 @@ export default function LandDetail() {
       <Card className="p-4 mt-2 grid gap-2 md:grid-cols-3 text-sm">
         <div><span className="text-muted-foreground">{t("ld_dag" as any)}:</span> <strong>{land.dag_no ?? "—"}</strong></div>
         <div><span className="text-muted-foreground">{t("ld_size" as any)}:</span> <strong>{land.land_size}</strong></div>
-        <div><span className="text-muted-foreground">{t("ld_type" as any)}:</span> {land.field_type} / {land.owner_type}</div>
+        <div><span className="text-muted-foreground">{t("ld_type" as any)}:</span> {(landTypeLabel(landTypeRows, land.land_type_id, land.field_type) || t((land.field_type as any) ?? ""))} / {land.owner_type}</div>
         <div><span className="text-muted-foreground">{t("ld_mouza" as any)}:</span> {loc?.mouza_name ?? land.mouza ?? "—"}</div>
         <div><span className="text-muted-foreground">{t("ld_village" as any)}:</span> {loc?.village_name ?? "—"}</div>
         <div><span className="text-muted-foreground">{t("ld_ward" as any)}:</span> {loc?.ward_name ?? "—"}</div>

@@ -12,6 +12,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
 
 /**
  * Consolidated Cultivation History view.
@@ -20,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
  */
 export default function CultivationHistoryReport() {
   const { tx } = useLang();
+  const { rows: landTypeRows } = useLandTypes();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
@@ -46,7 +48,7 @@ export default function CultivationHistoryReport() {
     setLoading(true);
     Promise.all([
       supabase.from("farmers").select("id,name_en,name_bn,father_name,mobile,member_no,farmer_code,status").is("deleted_at", null).order("name_en"),
-      (supabase.from as any)("lands_with_location").select("id,farmer_id,owner_type,land_size,field_type,mouza_name,mouza,dag_no"),
+      (supabase.from as any)("lands_with_location").select("id,farmer_id,owner_type,land_size,field_type,land_type_id,mouza_name,mouza,dag_no"),
     ]).then(([f, l]) => {
       setFarmers(f.data ?? []);
       setLands(l.data ?? []);
@@ -79,7 +81,7 @@ export default function CultivationHistoryReport() {
       }).filter(v => v !== null))) as number[];
       const avgRate = totalArea > 0 ? totalAmount / totalArea : 0;
       const mouzas = Array.from(new Set(fl.map((l) => l.mouza_name || l.mouza).filter(Boolean))).join(", ");
-      const particulars = Array.from(new Set(fl.map((l) => l.field_type).filter(Boolean))).join(", ");
+      const particulars = Array.from(new Set(fl.map((l) => landTypeLabel(landTypeRows, l.land_type_id, l.field_type) || l.field_type).filter(Boolean))).join(", ");
       return {
         id: f.id,
         member_no: f.member_no ?? f.farmer_code ?? "—",
@@ -95,7 +97,7 @@ export default function CultivationHistoryReport() {
         totalAmount,
       };
     }).filter((r) => r.landCount > 0);
-  }, [farmers, lands, rateMap]);
+  }, [farmers, lands, rateMap, landTypeRows]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

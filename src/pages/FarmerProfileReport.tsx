@@ -50,7 +50,7 @@ export default function FarmerProfileReport() {
         supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
         supabase
           .from("irrigation_invoices")
-          .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, is_borga, calculation_snapshot, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type, patwari_id, patwaris(name,name_bn))")
+          .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, is_borga, calculation_snapshot, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type, land_type_id, patwari_id, patwaris(name,name_bn))")
           .eq("farmer_id", id)
           .is("deleted_at", null)
           .order("generated_at", { ascending: false }),
@@ -77,7 +77,17 @@ export default function FarmerProfileReport() {
         }
       });
 
-      const fieldTypeLabel = (v: string) => {
+      // Catalogue land-type names take priority over the legacy enum so that
+      // custom types (পুকুর, সবজি ইত্যাদি) show their real name instead of "Other".
+      const { data: ltData } = await supabase
+        .from("land_types" as any)
+        .select("id,code,name,name_bn")
+        .is("deleted_at", null);
+      const ltRows = (ltData as any[]) ?? [];
+
+      const fieldTypeLabel = (v: string, landTypeId?: string | null) => {
+        const hit = landTypeId ? ltRows.find((r: any) => r.id === landTypeId) : undefined;
+        if (hit) return hit.name_bn || hit.name || hit.code;
         switch (v) {
           case "high_land": return tx("High Land", "উঁচু জমি(High Land)");
           case "medium_land": return tx("Medium Land", "মাঝারি জমি(Medium Land)");
@@ -109,7 +119,7 @@ export default function FarmerProfileReport() {
           owner_name_fid: ownerNameFid,
           patwari: pw ? safeText(pw.name_bn || pw.name) : "",
           land_size: billedArea ? billedArea.toFixed(6) : "",
-          field_type: fieldTypeLabel(row.lands?.field_type),
+          field_type: fieldTypeLabel(row.lands?.field_type, row.lands?.land_type_id),
           charge_rate: String(Math.round(Number(row.irrigation_amount || 0))),
           canal_charge: String(Math.round(Number(row.canal_amount || 0))),
           maintenance_charge: String(Math.round(Number(row.maintenance_amount || 0))),

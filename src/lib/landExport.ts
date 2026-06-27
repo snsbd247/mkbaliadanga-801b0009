@@ -17,6 +17,8 @@ export type LandExportRow = {
   land_size?: number | null;
   owner_type?: string | null;
   field_type?: string | null;
+  /** Resolved catalogue land-type name; preferred over the raw field_type enum. */
+  field_type_label?: string | null;
 };
 
 export type FarmerHeader = {
@@ -46,7 +48,7 @@ function rows(lands: LandExportRow[]): (string | number)[][] {
       Number(shatakToBigha(sh).toFixed(2)),
       Number(sh.toFixed(2)),
       l.owner_type ?? "-",
-      l.field_type ?? "-",
+      l.field_type_label ?? l.field_type ?? "-",
     ];
   });
 }
