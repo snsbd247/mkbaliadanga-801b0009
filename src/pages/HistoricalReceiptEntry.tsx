@@ -12,6 +12,7 @@ import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { LandTypeSelect, codeToFieldType, useLandTypes } from "@/components/locations/LandTypeSelect";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
+import { computeHistoricalAmounts } from "@/lib/historicalReceipt";
 import { History } from "lucide-react";
 
 type SeasonRow = { id: string; name: string | null; year: number | null; type: string | null };
