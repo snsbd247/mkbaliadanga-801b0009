@@ -156,7 +156,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     setLoading(true);
     let q = supabase
       .from("irrigation_invoices" as any)
-      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza), seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))")
+      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza,mouzas(name)), seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))")
       .is("deleted_at", null)
       .order("generated_at", { ascending: false })
       .limit(500);
@@ -175,10 +175,11 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   }
   useEffect(() => { load(); }, [seasonId, officeId, status]);
 
+  const mouzaName = (r: any) => (r?.lands?.mouza?.trim() || r?.lands?.mouzas?.name?.trim() || "");
   const mouzaOptions = useMemo(() => {
     const set = new Set<string>();
     for (const r of rows as any[]) {
-      const m = r.lands?.mouza?.trim();
+      const m = mouzaName(r);
       if (m) set.add(m);
     }
     return Array.from(set).sort();
@@ -186,7 +187,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
   const filtered = useMemo(() => {
     let base = rows as any[];
-    if (mouza !== "all") base = base.filter((r) => (r.lands?.mouza?.trim() ?? "") === mouza);
+    if (mouza !== "all") base = base.filter((r) => mouzaName(r) === mouza);
     const s = search.trim().toLowerCase();
     if (s) {
       base = base.filter((r: any) =>
@@ -196,14 +197,14 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         r.farmers?.farmer_code?.toLowerCase().includes(s) ||
         r.farmers?.mobile?.includes(s) ||
         matchesDagSearch(r.lands?.dag_no, s) ||
-        r.lands?.mouza?.toLowerCase().includes(s) ||
+        mouzaName(r).toLowerCase().includes(s) ||
         (r.irrigation_invoice_payments ?? []).some((p: any) =>
           p?.payments?.receipt_no?.toLowerCase?.().includes(s))
       );
     }
     if (mouzaSort !== "none") {
       base = [...base].sort((a, b) => {
-        const cmp = (a.lands?.mouza ?? "").localeCompare(b.lands?.mouza ?? "", "bn");
+        const cmp = mouzaName(a).localeCompare(mouzaName(b), "bn");
         return mouzaSort === "asc" ? cmp : -cmp;
       });
     }
@@ -309,7 +310,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         village: inv.farmers?.village ?? null,
       },
       land: {
-        mouza: inv.lands?.mouza,
+        mouza: mouzaName(inv),
         dag_no: inv.lands?.dag_no,
         // Use the land area frozen on the invoice at generation time, NOT the
         // farmer's current (possibly edited) land — past seasons must keep their
@@ -449,7 +450,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       .map((r) => [
         r.invoice_no ?? "—",
         r.farmers?.name_bn || r.farmers?.name_en || "—",
-        r.lands?.mouza ?? "—",
+        mouzaName(r) || "—",
         `${r.seasons?.name ?? r.seasons?.type ?? ""} ${r.seasons?.year ?? ""}`.trim(),
         money(r.payable_amount),
         money(r.paid_amount),
@@ -655,7 +656,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                     <div className="font-medium">{r.farmers?.name_bn ?? r.farmers?.name_en ?? "—"}</div>
                     <div className="text-xs text-muted-foreground">{r.farmers?.farmer_code} {r.is_borga && <span className="ml-1">🤝 {tx("Sharecropper", "বর্গা")}</span>}</div>
                   </TableCell>
-                  <TableCell className="text-xs">{r.lands?.mouza || "—"}</TableCell>
+                  <TableCell className="text-xs">{mouzaName(r) || "—"}</TableCell>
                   <TableCell className="text-xs">
                     Dag {formatDagNumbers(r.lands?.dag_no) || "—"}<br />
                     {formatLandSize(invoiceLandSize(r), "short")}
@@ -1008,7 +1009,7 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
         <div className="space-y-2 text-sm">
           <Row k={tx("Farmer", "কৃষক")} v={`${inv.farmers?.name_bn ?? inv.farmers?.name_en} (${inv.farmers?.farmer_code})`} />
           <Row k={tx("Type", "ধরন")} v={inv.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "নিজ মালিক")}`} />
-          <Row k={tx("Land", "জমি")} v={`${inv.lands?.mouza ?? ""} • Dag ${formatDagNumbers(inv.lands?.dag_no) || "—"} • ${formatLandSize(invoiceLandSize(inv))}`} />
+          <Row k={tx("Land", "জমি")} v={`${mouzaName(inv)} • Dag ${formatDagNumbers(inv.lands?.dag_no) || "—"} • ${formatLandSize(invoiceLandSize(inv))}`} />
           <Row k={tx("Land type", "জমির ধরন")} v={inv.land_type_name ?? "—"} />
           <Row k={tx("Season", "সিজন")} v={`${inv.seasons?.name ?? inv.seasons?.type} ${inv.seasons?.year}`} />
           <Row k={tx("Season rate / shotok", "সিজন রেট/শতক")} v={inv.season_rate != null ? money(inv.season_rate) : "—"} />
