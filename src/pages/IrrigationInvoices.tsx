@@ -438,6 +438,16 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             </div>
           )}
           <div>
+            <Label>{tx("Mouza", "মৌজা")}</Label>
+            <Select value={mouza} onValueChange={setMouza}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tx("All", "সব")}</SelectItem>
+                {mouzaOptions.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>{tx("Status", "স্ট্যাটাস")}</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger><SelectValue /></SelectTrigger>
