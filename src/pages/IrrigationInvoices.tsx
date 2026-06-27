@@ -187,7 +187,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
   const filtered = useMemo(() => {
     let base = rows as any[];
-    if (mouza !== "all") base = base.filter((r) => (r.lands?.mouza?.trim() ?? "") === mouza);
+    if (mouza !== "all") base = base.filter((r) => mouzaName(r) === mouza);
     const s = search.trim().toLowerCase();
     if (s) {
       base = base.filter((r: any) =>
@@ -197,14 +197,14 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         r.farmers?.farmer_code?.toLowerCase().includes(s) ||
         r.farmers?.mobile?.includes(s) ||
         matchesDagSearch(r.lands?.dag_no, s) ||
-        r.lands?.mouza?.toLowerCase().includes(s) ||
+        mouzaName(r).toLowerCase().includes(s) ||
         (r.irrigation_invoice_payments ?? []).some((p: any) =>
           p?.payments?.receipt_no?.toLowerCase?.().includes(s))
       );
     }
     if (mouzaSort !== "none") {
       base = [...base].sort((a, b) => {
-        const cmp = (a.lands?.mouza ?? "").localeCompare(b.lands?.mouza ?? "", "bn");
+        const cmp = mouzaName(a).localeCompare(mouzaName(b), "bn");
         return mouzaSort === "asc" ? cmp : -cmp;
       });
     }
@@ -450,7 +450,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       .map((r) => [
         r.invoice_no ?? "—",
         r.farmers?.name_bn || r.farmers?.name_en || "—",
-        r.lands?.mouza ?? "—",
+        mouzaName(r) || "—",
         `${r.seasons?.name ?? r.seasons?.type ?? ""} ${r.seasons?.year ?? ""}`.trim(),
         money(r.payable_amount),
         money(r.paid_amount),
@@ -656,7 +656,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                     <div className="font-medium">{r.farmers?.name_bn ?? r.farmers?.name_en ?? "—"}</div>
                     <div className="text-xs text-muted-foreground">{r.farmers?.farmer_code} {r.is_borga && <span className="ml-1">🤝 {tx("Sharecropper", "বর্গা")}</span>}</div>
                   </TableCell>
-                  <TableCell className="text-xs">{r.lands?.mouza || "—"}</TableCell>
+                  <TableCell className="text-xs">{mouzaName(r) || "—"}</TableCell>
                   <TableCell className="text-xs">
                     Dag {formatDagNumbers(r.lands?.dag_no) || "—"}<br />
                     {formatLandSize(invoiceLandSize(r), "short")}
