@@ -115,6 +115,7 @@ export default function FarmerDetail() {
   const [farmerOfficeId, setFarmerOfficeId] = useState<string | null>(null);
   const [landPayMap, setLandPayMap] = useState<Record<string, { lastDate: string | null; total: number }>>({});
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "due">("all");
+  const [landTypeFilter, setLandTypeFilter] = useState<string>("all");
   const [noteSearch, setNoteSearch] = useState("");
   const [hiddenInvoiceCount, setHiddenInvoiceCount] = useState<number>(0);
   const [backfilling, setBackfilling] = useState(false);
@@ -1346,6 +1347,15 @@ export default function FarmerDetail() {
                       placeholder={tx("Search by note…", "নোট দিয়ে খুঁজুন…")}
                       className="h-8 w-[180px] text-xs"
                     />
+                    <Select value={landTypeFilter} onValueChange={setLandTypeFilter}>
+                      <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder={tx("Land type", "জমির ধরন")} /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{tx("All land types", "সব জমির ধরন")}</SelectItem>
+                        {landTypeRows.map((lt) => (
+                          <SelectItem key={lt.id} value={lt.id}>{lt.name_bn || lt.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
                       <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -1398,6 +1408,7 @@ export default function FarmerDetail() {
                   };
                   const matchesFilter = (l: any) => {
                     if (!matchesNote(l)) return false;
+                    if (landTypeFilter !== "all" && (l.land_type_id ?? null) !== landTypeFilter) return false;
                     if (paymentFilter === "all") return true;
                     const s = landSeasonStatus(l.id).state;
                     if (paymentFilter === "paid") return s === "paid";
