@@ -61,7 +61,7 @@ const roundTk = (n: number) => Math.round(Number(n) || 0);
 
 export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFarmerId?: string; onPaid?: () => void }) {
   const { t, tx, lang } = useLang();
-  const { user, isAdmin, isSuper } = useAuth();
+  const { user, isAdmin, isSuper, roles } = useAuth();
   const [farmerId, setFarmerId] = useState(initialFarmerId ?? "");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
