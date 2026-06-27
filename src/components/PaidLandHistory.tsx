@@ -272,7 +272,7 @@ export function PaidLandHistory({ farmerId }: Props) {
           )}
           {filtered.length > 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-right font-semibold">{tx("Total", "মোট")}</TableCell>
+              <TableCell colSpan={11} className="text-right font-semibold">{tx("Total (excl. cancelled)", "মোট (বাতিল বাদে)")}</TableCell>
               <TableCell className="text-right font-semibold">{total.toFixed(2)}</TableCell>
               <TableCell />
             </TableRow>
