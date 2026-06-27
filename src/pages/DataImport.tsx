@@ -251,6 +251,8 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
     ["owner_type", "No", "owner | borgadar (default: owner)"],
     ["field_type", "No", "high_land | medium_land | low_land (default: medium_land)"],
     ["mouza", "No", "Free text mouza name."],
+    ["notes", "No", "হোল্ডিং এর বিবরন — receipt holding text (e.g. \"আমন হয় না। নিজ সেচে আবাদ হয়।\")."],
+    ["patwari_name", "No", "Patwari name (en/bn) or mobile. Must match an existing patwari (import patwaris first)."],
     [],
     ["Examples", "", ""],
     ["10001", "", "dag_no = 123  → single dag"],
