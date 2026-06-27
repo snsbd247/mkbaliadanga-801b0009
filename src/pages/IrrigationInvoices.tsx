@@ -591,6 +591,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                 </TableHead>
                 <TableHead>{tx("Invoice No", "ইনভয়েস নং")}</TableHead>
                 <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
+                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
                 <TableHead>{tx("Land", "জমি")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
