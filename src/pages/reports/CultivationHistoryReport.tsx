@@ -81,7 +81,7 @@ export default function CultivationHistoryReport() {
       }).filter(v => v !== null))) as number[];
       const avgRate = totalArea > 0 ? totalAmount / totalArea : 0;
       const mouzas = Array.from(new Set(fl.map((l) => l.mouza_name || l.mouza).filter(Boolean))).join(", ");
-      const particulars = Array.from(new Set(fl.map((l) => l.field_type).filter(Boolean))).join(", ");
+      const particulars = Array.from(new Set(fl.map((l) => landTypeLabel(landTypeRows, l.land_type_id, l.field_type) || l.field_type).filter(Boolean))).join(", ");
       return {
         id: f.id,
         member_no: f.member_no ?? f.farmer_code ?? "—",
