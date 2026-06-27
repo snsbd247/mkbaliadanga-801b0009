@@ -421,7 +421,10 @@ export default function DataImport() {
       return;
     }
     setWorking(true);
+    if (!dryRun) setSummary(null);
     const next = [...rows];
+    // Track real inserts so we can roll everything back if any row fails (atomic mode).
+    const insertedRecords: Array<{ table: string; id: string }> = [];
 
     try {
       // Pre-resolve farmer mapping where applicable
