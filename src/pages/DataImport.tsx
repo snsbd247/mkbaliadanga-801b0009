@@ -19,7 +19,8 @@ import { toast } from "sonner";
 import { downloadCsvTemplate } from "@/lib/importTemplates";
 import { validateDagNumbers, formatDagNumbers } from "@/lib/dagNumbers";
 import { SHATAK_PER_KATHA, SHATAK_PER_BIGHA } from "@/lib/landUnits";
-import { previewBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
+import { previewBnReceiptPdf, downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
+import { buildSampleReceipt, findMissingSampleFields, SAMPLE_RECEIPT_TYPE_LABELS, type SampleReceiptType } from "@/lib/sampleReceipts";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
@@ -391,6 +392,7 @@ export default function DataImport() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [upsertMode, setUpsertMode] = useState(false);
   const [atomicMode, setAtomicMode] = useState(true);
+  const [sampleType, setSampleType] = useState<SampleReceiptType>("irrigation");
   const [ledgerVerify, setLedgerVerify] = useState<Array<{ idx: number; record_id: string; ledger_ids: string[]; ok: boolean }>>([]);
   const [recentImports, setRecentImports] = useState<any[]>([]);
   const [summary, setSummary] = useState<{
@@ -1341,43 +1343,18 @@ export default function DataImport() {
 
   const tpl = TEMPLATES[mod];
 
-  async function previewSampleReceipt() {
-    const sample: BnReceiptData = {
-      kind: "irrigation",
-      receipt_no: "00123",
-      receipt_no_display: "১২৩",
-      date: new Date(),
-      bill_info: "সেচ চার্জ",
-      collected_amount: 1500,
-      farmer: {
-        name: "মোঃ রহিম উদ্দিন",
-        member_no: "১৯০০",
-        father_or_husband: "মৃত করিম মিয়া",
-        village: "বালিয়াডাঙ্গা",
-        mobile: "০১৭০০০০০০০০",
-        mouza: "বালিয়াডাঙ্গা",
-        field_type_bn: "আমন২৬/উচু",
-        land_size: 0.33,
-        dag_no: "১২৩, ৪৫৬",
-      },
-      rate: 3939,
-      rate_per_bigha: 100,
-      charge_amount: 1300,
-      current_season_charge: 1300,
-      previous_due: 200,
-      current_penalty: 0,
-      due_penalty: 0,
-      penalty_amount: 0,
-      total_outstanding: 200,
-      village_union: "বালিয়াডাঙ্গা ইউনিয়ন",
-      member_summary: "১৯০০ / মোঃ আলম ইসলাম (২১০০)",
-      land_owner_label: "মোঃ রহিম উদ্দিন / মোঃ আলম ইসলাম",
-      holding_description: "আমন হয় না। নিজ সেচে আবাদ হয়।",
-      patwari_name: "মোঃ আলম ইসলাম",
-      patwari_mobile: "০১৭০০০০০০০০",
-      remark: "নমুনা রশিদ",
-    };
+  async function previewSampleReceipt(action: "preview" | "download" = "preview") {
+    const sample = buildSampleReceipt(sampleType);
+    const missing = findMissingSampleFields(sampleType, sample);
+    if (missing.length > 0) {
+      toast.warning(`⚠ কিছু ফিল্ড রশিদে দেখা যাবে না: ${missing.join(", ")}`, { duration: 6000 });
+    }
     try {
+      if (action === "download") {
+        await downloadBnReceiptPdf(sample, "both");
+        toast.success("A5 রশিদ PDF ডাউনলোড হয়েছে");
+        return;
+      }
       const uri = await previewBnReceiptPdf(sample, "both");
       const w = window.open();
       if (w) w.document.write(`<iframe src="${uri}" style="border:0;width:100%;height:100%;" allowfullscreen></iframe>`);
@@ -1434,8 +1411,19 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadCsvTemplate(mod as any)}>
               <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
             </Button>
-            <Button variant="outline" onClick={previewSampleReceipt}>
+            <Select value={sampleType} onValueChange={(v) => setSampleType(v as SampleReceiptType)}>
+              <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(SAMPLE_RECEIPT_TYPE_LABELS) as SampleReceiptType[]).map((t) => (
+                  <SelectItem key={t} value={t}>{SAMPLE_RECEIPT_TYPE_LABELS[t]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => previewSampleReceipt("preview")}>
               <FileSpreadsheet className="h-4 w-4 mr-1" /> নমুনা রশিদ প্রিভিউ
+            </Button>
+            <Button variant="outline" onClick={() => previewSampleReceipt("download")}>
+              <Download className="h-4 w-4 mr-1" /> PDF ডাউনলোড
             </Button>
             <input
               ref={fileRef}
