@@ -487,6 +487,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
             <Button size="sm" variant="outline" onClick={() => exportInvoicesXLSX(filtered, "irrigation-invoices.xlsx", lang)} disabled={!filtered.length}>
               <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
             </Button>
+            <Button size="sm" variant="outline" onClick={exportFilteredPdf} disabled={!filtered.length}>
+              <Printer className="h-4 w-4 mr-1" /> PDF
+            </Button>
           </div>
         </div>
 
