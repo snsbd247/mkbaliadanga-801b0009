@@ -70,7 +70,7 @@ export default function HistoricalReceiptEntry() {
       const ltName = landTypes.find((l) => l.id === landTypeId)?.name_bn ?? landTypes.find((l) => l.id === landTypeId)?.name ?? null;
       const { data, error } = await supabase.functions.invoke("historical-receipt-entry", {
         body: {
-          office_id: farmer.office_id ?? null,
+          office_id: null,
           season_id: seasonId,
           farmer_id: farmer.id,
           owner_farmer_id: ownerId,
