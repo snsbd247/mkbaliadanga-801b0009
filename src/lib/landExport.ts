@@ -37,7 +37,7 @@ function buildLocation(r: LandExportRow): string {
 
 const headers = ["#", "Location", "Mouza", "Dag No", "Bigha", "Shatak", "Owner Type", "Field Type"];
 
-function rows(lands: LandExportRow[]): (string | number)[][] {
+export function buildLandExportRows(lands: LandExportRow[]): (string | number)[][] {
   return lands.map((l, i) => {
     const sh = Number(l.land_size ?? 0);
     return [
