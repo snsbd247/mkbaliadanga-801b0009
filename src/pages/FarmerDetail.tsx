@@ -28,7 +28,7 @@ import { validateDagNumbers, findDuplicateDagInMouza, normalizeDagInput } from "
 import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { SavingsStatement } from "@/components/SavingsStatement";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
-import { downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { calcInvoice, getChargeSettings } from "@/lib/irrigationInvoice";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
@@ -523,20 +523,83 @@ export default function FarmerDetail() {
     };
   }
 
-  function reprintReceipt(p: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
+  async function getFarmerUnionName(): Promise<string | null> {
+    if (!farmer?.union_id) return null;
+    const { data } = await supabase.from("unions").select("name_bn,name").eq("id", farmer.union_id).maybeSingle();
+    return data?.name_bn || data?.name || null;
+  }
+
+  async function reprintReceipt(p: any, copy: import("@/lib/bnReceipts").ReceiptCopy = "both") {
     if (!farmer) return;
     const k = (p.kind as string) || "savings";
     const kind: BnReceiptData["kind"] = k === "loan" ? "loan" : k === "irrigation" ? "irrigation" : "savings";
     const prefix = kind === "loan" ? "LOAN" : kind === "irrigation" ? "IRR" : "SAV";
     const description = p.note
       ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ" : kind === "savings" ? "সঞ্চয় জমা গ্রহণ" : "সেচ চার্জ গ্রহণ");
+    let irrigationExtras: Partial<BnReceiptData> & { farmer?: Partial<BnReceiptData["farmer"]> } = {};
+    if (kind === "irrigation") {
+      const allocIds = (p.payment_allocations ?? [])
+        .filter((a: any) => a.kind === "irrigation" && a.reference_id)
+        .map((a: any) => a.reference_id);
+      let invoiceRows: any[] = [];
+      if (allocIds.length) {
+        const { data } = await supabase
+          .from("irrigation_invoices")
+          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
+          .in("id", allocIds);
+        invoiceRows = data ?? [];
+      }
+      const primary = invoiceRows[0];
+      const land = primary?.lands;
+      const ownerFarmer = land?.farmers;
+      const isBorga = invoiceRows.some((inv) => inv?.is_borga);
+      const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
+      const ownerName = ownerFarmer ? (ownerFarmer.name_bn || ownerFarmer.name_en) : null;
+      const dagNo = Array.from(new Set(invoiceRows
+        .map((inv) => (inv?.lands?.dag_no ?? "").trim())
+        .filter(Boolean)
+        .flatMap((s) => s.split(/[,;\s]+/))
+        .filter(Boolean))).join(", ") || null;
+      const landSize = invoiceRows.reduce((s, inv) => s + Number(inv?.lands?.land_size || 0), 0) || null;
+      const billInfo = Array.from(new Set(invoiceRows
+        .map((inv) => inv?.seasons?.name || inv?.irrigation_category_name || inv?.land_type_name || null)
+        .filter(Boolean))).join("/") || "সেচ চার্জ";
+      const fieldTypeBn = Array.from(new Set(invoiceRows
+        .map((inv) => landTypeLabel(landTypeRows, inv?.lands?.land_type_id, inv?.lands?.field_type) || inv?.land_type_name || inv?.irrigation_category_name || null)
+        .filter(Boolean))).join("/") || null;
+      const patwari = invoiceRows.find((inv) => inv?.lands?.patwaris)?.lands?.patwaris ?? null;
+      irrigationExtras = {
+        bill_info: billInfo,
+        village_union: await getFarmerUnionName(),
+        member_summary: `${farmer?.member_no ?? farmer?.farmer_code ?? "N/A"}/${(isBorga && ownerMember) ? ownerMember : "N/A"}`,
+        owner_self: !isBorga,
+        land_owner_label: isBorga && ownerName ? `${ownerName}${ownerMember ? "-" + ownerMember : ""}` : "নিজ",
+        rate: normalizeIrrigationRatePerAcre(primary?.season_rate, primary?.irrigation_amount, land?.land_size),
+        current_season_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.irrigation_amount || 0), 0),
+        current_penalty: invoiceRows.reduce((s, inv) => s + Number(inv?.delay_fee || 0), 0),
+        maintenance_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.maintenance_amount || 0), 0),
+        canal_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.canal_amount || 0), 0),
+        total_outstanding: invoiceRows.reduce((s, inv) => s + Number(inv?.due_amount || 0), 0),
+        holding_description: [...new Set(invoiceRows.map((inv) => inv?.lands?.notes?.trim()).filter(Boolean))].join(" / ") || null,
+        patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
+        patwari_mobile: patwari?.mobile ?? null,
+        farmer: {
+          mouza: invoiceRows.find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null,
+          field_type_bn: fieldTypeBn,
+          land_size: landSize,
+          dag_no: dagNo,
+          owner_type_bn: isBorga ? "বর্গাদার" : "মালিক",
+        },
+      };
+    }
     downloadBnReceiptPdf({
       kind,
       ...commonReceipt(),
       receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
       date: p.created_at,
-      bill_info: kind === "irrigation" ? "সেচ চার্জ" : undefined,
-      farmer: farmerForReceipt(),
+      bill_info: kind === "irrigation" ? (irrigationExtras.bill_info ?? "সেচ চার্জ") : undefined,
+      farmer: farmerForReceipt(irrigationExtras.farmer),
+      ...(kind === "irrigation" ? irrigationExtras : {}),
       collected_amount: Number(p.amount),
       description,
       verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
@@ -684,17 +747,22 @@ export default function FarmerDetail() {
         dag_no: land?.dag_no ?? i.lands?.dag_no ?? null,
         owner_type_bn: land?.owner_type === "borgadar" ? "বর্গাদার" : land?.owner_type === "owner" ? "মালিক" : null,
       }),
-      rate: baseCharge + extras,
+      village_union: await getFarmerUnionName(),
+      member_summary: `${farmer?.member_no ?? farmer?.farmer_code ?? "N/A"}/${land?.owner_type === "borgadar" && land?.owner_farmer_id ? (ownerNames[land.owner_farmer_id] ?? "N/A") : "N/A"}`,
+      owner_self: landOwnerLabel === tx("Self", "নিজ"),
+      rate: normalizeIrrigationRatePerAcre(null, baseCharge, land?.land_size),
       charge_amount: Number(i.total),
       previous_due: Number(i.previous_due_brought ?? 0),
       land_owner_label: landOwnerLabel,
       current_season_charge: baseCharge,
+      current_penalty: Number(i.penalty_amount ?? 0),
       penalty_amount: Number(i.penalty_amount ?? 0),
       maintenance_charge: Number(i.maintenance_charge ?? 0),
       canal_charge: Number(i.canal_charge ?? 0),
       total_outstanding: totalOutstanding,
       collected_from_outstanding: collectedFromOutstanding,
       remark: i.note ?? null,
+      holding_description: (land as any)?.notes ?? null,
       patwari_name: pw ? (pw.name_bn || pw.name) : null,
       patwari_mobile: pw?.mobile ?? null,
       collected_amount: Number(i.paid_amount || i.total),
