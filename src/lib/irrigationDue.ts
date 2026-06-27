@@ -38,7 +38,7 @@ export async function getIrrigationDueForFarmer(farmerId: string): Promise<Irrig
     .eq("farmer_id", farmerId)
     .is("deleted_at", null)
     .neq("invoice_status", "cancelled")
-    .neq("invoice_status", "carried_forward");
+    .neq("invoice_status", "carried_forward" as any);
   if (error) throw error;
   return aggregate(data ?? []);
 }
