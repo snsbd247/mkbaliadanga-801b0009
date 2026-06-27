@@ -130,6 +130,8 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [mouza, setMouza] = useState(persisted.mouza ?? "all");
   const [status, setStatus] = useState<string>(persisted.status ?? "all");
   const [search, setSearch] = useState(persisted.search ?? "");
+  const [mouzaSort, setMouzaSort] = useState<"none" | "asc" | "desc">("none");
+  const [mouzaOpen, setMouzaOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("irr_invoice_filters", JSON.stringify({ seasonId, officeId, mouza, status, search }));
