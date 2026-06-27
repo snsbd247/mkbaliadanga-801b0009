@@ -143,13 +143,18 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     setLoading(true);
     let q = supabase
       .from("irrigation_invoices" as any)
-      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza), seasons(name,year,type)")
+      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza), seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))")
       .is("deleted_at", null)
       .order("generated_at", { ascending: false })
       .limit(500);
     if (seasonId !== "all") q = q.eq("season_id", seasonId);
     if (officeId !== "all") q = q.eq("office_id", officeId);
-    if (status !== "all") q = q.eq("invoice_status", status);
+    if (status === "due") {
+      // Unified outstanding view: any non-cancelled invoice with money still owed.
+      q = q.gt("due_amount", 0).neq("invoice_status", "cancelled");
+    } else if (status !== "all") {
+      q = q.eq("invoice_status", status);
+    }
     const { data, error } = await q;
     setLoading(false);
     if (error) { toast.error(error.message); return; }
