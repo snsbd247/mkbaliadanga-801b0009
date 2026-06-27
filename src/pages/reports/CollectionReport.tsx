@@ -292,17 +292,39 @@ export default function CollectionReport() {
   }
 
   // ---- Aggregations ----
-  const total = useMemo(
-    () => rows.reduce((s, r) => s + r.amount, 0),
-    [rows],
+  // Collection-kind filter merged with the report. Voided/cancelled rows are
+  // kept visible for transparency but excluded from every total.
+  const filtered = useMemo(
+    () => rows.filter((r) => kind === ALL || r.source === kind),
+    [rows, kind],
   );
+
+  const liveRows = useMemo(() => filtered.filter((r) => !r.voided), [filtered]);
+
+  const total = useMemo(
+    () => liveRows.reduce((s, r) => s + r.amount, 0),
+    [liveRows],
+  );
+
+  // Footer grand totals per breakdown column (cancelled excluded).
+  const columnTotals = useMemo(() => {
+    const keys = ["sech", "jorimana", "hal", "bokeya", "hawlat", "anudan", "vangari", "pukur", "bighat", "bhortifi", "rin", "soncoy", "share", "lav", "bibidh"] as const;
+    const acc: Record<string, number> = {};
+    for (const k of keys) acc[k] = 0;
+    let amount = 0;
+    for (const r of liveRows) {
+      for (const k of keys) acc[k] += Number((r as any)[k] || 0);
+      amount += r.amount;
+    }
+    return { ...acc, amount } as Record<string, number>;
+  }, [liveRows]);
 
   const byUser = useMemo(() => {
     const m = new Map<
       string,
       { user_id: string | null; name: string; total: number; loan: number; savings: number; irrigation: number; count: number }
     >();
-    for (const r of rows) {
+    for (const r of liveRows) {
       const key = r.user_id ?? "system";
       const cur =
         m.get(key) ??
@@ -313,7 +335,7 @@ export default function CollectionReport() {
       m.set(key, cur);
     }
     return Array.from(m.values()).sort((a, b) => b.total - a.total);
-  }, [rows]);
+  }, [liveRows]);
 
   const filterSuffix = () => {
     const parts: string[] = [];
