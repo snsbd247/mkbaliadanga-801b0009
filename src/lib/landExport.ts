@@ -48,7 +48,7 @@ function rows(lands: LandExportRow[]): (string | number)[][] {
       Number(shatakToBigha(sh).toFixed(2)),
       Number(sh.toFixed(2)),
       l.owner_type ?? "-",
-      l.field_type ?? "-",
+      l.field_type_label ?? l.field_type ?? "-",
     ];
   });
 }
