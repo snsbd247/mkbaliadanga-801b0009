@@ -1294,6 +1294,7 @@ export default function DataImport() {
       toast.error(`Import failed: ${e.message}`);
     } finally {
       setWorking(false);
+      setTimeout(() => setProgress(null), 1500);
     }
   }
 
