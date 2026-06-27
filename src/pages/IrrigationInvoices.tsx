@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
@@ -143,13 +143,18 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     setLoading(true);
     let q = supabase
       .from("irrigation_invoices" as any)
-      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza), seasons(name,year,type)")
+      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza), seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))")
       .is("deleted_at", null)
       .order("generated_at", { ascending: false })
       .limit(500);
     if (seasonId !== "all") q = q.eq("season_id", seasonId);
     if (officeId !== "all") q = q.eq("office_id", officeId);
-    if (status !== "all") q = q.eq("invoice_status", status);
+    if (status === "due") {
+      // Unified outstanding view: any non-cancelled invoice with money still owed.
+      q = q.gt("due_amount", 0).neq("invoice_status", "cancelled");
+    } else if (status !== "all") {
+      q = q.eq("invoice_status", status);
+    }
     const { data, error } = await q;
     setLoading(false);
     if (error) { toast.error(error.message); return; }
@@ -167,9 +172,24 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       r.farmers?.farmer_code?.toLowerCase().includes(s) ||
       r.farmers?.mobile?.includes(s) ||
       matchesDagSearch(r.lands?.dag_no, s) ||
-      r.lands?.mouza?.toLowerCase().includes(s)
+      r.lands?.mouza?.toLowerCase().includes(s) ||
+      (r.irrigation_invoice_payments ?? []).some((p: any) =>
+        p?.payments?.receipt_no?.toLowerCase?.().includes(s))
     );
   }, [rows, search]);
+
+  /** Grand totals for the currently-filtered invoices (footer summary). */
+  const grandTotals = useMemo(() => {
+    return (filtered as any[]).reduce(
+      (acc, r) => {
+        acc.payable += Number(r.payable_amount) || 0;
+        acc.paid += Number(r.paid_amount) || 0;
+        acc.due += Number(r.due_amount) || 0;
+        return acc;
+      },
+      { payable: 0, paid: 0, due: 0 },
+    );
+  }, [filtered]);
 
   /** Farmer-wise aggregate of the currently-loaded invoices (payable/paid/due). */
   const farmerSummary = useMemo(() => {
@@ -406,6 +426,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{tx("All", "সব")}</SelectItem>
+                <SelectItem value="due">{tx("Due (outstanding)", "বকেয়া (সব)")}</SelectItem>
                 <SelectItem value="generated">{tx("Issued", "ইস্যু")}</SelectItem>
                 <SelectItem value="partial_paid">{tx("Partial", "আংশিক")}</SelectItem>
                 <SelectItem value="paid">{tx("Paid", "পরিশোধিত")}</SelectItem>
@@ -416,7 +437,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           </div>
           <div className="lg:col-span-2">
             <Label>{tx("Search", "খুঁজুন")}</Label>
-            <Input placeholder={tx("Invoice no / farmer / code / mobile / dag / mouza", "ইনভয়েস নং / কৃষক / কোড / মোবাইল / দাগ / মৌজা")} value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input placeholder={tx("Invoice / receipt no / farmer / code / mobile / dag / mouza", "ইনভয়েস / রশিদ নং / কৃষক / কোড / মোবাইল / দাগ / মৌজা")} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -590,6 +611,19 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                 <TableRow><TableCell colSpan={11} className="text-center py-6 text-muted-foreground">{tx("No invoices", "কোন ইনভয়েস নেই")}</TableCell></TableRow>
               )}
             </TableBody>
+            {filtered.length > 0 && (
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={5} className="text-right font-semibold">
+                    {tx("Grand total", "সর্বমোট")} ({filtered.length})
+                  </TableCell>
+                  <TableCell className="text-right font-bold">{money(grandTotals.payable)}</TableCell>
+                  <TableCell className="text-right font-bold text-success">{money(grandTotals.paid)}</TableCell>
+                  <TableCell className="text-right font-bold text-destructive">{money(grandTotals.due)}</TableCell>
+                  <TableCell colSpan={3} />
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </div>
         <InvoicePreviewDialog
