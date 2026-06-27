@@ -431,7 +431,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // 5. মৌজা
     rows.push([mouzaLabel, d.farmer.mouza || "—"]);
     // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট × ৩৩/১০০)
-    const ratePerAcre = normalizeIrrigationRatePerAcre(d.rate, d.current_season_charge, d.farmer.land_size);
+    const ratePerAcre = d.rate != null
+      ? normalizeIrrigationRatePerAcre(d.rate, null, null)
+      : normalizeIrrigationRatePerAcre(null, d.current_season_charge, d.farmer.land_size);
     const ratePerBigha = d.rate_per_bigha != null
       ? Number(d.rate_per_bigha)
       : ratePerBighaFromAcre(ratePerAcre);
@@ -564,9 +566,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           : v;
       return `
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:42%;font-size:20px;line-height:1.24;white-space:nowrap;overflow:hidden;text-overflow:clip;">${label}</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:20px;line-height:1.24;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:20px;line-height:1.24;font-weight:600;${cellWrap}">${value}</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;${cellWrap}">${value}</td>
         </tr>`;
     }).join("");
 
