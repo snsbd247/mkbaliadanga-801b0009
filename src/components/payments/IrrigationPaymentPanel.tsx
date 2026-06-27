@@ -842,6 +842,64 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           )}
         </Card>
       )}
+
+      {isSuper && (
+        <Card className="p-4 space-y-2">
+          <div className="text-sm font-medium">{tx("Partial payment permission (Super Admin)", "আংশিক পেমেন্ট অনুমতি (সুপার অ্যাডমিন)")}</div>
+          <p className="text-xs text-muted-foreground">{tx("Select which roles may receive partial payments. All other roles must fully clear dues.", "কোন রোলগুলো আংশিক পেমেন্ট নিতে পারবে তা বাছাই করুন। বাকি সব রোলকে সম্পূর্ণ বকেয়া পরিশোধ করতে হবে।")}</p>
+          <div className="flex flex-wrap gap-4 pt-1">
+            {(["super_admin", "admin", "committee", "staff"] as const).map(r => (
+              <Label key={r} className="flex items-center gap-2 cursor-pointer text-sm">
+                <Checkbox
+                  checked={allowedRoles.includes(r)}
+                  disabled={r === "super_admin" || savingSettings}
+                  onCheckedChange={(c) => toggleAllowedRole(r, Boolean(c))}
+                />
+                <span>{r}</span>
+              </Label>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Dialog open={dueDialogOpen} onOpenChange={setDueDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              {tx("Dues not fully cleared", "বকেয়া সম্পূর্ণ পরিশোধ হয়নি")}
+            </DialogTitle>
+            <DialogDescription>
+              {tx("A receipt cannot be generated until all of the following dues are fully paid.", "নিচের সকল বকেয়া সম্পূর্ণ পরিশোধ না হওয়া পর্যন্ত রশিদ জেনারেট করা যাবে না।")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-72 overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
+                  <TableHead className="text-right">{tx("Unpaid", "বকেয়া")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dueDialogRows.map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{r.label}</TableCell>
+                    <TableCell className="text-right font-mono">{money(r.missing)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-between border-t pt-2 text-sm">
+            <span className="text-muted-foreground">{tx("Total unpaid", "মোট বকেয়া")}</span>
+            <span className="font-mono font-bold">{money(dueDialogRows.reduce((s, r) => s + r.missing, 0))}</span>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setDueDialogOpen(false)}>{tx("OK, fix it", "ঠিক আছে, সংশোধন করি")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
