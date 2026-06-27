@@ -178,17 +178,21 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     );
   }, [rows, search]);
 
-  /** Grand totals for the currently-filtered invoices (footer summary). */
+  /** Grand totals for the currently-filtered invoices (footer summary).
+   *  carried_forward invoices are excluded — their balance has already been
+   *  rolled into a target invoice, so counting them would double the totals. */
   const grandTotals = useMemo(() => {
-    return (filtered as any[]).reduce(
-      (acc, r) => {
-        acc.payable += Number(r.payable_amount) || 0;
-        acc.paid += Number(r.paid_amount) || 0;
-        acc.due += Number(r.due_amount) || 0;
-        return acc;
-      },
-      { payable: 0, paid: 0, due: 0 },
-    );
+    return (filtered as any[])
+      .filter((r) => r.invoice_status !== "carried_forward")
+      .reduce(
+        (acc, r) => {
+          acc.payable += Number(r.payable_amount) || 0;
+          acc.paid += Number(r.paid_amount) || 0;
+          acc.due += Number(r.due_amount) || 0;
+          return acc;
+        },
+        { payable: 0, paid: 0, due: 0 },
+      );
   }, [filtered]);
 
   /** Farmer-wise aggregate of the currently-loaded invoices (payable/paid/due). */
@@ -197,6 +201,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     for (const r of filtered as any[]) {
       const id = r.farmer_id;
       if (!id) continue;
+      if (r.invoice_status === "carried_forward") continue;
       const cur = map.get(id) ?? {
         id,
         name: r.farmers?.name_bn || r.farmers?.name_en || "—",
