@@ -60,6 +60,7 @@ export default function CollectionReport() {
   const [to, setTo] = useState("");
   const [farmerId, setFarmerId] = useState(ALL);
   const [userId, setUserId] = useState<string>(ALL);
+  const [kind, setKind] = useState<string>(ALL);
   const [onlyMine, setOnlyMine] = useState<boolean>(!isAdmin);
 
   const [farmers, setFarmers] = useState<any[]>([]);
@@ -291,17 +292,39 @@ export default function CollectionReport() {
   }
 
   // ---- Aggregations ----
-  const total = useMemo(
-    () => rows.reduce((s, r) => s + r.amount, 0),
-    [rows],
+  // Collection-kind filter merged with the report. Voided/cancelled rows are
+  // kept visible for transparency but excluded from every total.
+  const filtered = useMemo(
+    () => rows.filter((r) => kind === ALL || r.source === kind),
+    [rows, kind],
   );
+
+  const liveRows = useMemo(() => filtered.filter((r) => !r.voided), [filtered]);
+
+  const total = useMemo(
+    () => liveRows.reduce((s, r) => s + r.amount, 0),
+    [liveRows],
+  );
+
+  // Footer grand totals per breakdown column (cancelled excluded).
+  const columnTotals = useMemo(() => {
+    const keys = ["sech", "jorimana", "hal", "bokeya", "hawlat", "anudan", "vangari", "pukur", "bighat", "bhortifi", "rin", "soncoy", "share", "lav", "bibidh"] as const;
+    const acc: Record<string, number> = {};
+    for (const k of keys) acc[k] = 0;
+    let amount = 0;
+    for (const r of liveRows) {
+      for (const k of keys) acc[k] += Number((r as any)[k] || 0);
+      amount += r.amount;
+    }
+    return { ...acc, amount } as Record<string, number>;
+  }, [liveRows]);
 
   const byUser = useMemo(() => {
     const m = new Map<
       string,
       { user_id: string | null; name: string; total: number; loan: number; savings: number; irrigation: number; count: number }
     >();
-    for (const r of rows) {
+    for (const r of liveRows) {
       const key = r.user_id ?? "system";
       const cur =
         m.get(key) ??
@@ -312,12 +335,13 @@ export default function CollectionReport() {
       m.set(key, cur);
     }
     return Array.from(m.values()).sort((a, b) => b.total - a.total);
-  }, [rows]);
+  }, [liveRows]);
 
   const filterSuffix = () => {
     const parts: string[] = [];
     if (from || to) parts.push(`${from || "…"}→${to || "…"}`);
     if (farmerId !== ALL) parts.push(farmers.find((f) => f.id === farmerId)?.name_en ?? "");
+    if (kind !== ALL) parts.push(sourceLabel(kind as CollectionRow["source"]));
     if (effectiveUserId) parts.push(nameForUser(effectiveUserId));
     return parts.length ? ` (${parts.join(" · ")})` : "";
   };
@@ -333,7 +357,19 @@ export default function CollectionReport() {
       />
 
       <Card className="p-4 mb-4">
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-6">
+          <div>
+            <Label>আদায়ের ধরন</Label>
+            <Select value={kind} onValueChange={setKind}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("all")}</SelectItem>
+                <SelectItem value="irrigation">{t("irrigationLabel")}</SelectItem>
+                <SelectItem value="loan">{t("loanColLabel")}</SelectItem>
+                <SelectItem value="savings">{t("savingsLabel")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label>{t("from")}</Label>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -395,7 +431,7 @@ export default function CollectionReport() {
           </div>
           <div>
             <span className="text-muted-foreground">{t("entries")}:</span>{" "}
-            <span className="font-semibold">{rows.length}</span>
+            <span className="font-semibold">{filtered.length}</span>
           </div>
           <div>
             <span className="text-muted-foreground">{t("staffLabel")}:</span>{" "}
@@ -417,7 +453,7 @@ export default function CollectionReport() {
               exportTablePDF(
                 `Collection Report${filterSuffix()}`,
                 ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Vangari", "Pukur", "Bighat", "Bhorti Fee", "Loan", "Savings", "Share", "Profit", "Misc", "Total", "User"],
-                rows.map((r) => [
+                filtered.map((r) => [
                   fmtDate(r.date), `${r.receipt_no ?? "—"}${r.voided ? " (বাতিল)" : ""}`, `${r.farmer_code} — ${r.farmer_name}`,
                   r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.share, r.lav, r.bibidh, r.voided ? "বাতিল" : r.amount, r.user_name,
                 ]),
@@ -427,7 +463,7 @@ export default function CollectionReport() {
               exportExcel(
                 "collection-report",
                 "Collections",
-                rows.map((r) => ({
+                filtered.map((r) => ({
                   Date: r.date,
                   "Receipt #": `${r.receipt_no ?? ""}${r.voided ? " (বাতিল)" : ""}`,
                   "Farmer ID": r.farmer_code,
@@ -467,7 +503,7 @@ export default function CollectionReport() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => (
+                {filtered.map((r) => (
                   <TableRow key={`${r.source}-${r.ref_id}`} className={r.voided ? "opacity-70" : undefined}>
                     <TableCell>{fmtDate(r.date)}</TableCell>
                     <TableCell className="font-mono text-xs">
@@ -494,11 +530,33 @@ export default function CollectionReport() {
                     <TableCell className="text-xs">{r.user_name}</TableCell>
                   </TableRow>
                 ))}
-                {rows.length === 0 && !loading && (
+                {filtered.length === 0 && !loading && (
                   <TableRow>
                     <TableCell colSpan={20} className="text-center text-muted-foreground py-6">
                       {t("noCollectionsFiltered")}
                     </TableCell>
+                  </TableRow>
+                )}
+                {liveRows.length > 0 && (
+                  <TableRow className="bg-muted/50 font-semibold border-t-2">
+                    <TableCell colSpan={3} className="text-right">{t("total") || "মোট"} (বাতিল বাদে)</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.sech)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.jorimana)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.hal)}</TableCell>
+                    <TableCell className="text-right text-amber-600">{money(columnTotals.bokeya)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.hawlat)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.anudan)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.vangari)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.pukur)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.bighat)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.bhortifi)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.rin)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.soncoy)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.share)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.lav)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.bibidh)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.amount)}</TableCell>
+                    <TableCell />
                   </TableRow>
                 )}
               </TableBody>

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { FileText, FileSpreadsheet, Download, Eye, Search } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
@@ -27,12 +28,17 @@ type PaidRow = {
   dag_no: string;
   mouza: string;
   land_size: number | null;
+  land_type: string;
+  acre_rate: number | null;
+  bigha_rate: number | null;
+  due: number;
   irrigation: number;
   maintenance: number;
   canal: number;
   delay_fee: number;
   current_collected: number;
   previous_collected: number;
+  cancelled: boolean;
 };
 
 const money = (v: number) => Number(v || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 });
@@ -61,29 +67,37 @@ export function PaidLandHistory({ farmerId }: Props) {
         .from("irrigation_invoice_payments")
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
-          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, lands(dag_no, mouza, land_size), seasons(name,year,type)), " +
-          "payment:payments(receipt_no, created_at)"
+          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, land_type_name, due_amount, lands(dag_no, mouza, land_size), seasons(name,year,type)), " +
+          "payment:payments(receipt_no, created_at, status, voided_at)"
         )
         .eq("invoice.farmer_id", farmerId)
         .order("created_at", { ascending: false }),
       supabase.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,mobile,village,office_id").eq("id", farmerId).maybeSingle(),
     ]);
-    const list: PaidRow[] = (data ?? []).map((r: any) => ({
-      season: r.invoice?.seasons ? `${r.invoice.seasons.name ?? r.invoice.seasons.type ?? ""} ${r.invoice.seasons.year ?? ""}`.trim() : "—",
-      invoice_no: r.invoice?.invoice_no ?? "—",
-      receipt_no: r.payment?.receipt_no ?? "—",
-      paid_on: r.payment?.created_at ?? r.created_at ?? null,
-      amount: Number(r.collected_amount || 0),
-      dag_no: r.invoice?.lands?.dag_no ?? "—",
-      mouza: r.invoice?.lands?.mouza ?? "—",
-      land_size: r.invoice?.lands?.land_size != null ? Number(r.invoice.lands.land_size) : null,
-      irrigation: Number(r.irrigation_collected || 0),
-      maintenance: Number(r.maintenance_collected || 0),
-      canal: Number(r.canal_collected || 0),
-      delay_fee: Number(r.delay_fee_collected || 0),
-      current_collected: Number(r.current_invoice_collected || 0),
-      previous_collected: Number(r.previous_due_collected || 0),
-    }));
+    const list: PaidRow[] = (data ?? []).map((r: any) => {
+      const acreRate = r.invoice?.season_rate != null ? Number(r.invoice.season_rate) : null;
+      return {
+        season: r.invoice?.seasons ? `${r.invoice.seasons.name ?? r.invoice.seasons.type ?? ""} ${r.invoice.seasons.year ?? ""}`.trim() : "—",
+        invoice_no: r.invoice?.invoice_no ?? "—",
+        receipt_no: r.payment?.receipt_no ?? "—",
+        paid_on: r.payment?.created_at ?? r.created_at ?? null,
+        amount: Number(r.collected_amount || 0),
+        dag_no: r.invoice?.lands?.dag_no ?? "—",
+        mouza: r.invoice?.lands?.mouza ?? "—",
+        land_size: r.invoice?.lands?.land_size != null ? Number(r.invoice.lands.land_size) : null,
+        land_type: r.invoice?.land_type_name ?? "—",
+        acre_rate: acreRate,
+        bigha_rate: acreRate != null ? Math.round(acreRate * 0.33) : null,
+        due: Number(r.invoice?.due_amount || 0),
+        irrigation: Number(r.irrigation_collected || 0),
+        maintenance: Number(r.maintenance_collected || 0),
+        canal: Number(r.canal_collected || 0),
+        delay_fee: Number(r.delay_fee_collected || 0),
+        current_collected: Number(r.current_invoice_collected || 0),
+        previous_collected: Number(r.previous_due_collected || 0),
+        cancelled: r.payment?.status === "cancelled" || !!r.payment?.voided_at,
+      };
+    });
     setRows(list);
     setFarmer(f ?? null);
     if (f?.office_id) {
@@ -107,7 +121,8 @@ export function PaidLandHistory({ farmerId }: Props) {
     });
   }, [rows, q, from, to, farmer, office]);
 
-  const total = filtered.reduce((s, r) => s + r.amount, 0);
+  // Cancelled receipts are excluded from collection totals.
+  const total = filtered.reduce((s, r) => s + (r.cancelled ? 0 : r.amount), 0);
 
   // ১.৯ — receipt download শুধুমাত্র payment হওয়া সারির জন্য (এই তালিকার সব সারিই পরিশোধিত)।
   async function downloadReceipt(r: PaidRow) {
@@ -150,9 +165,9 @@ export function PaidLandHistory({ farmerId }: Props) {
 
   function exportExcel() {
     const ws = XLSX.utils.aoa_to_sheet([
-      [tx("Season", "সিজন"), tx("Receipt No", "রসিদ নং"), tx("Dag No", "দাগ নং"), tx("Mouza", "মৌজা"), tx("Land (shotok)", "জমি (শতক)"), tx("Collection Date", "আদায়ের তারিখ"), tx("Amount", "পরিমাণ")],
-      ...filtered.map((r) => [r.season, r.receipt_no, r.dag_no, r.mouza, r.land_size ?? "", r.paid_on ? fmtDate(r.paid_on) : "", r.amount]),
-      ["", "", "", "", "", tx("Total", "মোট"), total],
+      [tx("Season", "সিজন"), tx("Receipt No", "রসিদ নং"), tx("Dag No", "দাগ নং"), tx("Mouza", "মৌজা"), tx("Land type", "জমির ধরন"), tx("Land (shotok)", "জমি (শতক)"), tx("Rate (acre)", "রেট (একর)"), tx("Rate (bigha)", "রেট (বিঘা)"), tx("Penalty", "জরিমানা"), tx("Due", "বকেয়া"), tx("Collection Date", "আদায়ের তারিখ"), tx("Total collected", "মোট আদায়"), tx("Status", "স্ট্যাটাস")],
+      ...filtered.map((r) => [r.season, r.receipt_no, r.dag_no, r.mouza, r.land_type, r.land_size ?? "", r.acre_rate ?? "", r.bigha_rate ?? "", r.delay_fee, r.due, r.paid_on ? fmtDate(r.paid_on) : "", r.amount, r.cancelled ? tx("Cancelled", "বাতিল") : tx("Paid", "পরিশোধিত")]),
+      ["", "", "", "", "", "", "", "", "", "", tx("Total (excl. cancelled)", "মোট (বাতিল বাদে)"), total, ""],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Paid History");
@@ -164,12 +179,14 @@ export function PaidLandHistory({ farmerId }: Props) {
     doc.text("Paid History", 14, 16);
     autoTable(doc, {
       startY: 22,
-      head: [["Season", "Receipt No", "Dag", "Mouza", "Land", "Collection Date", "Amount"]],
-      body: filtered.map((r) => [r.season, r.receipt_no, r.dag_no, r.mouza, r.land_size ?? "", r.paid_on ? fmtDate(r.paid_on) : "", r.amount.toFixed(2)]),
-      foot: [["", "", "", "", "", "Total", total.toFixed(2)]],
+      head: [["Season", "Receipt", "Dag", "Mouza", "Type", "Land", "Rate(a/b)", "Penalty", "Due", "Date", "Total", "Status"]],
+      body: filtered.map((r) => [r.season, r.receipt_no, r.dag_no, r.mouza, r.land_type, r.land_size ?? "", r.acre_rate != null ? `${r.acre_rate}/${r.bigha_rate}` : "", r.delay_fee.toFixed(2), r.due.toFixed(2), r.paid_on ? fmtDate(r.paid_on) : "", r.amount.toFixed(2), r.cancelled ? "Cancelled" : "Paid"]),
+      foot: [["", "", "", "", "", "", "", "", "", "", total.toFixed(2), ""]],
+      styles: { fontSize: 7 },
     });
     doc.save(`paid-history-${farmerId.slice(0, 8)}.pdf`);
   }
+
 
   return (
     <Card>
@@ -215,37 +232,50 @@ export function PaidLandHistory({ farmerId }: Props) {
           <TableHead>{tx("Receipt No", "রসিদ নং")}</TableHead>
           <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
           <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+          <TableHead>{tx("Land type", "জমির ধরন")}</TableHead>
           <TableHead className="text-right">{tx("Land (shotok)", "জমি (শতক)")}</TableHead>
+          <TableHead className="text-right">{tx("Rate (acre/bigha)", "রেট (একর/বিঘা)")}</TableHead>
+          <TableHead className="text-right">{tx("Current", "হাল")}</TableHead>
+          <TableHead className="text-right">{tx("Penalty", "জরিমানা")}</TableHead>
+          <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
           <TableHead>{tx("Collection Date", "আদায়ের তারিখ")}</TableHead>
-          <TableHead className="text-right">{tx("Amount", "পরিমাণ")}</TableHead>
+          <TableHead className="text-right">{tx("Total collected", "মোট আদায়")}</TableHead>
           <TableHead className="text-right">{tx("Receipt", "রসিদ")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {filtered.map((r, i) => (
-            <TableRow key={i}>
+            <TableRow key={i} className={r.cancelled ? "opacity-60" : undefined}>
               <TableCell>{r.season}</TableCell>
-              <TableCell>{r.receipt_no}</TableCell>
+              <TableCell>
+                {r.receipt_no}
+                {r.cancelled && <Badge variant="destructive" className="ml-1">{tx("Cancelled", "বাতিল")}</Badge>}
+              </TableCell>
               <TableCell>{r.dag_no}</TableCell>
               <TableCell>{r.mouza}</TableCell>
+              <TableCell>{r.land_type}</TableCell>
               <TableCell className="text-right">{r.land_size ?? "—"}</TableCell>
+              <TableCell className="text-right whitespace-nowrap">{r.acre_rate != null ? `${money(r.acre_rate)} / ${money(r.bigha_rate ?? 0)}` : "—"}</TableCell>
+              <TableCell className="text-right">{money(r.current_collected)}</TableCell>
+              <TableCell className="text-right">{money(r.delay_fee)}</TableCell>
+              <TableCell className="text-right">{money(r.due)}</TableCell>
               <TableCell>{r.paid_on ? fmtDate(r.paid_on) : "—"}</TableCell>
-              <TableCell className="text-right">{r.amount.toFixed(2)}</TableCell>
+              <TableCell className={`text-right ${r.cancelled ? "line-through" : ""}`}>{r.amount.toFixed(2)}</TableCell>
               <TableCell className="text-right whitespace-nowrap">
                 <Button size="sm" variant="ghost" title={tx("Preview", "প্রিভিউ")} onClick={() => setPreview(r)}>
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" title={tx("Download", "ডাউনলোড")} onClick={() => downloadReceipt(r)}>
+                <Button size="sm" variant="ghost" title={tx("Download", "ডাউনলোড")} onClick={() => downloadReceipt(r)} disabled={r.cancelled}>
                   <Download className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>
           ))}
           {!loading && filtered.length === 0 && (
-            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+            <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
           )}
           {filtered.length > 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-right font-semibold">{tx("Total", "মোট")}</TableCell>
+              <TableCell colSpan={11} className="text-right font-semibold">{tx("Total (excl. cancelled)", "মোট (বাতিল বাদে)")}</TableCell>
               <TableCell className="text-right font-semibold">{total.toFixed(2)}</TableCell>
               <TableCell />
             </TableRow>
