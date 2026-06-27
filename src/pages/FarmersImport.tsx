@@ -45,9 +45,10 @@ type RowState = {
 };
 
 const COLUMNS = [
-  "farmer_id", "is_voter", "name_en", "name_bn",
+  "farmer_id", "account_number", "is_voter", "voter_number", "name_en", "name_bn",
   "father_name", "mother_name", "nid", "mobile",
-  "village", "post_office", "upazila", "district", "division", "address",
+  "village", "post_office", "upazila", "district", "division", "address", "mouza", "union",
+  "status", "savings_inactive", "photo_url",
   "nominee_name", "nominee_mobile", "nominee_relation", "nominee_nid", "nominee_address",
 ] as const;
 
