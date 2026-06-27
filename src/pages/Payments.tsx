@@ -772,7 +772,7 @@ export default function Payments() {
                 <SelectContent>
                   <SelectItem value="general">{tx("General", "সাধারণ")}</SelectItem>
                   <SelectItem value="hawlat">{tx("Hawlat", "হাওলাত")}</SelectItem>
-                  <SelectItem value="bank">{tx("Bank", "ব্যাংক")}</SelectItem>
+                  <SelectItem value="bank">{tx("Scrap sale", "ভাংড়ী বিক্রি")}</SelectItem>
                   <SelectItem value="donation">{tx("Donation", "দান")}</SelectItem>
                   <SelectItem value="misc">{tx("Misc", "বিবিধ")}</SelectItem>
                 </SelectContent>
@@ -1020,7 +1020,7 @@ export default function Payments() {
 
                           // বিবিধ আদায় (হাওলাত/ব্যাংক/দান/বিবিধ): জমি-সম্পর্কিত সারি বাদ, শুধু bill_info ধরন দেখাবে।
                           const miscLabels: Record<string, string> = {
-                            hawlat: "হাওলাত", bank: "ব্যাংক", donation: "অনুদান", misc: "বিবিধ",
+                            hawlat: "হাওলাত গ্রহণ", bank: "ভাংড়ী বিক্রি", donation: "অনুদান", misc: "বিবিধ",
                           };
                           const catBn = miscLabels[(p.category as string) ?? ""] ?? null;
                           const isMiscCollection = kind === "irrigation" && !!catBn;
