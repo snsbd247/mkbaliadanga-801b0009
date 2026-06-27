@@ -119,11 +119,18 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const { confirm } = useConfirm();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
-  const [seasonId, setSeasonId] = useState("all");
-  const [officeId, setOfficeId] = useState("all");
-  const [mouza, setMouza] = useState("all");
-  const [status, setStatus] = useState<string>("all");
-  const [search, setSearch] = useState("");
+  const persisted = useMemo<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("irr_invoice_filters") || "{}"); } catch { return {}; }
+  }, []);
+  const [seasonId, setSeasonId] = useState(persisted.seasonId ?? "all");
+  const [officeId, setOfficeId] = useState(persisted.officeId ?? "all");
+  const [mouza, setMouza] = useState(persisted.mouza ?? "all");
+  const [status, setStatus] = useState<string>(persisted.status ?? "all");
+  const [search, setSearch] = useState(persisted.search ?? "");
+
+  useEffect(() => {
+    localStorage.setItem("irr_invoice_filters", JSON.stringify({ seasonId, officeId, mouza, status, search }));
+  }, [seasonId, officeId, mouza, status, search]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [editInv, setEditInv] = useState<Invoice | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
