@@ -1411,8 +1411,19 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadCsvTemplate(mod as any)}>
               <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
             </Button>
-            <Button variant="outline" onClick={previewSampleReceipt}>
+            <Select value={sampleType} onValueChange={(v) => setSampleType(v as SampleReceiptType)}>
+              <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(SAMPLE_RECEIPT_TYPE_LABELS) as SampleReceiptType[]).map((t) => (
+                  <SelectItem key={t} value={t}>{SAMPLE_RECEIPT_TYPE_LABELS[t]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => previewSampleReceipt("preview")}>
               <FileSpreadsheet className="h-4 w-4 mr-1" /> নমুনা রশিদ প্রিভিউ
+            </Button>
+            <Button variant="outline" onClick={() => previewSampleReceipt("download")}>
+              <Download className="h-4 w-4 mr-1" /> PDF ডাউনলোড
             </Button>
             <input
               ref={fileRef}
