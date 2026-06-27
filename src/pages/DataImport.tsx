@@ -38,6 +38,7 @@ type Module =
   | "loans"
   | "loan_payments"
   | "loan_installments"
+  | "loan_guarantors"
   | "savings"
   | "payments"
   | "irrigation"
@@ -45,6 +46,12 @@ type Module =
   | "cashbook_receipts"
   | "cashbook_expenses"
   | "patwaris"
+  | "mouzas"
+  | "seasons"
+  | "offices"
+  | "bank_accounts"
+  | "bank_transactions"
+  | "assets"
   | "ledger";
 
 type RowResult = {
@@ -107,6 +114,34 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   patwaris: {
     columns: ["name", "name_bn", "mobile", "nid", "address", "mouza", "note"],
     sample: { name: "Md. Rahim", name_bn: "মোঃ রহিম", mobile: "01700000000", nid: "1234567890", address: "Village A", mouza: "Mouza A", note: "" },
+  },
+  mouzas: {
+    columns: ["upazila", "name", "name_bn", "code"],
+    sample: { upazila: "Shibganj", name: "Mouza A", name_bn: "মৌজা এ", code: "M-001" },
+  },
+  seasons: {
+    columns: ["year", "type", "name", "fiscal_year", "start_date", "end_date", "due_date", "status"],
+    sample: { year: 2026, type: "boro", name: "Boro 2026", fiscal_year: "2025-2026", start_date: "2026-01-01", end_date: "2026-06-30", due_date: "2026-07-15", status: "active" },
+  },
+  offices: {
+    columns: ["name", "registration_no", "established_on", "contact", "address"],
+    sample: { name: "Central Office", registration_no: "REG-001", established_on: "2010-01-01", contact: "01700000000", address: "Town Center" },
+  },
+  bank_accounts: {
+    columns: ["bank_name", "branch", "account_no", "account_title", "account_type", "opening_balance", "stream"],
+    sample: { bank_name: "Sonali Bank", branch: "Shibganj", account_no: "1234567890", account_title: "Samity Account", account_type: "savings", opening_balance: 0, stream: "irrigation" },
+  },
+  bank_transactions: {
+    columns: ["account_no", "txn_date", "txn_type", "amount", "reference_no", "note"],
+    sample: { account_no: "1234567890", txn_date: "2026-02-01", txn_type: "deposit", amount: 5000, reference_no: "TXN-001", note: "" },
+  },
+  assets: {
+    columns: ["asset_code", "name_en", "name_bn", "serial_no", "asset_type", "tracking_mode", "unit", "purchase_price", "current_status"],
+    sample: { asset_code: "AST-001", name_en: "Water Pump", name_bn: "পানির পাম্প", serial_no: "SN-123", asset_type: "fixed_asset", tracking_mode: "quantity", unit: "pcs", purchase_price: 25000, current_status: "purchased" },
+  },
+  loan_guarantors: {
+    columns: ["loan_account_number", "name", "father_name", "village", "mobile", "nid", "role", "guarantor_account_number"],
+    sample: { loan_account_number: "10001", name: "Md. Karim", father_name: "Md. Jashim", village: "Bagbari", mobile: "01700000000", nid: "1234567890", role: "guarantor", guarantor_account_number: "" },
   },
 };
 
@@ -381,6 +416,9 @@ export default function DataImport() {
           accountNumbers.push(String(r.raw.owner_account_number ?? "").trim());
           const tenantAcc = r.raw.tenant_account_number ?? r.raw.sharecropper_account_number;
           if (tenantAcc) accountNumbers.push(String(tenantAcc).trim());
+        } else if (mod === "loan_guarantors") {
+          accountNumbers.push(String(r.raw.loan_account_number ?? "").trim());
+          if (r.raw.guarantor_account_number) accountNumbers.push(String(r.raw.guarantor_account_number).trim());
         } else {
           accountNumbers.push(String(r.raw.account_number ?? "").trim());
         }
@@ -393,7 +431,7 @@ export default function DataImport() {
 
       // Pre-fetch latest active loan per farmer for loan_payments / loan_installments mode
       let loanByFarmer = new Map<string, string>();
-      if (mod === "loan_payments" || mod === "loan_installments") {
+      if (mod === "loan_payments" || mod === "loan_installments" || mod === "loan_guarantors") {
         const farmerIds = Array.from(new Set(Array.from(farmerMap.values()).map((v) => v.id)));
         if (farmerIds.length) {
           const { data: loans } = await supabase
@@ -406,6 +444,23 @@ export default function DataImport() {
             if (!loanByFarmer.has(l.farmer_id)) loanByFarmer.set(l.farmer_id, l.id);
           });
         }
+      }
+
+      // Pre-fetch lookup maps for catalog modules
+      const upazilaMap = new Map<string, string>();
+      if (mod === "mouzas") {
+        const { data: ups } = await supabase.from("upazilas").select("id,name,name_bn");
+        (ups ?? []).forEach((u: any) => {
+          if (u.name) upazilaMap.set(String(u.name).trim().toLowerCase(), u.id);
+          if (u.name_bn) upazilaMap.set(String(u.name_bn).trim().toLowerCase(), u.id);
+        });
+      }
+      const bankAcctMap = new Map<string, string>();
+      if (mod === "bank_transactions") {
+        const { data: ba } = await supabase.from("bank_accounts").select("id,account_no,office_id");
+        (ba ?? []).forEach((b: any) => {
+          if (b.account_no) bankAcctMap.set(String(b.account_no).trim(), b.id);
+        });
       }
 
       for (let i = 0; i < next.length; i++) {
@@ -769,6 +824,121 @@ export default function DataImport() {
               is_active: true,
               created_by: user?.id,
             };
+          } else if (mod === "mouzas") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            const upName = String(raw.upazila ?? "").trim().toLowerCase();
+            const upazilaId = upName ? upazilaMap.get(upName) : null;
+            if (!upazilaId) throw new Error("upazila not found");
+            table = "mouzas";
+            payload = {
+              upazila_id: upazilaId,
+              name,
+              name_bn: raw.name_bn ?? null,
+              code: raw.code ?? null,
+              is_active: true,
+            };
+          } else if (mod === "seasons") {
+            const year = Number(raw.year ?? 0);
+            const type = String(raw.type ?? "").trim();
+            if (!year) throw new Error("year required");
+            if (!type) throw new Error("type required");
+            table = "seasons";
+            payload = {
+              year,
+              type,
+              name: raw.name ?? null,
+              fiscal_year: raw.fiscal_year ?? null,
+              start_date: raw.start_date || null,
+              end_date: raw.end_date || null,
+              due_date: raw.due_date || null,
+              status: String(raw.status ?? "active").trim() || "active",
+            };
+          } else if (mod === "offices") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            table = "offices";
+            payload = {
+              name,
+              registration_no: raw.registration_no ?? null,
+              established_on: raw.established_on || null,
+              contact: raw.contact ?? null,
+              address: raw.address ?? null,
+            };
+          } else if (mod === "bank_accounts") {
+            const bankName = String(raw.bank_name ?? "").trim();
+            const accountNo = String(raw.account_no ?? "").trim();
+            if (!bankName) throw new Error("bank_name required");
+            if (!accountNo) throw new Error("account_no required");
+            table = "bank_accounts";
+            payload = {
+              bank_name: bankName,
+              branch: raw.branch ?? null,
+              account_no: accountNo,
+              account_title: raw.account_title ?? null,
+              account_type: String(raw.account_type ?? "savings").trim() || "savings",
+              opening_balance: Number(raw.opening_balance ?? 0) || 0,
+              stream: String(raw.stream ?? "other").trim() || "other",
+              is_active: true,
+            };
+          } else if (mod === "bank_transactions") {
+            const accountNo = String(raw.account_no ?? "").trim();
+            const bankAccountId = bankAcctMap.get(accountNo);
+            if (!bankAccountId) throw new Error("bank account not found for account_no");
+            const txnType = String(raw.txn_type ?? "").trim();
+            if (!txnType) throw new Error("txn_type required");
+            const amt = Number(raw.amount ?? 0);
+            if (!(amt > 0)) throw new Error("amount must be > 0");
+            table = "bank_transactions";
+            payload = {
+              bank_account_id: bankAccountId,
+              txn_date: raw.txn_date || new Date().toISOString().slice(0, 10),
+              txn_type: txnType,
+              amount: amt,
+              reference_no: raw.reference_no ?? null,
+              note: raw.note ?? null,
+              created_by: user?.id,
+            };
+          } else if (mod === "assets") {
+            const code = String(raw.asset_code ?? "").trim();
+            const nameEn = String(raw.name_en ?? "").trim();
+            if (!code) throw new Error("asset_code required");
+            if (!nameEn) throw new Error("name_en required");
+            table = "assets";
+            payload = {
+              asset_code: code,
+              name_en: nameEn,
+              name_bn: raw.name_bn ?? null,
+              serial_no: raw.serial_no ?? null,
+              asset_type: String(raw.asset_type ?? "fixed_asset").trim() || "fixed_asset",
+              tracking_mode: String(raw.tracking_mode ?? "quantity").trim() || "quantity",
+              unit: raw.unit ?? null,
+              purchase_price: Number(raw.purchase_price ?? 0) || 0,
+              current_status: String(raw.current_status ?? "purchased").trim() || "purchased",
+              created_by: user?.id,
+            };
+          } else if (mod === "loan_guarantors") {
+            const borrower = farmerMap.get(String(raw.loan_account_number));
+            if (!borrower) throw new Error("Borrower farmer not found for loan_account_number");
+            const loanId = loanByFarmer.get(borrower.id);
+            if (!loanId) throw new Error("No active/approved loan found for borrower");
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            const guarantorFarmer = raw.guarantor_account_number
+              ? farmerMap.get(String(raw.guarantor_account_number))
+              : null;
+            table = "loan_guarantors";
+            payload = {
+              loan_id: loanId,
+              farmer_id: guarantorFarmer?.id ?? null,
+              name,
+              father_name: raw.father_name ?? null,
+              village: raw.village ?? null,
+              mobile: raw.mobile ?? null,
+              nid: raw.nid ?? null,
+              office_id: borrower.office_id ?? null,
+              role: String(raw.role ?? "guarantor").trim() || "guarantor",
+            };
           }
 
           if (dryRun) {
@@ -886,6 +1056,13 @@ export default function DataImport() {
                 <SelectItem value="cashbook_expenses">Cashbook — Expenses</SelectItem>
                 <SelectItem value="shares">Share Balance (upsert)</SelectItem>
                 <SelectItem value="patwaris">Patwaris</SelectItem>
+                <SelectItem value="loan_guarantors">Loan Guarantors / Nominees</SelectItem>
+                <SelectItem value="mouzas">Mouzas</SelectItem>
+                <SelectItem value="seasons">Seasons</SelectItem>
+                <SelectItem value="offices">Offices / Branches</SelectItem>
+                <SelectItem value="bank_accounts">Bank Accounts</SelectItem>
+                <SelectItem value="bank_transactions">Bank Transactions</SelectItem>
+                <SelectItem value="assets">Assets</SelectItem>
                 {isSuper && <SelectItem value="ledger">Ledger Entries (super-admin)</SelectItem>}
               </SelectContent>
             </Select>

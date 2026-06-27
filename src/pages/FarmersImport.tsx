@@ -45,9 +45,10 @@ type RowState = {
 };
 
 const COLUMNS = [
-  "farmer_id", "is_voter", "name_en", "name_bn",
+  "farmer_id", "account_number", "is_voter", "voter_number", "name_en", "name_bn",
   "father_name", "mother_name", "nid", "mobile",
-  "village", "post_office", "upazila", "district", "division", "address",
+  "village", "post_office", "upazila", "district", "division", "address", "mouza", "union",
+  "status", "savings_inactive", "photo_url",
   "nominee_name", "nominee_mobile", "nominee_relation", "nominee_nid", "nominee_address",
 ] as const;
 
@@ -102,8 +103,8 @@ export default function FarmersImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const headers = [...COLUMNS];
     const sample = [
-      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Rahima", "1234567890", "01711000000", "Bagbari", "Baliadanga", "Sadar", "Tangail", "Dhaka", "গ্রামঃ বাগবাড়ী, ডাকঘরঃ বালিয়াডাঙ্গা", "Md. Sabuj", "01911000000", "Son", "1234567890123", "Bagbari, Baliadanga"],
-      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "Mst. Hasna", "9876543210", "01811000000", "Char Bhabanipur", "Baliadanga", "Sadar", "Tangail", "Dhaka", "", "", "", "", "", ""],
+      ["00001", "10001", "true", "10001", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Rahima", "1234567890", "01711000000", "Bagbari", "Baliadanga", "Sadar", "Tangail", "Dhaka", "গ্রামঃ বাগবাড়ী, ডাকঘরঃ বালিয়াডাঙ্গা", "Mouza A", "Baliadanga", "active", "false", "", "Md. Sabuj", "01911000000", "Son", "1234567890123", "Bagbari, Baliadanga"],
+      ["",      "10002", "false", "", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "Mst. Hasna", "9876543210", "01811000000", "Char Bhabanipur", "Baliadanga", "Sadar", "Tangail", "Dhaka", "", "", "", "active", "false", "", "", "", "", "", ""],
     ];
     if (format === "csv") {
       const csv = [headers, ...sample]
@@ -120,7 +121,9 @@ export default function FarmersImport() {
     const notes = XLSX.utils.aoa_to_sheet([
       ["Column", "Required", "Notes"],
       ["farmer_id", "No", "৫-ডিজিট padded কোড (যেমন 00001)। 'F-00001', '1', '2026-00000001' এর মতো ইনপুট স্বয়ংক্রিয়ভাবে 00001 হবে। existing হলে UPDATE, খালি হলে নতুন তৈরি হবে।"],
+      ["account_number", "No", "হিসাব নম্বর (সঞ্চয়/শেয়ার অ্যাকাউন্ট)"],
       ["is_voter", "No", "true/হ্যাঁ/1 হলে voter/savings নম্বর আলাদা নয় — Farmer ID-ই ব্যবহৃত হবে।"],
+      ["voter_number", "No", "ভোটার/সদস্য নম্বর (থাকলে is_voter স্বয়ংক্রিয়ভাবে true)"],
       ["name_en", "Yes", "ইংরেজী নাম (আবশ্যক)"],
       ["name_bn", "No", "বাংলা নাম"],
       ["father_name", "No", "পিতার নাম"],
@@ -133,6 +136,11 @@ export default function FarmersImport() {
       ["district", "No", "জেলা"],
       ["division", "No", "বিভাগ"],
       ["address", "No", "সম্পূর্ণ ঠিকানা (free-text)"],
+      ["mouza", "No", "মৌজার নাম — থাকলে mouza_id রিসলভ হবে"],
+      ["union", "No", "ইউনিয়নের নাম — থাকলে union_id রিসলভ হবে"],
+      ["status", "No", "active/inactive (ডিফল্ট active)"],
+      ["savings_inactive", "No", "true হলে সঞ্চয় নিষ্ক্রিয়"],
+      ["photo_url", "No", "ছবির URL"],
       ["nominee_name", "No", "নমিনির নাম"],
       ["nominee_mobile", "No", "নমিনির মোবাইল"],
       ["nominee_relation", "No", "নমিনির সম্পর্ক (যেমন: ছেলে, স্ত্রী)"],
@@ -198,6 +206,24 @@ export default function FarmersImport() {
     let saved = 0;
     const updated = [...rows];
 
+    // Prefetch mouza/union name → id maps for geo resolution
+    const mouzaMap = new Map<string, string>();
+    const unionMap = new Map<string, string>();
+    try {
+      const [{ data: mz }, { data: un }] = await Promise.all([
+        supabase.from("mouzas").select("id,name,name_bn"),
+        supabase.from("unions").select("id,name,name_bn"),
+      ]);
+      (mz ?? []).forEach((m: any) => {
+        if (m.name) mouzaMap.set(String(m.name).trim().toLowerCase(), m.id);
+        if (m.name_bn) mouzaMap.set(String(m.name_bn).trim().toLowerCase(), m.id);
+      });
+      (un ?? []).forEach((u: any) => {
+        if (u.name) unionMap.set(String(u.name).trim().toLowerCase(), u.id);
+        if (u.name_bn) unionMap.set(String(u.name_bn).trim().toLowerCase(), u.id);
+      });
+    } catch { /* geo resolution optional */ }
+
     for (const r of validRows) {
       const i = updated.findIndex((x) => x.idx === r.idx);
       updated[i] = { ...updated[i], status: "saving", errorMsg: null };
@@ -209,6 +235,9 @@ export default function FarmersImport() {
       const isVoter = ["1", "true", "yes", "y", "হ্যাঁ"].includes(rawVoter) || !!String(r.raw.voter_number ?? "").trim();
 
       const str = (v: any) => (v != null && String(v).trim() !== "" ? String(v).trim() : null);
+      const boolVal = (v: any) => ["1", "true", "yes", "y", "হ্যাঁ"].includes(String(v ?? "").trim().toLowerCase());
+      const mouzaId = r.raw.mouza ? mouzaMap.get(String(r.raw.mouza).trim().toLowerCase()) ?? null : null;
+      const unionId = r.raw.union ? unionMap.get(String(r.raw.union).trim().toLowerCase()) ?? null : null;
       const basePayload: any = {
         name_en:          String(r.raw.name_en ?? "").trim(),
         name_bn:          str(r.raw.name_bn),
@@ -222,12 +251,19 @@ export default function FarmersImport() {
         district:         str(r.raw.district),
         division:         str(r.raw.division),
         address:          str(r.raw.address),
+        account_number:   str(r.raw.account_number),
+        voter_number:     str(r.raw.voter_number),
+        photo_url:        str(r.raw.photo_url),
+        status:           str(r.raw.status),
+        mouza_id:         mouzaId,
+        union_id:         unionId,
         nominee_name:     str(r.raw.nominee_name),
         nominee_mobile:   str(r.raw.nominee_mobile),
         nominee_relation: str(r.raw.nominee_relation),
         nominee_nid:      str(r.raw.nominee_nid),
         nominee_address:  str(r.raw.nominee_address),
         ...(hasVoterInput ? { is_voter: isVoter } : {}),
+        ...(String(r.raw.savings_inactive ?? "").trim() !== "" ? { savings_inactive: boolVal(r.raw.savings_inactive) } : {}),
       };
       // Drop null-valued keys so an UPDATE never wipes existing data with blanks
       Object.keys(basePayload).forEach((k) => {
