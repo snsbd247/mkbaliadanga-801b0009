@@ -116,7 +116,7 @@ export default function FarmerDetail() {
   const [farmerOfficeId, setFarmerOfficeId] = useState<string | null>(null);
   const [landPayMap, setLandPayMap] = useState<Record<string, { lastDate: string | null; total: number }>>({});
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "due">("all");
-  const [landTypeFilter, setLandTypeFilter] = useState<string>("all");
+  const [landTypeFilter, setLandTypeFilter] = useState<string[]>([]);
   const [noteSearch, setNoteSearch] = useState("");
   const [hiddenInvoiceCount, setHiddenInvoiceCount] = useState<number>(0);
   const [backfilling, setBackfilling] = useState(false);
