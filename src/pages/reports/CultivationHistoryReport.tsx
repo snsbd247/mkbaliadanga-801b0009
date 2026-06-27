@@ -12,6 +12,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
 
 /**
  * Consolidated Cultivation History view.
