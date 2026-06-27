@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -281,6 +282,58 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
   ],
 };
 
+// Field-level format validation rules per module. Runs before import so bad
+// data is caught up-front (numbers, dates, enums) in addition to required checks.
+const isISODate = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v).trim());
+const isNum = (v: any) => v !== null && v !== "" && !isNaN(Number(v));
+type FieldRule = { type?: "number" | "positive" | "date" | "enum"; values?: string[] };
+const FORMAT_RULES: Partial<Record<Module, Record<string, FieldRule>>> = {
+  lands: {
+    land_size: { type: "positive" },
+    owner_type: { type: "enum", values: ["owner", "borgadar"] },
+    field_type: { type: "enum", values: ["high_land", "medium_land", "low_land"] },
+    land_size_unit: { type: "enum", values: ["shotok", "shatak", "decimal", "katha", "kattah", "bigha", "acre", "ekor"] },
+  },
+  land_relations: {
+    share_percentage: { type: "positive" },
+    valid_from: { type: "date" },
+  },
+  loans: { principal: { type: "positive" }, interest_rate: { type: "number" }, issued_on: { type: "date" } },
+  loan_payments: { amount: { type: "positive" }, paid_on: { type: "date" } },
+  loan_installments: { installment_no: { type: "positive" }, amount: { type: "positive" }, due_date: { type: "date" }, status: { type: "enum", values: ["due", "paid", "missed", "partial"] } },
+  savings: { amount: { type: "positive" }, type: { type: "enum", values: ["deposit", "withdrawal"] }, txn_date: { type: "date" } },
+  payments: { amount: { type: "positive" }, kind: { type: "enum", values: ["savings", "loan", "irrigation"] } },
+  irrigation: { season_year: { type: "positive" }, season_type: { type: "enum", values: ["boro", "aman", "aus"] }, base_charge: { type: "number" }, entry_date: { type: "date" } },
+  cashbook_receipts: { amount: { type: "positive" }, receipt_date: { type: "date" } },
+  cashbook_expenses: { amount: { type: "positive" }, expense_date: { type: "date" } },
+  ledger: { entry_date: { type: "date" }, debit: { type: "number" }, credit: { type: "number" } },
+  shares: { balance: { type: "number" } },
+  savings_plans: { duration_months: { type: "positive" } },
+  loan_plans: { duration_months: { type: "positive" } },
+  irrigation_rates: { season_year: { type: "positive" }, base_rate: { type: "number" } },
+};
+
+function checkFormat(col: string, value: any, rule: FieldRule): string | null {
+  const v = value;
+  if (v === null || v === undefined || String(v).trim() === "") return null; // required handled separately
+  switch (rule.type) {
+    case "number":
+      if (!isNum(v)) return `${col} must be a number`;
+      break;
+    case "positive":
+      if (!isNum(v) || Number(v) <= 0) return `${col} must be a number > 0`;
+      break;
+    case "date":
+      if (!isISODate(v)) return `${col} must be a date (YYYY-MM-DD)`;
+      break;
+    case "enum":
+      if (rule.values && !rule.values.includes(String(v).trim().toLowerCase()))
+        return `${col} must be one of: ${rule.values.join("/")}`;
+      break;
+  }
+  return null;
+}
+
 function downloadTemplate(mod: Module) {
   const tpl = TEMPLATES[mod];
   const ws = XLSX.utils.json_to_sheet([tpl.sample], { header: tpl.columns });
@@ -331,6 +384,7 @@ export default function DataImport() {
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<RowResult[]>([]);
   const [working, setWorking] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number; ok: number; failed: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [upsertMode, setUpsertMode] = useState(false);
   const [atomicMode, setAtomicMode] = useState(true);
@@ -408,6 +462,13 @@ export default function DataImport() {
         const v = raw[col];
         if (v === null || v === undefined || String(v).trim() === "") {
           issues.push(`${col} is required`);
+        }
+      }
+      const fmtRules = FORMAT_RULES[m];
+      if (fmtRules) {
+        for (const [col, rule] of Object.entries(fmtRules)) {
+          const err = checkFormat(col, raw[col], rule);
+          if (err) issues.push(err);
         }
       }
       if (["lands", "land_relations", "irrigation"].includes(m) && raw.dag_no) {
@@ -533,6 +594,7 @@ export default function DataImport() {
 
 
 
+      setProgress({ current: 0, total: next.length, ok: 0, failed: 0 });
       for (let i = 0; i < next.length; i++) {
         const r = next[i];
         const raw = r.raw;
@@ -1129,6 +1191,12 @@ export default function DataImport() {
           next[i] = { ...next[i], status: "error", message: e?.message ?? String(e) };
         }
 
+        setProgress({
+          current: i + 1,
+          total: next.length,
+          ok: next.slice(0, i + 1).filter((x) => x.status === "ok").length,
+          failed: next.slice(0, i + 1).filter((x) => x.status === "error").length,
+        });
         if (i % 10 === 0) setRows([...next]);
       }
 
@@ -1226,6 +1294,7 @@ export default function DataImport() {
       toast.error(`Import failed: ${e.message}`);
     } finally {
       setWorking(false);
+      setTimeout(() => setProgress(null), 1500);
     }
   }
 
@@ -1356,6 +1425,18 @@ export default function DataImport() {
           </div>
         )}
       </Card>
+
+      {progress && (
+        <Card className="mt-4 p-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">Importing “{mod}” …</span>
+            <span className="text-muted-foreground">
+              {progress.current} / {progress.total} • OK {progress.ok} • Failed {progress.failed}
+            </span>
+          </div>
+          <Progress value={progress.total ? (progress.current / progress.total) * 100 : 0} />
+        </Card>
+      )}
 
       {summary && (
         <Card className="mt-4 p-4">
