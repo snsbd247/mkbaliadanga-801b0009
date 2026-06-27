@@ -7,7 +7,7 @@ import {
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
   BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, MessageSquare, MessagesSquare, MapPin,
-  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload, Package, HelpCircle,
+  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload, Package, HelpCircle, History,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -93,6 +93,7 @@ export function AppSidebar() {
         { url: "/seasons", icon: CalendarDays, label: t("seasons"), permKey: "seasons" },
         { url: "/irrigation/invoices", icon: Droplets, label: t("irrigationInvoices" as any), permKey: "irrigation" },
         { url: "/irrigation/rates", icon: Droplets, label: t("irrigationRatesLabel"), permKey: "irrigation" },
+        { url: "/irrigation/historical-entry", icon: History, label: lang === "bn" ? "পুরাতন রশিদ এন্ট্রি" : "Historical Receipt Entry", permKey: "irrigation" },
         { url: "/irrigation/billing-split", icon: Calculator, label: lang === "bn" ? "বিলিং স্প্লিট প্রিভিউ" : "Billing Split Preview", adminOnly: true },
         { url: "/admin/lookups", icon: Sprout, label: t("seasonTypesAndLandKinds" as any), adminOnly: true },
         { url: "/admin/irrigation-categories", icon: Sprout, label: t("irrigationCategories" as any) || "সেচ ক্যাটাগরি", adminOnly: true },

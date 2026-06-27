@@ -27,6 +27,7 @@ import LoanStatementPage from "./pages/LoanStatementPage";
 import IrrigationInvoices from "./pages/IrrigationInvoices";
 import IrrigationReports from "./pages/IrrigationReports";
 import IrrigationRates from "./pages/IrrigationRates";
+import HistoricalReceiptEntry from "./pages/HistoricalReceiptEntry";
 import Payments from "./pages/Payments";
 import CombinedPayment from "./pages/CombinedPayment";
 import Reports from "./pages/Reports";
@@ -255,6 +256,7 @@ const App = () => (
                 <Route path="/irrigation/collect" element={<Navigate to="/payments" replace />} />
                 <Route path="/irrigation/invoices" element={<RequirePerm module="irrigation"><IrrigationInvoices /></RequirePerm>} />
                 <Route path="/irrigation/rates" element={<RequirePerm module="irrigation"><IrrigationRates /></RequirePerm>} />
+                <Route path="/irrigation/historical-entry" element={<RequirePerm module="irrigation"><HistoricalReceiptEntry /></RequirePerm>} />
                 <Route path="/payments" element={<RequirePerm module="payments"><Payments /></RequirePerm>} />
                 <Route path="/payments/combined" element={<RequirePerm module="payments"><CombinedPayment /></RequirePerm>} />
                 <Route path="/reports" element={<RequirePerm module="reports"><Reports /></RequirePerm>} />
