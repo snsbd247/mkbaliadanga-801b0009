@@ -536,7 +536,7 @@ export default function FarmerDetail() {
     const prefix = kind === "loan" ? "LOAN" : kind === "irrigation" ? "IRR" : "SAV";
     const description = p.note
       ?? (kind === "loan" ? "ঋণের কিস্তি গ্রহণ" : kind === "savings" ? "সঞ্চয় জমা গ্রহণ" : "সেচ চার্জ গ্রহণ");
-    let irrigationExtras: Partial<BnReceiptData> & { farmer?: Partial<BnReceiptData["farmer"]> } = {};
+    let irrigationExtras: Omit<Partial<BnReceiptData>, "farmer"> & { farmer?: Partial<BnReceiptData["farmer"]> } = {};
     if (kind === "irrigation") {
       const allocIds = (p.payment_allocations ?? [])
         .filter((a: any) => a.kind === "irrigation" && a.reference_id)
@@ -545,7 +545,7 @@ export default function FarmerDetail() {
       if (allocIds.length) {
         const { data } = await supabase
           .from("irrigation_invoices")
-          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
+          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
           .in("id", allocIds);
         invoiceRows = data ?? [];
       }
@@ -592,14 +592,15 @@ export default function FarmerDetail() {
         },
       };
     }
+    const { farmer: irrigationFarmerExtras, ...irrigationReceiptExtras } = irrigationExtras;
     downloadBnReceiptPdf({
       kind,
       ...commonReceipt(),
       receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
       date: p.created_at,
       bill_info: kind === "irrigation" ? (irrigationExtras.bill_info ?? "সেচ চার্জ") : undefined,
-      farmer: farmerForReceipt(irrigationExtras.farmer),
-      ...(kind === "irrigation" ? irrigationExtras : {}),
+      farmer: farmerForReceipt(irrigationFarmerExtras),
+      ...(kind === "irrigation" ? irrigationReceiptExtras : {}),
       collected_amount: Number(p.amount),
       description,
       verify_url: p.verify_token ? `${window.location.origin}/r/${p.verify_token}` : null,
