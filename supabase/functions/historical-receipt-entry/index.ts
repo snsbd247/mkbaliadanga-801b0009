@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
           mouza: mouza ?? null,
           dag_no: dag_no ?? null,
           dag_numbers: dag_no ? String(dag_no).split(/[,\s]+/).filter(Boolean) : [],
-          office_id: office_id ?? null,
+          office_id: officeId,
         })
         .select("id").single();
       if (landErr) throw landErr;
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
       .from("irrigation_invoices")
       .insert({
         invoice_no: `HIST-${receipt_no}`,
-        office_id: office_id ?? null,
+        office_id: officeId,
         season_id,
         land_id: landId,
         owner_farmer_id,
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
           collected_by: user.id,
           approved_by: user.id,
           approved_at: when,
-          office_id: office_id ?? null,
+          office_id: officeId,
           created_at: when,
         })
         .select("id").single();
@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
           delay_fee_collected: 0,
           current_invoice_collected: paid,
           previous_due_collected: 0,
-          office_id: office_id ?? null,
+          office_id: officeId,
           created_by: user.id,
           created_at: when,
         });
