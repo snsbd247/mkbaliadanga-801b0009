@@ -539,7 +539,7 @@ export default function CollectionReport() {
                 )}
                 {liveRows.length > 0 && (
                   <TableRow className="bg-muted/50 font-semibold border-t-2">
-                    <TableCell colSpan={3} className="text-right">{t("total") || "মোট"} ({t("collectionExclCancelled") || "বাতিল বাদে"})</TableCell>
+                    <TableCell colSpan={3} className="text-right">{t("total") || "মোট"} (বাতিল বাদে)</TableCell>
                     <TableCell className="text-right">{money(columnTotals.sech)}</TableCell>
                     <TableCell className="text-right">{money(columnTotals.jorimana)}</TableCell>
                     <TableCell className="text-right">{money(columnTotals.hal)}</TableCell>
