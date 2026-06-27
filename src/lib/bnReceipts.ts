@@ -108,7 +108,7 @@ export interface BnReceiptData {
   /** Irrigation receipt — extra layout fields matching the official রশিদ design */
   village_union?: string | null;               // ইউনিয়ন (shown with গ্রাম)
   member_summary?: string | null;              // কৃষক এবং মালিক সভ্য সদস্য (e.g. "১৯০০/ N/A")
-  rate_per_bigha?: number | null;              // বিঘা রেট (defaults to rate ÷ 33)
+  rate_per_bigha?: number | null;              // বিঘা রেট (defaults to acre rate × 33/100)
   current_penalty?: number | null;             // হাল-এর জরিমানা (defaults to penalty_amount)
   due_penalty?: number | null;                 // বকেয়ার জরিমানা
   holding_description?: string | null;         // হোল্ডিং এর বিবরন
@@ -213,6 +213,29 @@ function normalizeLandTypeText(fieldType?: string | null, billInfo?: string | nu
   return matched ?? (nonRice.length ? nonRice.join("/") : tokens.join("/"));
 }
 
+/** Official receipt rate display: entered/calculated rate is shown per acre and per bigha.
+ *  1 acre = 100 শতক, 1 bigha = 33 শতক, so bigha rate = acre rate × 33 / 100.
+ */
+export function ratePerBighaFromAcre(ratePerAcre: number | null): number | null {
+  return ratePerAcre == null ? null : (ratePerAcre * 33) / 100;
+}
+
+export function normalizeIrrigationRatePerAcre(
+  storedRate: number | null | undefined,
+  irrigationCharge: number | null | undefined,
+  landSizeShotok: number | null | undefined,
+): number | null {
+  const land = Number(landSizeShotok ?? 0);
+  const charge = Number(irrigationCharge ?? 0);
+  if (Number.isFinite(land) && land > 0 && Number.isFinite(charge) && charge > 0) {
+    return charge / (land / 100);
+  }
+  const rate = Number(storedRate ?? 0);
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+  // Legacy rows sometimes stored rate per শতক. Convert small per-shotok values to acre.
+  return rate < 500 ? rate * 100 : rate;
+}
+
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
   return digits(fmt4(Number(n ?? 0)), lang);
 }
@@ -235,6 +258,16 @@ function banglaOwnerLabel(label: string, lang: ReceiptLang): string {
   if (!v) return v;
   if (lang !== "bn") return /^owner\s*:/i.test(v) ? v : `Owner: ${v}`;
   return /^(মালিক|নিজ)\s*[:ঃ]?/.test(v) ? v : `মালিক: ${v}`;
+}
+
+function officialMemberSummaryText(d: BnReceiptData, lang: ReceiptLang): string {
+  const raw = String(d.member_summary ?? "").trim();
+  if (!raw) return "—";
+  if (d.owner_self) {
+    const first = raw.split("/")[0]?.trim();
+    return first ? digits(first, lang) : "—";
+  }
+  return digits(raw, lang);
 }
 
 const STR = {
@@ -404,14 +437,16 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const villageParts = [d.farmer.village, d.village_union].filter(Boolean).join(",");
     rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + digits(String(d.farmer.mobile), lang) : ""}`]);
     // 4. কৃষক এবং মালিক সভ্য সদস্য
-    rows.push([t.memberLine, d.member_summary ? digits(String(d.member_summary), lang) : "—"]);
+    rows.push([t.memberLine, officialMemberSummaryText(d, lang)]);
     // 5. মৌজা
     rows.push([mouzaLabel, d.farmer.mouza || "—"]);
-    // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট ÷ ৩৩)
-    const ratePerAcre = d.rate != null ? Number(d.rate) : null;
+    // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট × ৩৩/১০০)
+    const ratePerAcre = d.rate != null
+      ? normalizeIrrigationRatePerAcre(d.rate, null, null)
+      : normalizeIrrigationRatePerAcre(null, d.current_season_charge, d.farmer.land_size);
     const ratePerBigha = d.rate_per_bigha != null
       ? Number(d.rate_per_bigha)
-      : (ratePerAcre != null ? ratePerAcre / 33 : null);
+      : ratePerBighaFromAcre(ratePerAcre);
     const unit = lang === "bn" ? "টাকা" : "";
     const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
     rows.push([t.landKind, [normalizeLandTypeText(d.farmer.field_type_bn, d.bill_info), rateText].filter(Boolean).join("/ ") || "—"]);
@@ -541,9 +576,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           : v;
       return `
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:42%;font-size:20px;line-height:1.24;white-space:nowrap;overflow:hidden;text-overflow:clip;">${label}</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:20px;line-height:1.24;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:20px;line-height:1.24;font-weight:600;${cellWrap}">${value}</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:46%;font-size:18px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;font-weight:600;">${label}</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:18px;line-height:1.2;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:18px;line-height:1.2;font-weight:600;${cellWrap}">${value}</td>
         </tr>`;
     }).join("");
 

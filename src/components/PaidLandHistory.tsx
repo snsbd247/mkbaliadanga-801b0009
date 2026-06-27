@@ -11,7 +11,7 @@ import { FileText, FileSpreadsheet, Download, Eye, Search } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 import { fmtDate } from "@/lib/format";
 import { toast } from "sonner";
-import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre, ratePerBighaFromAcre } from "@/lib/bnReceipts";
 import { loadBranding } from "@/lib/branding";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -39,6 +39,12 @@ type PaidRow = {
   current_collected: number;
   previous_collected: number;
   cancelled: boolean;
+  member_summary: string;
+  owner_self: boolean;
+  land_owner_label: string | null;
+  holding_description: string | null;
+  patwari_name: string | null;
+  patwari_mobile: string | null;
 };
 
 const money = (v: number) => Number(v || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 });
@@ -49,6 +55,7 @@ export function PaidLandHistory({ farmerId }: Props) {
   const [loading, setLoading] = useState(true);
   const [farmer, setFarmer] = useState<any>(null);
   const [office, setOffice] = useState<any>(null);
+  const [unionName, setUnionName] = useState<string | null>(null);
 
   // Filters
   const [q, setQ] = useState("");
@@ -67,15 +74,18 @@ export function PaidLandHistory({ farmerId }: Props) {
         .from("irrigation_invoice_payments")
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
-          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, land_type_name, due_amount, lands(dag_no, mouza, land_size), seasons(name,year,type)), " +
+          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)), seasons(name,year,type)), " +
           "payment:payments(receipt_no, created_at, status, voided_at)"
         )
         .eq("invoice.farmer_id", farmerId)
         .order("created_at", { ascending: false }),
-      supabase.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,mobile,village,office_id").eq("id", farmerId).maybeSingle(),
+      supabase.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,mobile,village,office_id,union_id").eq("id", farmerId).maybeSingle(),
     ]);
     const list: PaidRow[] = (data ?? []).map((r: any) => {
-      const acreRate = r.invoice?.season_rate != null ? Number(r.invoice.season_rate) : null;
+      const acreRate = normalizeIrrigationRatePerAcre(r.invoice?.season_rate, r.invoice?.irrigation_amount, r.invoice?.lands?.land_size);
+      const owner = r.invoice?.lands?.owner;
+      const ownerMember = owner?.member_no || owner?.farmer_code || null;
+      const isBorga = !!r.invoice?.is_borga;
       return {
         season: r.invoice?.seasons ? `${r.invoice.seasons.name ?? r.invoice.seasons.type ?? ""} ${r.invoice.seasons.year ?? ""}`.trim() : "—",
         invoice_no: r.invoice?.invoice_no ?? "—",
@@ -87,7 +97,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         land_size: r.invoice?.lands?.land_size != null ? Number(r.invoice.lands.land_size) : null,
         land_type: r.invoice?.land_type_name ?? "—",
         acre_rate: acreRate,
-        bigha_rate: acreRate != null ? Math.round(acreRate * 0.33) : null,
+        bigha_rate: acreRate != null ? Math.round(ratePerBighaFromAcre(acreRate) ?? 0) : null,
         due: Number(r.invoice?.due_amount || 0),
         irrigation: Number(r.irrigation_collected || 0),
         maintenance: Number(r.maintenance_collected || 0),
@@ -96,6 +106,12 @@ export function PaidLandHistory({ farmerId }: Props) {
         current_collected: Number(r.current_invoice_collected || 0),
         previous_collected: Number(r.previous_due_collected || 0),
         cancelled: r.payment?.status === "cancelled" || !!r.payment?.voided_at,
+        member_summary: `${f?.member_no ?? f?.farmer_code ?? "N/A"}/${(isBorga && ownerMember) ? ownerMember : "N/A"}`,
+        owner_self: !isBorga,
+        land_owner_label: isBorga && owner ? `${owner.name_bn || owner.name_en || ""}${ownerMember ? "-" + ownerMember : ""}` : "নিজ",
+        holding_description: r.invoice?.lands?.notes ?? null,
+        patwari_name: r.invoice?.lands?.patwaris ? (r.invoice.lands.patwaris.name_bn || r.invoice.lands.patwaris.name) : null,
+        patwari_mobile: r.invoice?.lands?.patwaris?.mobile ?? null,
       };
     });
     setRows(list);
@@ -103,6 +119,12 @@ export function PaidLandHistory({ farmerId }: Props) {
     if (f?.office_id) {
       const { data: o } = await supabase.from("offices").select("name,name_bn").eq("id", f.office_id).maybeSingle();
       setOffice(o ?? null);
+    }
+    if (f?.union_id) {
+      const { data: u } = await supabase.from("unions").select("name_bn,name").eq("id", f.union_id).maybeSingle();
+      setUnionName(u?.name_bn || u?.name || null);
+    } else {
+      setUnionName(null);
     }
     setLoading(false);
   }
@@ -147,14 +169,25 @@ export function PaidLandHistory({ farmerId }: Props) {
           village: farmer?.village ?? null,
           mobile: farmer?.mobile ?? null,
           mouza: r.mouza !== "—" ? r.mouza : null,
+          field_type_bn: r.land_type !== "—" ? r.land_type : null,
           land_size: r.land_size,
           dag_no: r.dag_no !== "—" ? r.dag_no : null,
         },
+        village_union: unionName,
+        rate: r.acre_rate,
+        rate_per_bigha: r.bigha_rate,
+        member_summary: r.member_summary,
+        owner_self: r.owner_self,
+        land_owner_label: r.land_owner_label,
         current_season_charge: r.irrigation || null,
+        current_penalty: r.delay_fee || null,
         maintenance_charge: r.maintenance || null,
         canal_charge: r.canal || null,
         penalty_amount: r.delay_fee || null,
         collected_from_outstanding: r.previous_collected || null,
+        holding_description: r.holding_description,
+        patwari_name: r.patwari_name,
+        patwari_mobile: r.patwari_mobile,
         collected_amount: r.amount,
         verify_url: `${window.location.origin}/r/${r.receipt_no}`,
       }, "farmer");

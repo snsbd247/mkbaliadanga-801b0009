@@ -1488,10 +1488,13 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{tx("Land", "জমি")}</TableHead>
-                    <TableHead>{tx("Billed to", "বিল প্রাপক")}</TableHead>
+                    <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                    <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
+                    <TableHead className="text-right">{tx("Land size", "জমির পরিমাণ")}</TableHead>
+                    <TableHead>{tx("Farmer/Owner member", "কৃষক/মালিক সভ্য সদস্য")}</TableHead>
+                    <TableHead>{tx("Land type", "জমির ধরন")}</TableHead>
                     <TableHead>{tx("Source", "উৎস")}</TableHead>
-                    <TableHead className="text-right">{tx("Rate", "রেট")}</TableHead>
+                    <TableHead className="text-right">{tx("Rate (acre/bigha)", "রেট (একর/বিঘা)")}</TableHead>
                     <TableHead>{tx("Calculation", "হিসাব")}</TableHead>
                     <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
                     <TableHead>{tx("Manual override", "ম্যানুয়াল ওভাররাইড")}</TableHead>
@@ -1504,8 +1507,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                     const src = r.resolved?.source ?? "STANDARD";
                     return (
                       <TableRow key={i}>
-                        <TableCell className="text-xs">{r.land.mouza} • Dag {formatDagNumbers(r.land.dag_no)}<br />{formatLandSize(r.billedArea > 0 ? r.billedArea : r.land.land_size, "short")}{r.billedArea > 0 && r.billedArea !== Number(r.land.land_size) ? ` / ${formatLandSize(r.land.land_size, "short")}` : ""}</TableCell>
+                        <TableCell className="text-xs">{r.land.mouza || "—"}</TableCell>
+                        <TableCell className="text-xs whitespace-normal min-w-[140px]">{formatDagNumbers(r.land.dag_no) || "—"}</TableCell>
+                        <TableCell className="text-right text-xs whitespace-nowrap">{formatLandSize(r.billedArea > 0 ? r.billedArea : r.land.land_size, "short")}{r.billedArea > 0 && r.billedArea !== Number(r.land.land_size) ? ` / ${formatLandSize(r.land.land_size, "short")}` : ""}</TableCell>
                         <TableCell className="text-xs">{r.billed.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "মালিক")}`}</TableCell>
+                        <TableCell className="text-xs">{r.resolved?.categoryName || r.land.land_type_name || r.land.field_type || "—"}</TableCell>
 
                         <TableCell>
                           {Number(r.manualRate) > 0 && r.manualReason?.trim()
@@ -1514,7 +1520,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
                               ? <Badge variant="secondary" className="text-xs">{r.resolved?.categoryName || tx("Category", "ক্যাটাগরি")}</Badge>
                               : <Badge variant="outline" className="text-xs">{tx("Standard", "স্ট্যান্ডার্ড")}</Badge>}
                         </TableCell>
-                        <TableCell className="text-right text-xs">{money(Number(r.manualRate) > 0 ? Number(r.manualRate) : r.rate)}</TableCell>
+                        <TableCell className="text-right text-xs whitespace-nowrap">{money(Number(r.manualRate) > 0 ? Number(r.manualRate) : r.rate)} / {money(((Number(r.manualRate) > 0 ? Number(r.manualRate) : Number(r.rate || 0)) * 33) / 100)}</TableCell>
                         <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">
                           {(() => {
                             const bd = describeBaseCalculation(
