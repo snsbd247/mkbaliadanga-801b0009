@@ -90,9 +90,11 @@ describe("irrigation receipt edge cases (overflow prevention)", () => {
     expect(rowFor(html, "জমির পরিমাণ:")).toContain("০.৫০০০ একর");
   });
 
-  it("owner_self shows নিজ/মালিক only", () => {
+  it("owner_self shows only the owner's own name (no bargadar/owner split)", () => {
     const html = buildReceiptCopyHtmlForTest({ ...base, owner_self: true }, "farmer", "bn");
-    expect(rowFor(html, "কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি:")).toContain("নিজ/মালিক");
+    const val = rowFor(html, "কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি:");
+    expect(val).toContain("মোঃ মাসুদ রানা");
+    expect(val).not.toContain("/"); // self ⇒ single name, no bargadar/owner separator
   });
 });
 
