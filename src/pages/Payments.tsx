@@ -584,10 +584,8 @@ export default function Payments() {
       if (a.kind === "irrigation" && a.reference_id) {
         const { data: inv } = await supabase.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", a.reference_id).maybeSingle();
         if (inv) {
-          const newPaid = Math.max(0, Number(inv.paid_amount || 0) - amt);
-          const payable = Number(inv.payable_amount || 0);
-          const newStatus = newPaid <= 0 ? "unpaid" : newPaid >= payable ? "paid" : "partial";
-          await supabase.from("irrigation_invoices").update({ paid_amount: newPaid, due_amount: Math.max(0, payable - newPaid), invoice_status: newStatus } as any).eq("id", a.reference_id);
+          const st = computeInvoiceDue(inv.payable_amount, Number(inv.paid_amount || 0) - amt);
+          await supabase.from("irrigation_invoices").update({ paid_amount: st.paid, due_amount: st.due, invoice_status: st.status } as any).eq("id", a.reference_id);
         }
         await supabase.from("irrigation_invoice_payments").delete().eq("invoice_id", a.reference_id).eq("payment_id", p.id);
       } else if (a.kind === "savings") {
