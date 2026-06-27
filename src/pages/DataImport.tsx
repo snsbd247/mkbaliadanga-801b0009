@@ -416,6 +416,9 @@ export default function DataImport() {
           accountNumbers.push(String(r.raw.owner_account_number ?? "").trim());
           const tenantAcc = r.raw.tenant_account_number ?? r.raw.sharecropper_account_number;
           if (tenantAcc) accountNumbers.push(String(tenantAcc).trim());
+        } else if (mod === "loan_guarantors") {
+          accountNumbers.push(String(r.raw.loan_account_number ?? "").trim());
+          if (r.raw.guarantor_account_number) accountNumbers.push(String(r.raw.guarantor_account_number).trim());
         } else {
           accountNumbers.push(String(r.raw.account_number ?? "").trim());
         }
