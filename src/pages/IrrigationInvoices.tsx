@@ -626,7 +626,16 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                 </TableHead>
                 <TableHead>{tx("Invoice No", "ইনভয়েস নং")}</TableHead>
                 <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
-                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 hover:text-foreground"
+                    onClick={() => setMouzaSort((p) => (p === "asc" ? "desc" : p === "desc" ? "none" : "asc"))}
+                  >
+                    {tx("Mouza", "মৌজা")}
+                    {mouzaSort === "asc" ? <ArrowUp className="h-3 w-3" /> : mouzaSort === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                  </button>
+                </TableHead>
                 <TableHead>{tx("Land", "জমি")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
