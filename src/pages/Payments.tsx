@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { TruncateText } from "@/components/ui/truncate-text";
 import { exportPaymentReceiptPDF } from "@/lib/exports";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
-import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { paymentInitialStatus } from "@/lib/approvalMatrix";
 import { computeInvoiceDue } from "@/lib/irrigationDue";
@@ -969,7 +969,7 @@ export default function Payments() {
                                 seasonName: inv?.seasons?.name,
                               }) || (({ high_land: tx("High land","উঁচু জমি"), medium_land: tx("Medium land","মাঝারি জমি"), low_land: tx("Low land","নিচু জমি"), other: tx("Other","অন্যান্য") } as Record<string, string>)[inv?.lands?.field_type as string] ?? null)
                             )).filter(Boolean))).join("/") || null;
-                            const ratePerAcre = primaryCharge?.season_rate != null ? Number(primaryCharge.season_rate) : null;
+                            const ratePerAcre = normalizeIrrigationRatePerAcre(primaryCharge?.season_rate, primaryCharge?.irrigation_amount, primaryCharge?.lands?.land_size);
                             const ownerName = ownerFarmer ? (ownerFarmer.name_bn || ownerFarmer.name_en) : null;
                             const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
                             const memberSummary = `${p.farmers?.member_no ?? p.farmers?.farmer_code ?? "N/A"}/${(primaryCharge?.is_borga && ownerMember) ? ownerMember : "N/A"}`;
