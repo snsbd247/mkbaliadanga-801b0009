@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { validateNoOverlappingBorga } from "@/lib/irrigationBargaValidation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,6 +131,23 @@ export function LandRelations({ farmerId }: Props) {
             "This parcel already has an active sharecropper — only one active sharecropper is allowed per parcel.",
             "এই জমিতে ইতিমধ্যে একজন সক্রিয় বর্গাদার আছেন — একই জমি একাধিক সক্রিয় বর্গাদারের কাছে দেওয়া যাবে না।",
           ));
+          setSaving(false);
+          return;
+        }
+      }
+      // ১.২: ব্যাকডেটেড valid_from যেন কোনো পুরোনো বর্গা সময়কালের সাথে ওভারল্যাপ না করে
+      if (form.sharecropper_farmer_id) {
+        const { data: periods } = await supabase.from("land_relations")
+          .select("sharecropper_farmer_id,valid_from,valid_to")
+          .eq("land_id", form.land_id)
+          .not("sharecropper_farmer_id", "is", null)
+          .is("deleted_at", null);
+        const overlap = validateNoOverlappingBorga([
+          ...((periods as any[]) ?? []),
+          { sharecropper_farmer_id: form.sharecropper_farmer_id, valid_from: form.valid_from, valid_to: null },
+        ]);
+        if (overlap.length) {
+          toast.error(overlap[0].bn);
           setSaving(false);
           return;
         }

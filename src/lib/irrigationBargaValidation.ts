@@ -80,3 +80,52 @@ export function bargaErrorMessages(
 ): string[] {
   return errors.map((e) => e[lang]);
 }
+
+/**
+ * A time-bounded borga assignment on a single land parcel.
+ * `valid_to === null` means the relation is open-ended (still active).
+ */
+export interface ActiveBorgaPeriod {
+  sharecropper_farmer_id: string;
+  valid_from: string;        // YYYY-MM-DD
+  valid_to?: string | null;  // YYYY-MM-DD or null = open-ended
+}
+
+/** Two date ranges overlap when each starts on/before the other ends. */
+function periodsOverlap(a: ActiveBorgaPeriod, b: ActiveBorgaPeriod): boolean {
+  const aFrom = a.valid_from;
+  const aTo = a.valid_to ?? "9999-12-31";
+  const bFrom = b.valid_from;
+  const bTo = b.valid_to ?? "9999-12-31";
+  return aFrom <= bTo && bFrom <= aTo;
+}
+
+/**
+ * Block multiple *active* (time-overlapping) borga relations on the same land.
+ * A parcel can only have one sharecropper active for any given day, so any two
+ * relations whose [valid_from, valid_to] ranges overlap are a conflict.
+ * Returns bilingual errors; empty array = valid.
+ */
+export function validateNoOverlappingBorga(
+  relations: ActiveBorgaPeriod[],
+): BargaValidationError[] {
+  const errors: BargaValidationError[] = [];
+  const rows = (relations ?? []).filter(
+    (r) => r.sharecropper_farmer_id && r.valid_from,
+  );
+  for (let i = 0; i < rows.length; i++) {
+    for (let j = i + 1; j < rows.length; j++) {
+      if (periodsOverlap(rows[i], rows[j])) {
+        errors.push({
+          bn: `একই জমিতে একই সময়ে একাধিক সক্রিয় বর্গাদার থাকতে পারে না (সময়কাল ${rows[i].valid_from} ও ${rows[j].valid_from} এর মধ্যে মিল আছে)।`,
+          en: `A single land cannot have more than one active sharecropper for overlapping periods (${rows[i].valid_from} conflicts with ${rows[j].valid_from}).`,
+        });
+      }
+    }
+  }
+  return errors;
+}
+
+export function hasOverlappingBorga(relations: ActiveBorgaPeriod[]): boolean {
+  return validateNoOverlappingBorga(relations).length > 0;
+}
