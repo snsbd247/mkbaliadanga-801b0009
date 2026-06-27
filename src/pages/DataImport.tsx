@@ -1426,6 +1426,18 @@ export default function DataImport() {
         )}
       </Card>
 
+      {progress && (
+        <Card className="mt-4 p-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">Importing “{mod}” …</span>
+            <span className="text-muted-foreground">
+              {progress.current} / {progress.total} • OK {progress.ok} • Failed {progress.failed}
+            </span>
+          </div>
+          <Progress value={progress.total ? (progress.current / progress.total) * 100 : 0} />
+        </Card>
+      )}
+
       {summary && (
         <Card className="mt-4 p-4">
           <div className="font-medium mb-2">
