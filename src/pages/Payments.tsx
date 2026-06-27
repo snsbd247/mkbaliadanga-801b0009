@@ -27,6 +27,7 @@ import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { downloadBnReceiptPdf, type ReceiptCopy, type BnReceiptData } from "@/lib/bnReceipts";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { paymentInitialStatus } from "@/lib/approvalMatrix";
+import { computeInvoiceDue } from "@/lib/irrigationDue";
 import { nextMonthlyReceiptNo, nextUnifiedReceiptNo, peekMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { ReceiptCopyMenu } from "@/components/receipts/ReceiptCopyMenu";
 import { IrrigationReceiptPreviewDialog } from "@/components/receipts/IrrigationReceiptPreviewDialog";
