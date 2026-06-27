@@ -48,6 +48,9 @@ export default function OwnLandsTab({
   const [sortKey, setSortKey] = useState<SortKey>("dag_no");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
+  const { rows: landTypeRows } = useLandTypes();
+  // Prefer the land_types catalogue name; fall back to the legacy field_type enum label.
+  const ftLabel = (l: any) => landTypeLabel(landTypeRows, l?.land_type_id, l?.field_type) || t((l?.field_type as any) ?? "");
 
   const statusLabel = (s: SeasonStatus["state"]) =>
     s === "paid" ? tx("Paid", "পরিশোধিত")
