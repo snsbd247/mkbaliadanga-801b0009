@@ -341,6 +341,7 @@ export default function CollectionReport() {
     const parts: string[] = [];
     if (from || to) parts.push(`${from || "…"}→${to || "…"}`);
     if (farmerId !== ALL) parts.push(farmers.find((f) => f.id === farmerId)?.name_en ?? "");
+    if (kind !== ALL) parts.push(sourceLabel(kind as CollectionRow["source"]));
     if (effectiveUserId) parts.push(nameForUser(effectiveUserId));
     return parts.length ? ` (${parts.join(" · ")})` : "";
   };
