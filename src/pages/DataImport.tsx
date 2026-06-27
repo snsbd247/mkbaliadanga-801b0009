@@ -1009,6 +1009,111 @@ export default function DataImport() {
               office_id: borrower.office_id ?? null,
               role: String(raw.role ?? "guarantor").trim() || "guarantor",
             };
+          } else if (mod === "farmers") {
+            const acc = String(raw.account_number ?? "").trim();
+            const nameEn = String(raw.name_en ?? "").trim();
+            if (!acc) throw new Error("account_number required");
+            if (!nameEn) throw new Error("name_en required");
+            if (farmerMap.get(acc)) throw new Error(`Farmer already exists for account_number=${acc}`);
+            table = "farmers";
+            payload = {
+              farmer_code: acc,
+              account_number: acc,
+              name_en: nameEn,
+              name_bn: raw.name_bn ?? null,
+              father_name: raw.father_name ?? null,
+              mother_name: raw.mother_name ?? null,
+              mobile: raw.mobile ?? null,
+              nid: raw.nid ?? null,
+              village: raw.village ?? null,
+              address: raw.address ?? null,
+              status: String(raw.status ?? "active").trim() || "active",
+              created_by: user?.id,
+            };
+          } else if (mod === "savings_plans") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            const dur = Number(raw.duration_months ?? 0);
+            if (!(dur > 0)) throw new Error("duration_months must be > 0");
+            table = "savings_plans";
+            payload = {
+              name,
+              name_bn: raw.name_bn ?? null,
+              duration_months: dur,
+              installment_type: String(raw.installment_type ?? "monthly").trim() || "monthly",
+              installment_amount: Number(raw.installment_amount ?? 0) || 0,
+              interest_rate: Number(raw.interest_rate ?? 0) || 0,
+              maturity_type: String(raw.maturity_type ?? "simple").trim() || "simple",
+              is_active: true,
+              created_by: user?.id,
+            };
+          } else if (mod === "loan_plans") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            const dur = Number(raw.duration_months ?? 0);
+            if (!(dur > 0)) throw new Error("duration_months must be > 0");
+            table = "loan_plans";
+            payload = {
+              name,
+              name_bn: raw.name_bn ?? null,
+              duration_months: dur,
+              installment_type: String(raw.installment_type ?? "monthly").trim() || "monthly",
+              interest_rate: Number(raw.interest_rate ?? 0) || 0,
+              penalty_type: String(raw.penalty_type ?? "percentage").trim() || "percentage",
+              penalty_value: Number(raw.penalty_value ?? 0) || 0,
+              grace_period_days: Number(raw.grace_period_days ?? 0) || 0,
+              is_active: true,
+              created_by: user?.id,
+            };
+          } else if (mod === "farmer_savings_plans") {
+            const f = farmerMap.get(String(raw.account_number));
+            if (!f) throw new Error("Farmer not found for account_number");
+            const plan = savingsPlanMap.get(String(raw.plan_name ?? "").trim().toLowerCase());
+            if (!plan) throw new Error(`Savings plan not found for plan_name=${raw.plan_name ?? ""}`);
+            table = "farmer_savings_plans";
+            payload = {
+              farmer_id: f.id,
+              plan_id: plan.id,
+              office_id: f.office_id ?? plan.office_id ?? null,
+              start_date: raw.start_date || new Date().toISOString().slice(0, 10),
+              expected_total: Number(raw.expected_total ?? 0) || 0,
+              expected_interest: Number(raw.expected_interest ?? 0) || 0,
+              maturity_amount: Number(raw.maturity_amount ?? 0) || 0,
+              status: String(raw.status ?? "active").trim() || "active",
+              created_by: user?.id,
+            };
+          } else if (mod === "irrigation_categories") {
+            const code = String(raw.code ?? "").trim();
+            if (!code) throw new Error("code required");
+            table = "irrigation_categories";
+            payload = {
+              code,
+              name_bn: raw.name_bn ?? null,
+              name_en: raw.name_en ?? null,
+              calculation_basis: String(raw.calculation_basis ?? "per_shotok").trim() || "per_shotok",
+              allow_manual_negotiation: String(raw.allow_manual_negotiation ?? "").trim().toLowerCase() === "true",
+              is_active: true,
+              created_by: user?.id,
+            };
+          } else if (mod === "irrigation_rates") {
+            const year = Number(raw.season_year ?? 0);
+            const stype = String(raw.season_type ?? "").trim().toLowerCase();
+            if (!year) throw new Error("season_year required");
+            if (!stype) throw new Error("season_type required");
+            const seasonId = seasonMap.get(`${year}|${stype}`);
+            if (!seasonId) throw new Error(`Season not found for ${year} ${stype}`);
+            table = "irrigation_rates";
+            payload = {
+              season_id: seasonId,
+              basis: String(raw.basis ?? "per_size").trim() || "per_size",
+              base_rate: Number(raw.base_rate ?? 0) || 0,
+              canal_charge: Number(raw.canal_charge ?? 0) || 0,
+              maintenance_charge: Number(raw.maintenance_charge ?? 0) || 0,
+              other_charge: Number(raw.other_charge ?? 0) || 0,
+              note: raw.note ?? null,
+              is_active: true,
+              created_by: user?.id,
+            };
           }
 
           if (dryRun) {
