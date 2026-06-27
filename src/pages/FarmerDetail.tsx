@@ -549,10 +549,11 @@ export default function FarmerDetail() {
           .in("id", allocIds);
         invoiceRows = data ?? [];
       }
-      const primary = invoiceRows[0];
-      const land = primary?.lands;
-      const ownerFarmer = land?.owner;
       const isBorga = invoiceRows.some((inv) => inv?.is_borga);
+      const primary = invoiceRows[0];
+      const ownerInvoice = invoiceRows.find((inv) => inv?.is_borga && inv?.lands?.owner) ?? primary;
+      const land = primary?.lands;
+      const ownerFarmer = ownerInvoice?.lands?.owner;
       const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
       const ownerName = ownerFarmer ? (ownerFarmer.name_bn || ownerFarmer.name_en) : null;
       const dagNo = Array.from(new Set(invoiceRows

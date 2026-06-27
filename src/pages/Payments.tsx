@@ -958,9 +958,10 @@ export default function Payments() {
                                 .neq("invoice_status", "cancelled");
                               totalOutstanding = (allDues ?? []).reduce((s: number, r: any) => s + Number(r.due_amount || 0), 0);
                             }
-                            const land = primaryCharge?.lands;
-                            const ownerFarmer = land?.owner;
                             const anyBorga = (invoiceRows as any[]).some((inv) => !!inv?.is_borga);
+                            const ownerInvoice = (invoiceRows as any[]).find((inv) => inv?.is_borga && inv?.lands?.owner) ?? primaryCharge;
+                            const land = primaryCharge?.lands;
+                            const ownerFarmer = ownerInvoice?.lands?.owner;
                             const isSelf = !anyBorga;
                             // জমির ধরন: ক্যাটালগ/সিজন থেকে; নাহলে লিগ্যাসি enum.
                             const fieldTypeBn = Array.from(new Set((invoiceRows as any[]).map((inv) => (

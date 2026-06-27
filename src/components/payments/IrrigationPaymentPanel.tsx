@@ -393,6 +393,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       // ---- Official রশিদ enriched fields ----
       const rep = (sorted[0] ?? previousInvoices[0]) as Invoice | undefined;
+      const ownerRep = (allReceiptInvoices.find((inv) => inv.is_borga && inv.owner) ?? rep) as Invoice | undefined;
       // জমির ধরন: ধান হলে উচু/নিচু/মাঝারি, নাহলে ক্যাটেগরি (পুকুর/সবজি/ভর্তি ফি ইত্যাদি)
       const fieldTypeBn = Array.from(new Set(
         allReceiptInvoices
@@ -420,8 +421,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const dueChargeBase = Math.max(0, previousDueTotal - duePenalty);
       // মালিক নিজে কিনা (বর্গা না হলে নিজ)
       const isBorga = allReceiptInvoices.some((inv) => inv.is_borga);
-      const ownerName = rep?.owner ? (lang === "bn" ? rep.owner.name_bn : rep.owner.name_en) || rep.owner.name_bn || rep.owner.name_en : null;
-      const ownerMember = rep?.owner?.member_no || rep?.owner?.farmer_code || null;
+      const ownerName = ownerRep?.owner ? (lang === "bn" ? ownerRep.owner.name_bn : ownerRep.owner.name_en) || ownerRep.owner.name_bn || ownerRep.owner.name_en : null;
+      const ownerMember = ownerRep?.owner?.member_no || ownerRep?.owner?.farmer_code || null;
       const ownerLabel = ownerName ? `${ownerName}${ownerMember ? "-" + ownerMember : ""}` : null;
       const memberSummary = `${farmer?.member_no ?? farmer?.farmer_code ?? "N/A"}/${(isBorga && ownerMember) ? ownerMember : "N/A"}`;
       const billInfo = Array.from(new Set(
