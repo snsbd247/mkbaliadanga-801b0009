@@ -318,7 +318,7 @@ export default function Payments() {
   }
 
   async function load() {
-    let pq = supabase.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
+    let pq = supabase.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
     pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
     if (period !== "all") {
       const now = new Date();
@@ -772,7 +772,7 @@ export default function Payments() {
                 <SelectContent>
                   <SelectItem value="general">{tx("General", "সাধারণ")}</SelectItem>
                   <SelectItem value="hawlat">{tx("Hawlat", "হাওলাত")}</SelectItem>
-                  <SelectItem value="bank">{tx("Bank", "ব্যাংক")}</SelectItem>
+                  <SelectItem value="bank">{tx("Scrap sale", "ভাংড়ী বিক্রি")}</SelectItem>
                   <SelectItem value="donation">{tx("Donation", "দান")}</SelectItem>
                   <SelectItem value="misc">{tx("Misc", "বিবিধ")}</SelectItem>
                 </SelectContent>
@@ -941,13 +941,15 @@ export default function Payments() {
                             const refIds = irrAllocs.map((a: any) => a.reference_id).filter(Boolean);
                             const collectedFromOutstanding = irrAllocs.reduce((s: number, a: any) => s + Number(a.amount || 0), 0) || Number(p.amount || 0);
                             let primaryCharge: any = null;
+                            let invoiceRows: any[] = [];
                             let totalOutstanding = 0;
                             if (refIds.length) {
                               const { data: invs } = await supabase
                                 .from("irrigation_invoices")
-                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no))")
+                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
                                 .in("id", refIds);
-                              primaryCharge = (invs ?? [])[0] ?? null;
+                              invoiceRows = invs ?? [];
+                              primaryCharge = invoiceRows[0] ?? null;
                               const { data: allDues } = await supabase
                                 .from("irrigation_invoices")
                                 .select("due_amount")
@@ -960,46 +962,73 @@ export default function Payments() {
                             const ownerFarmer = land?.farmers;
                             const isSelf = !primaryCharge?.is_borga && (!land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner");
                             // জমির ধরন: ক্যাটালগ/সিজন থেকে; নাহলে লিগ্যাসি enum.
-                            const fieldTypeBn = resolveFieldTypeLabel({
-                              categoryName: primaryCharge?.irrigation_category_name,
-                              landTypeName: primaryCharge?.land_type_name,
-                              seasonName: primaryCharge?.seasons?.name,
-                            }) || (({ high_land: tx("High land","উঁচু জমি"), medium_land: tx("Medium land","মাঝারি জমি"), low_land: tx("Low land","নিচু জমি"), other: tx("Other","অন্যান্য") } as Record<string, string>)[land?.field_type as string] ?? null);
+                            const fieldTypeBn = Array.from(new Set((invoiceRows as any[]).map((inv) => (
+                              resolveFieldTypeLabel({
+                                categoryName: inv?.irrigation_category_name,
+                                landTypeName: inv?.land_type_name,
+                                seasonName: inv?.seasons?.name,
+                              }) || (({ high_land: tx("High land","উঁচু জমি"), medium_land: tx("Medium land","মাঝারি জমি"), low_land: tx("Low land","নিচু জমি"), other: tx("Other","অন্যান্য") } as Record<string, string>)[inv?.lands?.field_type as string] ?? null)
+                            )).filter(Boolean))).join("/") || null;
                             const ratePerAcre = primaryCharge?.season_rate != null ? Number(primaryCharge.season_rate) : null;
                             const ownerName = ownerFarmer ? (ownerFarmer.name_bn || ownerFarmer.name_en) : null;
-                            const memberSummary = `${p.farmers?.member_no ?? "N/A"}/${(primaryCharge?.is_borga && ownerName) ? ownerName : "N/A"}`;
+                            const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
+                            const memberSummary = `${p.farmers?.member_no ?? p.farmers?.farmer_code ?? "N/A"}/${(primaryCharge?.is_borga && ownerMember) ? ownerMember : "N/A"}`;
+                            const mouza = (invoiceRows as any[]).find((inv) => inv?.lands?.mouza)?.lands?.mouza ?? null;
+                            const dagNo = Array.from(new Set((invoiceRows as any[])
+                              .map((inv) => (inv?.lands?.dag_no ?? "").trim())
+                              .filter(Boolean)
+                              .flatMap((s) => s.split(/[,;\s]+/))
+                              .filter(Boolean))).join(", ") || null;
+                            const landSize = (invoiceRows as any[]).reduce((s, inv) => s + Number(inv?.lands?.land_size || 0), 0) || null;
+                            const billInfo = Array.from(new Set((invoiceRows as any[])
+                              .map((inv) => inv?.seasons?.name || inv?.irrigation_category_name || inv?.land_type_name || null)
+                              .filter(Boolean))).join("/") || "সেচ চার্জ";
+                            const patwari = (invoiceRows as any[]).find((inv) => inv?.lands?.patwaris)?.lands?.patwaris ?? null;
+                            const holdingDescription = [
+                              ...Array.from(new Set((invoiceRows as any[]).map((inv) => inv?.lands?.notes?.trim()).filter(Boolean))),
+                              p.note?.trim() || null,
+                            ].filter(Boolean).join(" / ") || null;
                             irrEnriched = {
                               farmerExtras: {
-                                mouza: land?.mouza ?? null,
-                                dag_no: land?.dag_no ?? null,
-                                land_size: land?.land_size != null ? Number(land.land_size) : null,
+                                mouza,
+                                dag_no: dagNo,
+                                land_size: landSize,
                                 field_type_bn: fieldTypeBn,
                                 owner_type_bn: primaryCharge?.is_borga ? "বর্গাদার" : "মালিক",
                               },
+                              bill_info: billInfo,
                               rate: ratePerAcre,
                               member_summary: memberSummary,
                               owner_self: isSelf,
                               land_owner_label: isSelf
                                 ? "নিজ"
                                 : ownerFarmer
-                                  ? `${ownerFarmer.name_bn || ownerFarmer.name_en}${ownerFarmer.member_no ? " (" + ownerFarmer.member_no + ")" : ""}`
+                                  ? `${ownerFarmer.name_bn || ownerFarmer.name_en}${ownerMember ? "-" + ownerMember : ""}`
                                   : null,
-                              current_season_charge: primaryCharge?.irrigation_amount != null ? Number(primaryCharge.irrigation_amount) : null,
-                              penalty_amount: primaryCharge?.delay_fee != null ? Number(primaryCharge.delay_fee) : 0,
-                              maintenance_charge: primaryCharge?.maintenance_amount != null ? Number(primaryCharge.maintenance_amount) : 0,
-                              canal_charge: primaryCharge?.canal_amount != null ? Number(primaryCharge.canal_amount) : 0,
+                              current_season_charge: (invoiceRows as any[]).reduce((s, inv) => s + Number(inv?.irrigation_amount || 0), 0),
+                              penalty_amount: (invoiceRows as any[]).reduce((s, inv) => s + Number(inv?.delay_fee || 0), 0),
+                              maintenance_charge: (invoiceRows as any[]).reduce((s, inv) => s + Number(inv?.maintenance_amount || 0), 0),
+                              canal_charge: (invoiceRows as any[]).reduce((s, inv) => s + Number(inv?.canal_amount || 0), 0),
                               total_outstanding: totalOutstanding,
                               collected_from_outstanding: collectedFromOutstanding,
                               remark: p.note ?? primaryCharge?.invoice_no ?? null,
+                              holding_description: holdingDescription,
+                              patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
+                              patwari_mobile: patwari?.mobile ?? null,
                             };
                           }
 
                           // বিবিধ আদায় (হাওলাত/ব্যাংক/দান/বিবিধ): জমি-সম্পর্কিত সারি বাদ, শুধু bill_info ধরন দেখাবে।
                           const miscLabels: Record<string, string> = {
-                            hawlat: "হাওলাত", bank: "ব্যাংক", donation: "অনুদান", misc: "বিবিধ",
+                            hawlat: "হাওলাত গ্রহণ", bank: "ভাংড়ী বিক্রি", donation: "অনুদান", misc: "বিবিধ",
                           };
                           const catBn = miscLabels[(p.category as string) ?? ""] ?? null;
                           const isMiscCollection = kind === "irrigation" && !!catBn;
+                          let villageUnion: string | null = null;
+                          if (kind === "irrigation" && p.farmers?.union_id) {
+                            const { data: u } = await supabase.from("unions").select("name_bn,name").eq("id", p.farmers.union_id).maybeSingle();
+                            villageUnion = u?.name_bn || u?.name || null;
+                          }
                           const rd: BnReceiptData = {
                             kind,
                             company_name: brand.company_name,
@@ -1009,7 +1038,7 @@ export default function Payments() {
                             receipt_no: p.receipt_no || autoReceiptNo(prefix as any, p.id, new Date(p.created_at)),
                             date: p.created_at,
                             misc_collection: isMiscCollection || undefined,
-                            bill_info: kind === "irrigation" ? (catBn ?? "সেচ চার্জ") : undefined,
+                            bill_info: kind === "irrigation" ? (catBn ?? irrEnriched.bill_info ?? "সেচ চার্জ") : undefined,
                             farmer: {
                               name: p.farmers?.name_bn || p.farmers?.name_en || "—",
                               member_no: p.farmers?.member_no ?? p.farmers?.farmer_code ?? null,
@@ -1024,6 +1053,7 @@ export default function Payments() {
                               ? {
                                   owner_self: irrEnriched.owner_self,
                                   land_owner_label: irrEnriched.land_owner_label,
+                                  village_union: villageUnion,
                                   rate: irrEnriched.rate,
                                   member_summary: irrEnriched.member_summary,
                                   current_season_charge: irrEnriched.current_season_charge,
@@ -1033,6 +1063,9 @@ export default function Payments() {
                                   total_outstanding: irrEnriched.total_outstanding,
                                   collected_from_outstanding: irrEnriched.collected_from_outstanding,
                                   remark: irrEnriched.remark,
+                                  holding_description: irrEnriched.holding_description,
+                                  patwari_name: irrEnriched.patwari_name,
+                                  patwari_mobile: irrEnriched.patwari_mobile,
                                 }
                               : {}),
                             collected_amount: Number(p.amount),

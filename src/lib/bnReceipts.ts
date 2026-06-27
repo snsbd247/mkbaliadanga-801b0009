@@ -57,6 +57,8 @@ export interface ReceiptOptions {
 export interface BnReceiptData {
   kind: ReceiptKind;
   receipt_no: string;
+  /** Printed official short serial for irrigation sample layout. Stored receipt_no remains unchanged. */
+  receipt_no_display?: string | null;
   date: string | Date;
   bill_info?: string;
   company_name_bn?: string | null;
@@ -164,15 +166,75 @@ function moneyText(n: number | null | undefined, lang: ReceiptLang, suffix = "")
   return `${digits(value, lang)}${suffix}`;
 }
 
-/** Official irrigation receipt money: whole-number when integer (no grouping, no decimals), else 2 decimals. */
+/** Official irrigation receipt money: always whole taka (no grouping, no decimals). */
 function moneyInt(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
   const v = Number(n ?? 0);
-  const s = Number.isInteger(v) ? String(v) : v.toFixed(2);
+  const s = String(Math.round(v));
   return `${digits(s, lang)}${suffix}`;
+}
+
+const cleanBnReceiptText = (s: string) => s
+  .replace(/হওলাত/g, "হাওলাত")
+  .replace(/গ্রহন/g, "গ্রহণ")
+  .replace(/ভাংড়ী/g, "ভাংড়ী")
+  .replace(/ভাঙারি/g, "ভাংড়ী");
+
+const splitReceiptTokens = (s?: string | null): string[] => cleanBnReceiptText(String(s ?? ""))
+  .split(/[\/|,;]+/)
+  .map((x) => x.trim())
+  .filter(Boolean);
+
+function isRiceBillInfo(s?: string | null): boolean {
+  const v = String(s ?? "").toLowerCase();
+  return /(আমন|ইরি|বোরো|ধান|aman|iri|boro|rice|paddy)/i.test(v);
+}
+
+function normalizeCollectionInfo(s?: string | null): string | null {
+  const tokens = splitReceiptTokens(s);
+  if (!tokens.length) return null;
+  // Client rule: "আদায়ের তথ্য" must show only the actual one item, never the full options list.
+  return tokens[0];
+}
+
+function normalizeLandTypeText(fieldType?: string | null, billInfo?: string | null): string | null {
+  const tokens = Array.from(new Set(splitReceiptTokens(fieldType)));
+  if (!tokens.length) return null;
+  const elevation = (x: string) => /(উঁচু|উচু|নিচু|মাঝারি|high|low|medium)/i.test(x);
+  const bill = cleanBnReceiptText(String(billInfo ?? "")).replace(/\s+/g, "").toLowerCase();
+  if (isRiceBillInfo(billInfo)) {
+    const riceTypes = tokens.filter(elevation);
+    return (riceTypes.length ? riceTypes : tokens).join("/");
+  }
+  const nonRice = tokens.filter((x) => !elevation(x));
+  const matched = nonRice.find((x) => {
+    const n = cleanBnReceiptText(x).replace(/\s+/g, "").toLowerCase();
+    return bill && (bill.includes(n) || n.includes(bill));
+  });
+  return matched ?? (nonRice.length ? nonRice.join("/") : tokens.join("/"));
 }
 
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
   return digits(fmt4(Number(n ?? 0)), lang);
+}
+
+function officialReceiptNoText(d: BnReceiptData, lang: ReceiptLang): string {
+  const manual = (d.receipt_no_display ?? "").trim();
+  if (manual) return digits(manual, lang);
+  const raw = String(d.receipt_no ?? "").trim();
+  // Official sample shows only the serial (e.g. ২৬৫২), not the internal
+  // RCP/IRR date prefix. Keep the stored receipt_no intact; shorten only print.
+  if (/^(RCP|RCPT|IRR|PAY|SAV|LOAN|COMBO)-/i.test(raw)) {
+    const last = raw.split("-").filter(Boolean).pop() ?? raw;
+    if (/^\d+$/.test(last)) return digits(last.replace(/^0+(?=\d)/, ""), lang);
+  }
+  return digits(raw, lang);
+}
+
+function banglaOwnerLabel(label: string, lang: ReceiptLang): string {
+  const v = label.trim();
+  if (!v) return v;
+  if (lang !== "bn") return /^owner\s*:/i.test(v) ? v : `Owner: ${v}`;
+  return /^(মালিক|নিজ)\s*[:ঃ]?/.test(v) ? v : `মালিক: ${v}`;
 }
 
 const STR = {
@@ -182,7 +244,7 @@ const STR = {
     titleLoan: "ঋণের কিস্তি গ্রহণের রশিদ",
     farmerCopy: "কৃষকের কপি",
     officeCopy: "অফিস কপি",
-    receiptNo: "রসিদ নং:",
+    receiptNo: "রশিদ নং:",
     billInfo: "আদায়ের তথ্য:",
     date: "সংগৃহীত তারিখ:",
     farmerLine: "কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি:",
@@ -332,7 +394,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       rows.push([t.farmerLine, idPart]);
     } else {
       const ownerPart = (d.land_owner_label && d.land_owner_label.trim())
-        ? d.land_owner_label.trim()
+        ? banglaOwnerLabel(d.land_owner_label, lang)
         : idPart;
       rows.push([t.farmerLine, `${idPart}/${ownerPart}`]);
     }
@@ -342,28 +404,24 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const villageParts = [d.farmer.village, d.village_union].filter(Boolean).join(",");
     rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + digits(String(d.farmer.mobile), lang) : ""}`]);
     // 4. কৃষক এবং মালিক সভ্য সদস্য
-    if (d.member_summary) rows.push([t.memberLine, digits(String(d.member_summary), lang)]);
+    rows.push([t.memberLine, d.member_summary ? digits(String(d.member_summary), lang) : "—"]);
     // 5. মৌজা
-    if (d.farmer.mouza) rows.push([mouzaLabel, d.farmer.mouza]);
+    rows.push([mouzaLabel, d.farmer.mouza || "—"]);
     // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট ÷ ৩৩)
-    if (d.farmer.field_type_bn || d.rate != null) {
-      const ratePerAcre = d.rate != null ? Number(d.rate) : null;
-      const ratePerBigha = d.rate_per_bigha != null
-        ? Number(d.rate_per_bigha)
-        : (ratePerAcre != null ? ratePerAcre / 33 : null);
-      const unit = lang === "bn" ? "টাকা" : "";
-      const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
-      rows.push([t.landKind, [d.farmer.field_type_bn, rateText].filter(Boolean).join("/ ")]);
-    }
+    const ratePerAcre = d.rate != null ? Number(d.rate) : null;
+    const ratePerBigha = d.rate_per_bigha != null
+      ? Number(d.rate_per_bigha)
+      : (ratePerAcre != null ? ratePerAcre / 33 : null);
+    const unit = lang === "bn" ? "টাকা" : "";
+    const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
+    rows.push([t.landKind, [normalizeLandTypeText(d.farmer.field_type_bn, d.bill_info), rateText].filter(Boolean).join("/ ") || "—"]);
     // 7. দাগ নং (একাধিক হতে পারে) — ডেমো অনুযায়ী ডট-সেপারেটেড
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
     const dagFormatted = digits(dagTokens.join("."), lang);
-    if (dagFormatted) rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted}</span>`]);
+    rows.push([dagLabel, `<span data-receipt-row="dag">${dagFormatted || "—"}</span>`]);
     // 8. জমির পরিমাণ — একর (শতক ÷ ১০০), . এর পর ৪ ডিজিট
-    if (d.farmer.land_size != null) {
-      const acre = Number(d.farmer.land_size) / 100;
-      rows.push([t.landSize, `${fixed4Text(acre, lang)} ${lang === "bn" ? "একর" : "acre"}`]);
-    }
+    const acre = d.farmer.land_size != null ? Number(d.farmer.land_size) / 100 : null;
+    rows.push([t.landSize, acre != null ? `${fixed4Text(acre, lang)} ${lang === "bn" ? "একর" : "acre"}` : "—"]);
     // 9. চার্জের পরিমাণ (হাল)/জরিমানা — চলতি সিজনের জমি
     const halCharge = Number(d.current_season_charge ?? 0);
     const halPenalty = Number(d.current_penalty ?? d.penalty_amount ?? 0);
@@ -374,7 +432,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.due, `${moneyInt(dueCharge, lang, "৳")}/${moneyInt(duePenalty, lang, "৳")}`]);
     // 11. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা)
     const totalDue = halCharge + halPenalty + dueCharge + duePenalty;
-    const totalIrr = totalDue > 0 ? totalDue : Number(d.collected_amount ?? 0);
+    const totalIrr = Number(d.collected_amount ?? 0) > 0 ? Number(d.collected_amount ?? 0) : totalDue;
     rows.push([t.totalIrr, moneyInt(totalIrr, lang, "৳")]);
     // 12. কথায়
     if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)} মাত্র।`]);
@@ -483,9 +541,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           : v;
       return `
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;${cellWrap}">${label}</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;${cellWrap}">${value}</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:42%;font-size:20px;line-height:1.24;white-space:nowrap;overflow:hidden;text-overflow:clip;">${label}</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:20px;line-height:1.24;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:20px;line-height:1.24;font-weight:600;${cellWrap}">${value}</td>
         </tr>`;
     }).join("");
 
@@ -495,7 +553,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
         <div style="padding-top:16px;">${logo}</div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;border-bottom:2px solid #111;padding-bottom:1px;">${titleFor(d.kind, lang)}</div>
+          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>` : ""}
@@ -504,8 +562,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
 
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
         <div>
-          <div>${t.receiptNo} ${digits(d.receipt_no, lang)}</div>
-          ${d.bill_info ? `<div>${t.billInfo} ${d.bill_info}</div>` : ""}
+          <div>${t.receiptNo} ${officialReceiptNoText(d, lang)}</div>
+          ${d.bill_info ? `<div>${t.billInfo} ${digits(cleanBnReceiptText(normalizeCollectionInfo(d.bill_info) ?? d.bill_info), lang)}</div>` : ""}
         </div>
         <div style="white-space:nowrap;padding-top:30px;">${t.date} ${fmtOfficialDate(d.date, lang)}</div>
       </div>
