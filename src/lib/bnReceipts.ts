@@ -166,11 +166,51 @@ function moneyText(n: number | null | undefined, lang: ReceiptLang, suffix = "")
   return `${digits(value, lang)}${suffix}`;
 }
 
-/** Official irrigation receipt money: whole-number when integer (no grouping, no decimals), else 2 decimals. */
+/** Official irrigation receipt money: always whole taka (no grouping, no decimals). */
 function moneyInt(n: number | null | undefined, lang: ReceiptLang, suffix = ""): string {
   const v = Number(n ?? 0);
-  const s = Number.isInteger(v) ? String(v) : v.toFixed(2);
+  const s = String(Math.round(v));
   return `${digits(s, lang)}${suffix}`;
+}
+
+const cleanBnReceiptText = (s: string) => s
+  .replace(/হওলাত/g, "হাওলাত")
+  .replace(/গ্রহন/g, "গ্রহণ")
+  .replace(/ভাংড়ী/g, "ভাংড়ী")
+  .replace(/ভাঙারি/g, "ভাংড়ী");
+
+const splitReceiptTokens = (s?: string | null): string[] => cleanBnReceiptText(String(s ?? ""))
+  .split(/[\/|,;]+/)
+  .map((x) => x.trim())
+  .filter(Boolean);
+
+function isRiceBillInfo(s?: string | null): boolean {
+  const v = String(s ?? "").toLowerCase();
+  return /(আমন|ইরি|বোরো|ধান|aman|iri|boro|rice|paddy)/i.test(v);
+}
+
+function normalizeCollectionInfo(s?: string | null): string | null {
+  const tokens = splitReceiptTokens(s);
+  if (!tokens.length) return null;
+  // Client rule: "আদায়ের তথ্য" must show only the actual one item, never the full options list.
+  return tokens[0];
+}
+
+function normalizeLandTypeText(fieldType?: string | null, billInfo?: string | null): string | null {
+  const tokens = Array.from(new Set(splitReceiptTokens(fieldType)));
+  if (!tokens.length) return null;
+  const elevation = (x: string) => /(উঁচু|উচু|নিচু|মাঝারি|high|low|medium)/i.test(x);
+  const bill = cleanBnReceiptText(String(billInfo ?? "")).replace(/\s+/g, "").toLowerCase();
+  if (isRiceBillInfo(billInfo)) {
+    const riceTypes = tokens.filter(elevation);
+    return (riceTypes.length ? riceTypes : tokens).join("/");
+  }
+  const nonRice = tokens.filter((x) => !elevation(x));
+  const matched = nonRice.find((x) => {
+    const n = cleanBnReceiptText(x).replace(/\s+/g, "").toLowerCase();
+    return bill && (bill.includes(n) || n.includes(bill));
+  });
+  return matched ?? (nonRice.length ? nonRice.join("/") : tokens.join("/"));
 }
 
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
