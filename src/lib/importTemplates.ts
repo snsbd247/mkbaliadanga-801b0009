@@ -69,6 +69,41 @@ const TEMPLATES: Record<string, Tpl> = {
     sample: { name: "Md. Rahim", name_bn: "মোঃ রহিম", mobile: "01700000000", nid: "1234567890", address: "Village A", mouza: "Mouza A", note: "" },
     instructions: "পাটোয়ারী (Patwaris) বাল্ক-যোগ। mouza নাম দিয়ে বিদ্যমান মৌজার সাথে ম্যাচ হয় (ঐচ্ছিক)। পাটোয়ারী active হিসেবে তৈরি হয়।",
   },
+  mouzas: {
+    columns: ["upazila", "name", "name_bn", "code"],
+    sample: { upazila: "Shibganj", name: "Mouza A", name_bn: "মৌজা এ", code: "M-001" },
+    instructions: "মৌজা (Mouzas)। upazila নাম দিয়ে বিদ্যমান উপজেলার সাথে ম্যাচ হয় (আবশ্যক)। name আবশ্যক।",
+  },
+  seasons: {
+    columns: ["year", "type", "name", "fiscal_year", "start_date", "end_date", "due_date", "status"],
+    sample: { year: 2026, type: "boro", name: "Boro 2026", fiscal_year: "2025-2026", start_date: "2026-01-01", end_date: "2026-06-30", due_date: "2026-07-15", status: "active" },
+    instructions: "সিজন (Seasons)। type = boro|aman|aus ইত্যাদি। year আবশ্যক। status = active|closed (ডিফল্ট active)। তারিখ YYYY-MM-DD।",
+  },
+  offices: {
+    columns: ["name", "registration_no", "established_on", "contact", "address"],
+    sample: { name: "Central Office", registration_no: "REG-001", established_on: "2010-01-01", contact: "01700000000", address: "Town Center" },
+    instructions: "অফিস/শাখা (Offices)। name আবশ্যক। established_on = YYYY-MM-DD।",
+  },
+  bank_accounts: {
+    columns: ["bank_name", "branch", "account_no", "account_title", "account_type", "opening_balance", "stream"],
+    sample: { bank_name: "Sonali Bank", branch: "Shibganj", account_no: "1234567890", account_title: "Samity Account", account_type: "savings", opening_balance: 0, stream: "irrigation" },
+    instructions: "ব্যাংক হিসাব (Bank accounts)। bank_name ও account_no আবশ্যক। account_type = savings|current। stream = irrigation|savings|loan|other।",
+  },
+  bank_transactions: {
+    columns: ["account_no", "txn_date", "txn_type", "amount", "reference_no", "note"],
+    sample: { account_no: "1234567890", txn_date: "2026-02-01", txn_type: "deposit", amount: 5000, reference_no: "TXN-001", note: "" },
+    instructions: "ব্যাংক লেনদেন (Bank transactions)। account_no দিয়ে বিদ্যমান ব্যাংক হিসাব ম্যাচ হয় (আবশ্যক)। txn_type = deposit|withdrawal। txn_date = YYYY-MM-DD।",
+  },
+  assets: {
+    columns: ["asset_code", "name_en", "name_bn", "serial_no", "asset_type", "tracking_mode", "unit", "purchase_price", "current_status"],
+    sample: { asset_code: "AST-001", name_en: "Water Pump", name_bn: "পানির পাম্প", serial_no: "SN-123", asset_type: "fixed_asset", tracking_mode: "quantity", unit: "pcs", purchase_price: 25000, current_status: "purchased" },
+    instructions: "সম্পদ (Assets)। asset_code ও name_en আবশ্যক। asset_type = fixed_asset|consumable। tracking_mode = quantity|individual। current_status = purchased|installed|disposed।",
+  },
+  loan_guarantors: {
+    columns: ["loan_account_number", "name", "father_name", "village", "mobile", "nid", "role", "guarantor_account_number"],
+    sample: { loan_account_number: "10001", name: "Md. Karim", father_name: "Md. Jashim", village: "Bagbari", mobile: "01700000000", nid: "1234567890", role: "guarantor", guarantor_account_number: "" },
+    instructions: "ঋণ জামিনদার/নমিনি (Loan guarantors)। loan_account_number = ঋণগ্রহীতার সদস্য নম্বর (সর্বশেষ ঋণে যুক্ত হয়)। role = guarantor|nominee। guarantor_account_number ঐচ্ছিক (জামিনদার নিজে সদস্য হলে)।",
+  },
 };
 
 function csvEscape(v: any): string {
