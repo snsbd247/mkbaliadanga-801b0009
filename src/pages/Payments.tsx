@@ -199,10 +199,8 @@ export default function Payments() {
       if (editInvoiceId) {
         const { data: inv2 } = await supabase.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", editInvoiceId).maybeSingle();
         if (inv2) {
-          const newPaid = Math.max(0, Number((inv2 as any).paid_amount || 0) + diff);
-          const payable2 = Number((inv2 as any).payable_amount || 0);
-          const newStatus = newPaid <= 0 ? "unpaid" : newPaid >= payable2 ? "paid" : "partial";
-          await supabase.from("irrigation_invoices").update({ paid_amount: newPaid, due_amount: Math.max(0, payable2 - newPaid), invoice_status: newStatus } as any).eq("id", editInvoiceId);
+          const st = computeInvoiceDue((inv2 as any).payable_amount, Number((inv2 as any).paid_amount || 0) + diff);
+          await supabase.from("irrigation_invoices").update({ paid_amount: st.paid, due_amount: st.due, invoice_status: st.status } as any).eq("id", editInvoiceId);
         }
         const { data: iip } = await supabase.from("irrigation_invoice_payments").select("id,collected_amount").eq("payment_id", p.id).eq("invoice_id", editInvoiceId).maybeSingle();
         if (iip) await supabase.from("irrigation_invoice_payments").update({ collected_amount: Math.max(0, Number((iip as any).collected_amount || 0) + diff), irrigation_collected: Math.max(0, Number((iip as any).collected_amount || 0) + diff) } as any).eq("id", (iip as any).id);
