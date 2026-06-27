@@ -229,33 +229,46 @@ export function PaidLandHistory({ farmerId }: Props) {
           <TableHead>{tx("Receipt No", "রসিদ নং")}</TableHead>
           <TableHead>{tx("Dag No", "দাগ নং")}</TableHead>
           <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+          <TableHead>{tx("Land type", "জমির ধরন")}</TableHead>
           <TableHead className="text-right">{tx("Land (shotok)", "জমি (শতক)")}</TableHead>
+          <TableHead className="text-right">{tx("Rate (acre/bigha)", "রেট (একর/বিঘা)")}</TableHead>
+          <TableHead className="text-right">{tx("Current", "হাল")}</TableHead>
+          <TableHead className="text-right">{tx("Penalty", "জরিমানা")}</TableHead>
+          <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
           <TableHead>{tx("Collection Date", "আদায়ের তারিখ")}</TableHead>
-          <TableHead className="text-right">{tx("Amount", "পরিমাণ")}</TableHead>
+          <TableHead className="text-right">{tx("Total collected", "মোট আদায়")}</TableHead>
           <TableHead className="text-right">{tx("Receipt", "রসিদ")}</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {filtered.map((r, i) => (
-            <TableRow key={i}>
+            <TableRow key={i} className={r.cancelled ? "opacity-60" : undefined}>
               <TableCell>{r.season}</TableCell>
-              <TableCell>{r.receipt_no}</TableCell>
+              <TableCell>
+                {r.receipt_no}
+                {r.cancelled && <Badge variant="destructive" className="ml-1">{tx("Cancelled", "বাতিল")}</Badge>}
+              </TableCell>
               <TableCell>{r.dag_no}</TableCell>
               <TableCell>{r.mouza}</TableCell>
+              <TableCell>{r.land_type}</TableCell>
               <TableCell className="text-right">{r.land_size ?? "—"}</TableCell>
+              <TableCell className="text-right whitespace-nowrap">{r.acre_rate != null ? `${money(r.acre_rate)} / ${money(r.bigha_rate ?? 0)}` : "—"}</TableCell>
+              <TableCell className="text-right">{money(r.current_collected)}</TableCell>
+              <TableCell className="text-right">{money(r.delay_fee)}</TableCell>
+              <TableCell className="text-right">{money(r.due)}</TableCell>
               <TableCell>{r.paid_on ? fmtDate(r.paid_on) : "—"}</TableCell>
-              <TableCell className="text-right">{r.amount.toFixed(2)}</TableCell>
+              <TableCell className={`text-right ${r.cancelled ? "line-through" : ""}`}>{r.amount.toFixed(2)}</TableCell>
               <TableCell className="text-right whitespace-nowrap">
                 <Button size="sm" variant="ghost" title={tx("Preview", "প্রিভিউ")} onClick={() => setPreview(r)}>
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" title={tx("Download", "ডাউনলোড")} onClick={() => downloadReceipt(r)}>
+                <Button size="sm" variant="ghost" title={tx("Download", "ডাউনলোড")} onClick={() => downloadReceipt(r)} disabled={r.cancelled}>
                   <Download className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>
           ))}
           {!loading && filtered.length === 0 && (
-            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
+            <TableRow><TableCell colSpan={13} className="text-center text-muted-foreground py-6">{t("noData")}</TableCell></TableRow>
           )}
           {filtered.length > 0 && (
             <TableRow>
