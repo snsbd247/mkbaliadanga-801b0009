@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +26,7 @@ import {
 } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 import { resolveIrrigationRate, type CategoryRateInput } from "@/lib/irrigationRateResolver";
-import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files } from "lucide-react";
+import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSpreadsheet, FileDown, Pencil, Trash2, Printer, Settings as SettingsIcon, Share2, MessageCircle, Mail, Files, ChevronsUpDown, Check, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
 import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
@@ -128,6 +130,8 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [mouza, setMouza] = useState(persisted.mouza ?? "all");
   const [status, setStatus] = useState<string>(persisted.status ?? "all");
   const [search, setSearch] = useState(persisted.search ?? "");
+  const [mouzaSort, setMouzaSort] = useState<"none" | "asc" | "desc">("none");
+  const [mouzaOpen, setMouzaOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("irr_invoice_filters", JSON.stringify({ seasonId, officeId, mouza, status, search }));
@@ -184,19 +188,28 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     let base = rows as any[];
     if (mouza !== "all") base = base.filter((r) => (r.lands?.mouza?.trim() ?? "") === mouza);
     const s = search.trim().toLowerCase();
-    if (!s) return base;
-    return base.filter((r: any) =>
-      r.invoice_no?.toLowerCase().includes(s) ||
-      r.farmers?.name_en?.toLowerCase().includes(s) ||
-      r.farmers?.name_bn?.toLowerCase().includes(s) ||
-      r.farmers?.farmer_code?.toLowerCase().includes(s) ||
-      r.farmers?.mobile?.includes(s) ||
-      matchesDagSearch(r.lands?.dag_no, s) ||
-      r.lands?.mouza?.toLowerCase().includes(s) ||
-      (r.irrigation_invoice_payments ?? []).some((p: any) =>
-        p?.payments?.receipt_no?.toLowerCase?.().includes(s))
-    );
-  }, [rows, search, mouza]);
+    if (s) {
+      base = base.filter((r: any) =>
+        r.invoice_no?.toLowerCase().includes(s) ||
+        r.farmers?.name_en?.toLowerCase().includes(s) ||
+        r.farmers?.name_bn?.toLowerCase().includes(s) ||
+        r.farmers?.farmer_code?.toLowerCase().includes(s) ||
+        r.farmers?.mobile?.includes(s) ||
+        matchesDagSearch(r.lands?.dag_no, s) ||
+        r.lands?.mouza?.toLowerCase().includes(s) ||
+        (r.irrigation_invoice_payments ?? []).some((p: any) =>
+          p?.payments?.receipt_no?.toLowerCase?.().includes(s))
+      );
+    }
+    if (mouzaSort !== "none") {
+      base = [...base].sort((a, b) => {
+        const cmp = (a.lands?.mouza ?? "").localeCompare(b.lands?.mouza ?? "", "bn");
+        return mouzaSort === "asc" ? cmp : -cmp;
+      });
+    }
+    return base;
+  }, [rows, search, mouza, mouzaSort]);
+
 
   /** Grand totals for the currently-filtered invoices (footer summary).
    *  carried_forward invoices are excluded — their balance has already been
@@ -476,14 +489,36 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           )}
           <div>
             <Label>{tx("Mouza", "মৌজা")}</Label>
-            <Select value={mouza} onValueChange={setMouza}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{tx("All", "সব")}</SelectItem>
-                {mouzaOptions.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Popover open={mouzaOpen} onOpenChange={setMouzaOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                  <span className="truncate">{mouza === "all" ? tx("All", "সব") : mouza}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder={tx("Search mouza…", "মৌজা খুঁজুন…")} />
+                  <CommandList>
+                    <CommandEmpty>{tx("No mouza found", "মৌজা পাওয়া যায়নি")}</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem value="all" onSelect={() => { setMouza("all"); setMouzaOpen(false); }}>
+                        <Check className={`mr-2 h-4 w-4 ${mouza === "all" ? "opacity-100" : "opacity-0"}`} />
+                        {tx("All", "সব")}
+                      </CommandItem>
+                      {mouzaOptions.map((m) => (
+                        <CommandItem key={m} value={m} onSelect={() => { setMouza(m); setMouzaOpen(false); }}>
+                          <Check className={`mr-2 h-4 w-4 ${mouza === m ? "opacity-100" : "opacity-0"}`} />
+                          {m}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
+
           <div>
             <Label>{tx("Status", "স্ট্যাটাস")}</Label>
             <Select value={status} onValueChange={setStatus}>
@@ -591,7 +626,16 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                 </TableHead>
                 <TableHead>{tx("Invoice No", "ইনভয়েস নং")}</TableHead>
                 <TableHead>{tx("Farmer", "কৃষক")}</TableHead>
-                <TableHead>{tx("Mouza", "মৌজা")}</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 hover:text-foreground"
+                    onClick={() => setMouzaSort((p) => (p === "asc" ? "desc" : p === "desc" ? "none" : "asc"))}
+                  >
+                    {tx("Mouza", "মৌজা")}
+                    {mouzaSort === "asc" ? <ArrowUp className="h-3 w-3" /> : mouzaSort === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                  </button>
+                </TableHead>
                 <TableHead>{tx("Land", "জমি")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
