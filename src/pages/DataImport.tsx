@@ -52,6 +52,12 @@ type Module =
   | "bank_accounts"
   | "bank_transactions"
   | "assets"
+  | "farmers"
+  | "savings_plans"
+  | "loan_plans"
+  | "farmer_savings_plans"
+  | "irrigation_categories"
+  | "irrigation_rates"
   | "ledger";
 
 type RowResult = {
