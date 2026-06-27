@@ -27,12 +27,17 @@ type PaidRow = {
   dag_no: string;
   mouza: string;
   land_size: number | null;
+  land_type: string;
+  acre_rate: number | null;
+  bigha_rate: number | null;
+  due: number;
   irrigation: number;
   maintenance: number;
   canal: number;
   delay_fee: number;
   current_collected: number;
   previous_collected: number;
+  cancelled: boolean;
 };
 
 const money = (v: number) => Number(v || 0).toLocaleString("bn-BD", { maximumFractionDigits: 2 });
