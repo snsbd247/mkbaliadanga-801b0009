@@ -1455,6 +1455,22 @@ export default function DataImport() {
           </div>
         </div>
 
+        {sampleMissing.length > 0 && (
+          <Alert variant="destructive">
+            <AlertTitle>⚠ নমুনা রশিদে {sampleMissing.length}টি ফিল্ড অনুপস্থিত (নন-ব্লকিং)</AlertTitle>
+            <AlertDescription>
+              <div className="text-xs space-y-1 mt-1">
+                {Array.from(new Set(sampleMissing.map((d) => d.section))).map((section) => (
+                  <div key={section}>
+                    <strong>{section}:</strong>{" "}
+                    {sampleMissing.filter((d) => d.section === section).map((d) => d.label).join(", ")}
+                  </div>
+                ))}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="text-xs text-muted-foreground space-y-1">
           <div><strong>Required columns:</strong> {tpl.columns.join(", ")}</div>
           <div className="text-[11px]">
