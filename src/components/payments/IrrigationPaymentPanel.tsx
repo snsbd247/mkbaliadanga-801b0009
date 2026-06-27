@@ -15,7 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Loader2, AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
-import { downloadBnReceiptPdf } from "@/lib/bnReceipts";
+import { downloadBnReceiptPdf, normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { safeWithRetry } from "@/lib/retryQueue";
 import { logAudit } from "@/lib/audit";
@@ -402,8 +402,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           }))
           .filter(Boolean) as string[],
       )).join("/") || null;
-      // চার্জ রেট (একর); বিঘা = একর রেট ÷ ৩৩ (lib auto-computes)
-      const ratePerAcre = rep?.season_rate != null ? Number(rep.season_rate) : null;
+      // চার্জ রেট (একর); বিঘা রেট lib-এ acre × 33/100 হিসেবে অটো হবে।
+      const ratePerAcre = normalizeIrrigationRatePerAcre(rep?.season_rate, rep?.irrigation_amount, rep?.lands?.land_size);
       // দাগ নং — সব সংশ্লিষ্ট জমির দাগ একত্রে
       const dagAll = Array.from(new Set(
         allReceiptInvoices
@@ -414,9 +414,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       )).join(", ") || null;
       // জরিমানা আলাদা: হাল (চলতি) ও বকেয়া (গত সিজন)
       const currentPenalty = totalDelay;
-      const currentChargeBase = sorted.reduce(
-        (s, inv) => s + Math.max(0, Number(inv.due_amount || 0) - Number(inv.delay_fee || 0)), 0,
-      );
+      const currentChargeBase = sorted.reduce((s, inv) => s + Number(inv.irrigation_amount || 0), 0);
       const duePenalty = previousInvoices.reduce((s, inv) => s + Number(inv.delay_fee || 0), 0);
       const dueChargeBase = Math.max(0, previousDueTotal - duePenalty);
       // মালিক নিজে কিনা (বর্গা না হলে নিজ)
