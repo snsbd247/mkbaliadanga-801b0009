@@ -216,8 +216,24 @@ function normalizeLandTypeText(fieldType?: string | null, billInfo?: string | nu
 /** Official receipt rate display: entered/calculated rate is shown per acre and per bigha.
  *  1 acre = 100 শতক, 1 bigha = 33 শতক, so bigha rate = acre rate × 33 / 100.
  */
-function ratePerBighaFromAcre(ratePerAcre: number | null): number | null {
+export function ratePerBighaFromAcre(ratePerAcre: number | null): number | null {
   return ratePerAcre == null ? null : (ratePerAcre * 33) / 100;
+}
+
+export function normalizeIrrigationRatePerAcre(
+  storedRate: number | null | undefined,
+  irrigationCharge: number | null | undefined,
+  landSizeShotok: number | null | undefined,
+): number | null {
+  const land = Number(landSizeShotok ?? 0);
+  const charge = Number(irrigationCharge ?? 0);
+  if (Number.isFinite(land) && land > 0 && Number.isFinite(charge) && charge > 0) {
+    return charge / (land / 100);
+  }
+  const rate = Number(storedRate ?? 0);
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+  // Legacy rows sometimes stored rate per শতক. Convert small per-shotok values to acre.
+  return rate < 500 ? rate * 100 : rate;
 }
 
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
@@ -415,7 +431,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     // 5. মৌজা
     rows.push([mouzaLabel, d.farmer.mouza || "—"]);
     // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট × ৩৩/১০০)
-    const ratePerAcre = d.rate != null ? Number(d.rate) : null;
+    const ratePerAcre = normalizeIrrigationRatePerAcre(d.rate, d.current_season_charge, d.farmer.land_size);
     const ratePerBigha = d.rate_per_bigha != null
       ? Number(d.rate_per_bigha)
       : ratePerBighaFromAcre(ratePerAcre);
