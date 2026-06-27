@@ -303,8 +303,13 @@ export default function DataImport() {
   const [working, setWorking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [upsertMode, setUpsertMode] = useState(false);
+  const [atomicMode, setAtomicMode] = useState(true);
   const [ledgerVerify, setLedgerVerify] = useState<Array<{ idx: number; record_id: string; ledger_ids: string[]; ok: boolean }>>([]);
   const [recentImports, setRecentImports] = useState<any[]>([]);
+  const [summary, setSummary] = useState<{
+    processed: number; inserted: number; updated: number; skipped: number;
+    failed: number; duplicates: number; rolledBack: boolean;
+  } | null>(null);
 
   async function loadRecentImports() {
     const { data } = await supabase
