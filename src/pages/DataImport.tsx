@@ -52,6 +52,12 @@ type Module =
   | "bank_accounts"
   | "bank_transactions"
   | "assets"
+  | "farmers"
+  | "savings_plans"
+  | "loan_plans"
+  | "farmer_savings_plans"
+  | "irrigation_categories"
+  | "irrigation_rates"
   | "ledger";
 
 type RowResult = {
@@ -142,6 +148,30 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
   loan_guarantors: {
     columns: ["loan_account_number", "name", "father_name", "village", "mobile", "nid", "role", "guarantor_account_number"],
     sample: { loan_account_number: "10001", name: "Md. Karim", father_name: "Md. Jashim", village: "Bagbari", mobile: "01700000000", nid: "1234567890", role: "guarantor", guarantor_account_number: "" },
+  },
+  farmers: {
+    columns: ["account_number", "name_en", "name_bn", "father_name", "mother_name", "mobile", "nid", "village", "address", "status"],
+    sample: { account_number: "10001", name_en: "Md. Rahim", name_bn: "মোঃ রহিম", father_name: "Md. Jashim", mother_name: "Mst. Rahima", mobile: "01700000000", nid: "1234567890", village: "Bagbari", address: "Village A", status: "active" },
+  },
+  savings_plans: {
+    columns: ["name", "name_bn", "duration_months", "installment_type", "installment_amount", "interest_rate", "maturity_type"],
+    sample: { name: "DPS 12m", name_bn: "ডিপিএস ১২ মাস", duration_months: 12, installment_type: "monthly", installment_amount: 500, interest_rate: 8, maturity_type: "simple" },
+  },
+  loan_plans: {
+    columns: ["name", "name_bn", "duration_months", "installment_type", "interest_rate", "penalty_type", "penalty_value", "grace_period_days"],
+    sample: { name: "Crop Loan 12m", name_bn: "শস্য ঋণ ১২ মাস", duration_months: 12, installment_type: "monthly", interest_rate: 12, penalty_type: "percentage", penalty_value: 2, grace_period_days: 7 },
+  },
+  farmer_savings_plans: {
+    columns: ["account_number", "plan_name", "start_date", "expected_total", "expected_interest", "maturity_amount", "status"],
+    sample: { account_number: "10001", plan_name: "DPS 12m", start_date: "2026-01-01", expected_total: 6000, expected_interest: 480, maturity_amount: 6480, status: "active" },
+  },
+  irrigation_categories: {
+    columns: ["code", "name_bn", "name_en", "calculation_basis", "allow_manual_negotiation"],
+    sample: { code: "CAT-A", name_bn: "ক্যাটাগরি এ", name_en: "Category A", calculation_basis: "per_shotok", allow_manual_negotiation: false },
+  },
+  irrigation_rates: {
+    columns: ["season_year", "season_type", "basis", "base_rate", "canal_charge", "maintenance_charge", "other_charge", "note"],
+    sample: { season_year: 2026, season_type: "boro", basis: "per_size", base_rate: 39.39, canal_charge: 0, maintenance_charge: 0, other_charge: 0, note: "" },
   },
 };
 
@@ -356,6 +386,12 @@ export default function DataImport() {
       ledger: ["entry_date", "account_code"],
       shares: ["account_number", "balance"],
       patwaris: ["name"],
+      farmers: ["account_number", "name_en"],
+      savings_plans: ["name", "duration_months"],
+      loan_plans: ["name", "duration_months"],
+      farmer_savings_plans: ["account_number", "plan_name"],
+      irrigation_categories: ["code"],
+      irrigation_rates: ["season_year", "season_type", "base_rate"],
     };
     const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
     const req = required[m] ?? TEMPLATES[m].columns;
@@ -481,6 +517,21 @@ export default function DataImport() {
           if (b.account_no) bankAcctMap.set(String(b.account_no).trim(), b.id);
         });
       }
+
+      // Plan lookup by name for farmer_savings_plans
+      const savingsPlanMap = new Map<string, { id: string; office_id: string | null }>();
+      if (mod === "farmer_savings_plans") {
+        const { data: sp } = await supabase.from("savings_plans").select("id,name,office_id");
+        (sp ?? []).forEach((p: any) => savingsPlanMap.set(String(p.name).trim().toLowerCase(), { id: p.id, office_id: p.office_id }));
+      }
+      // Season lookup by year+type for irrigation_rates
+      const seasonMap = new Map<string, string>();
+      if (mod === "irrigation_rates") {
+        const { data: ss } = await supabase.from("seasons").select("id,year,type");
+        (ss ?? []).forEach((s: any) => seasonMap.set(`${s.year}|${String(s.type).trim().toLowerCase()}`, s.id));
+      }
+
+
 
       for (let i = 0; i < next.length; i++) {
         const r = next[i];
@@ -958,6 +1009,111 @@ export default function DataImport() {
               office_id: borrower.office_id ?? null,
               role: String(raw.role ?? "guarantor").trim() || "guarantor",
             };
+          } else if (mod === "farmers") {
+            const acc = String(raw.account_number ?? "").trim();
+            const nameEn = String(raw.name_en ?? "").trim();
+            if (!acc) throw new Error("account_number required");
+            if (!nameEn) throw new Error("name_en required");
+            if (farmerMap.get(acc)) throw new Error(`Farmer already exists for account_number=${acc}`);
+            table = "farmers";
+            payload = {
+              farmer_code: acc,
+              account_number: acc,
+              name_en: nameEn,
+              name_bn: raw.name_bn ?? null,
+              father_name: raw.father_name ?? null,
+              mother_name: raw.mother_name ?? null,
+              mobile: raw.mobile ?? null,
+              nid: raw.nid ?? null,
+              village: raw.village ?? null,
+              address: raw.address ?? null,
+              status: String(raw.status ?? "active").trim() || "active",
+              created_by: user?.id,
+            };
+          } else if (mod === "savings_plans") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            const dur = Number(raw.duration_months ?? 0);
+            if (!(dur > 0)) throw new Error("duration_months must be > 0");
+            table = "savings_plans";
+            payload = {
+              name,
+              name_bn: raw.name_bn ?? null,
+              duration_months: dur,
+              installment_type: String(raw.installment_type ?? "monthly").trim() || "monthly",
+              installment_amount: Number(raw.installment_amount ?? 0) || 0,
+              interest_rate: Number(raw.interest_rate ?? 0) || 0,
+              maturity_type: String(raw.maturity_type ?? "simple").trim() || "simple",
+              is_active: true,
+              created_by: user?.id,
+            };
+          } else if (mod === "loan_plans") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            const dur = Number(raw.duration_months ?? 0);
+            if (!(dur > 0)) throw new Error("duration_months must be > 0");
+            table = "loan_plans";
+            payload = {
+              name,
+              name_bn: raw.name_bn ?? null,
+              duration_months: dur,
+              installment_type: String(raw.installment_type ?? "monthly").trim() || "monthly",
+              interest_rate: Number(raw.interest_rate ?? 0) || 0,
+              penalty_type: String(raw.penalty_type ?? "percentage").trim() || "percentage",
+              penalty_value: Number(raw.penalty_value ?? 0) || 0,
+              grace_period_days: Number(raw.grace_period_days ?? 0) || 0,
+              is_active: true,
+              created_by: user?.id,
+            };
+          } else if (mod === "farmer_savings_plans") {
+            const f = farmerMap.get(String(raw.account_number));
+            if (!f) throw new Error("Farmer not found for account_number");
+            const plan = savingsPlanMap.get(String(raw.plan_name ?? "").trim().toLowerCase());
+            if (!plan) throw new Error(`Savings plan not found for plan_name=${raw.plan_name ?? ""}`);
+            table = "farmer_savings_plans";
+            payload = {
+              farmer_id: f.id,
+              plan_id: plan.id,
+              office_id: f.office_id ?? plan.office_id ?? null,
+              start_date: raw.start_date || new Date().toISOString().slice(0, 10),
+              expected_total: Number(raw.expected_total ?? 0) || 0,
+              expected_interest: Number(raw.expected_interest ?? 0) || 0,
+              maturity_amount: Number(raw.maturity_amount ?? 0) || 0,
+              status: String(raw.status ?? "active").trim() || "active",
+              created_by: user?.id,
+            };
+          } else if (mod === "irrigation_categories") {
+            const code = String(raw.code ?? "").trim();
+            if (!code) throw new Error("code required");
+            table = "irrigation_categories";
+            payload = {
+              code,
+              name_bn: raw.name_bn ?? null,
+              name_en: raw.name_en ?? null,
+              calculation_basis: String(raw.calculation_basis ?? "per_shotok").trim() || "per_shotok",
+              allow_manual_negotiation: String(raw.allow_manual_negotiation ?? "").trim().toLowerCase() === "true",
+              is_active: true,
+              created_by: user?.id,
+            };
+          } else if (mod === "irrigation_rates") {
+            const year = Number(raw.season_year ?? 0);
+            const stype = String(raw.season_type ?? "").trim().toLowerCase();
+            if (!year) throw new Error("season_year required");
+            if (!stype) throw new Error("season_type required");
+            const seasonId = seasonMap.get(`${year}|${stype}`);
+            if (!seasonId) throw new Error(`Season not found for ${year} ${stype}`);
+            table = "irrigation_rates";
+            payload = {
+              season_id: seasonId,
+              basis: String(raw.basis ?? "per_size").trim() || "per_size",
+              base_rate: Number(raw.base_rate ?? 0) || 0,
+              canal_charge: Number(raw.canal_charge ?? 0) || 0,
+              maintenance_charge: Number(raw.maintenance_charge ?? 0) || 0,
+              other_charge: Number(raw.other_charge ?? 0) || 0,
+              note: raw.note ?? null,
+              is_active: true,
+              created_by: user?.id,
+            };
           }
 
           if (dryRun) {
@@ -1118,6 +1274,12 @@ export default function DataImport() {
                 <SelectItem value="bank_accounts">Bank Accounts</SelectItem>
                 <SelectItem value="bank_transactions">Bank Transactions</SelectItem>
                 <SelectItem value="assets">Assets</SelectItem>
+                <SelectItem value="farmers">Farmers (members)</SelectItem>
+                <SelectItem value="savings_plans">Savings Plans</SelectItem>
+                <SelectItem value="loan_plans">Loan Plans</SelectItem>
+                <SelectItem value="farmer_savings_plans">Farmer Savings Plans (enrollment)</SelectItem>
+                <SelectItem value="irrigation_categories">Irrigation Categories</SelectItem>
+                <SelectItem value="irrigation_rates">Irrigation Rates (per season)</SelectItem>
                 {isSuper && <SelectItem value="ledger">Ledger Entries (super-admin)</SelectItem>}
               </SelectContent>
             </Select>
