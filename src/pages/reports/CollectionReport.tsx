@@ -60,6 +60,7 @@ export default function CollectionReport() {
   const [to, setTo] = useState("");
   const [farmerId, setFarmerId] = useState(ALL);
   const [userId, setUserId] = useState<string>(ALL);
+  const [kind, setKind] = useState<string>(ALL);
   const [onlyMine, setOnlyMine] = useState<boolean>(!isAdmin);
 
   const [farmers, setFarmers] = useState<any[]>([]);
