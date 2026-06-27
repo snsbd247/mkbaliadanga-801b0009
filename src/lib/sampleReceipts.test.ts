@@ -35,4 +35,39 @@ describe("sample receipts (DataImport preview)", () => {
     expect(html).toContain("আলম ইসলাম");
     expect(html).toContain("বালিয়াডাঙ্গা");
   });
+
+  it("savings sample renders savings-specific fields, not land rows", () => {
+    const html = buildReceiptCopyHtmlForTest(buildSampleReceipt("savings"), "farmer", "bn");
+    expect(html).toContain("সঞ্চয়");
+    expect(html).not.toContain("দাগ নং");
+  });
+
+  it("loan sample renders loan-specific fields", () => {
+    const html = buildReceiptCopyHtmlForTest(buildSampleReceipt("loan"), "farmer", "bn");
+    expect(html).toContain("কিস্তি");
+    expect(html).not.toContain("দাগ নং");
+  });
+
+  it("misc sample hides land rows (বিবিধ আদায় mode)", () => {
+    const html = buildReceiptCopyHtmlForTest(buildSampleReceipt("misc"), "farmer", "bn");
+    expect(html).not.toContain("দাগ নং");
+    expect(html).not.toContain("জমির পরিমাণ");
+  });
+
+  it("each type's required fields differ (distinct field sets)", () => {
+    const irrigation = buildSampleReceipt("irrigation");
+    // irrigation requires holding/patwari; savings does not
+    expect(findMissingSampleFields("irrigation", { ...irrigation, holding_description: "" }))
+      .toContain("holding_description");
+    expect(findMissingSampleFields("savings", buildSampleReceipt("savings"))).toEqual([]);
+  });
+
+  it("findMissingSampleFieldDetails returns label and affected section", () => {
+    const data = buildSampleReceipt("irrigation");
+    data.holding_description = "";
+    const details = findMissingSampleFieldDetails("irrigation", data);
+    const holding = details.find((d) => d.path === "holding_description");
+    expect(holding?.label).toBe("হোল্ডিং বিবরন");
+    expect(holding?.section).toBe("হোল্ডিং/পাটুয়ারী");
+  });
 });
