@@ -1146,6 +1146,10 @@ export default function DataImport() {
                 Upsert mode (update existing relation)
               </label>
             )}
+            <label className="flex items-center gap-2 text-sm ml-2">
+              <input type="checkbox" checked={atomicMode} onChange={(e) => setAtomicMode(e.target.checked)} />
+              Atomic (roll back all if any row fails)
+            </label>
           </div>
         </div>
 
