@@ -67,6 +67,13 @@ Deno.serve(async (req) => {
     .select("id").eq("kind", "irrigation").eq("receipt_no", String(receipt_no)).is("deleted_at", null).maybeSingle();
   if (dup) return json({ error: `রশিদ নং ${receipt_no} ইতিমধ্যে এন্ট্রি করা আছে` }, 409);
 
+  // Derive office from the farmer when the client did not pass one.
+  let officeId = office_id ?? null;
+  if (!officeId) {
+    const { data: f } = await admin.from("farmers").select("office_id").eq("id", farmer_id).maybeSingle();
+    officeId = (f as any)?.office_id ?? null;
+  }
+
   try {
     // 1) Find or create the land record.
     let landId: string | null = null;
