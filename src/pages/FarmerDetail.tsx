@@ -1348,15 +1348,37 @@ export default function FarmerDetail() {
                       placeholder={tx("Search by note…", "নোট দিয়ে খুঁজুন…")}
                       className="h-8 w-[180px] text-xs"
                     />
-                    <Select value={landTypeFilter} onValueChange={setLandTypeFilter}>
-                      <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder={tx("Land type", "জমির ধরন")} /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{tx("All land types", "সব জমির ধরন")}</SelectItem>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="h-8 w-[180px] text-xs justify-start font-normal">
+                          {landTypeFilter.length === 0
+                            ? tx("All land types", "সব জমির ধরন")
+                            : tx(`${landTypeFilter.length} type(s)`, `${landTypeFilter.length} ধরন`)}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="max-h-[300px] overflow-auto">
                         {landTypeRows.map((lt) => (
-                          <SelectItem key={lt.id} value={lt.id}>{lt.name_bn || lt.name}</SelectItem>
+                          <DropdownMenuCheckboxItem
+                            key={lt.id}
+                            checked={landTypeFilter.includes(lt.id)}
+                            onCheckedChange={(c) =>
+                              setLandTypeFilter((prev) => (c ? [...prev, lt.id] : prev.filter((x) => x !== lt.id)))
+                            }
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            {lt.name_bn || lt.name}
+                          </DropdownMenuCheckboxItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                        {landTypeFilter.length > 0 && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => setLandTypeFilter([])}>
+                              {tx("Clear", "মুছুন")}
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
                       <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
