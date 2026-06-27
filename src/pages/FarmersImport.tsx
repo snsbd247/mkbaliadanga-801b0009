@@ -103,8 +103,8 @@ export default function FarmersImport() {
   function downloadTemplate(format: "xlsx" | "csv") {
     const headers = [...COLUMNS];
     const sample = [
-      ["00001", "true", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Rahima", "1234567890", "01711000000", "Bagbari", "Baliadanga", "Sadar", "Tangail", "Dhaka", "গ্রামঃ বাগবাড়ী, ডাকঘরঃ বালিয়াডাঙ্গা", "Md. Sabuj", "01911000000", "Son", "1234567890123", "Bagbari, Baliadanga"],
-      ["",      "false", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "Mst. Hasna", "9876543210", "01811000000", "Char Bhabanipur", "Baliadanga", "Sadar", "Tangail", "Dhaka", "", "", "", "", "", ""],
+      ["00001", "10001", "true", "10001", "Md. Abdur Rahman", "মোঃ আব্দুর রহমান", "Md. Karim Uddin", "Mst. Rahima", "1234567890", "01711000000", "Bagbari", "Baliadanga", "Sadar", "Tangail", "Dhaka", "গ্রামঃ বাগবাড়ী, ডাকঘরঃ বালিয়াডাঙ্গা", "Mouza A", "Baliadanga", "active", "false", "", "Md. Sabuj", "01911000000", "Son", "1234567890123", "Bagbari, Baliadanga"],
+      ["",      "10002", "false", "", "Mst. Rahima Khatun", "মোসাঃ রহিমা খাতুন", "Md. Jashim", "Mst. Hasna", "9876543210", "01811000000", "Char Bhabanipur", "Baliadanga", "Sadar", "Tangail", "Dhaka", "", "", "", "active", "false", "", "", "", "", "", ""],
     ];
     if (format === "csv") {
       const csv = [headers, ...sample]
