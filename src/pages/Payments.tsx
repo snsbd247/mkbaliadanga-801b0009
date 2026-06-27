@@ -980,10 +980,9 @@ export default function Payments() {
                               .flatMap((s) => s.split(/[,;\s]+/))
                               .filter(Boolean))).join(", ") || null;
                             const landSize = (invoiceRows as any[]).reduce((s, inv) => s + Number(inv?.lands?.land_size || 0), 0) || null;
-                            const billInfo = Array.from(new Set((invoiceRows as any[]).map((inv) => {
-                              const season = [inv?.seasons?.name, inv?.seasons?.year].filter(Boolean).join("-");
-                              return [season, inv?.irrigation_category_name].filter(Boolean).join("/");
-                            }).filter(Boolean))).join("/") || "সেচ চার্জ";
+                            const billInfo = Array.from(new Set((invoiceRows as any[])
+                              .map((inv) => inv?.seasons?.name || inv?.irrigation_category_name || inv?.land_type_name || null)
+                              .filter(Boolean))).join("/") || "সেচ চার্জ";
                             irrEnriched = {
                               farmerExtras: {
                                 mouza,
