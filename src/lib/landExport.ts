@@ -61,7 +61,7 @@ export function exportLandsPdf(farmer: FarmerHeader, lands: LandExportRow[]) {
   doc.text(`Account: ${farmer.account_number ?? farmer.farmer_code}`, 40, 58);
   autoTable(doc, {
     head: [headers],
-    body: rows(lands),
+    body: buildLandExportRows(lands),
     startY: 75,
     styles: { fontSize: 9, cellPadding: 4 },
     headStyles: { fillColor: [31, 78, 121] },
@@ -73,7 +73,7 @@ export function exportLandsPdf(farmer: FarmerHeader, lands: LandExportRow[]) {
 export function exportLandsExcel(farmer: FarmerHeader, lands: LandExportRow[]) {
   const wb = XLSX.utils.book_new();
   const meta = [["Farmer", farmer.name_en], ["Account No", farmer.account_number ?? farmer.farmer_code], []];
-  const data = [...meta, headers, ...rows(lands)];
+  const data = [...meta, headers, ...buildLandExportRows(lands)];
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws["!cols"] = [{ wch: 4 }, { wch: 60 }, { wch: 18 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 14 }];
   XLSX.utils.book_append_sheet(wb, ws, "Lands");
