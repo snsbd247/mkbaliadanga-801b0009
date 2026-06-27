@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -115,7 +116,7 @@ export default function FarmerDetail() {
   const [farmerOfficeId, setFarmerOfficeId] = useState<string | null>(null);
   const [landPayMap, setLandPayMap] = useState<Record<string, { lastDate: string | null; total: number }>>({});
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "due">("all");
-  const [landTypeFilter, setLandTypeFilter] = useState<string>("all");
+  const [landTypeFilter, setLandTypeFilter] = useState<string[]>([]);
   const [noteSearch, setNoteSearch] = useState("");
   const [hiddenInvoiceCount, setHiddenInvoiceCount] = useState<number>(0);
   const [backfilling, setBackfilling] = useState(false);
@@ -1347,15 +1348,37 @@ export default function FarmerDetail() {
                       placeholder={tx("Search by note…", "নোট দিয়ে খুঁজুন…")}
                       className="h-8 w-[180px] text-xs"
                     />
-                    <Select value={landTypeFilter} onValueChange={setLandTypeFilter}>
-                      <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder={tx("Land type", "জমির ধরন")} /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{tx("All land types", "সব জমির ধরন")}</SelectItem>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="h-8 w-[180px] text-xs justify-start font-normal">
+                          {landTypeFilter.length === 0
+                            ? tx("All land types", "সব জমির ধরন")
+                            : tx(`${landTypeFilter.length} type(s)`, `${landTypeFilter.length} ধরন`)}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="max-h-[300px] overflow-auto">
                         {landTypeRows.map((lt) => (
-                          <SelectItem key={lt.id} value={lt.id}>{lt.name_bn || lt.name}</SelectItem>
+                          <DropdownMenuCheckboxItem
+                            key={lt.id}
+                            checked={landTypeFilter.includes(lt.id)}
+                            onCheckedChange={(c) =>
+                              setLandTypeFilter((prev) => (c ? [...prev, lt.id] : prev.filter((x) => x !== lt.id)))
+                            }
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            {lt.name_bn || lt.name}
+                          </DropdownMenuCheckboxItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                        {landTypeFilter.length > 0 && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => setLandTypeFilter([])}>
+                              {tx("Clear", "মুছুন")}
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
                       <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -1364,6 +1387,15 @@ export default function FarmerDetail() {
                         <SelectItem value="due">{tx("Due only", "শুধু বকেয়া")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {(landTypeFilter.length > 0 || paymentFilter !== "all" || noteSearch.trim()) && (
+                      <Button
+                        variant="ghost"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => { setLandTypeFilter([]); setPaymentFilter("all"); setNoteSearch(""); }}
+                      >
+                        {tx("Reset", "রিসেট")}
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -1383,6 +1415,25 @@ export default function FarmerDetail() {
                 )}
               </div>
             )}
+            {(() => {
+              const missing = lands.filter((l: any) => !l.land_type_id);
+              if (missing.length === 0) return null;
+              return (
+                <div className="px-3 py-2 flex flex-wrap items-center gap-2 text-sm border-b bg-red-50 text-red-900">
+                  <span>
+                    ⚠️ {tx(
+                      `${missing.length} land(s) have no land type selected and may show as "Others". Click to edit:`,
+                      `${missing.length} টি জমিতে কোনো জমির ধরন নির্বাচন করা নেই এবং "Others" দেখাতে পারে। সম্পাদনা করতে ক্লিক করুন:`
+                    )}
+                  </span>
+                  {missing.map((l: any) => (
+                    <Link key={l.id} to={`/lands/${l.id}`} className="underline font-medium">
+                      {l.dag_no || l.id.slice(0, 6)}
+                    </Link>
+                  ))}
+                </div>
+              );
+            })()}
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{t("pgLocation")}</TableHead>
@@ -1408,7 +1459,7 @@ export default function FarmerDetail() {
                   };
                   const matchesFilter = (l: any) => {
                     if (!matchesNote(l)) return false;
-                    if (landTypeFilter !== "all" && (l.land_type_id ?? null) !== landTypeFilter) return false;
+                    if (landTypeFilter.length > 0 && !landTypeFilter.includes((l.land_type_id ?? "") as string)) return false;
                     if (paymentFilter === "all") return true;
                     const s = landSeasonStatus(l.id).state;
                     if (paymentFilter === "paid") return s === "paid";
