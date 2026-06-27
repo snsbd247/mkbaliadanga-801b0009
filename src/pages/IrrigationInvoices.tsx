@@ -188,19 +188,28 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     let base = rows as any[];
     if (mouza !== "all") base = base.filter((r) => (r.lands?.mouza?.trim() ?? "") === mouza);
     const s = search.trim().toLowerCase();
-    if (!s) return base;
-    return base.filter((r: any) =>
-      r.invoice_no?.toLowerCase().includes(s) ||
-      r.farmers?.name_en?.toLowerCase().includes(s) ||
-      r.farmers?.name_bn?.toLowerCase().includes(s) ||
-      r.farmers?.farmer_code?.toLowerCase().includes(s) ||
-      r.farmers?.mobile?.includes(s) ||
-      matchesDagSearch(r.lands?.dag_no, s) ||
-      r.lands?.mouza?.toLowerCase().includes(s) ||
-      (r.irrigation_invoice_payments ?? []).some((p: any) =>
-        p?.payments?.receipt_no?.toLowerCase?.().includes(s))
-    );
-  }, [rows, search, mouza]);
+    if (s) {
+      base = base.filter((r: any) =>
+        r.invoice_no?.toLowerCase().includes(s) ||
+        r.farmers?.name_en?.toLowerCase().includes(s) ||
+        r.farmers?.name_bn?.toLowerCase().includes(s) ||
+        r.farmers?.farmer_code?.toLowerCase().includes(s) ||
+        r.farmers?.mobile?.includes(s) ||
+        matchesDagSearch(r.lands?.dag_no, s) ||
+        r.lands?.mouza?.toLowerCase().includes(s) ||
+        (r.irrigation_invoice_payments ?? []).some((p: any) =>
+          p?.payments?.receipt_no?.toLowerCase?.().includes(s))
+      );
+    }
+    if (mouzaSort !== "none") {
+      base = [...base].sort((a, b) => {
+        const cmp = (a.lands?.mouza ?? "").localeCompare(b.lands?.mouza ?? "", "bn");
+        return mouzaSort === "asc" ? cmp : -cmp;
+      });
+    }
+    return base;
+  }, [rows, search, mouza, mouzaSort]);
+
 
   /** Grand totals for the currently-filtered invoices (footer summary).
    *  carried_forward invoices are excluded — their balance has already been
