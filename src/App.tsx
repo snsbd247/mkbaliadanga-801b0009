@@ -27,6 +27,7 @@ import LoanStatementPage from "./pages/LoanStatementPage";
 import IrrigationInvoices from "./pages/IrrigationInvoices";
 import IrrigationReports from "./pages/IrrigationReports";
 import IrrigationRates from "./pages/IrrigationRates";
+import HistoricalReceiptEntry from "./pages/HistoricalReceiptEntry";
 import Payments from "./pages/Payments";
 import CombinedPayment from "./pages/CombinedPayment";
 import Reports from "./pages/Reports";
