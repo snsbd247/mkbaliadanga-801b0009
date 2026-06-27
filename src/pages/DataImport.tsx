@@ -360,6 +360,11 @@ export default function DataImport() {
     const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
     const req = required[m] ?? TEMPLATES[m].columns;
     const missingCols = req.filter((c) => !headerSet.has(c));
+    // Detect duplicate rows within the uploaded file (same key columns repeated).
+    const dupKeyCols = req.length ? req : TEMPLATES[m].columns;
+    const seen = new Map<string, number>();
+    const rowKey = (raw: Record<string, any>) =>
+      dupKeyCols.map((c) => String(raw[c] ?? "").trim().toLowerCase()).join("|");
     return parsed.map((raw, idx) => {
       const issues: string[] = [];
       if (missingCols.length) issues.push(`Missing columns: ${missingCols.join(", ")}`);
@@ -372,6 +377,12 @@ export default function DataImport() {
       if (["lands", "land_relations", "irrigation"].includes(m) && raw.dag_no) {
         const dv = validateDagNumbers(String(raw.dag_no));
         if (!dv.ok) issues.push(`dag_no: ${(dv as any).error}`);
+      }
+      const key = rowKey(raw);
+      if (seen.has(key)) {
+        issues.push(`Duplicate of row ${seen.get(key)! + 2} in this file`);
+      } else {
+        seen.set(key, idx);
       }
       if (issues.length) return { idx, raw, status: "error", message: issues.join(" • ") };
       return { idx, raw, status: "pending" };
