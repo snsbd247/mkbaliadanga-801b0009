@@ -650,6 +650,24 @@ export default function DataImport() {
             const sizeShotok = Number(raw.land_size) * UNIT_TO_SHOTOK[unit];
             next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag, land_size_shotok: sizeShotok } };
             table = "lands";
+            const notesVal = (raw.notes ?? raw.holding_description ?? "").toString().trim() || null;
+            const patwariKey = (raw.patwari_name ?? raw.patwari ?? raw.patwari_mobile ?? "").toString().trim();
+            const resolvedPatwariId = patwariKey
+              ? (patwariMap.get(patwariKey.toLowerCase()) ?? patwariMap.get(patwariKey) ?? null)
+              : null;
+            // Debug log for receipt holding/patwari mapping (office/farmer/land identity)
+            console.debug("[DataImport] land holding/patwari mapping", {
+              office_id: f.office_id,
+              farmer_id: f.id,
+              account_number: raw.account_number,
+              dag_no: canonicalDag,
+              holding_description: notesVal,
+              patwari_key: patwariKey || null,
+              patwari_id: resolvedPatwariId,
+            });
+            if (patwariKey && !resolvedPatwariId) {
+              toast.warning(`⚠ পাটুয়ারী ম্যাপিং ব্যর্থ (রশিদে পাটুয়ারী খালি থাকবে): "${patwariKey}" — Farmer ${raw.account_number}`, { duration: 6000 });
+            }
             payload = {
               farmer_id: f.id,
               office_id: f.office_id,
@@ -658,12 +676,8 @@ export default function DataImport() {
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
-              notes: (raw.notes ?? raw.holding_description ?? "").toString().trim() || null,
-              patwari_id: (() => {
-                const key = (raw.patwari_name ?? raw.patwari ?? raw.patwari_mobile ?? "").toString().trim();
-                if (!key) return null;
-                return patwariMap.get(key.toLowerCase()) ?? patwariMap.get(key) ?? null;
-              })(),
+              notes: notesVal,
+              patwari_id: resolvedPatwariId,
             };
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
