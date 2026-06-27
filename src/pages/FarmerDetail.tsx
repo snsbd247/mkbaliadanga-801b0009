@@ -695,15 +695,17 @@ export default function FarmerDetail() {
 
     // Land owner label: "নিজ" for self, otherwise "Owner Name (member_no)"
     let landOwnerLabel: string | null = null;
+    let ownerMemberNo: string | null = null;
     if (land) {
       if (land.owner_type === "borgadar" && land.owner_farmer_id && land.owner_farmer_id !== farmer?.id) {
         const { data: own } = await supabase
           .from("farmers")
-          .select("name_bn,name_en,member_no")
+          .select("name_bn,name_en,member_no,farmer_code")
           .eq("id", land.owner_farmer_id)
           .maybeSingle();
         if (own) {
-          landOwnerLabel = `${own.name_bn || own.name_en}${own.member_no ? " (" + own.member_no + ")" : ""}`;
+          ownerMemberNo = own.member_no || own.farmer_code || null;
+          landOwnerLabel = `${own.name_bn || own.name_en}${ownerMemberNo ? "-" + ownerMemberNo : ""}`;
         } else {
           landOwnerLabel = "—";
         }
@@ -749,7 +751,7 @@ export default function FarmerDetail() {
         owner_type_bn: land?.owner_type === "borgadar" ? "বর্গাদার" : land?.owner_type === "owner" ? "মালিক" : null,
       }),
       village_union: await getFarmerUnionName(),
-      member_summary: `${farmer?.member_no ?? farmer?.farmer_code ?? "N/A"}/${land?.owner_type === "borgadar" && land?.owner_farmer_id ? (ownerNames[land.owner_farmer_id] ?? "N/A") : "N/A"}`,
+      member_summary: `${farmer?.member_no ?? farmer?.farmer_code ?? "N/A"}/${land?.owner_type === "borgadar" && land?.owner_farmer_id ? (ownerMemberNo ?? "N/A") : "N/A"}`,
       owner_self: landOwnerLabel === tx("Self", "নিজ"),
       rate: normalizeIrrigationRatePerAcre(null, baseCharge, land?.land_size),
       charge_amount: Number(i.total),
