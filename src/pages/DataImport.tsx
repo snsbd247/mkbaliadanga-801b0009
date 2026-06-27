@@ -1346,9 +1346,14 @@ export default function DataImport() {
 
   async function previewSampleReceipt(action: "preview" | "download" = "preview") {
     const sample = buildSampleReceipt(sampleType);
-    const missing = findMissingSampleFields(sampleType, sample);
-    if (missing.length > 0) {
-      toast.warning(`⚠ কিছু ফিল্ড রশিদে দেখা যাবে না: ${missing.join(", ")}`, { duration: 6000 });
+    const details = findMissingSampleFieldDetails(sampleType, sample);
+    setSampleMissing(details);
+    if (details.length > 0) {
+      const sections = Array.from(new Set(details.map((d) => d.section)));
+      toast.warning(
+        `⚠ ${details.length}টি ফিল্ড অনুপস্থিত — প্রভাবিত সেকশন: ${sections.join(", ")}`,
+        { duration: 6000 },
+      );
     }
     try {
       if (action === "download") {
