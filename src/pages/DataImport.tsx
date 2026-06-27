@@ -393,6 +393,7 @@ export default function DataImport() {
   const [upsertMode, setUpsertMode] = useState(false);
   const [atomicMode, setAtomicMode] = useState(true);
   const [sampleType, setSampleType] = useState<SampleReceiptType>("irrigation");
+  const [sampleMissing, setSampleMissing] = useState<MissingFieldDetail[]>([]);
   const [ledgerVerify, setLedgerVerify] = useState<Array<{ idx: number; record_id: string; ledger_ids: string[]; ok: boolean }>>([]);
   const [recentImports, setRecentImports] = useState<any[]>([]);
   const [summary, setSummary] = useState<{
