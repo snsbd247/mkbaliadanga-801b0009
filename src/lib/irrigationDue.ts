@@ -97,3 +97,28 @@ export function aggregate(rows: Array<Record<string, any>>): IrrigationDueAggreg
   }
   return { payable, paid, due, overdue, invoiceCount };
 }
+
+/**
+ * Single source of truth for an invoice's due + status given payable & paid.
+ *
+ * Guard rules (prevent double-add / over-count):
+ *  - paid is clamped to [0, payable]; due = payable - paid, never negative.
+ *  - This is the ONLY place receipt / edit / cancel flows should derive
+ *    due_amount + invoice_status, so a re-applied payment can never double-count.
+ */
+export interface InvoiceDueState {
+  payable: number;
+  paid: number;
+  due: number;
+  status: "unpaid" | "partial" | "paid";
+}
+
+export function computeInvoiceDue(payable: unknown, paid: unknown): InvoiceDueState {
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  const pay = Math.max(num(payable), 0);
+  const collected = Math.min(Math.max(num(paid), 0), pay);
+  const due = r2(Math.max(pay - collected, 0));
+  const status: InvoiceDueState["status"] =
+    collected <= 0 ? "unpaid" : collected >= pay && pay > 0 ? "paid" : "partial";
+  return { payable: r2(pay), paid: r2(collected), due, status };
+}
