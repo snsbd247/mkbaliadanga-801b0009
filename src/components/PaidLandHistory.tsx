@@ -74,7 +74,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         .from("irrigation_invoice_payments")
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
-          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, land_size, notes, patwaris(name,name_bn,mobile), farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code)), seasons(name,year,type)), " +
+          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, irrigation_amount, land_type_name, due_amount, is_borga, lands(dag_no, mouza, land_size, notes, patwaris(name,name_bn,mobile), owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)), seasons(name,year,type)), " +
           "payment:payments(receipt_no, created_at, status, voided_at)"
         )
         .eq("invoice.farmer_id", farmerId)
@@ -83,7 +83,7 @@ export function PaidLandHistory({ farmerId }: Props) {
     ]);
     const list: PaidRow[] = (data ?? []).map((r: any) => {
       const acreRate = normalizeIrrigationRatePerAcre(r.invoice?.season_rate, r.invoice?.irrigation_amount, r.invoice?.lands?.land_size);
-      const owner = r.invoice?.lands?.farmers;
+      const owner = r.invoice?.lands?.owner;
       const ownerMember = owner?.member_no || owner?.farmer_code || null;
       const isBorga = !!r.invoice?.is_borga;
       return {
