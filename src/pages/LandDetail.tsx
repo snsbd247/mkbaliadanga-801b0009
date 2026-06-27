@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
+import { useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
 
 export default function LandDetail() {
   const { id } = useParams();
