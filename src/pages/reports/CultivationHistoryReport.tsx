@@ -21,6 +21,7 @@ import { useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSele
  */
 export default function CultivationHistoryReport() {
   const { tx } = useLang();
+  const { rows: landTypeRows } = useLandTypes();
   const [farmers, setFarmers] = useState<any[]>([]);
   const [lands, setLands] = useState<any[]>([]);
   const [rateMap, setRateMap] = useState<RateRow[]>([]);
