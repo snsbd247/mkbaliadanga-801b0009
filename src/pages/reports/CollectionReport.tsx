@@ -536,6 +536,27 @@ export default function CollectionReport() {
                       {t("noCollectionsFiltered")}
                     </TableCell>
                   </TableRow>
+                {liveRows.length > 0 && (
+                  <TableRow className="bg-muted/50 font-semibold border-t-2">
+                    <TableCell colSpan={3} className="text-right">{t("total") || "মোট"} ({t("collectionExclCancelled") || "বাতিল বাদে"})</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.sech)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.jorimana)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.hal)}</TableCell>
+                    <TableCell className="text-right text-amber-600">{money(columnTotals.bokeya)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.hawlat)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.anudan)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.vangari)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.pukur)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.bighat)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.bhortifi)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.rin)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.soncoy)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.share)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.lav)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.bibidh)}</TableCell>
+                    <TableCell className="text-right">{money(columnTotals.amount)}</TableCell>
+                    <TableCell />
+                  </TableRow>
                 )}
               </TableBody>
 
