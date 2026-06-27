@@ -163,10 +163,21 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   }
   useEffect(() => { load(); }, [seasonId, officeId, status]);
 
+  const mouzaOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows as any[]) {
+      const m = r.lands?.mouza?.trim();
+      if (m) set.add(m);
+    }
+    return Array.from(set).sort();
+  }, [rows]);
+
   const filtered = useMemo(() => {
+    let base = rows as any[];
+    if (mouza !== "all") base = base.filter((r) => (r.lands?.mouza?.trim() ?? "") === mouza);
     const s = search.trim().toLowerCase();
-    if (!s) return rows;
-    return rows.filter((r: any) =>
+    if (!s) return base;
+    return base.filter((r: any) =>
       r.invoice_no?.toLowerCase().includes(s) ||
       r.farmers?.name_en?.toLowerCase().includes(s) ||
       r.farmers?.name_bn?.toLowerCase().includes(s) ||
@@ -177,7 +188,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       (r.irrigation_invoice_payments ?? []).some((p: any) =>
         p?.payments?.receipt_no?.toLowerCase?.().includes(s))
     );
-  }, [rows, search]);
+  }, [rows, search, mouza]);
 
   /** Grand totals for the currently-filtered invoices (footer summary).
    *  carried_forward invoices are excluded — their balance has already been
