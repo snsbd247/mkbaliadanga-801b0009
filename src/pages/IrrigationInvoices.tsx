@@ -175,10 +175,11 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   }
   useEffect(() => { load(); }, [seasonId, officeId, status]);
 
+  const mouzaName = (r: any) => (r?.lands?.mouza?.trim() || r?.lands?.mouzas?.name?.trim() || "");
   const mouzaOptions = useMemo(() => {
     const set = new Set<string>();
     for (const r of rows as any[]) {
-      const m = r.lands?.mouza?.trim();
+      const m = mouzaName(r);
       if (m) set.add(m);
     }
     return Array.from(set).sort();
