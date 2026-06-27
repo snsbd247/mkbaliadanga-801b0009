@@ -824,6 +824,121 @@ export default function DataImport() {
               is_active: true,
               created_by: user?.id,
             };
+          } else if (mod === "mouzas") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            const upName = String(raw.upazila ?? "").trim().toLowerCase();
+            const upazilaId = upName ? upazilaMap.get(upName) : null;
+            if (!upazilaId) throw new Error("upazila not found");
+            table = "mouzas";
+            payload = {
+              upazila_id: upazilaId,
+              name,
+              name_bn: raw.name_bn ?? null,
+              code: raw.code ?? null,
+              is_active: true,
+            };
+          } else if (mod === "seasons") {
+            const year = Number(raw.year ?? 0);
+            const type = String(raw.type ?? "").trim();
+            if (!year) throw new Error("year required");
+            if (!type) throw new Error("type required");
+            table = "seasons";
+            payload = {
+              year,
+              type,
+              name: raw.name ?? null,
+              fiscal_year: raw.fiscal_year ?? null,
+              start_date: raw.start_date || null,
+              end_date: raw.end_date || null,
+              due_date: raw.due_date || null,
+              status: String(raw.status ?? "active").trim() || "active",
+            };
+          } else if (mod === "offices") {
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            table = "offices";
+            payload = {
+              name,
+              registration_no: raw.registration_no ?? null,
+              established_on: raw.established_on || null,
+              contact: raw.contact ?? null,
+              address: raw.address ?? null,
+            };
+          } else if (mod === "bank_accounts") {
+            const bankName = String(raw.bank_name ?? "").trim();
+            const accountNo = String(raw.account_no ?? "").trim();
+            if (!bankName) throw new Error("bank_name required");
+            if (!accountNo) throw new Error("account_no required");
+            table = "bank_accounts";
+            payload = {
+              bank_name: bankName,
+              branch: raw.branch ?? null,
+              account_no: accountNo,
+              account_title: raw.account_title ?? null,
+              account_type: String(raw.account_type ?? "savings").trim() || "savings",
+              opening_balance: Number(raw.opening_balance ?? 0) || 0,
+              stream: String(raw.stream ?? "other").trim() || "other",
+              is_active: true,
+            };
+          } else if (mod === "bank_transactions") {
+            const accountNo = String(raw.account_no ?? "").trim();
+            const bankAccountId = bankAcctMap.get(accountNo);
+            if (!bankAccountId) throw new Error("bank account not found for account_no");
+            const txnType = String(raw.txn_type ?? "").trim();
+            if (!txnType) throw new Error("txn_type required");
+            const amt = Number(raw.amount ?? 0);
+            if (!(amt > 0)) throw new Error("amount must be > 0");
+            table = "bank_transactions";
+            payload = {
+              bank_account_id: bankAccountId,
+              txn_date: raw.txn_date || new Date().toISOString().slice(0, 10),
+              txn_type: txnType,
+              amount: amt,
+              reference_no: raw.reference_no ?? null,
+              note: raw.note ?? null,
+              created_by: user?.id,
+            };
+          } else if (mod === "assets") {
+            const code = String(raw.asset_code ?? "").trim();
+            const nameEn = String(raw.name_en ?? "").trim();
+            if (!code) throw new Error("asset_code required");
+            if (!nameEn) throw new Error("name_en required");
+            table = "assets";
+            payload = {
+              asset_code: code,
+              name_en: nameEn,
+              name_bn: raw.name_bn ?? null,
+              serial_no: raw.serial_no ?? null,
+              asset_type: String(raw.asset_type ?? "fixed_asset").trim() || "fixed_asset",
+              tracking_mode: String(raw.tracking_mode ?? "quantity").trim() || "quantity",
+              unit: raw.unit ?? null,
+              purchase_price: Number(raw.purchase_price ?? 0) || 0,
+              current_status: String(raw.current_status ?? "purchased").trim() || "purchased",
+              created_by: user?.id,
+            };
+          } else if (mod === "loan_guarantors") {
+            const borrower = farmerMap.get(String(raw.loan_account_number));
+            if (!borrower) throw new Error("Borrower farmer not found for loan_account_number");
+            const loanId = loanByFarmer.get(borrower.id);
+            if (!loanId) throw new Error("No active/approved loan found for borrower");
+            const name = String(raw.name ?? "").trim();
+            if (!name) throw new Error("name required");
+            const guarantorFarmer = raw.guarantor_account_number
+              ? farmerMap.get(String(raw.guarantor_account_number))
+              : null;
+            table = "loan_guarantors";
+            payload = {
+              loan_id: loanId,
+              farmer_id: guarantorFarmer?.id ?? null,
+              name,
+              father_name: raw.father_name ?? null,
+              village: raw.village ?? null,
+              mobile: raw.mobile ?? null,
+              nid: raw.nid ?? null,
+              office_id: borrower.office_id ?? null,
+              role: String(raw.role ?? "guarantor").trim() || "guarantor",
+            };
           }
 
           if (dryRun) {
