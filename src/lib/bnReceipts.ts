@@ -414,7 +414,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       : (ratePerAcre != null ? ratePerAcre / 33 : null);
     const unit = lang === "bn" ? "টাকা" : "";
     const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
-    rows.push([t.landKind, [d.farmer.field_type_bn, rateText].filter(Boolean).join("/ ") || "—"]);
+    rows.push([t.landKind, [normalizeLandTypeText(d.farmer.field_type_bn, d.bill_info), rateText].filter(Boolean).join("/ ") || "—"]);
     // 7. দাগ নং (একাধিক হতে পারে) — ডেমো অনুযায়ী ডট-সেপারেটেড
     const dagTokens = parseDagNumbers(d.farmer.dag_no);
     const dagFormatted = digits(dagTokens.join("."), lang);
@@ -563,7 +563,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
         <div>
           <div>${t.receiptNo} ${officialReceiptNoText(d, lang)}</div>
-          ${d.bill_info ? `<div>${t.billInfo} ${digits(d.bill_info, lang)}</div>` : ""}
+          ${d.bill_info ? `<div>${t.billInfo} ${digits(cleanBnReceiptText(normalizeCollectionInfo(d.bill_info) ?? d.bill_info), lang)}</div>` : ""}
         </div>
         <div style="white-space:nowrap;padding-top:30px;">${t.date} ${fmtOfficialDate(d.date, lang)}</div>
       </div>
