@@ -165,9 +165,9 @@ export function PaidLandHistory({ farmerId }: Props) {
 
   function exportExcel() {
     const ws = XLSX.utils.aoa_to_sheet([
-      [tx("Season", "সিজন"), tx("Receipt No", "রসিদ নং"), tx("Dag No", "দাগ নং"), tx("Mouza", "মৌজা"), tx("Land (shotok)", "জমি (শতক)"), tx("Collection Date", "আদায়ের তারিখ"), tx("Amount", "পরিমাণ")],
-      ...filtered.map((r) => [r.season, r.receipt_no, r.dag_no, r.mouza, r.land_size ?? "", r.paid_on ? fmtDate(r.paid_on) : "", r.amount]),
-      ["", "", "", "", "", tx("Total", "মোট"), total],
+      [tx("Season", "সিজন"), tx("Receipt No", "রসিদ নং"), tx("Dag No", "দাগ নং"), tx("Mouza", "মৌজা"), tx("Land type", "জমির ধরন"), tx("Land (shotok)", "জমি (শতক)"), tx("Rate (acre)", "রেট (একর)"), tx("Rate (bigha)", "রেট (বিঘা)"), tx("Penalty", "জরিমানা"), tx("Due", "বকেয়া"), tx("Collection Date", "আদায়ের তারিখ"), tx("Total collected", "মোট আদায়"), tx("Status", "স্ট্যাটাস")],
+      ...filtered.map((r) => [r.season, r.receipt_no, r.dag_no, r.mouza, r.land_type, r.land_size ?? "", r.acre_rate ?? "", r.bigha_rate ?? "", r.delay_fee, r.due, r.paid_on ? fmtDate(r.paid_on) : "", r.amount, r.cancelled ? tx("Cancelled", "বাতিল") : tx("Paid", "পরিশোধিত")]),
+      ["", "", "", "", "", "", "", "", "", "", tx("Total (excl. cancelled)", "মোট (বাতিল বাদে)"), total, ""],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Paid History");
@@ -179,12 +179,14 @@ export function PaidLandHistory({ farmerId }: Props) {
     doc.text("Paid History", 14, 16);
     autoTable(doc, {
       startY: 22,
-      head: [["Season", "Receipt No", "Dag", "Mouza", "Land", "Collection Date", "Amount"]],
-      body: filtered.map((r) => [r.season, r.receipt_no, r.dag_no, r.mouza, r.land_size ?? "", r.paid_on ? fmtDate(r.paid_on) : "", r.amount.toFixed(2)]),
-      foot: [["", "", "", "", "", "Total", total.toFixed(2)]],
+      head: [["Season", "Receipt", "Dag", "Mouza", "Type", "Land", "Rate(a/b)", "Penalty", "Due", "Date", "Total", "Status"]],
+      body: filtered.map((r) => [r.season, r.receipt_no, r.dag_no, r.mouza, r.land_type, r.land_size ?? "", r.acre_rate != null ? `${r.acre_rate}/${r.bigha_rate}` : "", r.delay_fee.toFixed(2), r.due.toFixed(2), r.paid_on ? fmtDate(r.paid_on) : "", r.amount.toFixed(2), r.cancelled ? "Cancelled" : "Paid"]),
+      foot: [["", "", "", "", "", "", "", "", "", "", total.toFixed(2), ""]],
+      styles: { fontSize: 7 },
     });
     doc.save(`paid-history-${farmerId.slice(0, 8)}.pdf`);
   }
+
 
   return (
     <Card>
