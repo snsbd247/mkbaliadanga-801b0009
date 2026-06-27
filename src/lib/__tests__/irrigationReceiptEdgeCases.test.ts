@@ -12,12 +12,15 @@ function esc(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function rowFor(html: string, label: string): string {
-  // Markup is a 3-cell row: <td>label</td><td>:</td><td>value</td>.
-  // Skip the optional colon-only separator cell and capture the value cell.
+  // Cells may contain nested <span> styling and the colon may sit either in the
+  // label cell or in its own separator cell. Strip spans, then match the label
+  // (with optional trailing colon) and skip an optional colon-only cell.
+  const clean = html.replace(/<\/?span[^>]*>/g, "");
+  const lbl = esc(label.replace(/:$/, ""));
   const re = new RegExp(
-    `<td[^>]*>${esc(label)}</td>\\s*(?:<td[^>]*>\\s*:?\\s*</td>\\s*)?<td[^>]*>([\\s\\S]*?)</td>`,
+    `<td[^>]*>${lbl}:?</td>\\s*(?:<td[^>]*>\\s*:?\\s*</td>\\s*)?<td[^>]*>([\\s\\S]*?)</td>`,
   );
-  const m = html.match(re);
+  const m = clean.match(re);
   return m ? m[1] : "";
 }
 
