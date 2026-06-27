@@ -121,6 +121,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [loading, setLoading] = useState(false);
   const [seasonId, setSeasonId] = useState("all");
   const [officeId, setOfficeId] = useState("all");
+  const [mouza, setMouza] = useState("all");
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
