@@ -1408,6 +1408,7 @@ export default function FarmerDetail() {
                   };
                   const matchesFilter = (l: any) => {
                     if (!matchesNote(l)) return false;
+                    if (landTypeFilter !== "all" && (l.land_type_id ?? null) !== landTypeFilter) return false;
                     if (paymentFilter === "all") return true;
                     const s = landSeasonStatus(l.id).state;
                     if (paymentFilter === "paid") return s === "paid";
