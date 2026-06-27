@@ -303,8 +303,13 @@ export default function DataImport() {
   const [working, setWorking] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [upsertMode, setUpsertMode] = useState(false);
+  const [atomicMode, setAtomicMode] = useState(true);
   const [ledgerVerify, setLedgerVerify] = useState<Array<{ idx: number; record_id: string; ledger_ids: string[]; ok: boolean }>>([]);
   const [recentImports, setRecentImports] = useState<any[]>([]);
+  const [summary, setSummary] = useState<{
+    processed: number; inserted: number; updated: number; skipped: number;
+    failed: number; duplicates: number; rolledBack: boolean;
+  } | null>(null);
 
   async function loadRecentImports() {
     const { data } = await supabase
@@ -355,6 +360,11 @@ export default function DataImport() {
     const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
     const req = required[m] ?? TEMPLATES[m].columns;
     const missingCols = req.filter((c) => !headerSet.has(c));
+    // Detect duplicate rows within the uploaded file (same key columns repeated).
+    const dupKeyCols = req.length ? req : TEMPLATES[m].columns;
+    const seen = new Map<string, number>();
+    const rowKey = (raw: Record<string, any>) =>
+      dupKeyCols.map((c) => String(raw[c] ?? "").trim().toLowerCase()).join("|");
     return parsed.map((raw, idx) => {
       const issues: string[] = [];
       if (missingCols.length) issues.push(`Missing columns: ${missingCols.join(", ")}`);
@@ -367,6 +377,12 @@ export default function DataImport() {
       if (["lands", "land_relations", "irrigation"].includes(m) && raw.dag_no) {
         const dv = validateDagNumbers(String(raw.dag_no));
         if (!dv.ok) issues.push(`dag_no: ${(dv as any).error}`);
+      }
+      const key = rowKey(raw);
+      if (seen.has(key)) {
+        issues.push(`Duplicate of row ${seen.get(key)! + 2} in this file`);
+      } else {
+        seen.set(key, idx);
       }
       if (issues.length) return { idx, raw, status: "error", message: issues.join(" • ") };
       return { idx, raw, status: "pending" };
@@ -405,7 +421,10 @@ export default function DataImport() {
       return;
     }
     setWorking(true);
+    if (!dryRun) setSummary(null);
     const next = [...rows];
+    // Track real inserts so we can roll everything back if any row fails (atomic mode).
+    const insertedRecords: Array<{ table: string; id: string }> = [];
 
     try {
       // Pre-resolve farmer mapping where applicable
@@ -946,7 +965,9 @@ export default function DataImport() {
           } else {
             const { data: inserted, error } = await supabase.from(table as any).insert(payload).select("id").maybeSingle();
             if (error) throw error;
-            next[i] = { ...next[i], status: "ok", resolved: { ...(next[i].resolved ?? {}), record_id: (inserted as any)?.id } };
+            const newId = (inserted as any)?.id;
+            if (newId) insertedRecords.push({ table, id: newId });
+            next[i] = { ...next[i], status: "ok", resolved: { ...(next[i].resolved ?? {}), record_id: newId } };
           }
         } catch (e: any) {
           next[i] = { ...next[i], status: "error", message: e?.message ?? String(e) };
@@ -957,7 +978,30 @@ export default function DataImport() {
 
       setRows([...next]);
       const ok = next.filter((x) => x.status === "ok").length;
-      const er = next.filter((x) => x.status === "error").length;
+      let er = next.filter((x) => x.status === "error").length;
+      const duplicates = next.filter((x) => x.status === "error" && /Duplicate of row/.test(x.message ?? "")).length;
+
+      // Atomic mode: if any row failed during a real run, roll back everything inserted.
+      let rolledBack = false;
+      if (!dryRun && atomicMode && er > 0 && insertedRecords.length > 0) {
+        const byTable = new Map<string, string[]>();
+        insertedRecords.forEach(({ table, id }) => {
+          const arr = byTable.get(table) ?? [];
+          arr.push(id);
+          byTable.set(table, arr);
+        });
+        for (const [table, ids] of byTable) {
+          await supabase.from(table as any).delete().in("id", ids);
+        }
+        rolledBack = true;
+        for (let i = 0; i < next.length; i++) {
+          if (next[i].status === "ok" && next[i].resolved?.record_id) {
+            next[i] = { ...next[i], status: "error", message: "Rolled back (atomic import — another row failed)" };
+          }
+        }
+        setRows([...next]);
+        er = next.filter((x) => x.status === "error").length;
+      }
 
       // Ledger verification + audit log (only on real run)
       if (!dryRun) {
@@ -985,6 +1029,9 @@ export default function DataImport() {
           }
         }
 
+        const inserted = rolledBack ? 0 : insertedRecords.length;
+        const updated = rolledBack ? 0 : Math.max(0, ok - insertedRecords.length);
+
         // Persist audit log
         try {
           const officeId = (next.find((r) => r.resolved?.office_id)?.resolved?.office_id) ?? null;
@@ -992,12 +1039,14 @@ export default function DataImport() {
             user_id: user?.id ?? null,
             office_id: officeId,
             module: mod,
-            mode: upsertMode ? "upsert" : "insert",
+            mode: rolledBack ? "rolled_back" : upsertMode ? "upsert" : "insert",
             rows_processed: next.length,
-            rows_inserted: ok,
-            rows_updated: 0,
+            rows_inserted: inserted,
+            rows_updated: updated,
             rows_failed: er,
             summary: {
+              duplicates,
+              rolled_back: rolledBack,
               record_ids: next.filter((r) => r.resolved?.record_id).map((r) => ({ row: r.idx + 2, id: r.resolved!.record_id })),
             },
           });
@@ -1006,8 +1055,14 @@ export default function DataImport() {
           console.warn("Audit log insert failed", auditErr);
         }
 
-        if (er === 0) toast.success(`Imported ${ok} rows successfully`);
-        else toast.warning(`Imported ${ok}, failed ${er}. Download error report.`);
+        setSummary({
+          processed: next.length, inserted, updated, skipped: duplicates,
+          failed: er, duplicates, rolledBack,
+        });
+
+        if (rolledBack) toast.error(`Rolled back — ${er} row(s) failed. No data was saved. Fix errors and retry.`);
+        else if (er === 0) toast.success(`Imported ${inserted}, updated ${updated} rows successfully`);
+        else toast.warning(`Imported ${inserted}, updated ${updated}, failed ${er}. Download error report.`);
       } else {
         toast.info(`Preview ready: ${ok} rows will be processed, ${er} have errors.`);
       }
@@ -1091,6 +1146,10 @@ export default function DataImport() {
                 Upsert mode (update existing relation)
               </label>
             )}
+            <label className="flex items-center gap-2 text-sm ml-2">
+              <input type="checkbox" checked={atomicMode} onChange={(e) => setAtomicMode(e.target.checked)} />
+              Atomic (roll back all if any row fails)
+            </label>
           </div>
         </div>
 
@@ -1135,6 +1194,28 @@ export default function DataImport() {
           </div>
         )}
       </Card>
+
+      {summary && (
+        <Card className="mt-4 p-4">
+          <div className="font-medium mb-2">
+            Import summary {summary.rolledBack && <Badge variant="destructive" className="ml-2">Rolled back</Badge>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">Processed: {summary.processed}</Badge>
+            <Badge className="bg-green-600 hover:bg-green-600">Imported: {summary.inserted}</Badge>
+            <Badge className="bg-blue-600 hover:bg-blue-600">Updated: {summary.updated}</Badge>
+            <Badge variant="secondary">Duplicates skipped: {summary.duplicates}</Badge>
+            <Badge variant="destructive">Failed: {summary.failed}</Badge>
+          </div>
+          {summary.rolledBack && (
+            <p className="text-xs text-destructive mt-2">
+              Atomic import: one or more rows failed, so all inserted records were removed. No partial data was saved.
+            </p>
+          )}
+        </Card>
+      )}
+
+
 
       {rows.length > 0 && (
         <Card className="mt-4 overflow-x-auto">
