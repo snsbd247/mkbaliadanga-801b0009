@@ -235,6 +235,9 @@ export default function FarmersImport() {
       const isVoter = ["1", "true", "yes", "y", "হ্যাঁ"].includes(rawVoter) || !!String(r.raw.voter_number ?? "").trim();
 
       const str = (v: any) => (v != null && String(v).trim() !== "" ? String(v).trim() : null);
+      const boolVal = (v: any) => ["1", "true", "yes", "y", "হ্যাঁ"].includes(String(v ?? "").trim().toLowerCase());
+      const mouzaId = r.raw.mouza ? mouzaMap.get(String(r.raw.mouza).trim().toLowerCase()) ?? null : null;
+      const unionId = r.raw.union ? unionMap.get(String(r.raw.union).trim().toLowerCase()) ?? null : null;
       const basePayload: any = {
         name_en:          String(r.raw.name_en ?? "").trim(),
         name_bn:          str(r.raw.name_bn),
@@ -248,12 +251,19 @@ export default function FarmersImport() {
         district:         str(r.raw.district),
         division:         str(r.raw.division),
         address:          str(r.raw.address),
+        account_number:   str(r.raw.account_number),
+        voter_number:     str(r.raw.voter_number),
+        photo_url:        str(r.raw.photo_url),
+        status:           str(r.raw.status),
+        mouza_id:         mouzaId,
+        union_id:         unionId,
         nominee_name:     str(r.raw.nominee_name),
         nominee_mobile:   str(r.raw.nominee_mobile),
         nominee_relation: str(r.raw.nominee_relation),
         nominee_nid:      str(r.raw.nominee_nid),
         nominee_address:  str(r.raw.nominee_address),
         ...(hasVoterInput ? { is_voter: isVoter } : {}),
+        ...(String(r.raw.savings_inactive ?? "").trim() !== "" ? { savings_inactive: boolVal(r.raw.savings_inactive) } : {}),
       };
       // Drop null-valued keys so an UPDATE never wipes existing data with blanks
       Object.keys(basePayload).forEach((k) => {
