@@ -1191,6 +1191,12 @@ export default function DataImport() {
           next[i] = { ...next[i], status: "error", message: e?.message ?? String(e) };
         }
 
+        setProgress({
+          current: i + 1,
+          total: next.length,
+          ok: next.slice(0, i + 1).filter((x) => x.status === "ok").length,
+          failed: next.slice(0, i + 1).filter((x) => x.status === "error").length,
+        });
         if (i % 10 === 0) setRows([...next]);
       }
 
