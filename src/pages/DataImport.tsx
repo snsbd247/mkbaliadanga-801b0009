@@ -1274,6 +1274,12 @@ export default function DataImport() {
                 <SelectItem value="bank_accounts">Bank Accounts</SelectItem>
                 <SelectItem value="bank_transactions">Bank Transactions</SelectItem>
                 <SelectItem value="assets">Assets</SelectItem>
+                <SelectItem value="farmers">Farmers (members)</SelectItem>
+                <SelectItem value="savings_plans">Savings Plans</SelectItem>
+                <SelectItem value="loan_plans">Loan Plans</SelectItem>
+                <SelectItem value="farmer_savings_plans">Farmer Savings Plans (enrollment)</SelectItem>
+                <SelectItem value="irrigation_categories">Irrigation Categories</SelectItem>
+                <SelectItem value="irrigation_rates">Irrigation Rates (per season)</SelectItem>
                 {isSuper && <SelectItem value="ledger">Ledger Entries (super-admin)</SelectItem>}
               </SelectContent>
             </Select>
