@@ -1029,6 +1029,9 @@ export default function DataImport() {
           }
         }
 
+        const inserted = rolledBack ? 0 : insertedRecords.length;
+        const updated = rolledBack ? 0 : Math.max(0, ok - insertedRecords.length);
+
         // Persist audit log
         try {
           const officeId = (next.find((r) => r.resolved?.office_id)?.resolved?.office_id) ?? null;
@@ -1036,12 +1039,14 @@ export default function DataImport() {
             user_id: user?.id ?? null,
             office_id: officeId,
             module: mod,
-            mode: upsertMode ? "upsert" : "insert",
+            mode: rolledBack ? "rolled_back" : upsertMode ? "upsert" : "insert",
             rows_processed: next.length,
-            rows_inserted: ok,
-            rows_updated: 0,
+            rows_inserted: inserted,
+            rows_updated: updated,
             rows_failed: er,
             summary: {
+              duplicates,
+              rolled_back: rolledBack,
               record_ids: next.filter((r) => r.resolved?.record_id).map((r) => ({ row: r.idx + 2, id: r.resolved!.record_id })),
             },
           });
@@ -1050,8 +1055,14 @@ export default function DataImport() {
           console.warn("Audit log insert failed", auditErr);
         }
 
-        if (er === 0) toast.success(`Imported ${ok} rows successfully`);
-        else toast.warning(`Imported ${ok}, failed ${er}. Download error report.`);
+        setSummary({
+          processed: next.length, inserted, updated, skipped: duplicates,
+          failed: er, duplicates, rolledBack,
+        });
+
+        if (rolledBack) toast.error(`Rolled back — ${er} row(s) failed. No data was saved. Fix errors and retry.`);
+        else if (er === 0) toast.success(`Imported ${inserted}, updated ${updated} rows successfully`);
+        else toast.warning(`Imported ${inserted}, updated ${updated}, failed ${er}. Download error report.`);
       } else {
         toast.info(`Preview ready: ${ok} rows will be processed, ${er} have errors.`);
       }
