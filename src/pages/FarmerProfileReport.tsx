@@ -86,8 +86,8 @@ export default function FarmerProfileReport() {
       const ltRows = (ltData as any[]) ?? [];
 
       const fieldTypeLabel = (v: string, landTypeId?: string | null) => {
-        const fromCatalogue = landTypeLabel(ltRows as any, landTypeId ?? null, v ?? null);
-        if (fromCatalogue) return fromCatalogue;
+        const hit = landTypeId ? ltRows.find((r: any) => r.id === landTypeId) : undefined;
+        if (hit) return hit.name_bn || hit.name || hit.code;
         switch (v) {
           case "high_land": return tx("High Land", "উঁচু জমি(High Land)");
           case "medium_land": return tx("Medium Land", "মাঝারি জমি(Medium Land)");
