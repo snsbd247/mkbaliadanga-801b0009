@@ -431,7 +431,7 @@ export default function CollectionReport() {
           </div>
           <div>
             <span className="text-muted-foreground">{t("entries")}:</span>{" "}
-            <span className="font-semibold">{rows.length}</span>
+            <span className="font-semibold">{filtered.length}</span>
           </div>
           <div>
             <span className="text-muted-foreground">{t("staffLabel")}:</span>{" "}
@@ -453,7 +453,7 @@ export default function CollectionReport() {
               exportTablePDF(
                 `Collection Report${filterSuffix()}`,
                 ["Date", "Receipt #", "Farmer", "Sech", "Penalty", "Hal", "Bokeya", "Hawlat", "Anudan", "Vangari", "Pukur", "Bighat", "Bhorti Fee", "Loan", "Savings", "Share", "Profit", "Misc", "Total", "User"],
-                rows.map((r) => [
+                filtered.map((r) => [
                   fmtDate(r.date), `${r.receipt_no ?? "—"}${r.voided ? " (বাতিল)" : ""}`, `${r.farmer_code} — ${r.farmer_name}`,
                   r.sech, r.jorimana, r.hal, r.bokeya, r.hawlat, r.anudan, r.vangari, r.pukur, r.bighat, r.bhortifi, r.rin, r.soncoy, r.share, r.lav, r.bibidh, r.voided ? "বাতিল" : r.amount, r.user_name,
                 ]),
@@ -463,7 +463,7 @@ export default function CollectionReport() {
               exportExcel(
                 "collection-report",
                 "Collections",
-                rows.map((r) => ({
+                filtered.map((r) => ({
                   Date: r.date,
                   "Receipt #": `${r.receipt_no ?? ""}${r.voided ? " (বাতিল)" : ""}`,
                   "Farmer ID": r.farmer_code,
@@ -503,7 +503,7 @@ export default function CollectionReport() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => (
+                {filtered.map((r) => (
                   <TableRow key={`${r.source}-${r.ref_id}`} className={r.voided ? "opacity-70" : undefined}>
                     <TableCell>{fmtDate(r.date)}</TableCell>
                     <TableCell className="font-mono text-xs">
@@ -530,7 +530,7 @@ export default function CollectionReport() {
                     <TableCell className="text-xs">{r.user_name}</TableCell>
                   </TableRow>
                 ))}
-                {rows.length === 0 && !loading && (
+                {filtered.length === 0 && !loading && (
                   <TableRow>
                     <TableCell colSpan={20} className="text-center text-muted-foreground py-6">
                       {t("noCollectionsFiltered")}
