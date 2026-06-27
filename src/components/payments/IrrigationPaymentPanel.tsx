@@ -175,6 +175,23 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     if (Number(previousCollected) > previousDueTotal) {
       return toast.error(tx("Previous due collected exceeds previous due", "পূর্বের বকেয়া থেকে সংগৃহীত পূর্বের মোট বকেয়ার চেয়ে বেশি"));
     }
+    // Full-clearance rule: regular operators must fully clear all dues (previous + current).
+    // Only super admins may accept a partial payment under special permission.
+    if (!isSuper) {
+      const currentShortfall = roundTk(currentPayable) - Number(currentCollected || 0);
+      if (currentShortfall > 0.5) {
+        return toast.error(tx(
+          "Full current charge must be cleared before receiving payment",
+          "পেমেন্ট নিতে হলে চলতি সিজনের সম্পূর্ণ চার্জ (জরিমানাসহ) পরিশোধ করতে হবে",
+        ));
+      }
+      if (previousRemainingAfter > 0.5) {
+        return toast.error(tx(
+          "All previous dues must be cleared before receiving payment",
+          "পেমেন্ট নিতে হলে আগের সকল বকেয়া সম্পূর্ণ পরিশোধ করতে হবে",
+        ));
+      }
+    }
     if (blockedByPreviousDue) {
       return toast.error(tx("Previous irrigation due must be cleared first", "আগের সেচ বকেয়া সম্পূর্ণ পরিশোধ করতে হবে"));
     }
