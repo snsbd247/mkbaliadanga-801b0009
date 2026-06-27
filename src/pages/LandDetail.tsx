@@ -17,6 +17,7 @@ import { useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSele
 export default function LandDetail() {
   const { id } = useParams();
   const { t } = useLang();
+  const { rows: landTypeRows } = useLandTypes();
   const [loading, setLoading] = useState(true);
   const [land, setLand] = useState<any>(null);
   const [loc, setLoc] = useState<any>(null);
