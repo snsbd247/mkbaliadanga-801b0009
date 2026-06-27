@@ -213,6 +213,13 @@ function normalizeLandTypeText(fieldType?: string | null, billInfo?: string | nu
   return matched ?? (nonRice.length ? nonRice.join("/") : tokens.join("/"));
 }
 
+/** Official receipt rate display: entered/calculated rate is shown per acre and per bigha.
+ *  1 acre = 100 শতক, 1 bigha = 33 শতক, so bigha rate = acre rate × 33 / 100.
+ */
+function ratePerBighaFromAcre(ratePerAcre: number | null): number | null {
+  return ratePerAcre == null ? null : (ratePerAcre * 33) / 100;
+}
+
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
   return digits(fmt4(Number(n ?? 0)), lang);
 }
@@ -407,11 +414,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.memberLine, d.member_summary ? digits(String(d.member_summary), lang) : "—"]);
     // 5. মৌজা
     rows.push([mouzaLabel, d.farmer.mouza || "—"]);
-    // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট ÷ ৩৩)
+    // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট × ৩৩/১০০)
     const ratePerAcre = d.rate != null ? Number(d.rate) : null;
     const ratePerBigha = d.rate_per_bigha != null
       ? Number(d.rate_per_bigha)
-      : (ratePerAcre != null ? ratePerAcre / 33 : null);
+      : ratePerBighaFromAcre(ratePerAcre);
     const unit = lang === "bn" ? "টাকা" : "";
     const rateText = ratePerAcre != null ? `${moneyInt(ratePerAcre, lang, unit)}/${moneyInt(ratePerBigha ?? 0, lang, unit)}` : "";
     rows.push([t.landKind, [normalizeLandTypeText(d.farmer.field_type_bn, d.bill_info), rateText].filter(Boolean).join("/ ") || "—"]);
