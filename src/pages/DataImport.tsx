@@ -594,6 +594,7 @@ export default function DataImport() {
 
 
 
+      setProgress({ current: 0, total: next.length, ok: 0, failed: 0 });
       for (let i = 0; i < next.length; i++) {
         const r = next[i];
         const raw = r.raw;
