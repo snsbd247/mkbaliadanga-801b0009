@@ -611,6 +611,19 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                 <TableRow><TableCell colSpan={11} className="text-center py-6 text-muted-foreground">{tx("No invoices", "কোন ইনভয়েস নেই")}</TableCell></TableRow>
               )}
             </TableBody>
+            {filtered.length > 0 && (
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={5} className="text-right font-semibold">
+                    {tx("Grand total", "সর্বমোট")} ({filtered.length})
+                  </TableCell>
+                  <TableCell className="text-right font-bold">{money(grandTotals.payable)}</TableCell>
+                  <TableCell className="text-right font-bold text-success">{money(grandTotals.paid)}</TableCell>
+                  <TableCell className="text-right font-bold text-destructive">{money(grandTotals.due)}</TableCell>
+                  <TableCell colSpan={3} />
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </div>
         <InvoicePreviewDialog
