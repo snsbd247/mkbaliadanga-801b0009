@@ -206,6 +206,24 @@ export default function FarmersImport() {
     let saved = 0;
     const updated = [...rows];
 
+    // Prefetch mouza/union name → id maps for geo resolution
+    const mouzaMap = new Map<string, string>();
+    const unionMap = new Map<string, string>();
+    try {
+      const [{ data: mz }, { data: un }] = await Promise.all([
+        supabase.from("mouzas").select("id,name,name_bn"),
+        supabase.from("unions").select("id,name,name_bn"),
+      ]);
+      (mz ?? []).forEach((m: any) => {
+        if (m.name) mouzaMap.set(String(m.name).trim().toLowerCase(), m.id);
+        if (m.name_bn) mouzaMap.set(String(m.name_bn).trim().toLowerCase(), m.id);
+      });
+      (un ?? []).forEach((u: any) => {
+        if (u.name) unionMap.set(String(u.name).trim().toLowerCase(), u.id);
+        if (u.name_bn) unionMap.set(String(u.name_bn).trim().toLowerCase(), u.id);
+      });
+    } catch { /* geo resolution optional */ }
+
     for (const r of validRows) {
       const i = updated.findIndex((x) => x.idx === r.idx);
       updated[i] = { ...updated[i], status: "saving", errorMsg: null };
