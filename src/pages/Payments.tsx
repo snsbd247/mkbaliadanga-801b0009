@@ -946,7 +946,7 @@ export default function Payments() {
                             if (refIds.length) {
                               const { data: invs } = await supabase
                                 .from("irrigation_invoices")
-                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
+                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))")
                                 .in("id", refIds);
                               invoiceRows = invs ?? [];
                               primaryCharge = invoiceRows[0] ?? null;
@@ -959,7 +959,7 @@ export default function Payments() {
                               totalOutstanding = (allDues ?? []).reduce((s: number, r: any) => s + Number(r.due_amount || 0), 0);
                             }
                             const land = primaryCharge?.lands;
-                            const ownerFarmer = land?.farmers;
+                            const ownerFarmer = land?.owner;
                             const isSelf = !primaryCharge?.is_borga && (!land?.owner_farmer_id || land.owner_farmer_id === p.farmer_id || land.owner_type === "owner");
                             // জমির ধরন: ক্যাটালগ/সিজন থেকে; নাহলে লিগ্যাসি enum.
                             const fieldTypeBn = Array.from(new Set((invoiceRows as any[]).map((inv) => (
