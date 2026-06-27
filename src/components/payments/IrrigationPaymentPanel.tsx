@@ -59,7 +59,7 @@ const roundTk = (n: number) => Math.round(Number(n) || 0);
 
 export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFarmerId?: string; onPaid?: () => void }) {
   const { t, tx, lang } = useLang();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isSuper } = useAuth();
   const [farmerId, setFarmerId] = useState(initialFarmerId ?? "");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -174,6 +174,23 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     }
     if (Number(previousCollected) > previousDueTotal) {
       return toast.error(tx("Previous due collected exceeds previous due", "পূর্বের বকেয়া থেকে সংগৃহীত পূর্বের মোট বকেয়ার চেয়ে বেশি"));
+    }
+    // Full-clearance rule: regular operators must fully clear all dues (previous + current).
+    // Only super admins may accept a partial payment under special permission.
+    if (!isSuper) {
+      const currentShortfall = roundTk(currentPayable) - Number(currentCollected || 0);
+      if (currentShortfall > 0.5) {
+        return toast.error(tx(
+          "Full current charge must be cleared before receiving payment",
+          "পেমেন্ট নিতে হলে চলতি সিজনের সম্পূর্ণ চার্জ (জরিমানাসহ) পরিশোধ করতে হবে",
+        ));
+      }
+      if (previousRemainingAfter > 0.5) {
+        return toast.error(tx(
+          "All previous dues must be cleared before receiving payment",
+          "পেমেন্ট নিতে হলে আগের সকল বকেয়া সম্পূর্ণ পরিশোধ করতে হবে",
+        ));
+      }
     }
     if (blockedByPreviousDue) {
       return toast.error(tx("Previous irrigation due must be cleared first", "আগের সেচ বকেয়া সম্পূর্ণ পরিশোধ করতে হবে"));
@@ -686,7 +703,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             </div>
           </div>
 
-          {previousDueTotal > 0 && previousRemainingAfter > 0 && (
+          {previousDueTotal > 0 && previousRemainingAfter > 0 && isSuper && (
             <div className="rounded-md border bg-muted/30 p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2 cursor-pointer">
