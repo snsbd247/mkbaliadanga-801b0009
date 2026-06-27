@@ -123,3 +123,42 @@ export function findMissingSampleFields(type: SampleReceiptType, data: BnReceipt
   }
   return missing;
 }
+
+/** Human-readable Bengali label + affected printable section for each field path. */
+export const SAMPLE_FIELD_META: Record<string, { label: string; section: string }> = {
+  "farmer.name": { label: "নাম", section: "সদস্য তথ্য" },
+  "farmer.father_or_husband": { label: "পিতা/স্বামী", section: "সদস্য তথ্য" },
+  "farmer.village": { label: "গ্রাম", section: "সদস্য তথ্য" },
+  "farmer.mobile": { label: "মোবাইল", section: "সদস্য তথ্য" },
+  "farmer.member_no": { label: "সদস্য নং", section: "সদস্য তথ্য" },
+  "farmer.mouza": { label: "মৌজা", section: "জমির তথ্য" },
+  "farmer.field_type_bn": { label: "জমির ধরন", section: "জমির তথ্য" },
+  "farmer.land_size": { label: "জমির পরিমাণ", section: "জমির তথ্য" },
+  "farmer.dag_no": { label: "দাগ নং", section: "জমির তথ্য" },
+  rate: { label: "চার্জ রেট", section: "চার্জ হিসাব" },
+  current_season_charge: { label: "চলতি সিজন চার্জ", section: "চার্জ হিসাব" },
+  previous_due: { label: "পূর্বের বকেয়া", section: "চার্জ হিসাব" },
+  collected_amount: { label: "আদায়কৃত পরিমাণ", section: "চার্জ হিসাব" },
+  member_summary: { label: "সদস্য সারসংক্ষেপ", section: "সদস্য তথ্য" },
+  land_owner_label: { label: "মালিক/বর্গাদার", section: "জমির তথ্য" },
+  holding_description: { label: "হোল্ডিং বিবরন", section: "হোল্ডিং/পাটুয়ারী" },
+  patwari_name: { label: "পাটুয়ারীর নাম", section: "হোল্ডিং/পাটুয়ারী" },
+  patwari_mobile: { label: "পাটুয়ারীর মোবাইল", section: "হোল্ডিং/পাটুয়ারী" },
+  savings_account_no: { label: "হিসাব নং", section: "সঞ্চয় তথ্য" },
+  savings_category_bn: { label: "সঞ্চয় ধরন", section: "সঞ্চয় তথ্য" },
+  savings_balance_after: { label: "বর্তমান স্থিতি", section: "সঞ্চয় তথ্য" },
+};
+
+export type MissingFieldDetail = { path: string; label: string; section: string };
+
+/** Like findMissingSampleFields but returns label + affected printable section. */
+export function findMissingSampleFieldDetails(
+  type: SampleReceiptType,
+  data: BnReceiptData,
+): MissingFieldDetail[] {
+  return findMissingSampleFields(type, data).map((path) => ({
+    path,
+    label: SAMPLE_FIELD_META[path]?.label ?? path,
+    section: SAMPLE_FIELD_META[path]?.section ?? "অন্যান্য",
+  }));
+}
