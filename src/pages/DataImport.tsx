@@ -1434,6 +1434,9 @@ export default function DataImport() {
             <Button variant="outline" onClick={() => downloadCsvTemplate(mod as any)}>
               <FileSpreadsheet className="h-4 w-4 mr-1" /> CSV Template
             </Button>
+            <Button variant="outline" onClick={previewSampleReceipt}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> নমুনা রশিদ প্রিভিউ
+            </Button>
             <input
               ref={fileRef}
               type="file"
