@@ -384,6 +384,7 @@ export default function DataImport() {
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<RowResult[]>([]);
   const [working, setWorking] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number; ok: number; failed: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [upsertMode, setUpsertMode] = useState(false);
   const [atomicMode, setAtomicMode] = useState(true);
