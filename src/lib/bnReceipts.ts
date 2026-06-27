@@ -260,6 +260,16 @@ function banglaOwnerLabel(label: string, lang: ReceiptLang): string {
   return /^(মালিক|নিজ)\s*[:ঃ]?/.test(v) ? v : `মালিক: ${v}`;
 }
 
+function officialMemberSummaryText(d: BnReceiptData, lang: ReceiptLang): string {
+  const raw = String(d.member_summary ?? "").trim();
+  if (!raw) return "—";
+  if (d.owner_self) {
+    const first = raw.split("/")[0]?.trim();
+    return first ? digits(first, lang) : "—";
+  }
+  return digits(raw, lang);
+}
+
 const STR = {
   bn: {
     titleIrr: "সেচ চার্জ ও বিবিধ আদায় রশিদ",
@@ -427,7 +437,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const villageParts = [d.farmer.village, d.village_union].filter(Boolean).join(",");
     rows.push([t.villageLine, `${villageParts || "—"}${d.farmer.mobile ? "/" + digits(String(d.farmer.mobile), lang) : ""}`]);
     // 4. কৃষক এবং মালিক সভ্য সদস্য
-    rows.push([t.memberLine, d.member_summary ? digits(String(d.member_summary), lang) : "—"]);
+    rows.push([t.memberLine, officialMemberSummaryText(d, lang)]);
     // 5. মৌজা
     rows.push([mouzaLabel, d.farmer.mouza || "—"]);
     // 6. জমির ধরন / চার্জ রেট (একর/বিঘা — বিঘা = একর রেট × ৩৩/১০০)
