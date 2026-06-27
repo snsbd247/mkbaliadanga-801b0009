@@ -236,7 +236,7 @@ export default function HistoricalReceiptEntry() {
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={reset} disabled={submitting}>{tx("Clear", "মুছুন")}</Button>
-          <Button onClick={submit} disabled={submitting}>
+          <Button onClick={submit} disabled={submitting || dupWarn}>
             {submitting ? tx("Saving…", "সংরক্ষণ হচ্ছে…") : tx("Save Receipt", "রশিদ সংরক্ষণ")}
           </Button>
         </div>
