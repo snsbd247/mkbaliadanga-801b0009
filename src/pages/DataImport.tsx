@@ -71,8 +71,8 @@ type RowResult = {
 
 const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any> }> = {
   lands: {
-    columns: ["account_number", "dag_no", "land_size", "land_size_unit", "owner_type", "field_type", "mouza"],
-    sample: { account_number: "10001", dag_no: "123, 124/A", land_size: 33, land_size_unit: "shotok", owner_type: "owner", field_type: "medium_land", mouza: "Mouza A" },
+    columns: ["account_number", "dag_no", "land_size", "land_size_unit", "owner_type", "field_type", "mouza", "notes", "patwari_name"],
+    sample: { account_number: "10001", dag_no: "123, 124/A", land_size: 33, land_size_unit: "shotok", owner_type: "owner", field_type: "medium_land", mouza: "Mouza A", notes: "আমন হয় না। নিজ সেচে আবাদ হয়।", patwari_name: "মোঃ আলম ইসলাম" },
   },
   land_relations: {
     columns: ["owner_account_number", "tenant_account_number", "dag_no", "share_percentage", "valid_from", "valid_to", "note"],
@@ -251,6 +251,8 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
     ["owner_type", "No", "owner | borgadar (default: owner)"],
     ["field_type", "No", "high_land | medium_land | low_land (default: medium_land)"],
     ["mouza", "No", "Free text mouza name."],
+    ["notes", "No", "হোল্ডিং এর বিবরন — receipt holding text (e.g. \"আমন হয় না। নিজ সেচে আবাদ হয়।\")."],
+    ["patwari_name", "No", "Patwari name (en/bn) or mobile. Must match an existing patwari (import patwaris first)."],
     [],
     ["Examples", "", ""],
     ["10001", "", "dag_no = 123  → single dag"],
@@ -592,6 +594,18 @@ export default function DataImport() {
         (ss ?? []).forEach((s: any) => seasonMap.set(`${s.year}|${String(s.type).trim().toLowerCase()}`, s.id));
       }
 
+      // Patwari lookup by name / name_bn / mobile for lands mode
+      const patwariMap = new Map<string, string>();
+      if (mod === "lands") {
+        const { data: pw } = await supabase.from("patwaris").select("id,name,name_bn,mobile");
+        (pw ?? []).forEach((p: any) => {
+          if (p.name) patwariMap.set(String(p.name).trim().toLowerCase(), p.id);
+          if (p.name_bn) patwariMap.set(String(p.name_bn).trim().toLowerCase(), p.id);
+          if (p.mobile) patwariMap.set(String(p.mobile).trim(), p.id);
+        });
+      }
+
+
 
 
       setProgress({ current: 0, total: next.length, ok: 0, failed: 0 });
@@ -633,6 +647,12 @@ export default function DataImport() {
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
+              notes: (raw.notes ?? raw.holding_description ?? "").toString().trim() || null,
+              patwari_id: (() => {
+                const key = (raw.patwari_name ?? raw.patwari ?? raw.patwari_mobile ?? "").toString().trim();
+                if (!key) return null;
+                return patwariMap.get(key.toLowerCase()) ?? patwariMap.get(key) ?? null;
+              })(),
             };
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
