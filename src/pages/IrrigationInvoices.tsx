@@ -310,7 +310,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
         village: inv.farmers?.village ?? null,
       },
       land: {
-        mouza: inv.lands?.mouza,
+        mouza: mouzaName(inv),
         dag_no: inv.lands?.dag_no,
         // Use the land area frozen on the invoice at generation time, NOT the
         // farmer's current (possibly edited) land — past seasons must keep their
@@ -1009,7 +1009,7 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
         <div className="space-y-2 text-sm">
           <Row k={tx("Farmer", "কৃষক")} v={`${inv.farmers?.name_bn ?? inv.farmers?.name_en} (${inv.farmers?.farmer_code})`} />
           <Row k={tx("Type", "ধরন")} v={inv.is_borga ? `🤝 ${tx("Sharecropper", "বর্গাদার")}` : `🏠 ${tx("Owner", "নিজ মালিক")}`} />
-          <Row k={tx("Land", "জমি")} v={`${inv.lands?.mouza ?? ""} • Dag ${formatDagNumbers(inv.lands?.dag_no) || "—"} • ${formatLandSize(invoiceLandSize(inv))}`} />
+          <Row k={tx("Land", "জমি")} v={`${mouzaName(inv)} • Dag ${formatDagNumbers(inv.lands?.dag_no) || "—"} • ${formatLandSize(invoiceLandSize(inv))}`} />
           <Row k={tx("Land type", "জমির ধরন")} v={inv.land_type_name ?? "—"} />
           <Row k={tx("Season", "সিজন")} v={`${inv.seasons?.name ?? inv.seasons?.type} ${inv.seasons?.year}`} />
           <Row k={tx("Season rate / shotok", "সিজন রেট/শতক")} v={inv.season_rate != null ? money(inv.season_rate) : "—"} />
