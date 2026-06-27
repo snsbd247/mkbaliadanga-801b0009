@@ -386,6 +386,12 @@ export default function DataImport() {
       ledger: ["entry_date", "account_code"],
       shares: ["account_number", "balance"],
       patwaris: ["name"],
+      farmers: ["account_number", "name_en"],
+      savings_plans: ["name", "duration_months"],
+      loan_plans: ["name", "duration_months"],
+      farmer_savings_plans: ["account_number", "plan_name"],
+      irrigation_categories: ["code"],
+      irrigation_rates: ["season_year", "season_type", "base_rate"],
     };
     const headerSet = parsed.length ? new Set(Object.keys(parsed[0])) : new Set<string>();
     const req = required[m] ?? TEMPLATES[m].columns;
