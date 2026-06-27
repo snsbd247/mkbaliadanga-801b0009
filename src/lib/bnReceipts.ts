@@ -204,7 +204,7 @@ const STR = {
     titleLoan: "ঋণের কিস্তি গ্রহণের রশিদ",
     farmerCopy: "কৃষকের কপি",
     officeCopy: "অফিস কপি",
-    receiptNo: "রসিদ নং:",
+    receiptNo: "রশিদ নং:",
     billInfo: "আদায়ের তথ্য:",
     date: "সংগৃহীত তারিখ:",
     farmerLine: "কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি:",
