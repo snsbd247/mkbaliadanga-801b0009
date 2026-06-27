@@ -431,7 +431,7 @@ export default function DataImport() {
 
       // Pre-fetch latest active loan per farmer for loan_payments / loan_installments mode
       let loanByFarmer = new Map<string, string>();
-      if (mod === "loan_payments" || mod === "loan_installments") {
+      if (mod === "loan_payments" || mod === "loan_installments" || mod === "loan_guarantors") {
         const farmerIds = Array.from(new Set(Array.from(farmerMap.values()).map((v) => v.id)));
         if (farmerIds.length) {
           const { data: loans } = await supabase
@@ -444,6 +444,23 @@ export default function DataImport() {
             if (!loanByFarmer.has(l.farmer_id)) loanByFarmer.set(l.farmer_id, l.id);
           });
         }
+      }
+
+      // Pre-fetch lookup maps for catalog modules
+      const upazilaMap = new Map<string, string>();
+      if (mod === "mouzas") {
+        const { data: ups } = await supabase.from("upazilas").select("id,name,name_bn");
+        (ups ?? []).forEach((u: any) => {
+          if (u.name) upazilaMap.set(String(u.name).trim().toLowerCase(), u.id);
+          if (u.name_bn) upazilaMap.set(String(u.name_bn).trim().toLowerCase(), u.id);
+        });
+      }
+      const bankAcctMap = new Map<string, string>();
+      if (mod === "bank_transactions") {
+        const { data: ba } = await supabase.from("bank_accounts").select("id,account_no,office_id");
+        (ba ?? []).forEach((b: any) => {
+          if (b.account_no) bankAcctMap.set(String(b.account_no).trim(), b.id);
+        });
       }
 
       for (let i = 0; i < next.length; i++) {
