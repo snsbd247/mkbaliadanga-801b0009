@@ -965,7 +965,9 @@ export default function DataImport() {
           } else {
             const { data: inserted, error } = await supabase.from(table as any).insert(payload).select("id").maybeSingle();
             if (error) throw error;
-            next[i] = { ...next[i], status: "ok", resolved: { ...(next[i].resolved ?? {}), record_id: (inserted as any)?.id } };
+            const newId = (inserted as any)?.id;
+            if (newId) insertedRecords.push({ table, id: newId });
+            next[i] = { ...next[i], status: "ok", resolved: { ...(next[i].resolved ?? {}), record_id: newId } };
           }
         } catch (e: any) {
           next[i] = { ...next[i], status: "error", message: e?.message ?? String(e) };
