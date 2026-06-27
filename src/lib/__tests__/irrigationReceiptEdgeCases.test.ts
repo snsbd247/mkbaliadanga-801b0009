@@ -72,22 +72,22 @@ describe("irrigation receipt edge cases (overflow prevention)", () => {
 
   it("shows separate হাল and বকেয়া penalty breakdown alongside totals", () => {
     const html = buildReceiptCopyHtmlForTest(base, "farmer", "bn");
-    expect(rowFor(html, "চার্জের পরিমাণ (হাল)/জরিমানা:")).toContain("1,300.00/130.00");
-    expect(rowFor(html, "চার্জের পরিমাণ (বকেয়া)/জরিমানা:")).toContain("1,300.00/130.00");
-    expect(rowFor(html, "মোট আদায়ের পরিমাণ:")).toContain("2,860.00");
+    expect(rowFor(html, "চার্জের পরিমাণ (হাল)/জরিমানা:")).toContain("১৩০০৳/১৩০৳");
+    expect(rowFor(html, "চার্জের পরিমাণ (বকেয়া)/জরিমানা:")).toContain("১৩০০৳/১৩০৳");
+    expect(rowFor(html, "মোট আদায়ের পরিমাণ:")).toContain("২৮৬০৳");
   });
 
   it("rate row shows acre rate and bigha rate (acre ÷ 33)", () => {
     const html = buildReceiptCopyHtmlForTest(base, "farmer", "bn");
     const kind = rowFor(html, "জমির ধরন/ চার্জ রেট (একর/বিঘা):");
     expect(kind).toContain("উচু জমি");
-    expect(kind).toContain("3,939.39"); // একর রেট
-    expect(kind).toContain("119.38");   // 3939.39 / 33 = 119.38 বিঘা রেট
+    expect(kind).toContain("৩৯৩৯.৩৯"); // একর রেট
+    expect(kind).toContain("১১৯.৩৮");   // 3939.39 / 33 = 119.38 বিঘা রেট
   });
 
   it("land size renders as একর with exactly 4 decimals", () => {
     const html = buildReceiptCopyHtmlForTest({ ...base, farmer: { ...base.farmer, land_size: 50 } }, "farmer", "bn");
-    expect(rowFor(html, "জমির পরিমাণ:")).toContain("0.5000 একর");
+    expect(rowFor(html, "জমির পরিমাণ:")).toContain("০.৫০০০ একর");
   });
 
   it("owner_self shows নিজ/মালিক only", () => {
