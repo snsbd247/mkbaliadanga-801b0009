@@ -830,12 +830,15 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <div className="text-xs text-muted-foreground">{tx("Grand total received", "মোট গ্রহণ")}</div>
               <div className="text-2xl font-mono font-bold">{money(grandTotal)}</div>
             </div>
-            <Button size="lg" onClick={submit} disabled={submitting || grandTotal <= 0 || blockedByPreviousDue}>
+            <Button size="lg" onClick={submit} disabled={submitting || grandTotal <= 0 || (blockedByPreviousDue && canDoPartial)}>
               {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{tx("Saving…", "সংরক্ষণ…")}</> : <><CheckCircle2 className="h-4 w-4 mr-2" />{tx("Receive Payment", "পেমেন্ট গ্রহণ")}</>}
             </Button>
           </div>
-          {blockedByPreviousDue && (
+          {blockedByPreviousDue && canDoPartial && (
             <p className="text-xs text-destructive">{tx("Submit blocked: previous irrigation due not fully cleared. Enable special permission to bypass.", "জমা করা যাবে না: আগের সেচ বকেয়া পরিশোধ হয়নি। অনুমতি দিতে চাইলে বিশেষ অনুমতি চালু করুন।")}</p>
+          )}
+          {!canDoPartial && (
+            <p className="text-xs text-muted-foreground">{tx("All dues (previous + current) must be fully cleared to generate a receipt.", "রশিদ জেনারেট করতে সকল বকেয়া (আগের + চলতি) সম্পূর্ণ পরিশোধ করতে হবে।")}</p>
           )}
         </Card>
       )}
