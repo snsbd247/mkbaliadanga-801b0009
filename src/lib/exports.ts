@@ -109,7 +109,7 @@ export async function exportFarmerReportPDF(farmer: any, ctx: any) {
   autoTable(doc, {
     startY: y + 2,
     head: [[tPdf("Mouza", "মৌজা"), tPdf("Dag No", "দাগ নং"), tPdf("Size", "পরিমাণ"), tPdf("Owner", "মালিকানা"), tPdf("Field", "ক্ষেত্র")]],
-    body: ctx.lands.map((l: any) => [l.mouza, formatDagNumbers(l.dag_no), l.land_size, l.owner_type, l.field_type]),
+    body: ctx.lands.map((l: any) => [l.mouza, formatDagNumbers(l.dag_no), l.land_size, l.owner_type, l.field_type_label ?? l.field_type]),
     styles: tableFont, headStyles: tableFont,
   });
 
