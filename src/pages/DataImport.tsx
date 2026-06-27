@@ -484,6 +484,13 @@ export default function DataImport() {
         seen.set(key, idx);
       }
       if (issues.length) return { idx, raw, status: "error", message: issues.join(" • ") };
+      // Non-blocking warning: lands without holding/patwari info → receipt rows will be empty.
+      if (m === "lands") {
+        const missingInfo: string[] = [];
+        if (String(raw.notes ?? raw.holding_description ?? "").trim() === "") missingInfo.push("notes (হোল্ডিং বিবরণ)");
+        if (String(raw.patwari_name ?? raw.patwari ?? raw.patwari_mobile ?? "").trim() === "") missingInfo.push("patwari_name");
+        if (missingInfo.length) return { idx, raw, status: "pending", message: `⚠ রশিদে দেখা যাবে না: ${missingInfo.join(", ")}` };
+      }
       return { idx, raw, status: "pending" };
     });
   }
