@@ -120,7 +120,8 @@ export function PaidLandHistory({ farmerId }: Props) {
     });
   }, [rows, q, from, to, farmer, office]);
 
-  const total = filtered.reduce((s, r) => s + r.amount, 0);
+  // Cancelled receipts are excluded from collection totals.
+  const total = filtered.reduce((s, r) => s + (r.cancelled ? 0 : r.amount), 0);
 
   // ১.৯ — receipt download শুধুমাত্র payment হওয়া সারির জন্য (এই তালিকার সব সারিই পরিশোধিত)।
   async function downloadReceipt(r: PaidRow) {
