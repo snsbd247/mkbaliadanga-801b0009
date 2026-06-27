@@ -1195,6 +1195,28 @@ export default function DataImport() {
         )}
       </Card>
 
+      {summary && (
+        <Card className="mt-4 p-4">
+          <div className="font-medium mb-2">
+            Import summary {summary.rolledBack && <Badge variant="destructive" className="ml-2">Rolled back</Badge>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">Processed: {summary.processed}</Badge>
+            <Badge className="bg-green-600 hover:bg-green-600">Imported: {summary.inserted}</Badge>
+            <Badge className="bg-blue-600 hover:bg-blue-600">Updated: {summary.updated}</Badge>
+            <Badge variant="secondary">Duplicates skipped: {summary.duplicates}</Badge>
+            <Badge variant="destructive">Failed: {summary.failed}</Badge>
+          </div>
+          {summary.rolledBack && (
+            <p className="text-xs text-destructive mt-2">
+              Atomic import: one or more rows failed, so all inserted records were removed. No partial data was saved.
+            </p>
+          )}
+        </Card>
+      )}
+
+
+
       {rows.length > 0 && (
         <Card className="mt-4 overflow-x-auto">
           <Table>
