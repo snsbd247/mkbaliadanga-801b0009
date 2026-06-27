@@ -66,29 +66,37 @@ export function PaidLandHistory({ farmerId }: Props) {
         .from("irrigation_invoice_payments")
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
-          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, lands(dag_no, mouza, land_size), seasons(name,year,type)), " +
-          "payment:payments(receipt_no, created_at)"
+          "invoice:irrigation_invoices!inner(invoice_no, farmer_id, season_rate, land_type_name, due_amount, lands(dag_no, mouza, land_size), seasons(name,year,type)), " +
+          "payment:payments(receipt_no, created_at, status, voided_at)"
         )
         .eq("invoice.farmer_id", farmerId)
         .order("created_at", { ascending: false }),
       supabase.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,mobile,village,office_id").eq("id", farmerId).maybeSingle(),
     ]);
-    const list: PaidRow[] = (data ?? []).map((r: any) => ({
-      season: r.invoice?.seasons ? `${r.invoice.seasons.name ?? r.invoice.seasons.type ?? ""} ${r.invoice.seasons.year ?? ""}`.trim() : "—",
-      invoice_no: r.invoice?.invoice_no ?? "—",
-      receipt_no: r.payment?.receipt_no ?? "—",
-      paid_on: r.payment?.created_at ?? r.created_at ?? null,
-      amount: Number(r.collected_amount || 0),
-      dag_no: r.invoice?.lands?.dag_no ?? "—",
-      mouza: r.invoice?.lands?.mouza ?? "—",
-      land_size: r.invoice?.lands?.land_size != null ? Number(r.invoice.lands.land_size) : null,
-      irrigation: Number(r.irrigation_collected || 0),
-      maintenance: Number(r.maintenance_collected || 0),
-      canal: Number(r.canal_collected || 0),
-      delay_fee: Number(r.delay_fee_collected || 0),
-      current_collected: Number(r.current_invoice_collected || 0),
-      previous_collected: Number(r.previous_due_collected || 0),
-    }));
+    const list: PaidRow[] = (data ?? []).map((r: any) => {
+      const acreRate = r.invoice?.season_rate != null ? Number(r.invoice.season_rate) : null;
+      return {
+        season: r.invoice?.seasons ? `${r.invoice.seasons.name ?? r.invoice.seasons.type ?? ""} ${r.invoice.seasons.year ?? ""}`.trim() : "—",
+        invoice_no: r.invoice?.invoice_no ?? "—",
+        receipt_no: r.payment?.receipt_no ?? "—",
+        paid_on: r.payment?.created_at ?? r.created_at ?? null,
+        amount: Number(r.collected_amount || 0),
+        dag_no: r.invoice?.lands?.dag_no ?? "—",
+        mouza: r.invoice?.lands?.mouza ?? "—",
+        land_size: r.invoice?.lands?.land_size != null ? Number(r.invoice.lands.land_size) : null,
+        land_type: r.invoice?.land_type_name ?? "—",
+        acre_rate: acreRate,
+        bigha_rate: acreRate != null ? Math.round(acreRate * 0.33) : null,
+        due: Number(r.invoice?.due_amount || 0),
+        irrigation: Number(r.irrigation_collected || 0),
+        maintenance: Number(r.maintenance_collected || 0),
+        canal: Number(r.canal_collected || 0),
+        delay_fee: Number(r.delay_fee_collected || 0),
+        current_collected: Number(r.current_invoice_collected || 0),
+        previous_collected: Number(r.previous_due_collected || 0),
+        cancelled: r.payment?.status === "cancelled" || !!r.payment?.voided_at,
+      };
+    });
     setRows(list);
     setFarmer(f ?? null);
     if (f?.office_id) {
