@@ -172,9 +172,24 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       r.farmers?.farmer_code?.toLowerCase().includes(s) ||
       r.farmers?.mobile?.includes(s) ||
       matchesDagSearch(r.lands?.dag_no, s) ||
-      r.lands?.mouza?.toLowerCase().includes(s)
+      r.lands?.mouza?.toLowerCase().includes(s) ||
+      (r.irrigation_invoice_payments ?? []).some((p: any) =>
+        p?.payments?.receipt_no?.toLowerCase?.().includes(s))
     );
   }, [rows, search]);
+
+  /** Grand totals for the currently-filtered invoices (footer summary). */
+  const grandTotals = useMemo(() => {
+    return (filtered as any[]).reduce(
+      (acc, r) => {
+        acc.payable += Number(r.payable_amount) || 0;
+        acc.paid += Number(r.paid_amount) || 0;
+        acc.due += Number(r.due_amount) || 0;
+        return acc;
+      },
+      { payable: 0, paid: 0, due: 0 },
+    );
+  }, [filtered]);
 
   /** Farmer-wise aggregate of the currently-loaded invoices (payable/paid/due). */
   const farmerSummary = useMemo(() => {
