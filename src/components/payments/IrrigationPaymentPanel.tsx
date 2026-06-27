@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
@@ -59,7 +61,7 @@ const roundTk = (n: number) => Math.round(Number(n) || 0);
 
 export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFarmerId?: string; onPaid?: () => void }) {
   const { t, tx, lang } = useLang();
-  const { user, isAdmin, isSuper } = useAuth();
+  const { user, isAdmin, isSuper, roles } = useAuth();
   const [farmerId, setFarmerId] = useState(initialFarmerId ?? "");
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -82,6 +84,60 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [submitting, setSubmitting] = useState(false);
   const [method, setMethod] = useState("cash");
   const [note, setNote] = useState("");
+
+  // Configurable: which roles may receive partial payments.
+  const [allowedRoles, setAllowedRoles] = useState<string[]>(["super_admin"]);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Validation modal for unpaid dues.
+  const [dueDialogOpen, setDueDialogOpen] = useState(false);
+  const [dueDialogRows, setDueDialogRows] = useState<{ label: string; missing: number }[]>([]);
+
+  const canDoPartial = isSuper || roles.some(r => allowedRoles.includes(r));
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("irrigation_partial_payment_settings")
+        .select("id,allowed_roles")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setSettingsId(data.id as string);
+        setAllowedRoles((data.allowed_roles as string[]) ?? ["super_admin"]);
+      }
+    })();
+  }, []);
+
+  async function toggleAllowedRole(role: string, checked: boolean) {
+    const next = checked ? Array.from(new Set([...allowedRoles, role])) : allowedRoles.filter(r => r !== role);
+    setAllowedRoles(next);
+    setSavingSettings(true);
+    try {
+      if (settingsId) {
+        const { error } = await supabase
+          .from("irrigation_partial_payment_settings")
+          .update({ allowed_roles: next, updated_by: user?.id })
+          .eq("id", settingsId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("irrigation_partial_payment_settings")
+          .insert({ allowed_roles: next, updated_by: user?.id })
+          .select("id")
+          .single();
+        if (error) throw error;
+        setSettingsId(data!.id as string);
+      }
+      toast.success(tx("Settings saved", "সেটিংস সংরক্ষিত হয়েছে"));
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
 
   useEffect(() => { if (initialFarmerId) setFarmerId(initialFarmerId); }, [initialFarmerId]);
 
@@ -175,24 +231,47 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     if (Number(previousCollected) > previousDueTotal) {
       return toast.error(tx("Previous due collected exceeds previous due", "পূর্বের বকেয়া থেকে সংগৃহীত পূর্বের মোট বকেয়ার চেয়ে বেশি"));
     }
-    // Full-clearance rule: regular operators must fully clear all dues (previous + current).
-    // Only super admins may accept a partial payment under special permission.
-    if (!isSuper) {
-      const currentShortfall = roundTk(currentPayable) - Number(currentCollected || 0);
+    // Full-clearance rule: only roles allowed in settings (or super admins) may
+    // accept a partial payment. Everyone else must fully clear all dues
+    // (previous + current) before a receipt can be generated.
+    const currentShortfall = roundTk(currentPayable) - Number(currentCollected || 0);
+    const previousShortfall = previousRemainingAfter;
+    if (!canDoPartial && (currentShortfall > 0.5 || previousShortfall > 0.5)) {
+      const rows: { label: string; missing: number }[] = [];
+      // Per-invoice current-season unpaid breakdown (covers multiple invoices).
       if (currentShortfall > 0.5) {
-        return toast.error(tx(
-          "Full current charge must be cleared before receiving payment",
-          "পেমেন্ট নিতে হলে চলতি সিজনের সম্পূর্ণ চার্জ (জরিমানাসহ) পরিশোধ করতে হবে",
-        ));
+        for (const inv of selectedCurrentInvoices) {
+          const fee = delayFee[inv.id] ?? Number(inv.delay_fee || 0);
+          const adjusted = Math.max(0, Number(inv.due_amount) + (fee - Number(inv.delay_fee || 0)));
+          if (adjusted > 0.5) rows.push({ label: `${tx("Current", "চলতি")} • ${inv.invoice_no}`, missing: adjusted });
+        }
+        if (rows.length === 0) rows.push({ label: tx("Current season charge", "চলতি সিজন চার্জ"), missing: currentShortfall });
       }
-      if (previousRemainingAfter > 0.5) {
-        return toast.error(tx(
-          "All previous dues must be cleared before receiving payment",
-          "পেমেন্ট নিতে হলে আগের সকল বকেয়া সম্পূর্ণ পরিশোধ করতে হবে",
-        ));
+      if (previousShortfall > 0.5) {
+        for (const inv of previousInvoices) {
+          if (Number(inv.due_amount) > 0.5) rows.push({ label: `${tx("Previous due", "আগের বকেয়া")} • ${inv.invoice_no}`, missing: Number(inv.due_amount) });
+        }
       }
+      setDueDialogRows(rows);
+      setDueDialogOpen(true);
+      // Audit the blocked attempt.
+      logAudit({
+        module: "irrigation_payment",
+        action_type: "fail",
+        office_id: (selectedCurrentInvoices[0]?.office_id ?? previousInvoices[0]?.office_id) ?? null,
+        reference_id: farmerId,
+        new_data: {
+          reason: "unpaid_dues_block",
+          farmer_id: farmerId,
+          user_roles: roles,
+          invoice_ids: [...selectedCurrentInvoices.map(i => i.id), ...previousInvoices.map(i => i.id)],
+          missing_current: currentShortfall > 0.5 ? roundTk(currentShortfall) : 0,
+          missing_previous: previousShortfall > 0.5 ? roundTk(previousShortfall) : 0,
+        },
+      });
+      return;
     }
-    if (blockedByPreviousDue) {
+    if (blockedByPreviousDue && !canDoPartial) {
       return toast.error(tx("Previous irrigation due must be cleared first", "আগের সেচ বকেয়া সম্পূর্ণ পরিশোধ করতে হবে"));
     }
     if (specialPermission) {
@@ -703,7 +782,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             </div>
           </div>
 
-          {previousDueTotal > 0 && previousRemainingAfter > 0 && isSuper && (
+          {previousDueTotal > 0 && previousRemainingAfter > 0 && canDoPartial && (
             <div className="rounded-md border bg-muted/30 p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2 cursor-pointer">
@@ -751,15 +830,76 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
               <div className="text-xs text-muted-foreground">{tx("Grand total received", "মোট গ্রহণ")}</div>
               <div className="text-2xl font-mono font-bold">{money(grandTotal)}</div>
             </div>
-            <Button size="lg" onClick={submit} disabled={submitting || grandTotal <= 0 || blockedByPreviousDue}>
+            <Button size="lg" onClick={submit} disabled={submitting || grandTotal <= 0 || (blockedByPreviousDue && canDoPartial)}>
               {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />{tx("Saving…", "সংরক্ষণ…")}</> : <><CheckCircle2 className="h-4 w-4 mr-2" />{tx("Receive Payment", "পেমেন্ট গ্রহণ")}</>}
             </Button>
           </div>
-          {blockedByPreviousDue && (
+          {blockedByPreviousDue && canDoPartial && (
             <p className="text-xs text-destructive">{tx("Submit blocked: previous irrigation due not fully cleared. Enable special permission to bypass.", "জমা করা যাবে না: আগের সেচ বকেয়া পরিশোধ হয়নি। অনুমতি দিতে চাইলে বিশেষ অনুমতি চালু করুন।")}</p>
+          )}
+          {!canDoPartial && (
+            <p className="text-xs text-muted-foreground">{tx("All dues (previous + current) must be fully cleared to generate a receipt.", "রশিদ জেনারেট করতে সকল বকেয়া (আগের + চলতি) সম্পূর্ণ পরিশোধ করতে হবে।")}</p>
           )}
         </Card>
       )}
+
+      {isSuper && (
+        <Card className="p-4 space-y-2">
+          <div className="text-sm font-medium">{tx("Partial payment permission (Super Admin)", "আংশিক পেমেন্ট অনুমতি (সুপার অ্যাডমিন)")}</div>
+          <p className="text-xs text-muted-foreground">{tx("Select which roles may receive partial payments. All other roles must fully clear dues.", "কোন রোলগুলো আংশিক পেমেন্ট নিতে পারবে তা বাছাই করুন। বাকি সব রোলকে সম্পূর্ণ বকেয়া পরিশোধ করতে হবে।")}</p>
+          <div className="flex flex-wrap gap-4 pt-1">
+            {(["super_admin", "admin", "committee", "staff"] as const).map(r => (
+              <Label key={r} className="flex items-center gap-2 cursor-pointer text-sm">
+                <Checkbox
+                  checked={allowedRoles.includes(r)}
+                  disabled={r === "super_admin" || savingSettings}
+                  onCheckedChange={(c) => toggleAllowedRole(r, Boolean(c))}
+                />
+                <span>{r}</span>
+              </Label>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Dialog open={dueDialogOpen} onOpenChange={setDueDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              {tx("Dues not fully cleared", "বকেয়া সম্পূর্ণ পরিশোধ হয়নি")}
+            </DialogTitle>
+            <DialogDescription>
+              {tx("A receipt cannot be generated until all of the following dues are fully paid.", "নিচের সকল বকেয়া সম্পূর্ণ পরিশোধ না হওয়া পর্যন্ত রশিদ জেনারেট করা যাবে না।")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-72 overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tx("Invoice", "ইনভয়েস")}</TableHead>
+                  <TableHead className="text-right">{tx("Unpaid", "বকেয়া")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dueDialogRows.map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{r.label}</TableCell>
+                    <TableCell className="text-right font-mono">{money(r.missing)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-between border-t pt-2 text-sm">
+            <span className="text-muted-foreground">{tx("Total unpaid", "মোট বকেয়া")}</span>
+            <span className="font-mono font-bold">{money(dueDialogRows.reduce((s, r) => s + r.missing, 0))}</span>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setDueDialogOpen(false)}>{tx("OK, fix it", "ঠিক আছে, সংশোধন করি")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

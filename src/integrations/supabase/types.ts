@@ -2932,6 +2932,30 @@ export type Database = {
           },
         ]
       }
+      irrigation_partial_payment_settings: {
+        Row: {
+          allowed_roles: string[]
+          created_at: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_roles?: string[]
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_roles?: string[]
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       irrigation_rate_audit_logs: {
         Row: {
           action: string
