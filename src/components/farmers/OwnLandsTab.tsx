@@ -78,7 +78,7 @@ export default function OwnLandsTab({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const base = !q ? enriched : enriched.filter((r) =>
-      [r.location, r.l.dag_no, r.l.patwari_name_bn, r.l.patwari_name, r.l.field_type]
+      [r.location, r.l.dag_no, r.l.patwari_name_bn, r.l.patwari_name, ftLabel(r.l)]
         .filter(Boolean).join(" ").toLowerCase().includes(q));
     const dir = sortDir === "asc" ? 1 : -1;
     const val = (r: typeof base[number]) => {
