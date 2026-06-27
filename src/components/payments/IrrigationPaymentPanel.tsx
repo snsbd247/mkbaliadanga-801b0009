@@ -231,24 +231,47 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     if (Number(previousCollected) > previousDueTotal) {
       return toast.error(tx("Previous due collected exceeds previous due", "পূর্বের বকেয়া থেকে সংগৃহীত পূর্বের মোট বকেয়ার চেয়ে বেশি"));
     }
-    // Full-clearance rule: regular operators must fully clear all dues (previous + current).
-    // Only super admins may accept a partial payment under special permission.
-    if (!isSuper) {
-      const currentShortfall = roundTk(currentPayable) - Number(currentCollected || 0);
+    // Full-clearance rule: only roles allowed in settings (or super admins) may
+    // accept a partial payment. Everyone else must fully clear all dues
+    // (previous + current) before a receipt can be generated.
+    const currentShortfall = roundTk(currentPayable) - Number(currentCollected || 0);
+    const previousShortfall = previousRemainingAfter;
+    if (!canDoPartial && (currentShortfall > 0.5 || previousShortfall > 0.5)) {
+      const rows: { label: string; missing: number }[] = [];
+      // Per-invoice current-season unpaid breakdown (covers multiple invoices).
       if (currentShortfall > 0.5) {
-        return toast.error(tx(
-          "Full current charge must be cleared before receiving payment",
-          "পেমেন্ট নিতে হলে চলতি সিজনের সম্পূর্ণ চার্জ (জরিমানাসহ) পরিশোধ করতে হবে",
-        ));
+        for (const inv of selectedCurrentInvoices) {
+          const fee = delayFee[inv.id] ?? Number(inv.delay_fee || 0);
+          const adjusted = Math.max(0, Number(inv.due_amount) + (fee - Number(inv.delay_fee || 0)));
+          if (adjusted > 0.5) rows.push({ label: `${tx("Current", "চলতি")} • ${inv.invoice_no}`, missing: adjusted });
+        }
+        if (rows.length === 0) rows.push({ label: tx("Current season charge", "চলতি সিজন চার্জ"), missing: currentShortfall });
       }
-      if (previousRemainingAfter > 0.5) {
-        return toast.error(tx(
-          "All previous dues must be cleared before receiving payment",
-          "পেমেন্ট নিতে হলে আগের সকল বকেয়া সম্পূর্ণ পরিশোধ করতে হবে",
-        ));
+      if (previousShortfall > 0.5) {
+        for (const inv of previousInvoices) {
+          if (Number(inv.due_amount) > 0.5) rows.push({ label: `${tx("Previous due", "আগের বকেয়া")} • ${inv.invoice_no}`, missing: Number(inv.due_amount) });
+        }
       }
+      setDueDialogRows(rows);
+      setDueDialogOpen(true);
+      // Audit the blocked attempt.
+      logAudit({
+        module: "irrigation_payment",
+        action_type: "fail",
+        office_id: (selectedCurrentInvoices[0]?.office_id ?? previousInvoices[0]?.office_id) ?? null,
+        reference_id: farmerId,
+        new_data: {
+          reason: "unpaid_dues_block",
+          farmer_id: farmerId,
+          user_roles: roles,
+          invoice_ids: [...selectedCurrentInvoices.map(i => i.id), ...previousInvoices.map(i => i.id)],
+          missing_current: currentShortfall > 0.5 ? roundTk(currentShortfall) : 0,
+          missing_previous: previousShortfall > 0.5 ? roundTk(previousShortfall) : 0,
+        },
+      });
+      return;
     }
-    if (blockedByPreviousDue) {
+    if (blockedByPreviousDue && !canDoPartial) {
       return toast.error(tx("Previous irrigation due must be cleared first", "আগের সেচ বকেয়া সম্পূর্ণ পরিশোধ করতে হবে"));
     }
     if (specialPermission) {
