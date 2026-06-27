@@ -20,7 +20,7 @@ import { downloadCsvTemplate } from "@/lib/importTemplates";
 import { validateDagNumbers, formatDagNumbers } from "@/lib/dagNumbers";
 import { SHATAK_PER_KATHA, SHATAK_PER_BIGHA } from "@/lib/landUnits";
 import { previewBnReceiptPdf, downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
-import { buildSampleReceipt, findMissingSampleFields, SAMPLE_RECEIPT_TYPE_LABELS, type SampleReceiptType } from "@/lib/sampleReceipts";
+import { buildSampleReceipt, findMissingSampleFields, findMissingSampleFieldDetails, SAMPLE_RECEIPT_TYPE_LABELS, type SampleReceiptType, type MissingFieldDetail } from "@/lib/sampleReceipts";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
@@ -393,6 +393,7 @@ export default function DataImport() {
   const [upsertMode, setUpsertMode] = useState(false);
   const [atomicMode, setAtomicMode] = useState(true);
   const [sampleType, setSampleType] = useState<SampleReceiptType>("irrigation");
+  const [sampleMissing, setSampleMissing] = useState<MissingFieldDetail[]>([]);
   const [ledgerVerify, setLedgerVerify] = useState<Array<{ idx: number; record_id: string; ledger_ids: string[]; ok: boolean }>>([]);
   const [recentImports, setRecentImports] = useState<any[]>([]);
   const [summary, setSummary] = useState<{
@@ -649,6 +650,24 @@ export default function DataImport() {
             const sizeShotok = Number(raw.land_size) * UNIT_TO_SHOTOK[unit];
             next[i] = { ...r, resolved: { ...(r.resolved ?? {}), dag_canonical: canonicalDag, land_size_shotok: sizeShotok } };
             table = "lands";
+            const notesVal = (raw.notes ?? raw.holding_description ?? "").toString().trim() || null;
+            const patwariKey = (raw.patwari_name ?? raw.patwari ?? raw.patwari_mobile ?? "").toString().trim();
+            const resolvedPatwariId = patwariKey
+              ? (patwariMap.get(patwariKey.toLowerCase()) ?? patwariMap.get(patwariKey) ?? null)
+              : null;
+            // Debug log for receipt holding/patwari mapping (office/farmer/land identity)
+            console.debug("[DataImport] land holding/patwari mapping", {
+              office_id: f.office_id,
+              farmer_id: f.id,
+              account_number: raw.account_number,
+              dag_no: canonicalDag,
+              holding_description: notesVal,
+              patwari_key: patwariKey || null,
+              patwari_id: resolvedPatwariId,
+            });
+            if (patwariKey && !resolvedPatwariId) {
+              toast.warning(`⚠ পাটুয়ারী ম্যাপিং ব্যর্থ (রশিদে পাটুয়ারী খালি থাকবে): "${patwariKey}" — Farmer ${raw.account_number}`, { duration: 6000 });
+            }
             payload = {
               farmer_id: f.id,
               office_id: f.office_id,
@@ -657,12 +676,8 @@ export default function DataImport() {
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
-              notes: (raw.notes ?? raw.holding_description ?? "").toString().trim() || null,
-              patwari_id: (() => {
-                const key = (raw.patwari_name ?? raw.patwari ?? raw.patwari_mobile ?? "").toString().trim();
-                if (!key) return null;
-                return patwariMap.get(key.toLowerCase()) ?? patwariMap.get(key) ?? null;
-              })(),
+              notes: notesVal,
+              patwari_id: resolvedPatwariId,
             };
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
@@ -1345,9 +1360,14 @@ export default function DataImport() {
 
   async function previewSampleReceipt(action: "preview" | "download" = "preview") {
     const sample = buildSampleReceipt(sampleType);
-    const missing = findMissingSampleFields(sampleType, sample);
-    if (missing.length > 0) {
-      toast.warning(`⚠ কিছু ফিল্ড রশিদে দেখা যাবে না: ${missing.join(", ")}`, { duration: 6000 });
+    const details = findMissingSampleFieldDetails(sampleType, sample);
+    setSampleMissing(details);
+    if (details.length > 0) {
+      const sections = Array.from(new Set(details.map((d) => d.section)));
+      toast.warning(
+        `⚠ ${details.length}টি ফিল্ড অনুপস্থিত — প্রভাবিত সেকশন: ${sections.join(", ")}`,
+        { duration: 6000 },
+      );
     }
     try {
       if (action === "download") {
@@ -1448,6 +1468,22 @@ export default function DataImport() {
             </label>
           </div>
         </div>
+
+        {sampleMissing.length > 0 && (
+          <Alert variant="destructive">
+            <AlertTitle>⚠ নমুনা রশিদে {sampleMissing.length}টি ফিল্ড অনুপস্থিত (নন-ব্লকিং)</AlertTitle>
+            <AlertDescription>
+              <div className="text-xs space-y-1 mt-1">
+                {Array.from(new Set(sampleMissing.map((d) => d.section))).map((section) => (
+                  <div key={section}>
+                    <strong>{section}:</strong>{" "}
+                    {sampleMissing.filter((d) => d.section === section).map((d) => d.label).join(", ")}
+                  </div>
+                ))}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="text-xs text-muted-foreground space-y-1">
           <div><strong>Required columns:</strong> {tpl.columns.join(", ")}</div>
