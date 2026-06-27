@@ -921,6 +921,13 @@ export default function DataImport() {
                 <SelectItem value="cashbook_expenses">Cashbook — Expenses</SelectItem>
                 <SelectItem value="shares">Share Balance (upsert)</SelectItem>
                 <SelectItem value="patwaris">Patwaris</SelectItem>
+                <SelectItem value="loan_guarantors">Loan Guarantors / Nominees</SelectItem>
+                <SelectItem value="mouzas">Mouzas</SelectItem>
+                <SelectItem value="seasons">Seasons</SelectItem>
+                <SelectItem value="offices">Offices / Branches</SelectItem>
+                <SelectItem value="bank_accounts">Bank Accounts</SelectItem>
+                <SelectItem value="bank_transactions">Bank Transactions</SelectItem>
+                <SelectItem value="assets">Assets</SelectItem>
                 {isSuper && <SelectItem value="ledger">Ledger Entries (super-admin)</SelectItem>}
               </SelectContent>
             </Select>
