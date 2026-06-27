@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildSampleReceipt,
   findMissingSampleFields,
+  findMissingSampleFieldDetails,
   SAMPLE_RECEIPT_TYPE_LABELS,
   type SampleReceiptType,
 } from "./sampleReceipts";
