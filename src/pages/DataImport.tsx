@@ -645,6 +645,12 @@ export default function DataImport() {
               owner_type: (raw.owner_type ?? "owner") as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
+              notes: (raw.notes ?? raw.holding_description ?? "").toString().trim() || null,
+              patwari_id: (() => {
+                const key = (raw.patwari_name ?? raw.patwari ?? raw.patwari_mobile ?? "").toString().trim();
+                if (!key) return null;
+                return patwariMap.get(key.toLowerCase()) ?? patwariMap.get(key) ?? null;
+              })(),
             };
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
