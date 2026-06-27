@@ -149,6 +149,30 @@ const TEMPLATES: Record<Module, { columns: string[]; sample: Record<string, any>
     columns: ["loan_account_number", "name", "father_name", "village", "mobile", "nid", "role", "guarantor_account_number"],
     sample: { loan_account_number: "10001", name: "Md. Karim", father_name: "Md. Jashim", village: "Bagbari", mobile: "01700000000", nid: "1234567890", role: "guarantor", guarantor_account_number: "" },
   },
+  farmers: {
+    columns: ["account_number", "name_en", "name_bn", "father_name", "mother_name", "mobile", "nid", "village", "address", "status"],
+    sample: { account_number: "10001", name_en: "Md. Rahim", name_bn: "মোঃ রহিম", father_name: "Md. Jashim", mother_name: "Mst. Rahima", mobile: "01700000000", nid: "1234567890", village: "Bagbari", address: "Village A", status: "active" },
+  },
+  savings_plans: {
+    columns: ["name", "name_bn", "duration_months", "installment_type", "installment_amount", "interest_rate", "maturity_type"],
+    sample: { name: "DPS 12m", name_bn: "ডিপিএস ১২ মাস", duration_months: 12, installment_type: "monthly", installment_amount: 500, interest_rate: 8, maturity_type: "simple" },
+  },
+  loan_plans: {
+    columns: ["name", "name_bn", "duration_months", "installment_type", "interest_rate", "penalty_type", "penalty_value", "grace_period_days"],
+    sample: { name: "Crop Loan 12m", name_bn: "শস্য ঋণ ১২ মাস", duration_months: 12, installment_type: "monthly", interest_rate: 12, penalty_type: "percentage", penalty_value: 2, grace_period_days: 7 },
+  },
+  farmer_savings_plans: {
+    columns: ["account_number", "plan_name", "start_date", "expected_total", "expected_interest", "maturity_amount", "status"],
+    sample: { account_number: "10001", plan_name: "DPS 12m", start_date: "2026-01-01", expected_total: 6000, expected_interest: 480, maturity_amount: 6480, status: "active" },
+  },
+  irrigation_categories: {
+    columns: ["code", "name_bn", "name_en", "calculation_basis", "allow_manual_negotiation"],
+    sample: { code: "CAT-A", name_bn: "ক্যাটাগরি এ", name_en: "Category A", calculation_basis: "per_shotok", allow_manual_negotiation: false },
+  },
+  irrigation_rates: {
+    columns: ["season_year", "season_type", "basis", "base_rate", "canal_charge", "maintenance_charge", "other_charge", "note"],
+    sample: { season_year: 2026, season_type: "boro", basis: "per_size", base_rate: 39.39, canal_charge: 0, maintenance_charge: 0, other_charge: 0, note: "" },
+  },
 };
 
 import { decodeSpreadsheetBuffer } from "@/lib/csvDecode";
