@@ -436,7 +436,10 @@ export default function Payments() {
 
     setSubmitting(true);
     try {
-      const status = receiptFile ? "pending" : "approved";
+      // অগ্রাধিকার ৫ — Approval matrix: collections (irrigation/savings/loan repayment)
+      // are approval-free regardless of an attached receipt scan.
+      const primaryKind = allocs[0]?.kind as "loan" | "savings" | "irrigation";
+      const status = paymentInitialStatus(primaryKind);
       // Primary kind = first allocation kind (kept for backward compat)
       const primary = allocs[0];
 
