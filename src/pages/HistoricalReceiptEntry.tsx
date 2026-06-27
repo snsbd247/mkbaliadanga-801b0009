@@ -217,6 +217,15 @@ export default function HistoricalReceiptEntry() {
               {tx("Collected = Total Charge − Due. Due carries to this season.",
                 "আদায় = মোট চার্জ − বকেয়া। বকেয়া এই সিজনে যোগ হবে।")}
             </p>
+            {(() => {
+              const a = computeHistoricalAmounts(Number(totalCharge) || 0, Number(dueAmount) || 0);
+              return (
+                <p className="text-xs font-medium mt-1">
+                  {tx("Collected", "আদায়")}: {a.paid} • {tx("Due", "বকেয়া")}:{" "}
+                  <span className={a.due > 0 ? "text-destructive" : ""}>{a.due}</span>
+                </p>
+              );
+            })()}
           </div>
           <div>
             <Label>{tx("Receipt No", "রশিদ নং")} *</Label>
