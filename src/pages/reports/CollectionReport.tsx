@@ -357,7 +357,19 @@ export default function CollectionReport() {
       />
 
       <Card className="p-4 mb-4">
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-6">
+          <div>
+            <Label>{t("collectionType") || "আদায়ের ধরন"}</Label>
+            <Select value={kind} onValueChange={setKind}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("all")}</SelectItem>
+                <SelectItem value="irrigation">{t("irrigationLabel")}</SelectItem>
+                <SelectItem value="loan">{t("loanColLabel")}</SelectItem>
+                <SelectItem value="savings">{t("savingsLabel")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label>{t("from")}</Label>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
