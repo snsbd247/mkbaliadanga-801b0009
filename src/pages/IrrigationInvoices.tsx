@@ -611,8 +611,9 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
                     <div className="font-medium">{r.farmers?.name_bn ?? r.farmers?.name_en ?? "—"}</div>
                     <div className="text-xs text-muted-foreground">{r.farmers?.farmer_code} {r.is_borga && <span className="ml-1">🤝 {tx("Sharecropper", "বর্গা")}</span>}</div>
                   </TableCell>
+                  <TableCell className="text-xs">{r.lands?.mouza || "—"}</TableCell>
                   <TableCell className="text-xs">
-                    {r.lands?.mouza ? `${r.lands.mouza} • ` : ""}Dag {formatDagNumbers(r.lands?.dag_no) || "—"}<br />
+                    Dag {formatDagNumbers(r.lands?.dag_no) || "—"}<br />
                     {formatLandSize(invoiceLandSize(r), "short")}
                   </TableCell>
                   <TableCell className="text-xs">{r.seasons?.name ?? r.seasons?.type} {r.seasons?.year}</TableCell>
