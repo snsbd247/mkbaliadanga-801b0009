@@ -38,6 +38,7 @@ type Module =
   | "loans"
   | "loan_payments"
   | "loan_installments"
+  | "loan_guarantors"
   | "savings"
   | "payments"
   | "irrigation"
@@ -45,6 +46,12 @@ type Module =
   | "cashbook_receipts"
   | "cashbook_expenses"
   | "patwaris"
+  | "mouzas"
+  | "seasons"
+  | "offices"
+  | "bank_accounts"
+  | "bank_transactions"
+  | "assets"
   | "ledger";
 
 type RowResult = {
