@@ -97,7 +97,7 @@ export default function CultivationHistoryReport() {
         totalAmount,
       };
     }).filter((r) => r.landCount > 0);
-  }, [farmers, lands, rateMap]);
+  }, [farmers, lands, rateMap, landTypeRows]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
