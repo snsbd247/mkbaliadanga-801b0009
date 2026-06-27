@@ -43,7 +43,13 @@ type Invoice = {
   land_type_name?: string | null;
   irrigation_category_name?: string | null;
   seasons?: { name: string | null; year: number | null; status: string | null } | null;
-  lands?: { mouza: string | null; land_size: number | null; dag_no: string | null } | null;
+  lands?: {
+    mouza: string | null;
+    land_size: number | null;
+    dag_no: string | null;
+    notes?: string | null;
+    patwaris?: { name: string | null; name_bn: string | null; mobile: string | null } | null;
+  } | null;
   owner?: { name_bn: string | null; name_en: string | null; member_no?: string | null; farmer_code?: string | null } | null;
 };
 
@@ -85,7 +91,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const [{ data: act }, { data: invs }] = await Promise.all([
         supabase.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("irrigation_invoices")
-          .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no),owner:farmers!owner_farmer_id(name_bn,name_en,member_no,farmer_code)")
+          .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no,notes,patwaris(name,name_bn,mobile)),owner:farmers!owner_farmer_id(name_bn,name_en,member_no,farmer_code)")
           .eq("farmer_id", farmerId)
           .is("deleted_at", null)
           .neq("invoice_status", "cancelled")
@@ -426,6 +432,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           })
           .filter(Boolean),
       )).join("/") || tx("Irrigation charge", "সেচ চার্জ");
+      const patwari = allReceiptInvoices.find((inv) => inv.lands?.patwaris)?.lands?.patwaris ?? null;
+      const holdingDescription = [
+        ...Array.from(new Set(allReceiptInvoices.map((inv) => inv.lands?.notes?.trim()).filter(Boolean) as string[])),
+        note?.trim() || null,
+      ].filter(Boolean).join(" / ") || null;
 
 
       // Receipt — never blocks payment; failure → retry queue
@@ -468,7 +479,9 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
           canal_charge: totalCanal,
           collected_amount: grandTotal,
           remark: specialPermission ? `${tx("Special permission until", "বিশেষ অনুমতি — পরিশোধের তারিখ")}: ${promiseDate}${promiseRemarks ? " — " + promiseRemarks : ""}` : (note || null),
-          holding_description: note || null,
+          holding_description: holdingDescription,
+          patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
+          patwari_mobile: patwari?.mobile ?? null,
           verify_url: `${window.location.origin}/r/${receiptNo}`,
         }, "farmer"),
         { referenceId: paymentId, payload: { kind: "irrigation", receipt_no: receiptNo, farmer_id: farmerId }, officeId: farmer?.office_id ?? null },
@@ -513,7 +526,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       onPaid?.();
       // re-trigger load
       const { data: invs } = await supabase.from("irrigation_invoices")
-        .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no),owner:farmers!owner_farmer_id(name_bn,name_en,member_no,farmer_code)")
+        .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no,notes,patwaris(name,name_bn,mobile)),owner:farmers!owner_farmer_id(name_bn,name_en,member_no,farmer_code)")
         .eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled").gt("due_amount", 0)
         .order("due_date", { ascending: true });
       setInvoices((invs ?? []) as any);
