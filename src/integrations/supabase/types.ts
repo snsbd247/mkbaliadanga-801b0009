@@ -6277,6 +6277,7 @@ export type Database = {
           field_type: Database["public"]["Enums"]["field_type"] | null
           id: string | null
           land_size: number | null
+          land_type_id: string | null
           mouza: string | null
           mouza_id: string | null
           mouza_name: string | null
@@ -6303,6 +6304,13 @@ export type Database = {
             columns: ["farmer_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_land_type_id_fkey"
+            columns: ["land_type_id"]
+            isOneToOne: false
+            referencedRelation: "land_types"
             referencedColumns: ["id"]
           },
           {
