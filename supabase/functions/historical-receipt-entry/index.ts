@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
-  const allowed = (roles ?? []).some((r: any) => ["admin", "super_admin", "staff"].includes(r.role));
+  const allowed = (roles ?? []).some((r: any) => ["admin", "super_admin", "staff", "developer"].includes(r.role));
   if (!allowed) return json({ error: "Forbidden" }, 403);
 
   let body: any;

@@ -12,6 +12,7 @@ import { MouzaSelect } from "@/components/locations/MouzaSelect";
 import { LandTypeSelect, codeToFieldType, useLandTypes } from "@/components/locations/LandTypeSelect";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
+import { computeHistoricalAmounts } from "@/lib/historicalReceipt";
 import { History } from "lucide-react";
 
 type SeasonRow = { id: string; name: string | null; year: number | null; type: string | null };
@@ -41,6 +42,8 @@ export default function HistoricalReceiptEntry() {
   const [note, setNote] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [dupWarn, setDupWarn] = useState(false);
+  const [dupChecking, setDupChecking] = useState(false);
 
   useEffect(() => {
     supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false })
@@ -50,6 +53,28 @@ export default function HistoricalReceiptEntry() {
         if (list[0]) setSeasonId(list[0].id);
       });
   }, []);
+
+  // Live duplicate pre-check: same irrigation receipt number already entered.
+  useEffect(() => {
+    const rn = receiptNo.trim();
+    if (!rn) { setDupWarn(false); return; }
+    let cancelled = false;
+    setDupChecking(true);
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("payments")
+        .select("id")
+        .eq("kind", "irrigation")
+        .eq("receipt_no", rn)
+        .is("deleted_at", null)
+        .limit(1);
+      if (cancelled) return;
+      setDupWarn((data?.length ?? 0) > 0);
+      setDupChecking(false);
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [receiptNo]);
+
 
   function reset() {
     setFarmer(null); setOwner(null); setSameAsFarmer(true);
@@ -192,10 +217,25 @@ export default function HistoricalReceiptEntry() {
               {tx("Collected = Total Charge − Due. Due carries to this season.",
                 "আদায় = মোট চার্জ − বকেয়া। বকেয়া এই সিজনে যোগ হবে।")}
             </p>
+            {(() => {
+              const a = computeHistoricalAmounts(Number(totalCharge) || 0, Number(dueAmount) || 0);
+              return (
+                <p className="text-xs font-medium mt-1">
+                  {tx("Collected", "আদায়")}: {a.paid} • {tx("Due", "বকেয়া")}:{" "}
+                  <span className={a.due > 0 ? "text-destructive" : ""}>{a.due}</span>
+                </p>
+              );
+            })()}
           </div>
           <div>
             <Label>{tx("Receipt No", "রশিদ নং")} *</Label>
-            <Input value={receiptNo} onChange={(e) => setReceiptNo(e.target.value)} />
+            <Input value={receiptNo} onChange={(e) => setReceiptNo(e.target.value)} className={dupWarn ? "border-destructive" : ""} />
+            {dupChecking && <p className="text-xs text-muted-foreground mt-1">{tx("Checking…", "যাচাই হচ্ছে…")}</p>}
+            {dupWarn && (
+              <p className="text-xs text-destructive mt-1">
+                {tx("This receipt no already exists — cannot enter again.", "এই রশিদ নং ইতিমধ্যে আছে — আবার এন্ট্রি করা যাবে না।")}
+              </p>
+            )}
           </div>
         </div>
 
@@ -206,7 +246,7 @@ export default function HistoricalReceiptEntry() {
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={reset} disabled={submitting}>{tx("Clear", "মুছুন")}</Button>
-          <Button onClick={submit} disabled={submitting}>
+          <Button onClick={submit} disabled={submitting || dupWarn}>
             {submitting ? tx("Saving…", "সংরক্ষণ হচ্ছে…") : tx("Save Receipt", "রশিদ সংরক্ষণ")}
           </Button>
         </div>
