@@ -119,7 +119,7 @@ export default function FarmerProfileReport() {
           owner_name_fid: ownerNameFid,
           patwari: pw ? safeText(pw.name_bn || pw.name) : "",
           land_size: billedArea ? billedArea.toFixed(6) : "",
-          field_type: fieldTypeLabel(row.lands?.field_type),
+          field_type: fieldTypeLabel(row.lands?.field_type, row.lands?.land_type_id),
           charge_rate: String(Math.round(Number(row.irrigation_amount || 0))),
           canal_charge: String(Math.round(Number(row.canal_amount || 0))),
           maintenance_charge: String(Math.round(Number(row.maintenance_amount || 0))),
