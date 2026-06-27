@@ -463,6 +463,13 @@ export default function DataImport() {
           issues.push(`${col} is required`);
         }
       }
+      const fmtRules = FORMAT_RULES[m];
+      if (fmtRules) {
+        for (const [col, rule] of Object.entries(fmtRules)) {
+          const err = checkFormat(col, raw[col], rule);
+          if (err) issues.push(err);
+        }
+      }
       if (["lands", "land_relations", "irrigation"].includes(m) && raw.dag_no) {
         const dv = validateDagNumbers(String(raw.dag_no));
         if (!dv.ok) issues.push(`dag_no: ${(dv as any).error}`);
