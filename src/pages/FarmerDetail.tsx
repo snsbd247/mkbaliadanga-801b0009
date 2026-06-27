@@ -1415,6 +1415,25 @@ export default function FarmerDetail() {
                 )}
               </div>
             )}
+            {(() => {
+              const missing = lands.filter((l: any) => !l.land_type_id);
+              if (missing.length === 0) return null;
+              return (
+                <div className="px-3 py-2 flex flex-wrap items-center gap-2 text-sm border-b bg-red-50 text-red-900">
+                  <span>
+                    ⚠️ {tx(
+                      `${missing.length} land(s) have no land type selected and may show as "Others". Click to edit:`,
+                      `${missing.length} টি জমিতে কোনো জমির ধরন নির্বাচন করা নেই এবং "Others" দেখাতে পারে। সম্পাদনা করতে ক্লিক করুন:`
+                    )}
+                  </span>
+                  {missing.map((l: any) => (
+                    <Link key={l.id} to={`/lands/${l.id}`} className="underline font-medium">
+                      {l.dag_no || l.id.slice(0, 6)}
+                    </Link>
+                  ))}
+                </div>
+              );
+            })()}
             <Table>
               <TableHeader><TableRow>
                 <TableHead>{t("pgLocation")}</TableHead>
