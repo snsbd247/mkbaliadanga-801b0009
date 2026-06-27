@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FarmerSearchSelect } from "@/components/farmers/FarmerSearchSelect";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertTriangle, ChevronDown, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
