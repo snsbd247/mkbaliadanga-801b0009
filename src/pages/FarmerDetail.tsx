@@ -545,13 +545,13 @@ export default function FarmerDetail() {
       if (allocIds.length) {
         const { data } = await supabase
           .from("irrigation_invoices")
-          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
+          .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))")
           .in("id", allocIds);
         invoiceRows = data ?? [];
       }
       const primary = invoiceRows[0];
       const land = primary?.lands;
-      const ownerFarmer = land?.farmers;
+      const ownerFarmer = land?.owner;
       const isBorga = invoiceRows.some((inv) => inv?.is_borga);
       const ownerMember = ownerFarmer?.member_no || ownerFarmer?.farmer_code || null;
       const ownerName = ownerFarmer ? (ownerFarmer.name_bn || ownerFarmer.name_en) : null;
