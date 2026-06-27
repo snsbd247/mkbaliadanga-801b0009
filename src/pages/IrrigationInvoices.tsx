@@ -426,6 +426,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{tx("All", "সব")}</SelectItem>
+                <SelectItem value="due">{tx("Due (outstanding)", "বকেয়া (সব)")}</SelectItem>
                 <SelectItem value="generated">{tx("Issued", "ইস্যু")}</SelectItem>
                 <SelectItem value="partial_paid">{tx("Partial", "আংশিক")}</SelectItem>
                 <SelectItem value="paid">{tx("Paid", "পরিশোধিত")}</SelectItem>
