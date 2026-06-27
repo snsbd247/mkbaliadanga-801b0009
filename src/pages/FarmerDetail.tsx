@@ -1347,6 +1347,15 @@ export default function FarmerDetail() {
                       placeholder={tx("Search by note…", "নোট দিয়ে খুঁজুন…")}
                       className="h-8 w-[180px] text-xs"
                     />
+                    <Select value={landTypeFilter} onValueChange={setLandTypeFilter}>
+                      <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder={tx("Land type", "জমির ধরন")} /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{tx("All land types", "সব জমির ধরন")}</SelectItem>
+                        {landTypeRows.map((lt) => (
+                          <SelectItem key={lt.id} value={lt.id}>{lt.name_bn || lt.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
                       <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
