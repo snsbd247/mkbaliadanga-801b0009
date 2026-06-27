@@ -1387,6 +1387,15 @@ export default function FarmerDetail() {
                         <SelectItem value="due">{tx("Due only", "শুধু বকেয়া")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {(landTypeFilter.length > 0 || paymentFilter !== "all" || noteSearch.trim()) && (
+                      <Button
+                        variant="ghost"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => { setLandTypeFilter([]); setPaymentFilter("all"); setNoteSearch(""); }}
+                      >
+                        {tx("Reset", "রিসেট")}
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
