@@ -134,6 +134,23 @@ export function LandRelations({ farmerId }: Props) {
           return;
         }
       }
+      // ১.২: ব্যাকডেটেড valid_from যেন কোনো পুরোনো বর্গা সময়কালের সাথে ওভারল্যাপ না করে
+      if (form.sharecropper_farmer_id) {
+        const { data: periods } = await supabase.from("land_relations")
+          .select("sharecropper_farmer_id,valid_from,valid_to")
+          .eq("land_id", form.land_id)
+          .not("sharecropper_farmer_id", "is", null)
+          .is("deleted_at", null);
+        const overlap = validateNoOverlappingBorga([
+          ...((periods as any[]) ?? []),
+          { sharecropper_farmer_id: form.sharecropper_farmer_id, valid_from: form.valid_from, valid_to: null },
+        ]);
+        if (overlap.length) {
+          toast.error(overlap[0].bn);
+          setSaving(false);
+          return;
+        }
+      }
       const { error } = await supabase.from("land_relations").insert({
         land_id: form.land_id,
         owner_farmer_id: form.owner_farmer_id,
