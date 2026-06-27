@@ -946,7 +946,7 @@ export default function Payments() {
                             if (refIds.length) {
                               const { data: invs } = await supabase
                                 .from("irrigation_invoices")
-                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
+                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),farmers:owner_farmer_id(name_bn,name_en,member_no,farmer_code))")
                                 .in("id", refIds);
                               invoiceRows = invs ?? [];
                               primaryCharge = invoiceRows[0] ?? null;
@@ -983,6 +983,11 @@ export default function Payments() {
                             const billInfo = Array.from(new Set((invoiceRows as any[])
                               .map((inv) => inv?.seasons?.name || inv?.irrigation_category_name || inv?.land_type_name || null)
                               .filter(Boolean))).join("/") || "সেচ চার্জ";
+                            const patwari = (invoiceRows as any[]).find((inv) => inv?.lands?.patwaris)?.lands?.patwaris ?? null;
+                            const holdingDescription = [
+                              ...Array.from(new Set((invoiceRows as any[]).map((inv) => inv?.lands?.notes?.trim()).filter(Boolean))),
+                              p.note?.trim() || null,
+                            ].filter(Boolean).join(" / ") || null;
                             irrEnriched = {
                               farmerExtras: {
                                 mouza,
@@ -1007,6 +1012,9 @@ export default function Payments() {
                               total_outstanding: totalOutstanding,
                               collected_from_outstanding: collectedFromOutstanding,
                               remark: p.note ?? primaryCharge?.invoice_no ?? null,
+                              holding_description: holdingDescription,
+                              patwari_name: patwari ? (patwari.name_bn || patwari.name) : null,
+                              patwari_mobile: patwari?.mobile ?? null,
                             };
                           }
 
@@ -1055,6 +1063,9 @@ export default function Payments() {
                                   total_outstanding: irrEnriched.total_outstanding,
                                   collected_from_outstanding: irrEnriched.collected_from_outstanding,
                                   remark: irrEnriched.remark,
+                                  holding_description: irrEnriched.holding_description,
+                                  patwari_name: irrEnriched.patwari_name,
+                                  patwari_mobile: irrEnriched.patwari_mobile,
                                 }
                               : {}),
                             collected_amount: Number(p.amount),
