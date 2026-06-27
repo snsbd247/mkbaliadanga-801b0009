@@ -489,14 +489,36 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
           )}
           <div>
             <Label>{tx("Mouza", "মৌজা")}</Label>
-            <Select value={mouza} onValueChange={setMouza}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{tx("All", "সব")}</SelectItem>
-                {mouzaOptions.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Popover open={mouzaOpen} onOpenChange={setMouzaOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                  <span className="truncate">{mouza === "all" ? tx("All", "সব") : mouza}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder={tx("Search mouza…", "মৌজা খুঁজুন…")} />
+                  <CommandList>
+                    <CommandEmpty>{tx("No mouza found", "মৌজা পাওয়া যায়নি")}</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem value="all" onSelect={() => { setMouza("all"); setMouzaOpen(false); }}>
+                        <Check className={`mr-2 h-4 w-4 ${mouza === "all" ? "opacity-100" : "opacity-0"}`} />
+                        {tx("All", "সব")}
+                      </CommandItem>
+                      {mouzaOptions.map((m) => (
+                        <CommandItem key={m} value={m} onSelect={() => { setMouza(m); setMouzaOpen(false); }}>
+                          <Check className={`mr-2 h-4 w-4 ${mouza === m ? "opacity-100" : "opacity-0"}`} />
+                          {m}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
+
           <div>
             <Label>{tx("Status", "স্ট্যাটাস")}</Label>
             <Select value={status} onValueChange={setStatus}>
