@@ -41,6 +41,8 @@ export default function HistoricalReceiptEntry() {
   const [note, setNote] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [dupWarn, setDupWarn] = useState(false);
+  const [dupChecking, setDupChecking] = useState(false);
 
   useEffect(() => {
     supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false })
@@ -50,6 +52,28 @@ export default function HistoricalReceiptEntry() {
         if (list[0]) setSeasonId(list[0].id);
       });
   }, []);
+
+  // Live duplicate pre-check: same irrigation receipt number already entered.
+  useEffect(() => {
+    const rn = receiptNo.trim();
+    if (!rn) { setDupWarn(false); return; }
+    let cancelled = false;
+    setDupChecking(true);
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("payments")
+        .select("id")
+        .eq("kind", "irrigation")
+        .eq("receipt_no", rn)
+        .is("deleted_at", null)
+        .limit(1);
+      if (cancelled) return;
+      setDupWarn((data?.length ?? 0) > 0);
+      setDupChecking(false);
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [receiptNo]);
+
 
   function reset() {
     setFarmer(null); setOwner(null); setSameAsFarmer(true);
