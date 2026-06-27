@@ -419,6 +419,35 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     setSelected(s);
   }
 
+  async function exportFilteredPdf() {
+    if (!filtered.length) return toast.error(tx("No invoices to export", "এক্সপোর্ট করার মতো ইনভয়েস নেই"));
+    const head = [
+      tx("Invoice", "ইনভয়েস"),
+      tx("Farmer", "কৃষক"),
+      tx("Mouza", "মৌজা"),
+      tx("Season", "সিজন"),
+      tx("Payable", "প্রদেয়"),
+      tx("Paid", "পরিশোধিত"),
+      tx("Due", "বকেয়া"),
+      tx("Status", "স্ট্যাটাস"),
+    ];
+    const body = (filtered as any[])
+      .filter((r) => r.invoice_status !== "carried_forward")
+      .map((r) => [
+        r.invoice_no ?? "—",
+        r.farmers?.name_bn || r.farmers?.name_en || "—",
+        r.lands?.mouza ?? "—",
+        `${r.seasons?.name ?? r.seasons?.type ?? ""} ${r.seasons?.year ?? ""}`.trim(),
+        money(r.payable_amount),
+        money(r.paid_amount),
+        money(r.due_amount),
+        statusLabel(tx, r.invoice_status),
+      ]);
+    body.push(["", "", "", tx("Grand total", "সর্বমোট"), money(grandTotals.payable), money(grandTotals.paid), money(grandTotals.due), ""]);
+    await exportTablePDF(tx("Irrigation Invoices", "সেচ ইনভয়েস"), head, body, undefined, { landscape: true });
+  }
+
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-3">
