@@ -219,7 +219,13 @@ export default function HistoricalReceiptEntry() {
           </div>
           <div>
             <Label>{tx("Receipt No", "রশিদ নং")} *</Label>
-            <Input value={receiptNo} onChange={(e) => setReceiptNo(e.target.value)} />
+            <Input value={receiptNo} onChange={(e) => setReceiptNo(e.target.value)} className={dupWarn ? "border-destructive" : ""} />
+            {dupChecking && <p className="text-xs text-muted-foreground mt-1">{tx("Checking…", "যাচাই হচ্ছে…")}</p>}
+            {dupWarn && (
+              <p className="text-xs text-destructive mt-1">
+                {tx("This receipt no already exists — cannot enter again.", "এই রশিদ নং ইতিমধ্যে আছে — আবার এন্ট্রি করা যাবে না।")}
+              </p>
+            )}
           </div>
         </div>
 
