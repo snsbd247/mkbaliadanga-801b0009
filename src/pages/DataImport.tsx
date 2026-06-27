@@ -592,6 +592,18 @@ export default function DataImport() {
         (ss ?? []).forEach((s: any) => seasonMap.set(`${s.year}|${String(s.type).trim().toLowerCase()}`, s.id));
       }
 
+      // Patwari lookup by name / name_bn / mobile for lands mode
+      const patwariMap = new Map<string, string>();
+      if (mod === "lands") {
+        const { data: pw } = await supabase.from("patwaris").select("id,name,name_bn,mobile");
+        (pw ?? []).forEach((p: any) => {
+          if (p.name) patwariMap.set(String(p.name).trim().toLowerCase(), p.id);
+          if (p.name_bn) patwariMap.set(String(p.name_bn).trim().toLowerCase(), p.id);
+          if (p.mobile) patwariMap.set(String(p.mobile).trim(), p.id);
+        });
+      }
+
+
 
 
       setProgress({ current: 0, total: next.length, ok: 0, failed: 0 });
