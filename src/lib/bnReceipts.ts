@@ -57,6 +57,8 @@ export interface ReceiptOptions {
 export interface BnReceiptData {
   kind: ReceiptKind;
   receipt_no: string;
+  /** Printed official short serial for irrigation sample layout. Stored receipt_no remains unchanged. */
+  receipt_no_display?: string | null;
   date: string | Date;
   bill_info?: string;
   company_name_bn?: string | null;
@@ -173,6 +175,26 @@ function moneyInt(n: number | null | undefined, lang: ReceiptLang, suffix = ""):
 
 function fixed4Text(n: number | null | undefined, lang: ReceiptLang): string {
   return digits(fmt4(Number(n ?? 0)), lang);
+}
+
+function officialReceiptNoText(d: BnReceiptData, lang: ReceiptLang): string {
+  const manual = (d.receipt_no_display ?? "").trim();
+  if (manual) return digits(manual, lang);
+  const raw = String(d.receipt_no ?? "").trim();
+  // Official sample shows only the serial (e.g. ২৬৫২), not the internal
+  // RCP/IRR date prefix. Keep the stored receipt_no intact; shorten only print.
+  if (/^(RCP|RCPT|IRR|PAY|SAV|LOAN|COMBO)-/i.test(raw)) {
+    const last = raw.split("-").filter(Boolean).pop() ?? raw;
+    if (/^\d+$/.test(last)) return digits(last.replace(/^0+(?=\d)/, ""), lang);
+  }
+  return digits(raw, lang);
+}
+
+function banglaOwnerLabel(label: string, lang: ReceiptLang): string {
+  const v = label.trim();
+  if (!v) return v;
+  if (lang !== "bn") return /^owner\s*:/i.test(v) ? v : `Owner: ${v}`;
+  return /^(মালিক|নিজ)\s*[:ঃ]?/.test(v) ? v : `মালিক: ${v}`;
 }
 
 const STR = {
@@ -332,7 +354,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       rows.push([t.farmerLine, idPart]);
     } else {
       const ownerPart = (d.land_owner_label && d.land_owner_label.trim())
-        ? d.land_owner_label.trim()
+        ? banglaOwnerLabel(d.land_owner_label, lang)
         : idPart;
       rows.push([t.farmerLine, `${idPart}/${ownerPart}`]);
     }
@@ -374,7 +396,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     rows.push([t.due, `${moneyInt(dueCharge, lang, "৳")}/${moneyInt(duePenalty, lang, "৳")}`]);
     // 11. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা)
     const totalDue = halCharge + halPenalty + dueCharge + duePenalty;
-    const totalIrr = totalDue > 0 ? totalDue : Number(d.collected_amount ?? 0);
+    const totalIrr = Number(d.collected_amount ?? 0) > 0 ? Number(d.collected_amount ?? 0) : totalDue;
     rows.push([t.totalIrr, moneyInt(totalIrr, lang, "৳")]);
     // 12. কথায়
     if (lang === "bn") rows.push([t.inWords, `${bnAmountInWords(totalIrr)} মাত্র।`]);
@@ -483,9 +505,9 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
           : v;
       return `
         <tr>
-          <td style="padding:1px 0 1px 12px;vertical-align:top;width:41%;font-size:21px;line-height:1.28;${cellWrap}">${label}</td>
-          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:21px;line-height:1.28;font-weight:700;">:</td>
-          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:21px;line-height:1.28;font-weight:600;${cellWrap}">${value}</td>
+          <td style="padding:1px 0 1px 12px;vertical-align:top;width:42%;font-size:20px;line-height:1.24;white-space:nowrap;overflow:hidden;text-overflow:clip;">${label}</td>
+          <td style="padding:1px 8px 1px 4px;vertical-align:top;width:14px;font-size:20px;line-height:1.24;font-weight:700;">:</td>
+          <td style="padding:1px 12px 1px 0;vertical-align:top;font-size:20px;line-height:1.24;font-weight:600;${cellWrap}">${value}</td>
         </tr>`;
     }).join("");
 
@@ -495,7 +517,7 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:240px 1fr 128px;align-items:start;min-height:92px;">
         <div style="padding-top:16px;">${logo}</div>
         <div style="text-align:center;padding-top:24px;">
-          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;border-bottom:2px solid #111;padding-bottom:1px;">${titleFor(d.kind, lang)}</div>
+          <div style="display:inline-block;font-size:25px;font-weight:800;line-height:1.1;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px;">${titleFor(d.kind, lang)}</div>
         </div>
         <div style="text-align:right;padding-top:14px;">
           ${qrDataUrl && tpl.qr_placement !== "none" ? `<img src="${qrDataUrl}" style="width:78px;height:78px;display:block;margin-left:auto;" /><div style="font-size:11px;color:#444;margin-top:2px;">${lang === "bn" ? "যাচাই করুন" : "Scan to verify"}</div>` : ""}
@@ -504,8 +526,8 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
 
       <div style="position:relative;z-index:1;display:grid;grid-template-columns:1fr auto;column-gap:24px;margin-top:4px;font-size:21px;line-height:1.35;">
         <div>
-          <div>${t.receiptNo} ${digits(d.receipt_no, lang)}</div>
-          ${d.bill_info ? `<div>${t.billInfo} ${d.bill_info}</div>` : ""}
+          <div>${t.receiptNo} ${officialReceiptNoText(d, lang)}</div>
+          ${d.bill_info ? `<div>${t.billInfo} ${digits(d.bill_info, lang)}</div>` : ""}
         </div>
         <div style="white-space:nowrap;padding-top:30px;">${t.date} ${fmtOfficialDate(d.date, lang)}</div>
       </div>
