@@ -12,8 +12,15 @@ function esc(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function rowFor(html: string, label: string): string {
-  const re = new RegExp(`<td[^>]*>${esc(label)}</td>\\s*<td[^>]*>([\\s\\S]*?)</td>`);
-  const m = html.match(re);
+  // Cells may contain nested <span> styling and the colon may sit either in the
+  // label cell or in its own separator cell. Strip spans, then match the label
+  // (with optional trailing colon) and skip an optional colon-only cell.
+  const clean = html.replace(/<\/?span[^>]*>/g, "");
+  const lbl = esc(label.replace(/:$/, ""));
+  const re = new RegExp(
+    `<td[^>]*>${lbl}:?</td>\\s*(?:<td[^>]*>\\s*:?\\s*</td>\\s*)?<td[^>]*>([\\s\\S]*?)</td>`,
+  );
+  const m = clean.match(re);
   return m ? m[1] : "";
 }
 
@@ -46,7 +53,7 @@ describe("irrigation receipt edge cases (overflow prevention)", () => {
   it("renders all dag tokens for a very long dag list", () => {
     const html = buildReceiptCopyHtmlForTest(base, "farmer", "bn");
     const dag = rowFor(html, "দাগ নং:");
-    for (const tok of ["1", "264", "247", "2852"]) expect(dag).toContain(tok);
+    for (const tok of ["১", "২৬৪", "২৪৭", "২৮৫২"]) expect(dag).toContain(tok);
   });
 
   it("applies consistent wrapping/line-height to every cell so long text cannot overflow", () => {
@@ -65,27 +72,29 @@ describe("irrigation receipt edge cases (overflow prevention)", () => {
 
   it("shows separate হাল and বকেয়া penalty breakdown alongside totals", () => {
     const html = buildReceiptCopyHtmlForTest(base, "farmer", "bn");
-    expect(rowFor(html, "চার্জের পরিমাণ (হাল)/জরিমানা:")).toContain("1,300.00/130.00");
-    expect(rowFor(html, "চার্জের পরিমাণ (বকেয়া)/জরিমানা:")).toContain("1,300.00/130.00");
-    expect(rowFor(html, "মোট আদায়ের পরিমাণ:")).toContain("2,860.00");
+    expect(rowFor(html, "চার্জের পরিমাণ (হাল)/জরিমানা:")).toContain("১৩০০৳/১৩০৳");
+    expect(rowFor(html, "চার্জের পরিমাণ (বকেয়া)/জরিমানা:")).toContain("১৩০০৳/১৩০৳");
+    expect(rowFor(html, "মোট আদায়ের পরিমাণ:")).toContain("২৮৬০৳");
   });
 
   it("rate row shows acre rate and bigha rate (acre ÷ 33)", () => {
     const html = buildReceiptCopyHtmlForTest(base, "farmer", "bn");
     const kind = rowFor(html, "জমির ধরন/ চার্জ রেট (একর/বিঘা):");
     expect(kind).toContain("উচু জমি");
-    expect(kind).toContain("3,939.39"); // একর রেট
-    expect(kind).toContain("119.38");   // 3939.39 / 33 = 119.38 বিঘা রেট
+    expect(kind).toContain("৩৯৩৯.৩৯"); // একর রেট
+    expect(kind).toContain("১১৯.৩৮");   // 3939.39 / 33 = 119.38 বিঘা রেট
   });
 
   it("land size renders as একর with exactly 4 decimals", () => {
     const html = buildReceiptCopyHtmlForTest({ ...base, farmer: { ...base.farmer, land_size: 50 } }, "farmer", "bn");
-    expect(rowFor(html, "জমির পরিমাণ:")).toContain("0.5000 একর");
+    expect(rowFor(html, "জমির পরিমাণ:")).toContain("০.৫০০০ একর");
   });
 
-  it("owner_self shows নিজ/মালিক only", () => {
+  it("owner_self shows only the owner's own name (no bargadar/owner split)", () => {
     const html = buildReceiptCopyHtmlForTest({ ...base, owner_self: true }, "farmer", "bn");
-    expect(rowFor(html, "কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি:")).toContain("নিজ/মালিক");
+    const val = rowFor(html, "কৃষকের নাম ও আইডি/মালিকের নাম ও আইডি:");
+    expect(val).toContain("মোঃ মাসুদ রানা");
+    expect(val).not.toContain("/"); // self ⇒ single name, no bargadar/owner separator
   });
 });
 

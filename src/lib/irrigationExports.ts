@@ -125,8 +125,25 @@ export function flattenInvoiceForExport(inv: any, lang: Lang = "bn") {
   };
 }
 
+/**
+ * Build a "Grand total" summary row matching the exported columns. Sums
+ * Payable / Paid / Due across the (already-filtered) invoice set so Excel/CSV
+ * exports show the same totals as the on-screen footer.
+ */
+export function buildExportTotalsRow(invoices: any[], lang: Lang = "bn") {
+  const L = lang === "en" ? IRR_EN : IRR_BN;
+  const sum = (k: string) => r(invoices.reduce((acc, inv) => acc + (Number(inv[k]) || 0), 0));
+  return {
+    [L.invoiceNo]: lang === "en" ? `Grand total (${invoices.length})` : `সর্বমোট (${invoices.length})`,
+    [L.payable]: sum("payable_amount"),
+    [L.paid]: sum("paid_amount"),
+    [L.due]: sum("due_amount"),
+  } as Record<string, any>;
+}
+
 export function exportInvoicesXLSX(invoices: any[], filename = "irrigation-invoices.xlsx", lang: Lang = "bn") {
   const rows = invoices.map((inv) => flattenInvoiceForExport(inv, lang));
+  if (rows.length) rows.push(buildExportTotalsRow(invoices, lang));
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Invoices");
@@ -135,6 +152,7 @@ export function exportInvoicesXLSX(invoices: any[], filename = "irrigation-invoi
 
 export function exportInvoicesCSV(invoices: any[], filename = "irrigation-invoices.csv", lang: Lang = "bn") {
   const rows = invoices.map((inv) => flattenInvoiceForExport(inv, lang));
+  if (rows.length) rows.push(buildExportTotalsRow(invoices, lang));
   const ws = XLSX.utils.json_to_sheet(rows);
   const csv = XLSX.utils.sheet_to_csv(ws);
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
