@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileDown, FileText, FileSpreadsheet, History, ArrowUpDown, Plus } from "lucide-react";
 import { money } from "@/lib/format";
 import { EditButton, DeleteButton } from "@/components/ui/action-icon-button";
+import { useLandTypes, landTypeLabel } from "@/components/locations/LandTypeSelect";
 
 type SeasonStatus = { state: "none" | "paid" | "partial" | "due"; payable: number; paid: number; due: number };
 
