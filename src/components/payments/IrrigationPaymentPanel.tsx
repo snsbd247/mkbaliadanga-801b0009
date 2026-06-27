@@ -782,7 +782,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
             </div>
           </div>
 
-          {previousDueTotal > 0 && previousRemainingAfter > 0 && isSuper && (
+          {previousDueTotal > 0 && previousRemainingAfter > 0 && canDoPartial && (
             <div className="rounded-md border bg-muted/30 p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2 cursor-pointer">
