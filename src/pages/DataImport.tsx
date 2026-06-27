@@ -518,6 +518,21 @@ export default function DataImport() {
         });
       }
 
+      // Plan lookup by name for farmer_savings_plans
+      const savingsPlanMap = new Map<string, { id: string; office_id: string | null }>();
+      if (mod === "farmer_savings_plans") {
+        const { data: sp } = await supabase.from("savings_plans").select("id,name,office_id");
+        (sp ?? []).forEach((p: any) => savingsPlanMap.set(String(p.name).trim().toLowerCase(), { id: p.id, office_id: p.office_id }));
+      }
+      // Season lookup by year+type for irrigation_rates
+      const seasonMap = new Map<string, string>();
+      if (mod === "irrigation_rates") {
+        const { data: ss } = await supabase.from("seasons").select("id,year,type");
+        (ss ?? []).forEach((s: any) => seasonMap.set(`${s.year}|${String(s.type).trim().toLowerCase()}`, s.id));
+      }
+
+
+
       for (let i = 0; i < next.length; i++) {
         const r = next[i];
         const raw = r.raw;
