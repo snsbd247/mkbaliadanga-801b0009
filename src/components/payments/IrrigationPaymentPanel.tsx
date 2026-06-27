@@ -85,6 +85,60 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
   const [method, setMethod] = useState("cash");
   const [note, setNote] = useState("");
 
+  // Configurable: which roles may receive partial payments.
+  const [allowedRoles, setAllowedRoles] = useState<string[]>(["super_admin"]);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Validation modal for unpaid dues.
+  const [dueDialogOpen, setDueDialogOpen] = useState(false);
+  const [dueDialogRows, setDueDialogRows] = useState<{ label: string; missing: number }[]>([]);
+
+  const canDoPartial = isSuper || roles.some(r => allowedRoles.includes(r));
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("irrigation_partial_payment_settings")
+        .select("id,allowed_roles")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setSettingsId(data.id as string);
+        setAllowedRoles((data.allowed_roles as string[]) ?? ["super_admin"]);
+      }
+    })();
+  }, []);
+
+  async function toggleAllowedRole(role: string, checked: boolean) {
+    const next = checked ? Array.from(new Set([...allowedRoles, role])) : allowedRoles.filter(r => r !== role);
+    setAllowedRoles(next);
+    setSavingSettings(true);
+    try {
+      if (settingsId) {
+        const { error } = await supabase
+          .from("irrigation_partial_payment_settings")
+          .update({ allowed_roles: next, updated_by: user?.id })
+          .eq("id", settingsId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("irrigation_partial_payment_settings")
+          .insert({ allowed_roles: next, updated_by: user?.id })
+          .select("id")
+          .single();
+        if (error) throw error;
+        setSettingsId(data!.id as string);
+      }
+      toast.success(tx("Settings saved", "সেটিংস সংরক্ষিত হয়েছে"));
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
   useEffect(() => { if (initialFarmerId) setFarmerId(initialFarmerId); }, [initialFarmerId]);
 
   useEffect(() => {
