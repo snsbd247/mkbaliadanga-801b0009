@@ -77,7 +77,17 @@ export default function FarmerProfileReport() {
         }
       });
 
-      const fieldTypeLabel = (v: string) => {
+      // Catalogue land-type names take priority over the legacy enum so that
+      // custom types (পুকুর, সবজি ইত্যাদি) show their real name instead of "Other".
+      const { data: ltData } = await supabase
+        .from("land_types" as any)
+        .select("id,code,name,name_bn")
+        .is("deleted_at", null);
+      const ltRows = (ltData as any[]) ?? [];
+
+      const fieldTypeLabel = (v: string, landTypeId?: string | null) => {
+        const fromCatalogue = landTypeLabel(ltRows as any, landTypeId ?? null, v ?? null);
+        if (fromCatalogue) return fromCatalogue;
         switch (v) {
           case "high_land": return tx("High Land", "উঁচু জমি(High Land)");
           case "medium_land": return tx("Medium Land", "মাঝারি জমি(Medium Land)");
