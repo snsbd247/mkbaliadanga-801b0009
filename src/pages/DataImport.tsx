@@ -282,6 +282,58 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
   ],
 };
 
+// Field-level format validation rules per module. Runs before import so bad
+// data is caught up-front (numbers, dates, enums) in addition to required checks.
+const isISODate = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v).trim());
+const isNum = (v: any) => v !== null && v !== "" && !isNaN(Number(v));
+type FieldRule = { type?: "number" | "positive" | "date" | "enum"; values?: string[] };
+const FORMAT_RULES: Partial<Record<Module, Record<string, FieldRule>>> = {
+  lands: {
+    land_size: { type: "positive" },
+    owner_type: { type: "enum", values: ["owner", "borgadar"] },
+    field_type: { type: "enum", values: ["high_land", "medium_land", "low_land"] },
+    land_size_unit: { type: "enum", values: ["shotok", "shatak", "decimal", "katha", "kattah", "bigha", "acre", "ekor"] },
+  },
+  land_relations: {
+    share_percentage: { type: "positive" },
+    valid_from: { type: "date" },
+  },
+  loans: { principal: { type: "positive" }, interest_rate: { type: "number" }, issued_on: { type: "date" } },
+  loan_payments: { amount: { type: "positive" }, paid_on: { type: "date" } },
+  loan_installments: { installment_no: { type: "positive" }, amount: { type: "positive" }, due_date: { type: "date" }, status: { type: "enum", values: ["due", "paid", "missed", "partial"] } },
+  savings: { amount: { type: "positive" }, type: { type: "enum", values: ["deposit", "withdrawal"] }, txn_date: { type: "date" } },
+  payments: { amount: { type: "positive" }, kind: { type: "enum", values: ["savings", "loan", "irrigation"] } },
+  irrigation: { season_year: { type: "positive" }, season_type: { type: "enum", values: ["boro", "aman", "aus"] }, base_charge: { type: "number" }, entry_date: { type: "date" } },
+  cashbook_receipts: { amount: { type: "positive" }, receipt_date: { type: "date" } },
+  cashbook_expenses: { amount: { type: "positive" }, expense_date: { type: "date" } },
+  ledger: { entry_date: { type: "date" }, debit: { type: "number" }, credit: { type: "number" } },
+  shares: { balance: { type: "number" } },
+  savings_plans: { duration_months: { type: "positive" } },
+  loan_plans: { duration_months: { type: "positive" } },
+  irrigation_rates: { season_year: { type: "positive" }, base_rate: { type: "number" } },
+};
+
+function checkFormat(col: string, value: any, rule: FieldRule): string | null {
+  const v = value;
+  if (v === null || v === undefined || String(v).trim() === "") return null; // required handled separately
+  switch (rule.type) {
+    case "number":
+      if (!isNum(v)) return `${col} must be a number`;
+      break;
+    case "positive":
+      if (!isNum(v) || Number(v) <= 0) return `${col} must be a number > 0`;
+      break;
+    case "date":
+      if (!isISODate(v)) return `${col} must be a date (YYYY-MM-DD)`;
+      break;
+    case "enum":
+      if (rule.values && !rule.values.includes(String(v).trim().toLowerCase()))
+        return `${col} must be one of: ${rule.values.join("/")}`;
+      break;
+  }
+  return null;
+}
+
 function downloadTemplate(mod: Module) {
   const tpl = TEMPLATES[mod];
   const ws = XLSX.utils.json_to_sheet([tpl.sample], { header: tpl.columns });
