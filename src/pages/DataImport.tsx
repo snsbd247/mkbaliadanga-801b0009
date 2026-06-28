@@ -21,6 +21,7 @@ import { validateDagNumbers, formatDagNumbers } from "@/lib/dagNumbers";
 import { SHATAK_PER_KATHA, SHATAK_PER_BIGHA } from "@/lib/landUnits";
 import { previewBnReceiptPdf, downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { buildSampleReceipt, findMissingSampleFields, findMissingSampleFieldDetails, SAMPLE_RECEIPT_TYPE_LABELS, type SampleReceiptType, type MissingFieldDetail } from "@/lib/sampleReceipts";
+import { buildIrrigationReceiptEnrichment } from "@/lib/irrigationReceiptData";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
@@ -1359,9 +1360,67 @@ export default function DataImport() {
   const tpl = TEMPLATES[mod];
 
   async function previewSampleReceipt(action: "preview" | "download" = "preview") {
-    const sample = buildSampleReceipt(sampleType);
+    let sample = buildSampleReceipt(sampleType);
+    // For irrigation, build the receipt from the SAME data source/query as the
+    // Payments re-print (real invoice + land data) so the preview reflects what
+    // users actually get after a demo import — no hard-coded or blank fields.
+    if (sampleType === "irrigation") {
+      try {
+        const { data: inv } = await supabase
+          .from("irrigation_invoices")
+          .select("farmer_id, farmers(name_bn,name_en,member_no,farmer_code,mobile,village,father_name,is_voter,voter_number,account_number,union_id)")
+          .is("deleted_at", null)
+          .neq("invoice_status", "cancelled")
+          .not("farmer_id", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const f: any = (inv as any)?.farmers;
+        const farmerId = (inv as any)?.farmer_id ?? null;
+        if (farmerId && f) {
+          const enriched = await buildIrrigationReceiptEnrichment({
+            farmerId,
+            paymentAmount: sample.collected_amount,
+            paymentNote: sample.remark ?? null,
+            memberNoFallback: f.member_no ?? f.farmer_code ?? null,
+          });
+          sample = {
+            ...sample,
+            farmer: {
+              ...sample.farmer,
+              name: f.name_bn || f.name_en || sample.farmer.name,
+              member_no: f.member_no ?? f.farmer_code ?? sample.farmer.member_no,
+              mobile: f.mobile ?? sample.farmer.mobile,
+              village: f.village ?? sample.farmer.village,
+              father_or_husband: f.father_name ?? sample.farmer.father_or_husband,
+              ...enriched.farmerExtras,
+            },
+            bill_info: enriched.bill_info,
+            rate: enriched.rate,
+            member_summary: enriched.member_summary,
+            owner_self: enriched.owner_self,
+            land_owner_label: enriched.land_owner_label,
+            current_season_charge: enriched.current_season_charge,
+            penalty_amount: enriched.penalty_amount,
+            maintenance_charge: enriched.maintenance_charge,
+            canal_charge: enriched.canal_charge,
+            total_outstanding: enriched.total_outstanding,
+            collected_from_outstanding: enriched.collected_from_outstanding,
+            remark: enriched.remark ?? sample.remark,
+            holding_description: enriched.holding_description,
+            patwari_name: enriched.patwari_name,
+            patwari_mobile: enriched.patwari_mobile,
+          } as typeof sample;
+        } else {
+          toast.info("কোনো সেচ ইনভয়েস পাওয়া যায়নি — স্ট্যাটিক নমুনা দেখানো হচ্ছে। ডেমো ইমপোর্ট চালান।");
+        }
+      } catch {
+        // fall back to static sample silently
+      }
+    }
     const details = findMissingSampleFieldDetails(sampleType, sample);
     setSampleMissing(details);
+
     if (details.length > 0) {
       const sections = Array.from(new Set(details.map((d) => d.section)));
       toast.warning(
