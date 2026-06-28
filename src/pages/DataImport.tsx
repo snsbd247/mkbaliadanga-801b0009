@@ -251,7 +251,7 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
     ["dag_no", "Yes", "One or more dag numbers, comma separated. Canonical: \"123, 124/A, 125-B\". Allowed chars per token: digits, letters, '/', '-' (max 32). No duplicates."],
     ["land_size", "Yes", "Land area number. > 0. Stored as শতক (shotok)."],
     ["land_size_unit", "No", "shotok | katha | bigha | acre (default: shotok). katha/bigha/acre values are auto-converted to শতক. 1 বিঘা = 33 শতক = 20 কাঠা, 1 একর ≈ 100 শতক."],
-    ["owner_type", "No", "owner | borgadar (default: owner)"],
+    ["owner_type", "No", "owner (default). borgadar এখানে নয় — বর্গা সম্পর্ক Land Relations মডিউল দিয়ে দিন।"],
     ["field_type", "No", "high_land | medium_land | low_land (default: medium_land)"],
     ["mouza", "No", "Free text mouza name."],
     ["notes", "No", "হোল্ডিং এর বিবরন — receipt holding text (e.g. \"আমন হয় না। নিজ সেচে আবাদ হয়।\")."],
