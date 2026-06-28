@@ -251,7 +251,7 @@ const TPL_INSTRUCTIONS: Partial<Record<Module, string[][]>> = {
     ["dag_no", "Yes", "One or more dag numbers, comma separated. Canonical: \"123, 124/A, 125-B\". Allowed chars per token: digits, letters, '/', '-' (max 32). No duplicates."],
     ["land_size", "Yes", "Land area number. > 0. Stored as শতক (shotok)."],
     ["land_size_unit", "No", "shotok | katha | bigha | acre (default: shotok). katha/bigha/acre values are auto-converted to শতক. 1 বিঘা = 33 শতক = 20 কাঠা, 1 একর ≈ 100 শতক."],
-    ["owner_type", "No", "owner | borgadar (default: owner)"],
+    ["owner_type", "No", "owner (default). borgadar এখানে নয় — বর্গা সম্পর্ক Land Relations মডিউল দিয়ে দিন।"],
     ["field_type", "No", "high_land | medium_land | low_land (default: medium_land)"],
     ["mouza", "No", "Free text mouza name."],
     ["notes", "No", "হোল্ডিং এর বিবরন — receipt holding text (e.g. \"আমন হয় না। নিজ সেচে আবাদ হয়।\")."],
@@ -295,7 +295,7 @@ type FieldRule = { type?: "number" | "positive" | "date" | "enum"; values?: stri
 const FORMAT_RULES: Partial<Record<Module, Record<string, FieldRule>>> = {
   lands: {
     land_size: { type: "positive" },
-    owner_type: { type: "enum", values: ["owner", "borgadar"] },
+    owner_type: { type: "enum", values: ["owner"] },
     field_type: { type: "enum", values: ["high_land", "medium_land", "low_land"] },
     land_size_unit: { type: "enum", values: ["shotok", "shatak", "decimal", "katha", "kattah", "bigha", "acre", "ekor"] },
   },
@@ -669,17 +669,28 @@ export default function DataImport() {
             if (patwariKey && !resolvedPatwariId) {
               toast.warning(`⚠ পাটুয়ারী ম্যাপিং ব্যর্থ (রশিদে পাটুয়ারী খালি থাকবে): "${patwariKey}" — Farmer ${raw.account_number}`, { duration: 6000 });
             }
+            // Unified borga model: borga must be a land_relation, NOT a separate
+            // owner_type='borgadar' land row. Creating such rows produces "orphan
+            // borgadar land" integrity errors. Force ownership rows to 'owner' and
+            // direct borga data to the land_relations module.
+            const rawOwnerType = String(raw.owner_type ?? "owner").trim().toLowerCase();
+            if (rawOwnerType === "borgadar") {
+              throw new Error(
+                "owner_type='borgadar' lands import এ অনুমোদিত নয় (অনাথ বর্গাদার রেকর্ড তৈরি হয়) — বর্গা সম্পর্ক 'Land Relations' মডিউল দিয়ে ইমপোর্ট করুন",
+              );
+            }
             payload = {
               farmer_id: f.id,
               office_id: f.office_id,
               dag_no: canonicalDag,
               land_size: sizeShotok,
-              owner_type: (raw.owner_type ?? "owner") as any,
+              owner_type: "owner" as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
               notes: notesVal,
               patwari_id: resolvedPatwariId,
             };
+
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
             if (!owner) throw new Error(`Owner farmer not found for owner_account_number=${raw.owner_account_number ?? ""}`);
