@@ -21,6 +21,7 @@ import { validateDagNumbers, formatDagNumbers } from "@/lib/dagNumbers";
 import { SHATAK_PER_KATHA, SHATAK_PER_BIGHA } from "@/lib/landUnits";
 import { previewBnReceiptPdf, downloadBnReceiptPdf, type BnReceiptData } from "@/lib/bnReceipts";
 import { buildSampleReceipt, findMissingSampleFields, findMissingSampleFieldDetails, SAMPLE_RECEIPT_TYPE_LABELS, type SampleReceiptType, type MissingFieldDetail } from "@/lib/sampleReceipts";
+import { buildIrrigationReceiptEnrichment } from "@/lib/irrigationReceiptData";
 
 /**
  * Universal Data Import — CSV / Excel (.xlsx)
