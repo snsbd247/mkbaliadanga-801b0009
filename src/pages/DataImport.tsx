@@ -669,17 +669,28 @@ export default function DataImport() {
             if (patwariKey && !resolvedPatwariId) {
               toast.warning(`⚠ পাটুয়ারী ম্যাপিং ব্যর্থ (রশিদে পাটুয়ারী খালি থাকবে): "${patwariKey}" — Farmer ${raw.account_number}`, { duration: 6000 });
             }
+            // Unified borga model: borga must be a land_relation, NOT a separate
+            // owner_type='borgadar' land row. Creating such rows produces "orphan
+            // borgadar land" integrity errors. Force ownership rows to 'owner' and
+            // direct borga data to the land_relations module.
+            const rawOwnerType = String(raw.owner_type ?? "owner").trim().toLowerCase();
+            if (rawOwnerType === "borgadar") {
+              throw new Error(
+                "owner_type='borgadar' lands import এ অনুমোদিত নয় (অনাথ বর্গাদার রেকর্ড তৈরি হয়) — বর্গা সম্পর্ক 'Land Relations' মডিউল দিয়ে ইমপোর্ট করুন",
+              );
+            }
             payload = {
               farmer_id: f.id,
               office_id: f.office_id,
               dag_no: canonicalDag,
               land_size: sizeShotok,
-              owner_type: (raw.owner_type ?? "owner") as any,
+              owner_type: "owner" as any,
               field_type: (raw.field_type ?? "medium_land") as any,
               mouza: raw.mouza ?? null,
               notes: notesVal,
               patwari_id: resolvedPatwariId,
             };
+
           } else if (mod === "land_relations") {
             const owner = farmerMap.get(String(raw.owner_account_number));
             if (!owner) throw new Error(`Owner farmer not found for owner_account_number=${raw.owner_account_number ?? ""}`);
