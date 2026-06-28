@@ -295,7 +295,7 @@ type FieldRule = { type?: "number" | "positive" | "date" | "enum"; values?: stri
 const FORMAT_RULES: Partial<Record<Module, Record<string, FieldRule>>> = {
   lands: {
     land_size: { type: "positive" },
-    owner_type: { type: "enum", values: ["owner", "borgadar"] },
+    owner_type: { type: "enum", values: ["owner"] },
     field_type: { type: "enum", values: ["high_land", "medium_land", "low_land"] },
     land_size_unit: { type: "enum", values: ["shotok", "shatak", "decimal", "katha", "kattah", "bigha", "acre", "ekor"] },
   },
