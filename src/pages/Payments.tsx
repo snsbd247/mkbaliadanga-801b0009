@@ -943,13 +943,28 @@ export default function Payments() {
                             let primaryCharge: any = null;
                             let invoiceRows: any[] = [];
                             let totalOutstanding = 0;
+                            const invoiceSelect = "id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))";
                             if (refIds.length) {
                               const { data: invs } = await supabase
                                 .from("irrigation_invoices")
-                                .select("id,invoice_no,payable_amount,paid_amount,due_amount,irrigation_amount,maintenance_amount,canal_amount,delay_fee,other_charge,is_borga,land_id,note,due_date,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,dag_no,land_size,field_type,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))")
+                                .select(invoiceSelect)
                                 .in("id", refIds);
                               invoiceRows = invs ?? [];
-                              primaryCharge = invoiceRows[0] ?? null;
+                            } else if (p.farmer_id) {
+                              // Fallback: legacy/imported payments without payment_allocations.
+                              // Reconstruct land/charge rows from the farmer's irrigation invoices
+                              // so the receipt shows mouza/dag/জমির ধরন/চার্জ instead of blanks.
+                              const { data: invs } = await supabase
+                                .from("irrigation_invoices")
+                                .select(invoiceSelect)
+                                .eq("farmer_id", p.farmer_id)
+                                .is("deleted_at", null)
+                                .neq("invoice_status", "cancelled")
+                                .order("due_date", { ascending: true });
+                              invoiceRows = invs ?? [];
+                            }
+                            primaryCharge = invoiceRows[0] ?? null;
+                            if (p.farmer_id) {
                               const { data: allDues } = await supabase
                                 .from("irrigation_invoices")
                                 .select("due_amount")
@@ -958,6 +973,7 @@ export default function Payments() {
                                 .neq("invoice_status", "cancelled");
                               totalOutstanding = (allDues ?? []).reduce((s: number, r: any) => s + Number(r.due_amount || 0), 0);
                             }
+
                             const anyBorga = (invoiceRows as any[]).some((inv) => !!inv?.is_borga);
                             const ownerInvoice = (invoiceRows as any[]).find((inv) => inv?.is_borga && inv?.lands?.owner) ?? primaryCharge;
                             const land = primaryCharge?.lands;
