@@ -152,6 +152,12 @@ npm run build
 # ──────────────────────────────────────────────────────────────────────────
 log "Reloading PHP-FPM & Nginx…"
 systemctl reload "php${PHP_VER}-fpm" || systemctl restart "php${PHP_VER}-fpm" || true
+# Patch legacy SPA fallback (`$uri $uri/` caused 404/redirect loops on routes
+# like /help/). Rewrite to a clean single-page fallback if present.
+for conf in /etc/nginx/sites-enabled/*.conf /etc/nginx/sites-available/*.conf; do
+  [ -f "$conf" ] || continue
+  sed -i 's#try_files \$uri \$uri/ /index.html;#try_files \$uri /index.html;#' "$conf" 2>/dev/null || true
+done
 nginx -t && systemctl reload nginx
 
 cd "${APP_DIR}/backend"
