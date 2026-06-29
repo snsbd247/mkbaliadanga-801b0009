@@ -165,19 +165,33 @@ chown -R www-data:www-data /var/lib/phpmyadmin
 # ──────────────────────────────────────────────────────────────────────────
 log "Setting up Laravel backend…"
 cd "${APP_DIR}/backend"
+# Hard repair for Laravel runtime directories. These paths are commonly
+# gitignored/removed by deploys, but Composer's package discovery must write to
+# bootstrap/cache before the app can continue.
+ensure_laravel_runtime_dirs() {
+  for dir in \
+    bootstrap/cache \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    storage/app/public; do
+    rm -f "${dir}"
+    install -d -m 0777 "${dir}"
+  done
+  chmod -R 0777 bootstrap/cache storage
+  touch bootstrap/cache/.deploy-write-test storage/framework/views/.deploy-write-test
+  rm -f bootstrap/cache/.deploy-write-test storage/framework/views/.deploy-write-test
+}
 # Composer 2.10+ runs as root safely with this flag, and we disable the
 # security-advisory blocker so Laravel 11 resolves (advisories are noted in CI).
 export COMPOSER_ALLOW_SUPERUSER=1
-# Laravel's bootstrap/cache and storage subdirs are gitignored, so they may be
-# missing on a fresh clone. Composer's post-autoload scripts require them.
-mkdir -p bootstrap/cache \
-  storage/framework/{cache/data,sessions,views} \
-  storage/logs storage/app/public
-chmod -R 775 bootstrap/cache storage
+ensure_laravel_runtime_dirs
 composer config --no-plugins policy.advisories.block false 2>/dev/null || true
 # Retry install: GitHub codeload (dist zips) occasionally returns HTTP 400/429.
 composer_install() {
   for attempt in 1 2 3 4 5; do
+    ensure_laravel_runtime_dirs
     if composer install --no-dev --optimize-autoloader --no-interaction; then
       return 0
     fi
@@ -187,6 +201,7 @@ composer_install() {
   done
   # Last resort: build from source instead of GitHub dist zips.
   warn "Falling back to --prefer-source…"
+  ensure_laravel_runtime_dirs
   composer install --no-dev --optimize-autoloader --no-interaction --prefer-source
 }
 composer_install

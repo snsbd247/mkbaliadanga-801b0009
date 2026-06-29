@@ -68,19 +68,34 @@ git -C "${APP_DIR}" reset --hard "origin/${BRANCH}"
 log "Updating backend…"
 cd "${APP_DIR}/backend"
 export COMPOSER_ALLOW_SUPERUSER=1
-# Ensure gitignored Laravel runtime dirs exist (Composer scripts need them).
-mkdir -p bootstrap/cache \
-  storage/framework/{cache/data,sessions,views} \
-  storage/logs storage/app/public
-chmod -R 775 bootstrap/cache storage
+# Hard repair for Laravel runtime directories. These paths are commonly
+# gitignored/removed by deploys, but Composer's package discovery must write to
+# bootstrap/cache before the app can continue.
+ensure_laravel_runtime_dirs() {
+  for dir in \
+    bootstrap/cache \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    storage/app/public; do
+    rm -f "${dir}"
+    install -d -m 0777 "${dir}"
+  done
+  chmod -R 0777 bootstrap/cache storage
+  touch bootstrap/cache/.deploy-write-test storage/framework/views/.deploy-write-test
+  rm -f bootstrap/cache/.deploy-write-test storage/framework/views/.deploy-write-test
+}
+ensure_laravel_runtime_dirs
 composer config --no-plugins policy.advisories.block false 2>/dev/null || true
 # Retry install: GitHub codeload (dist zips) occasionally returns HTTP 400/429.
 for attempt in 1 2 3 4 5; do
+  ensure_laravel_runtime_dirs
   composer install --no-dev --optimize-autoloader --no-interaction && break
   log "composer install failed (attempt ${attempt}/5) — clearing cache & retrying in 10s…"
   composer clear-cache >/dev/null 2>&1 || true
   sleep 10
-  [ "${attempt}" = "5" ] && composer install --no-dev --optimize-autoloader --no-interaction --prefer-source
+  [ "${attempt}" = "5" ] && ensure_laravel_runtime_dirs && composer install --no-dev --optimize-autoloader --no-interaction --prefer-source
 done
 
 php artisan down --retry=15 || true
