@@ -137,6 +137,12 @@ export default function Approvals() {
       patch.approved_at = new Date().toISOString();
       const { error } = await supabase.from(decision.table).update(patch).eq("id", decision.id);
       if (error) throw error;
+      await logAudit({
+        module: "other",
+        action_type: decision.status === "approved" ? "approve" : "reject",
+        reference_id: decision.id,
+        new_data: { table: decision.table, status: decision.status, note: comment.trim() || null },
+      });
       const statusLabel = decision.status === "approved" ? t("approved") : t("rejected");
       toast.success(t("markedAs").replace("{status}", statusLabel));
       setDecision(null);
