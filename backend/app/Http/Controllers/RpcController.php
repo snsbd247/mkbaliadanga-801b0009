@@ -123,4 +123,143 @@ class RpcController extends Controller
         }
         return $q->orderByRaw('COALESCE(full_name, email)')->get()->toArray();
     }
+
+    // ── SMS provider status ───────────────────────────────────────────
+    protected function rpc_get_sms_provider_status(array $p): array
+    {
+        $provider = $p['_provider'] ?? 'greenweb';
+
+        $active = DB::table('sms_provider_secrets')
+            ->where('provider', $provider)
+            ->where('status', 'active')
+            ->orderByDesc('activated_at')
+            ->first();
+
+        $stagedCount = (int) DB::table('sms_provider_secrets')
+            ->where('provider', $provider)
+            ->where('status', 'staged')
+            ->count();
+
+        $settings = Schema::hasTable('sms_settings')
+            ? DB::table('sms_settings')->first()
+            : null;
+
+        $expiresAt = $active->expires_at ?? null;
+        $daysToExpiry = null;
+        $expired = false;
+        if ($expiresAt) {
+            $diff = (strtotime($expiresAt) - time()) / 86400;
+            $daysToExpiry = (int) floor($diff);
+            $expired = $diff < 0;
+        }
+
+        return [
+            'configured'    => (bool) $active,
+            'enabled'       => (bool) ($settings->enabled ?? false),
+            'sender_id'     => $settings->sender_id ?? null,
+            'expires_at'    => $expiresAt,
+            'days_to_expiry'=> $daysToExpiry,
+            'expired'       => $expired,
+            'activated_at'  => $active->activated_at ?? null,
+            'last_updated'  => $active->updated_at ?? null,
+            'last_updater'  => $active->updated_by ?? null,
+            'staged_count'  => $stagedCount,
+            'last_test'     => null,
+        ];
+    }
+
+    // ── Ledger integrity ──────────────────────────────────────────────
+    protected function rpc_ledger_unbalanced_refs(): array
+    {
+        return DB::table('ledger_entries')
+            ->whereNotNull('reference_type')
+            ->whereNotNull('reference_id')
+            ->groupBy('reference_type', 'reference_id')
+            ->havingRaw('ABS(SUM(debit) - SUM(credit)) > 0.005')
+            ->get([
+                'reference_type',
+                'reference_id',
+                DB::raw('SUM(debit) as total_debit'),
+                DB::raw('SUM(credit) as total_credit'),
+                DB::raw('SUM(debit) - SUM(credit) as diff'),
+            ])->toArray();
+    }
+
+    protected function rpc_ledger_orphan_refs(): array
+    {
+        $map = [
+            'savings'      => 'savings_transactions',
+            'loan'         => 'loans',
+            'loan_payment' => 'loan_payments',
+            'irrigation'   => 'irrigation_invoices',
+            'expense'      => 'expenses',
+            'journal'      => 'journal_entries',
+        ];
+
+        $rows = DB::table('ledger_entries')
+            ->whereNotNull('reference_type')
+            ->whereNotNull('reference_id')
+            ->groupBy('reference_type', 'reference_id')
+            ->get([
+                'reference_type',
+                'reference_id',
+                DB::raw('COUNT(*) as entry_count'),
+            ]);
+
+        $orphans = [];
+        foreach ($rows as $r) {
+            $tbl = $map[$r->reference_type] ?? null;
+            if (! $tbl || ! Schema::hasTable($tbl)) {
+                continue; // unknown ref type — not treated as orphan
+            }
+            $exists = DB::table($tbl)->where('id', $r->reference_id)->exists();
+            if (! $exists) {
+                $orphans[] = [
+                    'reference_type' => $r->reference_type,
+                    'reference_id'   => $r->reference_id,
+                    'entry_count'    => (int) $r->entry_count,
+                ];
+            }
+        }
+        return $orphans;
+    }
+
+    protected function rpc_ledger_integrity_summary(): array
+    {
+        $agg = DB::table('ledger_entries')
+            ->selectRaw('COUNT(*) as total_entries, COALESCE(SUM(debit),0) as total_debit, COALESCE(SUM(credit),0) as total_credit, SUM(CASE WHEN account_id IS NULL THEN 1 ELSE 0 END) as missing_accounts')
+            ->first();
+
+        return [
+            'total_entries'    => (int) ($agg->total_entries ?? 0),
+            'total_debit'      => (float) ($agg->total_debit ?? 0),
+            'total_credit'     => (float) ($agg->total_credit ?? 0),
+            'balanced'         => abs(((float) ($agg->total_debit ?? 0)) - ((float) ($agg->total_credit ?? 0))) < 0.005,
+            'missing_accounts' => (int) ($agg->missing_accounts ?? 0),
+        ];
+    }
+
+    // ── Developer access audit ────────────────────────────────────────
+    protected function rpc_log_developer_access(array $p, Request $request): ?string
+    {
+        try {
+            if (! Schema::hasTable('developer_update_logs')) {
+                return null;
+            }
+            $user = $request->user();
+            $meta = isset($p['_meta']) ? json_encode($p['_meta']) : null;
+            DB::table('developer_update_logs')->insert([
+                'id'         => (string) Str::uuid(),
+                'user_id'    => $user->id ?? '00000000-0000-0000-0000-000000000000',
+                'action'     => $p['_action'] ?? 'unknown',
+                'repo_url'   => 'app://developer-access',
+                'note'       => trim(($p['_action'] ?? '') . ($meta ? " {$meta}" : '')),
+                'status'     => ! empty($p['_blocked']) ? 'blocked' : 'ok',
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            // Audit failures must never break the caller.
+        }
+        return null;
+    }
 }

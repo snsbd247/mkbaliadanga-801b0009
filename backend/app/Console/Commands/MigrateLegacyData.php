@@ -49,6 +49,7 @@ class MigrateLegacyData extends Command
         'accounts' => 'accounts',
         'journal_entries' => 'journal_entries',
         'journal_entry_lines' => 'journal_lines',
+        'ledger_entries' => 'ledger_entries',
         'assets' => 'assets',
         'payments' => 'payments',
         'payment_allocations' => 'payment_allocations',
