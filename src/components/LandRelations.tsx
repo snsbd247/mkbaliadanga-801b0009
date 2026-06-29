@@ -61,7 +61,7 @@ export function LandRelations({ farmerId }: Props) {
     const landIds = Array.from(new Set(relsData.map((r: any) => r.land_id).filter(Boolean)));
     let locByLand: Record<string, any> = {};
     if (landIds.length) {
-      const { data: locs } = await (supabase.from as any)("lands_with_location")
+      const { data: locs } = await (db.from as any)("lands_with_location")
         .select("id,division_name,district_name,upazila_name,union_name,ward_name,village_name,mouza_name")
         .in("id", landIds);
       (locs ?? []).forEach((l: any) => { locByLand[l.id] = l; });

@@ -198,7 +198,7 @@ export default function FarmerDetail() {
   async function loadAll() {
     const [f, l, s, ln, ir, sh, pm] = await Promise.all([
       db.from("farmers").select("*, offices(name), divisions(name,name_bn), districts(name,name_bn), upazilas(name,name_bn)").eq("id", id!).maybeSingle(),
-      (supabase.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
+      (db.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
       db.from("savings_transactions").select("*").eq("farmer_id", id!).is("deleted_at", null).order("txn_date", { ascending: false }),
       db.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).is("deleted_at", null).order("issued_on", { ascending: false }),
       db.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no), patwaris(name,name_bn,mobile)").eq("farmer_id", id!).is("deleted_at", null).order("entry_date", { ascending: false }),
@@ -297,7 +297,7 @@ export default function FarmerDetail() {
       const inParentIds = Array.from(new Set((relsIn ?? []).map((r: any) => r.land_id).filter(Boolean)));
       const inRows: any[] = [];
       if (inParentIds.length) {
-        const { data: parents } = await (supabase.from as any)("lands_with_location")
+        const { data: parents } = await (db.from as any)("lands_with_location")
           .select("*").in("id", inParentIds as string[]);
         const pById: Record<string, any> = {};
         (parents ?? []).forEach((p: any) => { pById[p.id] = p; });
