@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\SmsController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Edge-function dispatcher — a Laravel replacement for Supabase Edge
