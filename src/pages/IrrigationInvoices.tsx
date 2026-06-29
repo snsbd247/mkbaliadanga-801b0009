@@ -59,7 +59,7 @@ function invoiceLandSize(inv: any): number | undefined {
   return inv?.lands?.land_size;
 }
 
-const mouzaName = (r: any) => (r?.lands?.mouza?.trim() || r?.lands?.mouzas?.name?.trim() || "");
+const mouzaName = (r: any) => resolveRowMouzaName(r);
 
 const STATUS_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "outline",
