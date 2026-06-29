@@ -14,6 +14,8 @@ import { notifyBrandingChange, useBranding } from "@/lib/branding";
 import { getReceiptLayoutSettings, setReceiptLayoutSettings, resetReceiptLayoutSettings } from "@/lib/receiptLayoutSettings";
 import { buildReceiptCopyHtmlForTest } from "@/lib/bnReceipts";
 import BanglaFontSelector from "@/components/settings/BanglaFontSelector";
+import { downloadIrrigationInvoicePdf } from "@/lib/irrigationInvoicePdf";
+import { exportInvoicesXLSX } from "@/lib/irrigationExports";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default function Settings() {
@@ -272,7 +274,6 @@ function ReceiptLayoutCard() {
 
   async function downloadSamplePdf() {
     try {
-      const { downloadIrrigationInvoicePdf } = await import("@/lib/irrigationInvoicePdf");
       await downloadIrrigationInvoicePdf({
         invoice_no: "PREVIEW-001",
         generated_at: new Date().toISOString(),
@@ -289,7 +290,6 @@ function ReceiptLayoutCard() {
 
   async function downloadSampleExcel() {
     try {
-      const { exportInvoicesXLSX } = await import("@/lib/irrigationExports");
       exportInvoicesXLSX([{
         invoice_no: "PREVIEW-001",
         farmers: { name_bn: "Karim Mia", farmer_code: "00101", mobile: "017" },
