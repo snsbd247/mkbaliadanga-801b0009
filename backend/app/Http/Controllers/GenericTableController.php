@@ -240,8 +240,26 @@ class GenericTableController extends Controller
         $values = (array) $request->input('values', []);
         $filters = $request->input('filters', []);
 
+        // Safety: never allow an unfiltered mass-update (would rewrite the
+        // whole office's table). Edits must always target specific rows.
+        if (empty($filters)) {
+            abort(400, 'ফিল্টার ছাড়া আপডেট করা যাবে না।');
+        }
+
+        // Reject unknown / malformed column names in the payload.
+        foreach (array_keys($values) as $col) {
+            if (! preg_match('/^[a-z0-9_]+$/i', (string) $col) || ! Schema::hasColumn($table, $col)) {
+                abort(422, "অবৈধ কলাম: $col");
+            }
+        }
+
         if (Schema::hasColumn($table, 'updated_at')) $values['updated_at'] = now();
+        // Protected columns can never be changed through the generic gateway.
         unset($values['id'], $values['created_at']);
+        // Non-super-admins may not move a record to another office.
+        if (! $request->attributes->get('is_super_admin')) {
+            unset($values['office_id']);
+        }
 
         $query = DB::table($table);
         $this->scope($request, $query, $table);
