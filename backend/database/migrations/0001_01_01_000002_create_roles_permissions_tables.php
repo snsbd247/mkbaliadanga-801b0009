@@ -26,23 +26,21 @@ return new class extends Migration
         });
 
         Schema::create('role_permissions', function (Blueprint $table) {
-            $table->char('id', 36)->primary();
             $table->char('role_id', 36);
             $table->char('permission_id', 36);
             $table->timestamps();
 
-            $table->unique(['role_id', 'permission_id']);
+            $table->primary(['role_id', 'permission_id']);
             $table->foreign('role_id')->references('id')->on('roles')->cascadeOnDelete();
             $table->foreign('permission_id')->references('id')->on('permissions')->cascadeOnDelete();
         });
 
         Schema::create('user_roles', function (Blueprint $table) {
-            $table->char('id', 36)->primary();
             $table->char('user_id', 36);
             $table->char('role_id', 36);
             $table->timestamps();
 
-            $table->unique(['user_id', 'role_id']);
+            $table->primary(['user_id', 'role_id']);
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->foreign('role_id')->references('id')->on('roles')->cascadeOnDelete();
         });
