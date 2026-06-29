@@ -2,6 +2,7 @@
 import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -227,7 +228,7 @@ export function CoaImportDialog({ open, onOpenChange, existing, onImported }: Pr
       });
       for (let i = 0; i < parents.length; i += BATCH_SIZE) {
         const slice = parents.slice(i, i + BATCH_SIZE);
-        const { data, error } = await supabase.from("accounts").insert(slice).select("id,code");
+        const { data, error } = await db.from("accounts").insert(slice).select("id,code");
         if (error) {
           slice.forEach((p) => errors.push({ rowNum: 0, code: p.code, reason: `Auto-parent: ${error.message}` }));
         } else {
@@ -265,11 +266,11 @@ export function CoaImportDialog({ open, onOpenChange, existing, onImported }: Pr
           };
           const existingId = codeMap.get(row.code);
           if (existingId && existingByCode.has(row.code)) {
-            const { error } = await supabase.from("accounts").update(payload).eq("id", existingId);
+            const { error } = await db.from("accounts").update(payload).eq("id", existingId);
             if (error) errors.push({ rowNum: row.rowNum, code: row.code, reason: error.message });
             else if (pass === 0) updated++;
           } else if (!existingId) {
-            const { data: ins, error } = await supabase.from("accounts").insert(payload).select("id").single();
+            const { data: ins, error } = await db.from("accounts").insert(payload).select("id").single();
             if (error) {
               if (pass === 1) errors.push({ rowNum: row.rowNum, code: row.code, reason: error.message });
             } else {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -59,7 +60,7 @@ export default function ShareCapitalReconciliation() {
   useEffect(() => {
     document.title = t("shareCapitalReconciliation");
     (async () => {
-      const { data } = await supabase.from("accounts").select("id").eq("code", "3020").maybeSingle();
+      const { data } = await db.from("accounts").select("id").eq("code", "3020").maybeSingle();
       setAccountId((data as any)?.id ?? null);
     })();
   }, [t]);

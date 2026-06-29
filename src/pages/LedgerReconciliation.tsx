@@ -1,6 +1,7 @@
 // i18n-ignore-file — admin/utility page
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -61,7 +62,7 @@ export default function LedgerReconciliation() {
 
   useEffect(() => {
     document.title = t("p5_monthlyReconciliationTitle");
-    supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data ?? []) as any[]));
+    db.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data ?? []) as any[]));
   }, [t]);
 
   const officeName = useMemo(() =>

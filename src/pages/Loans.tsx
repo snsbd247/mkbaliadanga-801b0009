@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,12 +31,12 @@ export default function Loans() {
   useEffect(() => { document.title = `${tx("Loans", "ঋণ")} — MK Baliadanga`; load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from("loans").select("*, farmers(name_en,name_bn,farmer_code,member_no), loan_plans(name,name_bn,installment_type), loan_payments(amount,principal_amount), loan_guarantors(name,role)").is("deleted_at", null).order("created_at", { ascending: false });
+    const { data } = await db.from("loans").select("*, farmers(name_en,name_bn,farmer_code,member_no), loan_plans(name,name_bn,installment_type), loan_payments(amount,principal_amount), loan_guarantors(name,role)").is("deleted_at", null).order("created_at", { ascending: false });
     setRows(data ?? []);
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from("loans").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await db.from("loans").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(tx("Loan deleted", "ঋণ মুছে ফেলা হয়েছে"));
     load();
@@ -56,11 +57,11 @@ export default function Loans() {
   async function decide(id: string, status: "approved" | "rejected") {
     const patch: any = { status };
     if (status === "approved") { patch.approved_by = user?.id ?? null; }
-    const { error } = await supabase.from("loans").update(patch).eq("id", id);
+    const { error } = await db.from("loans").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     const ln = rows.find((r: any) => r.id === id);
     if (ln?.created_by) {
-      await supabase.from("notifications").insert({
+      await db.from("notifications").insert({
         user_id: ln.created_by,
         kind: status === "approved" ? "loan_approved" : "loan_rejected",
         title: status === "approved" ? tx("Loan approved", "ঋণ অনুমোদিত") : tx("Loan rejected", "ঋণ বাতিল"),

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,8 +60,8 @@ export default function PeriodClose() {
 
   const load = async () => {
     const [{ data: p }, { data: o }, m] = await Promise.all([
-      supabase.from("accounting_periods").select("*").order("period_end", { ascending: false }),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("accounting_periods").select("*").order("period_end", { ascending: false }),
+      db.from("offices").select("id,name").order("name"),
       getFiscalStartMonth(),
     ]);
     setPeriods((p as Period[]) || []);

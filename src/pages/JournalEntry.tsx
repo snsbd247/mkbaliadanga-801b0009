@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ export default function JournalEntry() {
   ]);
 
   useEffect(() => {
-    supabase.from("accounts").select("id,code,name").order("code")
+    db.from("accounts").select("id,code,name").order("code")
       .then(({ data }) => setAccounts((data as Account[]) || []));
   }, []);
 
@@ -43,7 +44,7 @@ export default function JournalEntry() {
     if (!balanced) return toast.error(t("debitMustEqualCredit"));
     if (lines.some((l) => !l.account_id)) return toast.error(t("selectAccountEveryLine"));
 
-    const { data: header, error: e1 } = await supabase.from("journal_entries").insert({
+    const { data: header, error: e1 } = await db.from("journal_entries").insert({
       entry_date: date, reference, description, posted: false,
     }).select().single();
     if (e1 || !header) return toast.error(e1?.message || t("failedToCreateJournal"));
@@ -53,10 +54,10 @@ export default function JournalEntry() {
       debit: Number(l.debit) || 0, credit: Number(l.credit) || 0,
       description: l.description, position: idx,
     }));
-    const { error: e2 } = await supabase.from("journal_entry_lines").insert(payload);
+    const { error: e2 } = await db.from("journal_entry_lines").insert(payload);
     if (e2) return toast.error(e2.message);
 
-    const { error: e3 } = await supabase.from("journal_entries")
+    const { error: e3 } = await db.from("journal_entries")
       .update({ posted: true }).eq("id", header.id);
     if (e3) return toast.error(e3.message);
 

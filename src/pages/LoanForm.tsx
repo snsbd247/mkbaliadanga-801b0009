@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,10 +47,10 @@ export default function LoanForm() {
   useEffect(() => {
     document.title = `${isEdit ? tx("Edit Loan", "ঋণ এডিট") : tx("Issue Loan", "ঋণ ইস্যু")} — MK Baliadanga`;
     (async () => {
-      const { data: p } = await supabase.from("loan_plans").select("*").eq("is_active", true).order("name");
+      const { data: p } = await db.from("loan_plans").select("*").eq("is_active", true).order("name");
       setPlans(p ?? []);
       if (isEdit) {
-        const { data: l } = await supabase.from("loans").select("*").eq("id", id).maybeSingle();
+        const { data: l } = await db.from("loans").select("*").eq("id", id).maybeSingle();
         if (l) {
           setForm({
             farmer_id: l.farmer_id ?? "", plan_id: l.plan_id ?? "", principal: Number(l.principal ?? 0),
@@ -58,7 +59,7 @@ export default function LoanForm() {
           });
           setStatus(l.status ?? "pending");
         }
-        const { data: parties } = await supabase.from("loan_guarantors").select("*").eq("loan_id", id);
+        const { data: parties } = await db.from("loan_guarantors").select("*").eq("loan_id", id);
         const split = splitParties(parties as any);
         setGuarantors(split.guarantors);
         setNominees(split.nominees);
@@ -118,7 +119,7 @@ export default function LoanForm() {
 
     const elig = await guardSavingsLoan(form.farmer_id, "loan", tx);
     if (!elig.ok) { setErrors({ farmer_id: elig.reason }); return; }
-    const { data: mchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
+    const { data: mchk } = await db.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
     setSaving(true);
     try {
       const payload = {
@@ -133,26 +134,26 @@ export default function LoanForm() {
       };
       const buildRows = (loanId: string) => buildPartyRows(loanId, guarantors, nominees, officeId ?? null);
       if (isEdit) {
-        const { error } = await supabase.from("loans").update(payload).eq("id", id);
+        const { error } = await db.from("loans").update(payload).eq("id", id);
         if (error) throw error;
-        await supabase.from("loan_guarantors").delete().eq("loan_id", id);
+        await db.from("loan_guarantors").delete().eq("loan_id", id);
         const rows = buildRows(id!);
         if (rows.length) {
-          const { error: gErr } = await supabase.from("loan_guarantors").insert(rows);
+          const { error: gErr } = await db.from("loan_guarantors").insert(rows);
           if (gErr) throw gErr;
         }
         toast.success(tx("Loan updated", "ঋণ আপডেট হয়েছে"));
       } else {
-        const { data: ins, error } = await supabase.from("loans").insert({
+        const { data: ins, error } = await db.from("loans").insert({
           ...payload, status: "pending", office_id: officeId ?? null, created_by: user?.id ?? null,
         }).select("id").single();
         if (error) throw error;
         const rows = buildRows(ins.id);
         if (rows.length) {
-          const { error: gErr } = await supabase.from("loan_guarantors").insert(rows);
+          const { error: gErr } = await db.from("loan_guarantors").insert(rows);
           if (gErr) throw gErr;
         }
-        await supabase.from("notifications").insert({
+        await db.from("notifications").insert({
           kind: "loan_pending",
           title: tx("Loan approval pending", "ঋণ অনুমোদন অপেক্ষমাণ"),
           body: `${mchk?.name_en ?? ""} — ৳${Number(form.principal).toLocaleString()}`,

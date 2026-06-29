@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { LoanStatement } from "@/components/LoanStatement";
@@ -18,7 +19,7 @@ export default function LoanStatementPage() {
   useEffect(() => {
     document.title = `${tx("Loan Statement", "ঋণ স্টেটমেন্ট")} — MK Baliadanga`;
     (async () => {
-      const { data } = await supabase.from("loans").select("farmers(name_en,name_bn)").eq("id", id).maybeSingle();
+      const { data } = await db.from("loans").select("farmers(name_en,name_bn)").eq("id", id).maybeSingle();
       const f: any = data?.farmers;
       if (f) setName(lang === "bn" ? (f.name_bn || f.name_en) : f.name_en);
     })();

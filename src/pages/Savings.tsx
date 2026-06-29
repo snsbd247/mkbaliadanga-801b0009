@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,14 +65,14 @@ export default function Savings() {
 
   useEffect(() => { document.title = `${t("savings")} — ${t("appName")}`; load(); }, [showDeleted]);
   async function load() {
-    let tq = supabase.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200);
+    let tq = db.from("savings_transactions").select("*, farmers(name_en,farmer_code,member_no,mobile,village)").order("created_at", { ascending: false }).limit(200);
     tq = showDeleted ? tq.not("deleted_at", "is", null) : tq.is("deleted_at", null);
     const [f, ts, pr, sp, fsp] = await Promise.all([
-      supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive").order("name_en"),
+      db.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive").order("name_en"),
       tq,
-      supabase.from("profiles").select("id,full_name,username"),
-      supabase.from("savings_plans").select("*").eq("is_active", true).order("name"),
-      supabase.from("farmer_savings_plans").select("*, farmers(name_en,name_bn,farmer_code), savings_plans(name,name_bn,duration_months,installment_type,installment_amount,interest_rate,maturity_type)").order("created_at", { ascending: false }),
+      db.from("profiles").select("id,full_name,username"),
+      db.from("savings_plans").select("*").eq("is_active", true).order("name"),
+      db.from("farmer_savings_plans").select("*, farmers(name_en,name_bn,farmer_code), savings_plans(name,name_bn,duration_months,installment_type,installment_amount,interest_rate,maturity_type)").order("created_at", { ascending: false }),
     ]);
     setFarmers(f.data ?? []);
     setTxns(ts.data ?? []);
@@ -99,7 +100,7 @@ export default function Savings() {
     if (!planElig.ok) return toast.error(planElig.reason);
     const plan = plans.find(p => p.id === planForm.plan_id);
     const c = calcMaturity(plan);
-    const { error } = await supabase.from("farmer_savings_plans").insert({
+    const { error } = await db.from("farmer_savings_plans").insert({
       farmer_id: planForm.farmer_id,
       plan_id: planForm.plan_id,
       start_date: planForm.start_date,
@@ -118,7 +119,7 @@ export default function Savings() {
       toast.error(t("cannotEditCancelled" as any));
       return;
     }
-    const { error } = await supabase.from("farmer_savings_plans")
+    const { error } = await db.from("farmer_savings_plans")
       .update({ status: "active", approved_by: user?.id, approved_at: new Date().toISOString() })
       .eq("id", id)
       .eq("status", "pending");
@@ -136,7 +137,7 @@ export default function Savings() {
     const patch: any = mode === "reject"
       ? { status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString(), cancel_reason: trimmed }
       : { status: "cancelled", cancelled_by: user?.id, cancelled_at: new Date().toISOString(), cancel_reason: trimmed, expected_total: 0, expected_interest: 0, maturity_amount: 0 };
-    let q = supabase.from("farmer_savings_plans").update(patch).eq("id", id);
+    let q = db.from("farmer_savings_plans").update(patch).eq("id", id);
     // Server-side guard: only allow rejecting from 'pending' and cancelling from 'pending'/'active'
     if (mode === "reject") q = q.eq("status", "pending");
     else q = q.in("status", ["pending", "active"]);
@@ -211,7 +212,7 @@ export default function Savings() {
     const elig = await guardSavingsLoan(form.farmer_id, "savings", tx);
     if (!elig.ok) return toast.error(elig.reason);
     // Voter guard: farmer must be is_voter=true to record savings/share txns
-    const { data: vchk } = await supabase.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
+    const { data: vchk } = await db.from("farmers").select("is_voter,savings_inactive,name_en").eq("id", form.farmer_id).maybeSingle();
     if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? tx("This farmer", "এই ফার্মার")} ${tx("does not have Voter / Savings A/C enabled — savings/share entry not allowed.", "এর Voter / Savings A/C এনাবল নেই — সঞ্চয়/শেয়ার এন্ট্রি করা যাবে না।")}`);
     if (vchk?.savings_inactive) return toast.error(`${vchk?.name_en ?? tx("This member", "এই সদস্য")} ${tx("is inactive — new savings transactions are not allowed.", "ইনঅ্যাক্টিভ — নতুন সেভিং লেনদেন করা যাবে না।")}`);
     const isWithdraw = form.type === "withdraw";
@@ -254,7 +255,7 @@ export default function Savings() {
       field_receipt_no: form.field_receipt_no?.trim() || null,
       category: form.category || "general",
     };
-    const { error } = await supabase.from("savings_transactions").insert(payload);
+    const { error } = await db.from("savings_transactions").insert(payload);
     if (error) {
       if (error.message?.includes("SAVINGS_WITHDRAW_EXCEEDS_BALANCE")) {
         return toast.error(tx("Withdrawal exceeds available balance", "জমাকৃত টাকার বেশি উত্তলন সম্ভব নয়"));
@@ -263,10 +264,10 @@ export default function Savings() {
     }
     if (isDepositKind) {
       const payPayload: any = { farmer_id: form.farmer_id, kind: "savings", amount: form.amount, collected_by: user?.id, receipt_no: finalReceiptNo };
-      await supabase.from("payments").insert(payPayload);
+      await db.from("payments").insert(payPayload);
     }
     if (status === "pending") {
-      await supabase.from("notifications").insert({
+      await db.from("notifications").insert({
         kind: "withdrawal_pending",
         title: t("withdrawalRequestTitle"),
         body: t("withdrawalRequestedBody").replace("{name}", farmer?.name_en ?? "").replace("{amount}", String(form.amount)),
@@ -299,7 +300,7 @@ export default function Savings() {
     // Notify originator about the decision
     const txn = txns.find((x: any) => x.id === id);
     if (txn?.created_by) {
-      await supabase.from("notifications").insert({
+      await db.from("notifications").insert({
         user_id: txn.created_by,
         kind: status === "approved" ? "withdrawal_approved" : "withdrawal_rejected",
         title: status === "approved" ? tx("Withdrawal approved", "উত্তোলন অনুমোদিত") : tx("Withdrawal rejected", "উত্তোলন প্রত্যাখ্যাত"),
@@ -311,7 +312,7 @@ export default function Savings() {
     load();
   }
   async function restoreTxn(id: string) {
-    const { error } = await supabase.from("savings_transactions").update({ deleted_at: null } as any).eq("id", id);
+    const { error } = await db.from("savings_transactions").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("restored")); load();
   }
@@ -322,7 +323,7 @@ export default function Savings() {
   async function saveEditTxn() {
     if (!editTxn) return;
     if (editTxnForm.amount <= 0) return toast.error(t("amountMustBePositiveSavings"));
-    const { error } = await supabase.from("savings_transactions")
+    const { error } = await db.from("savings_transactions")
       .update({ amount: editTxnForm.amount, note: editTxnForm.note || null })
       .eq("id", editTxn.id);
     if (error) return toast.error(error.message);
@@ -335,7 +336,7 @@ export default function Savings() {
       destructive: true, confirmText: t("pgDelete" as any),
     });
     if (!ok) return;
-    const { error } = await supabase.from("savings_transactions")
+    const { error } = await db.from("savings_transactions")
       .update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("deleted")); await load();
@@ -350,7 +351,7 @@ export default function Savings() {
       confirmText: next ? tx("Make inactive", "ইনঅ্যাক্টিভ") : tx("Make active", "অ্যাক্টিভ"),
     });
     if (!ok) return;
-    const { error } = await supabase.from("farmers").update({ savings_inactive: next } as any).eq("id", f.id);
+    const { error } = await db.from("farmers").update({ savings_inactive: next } as any).eq("id", f.id);
     if (error) return toast.error(error.message);
     toast.success(t("updated")); await load();
   }
@@ -359,14 +360,14 @@ export default function Savings() {
     if (transfer.toId === transfer.from.id) return toast.error(tx("Source and destination are the same", "উৎস ও গন্তব্য একই"));
     const fromId = transfer.from.id, toId = transfer.toId;
     // Move all savings transactions, savings payments and plan enrollments to the destination farmer.
-    const r1 = await supabase.from("savings_transactions").update({ farmer_id: toId } as any).eq("farmer_id", fromId);
+    const r1 = await db.from("savings_transactions").update({ farmer_id: toId } as any).eq("farmer_id", fromId);
     if (r1.error) return toast.error(r1.error.message);
-    const r2 = await supabase.from("payments").update({ farmer_id: toId } as any).eq("farmer_id", fromId).eq("kind", "savings");
+    const r2 = await db.from("payments").update({ farmer_id: toId } as any).eq("farmer_id", fromId).eq("kind", "savings");
     if (r2.error) return toast.error(r2.error.message);
-    const r3 = await supabase.from("farmer_savings_plans").update({ farmer_id: toId } as any).eq("farmer_id", fromId);
+    const r3 = await db.from("farmer_savings_plans").update({ farmer_id: toId } as any).eq("farmer_id", fromId);
     if (r3.error) return toast.error(r3.error.message);
     // Ensure destination has a savings account enabled.
-    await supabase.from("farmers").update({ is_voter: true } as any).eq("id", toId);
+    await db.from("farmers").update({ is_voter: true } as any).eq("id", toId);
     toast.success(tx("Savings account transferred", "সেভিং অ্যাকাউন্ট স্থানান্তর হয়েছে"));
     setTransfer(null); await load();
   }
