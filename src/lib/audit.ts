@@ -68,3 +68,22 @@ export async function logAudit(input: LogAuditInput): Promise<void> {
     console.warn("[audit] unexpected error:", e);
   }
 }
+
+/**
+ * Fire-and-forget audit log for report/data exports. Records which report was
+ * exported, in what format, with the active filters, so exports are searchable
+ * by office and date range in the Audit Timeline.
+ */
+export function auditExport(
+  report: string,
+  meta: Record<string, unknown> = {},
+  office_id?: string | null,
+): void {
+  void logAudit({
+    office_id: office_id ?? null,
+    module: "other",
+    action_type: "export",
+    reference_id: report,
+    new_data: { report, ...meta },
+  });
+}
