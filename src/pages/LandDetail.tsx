@@ -32,7 +32,7 @@ export default function LandDetail() {
       setLoading(true);
       const [{ data: l }, { data: lc }] = await Promise.all([
         db.from("lands").select("*").eq("id", id).maybeSingle(),
-        (supabase.from as any)("lands_with_location")
+        (db.from as any)("lands_with_location")
           .select("division_name,district_name,upazila_name,union_name,ward_name,village_name,mouza_name")
           .eq("id", id).maybeSingle(),
       ]);

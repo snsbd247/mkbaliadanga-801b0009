@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Download, Printer } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/branding";
