@@ -124,7 +124,7 @@ export default function AssetDepreciation() {
 
       // Post journal pair via RPC
       if ((row as any).status === "pending" && r.depreciation > 0) {
-        const { error: rpcErr } = await supabase.rpc("post_asset_depreciation_journal" as any, { _schedule_id: (row as any).id });
+        const { error: rpcErr } = await db.rpc("post_asset_depreciation_journal" as any, { _schedule_id: (row as any).id });
         if (rpcErr) throw rpcErr;
       }
       toast.success(tx("Depreciation posted", "ডিপ্রেসিয়েশন পোস্ট হয়েছে"));
@@ -235,7 +235,7 @@ export default function AssetDepreciation() {
                   if (!isAdmin) return;
                   setBusy(true);
                   try {
-                    const { data, error } = await supabase.rpc("run_monthly_depreciation_batch" as any, { _period_month: period });
+                    const { data, error } = await db.rpc("run_monthly_depreciation_batch" as any, { _period_month: period });
                     if (error) throw error;
                     const rows = (data as any[]) || [];
                     const summary = rows.reduce<Record<string, number>>((a, r) => { a[r.status] = (a[r.status] || 0) + 1; return a; }, {});

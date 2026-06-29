@@ -69,7 +69,7 @@ export default function AssetAlerts() {
   async function runScan() {
     setRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke("asset-alerts-scan", { body: {} });
+      const { data, error } = await db.functions.invoke("asset-alerts-scan", { body: {} });
       if (error) throw error;
       toast.success(
         tx(`Scan done — ${data?.created ?? 0} new, ${data?.smsSent ?? 0} SMS sent`,

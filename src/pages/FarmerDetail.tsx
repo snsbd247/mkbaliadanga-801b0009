@@ -377,7 +377,7 @@ export default function FarmerDetail() {
     setInvDue(invRows.reduce((a: number, r: any) => a + Number(r.due_amount || 0), 0));
     // Detect invoices hidden from the current user due to office permissions
     try {
-      const { data: trueCount } = await supabase.rpc("count_farmer_invoices", { _farmer_id: id! });
+      const { data: trueCount } = await db.rpc("count_farmer_invoices", { _farmer_id: id! });
       setHiddenInvoiceCount(Math.max(0, Number(trueCount ?? 0) - visibleInvCount));
     } catch { setHiddenInvoiceCount(0); }
     // Per-land irrigation payment status (aggregate all invoices per land)
@@ -474,7 +474,7 @@ export default function FarmerDetail() {
   async function handleBackfillInvoiceOffice() {
     setBackfilling(true);
     try {
-      const { data, error } = await supabase.rpc("backfill_irrigation_invoice_office");
+      const { data, error } = await db.rpc("backfill_irrigation_invoice_office");
       if (error) throw error;
       toast.success(tx(`Fixed ${data ?? 0} invoice(s)`, `${data ?? 0} টি ইনভয়েস ঠিক করা হয়েছে`));
       await loadAll();
@@ -1047,9 +1047,9 @@ export default function FarmerDetail() {
   async function uploadFarmerPhoto(file: File): Promise<string | undefined> {
     const ext = file.name.split(".").pop();
     const path = `farmers/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("farmer-photos").upload(path, file);
+    const { error } = await db.storage.from("farmer-photos").upload(path, file);
     if (error) { toast.error(error.message); return undefined; }
-    return supabase.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
+    return db.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
   }
 
   function openFarmerEdit() {
@@ -1075,7 +1075,7 @@ export default function FarmerDetail() {
     if (!editFarmerForm) return;
     if (!String(editFarmerForm.name_en ?? "").trim()) return toast.error(tx("Name (English) is required", "ইংরেজি নাম আবশ্যক"));
     if (editFarmerForm.member_no) {
-      const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(editFarmerForm.member_no).trim(), _exclude_id: editFarmerForm.id ?? null });
+      const { data: dup } = await db.rpc("member_no_exists" as any, { _member_no: String(editFarmerForm.member_no).trim(), _exclude_id: editFarmerForm.id ?? null });
       if (dup === true) return toast.error(t("duplicateFarmerId"));
     }
     setEditFarmerSaving(true);

@@ -22,6 +22,9 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SavingsController;
 use App\Http\Controllers\SeasonController;
 use App\Http\Controllers\GenericTableController;
+use App\Http\Controllers\RpcController;
+use App\Http\Controllers\FunctionController;
+use App\Http\Controllers\StorageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -189,6 +192,14 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::post('/db/{table}', [GenericTableController::class, 'insert']);
     Route::patch('/db/{table}', [GenericTableController::class, 'update']);
     Route::delete('/db/{table}', [GenericTableController::class, 'delete']);
+
+    // RPC dispatcher (Supabase Postgres RPC replacement)
+    Route::post('/rpc/{name}', [RpcController::class, 'handle']);
+    // Edge-function dispatcher (Supabase Edge Functions replacement)
+    Route::post('/fn/{name}', [FunctionController::class, 'handle']);
+    // Storage gateway (Supabase Storage replacement)
+    Route::post('/storage/upload', [StorageController::class, 'upload']);
+    Route::post('/storage/remove', [StorageController::class, 'remove']);
 });
 
 // ── Farmer portal (self-service: code login or phone + OTP) ───────────

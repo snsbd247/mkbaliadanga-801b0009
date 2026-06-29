@@ -986,7 +986,7 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
     if (reason.trim().length < 3) return toast.error(tx("Enter a reason (at least 3 chars)", "কারণ লিখুন (অন্তত ৩ অক্ষর)"));
     setBusy(true);
     try {
-      const { error } = await supabase.rpc("recalculate_irrigation_invoice" as any, {
+      const { error } = await db.rpc("recalculate_irrigation_invoice" as any, {
         _invoice_id: inv.id, _reason: reason.trim(),
       });
       if (error) throw error;

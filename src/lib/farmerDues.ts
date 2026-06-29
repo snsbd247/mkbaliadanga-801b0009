@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 
 export type FarmerDuesBreakdown = {
   farmer_id: string;
@@ -16,7 +17,7 @@ export type FarmerDuesBreakdown = {
  * identical numbers.
  */
 export async function getFarmerDues(farmerId: string): Promise<FarmerDuesBreakdown> {
-  const { data, error } = await supabase.rpc("farmer_dues_breakdown" as any, { _farmer_id: farmerId });
+  const { data, error } = await db.rpc("farmer_dues_breakdown" as any, { _farmer_id: farmerId });
   if (error) throw error;
   const row: any = Array.isArray(data) ? data[0] : data;
   return {

@@ -168,12 +168,90 @@ class LaravelQueryBuilder<T = any> implements PromiseLike<Result<T>> {
   }
 }
 
+type RpcResult<T = any> = { data: T | null; error: { message: string } | null };
+
+async function laravelRpc<T = any>(name: string, params?: Record<string, unknown>): Promise<RpcResult<T>> {
+  try {
+    const { data } = await api.post(`/rpc/${name}`, params ?? {});
+    // Laravel returns the raw value; supabase callers expect it under `data`.
+    return { data: (data?.result ?? data) as T, error: null };
+  } catch (e: any) {
+    return { data: null, error: { message: e?.message || "RPC failed" } };
+  }
+}
+
+async function laravelInvoke<T = any>(name: string, opts?: { body?: unknown }): Promise<RpcResult<T>> {
+  try {
+    const { data } = await api.post(`/fn/${name}`, opts?.body ?? {});
+    return { data: data as T, error: null };
+  } catch (e: any) {
+    return { data: null, error: { message: e?.message || "Function failed" } };
+  }
+}
+
+function laravelStorageBucket(bucket: string) {
+  return {
+    async upload(path: string, file: File | Blob, _opts?: unknown) {
+      try {
+        const form = new FormData();
+        form.append("file", file as Blob);
+        form.append("bucket", bucket);
+        form.append("path", path);
+        const { data } = await api.post(`/storage/upload`, form, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        return { data, error: null };
+      } catch (e: any) {
+        return { data: null, error: { message: e?.message || "Upload failed" } };
+      }
+    },
+    getPublicUrl(path: string) {
+      const base = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+      return { data: { publicUrl: `${base}/storage/${bucket}/${path}` } };
+    },
+    async remove(paths: string[]) {
+      try {
+        await api.post(`/storage/remove`, { bucket, paths });
+        return { data: null, error: null };
+      } catch (e: any) {
+        return { data: null, error: { message: e?.message || "Remove failed" } };
+      }
+    },
+    async createSignedUrl(path: string, _expiresIn: number) {
+      const base = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+      return { data: { signedUrl: `${base}/storage/${bucket}/${path}` }, error: null };
+    },
+  };
+}
+
 export const db = {
   from(table: string) {
     if (isLaravelBackend) {
       return new LaravelQueryBuilder(table) as any;
     }
     return supabase.from(table as any);
+  },
+  rpc(name: string, params?: Record<string, unknown>) {
+    if (isLaravelBackend) {
+      return laravelRpc(name, params) as any;
+    }
+    return (supabase.rpc as any)(name, params);
+  },
+  functions: {
+    invoke(name: string, opts?: { body?: unknown }) {
+      if (isLaravelBackend) {
+        return laravelInvoke(name, opts) as any;
+      }
+      return (supabase.functions.invoke as any)(name, opts);
+    },
+  },
+  storage: {
+    from(bucket: string) {
+      if (isLaravelBackend) {
+        return laravelStorageBucket(bucket) as any;
+      }
+      return supabase.storage.from(bucket);
+    },
   },
 };
 

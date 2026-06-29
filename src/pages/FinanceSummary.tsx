@@ -67,7 +67,7 @@ export default function FinanceSummary() {
         .gte("entry_date", from)
         .lte("entry_date", to),
       db.from("accounting_periods").select("*").order("period_end", { ascending: false }).limit(8),
-      supabase.rpc("ledger_integrity_summary"),
+      db.rpc("ledger_integrity_summary"),
     ]);
     const map: Record<string, { d: number; c: number }> = {};
     ((led.data as LedgerRow[]) || []).forEach((r) => {

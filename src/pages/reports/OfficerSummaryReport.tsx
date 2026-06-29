@@ -40,7 +40,7 @@ export default function OfficerSummaryReport() {
   const [users, setUsers] = useState<ProfileLite[]>([]);
 
   useEffect(() => {
-    supabase.rpc("list_collector_users").then(({ data }) => setUsers((data as ProfileLite[]) ?? []));
+    db.rpc("list_collector_users").then(({ data }) => setUsers((data as ProfileLite[]) ?? []));
   }, []);
 
   async function load() {

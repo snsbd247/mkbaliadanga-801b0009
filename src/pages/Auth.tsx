@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { isLaravelBackend } from "@/lib/backend";
@@ -100,7 +101,7 @@ export default function AuthPage() {
     // Step 1: resolve username -> email (or accept email directly)
     let email = u;
     if (!/@/.test(u)) {
-      const { data, error } = await supabase.rpc("email_for_username", { _username: u });
+      const { data, error } = await db.rpc("email_for_username", { _username: u });
       if (error) {
         setBusy(false);
         setDebug({
@@ -184,7 +185,7 @@ export default function AuthPage() {
     let email = v;
     // If it doesn't look like an email, treat it as a username and resolve.
     if (!/@/.test(v)) {
-      const { data, error } = await supabase.rpc("email_for_username", { _username: v });
+      const { data, error } = await db.rpc("email_for_username", { _username: v });
       if (error || !data) {
         setForgotBusy(false);
         // Show a generic success message either way to avoid account enumeration.

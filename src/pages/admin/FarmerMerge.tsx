@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export default function FarmerMerge() {
   async function doMerge() {
     if (!source || !target) return;
     setBusy(true);
-    const { error } = await supabase.rpc("merge_farmers" as any, {
+    const { error } = await db.rpc("merge_farmers" as any, {
       _source: source.id,
       _target: target.id,
     });

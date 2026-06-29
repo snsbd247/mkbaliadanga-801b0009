@@ -179,7 +179,7 @@ export function calcInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
  * Returns { billed_farmer_id, owner_farmer_id, is_borga }.
  */
 export async function resolveBilledFarmer(land_id: string, as_of: string = new Date().toISOString().slice(0, 10)) {
-  const { data, error } = await supabase.rpc("get_billed_farmer_for_land", { _land_id: land_id, _as_of: as_of });
+  const { data, error } = await db.rpc("get_billed_farmer_for_land", { _land_id: land_id, _as_of: as_of });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
   return {
@@ -205,7 +205,7 @@ export async function resolveBillingSplits(
   land_id: string,
   as_of: string = new Date().toISOString().slice(0, 10),
 ): Promise<BillingSplit[]> {
-  const { data, error } = await supabase.rpc("get_land_billing_split" as any, { _land_id: land_id, _as_of: as_of });
+  const { data, error } = await db.rpc("get_land_billing_split" as any, { _land_id: land_id, _as_of: as_of });
   if (error) throw error;
   const rows = (Array.isArray(data) ? data : []) as any[];
   const splits = rows
@@ -233,7 +233,7 @@ export async function getChargeSettings(office_id: string | null): Promise<Charg
 }
 
 export async function generateInvoiceNo(): Promise<string> {
-  const { data, error } = await supabase.rpc("generate_invoice_no" as any);
+  const { data, error } = await db.rpc("generate_invoice_no" as any);
   if (error) throw error;
   return data as string;
 }

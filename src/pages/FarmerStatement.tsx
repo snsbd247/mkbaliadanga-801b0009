@@ -151,7 +151,7 @@ export default function FarmerStatement() {
         return;
       }
       const fn = kind === "savings" ? "farmer_savings_statement" : "farmer_loan_statement";
-      const { data, error } = await supabase.rpc(fn, {
+      const { data, error } = await db.rpc(fn, {
         _farmer_id: farmerId,
         _from: from || null,
         _to: to || null,

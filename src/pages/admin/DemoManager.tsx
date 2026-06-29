@@ -124,7 +124,7 @@ export default function DemoManager() {
     setLoading(true);
     setConfirmText("");
     try {
-      const { data, error } = await supabase.functions.invoke("demo-reset", {
+      const { data, error } = await db.functions.invoke("demo-reset", {
         body: { action: "preview", modules: selected, size },
       });
       if (error) throw error;
@@ -813,7 +813,7 @@ export default function DemoManager() {
               if (!confirm(tx("Delete all audit logs? This cannot be undone.", "সব audit log মুছে ফেলবেন? এটা ফেরানো যাবে না।"))) return;
               setClearing(true);
               try {
-                const { data, error } = await supabase.functions.invoke("demo-reset", { body: { action: "clear_audit", confirm: "CLEAR" } });
+                const { data, error } = await db.functions.invoke("demo-reset", { body: { action: "clear_audit", confirm: "CLEAR" } });
                 if (error) throw error;
                 if ((data as any)?.error) throw new Error((data as any).error);
                 toast.success("Audit logs cleared");

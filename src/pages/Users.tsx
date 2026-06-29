@@ -80,7 +80,7 @@ export default function Users() {
     setList(visible);
     // Audit who viewed/attempted to view developer accounts
     try {
-      await supabase.rpc("log_developer_access", {
+      await db.rpc("log_developer_access", {
         _action: isDeveloper ? "view_developer_users" : "list_users",
         _blocked: blocked > 0 || !isDeveloper,
         _meta: { visible_count: visible.length, hidden_count: blocked } as any,
@@ -90,7 +90,7 @@ export default function Users() {
 
   async function callAdmin(payload: any) {
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke("admin-users", { body: payload });
+    const { data, error } = await db.functions.invoke("admin-users", { body: payload });
     setBusy(false);
     if (error || data?.error) {
       toast.error(data?.error ?? error?.message ?? t("failedGeneric"));

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react";
@@ -28,7 +29,7 @@ export function SmsProviderStatusCard() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data, error } = await supabase.rpc("get_sms_provider_status" as any, { _provider: "greenweb" } as any);
+      const { data, error } = await db.rpc("get_sms_provider_status" as any, { _provider: "greenweb" } as any);
       if (!alive) return;
       if (!error && data) setS(data as unknown as Status);
       setLoading(false);

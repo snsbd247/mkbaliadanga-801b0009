@@ -94,7 +94,7 @@ export default function PeriodClose() {
   const runPreview = async () => {
     if (!from || !to) { toast.error(t("periodStartEndRequired")); return; }
     setBusy(true);
-    const { data, error } = await supabase.rpc("compute_period_summary", {
+    const { data, error } = await db.rpc("compute_period_summary", {
       _from: from, _to: to, _office: officeId === NONE ? null : officeId,
     });
     setBusy(false);
@@ -105,7 +105,7 @@ export default function PeriodClose() {
   const closePeriod = async () => {
     if (!from || !to) { toast.error(t("periodStartEndRequired")); return; }
     setBusy(true);
-    const { error } = await supabase.rpc("close_accounting_period", {
+    const { error } = await db.rpc("close_accounting_period", {
       _from: from, _to: to,
       _office: officeId === NONE ? null : officeId,
       _note: note || null,
@@ -120,7 +120,7 @@ export default function PeriodClose() {
 
   const reopen = async (id: string) => {
     if (!isSuper) { toast.error(t("onlySuperReopen")); return; }
-    const { error } = await supabase.rpc("reopen_accounting_period", { _id: id });
+    const { error } = await db.rpc("reopen_accounting_period", { _id: id });
     if (error) { toast.error(error.message); return; }
     toast.success(t("periodReopenedToast"));
     await load();

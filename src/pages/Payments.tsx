@@ -395,9 +395,9 @@ export default function Payments() {
     if (!receiptFile) return null;
     const ext = receiptFile.name.split(".").pop();
     const path = `${user?.id}/${paymentId}.${ext}`;
-    const { error } = await supabase.storage.from("payment-receipts").upload(path, receiptFile, { upsert: true });
+    const { error } = await db.storage.from("payment-receipts").upload(path, receiptFile, { upsert: true });
     if (error) { toast.error(t("receiptUploadFailed").replace("{msg}", error.message)); return null; }
-    const { data } = await supabase.storage.from("payment-receipts").createSignedUrl(path, 60 * 60 * 24 * 365);
+    const { data } = await db.storage.from("payment-receipts").createSignedUrl(path, 60 * 60 * 24 * 365);
     return data?.signedUrl ?? path;
   }
 
@@ -510,7 +510,7 @@ export default function Payments() {
       const mobile = full?.mobile ?? farmer?.mobile;
       if (!mobile) return;
       const message = tx(`BDT ${irrTotal.toLocaleString()} received against your irrigation invoice.${receiptNo ? `\nReceipt no: ${receiptNo}` : ""}\nThank you.`, `আপনার সেচ ইনভয়েসের ৳${irrTotal.toLocaleString()} টাকা গ্রহণ করা হয়েছে।${receiptNo ? `\nরসিদ নং: ${receiptNo}` : ""}\nধন্যবাদ।`);
-      await supabase.functions.invoke("send-sms", { body: { mobile, message, event_type: "irrigation_payment", farmer_id: fId } });
+      await db.functions.invoke("send-sms", { body: { mobile, message, event_type: "irrigation_payment", farmer_id: fId } });
     } catch (_) { /* SMS failure must not break payment flow */ }
   }
 

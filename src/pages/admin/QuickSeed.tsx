@@ -1,6 +1,7 @@
 // One-click per-module dummy data seeder for testing.
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -90,7 +91,7 @@ export default function QuickSeed() {
       backupStatus = await maybeBackup(key);
       const body: any = { action: "import", modules, size, confirm: "RESET", transactional: true };
       if (monthsBack && monthsBack > 1) body.monthsBack = monthsBack;
-      const { data, error } = await supabase.functions.invoke("demo-reset", { body });
+      const { data, error } = await db.functions.invoke("demo-reset", { body });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const counts = (data as any)?.counts || (data as any)?.summary || {};
