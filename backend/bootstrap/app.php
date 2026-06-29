@@ -13,7 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->statefulApi();
+        // Token-only API (Bearer tokens). Do NOT enable statefulApi(): the SPA
+        // is served from the same domain as the API, and statefulApi() would
+        // route same-origin requests through the web group's CSRF validation,
+        // causing "CSRF token mismatch" on token-based login.
 
         // Named aliases used by route definitions.
         $middleware->alias([
