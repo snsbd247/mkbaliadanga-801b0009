@@ -371,10 +371,14 @@ DB_PASSWORD=${DB_PASS}
 PMA_USER=pma_admin
 PMA_PASSWORD=${PMA_PASS}
 
-# App super admin login
+# App admin logins
 LOGIN_URL=https://${DOMAIN}
-LOGIN_USER=ismail162
-LOGIN_PASS=Admin@123
+# developer
+LOGIN_USER_1=ismail162
+LOGIN_PASS_1=Admin@123
+# super_admin
+LOGIN_USER_2=suparadmin
+LOGIN_PASS_2=Admin@123
 CRED
 chmod 600 "${CRED_FILE}"
 
@@ -385,7 +389,8 @@ cat <<DONE
  🌐  Site         : https://${DOMAIN}
  🗄️  phpMyAdmin   : https://${DOMAIN}/${PMA_PATH}
        user: pma_admin   pass: ${PMA_PASS}
- 👤  App login    : ismail162 / Admin@123
+ 👤  Developer    : ismail162 / Admin@123
+ 👤  Super Admin  : suparadmin / Admin@123
  📄  Credentials  : ${CRED_FILE}
 ────────────────────────────────────────────────
  ⚠️  Change passwords after first login.
