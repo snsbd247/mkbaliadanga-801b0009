@@ -80,7 +80,7 @@ class CanonicalAdmins
     /**
      * Build the current status report for the two required accounts.
      *
-     * @return array<int, array{username:string, expected_role:string, exists:bool, active:bool, has_role:bool, token_ok:bool, token_error:?string, ok:bool}>
+     * @return array<int, array{username:string, expected_role:string, exists:bool, active:bool, has_role:bool, password_ok:bool, token_ok:bool, token_error:?string, payload_ok:bool, payload_error:?string, ok:bool}>
      */
     public static function status(): array
     {
@@ -90,16 +90,21 @@ class CanonicalAdmins
             $exists = (bool) $user;
             $active = $exists && (bool) $user->is_active;
             $hasRole = $exists && in_array($a['role'], $user->roleNames(), true);
+            $passwordOk = $exists && Hash::check('Admin@123', $user->password);
             $tokenProbe = self::probeTokenHealth($user);
+            $payloadProbe = self::probePayloadHealth($user);
             $out[] = [
                 'username' => $a['username'],
                 'expected_role' => $a['role'],
                 'exists' => $exists,
                 'active' => $active,
                 'has_role' => $hasRole,
+                'password_ok' => $passwordOk,
                 'token_ok' => $tokenProbe['ok'],
                 'token_error' => $tokenProbe['error'],
-                'ok' => $exists && $active && $hasRole && $tokenProbe['ok'],
+                'payload_ok' => $payloadProbe['ok'],
+                'payload_error' => $payloadProbe['error'],
+                'ok' => $exists && $active && $hasRole && $passwordOk && $tokenProbe['ok'] && $payloadProbe['ok'],
             ];
         }
 
@@ -196,6 +201,36 @@ class CanonicalAdmins
             return ['ok' => true, 'error' => null];
         } catch (\Throwable $e) {
             Log::warning('Canonical admin token probe failed: '.$e->getMessage(), [
+                'username' => $user->username,
+                'user_id' => $user->id,
+            ]);
+
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /** @return array{ok:bool,error:?string} */
+    private static function probePayloadHealth(?User $user): array
+    {
+        if (! $user || ! $user->is_active) {
+            return ['ok' => false, 'error' => 'User missing or inactive'];
+        }
+
+        try {
+            $roles = $user->roleNames();
+            $permissions = $user->permissionList();
+
+            if (empty($roles)) {
+                return ['ok' => false, 'error' => 'No roles returned by user role mapping'];
+            }
+
+            if ((in_array('developer', $roles, true) || in_array('super_admin', $roles, true)) && ! in_array('*', $permissions, true)) {
+                return ['ok' => false, 'error' => 'Admin wildcard permission missing from payload'];
+            }
+
+            return ['ok' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            Log::warning('Canonical admin payload probe failed: '.$e->getMessage(), [
                 'username' => $user->username,
                 'user_id' => $user->id,
             ]);
