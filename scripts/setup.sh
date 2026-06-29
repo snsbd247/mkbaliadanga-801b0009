@@ -247,6 +247,13 @@ else
   php artisan migrate --force
 fi
 
+# Always ensure roles + the two admin accounts exist. Fully idempotent
+# (firstOrCreate / updateOrCreate / syncWithoutDetaching) — never touches real data.
+#   developer    -> ismail162  / Admin@123
+#   super_admin  -> suparadmin / Admin@123
+php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force || true
+php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force || true
+
 php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache
 php artisan route:cache
