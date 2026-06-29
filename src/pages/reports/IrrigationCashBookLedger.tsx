@@ -143,6 +143,7 @@ export default function IrrigationCashBookLedgerPage() {
       { header: tx("Credit", "খরচ"), accessor: (r: CashBookRow) => r.credit },
       { header: tx("Balance", "ব্যালেন্স"), accessor: (r: CashBookRow) => r.balance },
     ] as any);
+    auditExport("irrigation_cashbook_ledger", { office_id: officeId, rows: rows.length }, officeId);
   }
 
   function exportPdf() {
