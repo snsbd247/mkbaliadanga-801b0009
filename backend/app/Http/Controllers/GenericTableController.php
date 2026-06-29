@@ -56,6 +56,12 @@ class GenericTableController extends Controller
             if (! $col || ! preg_match('/^[a-z0-9_]+$/i', $col)) {
                 continue;
             }
+            // Skip filters referencing a column not present in the MySQL schema
+            // (Supabase callers sometimes filter on view-only / renamed columns).
+            // Silently ignoring avoids a fatal SQL error → 500.
+            if (! Schema::hasColumn($table, $col)) {
+                continue;
+            }
             switch ($op) {
                 case 'eq':    $query->where($col, $val); break;
                 case 'neq':   $query->where($col, '!=', $val); break;
