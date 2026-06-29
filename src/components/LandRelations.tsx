@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { validateNoOverlappingBorga } from "@/lib/irrigationBargaValidation";
 import { Card } from "@/components/ui/card";
