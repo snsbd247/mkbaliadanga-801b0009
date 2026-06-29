@@ -68,6 +68,11 @@ git -C "${APP_DIR}" reset --hard "origin/${BRANCH}"
 log "Updating backend…"
 cd "${APP_DIR}/backend"
 export COMPOSER_ALLOW_SUPERUSER=1
+# Ensure gitignored Laravel runtime dirs exist (Composer scripts need them).
+mkdir -p bootstrap/cache \
+  storage/framework/{cache/data,sessions,views} \
+  storage/logs storage/app/public
+chmod -R 775 bootstrap/cache storage
 composer config --no-plugins policy.advisories.block false 2>/dev/null || true
 # Retry install: GitHub codeload (dist zips) occasionally returns HTTP 400/429.
 for attempt in 1 2 3 4 5; do
