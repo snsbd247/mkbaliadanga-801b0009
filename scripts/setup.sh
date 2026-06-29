@@ -95,6 +95,20 @@ else
 fi
 
 # ──────────────────────────────────────────────────────────────────────────
+# 2b. Re-exec the freshly-pulled repo copy.
+# When run via `curl | bash`, the piped script comes from GitHub's CDN, which
+# can serve a STALE cached version. The repo we just pulled is always current,
+# so hand off to its copy to guarantee the latest logic runs. The guard env var
+# prevents an infinite loop.
+# ──────────────────────────────────────────────────────────────────────────
+REPO_SETUP="${APP_DIR}/scripts/setup.sh"
+if [ -z "${MK_SETUP_REEXEC:-}" ] && [ -f "${REPO_SETUP}" ]; then
+  log "Re-executing latest setup.sh from repo…"
+  export MK_SETUP_REEXEC=1
+  exec bash "${REPO_SETUP}"
+fi
+
+# ──────────────────────────────────────────────────────────────────────────
 # 3. MySQL database + users (app + phpMyAdmin)
 # ──────────────────────────────────────────────────────────────────────────
 log "Setting up MySQL…"
