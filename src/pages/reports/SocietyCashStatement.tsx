@@ -116,6 +116,7 @@ export default function SocietyCashStatement() {
       { header: tx("Description", "বিবরন"), accessor: (r) => r.desc },
       { header: tx("Amount", "টাকা"), accessor: (r) => Number(r.amount || 0).toFixed(2) },
     ]);
+    auditExport("society_cash_statement", { from, to });
   };
 
   return (
