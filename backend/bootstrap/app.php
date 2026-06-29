@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // route same-origin requests through the web group's CSRF validation,
         // causing "CSRF token mismatch" on token-based login.
 
+        // Security hardening headers on every API response.
+        $middleware->append(SecurityHeaders::class);
+
         // Named aliases used by route definitions.
         $middleware->alias([
             'permission' => CheckPermission::class,
