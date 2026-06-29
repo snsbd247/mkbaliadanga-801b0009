@@ -824,6 +824,9 @@ export default function FarmerDetail() {
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
       return toast.error(t("ownerRequiredForBorgadar" as any));
     }
+    if ((land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && !land.land_type_id) {
+      return toast.error(tx("Please select a Field Type (land type)", "জমির ধরন (Field Type) নির্বাচন করুন"));
+    }
     setSavingLand(true);
     try {
       const { error } = await supabase.from("lands").insert({
@@ -939,6 +942,10 @@ export default function FarmerDetail() {
         if (dv.ok === false) { toast.error(dv.error); return; }
         canonicalDag = dv.values.join(", ");
         dagNumbers = dv.values;
+      }
+      if (!editForm.land_type_id) {
+        toast.error(tx("Please select a Field Type (land type)", "জমির ধরন (Field Type) নির্বাচন করুন"));
+        return;
       }
       const { data, error } = await supabase.from("lands").update({
         mouza: (editLoc as any).mouza_name ?? "",
@@ -1315,7 +1322,7 @@ export default function FarmerDetail() {
                               <p className="text-xs text-destructive mt-1">{liveErr} — {tx("Please separate with commas; only digits/letters/", "দয়া করে কমা দিয়ে আলাদা করুন এবং শুধু সংখ্যা/অক্ষর/")}<code>/</code>/<code>-</code>{tx(" allowed.", " ব্যবহার করুন।")}</p>
                             ) : (
                               <p className="text-xs text-muted-foreground mt-1">
-                                {tx("Separate multiple Dag numbers with comma (,). Allowed: digits, letters, ", "একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। অনুমোদিত: সংখ্যা, অক্ষর, ")}<code>/</code> {tx("and", "ও")} <code>-</code> {tx("(max 32 chars each). Examples:", "(প্রতিটি সর্বোচ্চ ৩২ অক্ষর)। উদাহরণ:")} <code>123</code>, <code>124/A</code>, <code>1-250</code>
+                                {tx("Separate multiple Dag numbers with comma (,). Allowed: digits, letters, ", "একাধিক দাগ নং কমা (,) দিয়ে আলাদা করুন। অনুমোদিত: সংখ্যা, অক্ষর, ")}<code>/</code> {tx("and", "ও")} <code>-</code> {tx("(max 200 chars each). Examples:", "(প্রতিটি সর্বোচ্চ ২০০ অক্ষর)। উদাহরণ:")} <code>123</code>, <code>124/A</code>, <code>1-250</code>
                                 {preview && preview !== land.dag_no.trim() && <> — {tx("will be saved as:", "সংরক্ষণে রূপান্তরিত হবে:")} <strong>{preview}</strong></>}
                               </p>
                             )}
@@ -1337,7 +1344,7 @@ export default function FarmerDetail() {
                           }} />
                         </div>
                         <div>
-                          <Label>{t("fieldType")}</Label>
+                          <Label>{t("fieldType")} <span className="text-destructive">*</span></Label>
                           <LandTypeSelect
                             landTypeId={land.land_type_id}
                             fieldType={land.field_type}
@@ -2093,7 +2100,7 @@ export default function FarmerDetail() {
                   <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div><Label>{t("fieldType")}</Label>
+              <div><Label>{t("fieldType")} <span className="text-destructive">*</span></Label>
                 <LandTypeSelect
                   landTypeId={editForm.land_type_id}
                   fieldType={editForm.field_type}
