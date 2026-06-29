@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ export default function AssetDashboard() {
   useEffect(() => {
     document.title = tx("Asset Dashboard", "এসেট ড্যাশবোর্ড");
     (async () => {
-      const a = await supabase.from("assets" as any).select("id,current_status,purchase_price").is("deleted_at", null);
+      const a = await db.from("assets" as any).select("id,current_status,purchase_price").is("deleted_at", null);
       if (!a.error && a.data) {
         const c: any = { purchased: 0, in_stock: 0, transferred: 0, installed: 0, maintenance: 0, damaged: 0, disposed: 0 };
         let total = 0;
@@ -35,12 +35,12 @@ export default function AssetDashboard() {
         setCounts(c);
         setTotalValuation(total);
       }
-      const m = await supabase.from("asset_movements" as any)
+      const m = await db.from("asset_movements" as any)
         .select("id,asset_id,quantity,movement_date,remarks,from_location_id,to_location_id")
         .order("created_at", { ascending: false }).limit(10);
       if (!m.error) setRecent((m.data as any[]) || []);
 
-      const s = await supabase.from("asset_stocks" as any)
+      const s = await db.from("asset_stocks" as any)
         .select("id,asset_id,location_id,quantity").lte("quantity", 1).limit(10);
       if (!s.error) setLowStock((s.data as any[]) || []);
     })();

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,12 +85,12 @@ export default function AssetReports() {
   useEffect(() => {
     (async () => {
       const [a, s, o, c] = await Promise.all([
-        supabase.from("assets" as any)
+        db.from("assets" as any)
           .select("id,office_id,asset_category_id,asset_code,name_en,name_bn,serial_no,tracking_mode,current_status,asset_type,purchase_price,unit")
           .is("deleted_at", null).order("asset_code"),
-        supabase.from("asset_stocks" as any).select("*"),
-        supabase.from("offices").select("id,name").order("name"),
-        supabase.from("asset_categories" as any).select("id,code,name_en,name_bn").is("deleted_at", null).order("code"),
+        db.from("asset_stocks" as any).select("*"),
+        db.from("offices").select("id,name").order("name"),
+        db.from("asset_categories" as any).select("id,code,name_en,name_bn").is("deleted_at", null).order("code"),
       ]);
       if (!a.error && a.data) {
         setRegister(a.data as any[]);
@@ -111,13 +111,13 @@ export default function AssetReports() {
     (async () => {
       const between = (q: any, col: string) => q.gte(col, range.from).lte(col, range.to);
       const [m, ins, mn, dm, d, dep, au] = await Promise.all([
-        between(supabase.from("asset_movements" as any).select("*").is("deleted_at", null).order("movement_date", { ascending: false }), "movement_date"),
-        between(supabase.from("asset_installations" as any).select("*").is("deleted_at", null).order("install_date", { ascending: false }), "install_date"),
-        between(supabase.from("asset_maintenance_logs" as any).select("*").is("deleted_at", null).order("maintenance_date", { ascending: false }), "maintenance_date"),
-        between(supabase.from("asset_damage_reports" as any).select("*").is("deleted_at", null).order("report_date", { ascending: false }), "report_date"),
-        between(supabase.from("asset_disposals" as any).select("*").is("deleted_at", null).order("disposal_date", { ascending: false }), "disposal_date"),
-        between(supabase.from("asset_depreciation_schedule" as any).select("*").order("period_month", { ascending: false }), "period_month"),
-        supabase.from("asset_audit_logs" as any).select("*")
+        between(db.from("asset_movements" as any).select("*").is("deleted_at", null).order("movement_date", { ascending: false }), "movement_date"),
+        between(db.from("asset_installations" as any).select("*").is("deleted_at", null).order("install_date", { ascending: false }), "install_date"),
+        between(db.from("asset_maintenance_logs" as any).select("*").is("deleted_at", null).order("maintenance_date", { ascending: false }), "maintenance_date"),
+        between(db.from("asset_damage_reports" as any).select("*").is("deleted_at", null).order("report_date", { ascending: false }), "report_date"),
+        between(db.from("asset_disposals" as any).select("*").is("deleted_at", null).order("disposal_date", { ascending: false }), "disposal_date"),
+        between(db.from("asset_depreciation_schedule" as any).select("*").order("period_month", { ascending: false }), "period_month"),
+        db.from("asset_audit_logs" as any).select("*")
           .gte("created_at", `${range.from}T00:00:00`).lte("created_at", `${range.to}T23:59:59`)
           .order("created_at", { ascending: false }).limit(500),
       ]);

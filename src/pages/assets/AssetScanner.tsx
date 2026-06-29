@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Camera, CameraOff, Search, History } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
@@ -27,7 +27,7 @@ export default function AssetScanner() {
     success: boolean; error?: string | null; source?: string;
   }) {
     try {
-      await supabase.from("asset_scan_logs" as any).insert({
+      await db.from("asset_scan_logs" as any).insert({
         scanned_text: opts.text, asset_id: opts.assetId ?? null, asset_code: opts.assetCode ?? null,
         success: opts.success, error_message: opts.error ?? null, source: opts.source ?? "camera",
         office_id: officeId ?? null,
@@ -63,7 +63,7 @@ export default function AssetScanner() {
 
   async function lookupByCode(code: string, source: string = "manual") {
     if (!code) return;
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("assets" as any).select("id, asset_code").eq("asset_code", code).maybeSingle();
     if (error) {
       await logScan({ text: code, success: false, error: error.message, source });

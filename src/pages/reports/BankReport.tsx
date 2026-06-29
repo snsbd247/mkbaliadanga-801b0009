@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 
-const sb = supabase as any;
+const sb = db as any;
 const isIn = (ty: string) => ["deposit", "transfer_in", "interest"].includes(ty);
 
 const STREAM_LABEL: Record<string, string> = {

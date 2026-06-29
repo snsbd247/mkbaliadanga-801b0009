@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,13 +51,13 @@ export default function AssetInstallations() {
 
   async function load() {
     const [r, a, o] = await Promise.all([
-      supabase.from("asset_installations" as any).select("*")
+      db.from("asset_installations" as any).select("*")
         .is("deleted_at", null)
         .gte("install_date", from).lte("install_date", to)
         .order("install_date", { ascending: false }).order("created_at", { ascending: false })
         .limit(1000),
-      supabase.from("assets" as any).select("id,asset_code,name_en,name_bn,office_id").is("deleted_at", null),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("assets" as any).select("id,asset_code,name_en,name_bn,office_id").is("deleted_at", null),
+      db.from("offices").select("id,name").order("name"),
     ]);
     if (r.error) toast.error(r.error.message); else setRows((r.data as any) ?? []);
     if (!a.error) setAssets((a.data as any) ?? []);
@@ -79,14 +79,14 @@ export default function AssetInstallations() {
     setSaving(true);
     try {
       const a = assetById.get(form.asset_id);
-      const { data: row, error } = await supabase.from("asset_installations" as any).insert({
+      const { data: row, error } = await db.from("asset_installations" as any).insert({
         office_id: a?.office_id ?? officeId, asset_id: form.asset_id,
         install_date: form.install_date, location_id: form.location_id || null,
         location_name: form.location_name || null, installed_by: user?.id ?? null,
         condition_status: form.condition_status, remarks: form.remarks || null,
       }).select("id").single();
       if (error) throw error;
-      await supabase.from("assets" as any).update({
+      await db.from("assets" as any).update({
         current_status: "installed", current_location_id: form.location_id || null,
         installed_at: new Date().toISOString(),
       }).eq("id", form.asset_id);

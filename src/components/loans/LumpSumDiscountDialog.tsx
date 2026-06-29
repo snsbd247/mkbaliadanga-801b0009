@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,7 @@ import {
   type LumpSumReceiptData,
 } from "@/lib/lumpSumReceipt";
 
-const sb = supabase as any;
+const sb = db as any;
 
 /**
  * Admin-only dialog to record a lump-sum loan repayment with an optional

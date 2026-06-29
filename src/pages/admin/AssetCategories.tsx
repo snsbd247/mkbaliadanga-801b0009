@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ export default function AssetCategories() {
   }, []);
 
   async function load() {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("asset_categories" as any)
       .select("*")
       .is("deleted_at", null)
@@ -88,9 +88,9 @@ export default function AssetCategories() {
       };
       let error: any;
       if (form.id) {
-        ({ error } = await supabase.from("asset_categories" as any).update(payload).eq("id", form.id));
+        ({ error } = await db.from("asset_categories" as any).update(payload).eq("id", form.id));
       } else {
-        ({ error } = await supabase.from("asset_categories" as any).insert(payload));
+        ({ error } = await db.from("asset_categories" as any).insert(payload));
       }
       if (error) throw error;
       await logAssetAudit({
@@ -106,7 +106,7 @@ export default function AssetCategories() {
   }
 
   async function softDelete(id: string) {
-    const { error } = await supabase
+    const { error } = await db
       .from("asset_categories" as any)
       .update({ deleted_at: new Date().toISOString() } as any)
       .eq("id", id);

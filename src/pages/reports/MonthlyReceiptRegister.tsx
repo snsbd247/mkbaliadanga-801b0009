@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -59,7 +60,7 @@ export default function MonthlyReceiptRegister() {
       const lastDay = new Date(year, month, 0).getDate();
       const to = `${year}-${pad2(month)}-${pad2(lastDay)}`;
 
-      let q = supabase
+      let q = db
         .from("payments")
         .select("id,receipt_no,created_at,amount,status,kind,collected_by,office_id,voided_at,void_reason,farmers(name_en,farmer_code,member_no)")
         .gte("created_at", `${from}T00:00:00`)

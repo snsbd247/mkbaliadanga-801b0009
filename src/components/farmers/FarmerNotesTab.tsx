@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { fmtDate } from "@/lib/format";
 
-const sb = supabase as any;
+const sb = db as any;
 
 interface Note {
   id: string;

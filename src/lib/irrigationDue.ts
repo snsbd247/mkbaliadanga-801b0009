@@ -11,8 +11,7 @@
  *   paid_amount     = sum of irrigation_invoice_payments.collected_amount
  *   due_amount      = payable_amount - paid_amount   (stored on the row)
  */
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export interface IrrigationDueAggregate {
   payable: number;
   paid: number;
@@ -32,7 +31,7 @@ const num = (v: any) => Number(v ?? 0) || 0;
 
 /** Per-farmer due — used by farmer profile / statement / receipt previews. */
 export async function getIrrigationDueForFarmer(farmerId: string): Promise<IrrigationDueAggregate> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("irrigation_invoices")
     .select("payable_amount,paid_amount,due_amount,due_date,invoice_status")
     .eq("farmer_id", farmerId)
@@ -45,7 +44,7 @@ export async function getIrrigationDueForFarmer(farmerId: string): Promise<Irrig
 
 /** Org-wide aggregate (optionally office-scoped). */
 export async function getIrrigationDueAggregate(opts?: { officeId?: string | null; seasonId?: string | null }): Promise<IrrigationDueAggregate> {
-  let q = supabase
+  let q = db
     .from("irrigation_invoices")
     .select("payable_amount,paid_amount,due_amount,due_date,invoice_status,office_id,season_id")
     .is("deleted_at", null)
@@ -60,7 +59,7 @@ export async function getIrrigationDueAggregate(opts?: { officeId?: string | nul
 
 /** Daily collections summary from irrigation_invoice_payments (split by current/previous). */
 export async function getIrrigationCollections(opts: { from: string; to: string; officeId?: string | null }): Promise<IrrigationCollectionsRow[]> {
-  let q = supabase
+  let q = db
     .from("irrigation_invoice_payments")
     .select("created_at,collected_amount,current_invoice_collected,previous_due_collected,office_id")
     .gte("created_at", opts.from)

@@ -1,3 +1,4 @@
+import { db } from "@/lib/db";
 /**
  * Shared Mouza relation helpers.
  *
@@ -76,14 +77,14 @@ export async function verifyMouzaRelation(
 ): Promise<MouzaFkVerification> {
   try {
     // Embed probe: if the FK is missing, PostgREST rejects the mouzas(name) embed.
-    const { error: embedError } = await supabase
+    const { error: embedError } = await db
       .from("lands")
       .select("id, mouzas(name)")
       .limit(1);
     const fkExists = !embedError;
 
     // Orphan probe: land rows whose mouza_id has no matching mouza.
-    const { data: orphans, error: orphanError } = await supabase
+    const { data: orphans, error: orphanError } = await db
       .from("lands")
       .select("id, mouza_id, mouzas(id)")
       .not("mouza_id", "is", null)

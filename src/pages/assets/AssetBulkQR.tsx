@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ export default function AssetBulkQR() {
   useEffect(() => {
     document.title = tx("Bulk QR print", "বাল্ক QR প্রিন্ট");
     (async () => {
-      const r = await supabase.from("assets" as any)
+      const r = await db.from("assets" as any)
         .select("id,asset_code,name_en,name_bn,serial_no")
         .is("deleted_at", null).order("asset_code");
       if (!r.error) setAssets((r.data as any) || []);

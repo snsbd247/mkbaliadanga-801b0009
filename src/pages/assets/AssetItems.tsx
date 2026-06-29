@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,8 +109,8 @@ export default function AssetItems() {
 
   async function load() {
     const [a, b] = await Promise.all([
-      supabase.from("assets" as any).select("*").is("deleted_at", null).order("created_at", { ascending: false }),
-      supabase.from("asset_categories" as any).select("id, code, name_bn, name_en, tracking_mode").is("deleted_at", null).eq("is_active", true).order("code"),
+      db.from("assets" as any).select("*").is("deleted_at", null).order("created_at", { ascending: false }),
+      db.from("asset_categories" as any).select("id, code, name_bn, name_en, tracking_mode").is("deleted_at", null).eq("is_active", true).order("code"),
     ]);
     if (a.error) toast.error(a.error.message); else setRows((a.data as any) ?? []);
     if (b.error) toast.error(b.error.message); else setCats((b.data as any) ?? []);
@@ -156,9 +156,9 @@ export default function AssetItems() {
       };
       let error: any;
       if (form.id) {
-        ({ error } = await supabase.from("assets" as any).update(payload).eq("id", form.id));
+        ({ error } = await db.from("assets" as any).update(payload).eq("id", form.id));
       } else {
-        ({ error } = await supabase.from("assets" as any).insert(payload));
+        ({ error } = await db.from("assets" as any).insert(payload));
       }
       if (error) throw error;
       await logAssetAudit({

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,13 +59,13 @@ export default function AssetMovements() {
 
   async function load() {
     const [m, a, o] = await Promise.all([
-      supabase.from("asset_movements" as any).select("*")
+      db.from("asset_movements" as any).select("*")
         .is("deleted_at", null)
         .gte("movement_date", from).lte("movement_date", to)
         .order("movement_date", { ascending: false }).order("created_at", { ascending: false })
         .limit(1000),
-      supabase.from("assets" as any).select("id,asset_code,name_en,name_bn,office_id").is("deleted_at", null),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("assets" as any).select("id,asset_code,name_en,name_bn,office_id").is("deleted_at", null),
+      db.from("offices").select("id,name").order("name"),
     ]);
     if (m.error) toast.error(m.error.message); else setRows((m.data as any) ?? []);
     if (a.error) toast.error(a.error.message); else setAssets((a.data as any) ?? []);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import { buildAutoLandChangeRemark } from "@/lib/landChangeRemark";
 
 
 const SEASONS = ["Boro", "Aman", "Aus", "Rabi"];
-const sb = supabase as any;
+const sb = db as any;
 
 type Props = { farmerId: string };
 

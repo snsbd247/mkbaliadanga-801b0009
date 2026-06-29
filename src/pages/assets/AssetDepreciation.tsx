@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ export default function AssetDepreciation() {
   useEffect(() => {
     document.title = tx("Asset Depreciation", "এসেট ডিপ্রেসিয়েশন");
     (async () => {
-      const r = await supabase.from("assets" as any).select("id,office_id,asset_code,name_en,name_bn,purchase_price")
+      const r = await db.from("assets" as any).select("id,office_id,asset_code,name_en,name_bn,purchase_price")
         .is("deleted_at", null).order("asset_code");
       if (!r.error) setAssets((r.data as any) || []);
     })();
@@ -52,14 +53,14 @@ export default function AssetDepreciation() {
     if (!assetId) { setSetting(null); setSchedule([]); return; }
     (async () => {
       const a = assets.find(x => x.id === assetId);
-      const cfg = await supabase.from("asset_depreciation_settings" as any).select("*").eq("asset_id", assetId).maybeSingle();
+      const cfg = await db.from("asset_depreciation_settings" as any).select("*").eq("asset_id", assetId).maybeSingle();
       if (cfg.data) setSetting(cfg.data as any);
       else setSetting({
         asset_id: assetId, office_id: a?.office_id ?? officeId ?? null,
         method: "straight_line", useful_life_months: 60, salvage_value: 0, wdv_rate_pct: 15,
         start_on: firstOfThisMonth(), expense_account_code: "5410", accum_account_code: "1610", is_active: true,
       });
-      const s = await supabase.from("asset_depreciation_schedule" as any).select("*")
+      const s = await db.from("asset_depreciation_schedule" as any).select("*")
         .eq("asset_id", assetId).order("period_month");
       if (!s.error) setSchedule((s.data as any) || []);
     })();
@@ -83,10 +84,10 @@ export default function AssetDepreciation() {
     try {
       const payload = { ...setting, office_id: setting.office_id ?? officeId ?? null };
       if (setting.id) {
-        const { error } = await supabase.from("asset_depreciation_settings" as any).update(payload).eq("id", setting.id);
+        const { error } = await db.from("asset_depreciation_settings" as any).update(payload).eq("id", setting.id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("asset_depreciation_settings" as any).insert(payload).select("id").single();
+        const { data, error } = await db.from("asset_depreciation_settings" as any).insert(payload).select("id").single();
         if (error) throw error;
         setSetting({ ...setting, id: (data as any).id });
       }
@@ -112,7 +113,7 @@ export default function AssetDepreciation() {
       });
 
       // Upsert schedule row
-      const { data: row, error } = await supabase.from("asset_depreciation_schedule" as any).upsert({
+      const { data: row, error } = await db.from("asset_depreciation_schedule" as any).upsert({
         asset_id: asset.id, office_id: setting.office_id ?? officeId ?? null,
         period_month: period, opening_book_value: opening,
         depreciation_amount: r.depreciation, accumulated_depreciation: r.accumulated,
@@ -128,7 +129,7 @@ export default function AssetDepreciation() {
       }
       toast.success(tx("Depreciation posted", "ডিপ্রেসিয়েশন পোস্ট হয়েছে"));
       // reload
-      const s = await supabase.from("asset_depreciation_schedule" as any).select("*").eq("asset_id", asset.id).order("period_month");
+      const s = await db.from("asset_depreciation_schedule" as any).select("*").eq("asset_id", asset.id).order("period_month");
       setSchedule((s.data as any) || []);
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(false); }
@@ -240,7 +241,7 @@ export default function AssetDepreciation() {
                     const summary = rows.reduce<Record<string, number>>((a, r) => { a[r.status] = (a[r.status] || 0) + 1; return a; }, {});
                     toast.success(tx(`Batch run: ${rows.length} assets`, `ব্যাচ চালান: ${rows.length} এসেট`) + " — " + JSON.stringify(summary));
                     if (assetId) {
-                      const s = await supabase.from("asset_depreciation_schedule" as any).select("*").eq("asset_id", assetId).order("period_month");
+                      const s = await db.from("asset_depreciation_schedule" as any).select("*").eq("asset_id", assetId).order("period_month");
                       setSchedule((s.data as any) || []);
                     }
                   } catch (e: any) { toast.error(e.message); }

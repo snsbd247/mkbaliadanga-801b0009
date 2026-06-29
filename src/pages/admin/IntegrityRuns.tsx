@@ -3,7 +3,7 @@
 // Restricted to Admin / Super Admin via the route guard AND an in-page check,
 // so deep links cannot trigger export generation for unauthorized roles.
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { exportIntegrityExcel, exportIntegrityPdf } from "@/lib/landTransferIntegrityExport";
 import type { IntegrityViolation, IntegritySummary } from "@/lib/landTransferIntegrity";
 
-const sb = supabase as any;
+const sb = db as any;
 
 type RunRow = {
   id: string;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,10 +36,10 @@ async function postDisposalJournal(opts: {
   reference: string; userId: string | null;
 }) {
   const codes = ["1010", "1500", "4090", "5050"];
-  const { data: accs } = await supabase.from("accounts").select("id,code").in("code", codes);
+  const { data: accs } = await db.from("accounts").select("id,code").in("code", codes);
   const byCode = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
   if (!byCode["1010"] || !byCode["1500"]) return null;
-  const { data: je, error } = await supabase.from("journal_entries").insert({
+  const { data: je, error } = await db.from("journal_entries").insert({
     entry_date: today(), reference: opts.reference,
     description: `Asset disposal ${opts.asset.asset_code}`,
     office_id: opts.asset.office_id, posted: true, posted_at: new Date().toISOString(),
@@ -52,7 +52,7 @@ async function postDisposalJournal(opts: {
   if (opts.gain_loss < 0 && byCode["5050"]) lines.push({ journal_id: je.id, account_id: byCode["5050"], debit: Math.abs(opts.gain_loss), credit: 0, position: pos++, description: "Disposal loss" });
   lines.push({ journal_id: je.id, account_id: byCode["1500"], debit: 0, credit: opts.book_value, position: pos++, description: "Asset book value" });
   if (opts.gain_loss > 0 && byCode["4090"]) lines.push({ journal_id: je.id, account_id: byCode["4090"], debit: 0, credit: opts.gain_loss, position: pos++, description: "Disposal gain" });
-  await supabase.from("journal_entry_lines").insert(lines);
+  await db.from("journal_entry_lines").insert(lines);
   return je.id;
 }
 
@@ -78,13 +78,13 @@ export default function AssetDisposal() {
 
   async function load() {
     const [r, a, o] = await Promise.all([
-      supabase.from("asset_disposals" as any).select("*")
+      db.from("asset_disposals" as any).select("*")
         .is("deleted_at", null)
         .gte("disposal_date", from).lte("disposal_date", to)
         .order("disposal_date", { ascending: false }).order("created_at", { ascending: false })
         .limit(1000),
-      supabase.from("assets" as any).select("id,asset_code,name_en,name_bn,office_id,purchase_price").is("deleted_at", null),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("assets" as any).select("id,asset_code,name_en,name_bn,office_id,purchase_price").is("deleted_at", null),
+      db.from("offices").select("id,name").order("name"),
     ]);
     if (r.error) toast.error(r.error.message); else setRows((r.data as any) ?? []);
     if (!a.error) setAssets((a.data as any) ?? []);
@@ -123,7 +123,7 @@ export default function AssetDisposal() {
       const a = assetById.get(form.asset_id);
       if (!a) throw new Error("Asset not found");
       const gain_loss = calcDisposalGainLoss(form.sale_amount, form.book_value);
-      const { data: row, error } = await supabase.from("asset_disposals" as any).insert({
+      const { data: row, error } = await db.from("asset_disposals" as any).insert({
         office_id: a.office_id, asset_id: form.asset_id,
         disposal_date: form.disposal_date, method: form.method,
         sale_amount: form.sale_amount, book_value: form.book_value, gain_loss,
@@ -136,10 +136,10 @@ export default function AssetDisposal() {
           asset: a, sale_amount: form.sale_amount, book_value: form.book_value, gain_loss,
           reference: `ASSET-DISP-${(row as any).id.slice(0, 8)}`, userId: user?.id ?? null,
         });
-        if (jeId) await supabase.from("asset_disposals" as any).update({ journal_entry_id: jeId }).eq("id", (row as any).id);
+        if (jeId) await db.from("asset_disposals" as any).update({ journal_entry_id: jeId }).eq("id", (row as any).id);
       }
       const newStatus = form.method === "lost" ? "lost" : form.method === "scrap_sale" ? "scrapped" : "disposed";
-      await supabase.from("assets" as any).update({ current_status: newStatus, disposed_at: new Date().toISOString() }).eq("id", form.asset_id);
+      await db.from("assets" as any).update({ current_status: newStatus, disposed_at: new Date().toISOString() }).eq("id", form.asset_id);
       await logAssetAudit({
         office_id: a.office_id, asset_id: form.asset_id,
         entity: "asset_disposal", entity_id: (row as any)?.id ?? null,

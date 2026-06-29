@@ -1,6 +1,6 @@
 // i18n-ignore-file — admin-only page (English UI)
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,7 @@ export default function FarmerLoginAudit() {
 
   async function load() {
     setLoading(true);
-    let qb = supabase
+    let qb = db
       .from("farmer_login_attempts")
       .select("id, identifier, farmer_id, office_id, success, error_reason, ip, user_agent, created_at")
       .order("created_at", { ascending: false })

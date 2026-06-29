@@ -2,7 +2,7 @@
 // Highlights mismatches grouped by office, farmer, and season.
 // i18n-ignore-file — admin/utility page
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { useLang } from "@/i18n/LanguageProvider";
 
 
-const sb = supabase as any;
+const sb = db as any;
 
 type Group = {
   key: string;

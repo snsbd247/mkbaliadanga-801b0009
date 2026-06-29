@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -64,12 +64,12 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
     let cancelled = false;
     setL("mou", true);
     (async () => {
-      const { data } = await supabase.from("mouzas")
+      const { data } = await db.from("mouzas")
         .select("id,name,name_bn,upazila_id").eq("is_active", true).order("name");
       let list = ((data as any[]) ?? []) as Row[];
       const cur = value.mouza_id;
       if (cur && !list.some((m) => m.id === cur)) {
-        const { data: one } = await supabase.from("mouzas")
+        const { data: one } = await db.from("mouzas")
           .select("id,name,name_bn,upazila_id").eq("id", cur).maybeSingle();
         if (one) list = [one as any, ...list];
       }
@@ -82,28 +82,28 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
   useEffect(() => {
     if (mouzaOnly) return;
     setL("div", true);
-    supabase.from("divisions").select("id,name,name_bn").eq("is_active", true).order("name")
+    db.from("divisions").select("id,name,name_bn").eq("is_active", true).order("name")
       .then(({ data }) => { setDivisions((data as any) ?? []); setL("div", false); });
   }, [mouzaOnly]);
 
   useEffect(() => {
     if (!value.division_id) { setDistricts([]); return; }
     setL("dis", true);
-    supabase.from("districts").select("id,name,name_bn").eq("division_id", value.division_id).eq("is_active", true).order("name")
+    db.from("districts").select("id,name,name_bn").eq("division_id", value.division_id).eq("is_active", true).order("name")
       .then(({ data }) => { setDistricts((data as any) ?? []); setL("dis", false); });
   }, [value.division_id]);
 
   useEffect(() => {
     if (!value.district_id) { setUpazilas([]); return; }
     setL("upa", true);
-    supabase.from("upazilas").select("id,name,name_bn").eq("district_id", value.district_id).eq("is_active", true).order("name")
+    db.from("upazilas").select("id,name,name_bn").eq("district_id", value.district_id).eq("is_active", true).order("name")
       .then(({ data }) => { setUpazilas((data as any) ?? []); setL("upa", false); });
   }, [value.district_id]);
 
   useEffect(() => {
     if (!value.upazila_id) { setMouzas([]); return; }
     setL("mou", true);
-    supabase.from("mouzas").select("id,name,name_bn").eq("upazila_id", value.upazila_id).eq("is_active", true).order("name")
+    db.from("mouzas").select("id,name,name_bn").eq("upazila_id", value.upazila_id).eq("is_active", true).order("name")
       .then(({ data }) => { setMouzas((data as any) ?? []); setL("mou", false); });
   }, [value.upazila_id]);
 
@@ -212,11 +212,11 @@ export function LocationPicker({ value, onChange, className, errorLevel = null, 
                           let district_id: string | null = null;
                           let division_id: string | null = null;
                           if (upazila_id) {
-                            const { data: up } = await supabase.from("upazilas")
+                            const { data: up } = await db.from("upazilas")
                               .select("district_id").eq("id", upazila_id).maybeSingle();
                             district_id = (up as any)?.district_id ?? null;
                             if (district_id) {
-                              const { data: di } = await supabase.from("districts")
+                              const { data: di } = await db.from("districts")
                                 .select("division_id").eq("id", district_id).maybeSingle();
                               division_id = (di as any)?.division_id ?? null;
                             }

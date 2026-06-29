@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,17 +49,17 @@ export default function OfficerSummaryReport() {
       const out: Row[] = [];
 
       const [irrRes, lpRes, svRes] = await Promise.all([
-        supabase.from("irrigation_invoice_payments")
+        db.from("irrigation_invoice_payments")
           .select("created_at,collected_amount,created_by")
           .gt("collected_amount", 0)
           .gte("created_at", `${from}T00:00:00`)
           .lte("created_at", `${to}T23:59:59`)
           .limit(5000),
-        supabase.from("loan_payments")
+        db.from("loan_payments")
           .select("paid_on,amount,collected_by")
           .gte("paid_on", from).lte("paid_on", to)
           .limit(5000),
-        supabase.from("savings_transactions")
+        db.from("savings_transactions")
           .select("txn_date,amount,type,status,created_by")
           .is("deleted_at", null).eq("type", "deposit").eq("status", "approved")
           .gte("txn_date", from).lte("txn_date", to)

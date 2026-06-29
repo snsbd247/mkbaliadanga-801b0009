@@ -1,7 +1,7 @@
 // Admin page to view and process public payment intents (P-E3).
 // i18n-ignore-file — admin/utility page
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { ExternalLink, Download } from "lucide-react";
 import { useLang } from "@/i18n/LanguageProvider";
 
 
-const sb = supabase as any;
+const sb = db as any;
 
 const TYPES = ["all", "irrigation", "loan", "savings", "other"];
 

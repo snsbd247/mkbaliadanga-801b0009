@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,7 @@ export default function IdReview() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("farmers")
       .select("id,name_en,name_bn,member_no,account_number,voter_number,is_voter,office_id")
       .is("deleted_at", null)
@@ -114,12 +115,12 @@ export default function IdReview() {
       setEditing(null);
       return;
     }
-    const { error } = await supabase.from("farmers").update(patch).eq("id", editing.id);
+    const { error } = await db.from("farmers").update(patch).eq("id", editing.id);
     if (error) { setSaving(false); toast.error(error.message); return; }
 
     // audit trail
     const { data: auth } = await supabase.auth.getUser();
-    await supabase.from("audit_logs").insert({
+    await db.from("audit_logs").insert({
       action: "id_override",
       entity: "farmers",
       entity_id: editing.id,
@@ -139,7 +140,7 @@ export default function IdReview() {
   async function openHistory(r: Row) {
     setHistoryFor(r);
     setHistory([]);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("audit_logs")
       .select("id,created_at,user_id,action,old_values,new_values")
       .eq("entity", "farmers")

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ export default function VoterHistory() {
 
   useEffect(() => {
     document.title = "Voter Cancel/Reactivate History";
-    supabase.from("offices").select("id,name").order("name").then(r => {
+    db.from("offices").select("id,name").order("name").then(r => {
       setOffices((r.data as any[]) ?? []);
       setOfficesMap(Object.fromEntries(((r.data as any[]) ?? []).map(o => [o.id, o])));
     });
@@ -50,7 +50,7 @@ export default function VoterHistory() {
 
   async function load() {
     setLoading(true);
-    let q = supabase.from("farmers")
+    let q = db.from("farmers")
       .select("id,name_en,name_bn,member_no,farmer_code,office_id,voter_cancelled_at,voter_cancelled_by,voter_cancel_reason,voter_reactivated_at,voter_reactivated_by,voter_reactivate_reason")
       .or("voter_cancelled_at.not.is.null,voter_reactivated_at.not.is.null")
       .order("voter_cancelled_at", { ascending: false, nullsFirst: false })
@@ -83,7 +83,7 @@ export default function VoterHistory() {
 
     const uids = Array.from(new Set(filtered.map(r => r.changed_by).filter(Boolean))) as string[];
     if (uids.length) {
-      const { data: ps } = await supabase.from("profiles").select("id,full_name,email").in("id", uids);
+      const { data: ps } = await db.from("profiles").select("id,full_name,email").in("id", uids);
       setProfilesMap(Object.fromEntries(((ps as any[]) ?? []).map(p => [p.id, p])));
     } else setProfilesMap({});
     setLoading(false);

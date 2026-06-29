@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
@@ -21,7 +21,7 @@ export function VoterHistoryDialog({ farmerId, open, onOpenChange }: Props) {
     if (!open || !farmerId) return;
     setLoading(true);
     setError(null);
-    supabase.from("voter_audit_logs")
+    db.from("voter_audit_logs")
       .select("*")
       .eq("farmer_id", farmerId)
       .order("created_at", { ascending: false })
