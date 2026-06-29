@@ -241,18 +241,29 @@ grep -q "^APP_KEY=base64:" .env || php artisan key:generate --force
 
 if [ "${FRESH_DB}" = "1" ]; then
   log "Fresh database — migrating WITH seed (first install only)…"
+  log "  → running: php artisan migrate --force --seed"
   php artisan migrate --force --seed
+  log "  ✓ migrations applied + full sample seeders ran (fresh install)"
 else
-  warn "Existing database detected — migrating WITHOUT seed (data preserved)…"
+  warn "Existing database detected — migrating WITHOUT sample seed (data preserved)…"
+  log "  → running: php artisan migrate --force"
   php artisan migrate --force
+  log "  ⏭  skipped sample data seeders (existing DB — real data preserved)"
 fi
 
 # Always ensure roles + the two admin accounts exist. Fully idempotent
 # (firstOrCreate / updateOrCreate / syncWithoutDetaching) — never touches real data.
 #   developer    -> ismail162  / Admin@123
 #   super_admin  -> suparadmin / Admin@123
-php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force || true
-php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force || true
+log "Ensuring permissions + required admin accounts (idempotent)…"
+log "  → running: php artisan db:seed --class=PermissionsSeeder"
+php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force && log "  ✓ PermissionsSeeder ok" || warn "  ✗ PermissionsSeeder failed"
+log "  → running: php artisan db:seed --class=SuperAdminSeeder"
+php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force && log "  ✓ SuperAdminSeeder ok" || warn "  ✗ SuperAdminSeeder failed"
+
+# Auto-verify the two required admin accounts (creates/repairs if needed).
+log "Verifying required admin accounts (developer + super_admin)…"
+php artisan admin:verify --fix || warn "  ✗ admin verification reported problems — check output above"
 
 php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache

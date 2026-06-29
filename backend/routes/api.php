@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AdminVerifyController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuthController;
@@ -66,6 +67,10 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::get('/roles', [RoleController::class, 'index'])->middleware('permission:roles.view');
     Route::get('/permissions', [RoleController::class, 'permissions'])->middleware('permission:roles.view');
     Route::post('/roles/{role}/permissions', [RoleController::class, 'syncPermissions'])->middleware('permission:roles.manage');
+
+    // Admin verification (required admin accounts + role mapping)
+    Route::get('/admin/verify', [AdminVerifyController::class, 'index'])->middleware('permission:users.view');
+    Route::post('/admin/verify/fix', [AdminVerifyController::class, 'fix'])->middleware('permission:users.manage');
 
     // Offices
     Route::get('/offices', [OfficeController::class, 'index'])->middleware('permission:offices.view');

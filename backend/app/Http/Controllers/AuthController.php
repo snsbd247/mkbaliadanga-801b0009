@@ -37,6 +37,13 @@ class AuthController extends Controller
             ]);
         }
 
+        // Server-side autofix: if this is a canonical admin account whose
+        // required role went missing, reattach it before issuing the token.
+        \App\Support\CanonicalAdmins::ensureRole($user);
+        $user->refresh();
+
+
+
         if (! $user->is_active) {
             throw ValidationException::withMessages([
                 'identifier' => ['এই অ্যাকাউন্টটি নিষ্ক্রিয়।'],

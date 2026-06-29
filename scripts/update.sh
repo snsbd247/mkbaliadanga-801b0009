@@ -108,13 +108,21 @@ done
 
 php artisan down --retry=15 || true
 # migrate ONLY applies new migrations; it never drops tables or re-seeds data
+log "Applying new migrations (schema only — no data drop, no sample seed)…"
+log "  → running: php artisan migrate --force"
 php artisan migrate --force
+log "  ✓ migrations applied; ⏭  sample data seeders intentionally skipped on update"
 # Idempotent: guarantees roles + the two admin accounts exist WITHOUT touching
 # any real data (firstOrCreate / updateOrCreate / syncWithoutDetaching only).
 #   developer    -> ismail162  / Admin@123
 #   super_admin  -> suparadmin / Admin@123
-php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force || true
-php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force || true
+log "Ensuring permissions + required admin accounts (idempotent)…"
+log "  → running: php artisan db:seed --class=PermissionsSeeder"
+php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force && log "  ✓ PermissionsSeeder ok" || warn "  ✗ PermissionsSeeder failed"
+log "  → running: php artisan db:seed --class=SuperAdminSeeder"
+php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force && log "  ✓ SuperAdminSeeder ok" || warn "  ✗ SuperAdminSeeder failed"
+log "Verifying required admin accounts (developer + super_admin)…"
+php artisan admin:verify --fix || warn "  ✗ admin verification reported problems — check output above"
 php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache
 php artisan route:cache
