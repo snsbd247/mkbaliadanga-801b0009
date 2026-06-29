@@ -62,9 +62,9 @@ export default function IrrigationCashBookLedgerPage() {
     setLoading(true);
     try {
       let pq = sb.from("irrigation_invoice_payments")
-        .select("amount,paid_at,receipt_no,method").eq("office_id", officeId).is("deleted_at", null);
-      if (from) pq = pq.gte("paid_at", from);
-      if (to) pq = pq.lte("paid_at", `${to}T23:59:59`);
+        .select("collected_amount,created_at,payments(receipt_no,method)").eq("office_id", officeId).gt("collected_amount", 0);
+      if (from) pq = pq.gte("created_at", from);
+      if (to) pq = pq.lte("created_at", `${to}T23:59:59`);
       const { data: pays } = await pq;
 
       let eq = sb.from("expenses")
@@ -74,8 +74,8 @@ export default function IrrigationCashBookLedgerPage() {
       const { data: exps } = await eq;
 
       const next: CashEntry[] = [];
-      for (const p of pays ?? [])
-        next.push({ date: String(p.paid_at).slice(0, 10), direction: "in", amount: Number(p.amount || 0), head: p.method ?? tx("Irrigation collection", "সেচ আদায়"), ref: p.receipt_no });
+      for (const p of (pays ?? []) as any[])
+        next.push({ date: String(p.created_at).slice(0, 10), direction: "in", amount: Number(p.collected_amount || 0), head: p.payments?.method ?? tx("Irrigation collection", "সেচ আদায়"), ref: p.payments?.receipt_no ?? null });
       for (const e of exps ?? [])
         next.push({ date: String(e.expense_date).slice(0, 10), direction: "out", amount: Number(e.amount || 0), head: e.head ?? tx("Expense", "খরচ"), ref: e.note });
       setEntries(next);
