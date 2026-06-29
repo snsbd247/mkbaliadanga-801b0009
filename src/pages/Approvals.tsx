@@ -167,6 +167,11 @@ export default function Approvals() {
       }
       const { error } = await supabase.from(bulk.table).update(patch).in("id", bulk.ids);
       if (error) throw error;
+      await logAudit({
+        module: "other",
+        action_type: bulk.status === "approved" ? "approve" : "reject",
+        new_data: { table: bulk.table, status: bulk.status, ids: bulk.ids, count: bulk.ids.length, note: comment.trim() || null },
+      });
       toast.success(`${bulk.ids.length} ${bulk.status === "approved" ? t("approved") : t("rejected")}`);
       setBulk(null);
       reload();
