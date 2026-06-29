@@ -28,54 +28,78 @@ class AuthController extends Controller
         ]);
 
         $identifier = $data['identifier'] ?? $data['login'];
-
-        $user = User::query()
-            ->where('username', $identifier)
-            ->orWhere('email', $identifier)
-            ->first();
-
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'identifier' => ['ভুল ইউজারনেম বা পাসওয়ার্ড।'],
-            ]);
-        }
-
-        // Server-side autofix: if this is a canonical admin account whose
-        // required role went missing, reattach it before issuing the token.
         try {
-            CanonicalAdmins::ensureRole($user);
-            $user->refresh();
-        } catch (\Throwable $e) {
-            // Never let the role-autofix break login; just log and continue.
-            Log::warning('CanonicalAdmins::ensureRole failed during login: '.$e->getMessage());
-        }
+            $user = User::query()
+                ->where('username', $identifier)
+                ->orWhere('email', $identifier)
+                ->first();
 
+            if (! $user || ! Hash::check($data['password'], $user->password)) {
+                throw ValidationException::withMessages([
+                    'identifier' => ['ভুল ইউজারনেম বা পাসওয়ার্ড।'],
+                ]);
+            }
 
+            // Server-side autofix: if this is a canonical admin account whose
+            // required role went missing, reattach it before issuing the token.
+            try {
+                CanonicalAdmins::ensureRole($user);
+                $user->refresh();
+            } catch (\Throwable $e) {
+                // Never let the role-autofix break login; just log and continue.
+                Log::warning('CanonicalAdmins::ensureRole failed during login: '.$e->getMessage());
+            }
 
-        if (! $user->is_active) {
-            throw ValidationException::withMessages([
-                'identifier' => ['এই অ্যাকাউন্টটি নিষ্ক্রিয়।'],
+            if (! $user->is_active) {
+                throw ValidationException::withMessages([
+                    'identifier' => ['এই অ্যাকাউন্টটি নিষ্ক্রিয়।'],
+                ]);
+            }
+
+            try {
+                $token = $this->issueToken($user, $data['device'] ?? 'web');
+            } catch (\Throwable $e) {
+                Log::warning('Initial API token creation failed during login; attempting repair.', [
+                    'user_id' => $user->id,
+                    'username' => $user->username,
+                    'error' => $e->getMessage(),
+                ]);
+
+                try {
+                    SanctumTokenSchema::ensureUuidTokenableId();
+                    if (CanonicalAdmins::isCanonical($user->username)) {
+                        CanonicalAdmins::fix();
+                    }
+                    $user->refresh();
+                    $token = $this->issueToken($user, $data['device'] ?? 'web');
+                } catch (\Throwable $retryError) {
+                    Log::error('API token creation failed after repair attempt during login: '.$retryError->getMessage(), [
+                        'user_id' => $user->id,
+                        'username' => $user->username,
+                        'first_error' => $e->getMessage(),
+                    ]);
+
+                    return response()->json([
+                        'message' => 'লগইন সেশন তৈরি করা যায়নি। VPS-এ bash scripts/update.sh চালান; তারপর php backend/artisan admin:verify --fix চালিয়ে আবার চেষ্টা করুন।',
+                    ], 500);
+                }
+            }
+
+            return response()->json([
+                'token' => $token,
+                'user' => $this->userPayload($user->fresh() ?? $user),
             ]);
-        }
-
-        try {
-            SanctumTokenSchema::ensureUuidTokenableId();
-            $token = $user->createToken($data['device'] ?? 'web')->plainTextToken;
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Throwable $e) {
-            Log::error('API token creation failed during login: '.$e->getMessage(), [
-                'user_id' => $user->id,
-                'username' => $user->username,
+            Log::error('Unexpected login failure: '.$e->getMessage(), [
+                'identifier' => $identifier,
             ]);
 
             return response()->json([
-                'message' => 'লগইন সেশন তৈরি করা যায়নি। VPS-এ bash scripts/update.sh চালিয়ে আবার চেষ্টা করুন।',
+                'message' => 'লগইন করার সময় সার্ভারে সমস্যা হয়েছে। VPS-এ bash scripts/update.sh চালিয়ে আবার চেষ্টা করুন।',
             ], 500);
         }
-
-        return response()->json([
-            'token' => $token,
-            'user' => $this->userPayload($user),
-        ]);
     }
 
     /**
@@ -178,5 +202,12 @@ class AuthController extends Controller
             'roles' => $user->roleNames(),
             'permissions' => $user->permissionList(),
         ];
+    }
+
+    private function issueToken(User $user, string $device): string
+    {
+        SanctumTokenSchema::ensureUuidTokenableId();
+
+        return $user->createToken($device)->plainTextToken;
     }
 }

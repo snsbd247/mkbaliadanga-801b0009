@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Farmer;
 use App\Models\SmsLog;
+use App\Support\SanctumTokenSchema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -107,7 +109,19 @@ class FarmerAuthController extends Controller
 
     private function tokenResponse(Farmer $farmer): JsonResponse
     {
-        $token = $farmer->createToken('farmer-portal', ['farmer'])->plainTextToken;
+        try {
+            SanctumTokenSchema::ensureUuidTokenableId();
+            $token = $farmer->createToken('farmer-portal', ['farmer'])->plainTextToken;
+        } catch (\Throwable $e) {
+            Log::error('Farmer token creation failed: '.$e->getMessage(), [
+                'farmer_id' => $farmer->id,
+                'code' => $farmer->code,
+            ]);
+
+            return response()->json([
+                'message' => 'লগইন সেশন তৈরি করা যায়নি। সার্ভার আপডেট করে আবার চেষ্টা করুন।',
+            ], 500);
+        }
 
         return response()->json([
             'token' => $token,

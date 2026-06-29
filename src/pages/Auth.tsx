@@ -13,7 +13,7 @@ import { db } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { isLaravelBackend } from "@/lib/backend";
-import { api, setApiToken } from "@/lib/api/client";
+import { api, ApiError, setApiToken } from "@/lib/api/client";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useBranding } from "@/lib/branding";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -88,9 +88,23 @@ export default function AuthPage() {
           if (window.location.pathname === "/auth") window.location.replace("/admin");
         }, 1200);
       } catch (err: any) {
-        const msg = err?.message || "Login failed";
-        setPasswordError(lang === "bn" ? "পাসওয়ার্ড সঠিক নয়" : "Incorrect password");
-        setDebug({ ...d, password: "fail", errorMessage: msg, hint: "Laravel /auth/login rejected the credentials." });
+        const apiError = err instanceof ApiError ? err : new ApiError(err?.message || "Login failed");
+        const msg = apiError.message || "Login failed";
+        const invalidCreds =
+          apiError.status === 401 ||
+          apiError.status === 422 ||
+          /ভুল ইউজারনেম বা পাসওয়ার্ড|invalid credentials|incorrect password/i.test(msg);
+
+        setPasswordError(invalidCreds ? (lang === "bn" ? "পাসওয়ার্ড সঠিক নয়" : "Incorrect password") : null);
+        setDebug({
+          ...d,
+          password: "fail",
+          errorStatus: apiError.status,
+          errorMessage: msg,
+          hint: invalidCreds
+            ? "Laravel /auth/login rejected the credentials."
+            : "Laravel login returned a server-side error. Use the exact backend message above.",
+        });
         toast.error(msg);
       } finally {
         setBusy(false);

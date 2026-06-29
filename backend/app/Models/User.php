@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -53,7 +54,16 @@ class User extends Authenticatable
     /** @return array<int, string> role names */
     public function roleNames(): array
     {
-        return $this->roles()->pluck('name')->all();
+        try {
+            return $this->roles()->pluck('name')->all();
+        } catch (\Throwable $e) {
+            Log::warning('Failed to load user roles: '.$e->getMessage(), [
+                'user_id' => $this->id,
+                'username' => $this->username,
+            ]);
+
+            return [];
+        }
     }
 
     /**
@@ -63,14 +73,30 @@ class User extends Authenticatable
      */
     public function permissionList(): array
     {
-        return Permission::query()
-            ->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id')
-            ->join('user_roles', 'user_roles.role_id', '=', 'role_permissions.role_id')
-            ->where('user_roles.user_id', $this->id)
-            ->pluck('permissions.key')
-            ->unique()
-            ->values()
-            ->all();
+        $roles = $this->roleNames();
+
+        // Canonical admin roles must never be locked out if permission rows drift.
+        if (in_array('developer', $roles, true) || in_array('super_admin', $roles, true)) {
+            return ['*'];
+        }
+
+        try {
+            return Permission::query()
+                ->join('role_permissions', 'role_permissions.permission_id', '=', 'permissions.id')
+                ->join('user_roles', 'user_roles.role_id', '=', 'role_permissions.role_id')
+                ->where('user_roles.user_id', $this->id)
+                ->pluck('permissions.key')
+                ->unique()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            Log::warning('Failed to load user permissions: '.$e->getMessage(), [
+                'user_id' => $this->id,
+                'username' => $this->username,
+            ]);
+
+            return [];
+        }
     }
 
     public function hasRole(string $role): bool
@@ -80,6 +106,11 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission): bool
     {
+        $roles = $this->roleNames();
+        if (in_array('developer', $roles, true) || in_array('super_admin', $roles, true)) {
+            return true;
+        }
+
         $permissions = $this->permissionList();
 
         // Wildcard (super admin) grants everything.

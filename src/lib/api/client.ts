@@ -2,6 +2,20 @@ import axios, { AxiosError, AxiosInstance } from "axios";
 
 const TOKEN_KEY = "mkb_api_token";
 
+export class ApiError extends Error {
+  status?: number;
+  code?: string;
+  data?: unknown;
+
+  constructor(message: string, options?: { status?: number; code?: string; data?: unknown }) {
+    super(message);
+    this.name = "ApiError";
+    this.status = options?.status;
+    this.code = options?.code;
+    this.data = options?.data;
+  }
+}
+
 export function getApiToken(): string | null {
   try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
 }
@@ -38,12 +52,18 @@ api.interceptors.response.use(
         window.dispatchEvent(new CustomEvent("api:unauthorized"));
       }
     }
+    const data = err.response?.data as any;
     const msg =
-      (err.response?.data as any)?.message ||
-      (err.response?.data as any)?.error ||
+      data?.message ||
+      data?.error ||
+      (typeof data === "string" && data.trim() ? data.trim() : undefined) ||
       err.message ||
       "Request failed";
-    return Promise.reject(new Error(msg));
+    return Promise.reject(new ApiError(msg, {
+      status: err.response?.status,
+      code: data?.code,
+      data,
+    }));
   }
 );
 
