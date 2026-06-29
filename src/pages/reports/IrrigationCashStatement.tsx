@@ -12,6 +12,7 @@ import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { computeStatement, incomeDrillDownUrl, expenseDrillDownUrl, type Line } from "@/lib/irrigationCashStatement";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = supabase as any;
