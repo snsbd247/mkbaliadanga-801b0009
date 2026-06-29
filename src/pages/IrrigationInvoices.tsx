@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveRowMouzaName } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -59,7 +60,7 @@ function invoiceLandSize(inv: any): number | undefined {
   return inv?.lands?.land_size;
 }
 
-const mouzaName = (r: any) => (r?.lands?.mouza?.trim() || r?.lands?.mouzas?.name?.trim() || "");
+const mouzaName = (r: any) => resolveRowMouzaName(r);
 
 const STATUS_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "outline",
