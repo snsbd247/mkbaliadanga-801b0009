@@ -2,6 +2,7 @@ export type Lang = "en" | "bn";
 
 export const translations = {
   en: {
+    receiptAudit: "Receipt Audit",
     appName: "Smart Irrigation & Cooperative",
     accessDenied: "Access denied",
     pgVoterListDocTitle: "Savings List",
