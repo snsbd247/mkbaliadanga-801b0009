@@ -39,8 +39,13 @@ class AuthController extends Controller
 
         // Server-side autofix: if this is a canonical admin account whose
         // required role went missing, reattach it before issuing the token.
-        \App\Support\CanonicalAdmins::ensureRole($user);
-        $user->refresh();
+        try {
+            \App\Support\CanonicalAdmins::ensureRole($user);
+            $user->refresh();
+        } catch (\Throwable $e) {
+            // Never let the role-autofix break login; just log and continue.
+            \Illuminate\Support\Facades\Log::warning('CanonicalAdmins::ensureRole failed during login: '.$e->getMessage());
+        }
 
 
 
