@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import {
   BANGLA_FONTS, getBanglaFontPref, setBanglaFontPref, type BanglaFontId,
 } from "@/lib/banglaFonts";
+import { jsPDF } from "jspdf";
+import { ensureBanglaFont } from "@/lib/pdfFonts";
 
 const SAMPLE_BN = "যত মত তত পথ — বাংলাদেশের কৃষক সমিতি। কৃষ্ণচূড়া ফোটে। ক্ষুদ্র ঋণ ব্যবস্থা। ২০২৬ সালের সেচ মৌসুম। জ্ঞান, বিজ্ঞান, ঐক্য।";
 const SAMPLE_DIGITS = "সংখ্যা: ০ ১ ২ ৩ ৪ ৫ ৬ ৭ ৮ ৯ — টাকা ১২,৩৪৫.৬৭";
