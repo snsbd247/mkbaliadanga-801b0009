@@ -18,6 +18,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import {
