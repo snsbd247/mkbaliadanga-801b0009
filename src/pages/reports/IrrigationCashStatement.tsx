@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { downloadCsv } from "@/lib/csvExport";
 import { auditExport } from "@/lib/audit";
 import { useLang } from "@/i18n/LanguageProvider";
 
-const sb = supabase as any;
+const sb = db as any;
 
 // Bengali money: comma grouping + two decimals + Bengali digits.
 function bnMoney(n: number): string {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -51,7 +51,7 @@ export default function IrrigationCategoryReport() {
   async function load() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("irrigation_invoice_payments")
         .select("created_at,collected_amount,irrigation_collected,delay_fee_collected,maintenance_collected,canal_collected,previous_due_collected,current_invoice_collected")
         .gte("created_at", from)
