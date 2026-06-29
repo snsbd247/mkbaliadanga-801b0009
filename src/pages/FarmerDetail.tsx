@@ -2100,7 +2100,7 @@ export default function FarmerDetail() {
                   <SelectContent><SelectItem value="owner">{t("owner")}</SelectItem><SelectItem value="borgadar">{t("borgadar")}</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div><Label>{t("fieldType")}</Label>
+              <div><Label>{t("fieldType")} <span className="text-destructive">*</span></Label>
                 <LandTypeSelect
                   landTypeId={editForm.land_type_id}
                   fieldType={editForm.field_type}
