@@ -21,6 +21,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SavingsController;
 use App\Http\Controllers\SeasonController;
+use App\Http\Controllers\GenericTableController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
