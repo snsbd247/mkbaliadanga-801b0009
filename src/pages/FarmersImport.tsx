@@ -273,7 +273,7 @@ export default function FarmersImport() {
       try {
         if (farmerId) {
           // Find existing farmer by member_no
-          const { data: existing } = await supabase
+          const { data: existing } = await db
             .from("farmers")
             .select("id")
             .eq("member_no", farmerId)
@@ -282,13 +282,13 @@ export default function FarmersImport() {
             const { error } = await db.from("farmers").update(basePayload).eq("id", existing.id);
             if (error) throw error;
           } else {
-            const { error } = await supabase
+            const { error } = await db
               .from("farmers")
               .insert({ ...basePayload, member_no: farmerId, farmer_code: farmerId, office_id: officeId ?? null });
             if (error) throw error;
           }
         } else {
-          const { error } = await supabase
+          const { error } = await db
             .from("farmers")
             .insert({ ...basePayload, office_id: officeId ?? null });
           if (error) throw error;
