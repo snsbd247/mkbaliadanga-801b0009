@@ -331,6 +331,7 @@ const App = () => (
                 <Route path="/admin/receipt-template" element={<RequireRole roles={["super_admin"]}><ReceiptTemplate /></RequireRole>} />
                 <Route path="/admin/card-designer" element={<RequireRole roles={["super_admin"]}><CardDesigner /></RequireRole>} />
                 <Route path="/admin/role-matrix" element={<RequireDeveloper><RoleMatrix /></RequireDeveloper>} />
+                <Route path="/admin/user-roles" element={<RequireRole roles={["super_admin"]}><UserRoles /></RequireRole>} />
                 <Route path="/admin/my-permissions" element={<MyPermissions />} />
                 <Route path="/admin/duplicate-receipts" element={<RequireDeveloper><DuplicateReceiptAudit /></RequireDeveloper>} />
                 <Route path="/admin/farmer-login-audit" element={<RequireDeveloper><FarmerLoginAudit /></RequireDeveloper>} />
