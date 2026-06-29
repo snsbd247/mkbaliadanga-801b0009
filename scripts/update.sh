@@ -109,7 +109,7 @@ done
 php artisan down --retry=15 || true
 # migrate ONLY applies new migrations; it never drops tables or re-seeds data
 php artisan migrate --force
-php artisan optimize:clear
+php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache
 php artisan route:cache
 php artisan up || true
