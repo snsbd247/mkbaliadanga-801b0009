@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -225,7 +224,7 @@ export default function Savings() {
 
     // Withdraw balance check (savings only)
     if (isWithdraw) {
-      const { data: bal } = await supabase
+      const { data: bal } = await db
         .from("savings_transactions")
         .select("type,amount,status")
         .eq("farmer_id", form.farmer_id)
@@ -291,7 +290,7 @@ export default function Savings() {
       decided_at: new Date().toISOString(),
       ...(status === "rejected" ? { reject_reason } : {}),
     };
-    const { error } = await supabase
+    const { error } = await db
       .from("savings_transactions")
       .update(patch)
       .eq("id", id)

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,7 +57,7 @@ export default function Ledger() {
     if (!term) { setFarmerRefIds(null); return; }
     let cancelled = false;
     (async () => {
-      const { data: fs } = await supabase
+      const { data: fs } = await db
         .from("farmers").select("id")
         .or(`name_en.ilike.%${term}%,farmer_code.ilike.%${term}%,member_no.ilike.%${term}%,mobile.ilike.%${term}%`)
         .limit(500);

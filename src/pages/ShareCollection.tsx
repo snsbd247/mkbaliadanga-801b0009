@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -64,7 +63,7 @@ export default function ShareCollection() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("savings_transactions")
       .select("id,farmer_id,amount,txn_date,status,note,reject_reason,created_at,farmers(name_en,farmer_code,member_no)")
       .eq("type", "share_collection")
@@ -178,7 +177,7 @@ export default function ShareCollection() {
     }
     const patch: any = { status, approved_by: user?.id, decided_at: new Date().toISOString() };
     if (reject_reason) patch.reject_reason = reject_reason;
-    const { error } = await supabase
+    const { error } = await db
       .from("savings_transactions")
       .update(patch)
       .eq("id", id)
