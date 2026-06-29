@@ -62,6 +62,14 @@ git config --global --add safe.directory "${APP_DIR}" || true
 git -C "${APP_DIR}" fetch --depth 1 origin "${BRANCH}"
 git -C "${APP_DIR}" reset --hard "origin/${BRANCH}"
 
+# Re-exec the freshly-pulled copy so the latest update logic always runs
+# (guards against running a stale in-memory/cached script).
+REPO_UPDATE="${APP_DIR}/scripts/update.sh"
+if [ -z "${MK_UPDATE_REEXEC:-}" ] && [ -f "${REPO_UPDATE}" ]; then
+  export MK_UPDATE_REEXEC=1
+  exec bash "${REPO_UPDATE}"
+fi
+
 # ──────────────────────────────────────────────────────────────────────────
 # 3. Backend: dependencies + schema migration (NO SEED, NO FRESH)
 # ──────────────────────────────────────────────────────────────────────────
