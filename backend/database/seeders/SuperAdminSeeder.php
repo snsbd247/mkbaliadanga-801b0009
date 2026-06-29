@@ -40,31 +40,43 @@ class SuperAdminSeeder extends Seeder
         $superAdminRole->permissions()->syncWithoutDetaching([$wildcard->id]);
 
         // Developer account (ismail162 / Admin@123).
-        $developer = User::query()->updateOrCreate(
-            ['username' => 'ismail162'],
-            [
-                'id' => (string) Str::uuid(),
-                'name' => 'Developer',
-                'email' => 'ismail162@mohammadkhani.com',
-                'password' => Hash::make('Admin@123'),
-                'office_id' => $office->id,
-                'is_active' => true,
-            ],
-        );
+        $developer = $this->ensureUser('ismail162', [
+            'name' => 'Developer',
+            'email' => 'ismail162@mohammadkhani.com',
+            'password' => Hash::make('Admin@123'),
+            'office_id' => $office->id,
+            'is_active' => true,
+        ]);
         $developer->roles()->syncWithoutDetaching([$developerRole->id]);
 
         // Super admin account (suparadmin / Admin@123).
-        $superAdmin = User::query()->updateOrCreate(
-            ['username' => 'suparadmin'],
-            [
-                'id' => (string) Str::uuid(),
-                'name' => 'Super Admin',
-                'email' => 'suparadmin@mohammadkhani.com',
-                'password' => Hash::make('Admin@123'),
-                'office_id' => $office->id,
-                'is_active' => true,
-            ],
-        );
+        $superAdmin = $this->ensureUser('suparadmin', [
+            'name' => 'Super Admin',
+            'email' => 'suparadmin@mohammadkhani.com',
+            'password' => Hash::make('Admin@123'),
+            'office_id' => $office->id,
+            'is_active' => true,
+        ]);
         $superAdmin->roles()->syncWithoutDetaching([$superAdminRole->id]);
+    }
+
+    /**
+     * Create the user if missing, otherwise update its attributes in place.
+     * Never touches the primary key `id`, so existing user_roles FK rows stay intact.
+     */
+    private function ensureUser(string $username, array $attributes): User
+    {
+        $user = User::query()->where('username', $username)->first();
+
+        if ($user === null) {
+            return User::query()->create(array_merge(
+                ['id' => (string) Str::uuid(), 'username' => $username],
+                $attributes,
+            ));
+        }
+
+        $user->fill($attributes)->save();
+
+        return $user;
     }
 }
