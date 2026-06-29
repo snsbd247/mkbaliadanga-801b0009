@@ -10,6 +10,7 @@ import { Printer, FileSpreadsheet } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import { computeSocietyStatement, computeBankSummary, incomeDrillDownUrl, expenseDrillDownUrl, incomingDrillDownUrl, type Line } from "@/lib/societyCashStatement";
 import { Link } from "react-router-dom";
 import { useLang } from "@/i18n/LanguageProvider";
