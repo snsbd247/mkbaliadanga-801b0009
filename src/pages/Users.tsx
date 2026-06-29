@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -60,9 +61,9 @@ export default function Users() {
 
   async function load() {
     const [p, r, o] = await Promise.all([
-      supabase.from("profiles").select("*"),
-      supabase.from("user_roles").select("*"),
-      supabase.from("offices").select("id,name"),
+      db.from("profiles").select("*"),
+      db.from("user_roles").select("*"),
+      db.from("offices").select("id,name"),
     ]);
     setOffices(o.data ?? []);
     const ROLE_RANK: Record<string, number> = { developer: 5, super_admin: 4, admin: 3, committee: 2, staff: 1 };
@@ -142,13 +143,13 @@ export default function Users() {
     if ((role === "developer" || role === "super_admin") && !isDeveloper) {
       return toast.error("Only developers can assign this role");
     }
-    await supabase.from("user_roles").delete().eq("user_id", uid);
-    const { error } = await supabase.from("user_roles").insert({ user_id: uid, role });
+    await db.from("user_roles").delete().eq("user_id", uid);
+    const { error } = await db.from("user_roles").insert({ user_id: uid, role });
     if (error) return toast.error(error.message);
     toast.success(t("saved")); load();
   }
   async function setOffice(uid: string, office_id: string) {
-    const { error } = await supabase.from("profiles").update({ office_id: office_id || null }).eq("id", uid);
+    const { error } = await db.from("profiles").update({ office_id: office_id || null }).eq("id", uid);
     if (error) return toast.error(error.message);
     load();
   }
@@ -157,7 +158,7 @@ export default function Users() {
     setPermFor(u);
     const role = (u.roles?.[0] as string) ?? "staff";
     const isGlobal = role === "developer" || role === "super_admin";
-    const { data } = await supabase.from("user_permissions").select("*").eq("user_id", u.id);
+    const { data } = await db.from("user_permissions").select("*").eq("user_id", u.id);
     const map: Record<string, any> = {};
     (data ?? []).forEach((r: any) => { map[r.module] = r; });
     ALL_MODULES.forEach((m) => {
@@ -176,8 +177,8 @@ export default function Users() {
       can_view: !!perms[m]?.can_view, can_add: !!perms[m]?.can_add,
       can_edit: !!perms[m]?.can_edit, can_delete: !!perms[m]?.can_delete,
     }));
-    await supabase.from("user_permissions").delete().eq("user_id", permFor.id);
-    const { error } = await supabase.from("user_permissions").insert(rows);
+    await db.from("user_permissions").delete().eq("user_id", permFor.id);
+    const { error } = await db.from("user_permissions").insert(rows);
     if (error) return toast.error(error.message);
     toast.success(t("saved"));
     setPermFor(null);

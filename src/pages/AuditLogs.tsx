@@ -1,6 +1,6 @@
 // i18n-ignore-file — admin/utility page
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,8 +57,8 @@ export default function AuditLogs() {
     document.title = `${t("auditLogs")} — ${t("appName")}`;
     (async () => {
       const [prof, ofcs] = await Promise.all([
-        supabase.from("profiles").select("id,full_name,username"),
-        supabase.from("offices").select("id,name"),
+        db.from("profiles").select("id,full_name,username"),
+        db.from("offices").select("id,name"),
       ]);
       setProfiles(Object.fromEntries((prof.data ?? []).map((p: any) => [p.id, p])));
       setOffices(Object.fromEntries((ofcs.data ?? []).map((o: any) => [o.id, o])));
