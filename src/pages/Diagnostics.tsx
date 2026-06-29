@@ -408,6 +408,66 @@ export default function Diagnostics() {
             )}
           </Card>
         </TabsContent>
+
+        <TabsContent value="api">
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">{t("diag_apiScanDesc" as any)}</div>
+              <Button onClick={runApiScan} disabled={apiBusy}>
+                {apiBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                {t("diag_runApiScan" as any)}
+              </Button>
+            </div>
+            {apiBusy && (
+              <div className="text-xs text-muted-foreground">{apiProgress}%</div>
+            )}
+            {apiResults.length > 0 && (
+              <Alert className="mb-1">
+                {apiResults.every(r => r.ok) ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                <AlertTitle>{t("diag_result" as any)}</AlertTitle>
+                <AlertDescription>
+                  {t("diag_passFail" as any)
+                    .replace("{pass}", String(apiResults.filter(r => r.ok).length))
+                    .replace("{fail}", String(apiResults.filter(r => !r.ok).length))}
+                </AlertDescription>
+              </Alert>
+            )}
+            {apiResults.length > 0 && (
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>{t("diag_page" as any)}</TableHead>
+                  <TableHead>{t("diag_status" as any)}</TableHead>
+                  <TableHead>{t("diag_endpoints" as any)}</TableHead>
+                  <TableHead>{t("diag_error" as any)}</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {apiResults.map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{r.page}</TableCell>
+                      <TableCell>
+                        {r.ok
+                          ? <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" />{t("diag_ok" as any)}</Badge>
+                          : <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />{t("diag_fail" as any)}</Badge>}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {r.total - r.failed.length}/{r.total}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {r.failed.length === 0
+                          ? t("diag_apiOk" as any)
+                          : r.failed.map((f, j) => (
+                              <div key={j} className="font-mono text-destructive">
+                                {f.table}{f.code ? ` [${f.code}]` : ""}: {f.message}
+                              </div>
+                            ))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Card>
+        </TabsContent>
       </Tabs>
     </>
   );
