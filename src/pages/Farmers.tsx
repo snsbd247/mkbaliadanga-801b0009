@@ -20,6 +20,7 @@ import { TruncateText } from "@/components/ui/truncate-text";
 import { EditButton, DeleteButton, ViewButton } from "@/components/ui/action-icon-button";
 import * as XLSX from "xlsx";
 import { normalizeFarmerCode } from "@/lib/farmerCode";
+import { parseDagSearchTokens } from "@/lib/dagNumbers";
 import { formatId5 } from "@/lib/idFormat";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
 
