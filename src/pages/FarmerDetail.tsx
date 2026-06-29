@@ -1340,7 +1340,7 @@ export default function FarmerDetail() {
                           }} />
                         </div>
                         <div>
-                          <Label>{t("fieldType")}</Label>
+                          <Label>{t("fieldType")} <span className="text-destructive">*</span></Label>
                           <LandTypeSelect
                             landTypeId={land.land_type_id}
                             fieldType={land.field_type}
