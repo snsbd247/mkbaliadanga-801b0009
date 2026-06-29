@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\CanonicalAdmins;
+use App\Support\SanctumTokenSchema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -40,11 +43,11 @@ class AuthController extends Controller
         // Server-side autofix: if this is a canonical admin account whose
         // required role went missing, reattach it before issuing the token.
         try {
-            \App\Support\CanonicalAdmins::ensureRole($user);
+            CanonicalAdmins::ensureRole($user);
             $user->refresh();
         } catch (\Throwable $e) {
             // Never let the role-autofix break login; just log and continue.
-            \Illuminate\Support\Facades\Log::warning('CanonicalAdmins::ensureRole failed during login: '.$e->getMessage());
+            Log::warning('CanonicalAdmins::ensureRole failed during login: '.$e->getMessage());
         }
 
 
@@ -55,7 +58,19 @@ class AuthController extends Controller
             ]);
         }
 
-        $token = $user->createToken($data['device'] ?? 'web')->plainTextToken;
+        try {
+            SanctumTokenSchema::ensureUuidTokenableId();
+            $token = $user->createToken($data['device'] ?? 'web')->plainTextToken;
+        } catch (\Throwable $e) {
+            Log::error('API token creation failed during login: '.$e->getMessage(), [
+                'user_id' => $user->id,
+                'username' => $user->username,
+            ]);
+
+            return response()->json([
+                'message' => 'লগইন সেশন তৈরি করা যায়নি। VPS-এ bash scripts/update.sh চালিয়ে আবার চেষ্টা করুন।',
+            ], 500);
+        }
 
         return response()->json([
             'token' => $token,
