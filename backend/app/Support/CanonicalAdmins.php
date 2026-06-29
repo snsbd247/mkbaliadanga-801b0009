@@ -6,6 +6,7 @@ use App\Models\Office;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -79,7 +80,7 @@ class CanonicalAdmins
     /**
      * Build the current status report for the two required accounts.
      *
-     * @return array<int, array{username:string, expected_role:string, exists:bool, active:bool, has_role:bool, ok:bool}>
+     * @return array<int, array{username:string, expected_role:string, exists:bool, active:bool, has_role:bool, token_ok:bool, token_error:?string, ok:bool}>
      */
     public static function status(): array
     {
@@ -89,13 +90,16 @@ class CanonicalAdmins
             $exists = (bool) $user;
             $active = $exists && (bool) $user->is_active;
             $hasRole = $exists && in_array($a['role'], $user->roleNames(), true);
+            $tokenProbe = self::probeTokenHealth($user);
             $out[] = [
                 'username' => $a['username'],
                 'expected_role' => $a['role'],
                 'exists' => $exists,
                 'active' => $active,
                 'has_role' => $hasRole,
-                'ok' => $exists && $active && $hasRole,
+                'token_ok' => $tokenProbe['ok'],
+                'token_error' => $tokenProbe['error'],
+                'ok' => $exists && $active && $hasRole && $tokenProbe['ok'],
             ];
         }
 
@@ -170,5 +174,33 @@ class CanonicalAdmins
         );
 
         $role->permissions()->syncWithoutDetaching([$wildcard->id]);
+    }
+
+    /**
+     * Attempt real token creation so deploy verification catches Sanctum/schema
+     * problems before an admin discovers them on the login screen.
+     *
+     * @return array{ok:bool,error:?string}
+     */
+    private static function probeTokenHealth(?User $user): array
+    {
+        if (! $user || ! $user->is_active) {
+            return ['ok' => false, 'error' => 'User missing or inactive'];
+        }
+
+        try {
+            SanctumTokenSchema::ensureUuidTokenableId();
+            $issued = $user->createToken('__admin_verify__'.Str::random(6));
+            $issued->accessToken->delete();
+
+            return ['ok' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            Log::warning('Canonical admin token probe failed: '.$e->getMessage(), [
+                'username' => $user->username,
+                'user_id' => $user->id,
+            ]);
+
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
     }
 }
