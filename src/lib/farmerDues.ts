@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 
 export type FarmerDuesBreakdown = {
   farmer_id: string;
