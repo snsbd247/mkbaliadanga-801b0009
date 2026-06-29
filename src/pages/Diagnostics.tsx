@@ -218,6 +218,7 @@ export default function Diagnostics() {
           <TabsTrigger value="health">{t("diag_healthCheck" as any)}</TabsTrigger>
           <TabsTrigger value="isolation">{t("diag_isolation" as any)}</TabsTrigger>
           <TabsTrigger value="integrity">{t("diag_integrity" as any)}</TabsTrigger>
+          <TabsTrigger value="api">{t("diag_apiHealth" as any)} {apiResults.some(r => !r.ok) && <Badge variant="destructive" className="ml-2">{apiResults.filter(r => !r.ok).length}</Badge>}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="errors">
