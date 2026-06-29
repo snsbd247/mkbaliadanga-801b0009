@@ -316,7 +316,6 @@ export default function Farmers() {
     // a search like "123, 124/A" find both single- and multi-dag lands.
     let dagFarmerIds: string[] = [];
     if (q && q.trim()) {
-      const { parseDagSearchTokens } = await import("@/lib/dagNumbers");
       const tokens = parseDagSearchTokens(q).slice(0, 10);
       if (tokens.length) {
         const orExpr = tokens.map((t) => `dag_no.ilike.%${t.replace(/[%,]/g, "")}%`).join(",");
