@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -34,14 +34,14 @@ export default function IrrigationDueMismatch() {
   async function load() {
     setLoading(true);
     try {
-      const { data: invs } = await supabase
+      const { data: invs } = await db
         .from("irrigation_invoices")
         .select("farmer_id,due_amount,paid_amount,payable_amount,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code)")
         .is("deleted_at", null)
         .neq("invoice_status", "cancelled")
         .limit(20000);
 
-      const { data: iips } = await supabase
+      const { data: iips } = await db
         .from("irrigation_invoice_payments")
         .select("invoice_id,collected_amount,current_invoice_collected,previous_due_collected,irrigation_invoices(farmer_id)")
         .limit(20000);
@@ -116,7 +116,7 @@ export default function IrrigationDueMismatch() {
     const tid = toast.loading(tx("Recalculating…", "রিক্যালকুলেট হচ্ছে…"));
     try {
       // Pull invoices + payment splits for this farmer; rederive paid_amount + due_amount
-      const { data: invs, error: e1 } = await supabase
+      const { data: invs, error: e1 } = await db
         .from("irrigation_invoices")
         .select("id,payable_amount,office_id")
         .eq("farmer_id", farmerId)
@@ -126,7 +126,7 @@ export default function IrrigationDueMismatch() {
 
       const ids = (invs ?? []).map(i => i.id);
       const { data: pays } = ids.length
-        ? await supabase
+        ? await db
             .from("irrigation_invoice_payments")
             .select("invoice_id,current_invoice_collected,previous_due_collected,collected_amount")
             .in("invoice_id", ids)
@@ -144,13 +144,13 @@ export default function IrrigationDueMismatch() {
       for (const inv of invs ?? []) {
         const paid = Math.min(Number(inv.payable_amount || 0), sumByInv.get(inv.id) || 0);
         const due = Math.max(0, Number(inv.payable_amount || 0) - paid);
-        const { error: eUp } = await supabase
+        const { error: eUp } = await db
           .from("irrigation_invoices")
           .update({ paid_amount: paid, due_amount: due })
           .eq("id", inv.id);
         if (!eUp) {
           updated++;
-          await supabase.from("irrigation_invoice_audit").insert({
+          await db.from("irrigation_invoice_audit").insert({
             invoice_id: inv.id,
             office_id: inv.office_id,
             action: "recalculate",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
 
   const load = async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
+    const { data } = await (db as any)
       .from("office_incomes")
       .select("*")
       .order("received_on", { ascending: false })
@@ -97,7 +97,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
       let receiptNo = form.receipt_no.trim();
       // সেচ রশিদের একই সিরিয়াল ধারা ব্যবহার করা হয়।
       if (!receiptNo) receiptNo = await nextUnifiedReceiptNo(form.office_id || null, "IRR", crypto.randomUUID());
-      const { error } = await (supabase as any).from("office_incomes").insert({
+      const { error } = await (db as any).from("office_incomes").insert({
         office_id: form.office_id || null,
         receipt_no: receiptNo,
         income_type: form.income_type,
@@ -145,7 +145,7 @@ export function OfficeIncomeTab({ offices, userId }: { offices: any[]; userId?: 
       description: `${r.receipt_no} — ${r.payer_name}`,
     });
     if (!ok) return;
-    const { error } = await (supabase as any).from("office_incomes").delete().eq("id", r.id);
+    const { error } = await (db as any).from("office_incomes").delete().eq("id", r.id);
     if (error) { toast.error(error.message); return; }
     toast.success(tx("Deleted", "মুছে ফেলা হয়েছে"));
     load();

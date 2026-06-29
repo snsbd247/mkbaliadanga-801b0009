@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,14 +34,14 @@ export default function IrrigationReports() {
   useEffect(() => {
     document.title = t("irr_pageTitle" as any);
     Promise.all([
-      supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
+      db.from("offices").select("id,name").order("name"),
     ]).then(([s, o]) => { setSeasons(s.data ?? []); setOffices(o.data ?? []); });
   }, []);
 
   useEffect(() => {
     setLoading(true);
-    let q = supabase
+    let q = db
       .from("irrigation_invoices" as any)
       .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,father_name,village), owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_en,name_bn,farmer_code,mobile,father_name,village), lands(dag_no,land_size,mouza,patwaris(name,name_bn)), seasons(name,year,type)")
       .is("deleted_at", null)

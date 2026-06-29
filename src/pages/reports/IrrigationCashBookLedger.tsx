@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -26,7 +26,7 @@ import {
   type CashEntry, type CashBookRow,
 } from "@/lib/irrigationCashBookLedger";
 
-const sb = supabase as any;
+const sb = db as any;
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function IrrigationCashBookLedgerPage() {

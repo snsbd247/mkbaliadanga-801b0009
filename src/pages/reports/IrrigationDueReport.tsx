@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -67,10 +67,10 @@ export default function IrrigationDueReport() {
   useEffect(() => {
     document.title = t("irrigationDueReport");
     Promise.all([
-      supabase.from("offices").select("id,name").order("name"),
-      supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
-      supabase.from("patwaris").select("id,name,name_bn").eq("is_active", true).order("name"),
-      supabase.from("farmers").select("id,name_en,name_bn,farmer_code").is("deleted_at", null).order("farmer_code").limit(5000),
+      db.from("offices").select("id,name").order("name"),
+      db.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
+      db.from("patwaris").select("id,name,name_bn").eq("is_active", true).order("name"),
+      db.from("farmers").select("id,name_en,name_bn,farmer_code").is("deleted_at", null).order("farmer_code").limit(5000),
     ]).then(([o, s, p, f]) => {
       setOffices(o.data ?? []);
       setSeasons(s.data ?? []);
@@ -83,7 +83,7 @@ export default function IrrigationDueReport() {
     let cancelled = false;
     setLoading(true);
     (async () => {
-      let q = supabase.from("irrigation_invoices").select(
+      let q = db.from("irrigation_invoices").select(
         "farmer_id,land_id,season_id,payable_amount,paid_amount,due_amount,office_id,generated_at,due_date," +
         "farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile)," +
         "lands(mouza,dag_no,dag_numbers,land_size,patwari_id,patwaris(name,name_bn),owner:farmers!lands_owner_farmer_id_fkey(name_en,name_bn,farmer_code,father_name,village,mobile))," +

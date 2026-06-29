@@ -1,6 +1,6 @@
 // i18n-ignore-file — admin/utility page
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,11 +59,11 @@ export default function IrrigationRates() {
 
   async function load() {
     const [r, s] = await Promise.all([
-      supabase
+      db
         .from("irrigation_rates")
         .select("*, seasons(name,year,type)")
         .order("created_at", { ascending: false }),
-      supabase.from("seasons").select("*").order("year", { ascending: false }),
+      db.from("seasons").select("*").order("year", { ascending: false }),
     ]);
     setRows((r.data as any) ?? []);
     setSeasons(s.data ?? []);
@@ -97,7 +97,7 @@ export default function IrrigationRates() {
       // Fall back to the first office when the current profile has none (e.g. super_admin without explicit assignment).
       let effectiveOffice = officeId;
       if (!effectiveOffice) {
-        const { data: o } = await supabase.from("offices").select("id").order("created_at").limit(1).maybeSingle();
+        const { data: o } = await db.from("offices").select("id").order("created_at").limit(1).maybeSingle();
         effectiveOffice = o?.id ?? null;
       }
       if (!effectiveOffice) return toast.error("No office available — create an office first.");
@@ -115,10 +115,10 @@ export default function IrrigationRates() {
       };
       let error: any = null;
       if (form.id) {
-        ({ error } = await supabase.from("irrigation_rates").update(payload).eq("id", form.id));
+        ({ error } = await db.from("irrigation_rates").update(payload).eq("id", form.id));
       } else {
         // Check duplicate (office_id + season_id) within the effective office.
-        const { data: existing } = await supabase
+        const { data: existing } = await db
           .from("irrigation_rates")
           .select("id")
           .eq("season_id", form.season_id)
@@ -129,9 +129,9 @@ export default function IrrigationRates() {
             setSaving(false);
             return;
           }
-          ({ error } = await supabase.from("irrigation_rates").update(payload).eq("id", existing.id));
+          ({ error } = await db.from("irrigation_rates").update(payload).eq("id", existing.id));
         } else {
-          ({ error } = await supabase.from("irrigation_rates").insert(payload));
+          ({ error } = await db.from("irrigation_rates").insert(payload));
         }
       }
       if (error) throw error;
@@ -146,7 +146,7 @@ export default function IrrigationRates() {
   }
 
   async function del(id: string) {
-    const { error } = await supabase.from("irrigation_rates").delete().eq("id", id);
+    const { error } = await db.from("irrigation_rates").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
   }

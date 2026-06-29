@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,8 +48,8 @@ export default function IrrigationCategoryRates() {
   useEffect(() => {
     document.title = tx("Category rate config", "ক্যাটাগরি রেট কনফিগ");
     Promise.all([
-      supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
-      supabase.from("irrigation_categories" as any).select("id,code,name_bn,name_en,calculation_basis").is("deleted_at", null).eq("is_active", true).order("code"),
+      db.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
+      db.from("irrigation_categories" as any).select("id,code,name_bn,name_en,calculation_basis").is("deleted_at", null).eq("is_active", true).order("code"),
     ]).then(([s, c]) => {
       setSeasons((s.data as any) ?? []);
       setCategories((c.data as any) ?? []);
@@ -61,7 +61,7 @@ export default function IrrigationCategoryRates() {
   useEffect(() => { if (seasonId) loadRates(); }, [seasonId]);
 
   async function loadRates() {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("irrigation_category_rates" as any)
       .select("*, irrigation_categories(id,code,name_bn,name_en,calculation_basis)")
       .eq("irrigation_season_id", seasonId);
@@ -89,7 +89,7 @@ export default function IrrigationCategoryRates() {
         unit: unit || null,
         is_negotiable: negotiable,
       };
-      const { error, data } = await supabase.from("irrigation_category_rates" as any).insert(payload).select("id").maybeSingle();
+      const { error, data } = await db.from("irrigation_category_rates" as any).insert(payload).select("id").maybeSingle();
       if (error) throw error;
       await logAudit({ office_id: officeId, module: "irrigation_invoice", action_type: "create", reference_id: (data as any)?.id, new_data: payload });
       toast.success(tx("Saved", "সংরক্ষিত"));
@@ -101,13 +101,13 @@ export default function IrrigationCategoryRates() {
   }
 
   async function updateRow(id: string, patch: Partial<RateRow>) {
-    const { error } = await supabase.from("irrigation_category_rates" as any).update(patch as any).eq("id", id);
+    const { error } = await db.from("irrigation_category_rates" as any).update(patch as any).eq("id", id);
     if (error) return toast.error(error.message);
     await logAudit({ office_id: officeId, module: "irrigation_invoice", action_type: "update", reference_id: id, new_data: patch as any });
     loadRates();
   }
   async function delRow(id: string) {
-    const { error } = await supabase.from("irrigation_category_rates" as any).delete().eq("id", id);
+    const { error } = await db.from("irrigation_category_rates" as any).delete().eq("id", id);
     if (error) return toast.error(error.message);
     await logAudit({ office_id: officeId, module: "irrigation_invoice", action_type: "delete", reference_id: id });
     loadRates();

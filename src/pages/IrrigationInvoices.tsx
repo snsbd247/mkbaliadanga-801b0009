@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { resolveRowMouzaName } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -94,8 +95,8 @@ export default function IrrigationInvoices() {
   useEffect(() => {
     document.title = `${tx("Irrigation Invoices", "সেচ ইনভয়েস")} — ${t("appName")}`;
     Promise.all([
-      supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
+      db.from("offices").select("id,name").order("name"),
     ]).then(([s, o]) => { setSeasons(s.data ?? []); setOffices(o.data ?? []); });
   }, []);
 
@@ -151,7 +152,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
   const [staff, setStaff] = useState<Array<{ id: string; full_name: string | null; username: string | null }>>([]);
 
   useEffect(() => {
-    supabase.from("profiles").select("id,full_name,username").order("full_name").limit(500)
+    db.from("profiles").select("id,full_name,username").order("full_name").limit(500)
       .then(({ data }) => setStaff((data as any) ?? []));
   }, []);
 
@@ -907,7 +908,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     if (error) return toast.error(error.message);
     const originalFee = Number(inv.delay_fee ?? 0);
     if (df !== originalFee) {
-      await supabase.from("irrigation_delay_fee_audit").insert({
+      await db.from("irrigation_delay_fee_audit").insert({
         invoice_id: inv.id, payment_id: null,
         original_amount: originalFee, modified_amount: df,
         reason: note || null,
@@ -1169,7 +1170,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
   // Load active categories + their season rates for the current season/office
   useEffect(() => {
-    let q = supabase.from("irrigation_categories" as any)
+    let q = db.from("irrigation_categories" as any)
       .select("id,name_bn,name_en,allow_manual_negotiation")
       .eq("is_active", true).is("deleted_at", null);
     if (officeId) q = q.eq("office_id", officeId);
@@ -1178,7 +1179,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
   useEffect(() => {
     if (!seasonId) { setCategoryRates([]); return; }
-    let q = supabase.from("irrigation_category_rates" as any)
+    let q = db.from("irrigation_category_rates" as any)
       .select("irrigation_category_id,rate,rate_type,is_negotiable")
       .eq("irrigation_season_id", seasonId);
     if (officeId) q = q.eq("office_id", officeId);
@@ -1204,7 +1205,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     setBusy(true);
     setSkippedNoRate(0);
     try {
-      let lq = supabase.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id").is("deleted_at", null);
+      let lq = db.from("lands").select("id, farmer_id, owner_farmer_id, land_size, office_id, dag_no, mouza, field_type, land_type_id").is("deleted_at", null);
       if (officeId) lq = lq.eq("office_id", officeId);
       const { data: lands, error: lerr } = await lq;
       if (lerr) throw lerr;
@@ -1386,11 +1387,11 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
               manual_reason: hasManual ? row.manualReason.trim() : null,
             },
           };
-          const { data: ins, error } = await (supabase.from("irrigation_invoices" as any).insert(payload).select("id").maybeSingle() as any);
+          const { data: ins, error } = await (db.from("irrigation_invoices" as any).insert(payload).select("id").maybeSingle() as any);
           if (error) { failed++; console.error(error); continue; }
           success++;
           if (hasManual && ins?.id) {
-            await (supabase.from("irrigation_rate_overrides" as any).insert({
+            await (db.from("irrigation_rate_overrides" as any).insert({
               irrigation_invoice_id: ins.id,
               office_id: payload.office_id,
               original_rate: originalStandardRate,
@@ -1412,7 +1413,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
     setBusy(true);
     try {
       // Current-season invoices (carry-forward targets)
-      let curQ = supabase.from("irrigation_invoices" as any)
+      let curQ = db.from("irrigation_invoices" as any)
         .select("id,farmer_id,payable_amount,due_amount,previous_due_amount,generated_at")
         .eq("season_id", seasonId).neq("invoice_status", "cancelled").is("deleted_at", null);
       if (officeId) curQ = curQ.eq("office_id", officeId);
@@ -1424,7 +1425,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       if (!targetByFarmer.size) { toast.error(tx("No invoices in this season yet — generate first.", "এই সিজনে কোনো ইনভয়েস নেই — আগে তৈরি করুন।")); return; }
 
       // Prior-season open dues
-      let oldQ = supabase.from("irrigation_invoices" as any)
+      let oldQ = db.from("irrigation_invoices" as any)
         .select("id,farmer_id,due_amount,delay_fee")
         .neq("season_id", seasonId).gt("due_amount", 0).is("deleted_at", null)
         .neq("invoice_status", "cancelled").neq("invoice_status", "carried_forward")
@@ -1449,14 +1450,14 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       for (const [farmerId, total] of totals) {
         const target = targetByFarmer.get(farmerId);
         if (!target || !(total > 0)) continue;
-        const { error: e1 } = await supabase.from("irrigation_invoices" as any).update({
+        const { error: e1 } = await db.from("irrigation_invoices" as any).update({
           previous_due_amount: Number(target.previous_due_amount || 0) + total,
           payable_amount: Number(target.payable_amount || 0) + total,
           due_amount: Number(target.due_amount || 0) + total,
           carried_forward_at: now,
         }).eq("id", target.id);
         if (e1) { console.error(e1); continue; }
-        await supabase.from("irrigation_invoices" as any).update({
+        await db.from("irrigation_invoices" as any).update({
           invoice_status: "carried_forward", due_amount: 0, carried_forward_to: target.id, carried_forward_at: now,
         }).in("id", oldByFarmer.get(farmerId) || []);
         done++;
@@ -1699,8 +1700,8 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
     if (!farmerId) { setLands([]); return; }
     (async () => {
       const [{ data: own }, { data: rels }] = await Promise.all([
-        supabase.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type").eq("farmer_id", farmerId).is("deleted_at", null),
-        supabase.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
+        db.from("lands").select("id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type").eq("farmer_id", farmerId).is("deleted_at", null),
+        db.from("land_relations").select("land_id, lands(id,dag_no,land_size,mouza,owner_farmer_id,office_id,field_type)").eq("sharecropper_farmer_id", farmerId).is("deleted_at", null),
       ]);
       const ids = new Set((own ?? []).map((l: any) => l.id));
       const sc = (rels ?? []).map((r: any) => r.lands).filter((l: any) => l && !ids.has(l.id));
@@ -1744,7 +1745,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
       const invoice_no = await generateInvoiceNo();
       const standardRate = rateRow?.rate_per_shotok ?? 0;
       const rateSource: "STANDARD" | "MANUAL" = isManualRate ? "MANUAL" : (standardRate > 0 && standardRate === rate ? "STANDARD" : "MANUAL");
-      const { data: insertedRows, error } = await supabase.from("irrigation_invoices" as any).insert({
+      const { data: insertedRows, error } = await db.from("irrigation_invoices" as any).insert({
         invoice_no,
         office_id: land?.office_id ?? null,
         season_id: seasonId,
@@ -1791,7 +1792,7 @@ function ManualInvoiceDialog({ open, onOpenChange, seasons, userId }: any) {
       if (error) throw error;
       // Audit row for any MANUAL override
       if (rateSource === "MANUAL" && insertedRows?.id) {
-        await supabase.from("irrigation_rate_overrides" as any).insert({
+        await db.from("irrigation_rate_overrides" as any).insert({
           irrigation_invoice_id: insertedRows.id,
           original_rate: standardRate,
           overridden_rate: rate,
