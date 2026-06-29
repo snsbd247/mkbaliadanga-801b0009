@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
+import { logAudit } from "@/lib/audit";
 
 type Table = "savings_transactions" | "loan_payments" | "loans" | "payments";
 
