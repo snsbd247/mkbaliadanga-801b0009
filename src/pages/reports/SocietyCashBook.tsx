@@ -135,6 +135,7 @@ export default function SocietyCashBook() {
       { header: tx("Miscellaneous", "বিবিধ"), accessor: (r) => r.misc || "" },
       { header: tx("Total", "মোট"), accessor: (r) => r.total },
     ]);
+    auditExport("society_cashbook", { from, to });
   };
 
   return (
