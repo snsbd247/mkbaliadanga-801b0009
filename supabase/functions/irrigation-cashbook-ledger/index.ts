@@ -41,14 +41,14 @@ Deno.serve(async (req) => {
       return json({ error: { en: "You can only view the cash book for your assigned office.", bn: "আপনি কেবল আপনার নির্ধারিত অফিসের ক্যাশ বুক দেখতে পারবেন।" } }, 403);
     }
 
-    // জমা (cash in): live irrigation receipts (Step 5/6 voided rows excluded).
+    // জমা (cash in): live irrigation receipts.
     let pq = supabase
       .from("irrigation_invoice_payments")
-      .select("amount,paid_at,receipt_no,method")
+      .select("collected_amount,created_at,payments(receipt_no,method)")
       .eq("office_id", officeId)
-      .is("deleted_at", null);
-    if (from) pq = pq.gte("paid_at", from);
-    if (to) pq = pq.lte("paid_at", `${to}T23:59:59`);
+      .gt("collected_amount", 0);
+    if (from) pq = pq.gte("created_at", from);
+    if (to) pq = pq.lte("created_at", `${to}T23:59:59`);
     const { data: pays, error: pErr } = await pq;
     if (pErr) throw pErr;
 
