@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -273,7 +274,7 @@ export default function Farmers() {
     }
   }, []);
 
-  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); supabase.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, fatherQ, page, showDeleted, statusFilter, periodFilter]);
+  useEffect(() => { document.title = `${t("farmers")} — ${t("appName")}`; load(); db.from("offices").select("id,name").then(r => setOffices(r.data ?? [])); }, [q, fatherQ, page, showDeleted, statusFilter, periodFilter]);
   useEffect(() => { setForm((f) => ({ ...f, office_id: officeId ?? f.office_id })); }, [officeId]);
 
   // Open the edit dialog when navigated with ?edit=<farmerId>
@@ -284,7 +285,7 @@ export default function Farmers() {
       const returnTo = searchParams.get("returnTo");
       editReturnToRef.current = returnTo;
       (async () => {
-        const { data } = await supabase.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
+        const { data } = await db.from("farmers").select("*, offices(name)").eq("id", editId).maybeSingle();
         if (data) openEdit(data);
         const next = new URLSearchParams(searchParams);
         next.delete("edit");
@@ -328,7 +329,7 @@ export default function Farmers() {
       }
     }
 
-    let qy = supabase.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
+    let qy = db.from("farmers").select("*, offices(name)").order("created_at", { ascending: false }).range(page * PAGE, page * PAGE + PAGE - 1);
     qy = showDeleted ? qy.not("deleted_at", "is", null) : qy.is("deleted_at", null);
     if (statusFilter !== "all") qy = qy.eq("status", statusFilter);
     if (periodFilter !== "all") {
@@ -484,7 +485,7 @@ export default function Farmers() {
     );
     if (form.office_id) payload.office_id = form.office_id;
 
-    const { data, error } = await supabase.from("farmers").insert(payload).select().single();
+    const { data, error } = await db.from("farmers").insert(payload).select().single();
     if (error) {
       setSaving(false);
       const lvl = parseLocationDbError(error.message);
@@ -499,7 +500,7 @@ export default function Farmers() {
       } else toast.error(error.message);
       return;
     }
-    if (data) await supabase.from("shares").insert({ farmer_id: data.id, balance: 0 });
+    if (data) await db.from("shares").insert({ farmer_id: data.id, balance: 0 });
     setSaving(false);
     toast.success(t("farmerAdded"));
     resetCreateForm();
@@ -541,7 +542,7 @@ export default function Farmers() {
     const id = (editForm as any).id;
     const payload = toFarmerUpdatePayload(editForm as any, photo_url ? { photo_url } : {});
     if (import.meta.env.DEV) console.debug("[farmers.update] payload keys:", Object.keys(payload));
-    const { error } = await supabase.from("farmers").update(payload as any).eq("id", id);
+    const { error } = await db.from("farmers").update(payload as any).eq("id", id);
     if (error) {
       setSaving(false);
       const lvl = parseLocationDbError(error.message);
@@ -572,14 +573,14 @@ export default function Farmers() {
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from("farmers").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
+    const { error } = await db.from("farmers").update({ deleted_at: new Date().toISOString() } as any).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("farmerArchived"));
     load();
   }
 
   async function restore(id: string) {
-    const { error } = await supabase.from("farmers").update({ deleted_at: null } as any).eq("id", id);
+    const { error } = await db.from("farmers").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("farmerRestored"));
     load();
@@ -588,7 +589,7 @@ export default function Farmers() {
   async function toggleStatus(id: string, current: string) {
     const next = current === "active" ? "inactive" : "active";
     setList((prev) => prev.map((r) => (r.id === id ? { ...r, status: next } : r)));
-    const { error } = await supabase.from("farmers").update({ status: next } as any).eq("id", id);
+    const { error } = await db.from("farmers").update({ status: next } as any).eq("id", id);
     if (error) { toast.error(error.message); load(); return; }
     toast.success(next === "active" ? tx("Member activated", "সদস্য সক্রিয় করা হয়েছে") : tx("Member marked inactive", "সদস্য নিষ্ক্রিয় করা হয়েছে"));
   }

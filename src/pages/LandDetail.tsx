@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,7 @@ export default function LandDetail() {
     (async () => {
       setLoading(true);
       const [{ data: l }, { data: lc }] = await Promise.all([
-        supabase.from("lands").select("*").eq("id", id).maybeSingle(),
+        db.from("lands").select("*").eq("id", id).maybeSingle(),
         (supabase.from as any)("lands_with_location")
           .select("division_name,district_name,upazila_name,union_name,ward_name,village_name,mouza_name")
           .eq("id", id).maybeSingle(),
@@ -38,15 +39,15 @@ export default function LandDetail() {
       setLand(l);
       setLoc(lc);
       if (l?.farmer_id) {
-        const { data: f } = await supabase.from("farmers")
+        const { data: f } = await db.from("farmers")
           .select("id,name_en,name_bn,member_no,farmer_code,mobile").eq("id", l.farmer_id).maybeSingle();
         setOwner(f);
       }
       const [{ data: rels }, { data: ch }] = await Promise.all([
-        supabase.from("land_relations")
+        db.from("land_relations")
           .select("*, owner:farmers!land_relations_owner_farmer_id_fkey(id,name_en,member_no,farmer_code), sc:farmers!land_relations_sharecropper_farmer_id_fkey(id,name_en,member_no,farmer_code)")
           .eq("land_id", id).order("valid_from", { ascending: false }),
-        supabase.from("irrigation_invoices")
+        db.from("irrigation_invoices")
           .select("id,generated_at,payable_amount,paid_amount,due_amount,seasons(year,type)")
           .eq("land_id", id).is("deleted_at", null).order("generated_at", { ascending: false }).limit(50),
       ]);
@@ -159,7 +160,7 @@ function LandNotesCard({ land, onSaved }: { land: any; onSaved: (notes: string, 
 
   async function save() {
     setSaving(true);
-    const { error } = await supabase.from("lands").update({ notes, remarks } as any).eq("id", land.id);
+    const { error } = await db.from("lands").update({ notes, remarks } as any).eq("id", land.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success(tx("Saved", "সংরক্ষিত হয়েছে"));

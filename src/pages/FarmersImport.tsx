@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -211,8 +212,8 @@ export default function FarmersImport() {
     const unionMap = new Map<string, string>();
     try {
       const [{ data: mz }, { data: un }] = await Promise.all([
-        supabase.from("mouzas").select("id,name,name_bn"),
-        supabase.from("unions").select("id,name,name_bn"),
+        db.from("mouzas").select("id,name,name_bn"),
+        db.from("unions").select("id,name,name_bn"),
       ]);
       (mz ?? []).forEach((m: any) => {
         if (m.name) mouzaMap.set(String(m.name).trim().toLowerCase(), m.id);
@@ -279,7 +280,7 @@ export default function FarmersImport() {
             .eq("member_no", farmerId)
             .maybeSingle();
           if (existing?.id) {
-            const { error } = await supabase.from("farmers").update(basePayload).eq("id", existing.id);
+            const { error } = await db.from("farmers").update(basePayload).eq("id", existing.id);
             if (error) throw error;
           } else {
             const { error } = await supabase

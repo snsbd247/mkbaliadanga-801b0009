@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -149,7 +150,7 @@ export default function FarmerDetail() {
 
   // Load patwaris for assignment
   useEffect(() => {
-    let qb = supabase.from("patwaris").select("id,name,name_bn,mobile").eq("is_active", true).order("name");
+    let qb = db.from("patwaris").select("id,name,name_bn,mobile").eq("is_active", true).order("name");
     if (farmer?.office_id) qb = qb.eq("office_id", farmer.office_id);
     qb.then(({ data }) => setPatwaris(data ?? []));
   }, [farmer?.office_id]);
@@ -189,20 +190,20 @@ export default function FarmerDetail() {
 
   useEffect(() => { if (id) loadAll(); }, [id]);
   useEffect(() => {
-    supabase.from("loan_plans").select("*").eq("is_active", true).then(({ data }) => setLoanPlans(data ?? []));
-    supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices(data ?? []));
+    db.from("loan_plans").select("*").eq("is_active", true).then(({ data }) => setLoanPlans(data ?? []));
+    db.from("offices").select("id,name").order("name").then(({ data }) => setOffices(data ?? []));
   }, []);
   useEffect(() => { document.title = `${farmer?.name_en ?? ""} — ${t("farmers")}`; }, [farmer, t]);
 
   async function loadAll() {
     const [f, l, s, ln, ir, sh, pm] = await Promise.all([
-      supabase.from("farmers").select("*, offices(name), divisions(name,name_bn), districts(name,name_bn), upazilas(name,name_bn)").eq("id", id!).maybeSingle(),
+      db.from("farmers").select("*, offices(name), divisions(name,name_bn), districts(name,name_bn), upazilas(name,name_bn)").eq("id", id!).maybeSingle(),
       (supabase.from as any)("lands_with_location").select("*").eq("farmer_id", id!).order("created_at"),
-      supabase.from("savings_transactions").select("*").eq("farmer_id", id!).is("deleted_at", null).order("txn_date", { ascending: false }),
-      supabase.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).is("deleted_at", null).order("issued_on", { ascending: false }),
-      supabase.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no), patwaris(name,name_bn,mobile)").eq("farmer_id", id!).is("deleted_at", null).order("entry_date", { ascending: false }),
-      supabase.from("shares").select("balance").eq("farmer_id", id!).maybeSingle(),
-      supabase.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, verify_token, receipt_no, offices(name), payment_allocations(*)").eq("farmer_id", id!).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
+      db.from("savings_transactions").select("*").eq("farmer_id", id!).is("deleted_at", null).order("txn_date", { ascending: false }),
+      db.from("loans").select("*, loan_payments(amount,paid_on)").eq("farmer_id", id!).is("deleted_at", null).order("issued_on", { ascending: false }),
+      db.from("irrigation_charges").select("*, seasons(name,year,type), lands(dag_no), patwaris(name,name_bn,mobile)").eq("farmer_id", id!).is("deleted_at", null).order("entry_date", { ascending: false }),
+      db.from("shares").select("balance").eq("farmer_id", id!).maybeSingle(),
+      db.from("payments").select("id, kind, amount, method, note, created_at, idempotency_key, office_id, verify_token, receipt_no, offices(name), payment_allocations(*)").eq("farmer_id", id!).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
     ]);
     setFarmer(f.data); setLands((l.data as any) ?? []); setSavings(s.data ?? []);
     setLoans(ln.data ?? []); setIrr(ir.data ?? []); setShare(sh.data);
@@ -211,7 +212,7 @@ export default function FarmerDetail() {
     // Fetch owner farmer names for borga lands
     const ownerIds = Array.from(new Set(((l.data as any) ?? []).map((x: any) => x.owner_farmer_id).filter(Boolean)));
     if (ownerIds.length) {
-      const { data: owners } = await supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", ownerIds as string[]);
+      const { data: owners } = await db.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", ownerIds as string[]);
       const map: Record<string, string> = {};
       (owners ?? []).forEach((o: any) => { map[o.id] = o.name_bn || o.name_en || o.farmer_code || "—"; });
       setOwnerNames(map);
@@ -221,12 +222,12 @@ export default function FarmerDetail() {
     const landIdsForNotes = Array.from(new Set(((l.data as any) ?? []).map((x: any) => x.id).filter(Boolean)));
     if (landIdsForNotes.length) {
       const [{ data: rels }, { data: selfRows }] = await Promise.all([
-        supabase.from("land_relations")
+        db.from("land_relations")
           .select("land_id,note")
           .in("land_id", landIdsForNotes as string[])
           .is("deleted_at", null)
           .is("valid_to", null),
-        supabase.from("lands")
+        db.from("lands")
           .select("id,notes")
           .in("id", landIdsForNotes as string[]),
       ]);
@@ -259,7 +260,7 @@ export default function FarmerDetail() {
       const givenMap: Record<string, number> = {};
       const outRows: any[] = [];
       if (ownerLandIds.length) {
-        const { data: relsOut } = await supabase.from("land_relations")
+        const { data: relsOut } = await db.from("land_relations")
           .select("id,land_id,sharecropper_farmer_id,area_decimal,share_percentage")
           .in("land_id", ownerLandIds as string[])
           .not("sharecropper_farmer_id", "is", null)
@@ -288,7 +289,7 @@ export default function FarmerDetail() {
       // (B) Borga TAKEN IN — relations where THIS farmer is the sharecropper.
       // Show the owner's land in this farmer's profile (read-only) so the same
       // parcel appears in BOTH profiles.
-      const { data: relsIn } = await supabase.from("land_relations")
+      const { data: relsIn } = await db.from("land_relations")
         .select("id,land_id,owner_farmer_id,area_decimal,share_percentage")
         .eq("sharecropper_farmer_id", id!)
         .is("deleted_at", null)
@@ -323,7 +324,7 @@ export default function FarmerDetail() {
           return [...prev, ...add];
         });
         const inOwnerIds = Array.from(new Set(inRows.map((r) => r.owner_farmer_id).filter(Boolean)));
-        const { data: ow } = await supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", inOwnerIds as string[]);
+        const { data: ow } = await db.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", inOwnerIds as string[]);
         setOwnerNames((prev) => {
           const next = { ...prev };
           (ow ?? []).forEach((o: any) => { next[o.id] = o.name_bn || o.name_en || o.farmer_code || "—"; });
@@ -335,14 +336,14 @@ export default function FarmerDetail() {
       const tenantIds = Array.from(new Set(outRows.map((r) => r.farmer_id).filter(Boolean)));
       const tenantMap: Record<string, any> = {};
       if (tenantIds.length) {
-        const { data: tenants } = await supabase.from("farmers")
+        const { data: tenants } = await db.from("farmers")
           .select("id,name_en,name_bn,farmer_code,mobile").in("id", tenantIds as string[]);
         (tenants ?? []).forEach((t: any) => { tenantMap[t.id] = t; });
       }
       const outLandIds = Array.from(new Set(outRows.map((r) => r._invoice_land_id).filter(Boolean)));
       const invMap: Record<string, any> = {};
       if (outLandIds.length) {
-        const { data: invs } = await supabase.from("irrigation_invoices")
+        const { data: invs } = await db.from("irrigation_invoices")
           .select("land_id,farmer_id,generated_at,payable_amount,paid_amount,due_amount")
           .in("land_id", outLandIds as string[])
           .eq("is_borga", true)
@@ -525,7 +526,7 @@ export default function FarmerDetail() {
 
   async function getFarmerUnionName(): Promise<string | null> {
     if (!farmer?.union_id) return null;
-    const { data } = await supabase.from("unions").select("name_bn,name").eq("id", farmer.union_id).maybeSingle();
+    const { data } = await db.from("unions").select("name_bn,name").eq("id", farmer.union_id).maybeSingle();
     return data?.name_bn || data?.name || null;
   }
 
@@ -774,19 +775,19 @@ export default function FarmerDetail() {
   }
   async function deleteSavings(s: any) {
     if (!window.confirm("Delete this savings transaction?")) return;
-    const { error } = await supabase.from("savings_transactions").update({ deleted_at: new Date().toISOString() } as any).eq("id", s.id);
+    const { error } = await db.from("savings_transactions").update({ deleted_at: new Date().toISOString() } as any).eq("id", s.id);
     if (error) return toast.error(error.message);
     toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function deleteIrrigation(i: any) {
     if (!window.confirm("Delete this irrigation entry?")) return;
-    const { error } = await supabase.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", i.id);
+    const { error } = await db.from("irrigation_charges").update({ deleted_at: new Date().toISOString() } as any).eq("id", i.id);
     if (error) return toast.error(error.message);
     toast.success(t("pgDeleted" as any)); loadAll();
   }
   async function deletePayment(p: any) {
     if (!window.confirm("Delete this payment?")) return;
-    const { error } = await supabase.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
+    const { error } = await db.from("payments").update({ deleted_at: new Date().toISOString() } as any).eq("id", p.id);
     if (error) return toast.error(error.message);
     toast.success(t("pgDeleted" as any)); loadAll();
   }
@@ -808,7 +809,7 @@ export default function FarmerDetail() {
     }
     // Prevent duplicate Dag within the same Mouza (across existing land records).
     {
-      let dq = supabase.from("lands").select("dag_no,mouza_id,mouza").is("deleted_at", null);
+      let dq = db.from("lands").select("dag_no,mouza_id,mouza").is("deleted_at", null);
       const mid = (landLoc as any).mouza_id;
       dq = mid ? dq.eq("mouza_id", mid) : dq.eq("mouza", String(loc.mouza_name).trim());
       const { data: sameMouza } = await dq;
@@ -829,7 +830,7 @@ export default function FarmerDetail() {
     }
     setSavingLand(true);
     try {
-      const { error } = await supabase.from("lands").insert({
+      const { error } = await db.from("lands").insert({
         farmer_id: id!,
         mouza: (landLoc as any).mouza_name ?? "",
         division_id: (landLoc as any).division_id ?? null,
@@ -862,7 +863,7 @@ export default function FarmerDetail() {
         .from("seasons").select("id,name,year,due_date,status")
         .eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle();
       if (!season?.id) return;
-      let rq = supabase.from("irrigation_rates")
+      let rq = db.from("irrigation_rates")
         .select("base_rate,office_id").eq("season_id", season.id).eq("is_active", true);
       const { data: rates } = await rq;
       const rate = (rates ?? []).find((r: any) => officeId && r.office_id === officeId)?.base_rate
@@ -947,7 +948,7 @@ export default function FarmerDetail() {
         toast.error(tx("Please select a Field Type (land type)", "জমির ধরন (Field Type) নির্বাচন করুন"));
         return;
       }
-      const { data, error } = await supabase.from("lands").update({
+      const { data, error } = await db.from("lands").update({
         mouza: (editLoc as any).mouza_name ?? "",
         division_id: (editLoc as any).division_id ?? null,
         district_id: (editLoc as any).district_id ?? null,
@@ -972,7 +973,7 @@ export default function FarmerDetail() {
       const oldNote = (editLand as any).notes?.trim() || null;
       if (newNote !== oldNote) {
         const { data: u } = await supabase.auth.getUser();
-        await supabase.from("land_note_audit").insert({
+        await db.from("land_note_audit").insert({
           land_id: editLand.id,
           office_id: (editLand as any).office_id ?? null,
           old_note: oldNote,
@@ -1001,16 +1002,16 @@ export default function FarmerDetail() {
     try {
       // Block if referenced by irrigation_invoices, legacy irrigation_charges, or land_relations
       const [{ count: invCnt }, { count: irrCnt }, { count: relCnt }] = await Promise.all([
-        supabase.from("irrigation_invoices").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id).is("deleted_at", null),
-        supabase.from("irrigation_charges").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id).is("deleted_at", null),
-        supabase.from("land_relations").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id),
+        db.from("irrigation_invoices").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id).is("deleted_at", null),
+        db.from("irrigation_charges").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id).is("deleted_at", null),
+        db.from("land_relations").select("id", { count: "exact", head: true }).eq("land_id", delTarget.id),
       ]);
       const totalIrr = (invCnt ?? 0) + (irrCnt ?? 0);
       if (totalIrr > 0 || (relCnt ?? 0) > 0) {
         toast.error(`Cannot delete: linked to ${totalIrr} irrigation entries and ${relCnt ?? 0} relations.`);
         return;
       }
-      const { error } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", delTarget.id);
+      const { error } = await db.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", delTarget.id);
       if (error) { toast.error(error.message); return; }
       toast.success(t("pgLandDeleted" as any));
       setDelTarget(null);
@@ -1085,7 +1086,7 @@ export default function FarmerDetail() {
         if (!photo_url) return;
       }
       const payload = toFarmerUpdatePayload(editFarmerForm, photo_url ? { photo_url } : {});
-      const { error } = await supabase.from("farmers").update(payload as any).eq("id", editFarmerForm.id);
+      const { error } = await db.from("farmers").update(payload as any).eq("id", editFarmerForm.id);
       if (error) {
         const lvl = parseLocationDbError(error.message);
         if (lvl) setEditFarmerLocErr({ level: lvl, message: tx(`Invalid ${levelLabel(lvl)} selection`, `${levelLabel(lvl)} নির্বাচন সঠিক নয়`) });
@@ -1110,7 +1111,7 @@ export default function FarmerDetail() {
             variant={farmer.status === "inactive" ? "default" : "outline"}
             onClick={async () => {
               const next = farmer.status === "active" ? "inactive" : "active";
-              const { error } = await supabase.from("farmers").update({ status: next } as any).eq("id", farmer.id);
+              const { error } = await db.from("farmers").update({ status: next } as any).eq("id", farmer.id);
               if (error) return toast.error(error.message);
               setFarmer((p: any) => p ? { ...p, status: next } : p);
               toast.success(next === "active" ? tx("Member activated", "সদস্য সক্রিয় করা হয়েছে") : tx("Member marked inactive", "সদস্য নিষ্ক্রিয় করা হয়েছে"));
