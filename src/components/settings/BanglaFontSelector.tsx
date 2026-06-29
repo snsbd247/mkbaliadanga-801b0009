@@ -40,9 +40,7 @@ export default function BanglaFontSelector() {
   async function downloadQaSample() {
     setBusy(true);
     try {
-      const jsPDFmod: any = await import("jspdf");
-      const { ensureBanglaFont } = await import("@/lib/pdfFonts");
-      const doc = new jsPDFmod.jsPDF({ unit: "pt", format: "a4" });
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
       const family = await ensureBanglaFont(doc);
       if (family) doc.setFont(family, "normal");
       doc.setFontSize(16);
