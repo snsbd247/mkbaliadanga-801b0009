@@ -209,6 +209,12 @@ class GenericTableController extends Controller
         $prepared = [];
         foreach ($rows as $row) {
             $row = (array) $row;
+            // Reject unknown / malformed column names to block SQL surprises.
+            foreach (array_keys($row) as $col) {
+                if (! preg_match('/^[a-z0-9_]+$/i', (string) $col) || ! Schema::hasColumn($table, $col)) {
+                    abort(422, "অবৈধ কলাম: $col");
+                }
+            }
             if (Schema::hasColumn($table, 'id') && empty($row['id'])) {
                 $row['id'] = (string) Str::uuid();
             }
