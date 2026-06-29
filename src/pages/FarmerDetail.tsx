@@ -824,6 +824,9 @@ export default function FarmerDetail() {
     if (land.owner_type === "borgadar" && !land.owner_farmer_id) {
       return toast.error(t("ownerRequiredForBorgadar" as any));
     }
+    if ((land.owner_type === "owner" || (land.owner_type === "borgadar" && land.owner_farmer_id)) && !land.land_type_id) {
+      return toast.error(tx("Please select a Field Type (land type)", "জমির ধরন (Field Type) নির্বাচন করুন"));
+    }
     setSavingLand(true);
     try {
       const { error } = await supabase.from("lands").insert({
