@@ -274,7 +274,6 @@ function ReceiptLayoutCard() {
 
   async function downloadSamplePdf() {
     try {
-      const { downloadIrrigationInvoicePdf } = await import("@/lib/irrigationInvoicePdf");
       await downloadIrrigationInvoicePdf({
         invoice_no: "PREVIEW-001",
         generated_at: new Date().toISOString(),
