@@ -236,6 +236,10 @@ set_env DB_USERNAME "${DB_USER}"
 set_env DB_PASSWORD "${DB_PASS}"
 set_env SANCTUM_STATEFUL_DOMAINS "${DOMAIN},www.${DOMAIN}"
 set_env CORS_ALLOWED_ORIGINS "https://${DOMAIN},https://www.${DOMAIN}"
+# File-based cache/session: the login throttle middleware must not depend on a
+# DB cache table (root cause of "Server Error" on /api/auth/login).
+set_env CACHE_STORE file
+set_env SESSION_DRIVER file
 
 grep -q "^APP_KEY=base64:" .env || php artisan key:generate --force
 
