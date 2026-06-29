@@ -109,6 +109,12 @@ done
 php artisan down --retry=15 || true
 # migrate ONLY applies new migrations; it never drops tables or re-seeds data
 php artisan migrate --force
+# Idempotent: guarantees roles + the two admin accounts exist WITHOUT touching
+# any real data (firstOrCreate / updateOrCreate / syncWithoutDetaching only).
+#   developer    -> ismail162  / Admin@123
+#   super_admin  -> suparadmin / Admin@123
+php artisan db:seed --class=Database\\Seeders\\PermissionsSeeder --force || true
+php artisan db:seed --class=Database\\Seeders\\SuperAdminSeeder --force || true
 php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache
 php artisan route:cache
