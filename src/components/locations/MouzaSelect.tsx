@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -68,20 +69,20 @@ export function MouzaSelect({
       if (upazilaId) {
         allowedUpazilas = [upazilaId];
       } else if (districtId) {
-        const { data } = await supabase.from("upazilas").select("id").eq("district_id", districtId);
+        const { data } = await db.from("upazilas").select("id").eq("district_id", districtId);
         allowedUpazilas = ((data as any[]) ?? []).map((u) => u.id);
       } else if (divisionId) {
-        const { data: ds } = await supabase.from("districts").select("id").eq("division_id", divisionId);
+        const { data: ds } = await db.from("districts").select("id").eq("division_id", divisionId);
         const dIds = ((ds as any[]) ?? []).map((d) => d.id);
         if (dIds.length) {
-          const { data: us } = await supabase.from("upazilas").select("id").in("district_id", dIds);
+          const { data: us } = await db.from("upazilas").select("id").in("district_id", dIds);
           allowedUpazilas = ((us as any[]) ?? []).map((u) => u.id);
         } else {
           allowedUpazilas = [];
         }
       }
 
-      let q = supabase.from("mouzas").select("id,name,name_bn,upazila_id,is_active").eq("is_active", true).order("name");
+      let q = db.from("mouzas").select("id,name,name_bn,upazila_id,is_active").eq("is_active", true).order("name");
       if (allowedUpazilas) {
         if (allowedUpazilas.length === 0) {
           if (!cancelled) { setRows([]); setLoading(false); }

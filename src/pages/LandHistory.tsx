@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,8 @@ import { useLang } from "@/i18n/LanguageProvider";
 
 
 const SEASONS = ["Boro", "Aman", "Aus", "Rabi"];
-const sb = supabase as any;
+import { db } from "@/lib/db";
+const sb = db as any;
 
 export default function LandHistory() {
   const { user, isAdmin } = useAuth();

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +71,7 @@ const OPTIONAL_PARENT_COL: Partial<Record<Level, string>> = {
 
 // Lookup endpoint to fetch children of a parent for cascading dropdowns.
 const childrenOf = async (table: Level, parentCol?: string, parentId?: string) => {
-  let q: any = (supabase.from as any)(table).select("id,name,name_bn").eq("is_active", true).order("name").limit(2000);
+  let q: any = (db.from as any)(table).select("id,name,name_bn").eq("is_active", true).order("name").limit(2000);
   if (parentCol && parentId) q = q.eq(parentCol, parentId);
   const { data, error } = await q;
   if (error) throw error;
@@ -227,7 +228,7 @@ function LevelTab({ level }: { level: Level }) {
 
   async function load() {
     setLoading(true);
-    let q: any = (supabase.from as any)(level).select("*").order("name").limit(1000);
+    let q: any = (db.from as any)(level).select("*").order("name").limit(1000);
     // For villages/mouzas, ward_id is the most specific filter even though directCol is union_id
     if (optionalCol && filter[optionalCol]) {
       q = q.eq(optionalCol, filter[optionalCol]);
@@ -265,7 +266,7 @@ function LevelTab({ level }: { level: Level }) {
     for (let j = idx + 1; j < c.length; j++) {
       const step = c[j];
       const parentCol = c[j - 1].col;
-      const { data, error } = await (supabase.from as any)(step.table).select("id").in(parentCol, currentIds).limit(5000);
+      const { data, error } = await (db.from as any)(step.table).select("id").in(parentCol, currentIds).limit(5000);
       if (error) { toast.error(error.message); return []; }
       currentIds = ((data as Row[]) ?? []).map((r) => r.id);
       if (step.col === targetCol) return currentIds;
@@ -296,7 +297,7 @@ function LevelTab({ level }: { level: Level }) {
     if (optionalCol && addChain[optionalCol]) payload[optionalCol] = addChain[optionalCol];
 
     setAdding(true);
-    const { error } = await (supabase.from as any)(level).insert(payload);
+    const { error } = await (db.from as any)(level).insert(payload);
     setAdding(false);
     if (error) return toast.error(error.message);
     toast.success(t("addedToast"));
@@ -311,14 +312,14 @@ function LevelTab({ level }: { level: Level }) {
   }
 
   async function remove(id: string) {
-    const { error } = await (supabase.from as any)(level).delete().eq("id", id);
+    const { error } = await (db.from as any)(level).delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("deletedToast")); load();
   }
 
   async function toggleActive(row: Row) {
     const next = !row.is_active;
-    const { error } = await (supabase.from as any)(level).update({ is_active: next }).eq("id", row.id);
+    const { error } = await (db.from as any)(level).update({ is_active: next }).eq("id", row.id);
     if (error) return toast.error(error.message);
     toast.success(next ? "Activated" : "Deactivated");
     load();
@@ -339,7 +340,7 @@ function LevelTab({ level }: { level: Level }) {
       let currentId = row[directCol];
       for (let j = idx - 1; j >= 0; j--) {
         const parentStep = chain[j];
-        const { data } = await (supabase.from as any)(currentTable).select(`${parentStep.col}`).eq("id", currentId).maybeSingle();
+        const { data } = await (db.from as any)(currentTable).select(`${parentStep.col}`).eq("id", currentId).maybeSingle();
         if (!data) break;
         c[parentStep.col] = (data as any)[parentStep.col];
         currentId = (data as any)[parentStep.col];
@@ -370,7 +371,7 @@ function LevelTab({ level }: { level: Level }) {
     if (directCol) payload[directCol] = editChain[directCol];
     if (optionalCol) payload[optionalCol] = editChain[optionalCol] || null;
 
-    const { error } = await (supabase.from as any)(level).update(payload).eq("id", editing.id);
+    const { error } = await (db.from as any)(level).update(payload).eq("id", editing.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(t("updatedToast"));
@@ -398,7 +399,7 @@ function LevelTab({ level }: { level: Level }) {
     const ids = Array.from(new Set(rows.map((r) => r[directCol]).filter(Boolean)));
     if (ids.length === 0) { setParentNames({}); return; }
     const parentTable = chain[chain.length - 1].table;
-    (supabase.from as any)(parentTable).select("id,name").in("id", ids).then(({ data }: any) => {
+    (db.from as any)(parentTable).select("id,name").in("id", ids).then(({ data }: any) => {
       const map: Record<string, string> = {};
       ((data as Row[]) ?? []).forEach((p) => { map[p.id] = p.name; });
       setParentNames(map);
