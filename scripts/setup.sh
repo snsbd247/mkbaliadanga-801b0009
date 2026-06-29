@@ -169,7 +169,21 @@ cd "${APP_DIR}/backend"
 # security-advisory blocker so Laravel 11 resolves (advisories are noted in CI).
 export COMPOSER_ALLOW_SUPERUSER=1
 composer config --no-plugins policy.advisories.block false 2>/dev/null || true
-composer install --no-dev --optimize-autoloader --no-interaction
+# Retry install: GitHub codeload (dist zips) occasionally returns HTTP 400/429.
+composer_install() {
+  for attempt in 1 2 3 4 5; do
+    if composer install --no-dev --optimize-autoloader --no-interaction; then
+      return 0
+    fi
+    warn "composer install failed (attempt ${attempt}/5) — clearing cache & retrying in 10s…"
+    composer clear-cache >/dev/null 2>&1 || true
+    sleep 10
+  done
+  # Last resort: build from source instead of GitHub dist zips.
+  warn "Falling back to --prefer-source…"
+  composer install --no-dev --optimize-autoloader --no-interaction --prefer-source
+}
+composer_install
 
 [ -f .env ] || cp .env.example .env
 
