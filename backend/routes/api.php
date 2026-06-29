@@ -21,6 +21,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SavingsController;
 use App\Http\Controllers\SeasonController;
+use App\Http\Controllers\GenericTableController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -175,6 +176,16 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::post('/qr/issue', [QrController::class, 'issue'])->middleware('permission:qr.manage');
     Route::delete('/qr/{qr}', [QrController::class, 'revoke'])->middleware('permission:qr.manage');
     Route::post('/qr/resolve', [QrController::class, 'resolve'])->middleware('permission:qr.view');
+});
+
+// ── Generic table gateway (Supabase Data API replacement) ─────────────
+// Lets the frontend `db` adapter run the common subset of supabase
+// queries against any allow-listed table, office-scoped by branch.scope.
+Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
+    Route::post('/db/{table}/query', [GenericTableController::class, 'select']);
+    Route::post('/db/{table}', [GenericTableController::class, 'insert']);
+    Route::patch('/db/{table}', [GenericTableController::class, 'update']);
+    Route::delete('/db/{table}', [GenericTableController::class, 'delete']);
 });
 
 // ── Farmer portal (self-service: code login or phone + OTP) ───────────

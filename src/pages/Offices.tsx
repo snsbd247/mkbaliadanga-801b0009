@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ export default function Offices() {
   useEffect(() => { document.title = `${t("offices")} — ${t("appName")}`; load(); }, []);
 
   async function load() {
-    const { data } = await supabase.from("offices").select("*").order("name");
+    const { data } = await db.from("offices").select("*").order("name");
     setList(data ?? []);
   }
   function openNew() { setEditing(null); setForm({ name: "", registration_no: "", established_on: "", contact: "", address: "", payment_priority: ["irrigation", "loan", "savings"] }); setOpen(true); }
@@ -41,13 +41,13 @@ export default function Offices() {
     if (!form.name) return toast.error(t("nameRequired"));
     const payload = { ...form, established_on: form.established_on || null };
     const { error } = editing
-      ? await supabase.from("offices").update(payload).eq("id", editing.id)
-      : await supabase.from("offices").insert(payload);
+      ? await db.from("offices").update(payload).eq("id", editing.id)
+      : await db.from("offices").insert(payload);
     if (error) return toast.error(error.message);
     toast.success(t("saved")); setOpen(false); load();
   }
   async function del(id: string) {
-    const { error } = await supabase.from("offices").delete().eq("id", id);
+    const { error } = await db.from("offices").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
   }
