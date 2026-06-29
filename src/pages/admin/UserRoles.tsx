@@ -94,7 +94,7 @@ export default function UserRoles() {
         description="View and manage which role each user holds, grouped by office. Edit fine-grained permissions in the Role Matrix."
         actions={
           <Button asChild variant="outline" size="sm">
-            <Link to="/role-matrix"><ShieldCheck className="h-4 w-4 mr-1" /> Role Matrix</Link>
+            <Link to="/admin/role-matrix"><ShieldCheck className="h-4 w-4 mr-1" /> Role Matrix</Link>
           </Button>
         }
       />
