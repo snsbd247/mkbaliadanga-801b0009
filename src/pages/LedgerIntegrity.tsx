@@ -32,10 +32,10 @@ export default function LedgerIntegrity() {
   const runCheck = async () => {
     setLoading(true);
     const [u, o, m, s] = await Promise.all([
-      supabase.rpc("ledger_unbalanced_refs"),
-      supabase.rpc("ledger_orphan_refs"),
+      db.rpc("ledger_unbalanced_refs"),
+      db.rpc("ledger_orphan_refs"),
       db.from("ledger_entries").select("id,entry_date,description").is("account_id", null).limit(100),
-      supabase.rpc("ledger_integrity_summary"),
+      db.rpc("ledger_integrity_summary"),
     ]);
     setUnbalanced((u.data as any[]) || []);
     setOrphans((o.data as any[]) || []);

@@ -90,7 +90,7 @@ export default function QuickSeed() {
       backupStatus = await maybeBackup(key);
       const body: any = { action: "import", modules, size, confirm: "RESET", transactional: true };
       if (monthsBack && monthsBack > 1) body.monthsBack = monthsBack;
-      const { data, error } = await supabase.functions.invoke("demo-reset", { body });
+      const { data, error } = await db.functions.invoke("demo-reset", { body });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const counts = (data as any)?.counts || (data as any)?.summary || {};

@@ -125,7 +125,7 @@ export default function VoterList() {
     if (reason.trim().length < 3) { toast.error(t("pgReasonRequiredMin" as any)); return; }
     setWorking(true);
     const fn = mode === "cancel" ? "cancel_voter_membership" : "reactivate_voter_membership";
-    const { error } = await supabase.rpc(fn as any, { _farmer_id: target.id, _reason: reason.trim() });
+    const { error } = await db.rpc(fn as any, { _farmer_id: target.id, _reason: reason.trim() });
     setWorking(false);
     if (error) {
       const msg = error.message || "";

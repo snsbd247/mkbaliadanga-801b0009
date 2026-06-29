@@ -26,7 +26,7 @@ export default function FarmerMerge() {
   async function doMerge() {
     if (!source || !target) return;
     setBusy(true);
-    const { error } = await supabase.rpc("merge_farmers" as any, {
+    const { error } = await db.rpc("merge_farmers" as any, {
       _source: source.id,
       _target: target.id,
     });

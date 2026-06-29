@@ -159,7 +159,7 @@ export default function SmsLogs() {
 
   async function retryOne(id: string) {
     setBusy(true);
-    const { error } = await supabase.functions.invoke("send-sms", { body: { retry: true, ids: [id] } });
+    const { error } = await db.functions.invoke("send-sms", { body: { retry: true, ids: [id] } });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(t("retried"));
@@ -168,7 +168,7 @@ export default function SmsLogs() {
 
   async function retryAllFailed() {
     setBusy(true);
-    const { error } = await supabase.functions.invoke("send-sms", { body: { retry: true } });
+    const { error } = await db.functions.invoke("send-sms", { body: { retry: true } });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(t("retryBatchSent"));
@@ -177,7 +177,7 @@ export default function SmsLogs() {
 
   async function runDueReminders() {
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke("sms-due-reminders", { body: { source: "manual" } });
+    const { data, error } = await db.functions.invoke("sms-due-reminders", { body: { source: "manual" } });
     setBusy(false);
     if (error) return toast.error(error.message);
     const r = data as any;
@@ -244,7 +244,7 @@ export default function SmsLogs() {
     if (!mobiles.length) return toast.error(t("enterAtLeastOneMobile"));
     if (!bulkMessage.trim()) return toast.error(t("enterMessage"));
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke("send-sms", { body: { mobiles, message: bulkMessage } });
+    const { data, error } = await db.functions.invoke("send-sms", { body: { mobiles, message: bulkMessage } });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(t("queuedMsgs").replace("{n}", String((data as any)?.queued ?? mobiles.length)));

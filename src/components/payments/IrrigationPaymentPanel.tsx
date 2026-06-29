@@ -600,7 +600,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         const smsResult = await safeWithRetry(
           "sms_send",
           async () => {
-            const { error } = await supabase.functions.invoke("send-sms", { body: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId } });
+            const { error } = await db.functions.invoke("send-sms", { body: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId } });
             if (error) throw error;
           },
           { referenceId: paymentId, payload: { mobile: farmer.mobile, message, event_type: "irrigation_payment", farmer_id: farmerId }, officeId: farmer?.office_id ?? null },

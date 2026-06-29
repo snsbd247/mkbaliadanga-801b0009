@@ -105,7 +105,7 @@ export default function MonthlyReceiptRegister() {
     if (!voidReason.trim()) { toast.error("কারণ লিখুন"); return; }
     setVoiding(true);
     try {
-      const { error } = await supabase.rpc("void_receipt_and_recycle", {
+      const { error } = await db.rpc("void_receipt_and_recycle", {
         p_receipt_no: voidTarget.receipt_no,
         p_office_id: voidTarget.office_id,
         p_reason: voidReason.trim(),

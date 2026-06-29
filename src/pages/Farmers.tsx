@@ -69,7 +69,7 @@ function VoterSavingsField({ f, setF, disabled, isSuper }: { f: any; setF: (n: a
   async function generate() {
     setGenerating(true);
     try {
-      const { data, error } = await supabase.rpc("generate_account_number" as any, {
+      const { data, error } = await db.rpc("generate_account_number" as any, {
         _office_id: f.office_id || null,
       });
       if (error) { toast.error(error.message); return; }
@@ -130,7 +130,7 @@ function FarmerIdField({ f, setF, disabled, isSuper, currentId }: { f: any; setF
     if (!v.trim()) return;
     setChecking(true);
     tRef.current = setTimeout(async () => {
-      const { data, error } = await supabase.rpc("member_no_exists" as any, {
+      const { data, error } = await db.rpc("member_no_exists" as any, {
         _member_no: v.trim(), _exclude_id: currentId ?? null,
       });
       setChecking(false);
@@ -352,7 +352,7 @@ export default function Farmers() {
     setList(farmers);
     if (farmers.length) {
       const ids = farmers.map((f: any) => f.id);
-      const { data: dues } = await supabase.rpc("farmer_dues_summary" as any);
+      const { data: dues } = await db.rpc("farmer_dues_summary" as any);
       const map: Record<string, any> = {};
       (dues ?? []).forEach((d: any) => { if (ids.includes(d.farmer_id)) map[d.farmer_id] = d; });
       setDuesMap(map);
@@ -387,9 +387,9 @@ export default function Farmers() {
   async function uploadPhoto(file: File): Promise<string | undefined> {
     const ext = file.name.split(".").pop();
     const path = `farmers/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("farmer-photos").upload(path, file);
+    const { error } = await db.storage.from("farmer-photos").upload(path, file);
     if (error) { toast.error(error.message); return undefined; }
-    return supabase.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
+    return db.storage.from("farmer-photos").getPublicUrl(path).data.publicUrl;
   }
 
   function resetCreateForm() {
@@ -461,14 +461,14 @@ export default function Farmers() {
     }
     // Duplicate check on member_no (Farmer ID) — always
     if (form.member_no) {
-      const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(form.member_no).trim(), _exclude_id: null });
+      const { data: dup } = await db.rpc("member_no_exists" as any, { _member_no: String(form.member_no).trim(), _exclude_id: null });
       if (dup === true) { toast.error(t("duplicateFarmerId")); return; }
     }
 
     // Auto-generate Farmer ID if empty (super admin can override above)
     let memberNo = form.member_no;
     if (!memberNo) {
-      const { data: gen, error: genErr } = await supabase.rpc("generate_member_no" as any);
+      const { data: gen, error: genErr } = await db.rpc("generate_member_no" as any);
       if (genErr) { toast.error(genErr.message); return; }
       memberNo = String(gen ?? "");
     }
@@ -529,7 +529,7 @@ export default function Farmers() {
       return;
     }
     if (editForm.member_no) {
-      const { data: dup } = await supabase.rpc("member_no_exists" as any, { _member_no: String(editForm.member_no).trim(), _exclude_id: (editForm as any).id ?? null });
+      const { data: dup } = await db.rpc("member_no_exists" as any, { _member_no: String(editForm.member_no).trim(), _exclude_id: (editForm as any).id ?? null });
       if (dup === true) { toast.error(t("duplicateFarmerId")); return; }
     }
 

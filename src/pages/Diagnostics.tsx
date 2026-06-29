@@ -135,7 +135,7 @@ export default function Diagnostics() {
   async function runIntegrityScan() {
     setScanBusy(true);
     try {
-      const { data, error } = await supabase.functions.invoke("data-integrity-scan", { body: {} });
+      const { data, error } = await db.functions.invoke("data-integrity-scan", { body: {} });
       if (error) throw error;
       setScan(data?.report ?? null);
     } catch (e: any) {

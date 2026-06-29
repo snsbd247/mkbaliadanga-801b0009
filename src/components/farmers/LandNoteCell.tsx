@@ -97,7 +97,7 @@ export function LandNoteCell({
         }
         const ext = file.name.split(".").pop() || "bin";
         const path = `${landId}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
+        const { error: upErr } = await db.storage.from(BUCKET).upload(path, file, { contentType: file.type });
         if (upErr) { toast.error(upErr.message); continue; }
         const { data, error } = await db.from("land_note_attachments").insert({
           land_id: landId,
@@ -119,14 +119,14 @@ export function LandNoteCell({
   }
 
   async function openAttachment(a: Attachment) {
-    const { data } = await supabase.storage.from(BUCKET).createSignedUrl(a.file_path, 60);
+    const { data } = await db.storage.from(BUCKET).createSignedUrl(a.file_path, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   }
 
   async function removeAttachment(a: Attachment) {
     const { error } = await db.from("land_note_attachments").delete().eq("id", a.id);
     if (error) { toast.error(error.message); return; }
-    await supabase.storage.from(BUCKET).remove([a.file_path]);
+    await db.storage.from(BUCKET).remove([a.file_path]);
     setAttachments((p) => p.filter((x) => x.id !== a.id));
   }
 

@@ -82,7 +82,7 @@ export default function CollectionReport() {
       .order("name_en")
       .then(({ data }) => setFarmers(data ?? []));
 
-    supabase.rpc("list_collector_users").then(({ data }) => {
+    db.rpc("list_collector_users").then(({ data }) => {
       setUsers((data as ProfileLite[]) ?? []);
     });
   }, []);

@@ -498,7 +498,7 @@ export default function SmsSettings() {
 
   async function activateToken(id: string) {
     setTokenBusy(true);
-    const { error } = await supabase.rpc("activate_sms_token" as any, { _id: id } as any);
+    const { error } = await db.rpc("activate_sms_token" as any, { _id: id } as any);
     setTokenBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Token activated");
@@ -507,7 +507,7 @@ export default function SmsSettings() {
 
   async function retireToken(id: string) {
     setTokenBusy(true);
-    const { error } = await supabase.rpc("retire_sms_token" as any, { _id: id } as any);
+    const { error } = await db.rpc("retire_sms_token" as any, { _id: id } as any);
     setTokenBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Token retired");
@@ -533,7 +533,7 @@ export default function SmsSettings() {
     setTestConnBusy(true);
     setTestConnResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke("send-sms", {
+      const { data, error } = await db.functions.invoke("send-sms", {
         body: {
           test_connection: true,
           mobile,
@@ -619,7 +619,7 @@ export default function SmsSettings() {
     if (!testMobile.trim()) return toast.error(L.enterMobile);
     if (!isValidPhone(testMobile)) return toast.error(L.invalidPhone);
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke("send-sms", {
+    const { data, error } = await db.functions.invoke("send-sms", {
       body: { mobile: testMobile.trim(), message: testMsg, event_type: "manual" },
     });
     setBusy(false);
@@ -646,7 +646,7 @@ export default function SmsSettings() {
     setConfirmTest(null);
     setTplTestBusy(String(key));
     const target = tplTestMobile.trim();
-    const { data, error } = await supabase.functions.invoke("send-sms", {
+    const { data, error } = await db.functions.invoke("send-sms", {
       body: { mobile: target, message: preview, event_type: "manual_template_test" },
     });
     setTplTestBusy(null);
@@ -694,7 +694,7 @@ export default function SmsSettings() {
     setSchedResult(null);
     const payload: Record<string, unknown> = { from: schedFrom, to: schedTo };
     if (schedOffice !== "__all__") payload.office_id = schedOffice;
-    const { data, error } = await supabase.functions.invoke("sms-due-reminders", { body: payload });
+    const { data, error } = await db.functions.invoke("sms-due-reminders", { body: payload });
     setSchedBusy(false);
     if (error) return toast.error(error.message);
     setSchedResult(data);

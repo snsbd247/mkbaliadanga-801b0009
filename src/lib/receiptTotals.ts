@@ -14,7 +14,7 @@ export type CanonicalReceiptTotals = {
 export async function getCanonicalReceiptTotals(receiptNo: string): Promise<CanonicalReceiptTotals | null> {
   if (!receiptNo?.trim()) return null;
   try {
-    const { data, error } = await supabase.functions.invoke("receipt-totals", {
+    const { data, error } = await db.functions.invoke("receipt-totals", {
       body: { receipt_no: receiptNo.trim() },
     });
     if (error) throw error;
