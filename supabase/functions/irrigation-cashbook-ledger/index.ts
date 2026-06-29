@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     type Row = { date: string; direction: "in" | "out"; amount: number; head: string | null; ref: string | null; i: number };
     const entries: Row[] = [];
     let i = 0;
-    for (const p of pays ?? []) entries.push({ date: String((p as any).paid_at).slice(0, 10), direction: "in", amount: Number((p as any).amount || 0), head: (p as any).method ?? "সেচ আদায়", ref: (p as any).receipt_no ?? null, i: i++ });
+    for (const p of pays ?? []) entries.push({ date: String((p as any).created_at).slice(0, 10), direction: "in", amount: Number((p as any).collected_amount || 0), head: (p as any).payments?.method ?? "সেচ আদায়", ref: (p as any).payments?.receipt_no ?? null, i: i++ });
     for (const e of exps ?? []) entries.push({ date: String((e as any).expense_date).slice(0, 10), direction: "out", amount: Number((e as any).amount || 0), head: (e as any).head ?? "খরচ", ref: (e as any).note ?? null, i: i++ });
 
     entries.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.i - b.i));
