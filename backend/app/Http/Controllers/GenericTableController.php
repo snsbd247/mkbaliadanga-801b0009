@@ -178,15 +178,25 @@ class GenericTableController extends Controller
 
         foreach ($request->input('order', []) as $o) {
             $col = $o['column'] ?? null;
-            if ($col && preg_match('/^[a-z0-9_]+$/i', $col)) {
+            if ($col && preg_match('/^[a-z0-9_]+$/i', $col) && Schema::hasColumn($table, $col)) {
                 $query->orderBy($col, ($o['ascending'] ?? true) ? 'asc' : 'desc');
             }
         }
         if ($request->filled('limit')) $query->limit((int) $request->input('limit'));
         if ($request->filled('offset')) $query->offset((int) $request->input('offset'));
 
-        // Column projection (skip when embeds need fk columns; just fetch all then filter)
-        $selectCols = (in_array('*', $columns, true) || ! empty($embeds)) ? ['*'] : $columns;
+        // Column projection (skip when embeds need fk columns; just fetch all then filter).
+        // Drop any requested column that doesn't exist in the MySQL table so a
+        // stale/view-only column name can't turn the whole query into a 500.
+        if (in_array('*', $columns, true) || ! empty($embeds)) {
+            $selectCols = ['*'];
+        } else {
+            $selectCols = array_values(array_filter(
+                $columns,
+                fn ($c) => preg_match('/^[a-z0-9_]+$/i', (string) $c) && Schema::hasColumn($table, $c)
+            ));
+            if (empty($selectCols)) $selectCols = ['*'];
+        }
         $rows = array_map(fn ($r) => (array) $r, $query->get($selectCols)->all());
 
         if (! empty($embeds)) {
