@@ -29,5 +29,32 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Always answer API requests with JSON. Without this, an unexpected
+        // server error (e.g. a query against a missing column/table) renders as
+        // an opaque HTML 500 that the frontend reports only as "Edge Function
+        // Error". Returning structured JSON makes every failure actionable and
+        // keeps the SPA error handling working.
+        $exceptions->shouldRenderJsonWhen(function ($request, $throwable) {
+            return $request->is('api/*') || $request->expectsJson();
+        });
+
+        $exceptions->render(function (\Throwable $e, $request) {
+            if (! ($request->is('api/*') || $request->expectsJson())) {
+                return null;
+            }
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                $status = $e->getStatusCode();
+                return response()->json([
+                    'message' => $e->getMessage() ?: 'Request failed',
+                ], $status);
+            }
+            \Illuminate\Support\Facades\Log::error('API error: '.$e->getMessage(), [
+                'exception' => get_class($e),
+                'path' => $request->path(),
+            ]);
+            return response()->json([
+                'message' => $e->getMessage(),
+                'exception' => class_basename($e),
+            ], 500);
+        });
     })->create();
