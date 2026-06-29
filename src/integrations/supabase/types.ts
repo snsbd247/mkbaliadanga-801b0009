@@ -4050,6 +4050,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lands_mouza_id_fkey"
+            columns: ["mouza_id"]
+            isOneToOne: false
+            referencedRelation: "mouzas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lands_owner_farmer_id_fkey"
             columns: ["owner_farmer_id"]
             isOneToOne: false
@@ -6335,6 +6342,13 @@ export type Database = {
             columns: ["land_type_id"]
             isOneToOne: false
             referencedRelation: "land_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_mouza_id_fkey"
+            columns: ["mouza_id"]
+            isOneToOne: false
+            referencedRelation: "mouzas"
             referencedColumns: ["id"]
           },
           {
