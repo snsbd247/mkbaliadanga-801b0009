@@ -158,7 +158,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
     setLoading(true);
     let q = supabase
       .from("irrigation_invoices" as any)
-      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza,mouzas(name)), seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))")
+      .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza), seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))")
       .is("deleted_at", null)
       .order("generated_at", { ascending: false })
       .limit(500);
