@@ -10,7 +10,10 @@
 // Pages can simply swap `import { supabase } from "@/integrations/supabase/client"`
 // for `import { db } from "@/lib/db"` and keep their existing query code.
 
-import { supabase } from "@/integrations/supabase/client";
+// NOTE: relative path (not the "@/..." alias) so the VPS build's conditional
+// alias of "@/integrations/supabase/client" -> laravelClient never rewrites
+// this import. The adapter must always hold the REAL client for preview mode.
+import { supabase } from "../../integrations/supabase/client";
 import { isLaravelBackend } from "@/lib/backend";
 import { api } from "@/lib/api/client";
 
