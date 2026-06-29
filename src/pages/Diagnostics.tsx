@@ -65,6 +65,37 @@ const REFERENCE_TABLES = [
 
 type Probe = { table: string; op: "select" | "count"; ok: boolean; status?: number; code?: string; message?: string; rows?: number };
 
+// Maps each functional page/module to the primary tables (API endpoints) it
+// reads. Scanning these tells us which page's Laravel API is broken.
+const PAGE_API_MAP: Record<string, string[]> = {
+  "Dashboard": ["farmers", "irrigation_invoices", "loans", "savings_transactions", "payments"],
+  "Farmers": ["farmers", "farmer_savings_plans", "farmer_notes"],
+  "Lands": ["lands", "land_relations", "land_history", "land_types"],
+  "Locations / Geo": ["divisions", "districts", "upazilas", "mouzas"],
+  "Irrigation Rates": ["irrigation_rates", "irrigation_rate_overrides", "irrigation_season_rates", "irrigation_category_rates"],
+  "Irrigation Invoices": ["irrigation_invoices", "irrigation_invoice_payments", "irrigation_charges"],
+  "Irrigation Categories": ["irrigation_categories", "irrigation_season_types", "irrigation_charge_settings"],
+  "Irrigation Dues / Reminders": ["irrigation_due_promises", "irrigation_sms_logs"],
+  "Savings": ["savings_transactions", "savings_plans", "farmer_savings_plans", "savings_yearly_opening"],
+  "Loans": ["loans", "loan_payments", "loan_plans", "loan_installments"],
+  "Shares": ["shares"],
+  "Payments": ["payments", "payment_allocations", "receipts", "receipt_sequences"],
+  "Expenses": ["expenses"],
+  "Accounting / Ledger": ["accounts", "journal_entries", "journal_entry_lines", "ledger_entries", "accounting_periods"],
+  "Bank": ["bank_accounts", "bank_transactions"],
+  "Assets": ["assets", "asset_categories", "asset_purchases", "asset_movements", "asset_stocks"],
+  "Asset Maintenance": ["asset_maintenance_logs", "asset_maintenance_schedules", "asset_damage_reports"],
+  "Asset Depreciation": ["asset_depreciation_schedule", "asset_depreciation_settings", "asset_disposals"],
+  "SMS": ["sms_logs", "sms_templates", "sms_settings", "sms_office_settings"],
+  "Voters": ["voter_audit_logs"],
+  "Users / Roles": ["user_roles", "user_permissions", "role_permissions", "profiles"],
+  "Offices": ["offices", "seasons", "company_settings"],
+  "Audit Logs": ["audit_logs", "system_audit_logs", "import_audit_logs"],
+  "Settings": ["card_settings", "receipt_settings", "qr_rotation_settings", "notifications"],
+};
+
+type PageApiResult = { page: string; ok: boolean; failed: { table: string; code?: string; message?: string }[]; total: number };
+
 export default function Diagnostics() {
   const { isSuper, user, officeId, rolesLoaded } = useAuth();
   const { t } = useLang();
@@ -75,6 +106,9 @@ export default function Diagnostics() {
   const [isoBusy, setIsoBusy] = useState(false);
   const [scan, setScan] = useState<any>(null);
   const [scanBusy, setScanBusy] = useState(false);
+  const [apiResults, setApiResults] = useState<PageApiResult[]>([]);
+  const [apiBusy, setApiBusy] = useState(false);
+  const [apiProgress, setApiProgress] = useState(0);
 
   useEffect(() => { document.title = t("diag_pageTitle" as any); }, [t]);
   useEffect(() => {
@@ -145,6 +179,29 @@ export default function Diagnostics() {
     }
   }
 
+  async function runApiScan() {
+    setApiBusy(true);
+    setApiResults([]);
+    setApiProgress(0);
+    const pages = Object.entries(PAGE_API_MAP);
+    const out: PageApiResult[] = [];
+    let done = 0;
+    for (const [page, tables] of pages) {
+      const failed: { table: string; code?: string; message?: string }[] = [];
+      for (const tbl of tables) {
+        const { error } = await db.from(tbl as any).select("*", { count: "exact", head: true });
+        if (error) {
+          failed.push({ table: tbl, code: (error as any).code, message: error.message });
+        }
+      }
+      out.push({ page, ok: failed.length === 0, failed, total: tables.length });
+      done++;
+      setApiProgress(Math.round((done / pages.length) * 100));
+      setApiResults([...out]);
+    }
+    setApiBusy(false);
+  }
+
   const errorStats = useMemo(() => {
     const byCode: Record<string, number> = {};
     errors.forEach(e => { const k = e.code || `HTTP ${e.status}`; byCode[k] = (byCode[k] || 0) + 1; });
@@ -161,6 +218,7 @@ export default function Diagnostics() {
           <TabsTrigger value="health">{t("diag_healthCheck" as any)}</TabsTrigger>
           <TabsTrigger value="isolation">{t("diag_isolation" as any)}</TabsTrigger>
           <TabsTrigger value="integrity">{t("diag_integrity" as any)}</TabsTrigger>
+          <TabsTrigger value="api">{t("diag_apiHealth" as any)} {apiResults.some(r => !r.ok) && <Badge variant="destructive" className="ml-2">{apiResults.filter(r => !r.ok).length}</Badge>}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="errors">
@@ -347,6 +405,66 @@ export default function Diagnostics() {
                   </div>
                 )}
               </>
+            )}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="api">
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">{t("diag_apiScanDesc" as any)}</div>
+              <Button onClick={runApiScan} disabled={apiBusy}>
+                {apiBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                {t("diag_runApiScan" as any)}
+              </Button>
+            </div>
+            {apiBusy && (
+              <div className="text-xs text-muted-foreground">{apiProgress}%</div>
+            )}
+            {apiResults.length > 0 && (
+              <Alert className="mb-1">
+                {apiResults.every(r => r.ok) ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                <AlertTitle>{t("diag_result" as any)}</AlertTitle>
+                <AlertDescription>
+                  {t("diag_passFail" as any)
+                    .replace("{pass}", String(apiResults.filter(r => r.ok).length))
+                    .replace("{fail}", String(apiResults.filter(r => !r.ok).length))}
+                </AlertDescription>
+              </Alert>
+            )}
+            {apiResults.length > 0 && (
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>{t("diag_page" as any)}</TableHead>
+                  <TableHead>{t("diag_status" as any)}</TableHead>
+                  <TableHead>{t("diag_endpoints" as any)}</TableHead>
+                  <TableHead>{t("diag_error" as any)}</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {apiResults.map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{r.page}</TableCell>
+                      <TableCell>
+                        {r.ok
+                          ? <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" />{t("diag_ok" as any)}</Badge>
+                          : <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />{t("diag_fail" as any)}</Badge>}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {r.total - r.failed.length}/{r.total}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {r.failed.length === 0
+                          ? t("diag_apiOk" as any)
+                          : r.failed.map((f, j) => (
+                              <div key={j} className="font-mono text-destructive">
+                                {f.table}{f.code ? ` [${f.code}]` : ""}: {f.message}
+                              </div>
+                            ))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </Card>
         </TabsContent>
