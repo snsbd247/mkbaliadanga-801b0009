@@ -247,7 +247,7 @@ else
   php artisan migrate --force
 fi
 
-php artisan optimize:clear
+php artisan config:clear; php artisan route:clear; php artisan view:clear
 php artisan config:cache
 php artisan route:cache
 
