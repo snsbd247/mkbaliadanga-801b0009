@@ -225,7 +225,7 @@ log "Building frontend…"
 cd "${APP_DIR}"
 echo "VITE_API_URL=https://${DOMAIN}/api" > .env.production
 echo "VITE_BACKEND=laravel" >> .env.production
-npm ci
+npm install
 npm run build   # → dist/
 
 # ──────────────────────────────────────────────────────────────────────────

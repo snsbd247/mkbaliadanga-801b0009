@@ -8,7 +8,7 @@
 #   - git pull (fast-forward / reset to origin/BRANCH)
 #   - composer install (no-dev)
 #   - php artisan migrate --force   (schema changes only — NEVER --seed, NEVER fresh)
-#   - npm ci + npm run build (frontend)
+#   - npm install + npm run build (frontend)
 #   - cache rebuild + nginx reload
 #
 # A safety DB dump is taken before migrating, in case a rollback is needed.
@@ -93,7 +93,7 @@ chmod -R 775 "${APP_DIR}/backend/storage" "${APP_DIR}/backend/bootstrap/cache"
 # ──────────────────────────────────────────────────────────────────────────
 log "Rebuilding frontend…"
 cd "${APP_DIR}"
-npm ci
+npm install
 npm run build
 
 # ──────────────────────────────────────────────────────────────────────────
