@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,9 +52,9 @@ export default function Patwaris() {
 
   async function load() {
     const [p, m, o] = await Promise.all([
-      supabase.from("patwaris").select("*, mouzas(name,name_bn)").order("name"),
-      supabase.from("mouzas").select("id,name,name_bn").eq("is_active", true).order("name"),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("patwaris").select("*, mouzas(name,name_bn)").order("name"),
+      db.from("mouzas").select("id,name,name_bn").eq("is_active", true).order("name"),
+      db.from("offices").select("id,name").order("name"),
     ]);
     let list = (p.data ?? []) as Patwari[];
     if (!showInactive) list = list.filter((r) => r.is_active);
@@ -95,10 +95,10 @@ export default function Patwaris() {
     };
     let error;
     if (editId) {
-      ({ error } = await supabase.from("patwaris").update(payload).eq("id", editId));
+      ({ error } = await db.from("patwaris").update(payload).eq("id", editId));
     } else {
       payload.created_by = user?.id;
-      ({ error } = await supabase.from("patwaris").insert(payload));
+      ({ error } = await db.from("patwaris").insert(payload));
     }
     if (error) return toast.error(error.message);
     toast.success(tx("Saved", "সংরক্ষিত হয়েছে"));

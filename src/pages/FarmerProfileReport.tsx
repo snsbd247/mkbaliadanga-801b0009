@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Download, Printer } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/branding";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -44,22 +44,22 @@ export default function FarmerProfileReport() {
     async function load() {
       setLoading(true);
       const [f, s, sh, ln, ir, rel, inst] = await Promise.all([
-        supabase.from("farmers").select("*").eq("id", id).maybeSingle(),
-        supabase.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null).order("txn_date", { ascending: true }),
-        supabase.from("shares").select("balance").eq("farmer_id", id).maybeSingle(),
-        supabase.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
-        supabase
+        db.from("farmers").select("*").eq("id", id).maybeSingle(),
+        db.from("savings_transactions").select("*").eq("farmer_id", id).is("deleted_at", null).order("txn_date", { ascending: true }),
+        db.from("shares").select("balance").eq("farmer_id", id).maybeSingle(),
+        db.from("loans").select("*, loan_payments(amount)").eq("farmer_id", id).is("deleted_at", null).order("issued_on", { ascending: false }),
+        db
           .from("irrigation_invoices")
           .select("id, payable_amount, paid_amount, due_amount, irrigation_amount, canal_amount, maintenance_amount, other_charge, season_id, land_id, is_borga, calculation_snapshot, seasons(name,year,type), lands(id, mouza, dag_no, land_size, owner_type, field_type, land_type_id, patwari_id, patwaris(name,name_bn))")
           .eq("farmer_id", id)
           .is("deleted_at", null)
           .order("generated_at", { ascending: false }),
-        supabase
+        db
           .from("land_relations")
           .select("land_id, valid_to, sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en, farmer_code)")
           .eq("owner_farmer_id", id)
           .is("deleted_at", null),
-        supabase
+        db
           .from("loan_installments")
           .select("id, loan_id, installment_no, due_date, amount, paid_amount, status, paid_on, loans!inner(farmer_id)")
           .eq("loans.farmer_id", id)
@@ -79,7 +79,7 @@ export default function FarmerProfileReport() {
 
       // Catalogue land-type names take priority over the legacy enum so that
       // custom types (পুকুর, সবজি ইত্যাদি) show their real name instead of "Other".
-      const { data: ltData } = await supabase
+      const { data: ltData } = await db
         .from("land_types" as any)
         .select("id,code,name,name_bn")
         .is("deleted_at", null);

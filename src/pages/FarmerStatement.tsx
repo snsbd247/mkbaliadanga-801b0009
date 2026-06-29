@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,7 @@ export default function FarmerStatement() {
 
   useEffect(() => {
     if (!farmerId) { setFarmer(null); setHealth(null); return; }
-    supabase.from("farmers")
+    db.from("farmers")
       .select("id, name_en, name_bn, account_number, farmer_code, mobile, village")
       .eq("id", farmerId).maybeSingle()
       .then(r => {
@@ -60,10 +61,10 @@ export default function FarmerStatement() {
     // Member-wise financial health
     (async () => {
       const [savTxns, loans, irrInv, lands] = await Promise.all([
-        supabase.from("savings_transactions").select("type,amount").eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null),
-        supabase.from("loans").select("total_payable,loan_payments(amount)").eq("farmer_id", farmerId).is("deleted_at", null).in("status", ["approved", "pending"]),
-        supabase.from("irrigation_invoices").select("due_amount").eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled"),
-        supabase.from("lands").select("land_size").eq("farmer_id", farmerId).is("deleted_at", null),
+        db.from("savings_transactions").select("type,amount").eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null),
+        db.from("loans").select("total_payable,loan_payments(amount)").eq("farmer_id", farmerId).is("deleted_at", null).in("status", ["approved", "pending"]),
+        db.from("irrigation_invoices").select("due_amount").eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled"),
+        db.from("lands").select("land_size").eq("farmer_id", farmerId).is("deleted_at", null),
       ]);
       const savings = (savTxns.data ?? []).reduce((a: number, r: any) => a + (r.type === "deposit" ? Number(r.amount) : -Number(r.amount)), 0);
       const loanDue = (loans.data ?? []).reduce((a: number, l: any) => {
@@ -104,7 +105,7 @@ export default function FarmerStatement() {
         // Carry-forward: compute opening due from invoices generated BEFORE `from`
         let opening = 0;
         if (from) {
-          const { data: prior } = await supabase.from("irrigation_invoices")
+          const { data: prior } = await db.from("irrigation_invoices")
             .select("payable_amount,paid_amount,due_amount")
             .eq("farmer_id", farmerId).is("deleted_at", null)
             .neq("invoice_status", "cancelled")
@@ -112,7 +113,7 @@ export default function FarmerStatement() {
           opening = (prior ?? []).reduce((s: number, r: any) =>
             s + (Number(r.due_amount ?? (Number(r.payable_amount || 0) - Number(r.paid_amount || 0))) || 0), 0);
         }
-        let q = supabase.from("irrigation_invoices")
+        let q = db.from("irrigation_invoices")
           .select("id,generated_at,due_date,invoice_no,payable_amount,paid_amount,due_amount,seasons(name,year)")
           .eq("farmer_id", farmerId).is("deleted_at", null)
           .order("generated_at", { ascending: true });
@@ -266,17 +267,17 @@ export default function FarmerStatement() {
         a + (r.type === "deposit" ? Number(r.amount) : -Number(r.amount)), 0);
 
       const [savRes, irrRes, loansRes] = await Promise.all([
-        supabase.from("savings_transactions")
+        db.from("savings_transactions")
           .select("txn_date,type,amount,note")
           .eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null)
           .gte("txn_date", f1).lte("txn_date", t1)
           .order("txn_date", { ascending: true }),
-        supabase.from("irrigation_invoices")
+        db.from("irrigation_invoices")
           .select("generated_at,payable_amount,paid_amount,due_amount,seasons(name,year),lands(dag_no)")
           .eq("farmer_id", farmerId).is("deleted_at", null)
           .gte("generated_at", f1).lte("generated_at", t1)
           .order("generated_at", { ascending: true }),
-        supabase.from("loans")
+        db.from("loans")
           .select("issued_on,principal,interest_rate,total_payable,status,loan_payments(amount)")
           .eq("farmer_id", farmerId).is("deleted_at", null)
           .gte("issued_on", f1).lte("issued_on", t1)
