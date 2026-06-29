@@ -1,6 +1,6 @@
 // i18n-ignore-file — admin-only page (English UI)
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,7 @@ export default function RoleMatrix() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase.from("role_permissions").select("*");
+    const { data } = await db.from("role_permissions").select("*");
     const m: Record<string, Perm> = {};
     (data ?? []).forEach((r: any) => {
       m[`${r.role}:${r.module}`] = {
@@ -152,7 +152,7 @@ export default function RoleMatrix() {
         new_value: d.nw,
       }));
       // Fail-safe: don't block save on audit failure
-      await supabase.from("permission_audit_logs").insert(auditRows);
+      await db.from("permission_audit_logs").insert(auditRows);
     }
 
     setSaving(false);
