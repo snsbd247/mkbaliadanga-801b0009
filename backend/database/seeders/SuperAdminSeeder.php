@@ -20,32 +20,51 @@ class SuperAdminSeeder extends Seeder
             ['id' => (string) Str::uuid(), 'name' => 'প্রধান কার্যালয়', 'is_active' => true],
         );
 
-        // Wildcard permission + super_admin role.
+        // Wildcard permission grants everything.
         $wildcard = Permission::query()->firstOrCreate(
             ['key' => '*'],
             ['id' => (string) Str::uuid(), 'module' => 'system', 'description' => 'All permissions'],
         );
 
-        $role = Role::query()->firstOrCreate(
+        // Roles: developer (highest) + super_admin.
+        $developerRole = Role::query()->firstOrCreate(
+            ['name' => 'developer'],
+            ['id' => (string) Str::uuid(), 'description' => 'Developer'],
+        );
+        $superAdminRole = Role::query()->firstOrCreate(
             ['name' => 'super_admin'],
             ['id' => (string) Str::uuid(), 'description' => 'Super Administrator'],
         );
 
-        $role->permissions()->syncWithoutDetaching([$wildcard->id]);
+        $developerRole->permissions()->syncWithoutDetaching([$wildcard->id]);
+        $superAdminRole->permissions()->syncWithoutDetaching([$wildcard->id]);
 
-        // Super admin account (ismail162 / Admin@123).
-        $admin = User::query()->updateOrCreate(
+        // Developer account (ismail162 / Admin@123).
+        $developer = User::query()->updateOrCreate(
             ['username' => 'ismail162'],
             [
                 'id' => (string) Str::uuid(),
-                'name' => 'Super Admin',
+                'name' => 'Developer',
                 'email' => 'ismail162@mohammadkhani.com',
                 'password' => Hash::make('Admin@123'),
                 'office_id' => $office->id,
                 'is_active' => true,
             ],
         );
+        $developer->roles()->syncWithoutDetaching([$developerRole->id]);
 
-        $admin->roles()->syncWithoutDetaching([$role->id]);
+        // Super admin account (suparadmin / Admin@123).
+        $superAdmin = User::query()->updateOrCreate(
+            ['username' => 'suparadmin'],
+            [
+                'id' => (string) Str::uuid(),
+                'name' => 'Super Admin',
+                'email' => 'suparadmin@mohammadkhani.com',
+                'password' => Hash::make('Admin@123'),
+                'office_id' => $office->id,
+                'is_active' => true,
+            ],
+        );
+        $superAdmin->roles()->syncWithoutDetaching([$superAdminRole->id]);
     }
 }
