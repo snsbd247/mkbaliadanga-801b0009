@@ -250,7 +250,7 @@ export const db = {
       if (isLaravelBackend) {
         return laravelStorageBucket(bucket) as any;
       }
-      return db.storage.from(bucket);
+      return supabase.storage.from(bucket);
     },
   },
 };
