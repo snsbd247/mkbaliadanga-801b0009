@@ -107,6 +107,14 @@ for attempt in 1 2 3 4 5; do
 done
 
 php artisan down --retry=15 || true
+# Force file-based cache/session so the login throttle middleware never depends
+# on a DB cache table existing (root cause of past "Server Error" on /auth/login).
+if [ -f .env ]; then
+  sed -i 's/^CACHE_STORE=.*/CACHE_STORE=file/; s/^SESSION_DRIVER=.*/SESSION_DRIVER=file/' .env
+  grep -q '^CACHE_STORE=' .env || echo 'CACHE_STORE=file' >> .env
+  grep -q '^SESSION_DRIVER=' .env || echo 'SESSION_DRIVER=file' >> .env
+  log "  ✓ ensured CACHE_STORE=file / SESSION_DRIVER=file in .env"
+fi
 # migrate ONLY applies new migrations; it never drops tables or re-seeds data
 log "Applying new migrations (schema only — no data drop, no sample seed)…"
 log "  → running: php artisan migrate --force"
