@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,7 @@ export default function SmsTemplates() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("sms_templates" as any)
       .select("*")
       .order("key");
@@ -88,8 +88,8 @@ export default function SmsTemplates() {
     const variables = varsText.split(",").map((s) => s.trim()).filter(Boolean);
     const payload = { ...form, variables };
     const { error } = editing
-      ? await supabase.from("sms_templates" as any).update(payload).eq("id", editing.id)
-      : await supabase.from("sms_templates" as any).insert(payload);
+      ? await db.from("sms_templates" as any).update(payload).eq("id", editing.id)
+      : await db.from("sms_templates" as any).insert(payload);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success(isBn ? "সংরক্ষিত" : "Saved");
@@ -98,14 +98,14 @@ export default function SmsTemplates() {
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from("sms_templates" as any).delete().eq("id", id);
+    const { error } = await db.from("sms_templates" as any).delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success(isBn ? "মুছে ফেলা হয়েছে" : "Deleted");
     load();
   }
 
   async function toggleActive(r: Template) {
-    const { error } = await supabase
+    const { error } = await db
       .from("sms_templates" as any)
       .update({ is_active: !r.is_active })
       .eq("id", r.id);

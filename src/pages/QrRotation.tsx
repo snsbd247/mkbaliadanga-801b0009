@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -35,7 +36,7 @@ export default function QrRotation() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("qr_rotation_settings").select("*").eq("id", 1).maybeSingle();
     if (error) toast.error(error.message);
     setSettings((data as any) ?? { enabled: false, interval_days: 90, grace_hours: 24, last_run_at: null, last_run_summary: null });
@@ -46,7 +47,7 @@ export default function QrRotation() {
     if (!settings) return;
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from("qr_rotation_settings")
         .update({
           enabled: settings.enabled,

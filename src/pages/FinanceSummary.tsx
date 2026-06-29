@@ -61,7 +61,7 @@ export default function FinanceSummary() {
     if (!from || !to) return;
     setLoading(true);
     const [led, prd, integ] = await Promise.all([
-      supabase
+      db
         .from("ledger_entries")
         .select("account_id,debit,credit")
         .gte("entry_date", from)

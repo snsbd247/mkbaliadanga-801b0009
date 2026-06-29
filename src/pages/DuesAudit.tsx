@@ -1,6 +1,6 @@
 // i18n-ignore-file — admin/utility page
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,14 +31,14 @@ export default function DuesAudit() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => { document.title = "Dues Audit — Smart Irrigation"; }, []);
-  useEffect(() => { supabase.from("seasons").select("id,name,year").order("year", { ascending: false }).then(r => setSeasons((r.data as any) ?? [])); }, []);
+  useEffect(() => { db.from("seasons").select("id,name,year").order("year", { ascending: false }).then(r => setSeasons((r.data as any) ?? [])); }, []);
 
   useEffect(() => {
     if (!farmerId) { setIrr([]); setLoanDue(0); setSavingsBal(0); setShareBal(0); return; }
     setLoading(true);
     (async () => {
       const [{ data: ic }, dues] = await Promise.all([
-        supabase.from("irrigation_invoices")
+        db.from("irrigation_invoices")
           .select("id,generated_at,season_id,due_amount,payable_amount,paid_amount,seasons(name,year),lands(dag_no)")
           .eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled").order("generated_at", { ascending: false }),
         getFarmerDues(farmerId),

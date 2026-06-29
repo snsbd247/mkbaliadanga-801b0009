@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -17,7 +17,7 @@ import {
 } from "@/lib/societyCashBook";
 import { useLang } from "@/i18n/LanguageProvider";
 
-const sb = supabase as any;
+const sb = db as any;
 
 function bnMoney(nv: number): string {
   if (!nv) return "";

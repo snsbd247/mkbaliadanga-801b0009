@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,7 +49,7 @@ export default function Settings() {
       if (up.error) { setBusy(false); return toast.error(up.error.message); }
       editor_signature_url = supabase.storage.from("branding").getPublicUrl(path).data.publicUrl;
     }
-    const { error } = await supabase.from("company_settings").update({
+    const { error } = await db.from("company_settings").update({
       company_name: form.company_name,
       company_name_bn: form.company_name_bn,
       logo_url,

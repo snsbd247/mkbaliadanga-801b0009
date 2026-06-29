@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ export function SavingsStatement({ farmer }: Props) {
   async function load() {
     if (!farmer?.id) return;
     // 1. opening balance for this year (if recorded)
-    const { data: ob } = await supabase
+    const { data: ob } = await db
       .from("savings_yearly_opening")
       .select("opening_balance")
       .eq("farmer_id", farmer.id).eq("year", year).maybeSingle();
@@ -35,7 +35,7 @@ export function SavingsStatement({ farmer }: Props) {
     // 2. txns prior to this year (approved) → fallback opening
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
-    const { data: prior } = await supabase
+    const { data: prior } = await db
       .from("savings_transactions")
       .select("type,amount")
       .eq("farmer_id", farmer.id)
@@ -52,7 +52,7 @@ export function SavingsStatement({ farmer }: Props) {
     setOpening(ob?.opening_balance != null ? Number(ob.opening_balance) : priorBal);
 
     // 3. txns within year (any status, latest first)
-    const { data: t } = await supabase
+    const { data: t } = await db
       .from("savings_transactions")
       .select("*")
       .eq("farmer_id", farmer.id)

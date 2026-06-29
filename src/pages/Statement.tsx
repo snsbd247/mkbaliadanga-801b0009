@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export default function Statement() {
 
   useEffect(() => {
     document.title = `${t("statement") || t("memberStatement")} — ${t("appName")}`;
-    supabase.from("farmers").select("id,farmer_code,member_no,name_en,name_bn,mobile,village")
+    db.from("farmers").select("id,farmer_code,member_no,name_en,name_bn,mobile,village")
       .order("name_en").limit(1000).then(r => setFarmers(r.data ?? []));
   }, []);
 
@@ -42,7 +42,7 @@ export default function Statement() {
       setFarmer(f ?? null);
 
       // Yearly opening (if any)
-      const { data: o } = await supabase
+      const { data: o } = await db
         .from("savings_yearly_opening")
         .select("opening_balance")
         .eq("farmer_id", farmerId).eq("year", year).maybeSingle();
@@ -51,7 +51,7 @@ export default function Statement() {
       // If no yearly opening row, derive from approved txns before Jan 1 of `year`
       if (!o) {
         const start = `${year}-01-01`;
-        const { data: prior } = await supabase
+        const { data: prior } = await db
           .from("savings_transactions")
           .select("type,amount,status,txn_date")
           .eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null).lt("txn_date", start);
@@ -63,7 +63,7 @@ export default function Statement() {
       // Period filter (defaults to whole year)
       const f1 = from || `${year}-01-01`;
       const t1 = to || `${year}-12-31`;
-      const { data: list } = await supabase
+      const { data: list } = await db
         .from("savings_transactions")
         .select("id,type,amount,status,txn_date,note")
         .eq("farmer_id", farmerId)
@@ -119,11 +119,11 @@ export default function Statement() {
     const tid = toast.loading("Building combined statement…");
     try {
       const [irrRes, loansRes] = await Promise.all([
-        supabase.from("irrigation_invoices")
+        db.from("irrigation_invoices")
           .select("generated_at,payable_amount,paid_amount,due_amount,seasons(name,year),lands(dag_no)")
           .eq("farmer_id", farmerId).is("deleted_at", null).gte("generated_at", f1).lte("generated_at", t1)
           .order("generated_at", { ascending: true }),
-        supabase.from("loans")
+        db.from("loans")
           .select("issued_on,principal,interest_rate,total_payable,status,loan_payments(amount)")
           .eq("farmer_id", farmerId).is("deleted_at", null).gte("issued_on", f1).lte("issued_on", t1)
           .order("issued_on", { ascending: true }),

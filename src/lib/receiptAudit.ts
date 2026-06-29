@@ -1,5 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export type ReceiptAuditLog = {
   id: string;
   created_at: string;
@@ -34,7 +33,7 @@ export async function fetchReceiptAuditLogs(
 ): Promise<{ rows: ReceiptAuditLog[]; count: number }> {
   const limit = filters.limit ?? 50;
   const offset = filters.offset ?? 0;
-  let q = supabase
+  let q = db
     .from("audit_logs" as any)
     .select("id,created_at,action,entity,entity_id,office_id,old_values,new_values,meta,user_id", { count: "exact" })
     .eq("entity", "payments")

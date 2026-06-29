@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -42,10 +42,10 @@ export default function Reports() {
   useEffect(() => {
     document.title = `${t("reports")} — ${t("appName")}`;
     Promise.all([
-      supabase.from("seasons").select("*"),
-      supabase.from("offices").select("id,name"),
-      supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
-      supabase.from("lands").select("id,land_size,mouza,farmer_id").is("deleted_at", null),
+      db.from("seasons").select("*"),
+      db.from("offices").select("id,name"),
+      db.from("farmers").select("id,name_en,farmer_code").order("name_en"),
+      db.from("lands").select("id,land_size,mouza,farmer_id").is("deleted_at", null),
     ]).then(([s, o, f, l]) => {
       setSeasons(s.data ?? []); setOffices(o.data ?? []); setFarmers(f.data ?? []);
       const lands = l.data ?? [];
@@ -71,7 +71,7 @@ export default function Reports() {
     // Source of truth: irrigation_invoices (legacy irrigation_charges fields are
     // mapped onto entry_date/total/base_charge so downstream aggregations stay
     // identical without rewriting every reduce/export call site.)
-    let irrQ: any = supabase.from("irrigation_invoices")
+    let irrQ: any = db.from("irrigation_invoices")
       .select("generated_at,office_id,irrigation_amount,canal_amount,maintenance_amount,other_charge,delay_fee,payable_amount,paid_amount,due_amount,farmer_id,farmers(name_en,farmer_code),seasons(name,year,type),lands(dag_no,mouza,land_size),season_id,invoice_status")
       .is("deleted_at", null)
       .neq("invoice_status", "cancelled")
@@ -88,23 +88,23 @@ export default function Reports() {
     }));
     setIrr(irrRows);
 
-    let lnQ: any = supabase.from("loans").select("issued_on,office_id,principal,interest_rate,total_payable,status,farmer_id,farmers(name_en,farmer_code),loan_payments(amount,paid_on)").is("deleted_at", null).order("issued_on", { ascending: false });
+    let lnQ: any = db.from("loans").select("issued_on,office_id,principal,interest_rate,total_payable,status,farmer_id,farmers(name_en,farmer_code),loan_payments(amount,paid_on)").is("deleted_at", null).order("issued_on", { ascending: false });
     lnQ = applyCommon(lnQ, "issued_on");
     setLoans((await lnQ).data ?? []);
 
-    let lpQ: any = supabase.from("loan_payments").select("paid_on,amount,office_id,loan_id,loans(farmer_id)").order("paid_on", { ascending: false });
+    let lpQ: any = db.from("loan_payments").select("paid_on,amount,office_id,loan_id,loans(farmer_id)").order("paid_on", { ascending: false });
     if (from) lpQ = lpQ.gte("paid_on", from);
     if (to) lpQ = lpQ.lte("paid_on", to);
     if (officeId !== ALL) lpQ = lpQ.eq("office_id", officeId);
     setLoanPayments((await lpQ).data ?? []);
 
-    let svQ: any = supabase.from("savings_transactions").select("txn_date,type,amount,status,category,office_id,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).order("txn_date", { ascending: false });
+    let svQ: any = db.from("savings_transactions").select("txn_date,type,amount,status,category,office_id,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).order("txn_date", { ascending: false });
     svQ = applyCommon(svQ, "txn_date");
     setSavings((await svQ).data ?? []);
 
     // Voided/cancelled receipts are kept (voided_at NOT filtered) so they appear in the
     // collection report as "বাতিল". They never count toward totals (totals filter status==="approved").
-    let pQ: any = supabase.from("payments").select("created_at,amount,kind,category,status,method,receipt_no,collected_by,office_id,farmer_id,voided_at,void_reason,farmers(name_en,farmer_code),payment_allocations(kind,amount)").is("deleted_at", null).order("created_at", { ascending: false });
+    let pQ: any = db.from("payments").select("created_at,amount,kind,category,status,method,receipt_no,collected_by,office_id,farmer_id,voided_at,void_reason,farmers(name_en,farmer_code),payment_allocations(kind,amount)").is("deleted_at", null).order("created_at", { ascending: false });
     if (from) pQ = pQ.gte("created_at", from);
     if (to) pQ = pQ.lte("created_at", to);
     if (officeId !== ALL) pQ = pQ.eq("office_id", officeId);
@@ -113,7 +113,7 @@ export default function Reports() {
     setPayments(payRows);
     const userIds = Array.from(new Set(payRows.map((p: any) => p.collected_by).filter(Boolean)));
     if (userIds.length) {
-      const { data: profs } = await supabase.from("profiles").select("id,full_name").in("id", userIds as string[]);
+      const { data: profs } = await db.from("profiles").select("id,full_name").in("id", userIds as string[]);
       const map: Record<string, string> = {};
       (profs ?? []).forEach((p: any) => { map[p.id] = p.full_name; });
       setUserMap(map);

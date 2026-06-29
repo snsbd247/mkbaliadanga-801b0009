@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { money } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 
-const sb = supabase as any;
+const sb = db as any;
 
 type Stream = "irrigation" | "savings";
 type Orientation = "portrait" | "landscape";

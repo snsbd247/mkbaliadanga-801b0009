@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -24,7 +24,7 @@ import { nextMonthlyReceiptNo } from "@/lib/monthlyReceiptNo";
 import { autoReceiptNo } from "@/lib/receiptNo";
 import { CashbookA4Preview } from "@/components/cashbook/CashbookA4Preview";
 
-const sb = supabase as any;
+const sb = db as any;
 
 const RECEIPT_KINDS = [
   "irrigation", "bigha_rent", "pond", "crop_sale", "scrap",
@@ -110,7 +110,7 @@ export default function Cashbook() {
 
   useEffect(() => {
     document.title = `${t("cashbook")} — ${t("appName")}`;
-    supabase.from("farmers").select("id,name_en,farmer_code,member_no").order("name_en").then(d => setFarmers(d.data ?? []));
+    db.from("farmers").select("id,name_en,farmer_code,member_no").order("name_en").then(d => setFarmers(d.data ?? []));
     loadHeads();
     sb.from("bank_accounts").select("*").eq("is_active", true).order("bank_name").then((d: any) => setBankAccounts(d.data ?? []));
   }, []);
@@ -267,7 +267,7 @@ export default function Cashbook() {
     if (r.method === "bank" && !r.bank_account_id) return toast.error(tx("Select a bank account", "ব্যাংক একাউন্ট নির্বাচন করুন"));
     // A bank-method income = a withdrawal from that bank; pair it with a bank_transactions row.
     const linkId = r.method === "bank" ? crypto.randomUUID() : null;
-    const { error } = await supabase.from("receipts").insert({
+    const { error } = await db.from("receipts").insert({
       kind: r.kind, farmer_id: r.farmer_id || null, amount: r.amount, method: r.method,
       note: r.note, receipt_date: r.receipt_date, collected_by: user?.id, link_id: linkId,
     } as any);
@@ -303,7 +303,7 @@ export default function Cashbook() {
     if (!oi.remark.trim()) return toast.error(tx("Write a remark / description", "একটি রিমার্ক / বিবরণ লিখুন"));
     const receipt_no = await nextMonthlyReceiptNo("IRR", officeId, `OI-${Date.now()}-${crypto.randomUUID()}`)
       .catch(() => autoReceiptNo("IRR", `${Date.now()}`));
-    const { error } = await supabase.from("receipts").insert({
+    const { error } = await db.from("receipts").insert({
       kind: oi.kind, farmer_id: null, amount: oi.amount, method: "cash", note: oi.remark.trim(),
       receipt_date: oi.receipt_date, collected_by: user?.id, receipt_no,
     });

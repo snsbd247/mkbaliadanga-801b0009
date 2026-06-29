@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -67,13 +68,13 @@ export default function Approvals() {
     setLoading(true);
     try {
       const [{ data: s }, { data: lp }, { data: l }, { data: p }] = await Promise.all([
-        supabase.from("savings_transactions").select("id,txn_date,amount,type,status,note,farmer_id,farmers(name_en,farmer_code,member_no)")
+        db.from("savings_transactions").select("id,txn_date,amount,type,status,note,farmer_id,farmers(name_en,farmer_code,member_no)")
           .is("deleted_at", null).eq("type", "withdraw").eq("status", "pending").order("txn_date", { ascending: false }).limit(500),
-        supabase.from("loan_payments").select("id,paid_on,amount,status,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
+        db.from("loan_payments").select("id,paid_on,amount,status,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
           .eq("status", "pending").order("paid_on", { ascending: false }).limit(500),
-        supabase.from("loans").select("id,issued_on,principal,total_payable,status,note,farmer_id,farmers(name_en,farmer_code,member_no)")
+        db.from("loans").select("id,issued_on,principal,total_payable,status,note,farmer_id,farmers(name_en,farmer_code,member_no)")
           .is("deleted_at", null).eq("status", "pending").order("issued_on", { ascending: false }).limit(500),
-        supabase.from("payments").select("id,created_at,amount,status,kind,receipt_no,note,farmer_id,farmers(name_en,farmer_code,member_no)")
+        db.from("payments").select("id,created_at,amount,status,kind,receipt_no,note,farmer_id,farmers(name_en,farmer_code,member_no)")
           .is("deleted_at", null).eq("status", "pending").order("created_at", { ascending: false }).limit(500),
       ]);
       setSavings((s as any[]) || []);
@@ -135,7 +136,7 @@ export default function Approvals() {
         if (comment.trim()) patch.approval_note = comment.trim();
       }
       patch.approved_at = new Date().toISOString();
-      const { error } = await supabase.from(decision.table).update(patch).eq("id", decision.id);
+      const { error } = await db.from(decision.table).update(patch).eq("id", decision.id);
       if (error) throw error;
       await logAudit({
         module: "other",
@@ -165,7 +166,7 @@ export default function Approvals() {
         if (bulk.table === "savings_transactions" || bulk.table === "payments") patch.note = comment.trim();
         else patch.approval_note = comment.trim();
       }
-      const { error } = await supabase.from(bulk.table).update(patch).in("id", bulk.ids);
+      const { error } = await db.from(bulk.table).update(patch).in("id", bulk.ids);
       if (error) throw error;
       await logAudit({
         module: "other",

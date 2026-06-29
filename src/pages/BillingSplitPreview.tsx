@@ -3,7 +3,7 @@
 // between the owner (remainder area) and each sharecropper (borga area)
 // BEFORE generating invoices or taking payments. No data is written here.
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { usePermissions } from "@/lib/permissions";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { resolveBillingSplits } from "@/lib/irrigationInvoice";
 import { loadSeasonRateMap, resolveRateForLand, type RateRow } from "@/lib/seasonRates";
 
-const sb = supabase as any;
+const sb = db as any;
 
 type SeasonLite = { id: string; name: string; year: number | null; type: string | null };
 type LandLite = {

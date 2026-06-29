@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import { db } from "@/lib/db";
 export type MemberCheck = {
   ok: boolean;
   reason?: string;
@@ -60,7 +61,7 @@ export async function checkMemberEligibility(
   tx: (en: string, bn: string) => string,
 ): Promise<MemberCheck> {
   if (!farmerId) return { ok: false, reason: tx("Select a farmer", "ফার্মার নির্বাচন করুন") };
-  const { data } = await supabase
+  const { data } = await db
     .from("farmers")
     .select("status,member_no,name_en,office_id")
     .eq("id", farmerId)
@@ -86,7 +87,7 @@ export async function guardSavingsLoan(
   tx: (en: string, bn: string) => string,
 ): Promise<MemberCheck> {
   if (!farmerId) return { ok: false, reason: tx("Select a farmer", "ফার্মার নির্বাচন করুন") };
-  const { data } = await supabase
+  const { data } = await db
     .from("farmers")
     .select("status,member_no,name_en,office_id")
     .eq("id", farmerId)
@@ -96,7 +97,7 @@ export async function guardSavingsLoan(
     const reason = blockReasonCode(data as any) ?? "BLOCKED";
     try {
       const { data: auth } = await supabase.auth.getUser();
-      await supabase.from("member_block_audit").insert({
+      await db.from("member_block_audit").insert({
         attempted_by: auth?.user?.id ?? null,
         office_id: (data as any)?.office_id ?? null,
         farmer_id: farmerId,

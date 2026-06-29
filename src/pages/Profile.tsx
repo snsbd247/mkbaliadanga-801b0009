@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,7 +30,7 @@ const profileSchema = z.object({
 
 async function logAudit(user_id: string, action: string, meta: Record<string, any> = {}) {
   try {
-    await supabase.from("audit_logs").insert({
+    await db.from("audit_logs").insert({
       user_id,
       action,
       entity: "profile",
@@ -62,7 +63,7 @@ export default function Profile() {
     let cancel = false;
     (async () => {
       if (!user) return;
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("profiles")
         .select("full_name, username, email")
         .eq("id", user.id)
@@ -87,7 +88,7 @@ export default function Profile() {
       return toast.error(first ?? t("prof_validationFailed" as any));
     }
     setSaving(true);
-    const { data: dup } = await supabase
+    const { data: dup } = await db
       .from("profiles")
       .select("id")
       .eq("username", parsed.data.username)
@@ -97,7 +98,7 @@ export default function Profile() {
       setSaving(false);
       return toast.error(t("prof_usernameTaken" as any));
     }
-    const { error } = await supabase
+    const { error } = await db
       .from("profiles")
       .update({
         full_name: parsed.data.full_name,

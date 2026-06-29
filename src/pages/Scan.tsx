@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLang } from "@/i18n/LanguageProvider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { toast } from "sonner";
 import { Camera, RefreshCcw, AlertCircle } from "lucide-react";
 
@@ -114,18 +114,18 @@ export default function Scan() {
 
     if (kind !== "id" && /^[0-9]{8,18}$/.test(key)) {
       const byAcc = await activeFarmer(
-        supabase.from("farmers").select("id").eq("account_number", key),
+        db.from("farmers").select("id").eq("account_number", key),
       );
       if (byAcc.data?.id) return nav(`/payments?farmer=${byAcc.data.id}`);
     }
     if (kind === "id" || /^[0-9a-f-]{36}$/i.test(key)) {
       const byId = await activeFarmer(
-        supabase.from("farmers").select("id").eq("id", key),
+        db.from("farmers").select("id").eq("id", key),
       );
       if (byId.data?.id) return nav(`/payments?farmer=${byId.data.id}`);
     }
     const byCode = await activeFarmer(
-      supabase.from("farmers").select("id").eq("farmer_code", key),
+      db.from("farmers").select("id").eq("farmer_code", key),
     );
     if (byCode.data?.id) return nav(`/payments?farmer=${byCode.data.id}`);
 

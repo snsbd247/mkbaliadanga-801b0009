@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,9 +40,9 @@ export default function RateSourceReport() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
-      supabase.from("offices").select("id,name").order("name"),
-      supabase.from("irrigation_categories" as any).select("id,name_bn,name_en").eq("is_active", true).is("deleted_at", null).order("name_bn"),
+      db.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
+      db.from("offices").select("id,name").order("name"),
+      db.from("irrigation_categories" as any).select("id,name_bn,name_en").eq("is_active", true).is("deleted_at", null).order("name_bn"),
     ]).then(([s, o, c]) => {
       setSeasons(s.data ?? []);
       setOffices(o.data ?? []);
@@ -53,7 +53,7 @@ export default function RateSourceReport() {
   async function load() {
     setLoading(true);
     try {
-      let q = supabase
+      let q = db
         .from("irrigation_invoices" as any)
         .select("id,invoice_no,generated_at,rate_source,applied_rate,original_standard_rate,irrigation_category_name,override_reason,payable_amount,paid_amount,is_manual_rate,manual_rate_reason,season_rate,farmers!irrigation_invoices_farmer_id_fkey(name_bn,name_en,farmer_code,mobile),seasons(name,year,type)")
         .is("deleted_at", null)

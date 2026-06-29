@@ -319,7 +319,7 @@ export default function Farmers() {
       const tokens = parseDagSearchTokens(q).slice(0, 10);
       if (tokens.length) {
         const orExpr = tokens.map((t) => `dag_no.ilike.%${t.replace(/[%,]/g, "")}%`).join(",");
-        const { data: lr } = await supabase
+        const { data: lr } = await db
           .from("lands")
           .select("farmer_id")
           .is("deleted_at", null)
@@ -561,7 +561,7 @@ export default function Farmers() {
     setList((prev) => prev.map((r) => (r.id === id ? { ...r, ...payload } : r)));
     // Targeted refetch for the edited row to reconcile DB-trigger derived fields
     // (voter_number, farmer_code, joined relations) without a full table reload.
-    const { data: fresh } = await supabase
+    const { data: fresh } = await db
       .from("farmers")
       .select("*, offices(name)")
       .eq("id", id)

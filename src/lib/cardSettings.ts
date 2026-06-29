@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export interface CardSettings {
   template_id: string;
   accent_color: string;
@@ -42,7 +41,7 @@ const subs = new Set<(s: CardSettings) => void>();
 
 export async function loadCardSettings(force = false): Promise<CardSettings> {
   if (cached && !force) return cached;
-  const { data } = await supabase.from("card_settings").select("*").eq("id", 1).maybeSingle();
+  const { data } = await db.from("card_settings").select("*").eq("id", 1).maybeSingle();
   cached = { ...DEFAULT_CARD_SETTINGS, ...((data as any) ?? {}) };
   subs.forEach((s) => s(cached!));
   return cached!;

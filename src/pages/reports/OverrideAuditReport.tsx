@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ export default function OverrideAuditReport() {
   async function load() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("irrigation_rate_overrides" as any)
         .select("id,created_at,original_rate,overridden_rate,override_reason,approved_by,created_by,irrigation_invoice_id,irrigation_invoices!inner(invoice_no,farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_bn,name_en,farmer_code,mobile))")
         .order("created_at", { ascending: false })

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { hydrateReceiptOptionsFromProfile } from "@/lib/receiptOptions";
 import { isLaravelBackend } from "@/lib/backend";
 import { api, getApiToken, setApiToken } from "@/lib/api/client";
@@ -45,8 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Supabase path ──────────────────────────────────────────────────
   const loadSupabaseProfile = async (uid: string) => {
     const [{ data: rolesData }, { data: prof }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-      supabase.from("profiles").select("office_id").eq("id", uid).maybeSingle(),
+      db.from("user_roles").select("role").eq("user_id", uid),
+      db.from("profiles").select("office_id").eq("id", uid).maybeSingle(),
     ]);
     loadedProfileUserIdRef.current = uid;
     setRoles((rolesData ?? []).map((r: any) => r.role as AppRole));

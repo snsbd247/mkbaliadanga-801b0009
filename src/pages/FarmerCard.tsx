@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,7 +52,7 @@ export default function FarmerCard() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Please sign in"); return; }
-      const { data: f, error } = await supabase
+      const { data: f, error } = await db
         .from("farmers")
         .select("id, name_en, name_bn, farmer_code, member_no, account_number, voter_number, mobile, village, address, photo_url")
         .eq("id", id).maybeSingle();

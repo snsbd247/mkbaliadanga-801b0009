@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -119,7 +120,7 @@ export default function Payments() {
     let mouza = "", land_size = 0, owner = "", delay = 0, landId: string | null = null;
     let baseline: EditBaseline | null = null;
     if (invId) {
-      const { data: inv } = await supabase.from("irrigation_invoices")
+      const { data: inv } = await db.from("irrigation_invoices")
         .select("land_id,owner_farmer_id,delay_fee,payable_amount,due_amount,paid_amount,lands(mouza,land_size)").eq("id", invId).maybeSingle();
       if (inv) {
         landId = (inv as any).land_id ?? null;
@@ -162,18 +163,18 @@ export default function Payments() {
     const after: any = {};
     // 1) Land fields (mouza, land size)
     if (editLandId) {
-      const { data: land } = await supabase.from("lands").select("mouza,land_size").eq("id", editLandId).maybeSingle();
+      const { data: land } = await db.from("lands").select("mouza,land_size").eq("id", editLandId).maybeSingle();
       const newMouza = editForm.mouza.trim();
       const newSize = Number(editForm.land_size) || 0;
       if (land && (land.mouza !== newMouza || Number(land.land_size || 0) !== newSize)) {
         before.land = { mouza: land.mouza, land_size: land.land_size };
         after.land = { mouza: newMouza, land_size: newSize };
-        await supabase.from("lands").update({ mouza: newMouza, land_size: newSize } as any).eq("id", editLandId);
+        await db.from("lands").update({ mouza: newMouza, land_size: newSize } as any).eq("id", editLandId);
       }
     }
     // 2) Invoice: owner + delay fee (recompute payable/due)
     if (editInvoiceId) {
-      const { data: inv } = await supabase.from("irrigation_invoices")
+      const { data: inv } = await db.from("irrigation_invoices")
         .select("owner_farmer_id,delay_fee,payable_amount,due_amount,paid_amount").eq("id", editInvoiceId).maybeSingle();
       if (inv) {
         const oldFee = Number((inv as any).delay_fee || 0);
@@ -187,7 +188,7 @@ export default function Payments() {
           patch.payable_amount = Number((inv as any).payable_amount || 0) + (newFee - oldFee);
           patch.due_amount = Math.max(0, Number((inv as any).due_amount || 0) + (newFee - oldFee));
         }
-        if (Object.keys(patch).length) await supabase.from("irrigation_invoices").update(patch).eq("id", editInvoiceId);
+        if (Object.keys(patch).length) await db.from("irrigation_invoices").update(patch).eq("id", editInvoiceId);
       }
     }
     // 3) Payment amount adjustment (reflect in invoice paid_amount + allocation row)
@@ -195,26 +196,26 @@ export default function Payments() {
     if (newAmount !== Number(p.amount || 0)) {
       before.amount = Number(p.amount || 0); after.amount = newAmount;
       const diff = newAmount - Number(p.amount || 0);
-      await supabase.from("payments").update({ amount: newAmount } as any).eq("id", p.id);
+      await db.from("payments").update({ amount: newAmount } as any).eq("id", p.id);
       if (editInvoiceId) {
-        const { data: inv2 } = await supabase.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", editInvoiceId).maybeSingle();
+        const { data: inv2 } = await db.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", editInvoiceId).maybeSingle();
         if (inv2) {
           const st = computeInvoiceDue((inv2 as any).payable_amount, Number((inv2 as any).paid_amount || 0) + diff);
-          await supabase.from("irrigation_invoices").update({ paid_amount: st.paid, due_amount: st.due, invoice_status: st.status } as any).eq("id", editInvoiceId);
+          await db.from("irrigation_invoices").update({ paid_amount: st.paid, due_amount: st.due, invoice_status: st.status } as any).eq("id", editInvoiceId);
         }
-        const { data: iip } = await supabase.from("irrigation_invoice_payments").select("id,collected_amount").eq("payment_id", p.id).eq("invoice_id", editInvoiceId).maybeSingle();
-        if (iip) await supabase.from("irrigation_invoice_payments").update({ collected_amount: Math.max(0, Number((iip as any).collected_amount || 0) + diff), irrigation_collected: Math.max(0, Number((iip as any).collected_amount || 0) + diff) } as any).eq("id", (iip as any).id);
+        const { data: iip } = await db.from("irrigation_invoice_payments").select("id,collected_amount").eq("payment_id", p.id).eq("invoice_id", editInvoiceId).maybeSingle();
+        if (iip) await db.from("irrigation_invoice_payments").update({ collected_amount: Math.max(0, Number((iip as any).collected_amount || 0) + diff), irrigation_collected: Math.max(0, Number((iip as any).collected_amount || 0) + diff) } as any).eq("id", (iip as any).id);
       }
-      const { data: pa } = await supabase.from("payment_allocations").select("id").eq("payment_id", p.id).eq("kind", "irrigation").maybeSingle();
-      if (pa) await supabase.from("payment_allocations").update({ amount: newAmount } as any).eq("id", (pa as any).id);
+      const { data: pa } = await db.from("payment_allocations").select("id").eq("payment_id", p.id).eq("kind", "irrigation").maybeSingle();
+      if (pa) await db.from("payment_allocations").update({ amount: newAmount } as any).eq("id", (pa as any).id);
     }
     // 4) Note (applies to all kinds incl. savings)
     const newNote = editForm.note.trim() || null;
     if ((p.note ?? null) !== newNote) {
       before.note = p.note ?? null; after.note = newNote;
-      await supabase.from("payments").update({ note: newNote } as any).eq("id", p.id);
+      await db.from("payments").update({ note: newNote } as any).eq("id", p.id);
     }
-    await supabase.from("audit_logs").insert({
+    await db.from("audit_logs").insert({
       user_id: user?.id, action: "edit", entity: "payments", entity_id: p.id, office_id: p.office_id ?? null,
       old_values: before, new_values: { ...after, reason: editForm.reason.trim() }, meta: { receipt_no: p.receipt_no },
     } as any);
@@ -225,7 +226,7 @@ export default function Payments() {
 
 
   async function loadSavingsBalance(fid: string) {
-    const { data } = await supabase
+    const { data } = await db
       .from("savings_transactions")
       .select("type,amount,status")
       .eq("farmer_id", fid)
@@ -245,12 +246,12 @@ export default function Payments() {
     if (!(withdrawForm.amount > 0)) return toast.error(t("amountMustBePositiveSavings"));
     if (withdrawForm.amount > savingsBalance) return toast.error(`${tx("Insufficient balance. Available", "যথেষ্ট ব্যালেন্স নেই। উপলব্ধ")}: ৳${savingsBalance.toLocaleString()}`);
     const farmer = farmers.find((x: any) => x.id === farmerId);
-    const { error } = await supabase.from("savings_transactions").insert({
+    const { error } = await db.from("savings_transactions").insert({
       farmer_id: farmerId, type: "withdraw" as any, amount: withdrawForm.amount,
       note: withdrawForm.note, status: "pending" as any, created_by: user?.id,
     });
     if (error) return toast.error(error.message);
-    await supabase.from("notifications").insert({
+    await db.from("notifications").insert({
       kind: "withdrawal_pending",
       title: t("withdrawalRequestTitle"),
       body: t("withdrawalRequestedBody").replace("{name}", farmer?.name_en ?? "").replace("{amount}", String(withdrawForm.amount)),
@@ -305,20 +306,20 @@ export default function Payments() {
 
   async function loadPriority() {
     if (!user) return;
-    const { data: prof } = await supabase.from("profiles").select("office_id").eq("id", user.id).maybeSingle();
+    const { data: prof } = await db.from("profiles").select("office_id").eq("id", user.id).maybeSingle();
     if (!prof?.office_id) return;
-    const { data: off } = await supabase.from("offices").select("payment_priority").eq("id", prof.office_id).maybeSingle();
+    const { data: off } = await db.from("offices").select("payment_priority").eq("id", prof.office_id).maybeSingle();
     if (off?.payment_priority?.length) setPriority(off.payment_priority as string[]);
   }
 
   async function checkRole() {
     if (!user) return;
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const { data } = await db.from("user_roles").select("role").eq("user_id", user.id);
     setIsAdmin((data ?? []).some((r: any) => r.role === "committee" || r.role === "super_admin"));
   }
 
   async function load() {
-    let pq = supabase.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
+    let pq = db.from("payments").select("*, farmers(name_en,name_bn,farmer_code,member_no,mobile,village,father_name,voter_number,account_number,is_voter,union_id), payment_allocations(*)").order("created_at", { ascending: false }).limit(100);
     pq = showDeleted ? pq.not("deleted_at", "is", null) : pq.is("deleted_at", null);
     if (period !== "all") {
       const now = new Date();
@@ -328,7 +329,7 @@ export default function Payments() {
       pq = pq.gte("created_at", from.toISOString());
     }
     const [f, p] = await Promise.all([
-      supabase.from("farmers").select("id,name_en,farmer_code").order("name_en"),
+      db.from("farmers").select("id,name_en,farmer_code").order("name_en"),
       pq,
     ]);
     setFarmers(f.data ?? []); setList(p.data ?? []);
@@ -362,12 +363,12 @@ export default function Payments() {
 
 
   async function restorePayment(id: string) {
-    const { error } = await supabase.from("payments").update({ deleted_at: null } as any).eq("id", id);
+    const { error } = await db.from("payments").update({ deleted_at: null } as any).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("restored")); load();
   }
   async function loadDues() {
-    const i = await supabase.from("irrigation_invoices")
+    const i = await db.from("irrigation_invoices")
       .select("id,invoice_no,payable_amount,paid_amount,due_amount,due_date,generated_at,office_id,is_borga,delay_fee,maintenance_amount,canal_amount,irrigation_amount,other_charge")
       .eq("farmer_id", farmerId)
       .is("deleted_at", null)
@@ -467,7 +468,7 @@ export default function Payments() {
       };
 
 
-      const { data: inserted, error } = await supabase.from("payments").insert(payload).select("id").single();
+      const { data: inserted, error } = await db.from("payments").insert(payload).select("id").single();
       if (error) {
         if ((error as any).code === "23505" || /duplicate/i.test(error.message)) {
           toast.error(t("duplicateSubmissionDetected"));
@@ -478,12 +479,12 @@ export default function Payments() {
 
       // Insert allocations
       const allocRows = allocs.map(a => ({ payment_id: inserted!.id, kind: a.kind, reference_id: a.reference_id || null, amount: Number(a.amount) }));
-      const { error: aErr } = await supabase.from("payment_allocations").insert(allocRows);
+      const { error: aErr } = await db.from("payment_allocations").insert(allocRows);
       if (aErr) toast.error(t("allocationsErr").replace("{msg}", aErr.message));
 
       if (receiptFile) {
         const url = await uploadReceipt(inserted.id);
-        if (url) await supabase.from("payments").update({ receipt_url: url }).eq("id", inserted.id);
+        if (url) await db.from("payments").update({ receipt_url: url }).eq("id", inserted.id);
       }
 
       if (status === "approved") {
@@ -505,7 +506,7 @@ export default function Payments() {
       const irrTotal = list.filter(a => a.kind === "irrigation").reduce((s, a) => s + Number(a.amount || 0), 0);
       if (irrTotal <= 0) return;
       const farmer = farmers.find((x: any) => x.id === fId);
-      const { data: full } = await supabase.from("farmers").select("mobile,name_bn,name_en").eq("id", fId).maybeSingle();
+      const { data: full } = await db.from("farmers").select("mobile,name_bn,name_en").eq("id", fId).maybeSingle();
       const mobile = full?.mobile ?? farmer?.mobile;
       if (!mobile) return;
       const message = tx(`BDT ${irrTotal.toLocaleString()} received against your irrigation invoice.${receiptNo ? `\nReceipt no: ${receiptNo}` : ""}\nThank you.`, `আপনার সেচ ইনভয়েসের ৳${irrTotal.toLocaleString()} টাকা গ্রহণ করা হয়েছে।${receiptNo ? `\nরসিদ নং: ${receiptNo}` : ""}\nধন্যবাদ।`);
@@ -517,16 +518,16 @@ export default function Payments() {
     const noteText = desc?.trim() || undefined;
     for (const a of list) {
       if (a.kind === "irrigation" && a.reference_id) {
-        const { data: inv } = await supabase
+        const { data: inv } = await db
           .from("irrigation_invoices")
           .select("paid_amount,office_id")
           .eq("id", a.reference_id)
           .single();
         if (inv) {
-          await supabase.from("irrigation_invoices")
+          await db.from("irrigation_invoices")
             .update({ paid_amount: Number(inv.paid_amount) + Number(a.amount) })
             .eq("id", a.reference_id);
-          await supabase.from("irrigation_invoice_payments").insert({
+          await db.from("irrigation_invoice_payments").insert({
             invoice_id: a.reference_id,
             payment_id: paymentId,
             office_id: inv.office_id,
@@ -536,13 +537,13 @@ export default function Payments() {
           });
         }
       } else if (a.kind === "savings") {
-        await supabase.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id, note: noteText });
+        await db.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id, note: noteText });
       }
     }
   }
 
   async function approvePayment(p: any) {
-    const { error } = await supabase.from("payments").update({ status: "approved", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", p.id);
+    const { error } = await db.from("payments").update({ status: "approved", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", p.id);
     if (error) return toast.error(error.message);
 
     const allocList: Allocation[] = (p.payment_allocations ?? []).length > 0
@@ -556,7 +557,7 @@ export default function Payments() {
   }
 
   async function rejectPayment(p: any) {
-    const { error } = await supabase.from("payments").update({ status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", p.id);
+    const { error } = await db.from("payments").update({ status: "rejected", approved_by: user?.id, approved_at: new Date().toISOString() }).eq("id", p.id);
     if (error) return toast.error(error.message);
     toast.success(t("rejectedToast"));
     load();
@@ -566,7 +567,7 @@ export default function Payments() {
     if (p.voided_at || p.status === "voided") return toast.error("এই রসিদ ইতোমধ্যে বাতিল করা হয়েছে");
     const reason = window.prompt("কেন এই রসিদ বাতিল করছেন? (Reason for voiding receipt)");
     if (!reason || !reason.trim()) return;
-    const { error } = await supabase.from("payments").update({
+    const { error } = await db.from("payments").update({
       voided_at: new Date().toISOString(),
       voided_by: user?.id,
       void_reason: reason.trim(),
@@ -582,14 +583,14 @@ export default function Payments() {
       const amt = Number(a.amount || 0);
       if (!(amt > 0)) continue;
       if (a.kind === "irrigation" && a.reference_id) {
-        const { data: inv } = await supabase.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", a.reference_id).maybeSingle();
+        const { data: inv } = await db.from("irrigation_invoices").select("paid_amount,payable_amount").eq("id", a.reference_id).maybeSingle();
         if (inv) {
           const st = computeInvoiceDue(inv.payable_amount, Number(inv.paid_amount || 0) - amt);
-          await supabase.from("irrigation_invoices").update({ paid_amount: st.paid, due_amount: st.due, invoice_status: st.status } as any).eq("id", a.reference_id);
+          await db.from("irrigation_invoices").update({ paid_amount: st.paid, due_amount: st.due, invoice_status: st.status } as any).eq("id", a.reference_id);
         }
-        await supabase.from("irrigation_invoice_payments").delete().eq("invoice_id", a.reference_id).eq("payment_id", p.id);
+        await db.from("irrigation_invoice_payments").delete().eq("invoice_id", a.reference_id).eq("payment_id", p.id);
       } else if (a.kind === "savings") {
-        await supabase.from("savings_transactions").insert({
+        await db.from("savings_transactions").insert({
           farmer_id: p.farmer_id, type: "withdraw" as any, amount: amt,
           status: "approved" as any, created_by: user?.id,
           note: `Void reversal of payment ${p.receipt_no ?? p.id} — ${reason.trim()}`,
@@ -597,7 +598,7 @@ export default function Payments() {
       }
     }
 
-    await supabase.from("audit_logs").insert({
+    await db.from("audit_logs").insert({
       user_id: user?.id,
       action: "void",
       entity: "payments",
@@ -957,7 +958,7 @@ export default function Payments() {
                           const isMiscCollection = kind === "irrigation" && !!catBn;
                           let villageUnion: string | null = null;
                           if (kind === "irrigation" && p.farmers?.union_id) {
-                            const { data: u } = await supabase.from("unions").select("name_bn,name").eq("id", p.farmers.union_id).maybeSingle();
+                            const { data: u } = await db.from("unions").select("name_bn,name").eq("id", p.farmers.union_id).maybeSingle();
                             villageUnion = u?.name_bn || u?.name || null;
                           }
                           const rd: BnReceiptData = {

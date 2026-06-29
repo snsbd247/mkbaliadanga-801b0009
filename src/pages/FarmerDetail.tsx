@@ -162,7 +162,7 @@ export default function FarmerDetail() {
       return;
     }
     setOwnerLandsLoading(true);
-    let qb = supabase
+    let qb = db
       .from("lands_with_location")
       .select("id,dag_no,land_size,field_type,land_type_id,division_id,district_id,upazila_id,mouza_id,mouza_name,office_id")
       .eq("farmer_id", land.owner_farmer_id)
@@ -366,7 +366,7 @@ export default function FarmerDetail() {
 
 
     // Outstanding from new irrigation_invoices (replaces legacy irrigation_charges total)
-    const inv = await supabase
+    const inv = await db
       .from("irrigation_invoices")
       .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_bn,name_en,farmer_code,mobile,village), lands(mouza,dag_no,land_size), seasons(name,year,type)")
       .eq("farmer_id", id!)
@@ -402,7 +402,7 @@ export default function FarmerDetail() {
       const invToLand: Record<string, string> = {};
       invRows.forEach((r: any) => { if (r.id && r.land_id) invToLand[r.id] = r.land_id; });
       if (invIds.length) {
-        const { data: pays } = await supabase
+        const { data: pays } = await db
           .from("irrigation_invoice_payments")
           .select("invoice_id,collected_amount,created_at")
           .in("invoice_id", invIds);
@@ -424,7 +424,7 @@ export default function FarmerDetail() {
     // Load all seasons + active season + per-land rate map (for Rate/Total columns in Land tab)
     try {
       setFarmerOfficeId(f.data?.office_id ?? null);
-      const { data: allSeasons } = await supabase
+      const { data: allSeasons } = await db
         .from("seasons")
         .select("id,name,year,type,status,start_date,end_date")
         .order("year", { ascending: false });
@@ -544,7 +544,7 @@ export default function FarmerDetail() {
         .map((a: any) => a.reference_id);
       let invoiceRows: any[] = [];
       if (allocIds.length) {
-        const { data } = await supabase
+        const { data } = await db
           .from("irrigation_invoices")
           .select("id,invoice_no,irrigation_amount,maintenance_amount,canal_amount,delay_fee,due_amount,season_rate,is_borga,note,seasons(name,year,status),land_type_name,irrigation_category_name,lands(mouza,dag_no,land_size,field_type,land_type_id,owner_type,owner_farmer_id,notes,patwaris(name,name_bn,mobile),owner:farmers!lands_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code))")
           .in("id", allocIds);
@@ -700,7 +700,7 @@ export default function FarmerDetail() {
     let ownerMemberNo: string | null = null;
     if (land) {
       if (land.owner_type === "borgadar" && land.owner_farmer_id && land.owner_farmer_id !== farmer?.id) {
-        const { data: own } = await supabase
+        const { data: own } = await db
           .from("farmers")
           .select("name_bn,name_en,member_no,farmer_code")
           .eq("id", land.owner_farmer_id)
@@ -725,7 +725,7 @@ export default function FarmerDetail() {
     } as Record<string, string>)[land?.field_type as string] ?? null);
 
     // Full ledger outstanding for this farmer (sum of due across all open invoices)
-    const { data: dueRows } = await supabase
+    const { data: dueRows } = await db
       .from("irrigation_invoices")
       .select("due_amount")
       .eq("farmer_id", farmer?.id ?? id!)
@@ -859,7 +859,7 @@ export default function FarmerDetail() {
   // Read-only estimate (no DB invoice created). Uses the active season's base rate.
   async function estimateNewLandDue(landSize: number, officeId: string | null, suffix = "") {
     try {
-      const { data: season } = await supabase
+      const { data: season } = await db
         .from("seasons").select("id,name,year,due_date,status")
         .eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle();
       if (!season?.id) return;
@@ -905,7 +905,7 @@ export default function FarmerDetail() {
       mouza_name: row.mouza ?? null,
     };
     if (initialLoc.mouza_id) {
-      const { data: m } = await supabase
+      const { data: m } = await db
         .from("mouzas")
         .select("id,name,upazila_id,upazilas:upazila_id(id,name,district_id,districts:district_id(id,name,division_id,divisions:division_id(id,name)))")
         .eq("id", initialLoc.mouza_id)

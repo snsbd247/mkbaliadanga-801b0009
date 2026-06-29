@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -47,14 +47,14 @@ export default function PromiseDueReport() {
 
   useEffect(() => {
     document.title = tx("Promise Due Report", "প্রতিশ্রুতি বকেয়া রিপোর্ট");
-    if (isSuper) supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices(data ?? []));
+    if (isSuper) db.from("offices").select("id,name").order("name").then(({ data }) => setOffices(data ?? []));
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     (async () => {
-      let q = supabase.from("irrigation_due_promises")
+      let q = db.from("irrigation_due_promises")
         .select("id,previous_due_amount,promise_date,status,remarks,created_at,farmer_id,office_id,farmers(name_en,farmer_code)")
         .order("promise_date", { ascending: true })
         .limit(2000);

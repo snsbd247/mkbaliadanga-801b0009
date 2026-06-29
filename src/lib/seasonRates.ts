@@ -1,5 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export type RateRow = {
   land_type_id: string;
   land_type_code: string;
@@ -15,7 +14,7 @@ export type RateRow = {
  */
 export async function loadSeasonRateMap(season_id: string, office_id?: string | null): Promise<RateRow[]> {
   if (!season_id) return [];
-  const { data } = await supabase
+  const { data } = await db
     .from("irrigation_season_rates" as any)
     .select("land_type_id, rate_per_shotok, calculation_basis, office_id, land_types(id, code, name, name_bn)")
     .eq("irrigation_season_id", season_id);

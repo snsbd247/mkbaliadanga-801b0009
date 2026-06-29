@@ -1,7 +1,7 @@
 // i18n-ignore-file — admin-only page (English UI)
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -403,7 +403,7 @@ export default function DataImport() {
   } | null>(null);
 
   async function loadRecentImports() {
-    const { data } = await supabase
+    const { data } = await db
       .from("import_audit_logs" as any)
       .select("*").order("created_at", { ascending: false }).limit(20);
     setRecentImports((data as any) ?? []);
@@ -504,7 +504,7 @@ export default function DataImport() {
   async function resolveFarmers(accountNumbers: string[]) {
     const unique = Array.from(new Set(accountNumbers.filter(Boolean)));
     if (!unique.length) return new Map<string, { id: string; office_id: string | null }>();
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("farmers")
       .select("id, office_id, account_number")
       .in("account_number", unique);
@@ -517,7 +517,7 @@ export default function DataImport() {
   async function resolveAccountsByCode(codes: string[]) {
     const unique = Array.from(new Set(codes.filter(Boolean)));
     if (!unique.length) return new Map<string, string>();
-    const { data, error } = await supabase.from("accounts").select("id, code").in("code", unique);
+    const { data, error } = await db.from("accounts").select("id, code").in("code", unique);
     if (error) throw error;
     const m = new Map<string, string>();
     (data ?? []).forEach((a: any) => m.set(String(a.code), a.id));
@@ -564,7 +564,7 @@ export default function DataImport() {
       if (mod === "loan_payments" || mod === "loan_installments" || mod === "loan_guarantors") {
         const farmerIds = Array.from(new Set(Array.from(farmerMap.values()).map((v) => v.id)));
         if (farmerIds.length) {
-          const { data: loans } = await supabase
+          const { data: loans } = await db
             .from("loans")
             .select("id, farmer_id, status, issued_on")
             .in("farmer_id", farmerIds)
@@ -579,7 +579,7 @@ export default function DataImport() {
       // Pre-fetch lookup maps for catalog modules
       const upazilaMap = new Map<string, string>();
       if (mod === "mouzas") {
-        const { data: ups } = await supabase.from("upazilas").select("id,name,name_bn");
+        const { data: ups } = await db.from("upazilas").select("id,name,name_bn");
         (ups ?? []).forEach((u: any) => {
           if (u.name) upazilaMap.set(String(u.name).trim().toLowerCase(), u.id);
           if (u.name_bn) upazilaMap.set(String(u.name_bn).trim().toLowerCase(), u.id);
@@ -587,7 +587,7 @@ export default function DataImport() {
       }
       const bankAcctMap = new Map<string, string>();
       if (mod === "bank_transactions") {
-        const { data: ba } = await supabase.from("bank_accounts").select("id,account_no,office_id");
+        const { data: ba } = await db.from("bank_accounts").select("id,account_no,office_id");
         (ba ?? []).forEach((b: any) => {
           if (b.account_no) bankAcctMap.set(String(b.account_no).trim(), b.id);
         });
@@ -596,20 +596,20 @@ export default function DataImport() {
       // Plan lookup by name for farmer_savings_plans
       const savingsPlanMap = new Map<string, { id: string; office_id: string | null }>();
       if (mod === "farmer_savings_plans") {
-        const { data: sp } = await supabase.from("savings_plans").select("id,name,office_id");
+        const { data: sp } = await db.from("savings_plans").select("id,name,office_id");
         (sp ?? []).forEach((p: any) => savingsPlanMap.set(String(p.name).trim().toLowerCase(), { id: p.id, office_id: p.office_id }));
       }
       // Season lookup by year+type for irrigation_rates
       const seasonMap = new Map<string, string>();
       if (mod === "irrigation_rates") {
-        const { data: ss } = await supabase.from("seasons").select("id,year,type");
+        const { data: ss } = await db.from("seasons").select("id,year,type");
         (ss ?? []).forEach((s: any) => seasonMap.set(`${s.year}|${String(s.type).trim().toLowerCase()}`, s.id));
       }
 
       // Patwari lookup by name / name_bn / mobile for lands mode
       const patwariMap = new Map<string, string>();
       if (mod === "lands") {
-        const { data: pw } = await supabase.from("patwaris").select("id,name,name_bn,mobile");
+        const { data: pw } = await db.from("patwaris").select("id,name,name_bn,mobile");
         (pw ?? []).forEach((p: any) => {
           if (p.name) patwariMap.set(String(p.name).trim().toLowerCase(), p.id);
           if (p.name_bn) patwariMap.set(String(p.name_bn).trim().toLowerCase(), p.id);
@@ -704,7 +704,7 @@ export default function DataImport() {
             }
             const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
             if (!dag) throw new Error("dag_no required to identify the land");
-            const { data: landRow, error: landErr } = await supabase
+            const { data: landRow, error: landErr } = await db
               .from("lands")
               .select("id, office_id")
               .eq("farmer_id", owner.id)
@@ -718,7 +718,7 @@ export default function DataImport() {
             const validTo = raw.valid_to || null;
 
             // Validate: total share for this land in overlapping period must not exceed 100
-            const { data: existing } = await supabase
+            const { data: existing } = await db
               .from("land_relations")
               .select("id, share_percentage, owner_farmer_id, sharecropper_farmer_id, valid_from, valid_to")
               .eq("land_id", landRow.id);
@@ -768,7 +768,7 @@ export default function DataImport() {
                 if (i % 10 === 0) setRows([...next]);
                 continue;
               }
-              const { error: upErr } = await supabase
+              const { error: upErr } = await db
                 .from("land_relations")
                 .upsert(lrPayload, {
                   onConflict: "land_id,owner_farmer_id,sharecropper_farmer_id,valid_from,valid_to",
@@ -896,14 +896,14 @@ export default function DataImport() {
             if (!f) throw new Error(`Farmer not found for account_number=${raw.account_number ?? ""}`);
             const dag = raw.dag_no ? String(raw.dag_no).trim() : null;
             if (!dag) throw new Error("dag_no required");
-            const { data: landRow } = await supabase
+            const { data: landRow } = await db
               .from("lands").select("id, office_id")
               .eq("farmer_id", f.id).eq("dag_no", dag).maybeSingle();
             if (!landRow) throw new Error(`No land found for farmer with dag_no=${dag}`);
             const year = Number(raw.season_year);
             const stype = String(raw.season_type ?? "").toLowerCase();
             if (!year || !stype) throw new Error("season_year and season_type required");
-            const { data: season } = await supabase
+            const { data: season } = await db
               .from("seasons").select("id").eq("year", year).eq("type", stype as any).maybeSingle();
             if (!season) throw new Error(`Season not found year=${year} type=${stype}`);
             const qty = Number(raw.quantity ?? 0);
@@ -944,7 +944,7 @@ export default function DataImport() {
             const acc = raw.account_number ? String(raw.account_number).trim() : null;
             let f: any = null;
             if (acc) {
-              const { data: fdata } = await supabase
+              const { data: fdata } = await db
                 .from("farmers").select("id, office_id").eq("account_number", acc).maybeSingle();
               if (!fdata) throw new Error(`Farmer not found for account_number=${acc}`);
               f = fdata;
@@ -985,7 +985,7 @@ export default function DataImport() {
               if (i % 10 === 0) setRows([...next]);
               continue;
             }
-            const { error: upErr } = await supabase
+            const { error: upErr } = await db
               .from("shares")
               .upsert({ farmer_id: f.id, office_id: f.office_id, balance: bal }, { onConflict: "farmer_id" });
             if (upErr) throw upErr;
@@ -997,7 +997,7 @@ export default function DataImport() {
             if (!name) throw new Error("name required");
             let mouzaId: string | null = null;
             if (raw.mouza) {
-              const { data: mz } = await supabase
+              const { data: mz } = await db
                 .from("mouzas").select("id").eq("name", String(raw.mouza).trim()).maybeSingle();
               if (mz) mouzaId = mz.id;
             }
@@ -1238,7 +1238,7 @@ export default function DataImport() {
           if (dryRun) {
             next[i] = { ...next[i], status: "ok", message: `Will insert into ${table} (preview)` };
           } else {
-            const { data: inserted, error } = await supabase.from(table as any).insert(payload).select("id").maybeSingle();
+            const { data: inserted, error } = await db.from(table as any).insert(payload).select("id").maybeSingle();
             if (error) throw error;
             const newId = (inserted as any)?.id;
             if (newId) insertedRecords.push({ table, id: newId });
@@ -1272,7 +1272,7 @@ export default function DataImport() {
           byTable.set(table, arr);
         });
         for (const [table, ids] of byTable) {
-          await supabase.from(table as any).delete().in("id", ids);
+          await db.from(table as any).delete().in("id", ids);
         }
         rolledBack = true;
         for (let i = 0; i < next.length; i++) {
@@ -1292,7 +1292,7 @@ export default function DataImport() {
             .filter((x) => x.status === "ok" && x.resolved?.record_id)
             .map((x) => ({ idx: x.idx, id: x.resolved!.record_id as string }));
           if (ids.length) {
-            const { data: led } = await supabase
+            const { data: led } = await db
               .from("ledger_entries")
               .select("id,reference_id,debit,credit")
               .in("reference_id", ids.map((x) => x.id));
@@ -1316,7 +1316,7 @@ export default function DataImport() {
         // Persist audit log
         try {
           const officeId = (next.find((r) => r.resolved?.office_id)?.resolved?.office_id) ?? null;
-          await supabase.from("import_audit_logs" as any).insert({
+          await db.from("import_audit_logs" as any).insert({
             user_id: user?.id ?? null,
             office_id: officeId,
             module: mod,
@@ -1377,7 +1377,7 @@ export default function DataImport() {
     // users actually get after a demo import — no hard-coded or blank fields.
     if (sampleType === "irrigation") {
       try {
-        const { data: inv } = await supabase
+        const { data: inv } = await db
           .from("irrigation_invoices")
           .select("farmer_id, farmers(name_bn,name_en,member_no,farmer_code,mobile,village,father_name,is_voter,voter_number,account_number,union_id)")
           .is("deleted_at", null)

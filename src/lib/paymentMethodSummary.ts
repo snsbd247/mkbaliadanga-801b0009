@@ -2,8 +2,7 @@
  * Today's payment method-wise collection summary.
  * Reads from `payments` (approved + not voided) for the calling user's office.
  */
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export interface MethodSummary {
   method: string;
   count: number;
@@ -12,7 +11,7 @@ export interface MethodSummary {
 
 export async function getTodayMethodSummary(opts?: { officeId?: string | null }): Promise<MethodSummary[]> {
   const start = new Date(); start.setHours(0, 0, 0, 0);
-  let q = supabase
+  let q = db
     .from("payments")
     .select("method,amount,status,office_id,created_at")
     .gte("created_at", start.toISOString())

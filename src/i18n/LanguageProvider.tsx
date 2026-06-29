@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { translations, type Lang, type TranslationKey } from "./translations";
 import { supabase } from "@/integrations/supabase/client";
 
+import { db } from "@/lib/db";
 interface Ctx {
   lang: Lang;
   setLang: (l: Lang) => void;
@@ -96,7 +97,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function loadForUser(uid: string) {
-      const { data } = await supabase
+      const { data } = await db
         .from("profiles")
         .select("language_pref")
         .eq("id", uid)
@@ -129,7 +130,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const uid = userIdRef.current;
     if (uid) {
       // Fire-and-forget; failures are non-fatal (localStorage still works).
-      supabase
+      db
         .from("profiles")
         .update({ language_pref: l })
         .eq("id", uid)

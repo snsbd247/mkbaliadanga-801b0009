@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { fmtDate } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
@@ -31,7 +32,7 @@ export function NotificationBell() {
   async function load() {
     if (!user) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("notifications")
         .select("*")
         .order("created_at", { ascending: false })
@@ -118,7 +119,7 @@ export function NotificationBell() {
 
   async function markAll() {
     try {
-      await supabase.from("notifications").update({ read: true }).eq("read", false);
+      await db.from("notifications").update({ read: true }).eq("read", false);
       load();
     } catch (e: any) {
       devErr("markAll failed", e);
@@ -128,7 +129,7 @@ export function NotificationBell() {
 
   async function archive(id: string) {
     try {
-      await supabase.from("notifications").update({ archived: true, read: true }).eq("id", id);
+      await db.from("notifications").update({ archived: true, read: true }).eq("id", id);
       load();
     } catch (e: any) {
       devErr("archive failed", e);

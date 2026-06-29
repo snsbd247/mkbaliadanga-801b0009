@@ -1,5 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export type RetryJobType =
   | "receipt_generation"
   | "sms_send"
@@ -30,7 +29,7 @@ export interface EnqueueOpts {
 }
 
 export async function enqueueRetryJob(opts: EnqueueOpts) {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("background_retry_jobs")
     .insert({
       job_type: opts.jobType,
@@ -49,21 +48,21 @@ export async function enqueueRetryJob(opts: EnqueueOpts) {
 }
 
 export async function markJobSuccess(id: string) {
-  await supabase
+  await db
     .from("background_retry_jobs")
     .update({ status: "succeeded", last_error: null } as any)
     .eq("id", id);
 }
 
 export async function markJobFailed(id: string, errMsg: string) {
-  const { data: row } = await supabase
+  const { data: row } = await db
     .from("background_retry_jobs")
     .select("retry_count, max_retry")
     .eq("id", id)
     .maybeSingle();
   const attempt = (row?.retry_count ?? 0) + 1;
   const exhausted = attempt > (row?.max_retry ?? 4);
-  await supabase
+  await db
     .from("background_retry_jobs")
     .update({
       status: exhausted ? "permanently_failed" : "retrying",
@@ -75,7 +74,7 @@ export async function markJobFailed(id: string, errMsg: string) {
 }
 
 export async function manualRetry(id: string) {
-  await supabase
+  await db
     .from("background_retry_jobs")
     .update({
       status: "pending",

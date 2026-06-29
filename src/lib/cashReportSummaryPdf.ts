@@ -3,7 +3,7 @@
 // Cash Book, Hand Cash and Cash Statement (Irrigation + Society).
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { fetchCashReportCounts, flagCashMismatches, type CashCountRow } from "@/lib/cashReportBackup";
 import { computeStatement } from "@/lib/irrigationCashStatement";
 import { computeSocietyStatement } from "@/lib/societyCashStatement";
@@ -41,7 +41,7 @@ const L = {
 };
 const pick = (k: keyof typeof L) => (isBn() ? L[k][1] : L[k][0]);
 
-const sb = supabase as any;
+const sb = db as any;
 
 function currentFy() {
   const today = new Date();

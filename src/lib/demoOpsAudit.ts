@@ -1,9 +1,9 @@
 // Records a QuickSeed / DemoManager run in the demo operations audit log.
 // Captures who ran it, when, which modules, backup status and validation results.
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import type { CashCountRow } from "@/lib/cashReportBackup";
 
-const sb = supabase as any;
+const sb = db as any;
 
 export type DemoRunAudit = {
   source: "QuickSeed" | "DemoManager";

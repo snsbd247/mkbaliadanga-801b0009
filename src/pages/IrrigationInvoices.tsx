@@ -158,7 +158,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
   async function load() {
     setLoading(true);
-    let q = supabase
+    let q = db
       .from("irrigation_invoices" as any)
       .select("*, farmers!irrigation_invoices_farmer_id_fkey(name_en,name_bn,farmer_code,mobile), lands(dag_no,land_size,mouza,mouzas(name)), seasons(name,year,type), irrigation_invoice_payments(payments(receipt_no))")
       .is("deleted_at", null)
@@ -262,7 +262,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       destructive: true, confirmText: tx("Cancel it", "বাতিল করুন"),
     });
     if (!ok) return;
-    const { error } = await supabase
+    const { error } = await db
       .from("irrigation_invoices" as any)
       .update({ invoice_status: "cancelled", cancelled_at: new Date().toISOString(), cancel_reason: "Manually cancelled" } as any)
       .eq("id", inv.id);
@@ -277,7 +277,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
       destructive: true, confirmText: tx("Delete", "মুছুন"),
     });
     if (!ok) return;
-    const { error } = await supabase
+    const { error } = await db
       .from("irrigation_invoices" as any)
       .update({ deleted_at: new Date().toISOString() } as any)
       .eq("id", inv.id);
@@ -892,7 +892,7 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
       due === 0 ? "paid" :
       Number(inv.paid_amount ?? 0) > 0 ? "partial_paid" :
       new Date(dueDate) < new Date() ? "overdue" : "generated";
-    const { error } = await supabase
+    const { error } = await db
       .from("irrigation_invoices" as any)
       .update({
         due_date: dueDate,
@@ -973,7 +973,7 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
   const [overrides, setOverrides] = useState<any[]>([]);
   useEffect(() => {
     if (!invoiceId) { setOverrides([]); return; }
-    (supabase
+    (db
       .from("irrigation_rate_overrides" as any)
       .select("id,original_rate,overridden_rate,override_reason,created_at,created_by")
       .eq("irrigation_invoice_id", invoiceId)
@@ -1143,7 +1143,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
   // Load active land types and select them all by default.
   useEffect(() => {
-    supabase
+    db
       .from("land_types" as any)
       .select("id,code,name_bn,name_en")
       .eq("is_active", true)
@@ -1212,7 +1212,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
 
       let skip = new Set<string>();
       if (skipExisting) {
-        const { data: existing } = await supabase
+        const { data: existing } = await db
           .from("irrigation_invoices" as any)
           .select("land_id")
           .eq("season_id", seasonId)
@@ -1289,7 +1289,7 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
       try {
         const farmerIds = Array.from(new Set(previewArr.map((r) => r.billed.billed_farmer_id).filter(Boolean)));
         if (farmerIds.length) {
-          const { data: prev } = await supabase
+          const { data: prev } = await db
             .from("irrigation_invoices" as any)
             .select("farmer_id,due_amount,delay_fee")
             .in("farmer_id", farmerIds)
@@ -1896,7 +1896,7 @@ function SettingsTab({ offices, userId, isSuper }: any) {
     if (!officeId) return;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data } = await db
         .from("irrigation_charge_settings" as any)
         .select("*")
         .eq("office_id", officeId)
@@ -1908,7 +1908,7 @@ function SettingsTab({ offices, userId, isSuper }: any) {
 
   async function save() {
     if (!officeId) return toast.error(tx("Select an office", "একটি অফিস নির্বাচন করুন"));
-    const { error } = await supabase
+    const { error } = await db
       .from("irrigation_charge_settings" as any)
       .upsert({
         office_id: officeId,
