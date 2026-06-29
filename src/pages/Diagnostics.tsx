@@ -179,6 +179,29 @@ export default function Diagnostics() {
     }
   }
 
+  async function runApiScan() {
+    setApiBusy(true);
+    setApiResults([]);
+    setApiProgress(0);
+    const pages = Object.entries(PAGE_API_MAP);
+    const out: PageApiResult[] = [];
+    let done = 0;
+    for (const [page, tables] of pages) {
+      const failed: { table: string; code?: string; message?: string }[] = [];
+      for (const tbl of tables) {
+        const { error } = await db.from(tbl as any).select("*", { count: "exact", head: true });
+        if (error) {
+          failed.push({ table: tbl, code: (error as any).code, message: error.message });
+        }
+      }
+      out.push({ page, ok: failed.length === 0, failed, total: tables.length });
+      done++;
+      setApiProgress(Math.round((done / pages.length) * 100));
+      setApiResults([...out]);
+    }
+    setApiBusy(false);
+  }
+
   const errorStats = useMemo(() => {
     const byCode: Record<string, number> = {};
     errors.forEach(e => { const k = e.code || `HTTP ${e.status}`; byCode[k] = (byCode[k] || 0) + 1; });
