@@ -1,0 +1,57 @@
+import { describe, it, expect } from "vitest";
+import {
+  resolveMouzaName,
+  resolveRowMouzaName,
+  rowMatchesMouza,
+  buildMouzaOptions,
+  LAND_MOUZA_FIELDS,
+  LANDS_EMBED,
+} from "./mouzaQuery";
+
+describe("mouzaQuery shared helpers", () => {
+  it("prefers the joined mouzas relation over the text column", () => {
+    expect(resolveMouzaName({ mouza: "old", mouzas: { name: "চরপাড়া" } })).toBe("চরপাড়া");
+  });
+
+  it("falls back to the text column for legacy rows without a join", () => {
+    expect(resolveMouzaName({ mouza: "বড়পাড়া", mouzas: null })).toBe("বড়পাড়া");
+  });
+
+  it("handles the array form of the embed", () => {
+    expect(resolveMouzaName({ mouza: "x", mouzas: [{ name: "নদীপাড়া" }] })).toBe("নদীপাড়া");
+  });
+
+  it("returns empty string when nothing resolves", () => {
+    expect(resolveMouzaName(null)).toBe("");
+    expect(resolveMouzaName({})).toBe("");
+  });
+
+  it("resolves mouza from a row that embeds a land", () => {
+    expect(resolveRowMouzaName({ lands: { mouza: "x", mouzas: { name: "ধানক্ষেত" } } })).toBe("ধানক্ষেত");
+  });
+
+  it("matches mouza filter and treats 'all'/empty as wildcard", () => {
+    const row = { lands: { mouzas: { name: "চরপাড়া" } } };
+    expect(rowMatchesMouza(row, "all")).toBe(true);
+    expect(rowMatchesMouza(row, "")).toBe(true);
+    expect(rowMatchesMouza(row, "চরপাড়া")).toBe(true);
+    expect(rowMatchesMouza(row, "বড়পাড়া")).toBe(false);
+  });
+
+  it("builds sorted unique mouza options", () => {
+    const rows = [
+      { lands: { mouzas: { name: "বড়পাড়া" } } },
+      { lands: { mouzas: { name: "চরপাড়া" } } },
+      { lands: { mouza: "বড়পাড়া" } },
+      { lands: {} },
+    ];
+    const opts = buildMouzaOptions(rows, resolveRowMouzaName);
+    expect(opts).toEqual(["চরপাড়া", "বড়পাড়া"].sort((a, b) => a.localeCompare(b, "bn")));
+    expect(opts).toHaveLength(2);
+  });
+
+  it("exposes a stable embed fragment used by every module", () => {
+    expect(LAND_MOUZA_FIELDS).toContain("mouzas(name)");
+    expect(LANDS_EMBED).toBe("lands(dag_no,land_size,mouza,mouzas(name))");
+  });
+});
