@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,7 +28,7 @@ export default function FinancialReports() {
   useEffect(() => {
     (async () => {
       const [{ data }, m] = await Promise.all([
-        supabase.from("accounts").select("id,code,name,type").order("code"),
+        db.from("accounts").select("id,code,name,type").order("code"),
         getFiscalStartMonth(),
       ]);
       setAccounts((data as Account[]) || []);
@@ -40,7 +40,7 @@ export default function FinancialReports() {
   }, []);
 
   useEffect(() => {
-    let q = supabase.from("ledger_entries").select("id,entry_date,account_id,debit,credit,description").order("entry_date");
+    let q = db.from("ledger_entries").select("id,entry_date,account_id,debit,credit,description").order("entry_date");
     if (from) q = q.gte("entry_date", from);
     if (to) q = q.lte("entry_date", to);
     q.limit(10000).then(({ data }) => setEntries((data as Entry[]) || []));

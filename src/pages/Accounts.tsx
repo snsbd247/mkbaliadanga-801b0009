@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,8 +86,8 @@ export default function Accounts() {
   const load = async () => {
     setLoading(true);
     const [{ data: accs }, { data: led }] = await Promise.all([
-      supabase.from("accounts").select("*").order("code"),
-      supabase.from("ledger_entries").select("account_id,debit,credit"),
+      db.from("accounts").select("*").order("code"),
+      db.from("ledger_entries").select("account_id,debit,credit"),
     ]);
     setRows((accs as Account[]) || []);
     const map: Record<string, { debit: number; credit: number }> = {};
@@ -200,11 +200,11 @@ export default function Accounts() {
       is_active: editing.is_active ?? true,
     };
     if (editing.id) {
-      const { error } = await supabase.from("accounts").update(payload).eq("id", editing.id);
+      const { error } = await db.from("accounts").update(payload).eq("id", editing.id);
       if (error) return toast.error(error.message);
       toast.success(t("accountUpdated"));
     } else {
-      const { error } = await supabase.from("accounts").insert(payload);
+      const { error } = await db.from("accounts").insert(payload);
       if (error) return toast.error(error.message);
       toast.success(t("accountCreated"));
     }
@@ -214,7 +214,7 @@ export default function Accounts() {
 
   const doDelete = async () => {
     if (!deleteId) return;
-    const { error } = await supabase.from("accounts").delete().eq("id", deleteId);
+    const { error } = await db.from("accounts").delete().eq("id", deleteId);
     if (error) toast.error(error.message);
     else toast.success(t("accountDeleted"));
     setDeleteId(null);

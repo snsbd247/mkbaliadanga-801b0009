@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -59,7 +59,7 @@ export default function ShareCapitalReconciliation() {
   useEffect(() => {
     document.title = t("shareCapitalReconciliation");
     (async () => {
-      const { data } = await supabase.from("accounts").select("id").eq("code", "3020").maybeSingle();
+      const { data } = await db.from("accounts").select("id").eq("code", "3020").maybeSingle();
       setAccountId((data as any)?.id ?? null);
     })();
   }, [t]);
@@ -70,7 +70,7 @@ export default function ShareCapitalReconciliation() {
     setProgress("Loading savings…");
     try {
       const txns = await fetchAllChunked<any>((f, to_) =>
-        supabase
+        db
           .from("savings_transactions")
           .select("farmer_id, amount, txn_date")
           .eq("type", "share_collection")
@@ -87,7 +87,7 @@ export default function ShareCapitalReconciliation() {
 
       setProgress("Loading ledger…");
       const ledger = await fetchAllChunked<any>((f, to_) =>
-        supabase
+        db
           .from("ledger_entries")
           .select("credit, debit, reference_id")
           .eq("account_id", accountId)
@@ -100,7 +100,7 @@ export default function ShareCapitalReconciliation() {
       const refToFarmer = new Map<string, string>();
       for (let i = 0; i < refIds.length; i += 200) {
         const slice = refIds.slice(i, i + 200);
-        const { data: refs } = await supabase
+        const { data: refs } = await db
           .from("savings_transactions")
           .select("id, farmer_id")
           .in("id", slice);
@@ -120,7 +120,7 @@ export default function ShareCapitalReconciliation() {
       const farmers: any[] = [];
       for (let i = 0; i < allFarmerIds.length; i += 200) {
         const slice = allFarmerIds.slice(i, i + 200);
-        const { data: fs } = await supabase
+        const { data: fs } = await db
           .from("farmers")
           .select("id, farmer_code, name_en, name_bn")
           .in("id", slice);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -41,8 +41,8 @@ export default function Ledger() {
   useEffect(() => {
     (async () => {
       const [{ data: a }, { data: o }, m] = await Promise.all([
-        supabase.from("accounts").select("id,code,name,type").order("code"),
-        supabase.from("offices").select("id,name").order("name"),
+        db.from("accounts").select("id,code,name,type").order("code"),
+        db.from("offices").select("id,name").order("name"),
         getFiscalStartMonth(),
       ]);
       setAccounts((a as Account[]) || []);
@@ -57,18 +57,18 @@ export default function Ledger() {
     if (!term) { setFarmerRefIds(null); return; }
     let cancelled = false;
     (async () => {
-      const { data: fs } = await supabase
+      const { data: fs } = await db
         .from("farmers").select("id")
         .or(`name_en.ilike.%${term}%,farmer_code.ilike.%${term}%,member_no.ilike.%${term}%,mobile.ilike.%${term}%`)
         .limit(500);
       const ids = (fs ?? []).map((f: any) => f.id);
       if (!ids.length) { if (!cancelled) setFarmerRefIds([]); return; }
       const [savings, loans, lps, irrs] = await Promise.all([
-        supabase.from("savings_transactions").select("id").in("farmer_id", ids),
-        supabase.from("loans").select("id").in("farmer_id", ids),
-        supabase.from("loan_payments").select("id,loan_id").in("loan_id",
-          ((await supabase.from("loans").select("id").in("farmer_id", ids)).data ?? []).map((l: any) => l.id)),
-        supabase.from("irrigation_invoices").select("id").in("farmer_id", ids).is("deleted_at", null),
+        db.from("savings_transactions").select("id").in("farmer_id", ids),
+        db.from("loans").select("id").in("farmer_id", ids),
+        db.from("loan_payments").select("id,loan_id").in("loan_id",
+          ((await db.from("loans").select("id").in("farmer_id", ids)).data ?? []).map((l: any) => l.id)),
+        db.from("irrigation_invoices").select("id").in("farmer_id", ids).is("deleted_at", null),
       ]);
       const refIds = [
         ...((savings.data ?? []).map((x: any) => x.id)),
@@ -84,7 +84,7 @@ export default function Ledger() {
   const fyOptions = useMemo(() => listFiscalYears(fyStartMonth, 6), [fyStartMonth]);
 
   useEffect(() => {
-    let q = supabase.from("ledger_entries_view").select("*").order("entry_date").order("created_at").limit(5000);
+    let q = db.from("ledger_entries_view").select("*").order("entry_date").order("created_at").limit(5000);
     if (accountId !== "all") q = q.eq("account_id", accountId);
     if (officeId !== "all") q = q.eq("office_id", officeId);
     if (refType !== "all") q = q.eq("reference_type", refType);

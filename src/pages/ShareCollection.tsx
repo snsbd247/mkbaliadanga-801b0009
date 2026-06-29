@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ export default function ShareCollection() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("savings_transactions")
       .select("id,farmer_id,amount,txn_date,status,note,reject_reason,created_at,farmers(name_en,farmer_code,member_no)")
       .eq("type", "share_collection")
@@ -87,10 +87,10 @@ export default function ShareCollection() {
     const err = validate(amt);
     if (err) return toast.error(err);
     if (!form.farmer_id) return toast.error(t("pgShareSelectFarmer" as any));
-    const { data: vchk } = await supabase.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
+    const { data: vchk } = await db.from("farmers").select("is_voter,name_en").eq("id", form.farmer_id).maybeSingle();
     if (!vchk?.is_voter) return toast.error(`${vchk?.name_en ?? "এই ফার্মার"} এর Voter / Savings A/C এনাবল নেই — শেয়ার সংগ্রহ করা যাবে না।`);
 
-    const { error } = await supabase.from("savings_transactions").insert({
+    const { error } = await db.from("savings_transactions").insert({
       farmer_id: form.farmer_id,
       type: "share_collection" as any,
       amount: amt,
@@ -121,7 +121,7 @@ export default function ShareCollection() {
     const today = new Date().toISOString().slice(0, 10);
 
     const codes = Array.from(new Set(lines.map(l => l.raw.split(",")[0]?.trim()).filter(Boolean)));
-    const { data: fs } = await supabase.from("farmers").select("id,farmer_code").in("farmer_code", codes);
+    const { data: fs } = await db.from("farmers").select("id,farmer_code").in("farmer_code", codes);
     const map = new Map<string, string>((fs ?? []).map((f: any) => [f.farmer_code, f.id]));
 
     const payload: any[] = [];
@@ -154,7 +154,7 @@ export default function ShareCollection() {
       return toast.error((t("pgShareAllFailed" as any) as string).replace("{n}", String(errors.length)));
     }
 
-    const { error, data } = await supabase.from("savings_transactions").insert(payload).select("id");
+    const { error, data } = await db.from("savings_transactions").insert(payload).select("id");
     if (error) {
       // Surface DB-side errors (e.g., unique violations) in the report
       errors.push({ line: 0, raw: "(database)", reason: error.message });
@@ -177,7 +177,7 @@ export default function ShareCollection() {
     }
     const patch: any = { status, approved_by: user?.id, decided_at: new Date().toISOString() };
     if (reject_reason) patch.reject_reason = reject_reason;
-    const { error } = await supabase
+    const { error } = await db
       .from("savings_transactions")
       .update(patch)
       .eq("id", id)
@@ -196,7 +196,7 @@ export default function ShareCollection() {
     const amt = Number(editForm.amount);
     const v = validate(amt);
     if (v) return toast.error(v);
-    const { error } = await supabase.from("savings_transactions")
+    const { error } = await db.from("savings_transactions")
       .update({ amount: amt, txn_date: editForm.txn_date, note: editForm.note || null })
       .eq("id", editRow.id);
     if (error) return toast.error(error.message);
@@ -211,7 +211,7 @@ export default function ShareCollection() {
       destructive: true, confirmText: t("pgDelete" as any),
     });
     if (!ok) return;
-    const { error } = await supabase.from("savings_transactions")
+    const { error } = await db.from("savings_transactions")
       .update({ deleted_at: new Date().toISOString() } as any).eq("id", r.id);
     if (error) return toast.error(error.message);
     toast.success(t("pgShareDeleted" as any));

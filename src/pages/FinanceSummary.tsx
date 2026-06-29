@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ export default function FinanceSummary() {
   useEffect(() => {
     (async () => {
       const [{ data: accs }, m] = await Promise.all([
-        supabase.from("accounts").select("id,code,name,type").order("code"),
+        db.from("accounts").select("id,code,name,type").order("code"),
         getFiscalStartMonth(),
       ]);
       setAccounts((accs as AccountRow[]) || []);
@@ -65,7 +66,7 @@ export default function FinanceSummary() {
         .select("account_id,debit,credit")
         .gte("entry_date", from)
         .lte("entry_date", to),
-      supabase.from("accounting_periods").select("*").order("period_end", { ascending: false }).limit(8),
+      db.from("accounting_periods").select("*").order("period_end", { ascending: false }).limit(8),
       supabase.rpc("ledger_integrity_summary"),
     ]);
     const map: Record<string, { d: number; c: number }> = {};

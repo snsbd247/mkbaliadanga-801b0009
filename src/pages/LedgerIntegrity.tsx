@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -33,7 +34,7 @@ export default function LedgerIntegrity() {
     const [u, o, m, s] = await Promise.all([
       supabase.rpc("ledger_unbalanced_refs"),
       supabase.rpc("ledger_orphan_refs"),
-      supabase.from("ledger_entries").select("id,entry_date,description").is("account_id", null).limit(100),
+      db.from("ledger_entries").select("id,entry_date,description").is("account_id", null).limit(100),
       supabase.rpc("ledger_integrity_summary"),
     ]);
     setUnbalanced((u.data as any[]) || []);
