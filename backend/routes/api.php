@@ -193,9 +193,11 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
 
 // ── Farmer portal (self-service: code login or phone + OTP) ───────────
 Route::prefix('farmer')->group(function () {
-    Route::post('/auth/login', [FarmerAuthController::class, 'login']);
-    Route::post('/auth/request-otp', [FarmerAuthController::class, 'requestOtp']);
-    Route::post('/auth/verify-otp', [FarmerAuthController::class, 'verifyOtp']);
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('/auth/login', [FarmerAuthController::class, 'login']);
+        Route::post('/auth/request-otp', [FarmerAuthController::class, 'requestOtp']);
+        Route::post('/auth/verify-otp', [FarmerAuthController::class, 'verifyOtp']);
+    });
 
     Route::middleware('auth:sanctum')->get('/me', [FarmerAuthController::class, 'me']);
 });
