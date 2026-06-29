@@ -138,7 +138,7 @@ export default function RoleMatrix() {
         return { role, module: mod, ...p, updated_at: new Date().toISOString() };
       })
     );
-    const { error } = await supabase
+    const { error } = await db
       .from("role_permissions")
       .upsert(rows, { onConflict: "role,module" });
 

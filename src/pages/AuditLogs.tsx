@@ -70,7 +70,7 @@ export default function AuditLogs() {
   async function resolveFarmer(): Promise<string | null> {
     const q = farmerQuery.trim();
     if (!q) return null;
-    const { data } = await supabase
+    const { data } = await db
       .from("farmers")
       .select("id, farmer_code, name_en, name_bn")
       .or(`farmer_code.ilike.%${q}%,name_en.ilike.%${q}%,name_bn.ilike.%${q}%`)
@@ -95,7 +95,7 @@ export default function AuditLogs() {
         setFarmerId("");
       }
 
-      let q = supabase
+      let q = db
         .from("audit_logs")
         .select("*")
         .gte("created_at", `${dateFrom}T00:00:00.000Z`)
@@ -137,7 +137,7 @@ export default function AuditLogs() {
     ));
     const farmerMap: Record<string, { code?: string; name_en?: string; name_bn?: string }> = {};
     if (farmerIds.length > 0) {
-      const { data: fs } = await supabase
+      const { data: fs } = await db
         .from("farmers")
         .select("id, farmer_code, name_en, name_bn")
         .in("id", farmerIds);
@@ -471,7 +471,7 @@ function LedgerLinkButton({ log }: { log: any }) {
     <Dialog open={open} onOpenChange={async (o) => {
       setOpen(o);
       if (o && rows.length === 0) {
-        const { data } = await supabase
+        const { data } = await db
           .from("ledger_entries")
           .select("entry_date,debit,credit,description,account_id,accounts(code,name)")
           .eq("reference_type", refType).eq("reference_id", refId)
