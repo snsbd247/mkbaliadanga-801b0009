@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
