@@ -28,12 +28,13 @@ function fieldTypeToCode(ft?: string | null): string {
 
 let _cache: LandTypeRow[] | null = null;
 
-/** Shared loader for the active land-type catalogue (cached for the session). */
+/** Shared loader for the active land-type catalogue.
+ *  Seeds instantly from a session cache, but ALWAYS refetches on mount so land
+ *  types newly added in Irrigation Settings show up without a full page reload. */
 export function useLandTypes() {
   const [rows, setRows] = useState<LandTypeRow[]>(_cache ?? []);
   const [loading, setLoading] = useState(!_cache);
   useEffect(() => {
-    if (_cache) return;
     let cancelled = false;
     supabase.from("land_types" as any)
       .select("id,code,name,name_bn")
