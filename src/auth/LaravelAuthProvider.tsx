@@ -71,6 +71,15 @@ export function LaravelAuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (identifier: string, password: string) => {
     const { user } = await apiLogin(identifier, password);
+    // Validate role/authorisation AFTER successful authentication.
+    const denied = validateStaffAccess(user);
+    if (denied) {
+      // Drop the freshly-issued session so an unauthorised token isn't kept.
+      try { await apiLogout(); } catch { /* ignore */ }
+      setUser(null);
+      setRolesLoaded(true);
+      throw new AccessDeniedError(denied);
+    }
     setUser(user);
     setRolesLoaded(true);
   }, []);
