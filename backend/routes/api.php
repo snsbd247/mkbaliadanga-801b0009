@@ -22,6 +22,9 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SavingsController;
 use App\Http\Controllers\SeasonController;
 use App\Http\Controllers\GenericTableController;
+use App\Http\Controllers\RpcController;
+use App\Http\Controllers\FunctionController;
+use App\Http\Controllers\StorageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
