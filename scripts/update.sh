@@ -69,7 +69,14 @@ log "Updating backend…"
 cd "${APP_DIR}/backend"
 export COMPOSER_ALLOW_SUPERUSER=1
 composer config --no-plugins policy.advisories.block false 2>/dev/null || true
-composer install --no-dev --optimize-autoloader --no-interaction
+# Retry install: GitHub codeload (dist zips) occasionally returns HTTP 400/429.
+for attempt in 1 2 3 4 5; do
+  composer install --no-dev --optimize-autoloader --no-interaction && break
+  log "composer install failed (attempt ${attempt}/5) — clearing cache & retrying in 10s…"
+  composer clear-cache >/dev/null 2>&1 || true
+  sleep 10
+  [ "${attempt}" = "5" ] && composer install --no-dev --optimize-autoloader --no-interaction --prefer-source
+done
 
 php artisan down --retry=15 || true
 # migrate ONLY applies new migrations; it never drops tables or re-seeds data
