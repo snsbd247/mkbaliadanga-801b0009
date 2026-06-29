@@ -146,4 +146,8 @@ log "Reloading PHP-FPM & Nginx…"
 systemctl reload "php${PHP_VER}-fpm" || systemctl restart "php${PHP_VER}-fpm" || true
 nginx -t && systemctl reload nginx
 
+cd "${APP_DIR}/backend"
+log "Final admin verification report (detected roles + active status)…"
+php artisan admin:verify --fix || warn "  ✗ final admin verification reported problems — check output above"
+
 log "✅ Update complete — existing data preserved, no sample data seeded."

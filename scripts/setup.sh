@@ -357,6 +357,10 @@ fi
 # ──────────────────────────────────────────────────────────────────────────
 # 9. Credentials + summary
 # ──────────────────────────────────────────────────────────────────────────
+cd "${APP_DIR}/backend"
+log "Final admin verification report (detected roles + active status)…"
+php artisan admin:verify --fix || warn "  ✗ final admin verification reported problems — check output above"
+
 cat > "${CRED_FILE}" <<CRED
 # MK Cooperative ERP — server credentials  ($(date))
 DOMAIN=${DOMAIN}
@@ -391,6 +395,7 @@ cat <<DONE
        user: pma_admin   pass: ${PMA_PASS}
  👤  Developer    : ismail162 / Admin@123
  👤  Super Admin  : suparadmin / Admin@123
+ 🔎  Verify page  : https://${DOMAIN}/admin/verify
  📄  Credentials  : ${CRED_FILE}
 ────────────────────────────────────────────────
  ⚠️  Change passwords after first login.

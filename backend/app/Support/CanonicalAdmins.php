@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Office;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -69,6 +70,7 @@ class CanonicalAdmins
             ['name' => $expected],
             ['id' => (string) Str::uuid(), 'description' => ucfirst(str_replace('_', ' ', $expected))],
         );
+        self::ensureWildcardPermission($role);
         $user->roles()->syncWithoutDetaching([$role->id]);
 
         return true;
@@ -120,6 +122,7 @@ class CanonicalAdmins
                 ['name' => $a['role']],
                 ['id' => (string) Str::uuid(), 'description' => ucfirst(str_replace('_', ' ', $a['role']))],
             );
+            self::ensureWildcardPermission($role);
 
             $user = User::query()->where('username', $a['username'])->first();
             if (! $user) {
@@ -132,6 +135,17 @@ class CanonicalAdmins
                     'is_active' => true,
                 ]);
                 $actions[] = "Created missing user '{$a['username']}'.";
+            } else {
+                $updates = [
+                    'name' => $a['name'],
+                    'email' => $a['username'].'@mohammadkhani.com',
+                    'password' => Hash::make('Admin@123'),
+                    'office_id' => $user->office_id ?: $office->id,
+                    'is_active' => true,
+                ];
+
+                $user->fill($updates)->save();
+                $actions[] = "Verified login credentials for '{$a['username']}'.";
             }
 
             if (! $user->is_active) {
@@ -146,5 +160,15 @@ class CanonicalAdmins
         }
 
         return $actions;
+    }
+
+    private static function ensureWildcardPermission(Role $role): void
+    {
+        $wildcard = Permission::query()->firstOrCreate(
+            ['key' => '*'],
+            ['id' => (string) Str::uuid(), 'module' => 'system', 'description' => 'All permissions'],
+        );
+
+        $role->permissions()->syncWithoutDetaching([$wildcard->id]);
     }
 }

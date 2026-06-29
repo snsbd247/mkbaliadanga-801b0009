@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Support\CanonicalAdmins;
+use App\Support\SanctumTokenSchema;
 use Illuminate\Console\Command;
 
 class VerifyAdmins extends Command
@@ -14,6 +15,11 @@ class VerifyAdmins extends Command
     public function handle(): int
     {
         if ($this->option('fix')) {
+            $tokenSchemaActions = SanctumTokenSchema::ensureUuidTokenableId();
+            foreach ($tokenSchemaActions as $a) {
+                $this->warn('• '.$a);
+            }
+
             $actions = CanonicalAdmins::fix();
             if (empty($actions)) {
                 $this->info('✓ Nothing to fix — both admin accounts already correct.');
