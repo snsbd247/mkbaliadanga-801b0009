@@ -106,6 +106,9 @@ export default function Diagnostics() {
   const [isoBusy, setIsoBusy] = useState(false);
   const [scan, setScan] = useState<any>(null);
   const [scanBusy, setScanBusy] = useState(false);
+  const [apiResults, setApiResults] = useState<PageApiResult[]>([]);
+  const [apiBusy, setApiBusy] = useState(false);
+  const [apiProgress, setApiProgress] = useState(0);
 
   useEffect(() => { document.title = t("diag_pageTitle" as any); }, [t]);
   useEffect(() => {
