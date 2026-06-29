@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -426,17 +427,17 @@ export default function SmsSettings() {
 
   async function load() {
     const [settingsRes, officesRes, overridesRes, tokensRes, auditRes] = await Promise.all([
-      supabase.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
-      supabase.from("offices").select("id,name").order("name"),
-      supabase.from("sms_office_settings").select("office_id,enabled,sender_id"),
+      db.from("sms_settings").select("*").eq("id", 1).maybeSingle(),
+      db.from("offices").select("id,name").order("name"),
+      db.from("sms_office_settings").select("office_id,enabled,sender_id"),
       // Lifecycle metadata only — never select api_token to avoid leaking secrets to the browser.
-      supabase
+      db
         .from("sms_provider_secrets" as any)
         .select("id,provider,status,expires_at,activated_at,updated_at,updated_by,label,priority")
         .eq("provider", "greenweb")
         .order("status", { ascending: true })
         .order("updated_at", { ascending: false }),
-      supabase
+      db
         .from("audit_logs")
         .select("id,action,created_at,user_id,meta")
         .eq("entity", "sms_provider_secrets")
@@ -445,7 +446,7 @@ export default function SmsSettings() {
     ]);
     if (settingsRes.error) return toast.error(settingsRes.error.message);
     if (!settingsRes.data) {
-      const ins = await supabase.from("sms_settings").insert({ id: 1 } as any).select("*").maybeSingle();
+      const ins = await db.from("sms_settings").insert({ id: 1 } as any).select("*").maybeSingle();
       setS(ins.data as any);
     } else {
       setS(settingsRes.data as any);
@@ -479,7 +480,7 @@ export default function SmsSettings() {
     const { data: u } = await supabase.auth.getUser();
     const expiresAtIso = tokenExpiry ? new Date(tokenExpiry + "T23:59:59").toISOString() : null;
     // New tokens always land as "staged" (disabled). Click Activate to switch.
-    const { error } = await supabase
+    const { error } = await db
       .from("sms_provider_secrets" as any)
       .insert({
         provider: "greenweb",
@@ -516,7 +517,7 @@ export default function SmsSettings() {
   async function deleteToken(id: string) {
     if (!confirm("Permanently delete this token row? Use Retire instead if you want to keep an audit trail.")) return;
     setTokenBusy(true);
-    const { error } = await supabase.from("sms_provider_secrets" as any).delete().eq("id", id);
+    const { error } = await db.from("sms_provider_secrets" as any).delete().eq("id", id);
     setTokenBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Token deleted");
@@ -569,7 +570,7 @@ export default function SmsSettings() {
     const current = overrides[officeId] ?? { office_id: officeId, enabled: true, sender_id: null };
     const next: OfficeOverride = { ...current, ...patch, office_id: officeId };
     setOverrides({ ...overrides, [officeId]: next });
-    const { error } = await supabase
+    const { error } = await db
       .from("sms_office_settings")
       .upsert(
         { office_id: officeId, enabled: next.enabled, sender_id: next.sender_id, updated_at: new Date().toISOString() } as any,
@@ -605,7 +606,7 @@ export default function SmsSettings() {
       return toast.error(L.blockedSave);
     }
     setBusy(true);
-    const { error } = await supabase
+    const { error } = await db
       .from("sms_settings")
       .update({ ...s, updated_at: new Date().toISOString() } as any)
       .eq("id", 1);
@@ -862,7 +863,7 @@ export default function SmsSettings() {
                               onBlur={async (e) => {
                                 const v = Math.max(1, Math.min(999, Number(e.currentTarget.value) || 100));
                                 if (v === (t.priority ?? 100)) return;
-                                const { error } = await supabase.from("sms_provider_secrets" as any).update({ priority: v }).eq("id", t.id);
+                                const { error } = await db.from("sms_provider_secrets" as any).update({ priority: v }).eq("id", t.id);
                                 if (error) toast.error(error.message); else { toast.success("Priority updated"); load(); }
                               }}
                             />

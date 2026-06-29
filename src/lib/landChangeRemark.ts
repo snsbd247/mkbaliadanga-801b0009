@@ -4,8 +4,7 @@
  * same farmer; if mouza / dag / land_size / owner_type / cultivator changes,
  * builds a Bengali remark prefix the caller can prepend to the user remark.
  */
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export type LandHistoryRow = {
   fiscal_year: number;
   mouza?: string | null;
@@ -19,7 +18,7 @@ export async function buildAutoLandChangeRemark(
   farmerId: string,
   next: LandHistoryRow,
 ): Promise<string> {
-  const { data } = await supabase
+  const { data } = await db
     .from("land_history")
     .select("fiscal_year,mouza,dag_no,land_size,owner_type,cultivator_farmer_id")
     .eq("farmer_id", farmerId)

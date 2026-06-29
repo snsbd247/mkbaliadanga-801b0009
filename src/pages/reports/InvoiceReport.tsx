@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,8 +32,8 @@ export default function InvoiceReport() {
   useEffect(() => {
     document.title = tx("Invoice Report", "ইনভয়েস রিপোর্ট");
     Promise.all([
-      supabase.from("offices").select("id,name").order("name"),
-      supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
+      db.from("offices").select("id,name").order("name"),
+      db.from("seasons").select("id,name,year,type").order("year", { ascending: false }),
     ]).then(([o, s]) => { setOffices(o.data ?? []); setSeasons(s.data ?? []); });
   }, []);
 
@@ -41,7 +41,7 @@ export default function InvoiceReport() {
     let cancelled = false;
     setLoading(true);
     (async () => {
-      let q = supabase.from("irrigation_invoices").select(
+      let q = db.from("irrigation_invoices").select(
         "id,invoice_no,is_borga,payable_amount,paid_amount,due_amount,delay_fee,irrigation_amount,maintenance_amount,canal_amount,due_date,invoice_status,office_id,season_id,generated_at,cancelled_at,cancel_reason," +
         "farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,mobile)," +
         "lands(mouza,dag_no,land_size)," +

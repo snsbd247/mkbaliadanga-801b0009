@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useBranding } from "@/lib/branding";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -50,13 +51,13 @@ export default function BulkCards() {
 
   useEffect(() => {
     document.title = t("pgBulkCardsDocTitle" as any) as string;
-    supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data ?? []) as any[]));
+    db.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data ?? []) as any[]));
   }, []);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    let qy = supabase.from("farmers")
+    let qy = db.from("farmers")
       .select("id,name_en,name_bn,farmer_code,member_no,mobile,village,address,photo_url,status,office_id,offices(name)")
       .eq("status", "active")
       .order("name_en")

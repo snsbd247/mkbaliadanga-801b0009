@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,7 +74,7 @@ export default function VoterList() {
 
   async function load() {
     setLoading(true);
-    let qy: any = supabase
+    let qy: any = db
       .from("farmers")
       .select("id,name_en,name_bn,account_number,voter_number,mobile,village,is_voter,voter_cancelled_at,voter_cancel_reason,offices(name),upazilas(name),districts(name)")
       .not("voter_number", "is", null)

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,10 +53,10 @@ export default function MaintenanceSchedules() {
   async function load() {
     setLoading(true);
     const [s, a] = await Promise.all([
-      supabase.from("asset_maintenance_schedules" as any)
+      db.from("asset_maintenance_schedules" as any)
         .select("*,assets(asset_code,name_en,name_bn)")
         .order("next_due_at", { ascending: true }),
-      supabase.from("assets" as any).select("id,asset_code,name_en,name_bn").is("deleted_at", null),
+      db.from("assets" as any).select("id,asset_code,name_en,name_bn").is("deleted_at", null),
     ]);
     setLoading(false);
     if (s.error) toast.error(s.error.message); else {
@@ -94,11 +94,11 @@ export default function MaintenanceSchedules() {
         active: form.active,
       };
       if (editId) {
-        const { error } = await supabase.from("asset_maintenance_schedules" as any).update(payload).eq("id", editId);
+        const { error } = await db.from("asset_maintenance_schedules" as any).update(payload).eq("id", editId);
         if (error) throw error;
       } else {
         payload.office_id = officeId ?? null;
-        const { error } = await supabase.from("asset_maintenance_schedules" as any).insert(payload);
+        const { error } = await db.from("asset_maintenance_schedules" as any).insert(payload);
         if (error) throw error;
       }
       toast.success(tx("Saved", "সংরক্ষিত"));
@@ -108,7 +108,7 @@ export default function MaintenanceSchedules() {
 
   async function del(id: string) {
     if (!confirm(tx("Delete this schedule?", "এই সময়সূচি মুছবেন?"))) return;
-    const { error } = await supabase.from("asset_maintenance_schedules" as any).delete().eq("id", id);
+    const { error } = await db.from("asset_maintenance_schedules" as any).delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(tx("Deleted", "মুছে ফেলা হয়েছে")); load();
   }
@@ -117,7 +117,7 @@ export default function MaintenanceSchedules() {
     try {
       // 1) log maintenance
       const today = new Date().toISOString().slice(0, 10);
-      const { error: logErr } = await supabase.from("asset_maintenance_logs" as any).insert({
+      const { error: logErr } = await db.from("asset_maintenance_logs" as any).insert({
         asset_id: r.asset_id, office_id: r.office_id,
         maintenance_date: today, vendor: r.vendor, cost: 0, downtime_days: 0,
         status: "completed", remarks: `[Scheduled] ${r.title}`,
@@ -127,11 +127,11 @@ export default function MaintenanceSchedules() {
       const d = new Date(today + "T00:00:00Z");
       d.setUTCDate(d.getUTCDate() + r.frequency_days);
       const next = d.toISOString().slice(0, 10);
-      const { error: upErr } = await supabase.from("asset_maintenance_schedules" as any)
+      const { error: upErr } = await db.from("asset_maintenance_schedules" as any)
         .update({ next_due_at: next }).eq("id", r.id);
       if (upErr) throw upErr;
       // 3) resolve any open maintenance_due alerts for this asset
-      await supabase.from("asset_alerts" as any)
+      await db.from("asset_alerts" as any)
         .update({ status: "resolved", resolved_at: new Date().toISOString() })
         .eq("asset_id", r.asset_id).eq("alert_type", "maintenance_due").eq("status", "open");
       toast.success(tx(`Done — next ${next}`, `সম্পন্ন — পরবর্তী ${next}`));

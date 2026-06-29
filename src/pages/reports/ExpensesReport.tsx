@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,7 @@ export default function ExpensesReport() {
   async function load() {
     setLoading(true);
     try {
-      let q: any = supabase
+      let q: any = db
         .from("expenses")
         .select("id,expense_date,head,payee,amount,method,note")
         .is("deleted_at", null)

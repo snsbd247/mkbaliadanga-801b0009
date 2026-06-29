@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { computeSocietyStatement, computeBankSummary, incomeDrillDownUrl, expens
 import { Link } from "react-router-dom";
 import { useLang } from "@/i18n/LanguageProvider";
 
-const sb = supabase as any;
+const sb = db as any;
 
 function bnMoney(n: number): string {
   const fixed = Number(n || 0).toFixed(2);

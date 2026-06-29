@@ -82,7 +82,7 @@ export default function FarmerStatement() {
     if (!ac) return;
     setAccountLookupLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("farmers")
         .select("id")
         .eq("account_number", ac)
@@ -259,7 +259,7 @@ export default function FarmerStatement() {
     const tid = toast.loading("Building combined statement…");
     try {
       // Opening savings = approved deposits-withdrawals before f1
-      const { data: prior } = await supabase
+      const { data: prior } = await db
         .from("savings_transactions")
         .select("type,amount")
         .eq("farmer_id", farmerId).eq("status", "approved").is("deleted_at", null).lt("txn_date", f1);

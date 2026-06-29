@@ -15,7 +15,7 @@ import {
   CheckCircle2, History, CheckCheck, FileSpreadsheet, FileText, Search, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -80,7 +80,7 @@ export default function DeveloperUpdates() {
   }, []);
 
   async function loadHistory() {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("developer_update_logs" as any)
       .select("*")
       .order("created_at", { ascending: false })
@@ -90,7 +90,7 @@ export default function DeveloperUpdates() {
     const ids = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)));
     let profileMap = new Map<string, { full_name: string | null; email: string | null }>();
     if (ids.length > 0) {
-      const { data: profs } = await supabase
+      const { data: profs } = await db
         .from("profiles")
         .select("id, full_name, email")
         .in("id", ids);
@@ -105,7 +105,7 @@ export default function DeveloperUpdates() {
 
   async function logEvent(payload: Partial<LogRow> & { action: string; repo_url: string }) {
     if (!user) return;
-    await supabase.from("developer_update_logs" as any).insert({
+    await db.from("developer_update_logs" as any).insert({
       user_id: user.id,
       ...payload,
     });

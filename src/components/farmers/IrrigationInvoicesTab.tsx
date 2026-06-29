@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
 
   useEffect(() => {
     setLoading(true);
-    supabase
+    db
       .from("irrigation_invoices" as any)
       .select("*, seasons(name,year,type), lands(dag_no,mouza,land_size,owner_type,owner_farmer_id)")
       .eq("farmer_id", farmerId)
@@ -49,7 +49,7 @@ export default function IrrigationInvoicesTab({ farmerId }: { farmerId: string }
           list.map((r: any) => r.lands?.owner_type === "borgadar" ? r.lands?.owner_farmer_id : null).filter(Boolean)
         )) as string[];
         if (ownerIds.length) {
-          const { data: owners } = await supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", ownerIds);
+          const { data: owners } = await db.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", ownerIds);
           const map: Record<string, string> = {};
           (owners ?? []).forEach((o: any) => { map[o.id] = o.name_bn || o.name_en || o.farmer_code || "—"; });
           setOwnerNames(map);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -97,7 +98,7 @@ export default function DemoManager() {
 
   const loadLogs = async () => {
     setLogsLoading(true);
-    const { data } = await supabase
+    const { data } = await db
       .from("demo_operations_log" as any)
       .select("*")
       .order("created_at", { ascending: false })

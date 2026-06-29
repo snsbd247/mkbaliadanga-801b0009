@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ export default function IdReconcile() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("farmers")
       .select("id,name_en,member_no,account_number,farmer_code,office_id")
       .is("deleted_at", null)
@@ -94,7 +94,7 @@ export default function IdReconcile() {
   async function autoFillMember(r: Row) {
     if (r.member_no) return;
     const next = r.farmer_code;
-    const { error } = await supabase.from("farmers").update({ member_no: next }).eq("id", r.id);
+    const { error } = await db.from("farmers").update({ member_no: next }).eq("id", r.id);
     if (error) { toast.error(error.message); return; }
     toast.success(t("setFarmerIdToast").replace("{v}", String(next)));
     load();

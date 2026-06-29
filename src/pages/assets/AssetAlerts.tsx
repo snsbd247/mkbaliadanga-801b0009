@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export default function AssetAlerts() {
 
   async function load() {
     setLoading(true);
-    let q = supabase
+    let q = db
       .from("asset_alerts" as any)
       .select("*,assets(asset_code,name_en,name_bn)")
       .order("created_at", { ascending: false })
@@ -60,7 +61,7 @@ export default function AssetAlerts() {
   }
 
   async function loadRecipients() {
-    const { data } = await supabase.from("sms_settings").select("config").eq("id", 1).maybeSingle();
+    const { data } = await db.from("sms_settings").select("config").eq("id", 1).maybeSingle();
     const arr = ((data?.config as any)?.asset_alert_recipients ?? []) as string[];
     setRecipientsText(arr.join(", "));
   }
@@ -82,7 +83,7 @@ export default function AssetAlerts() {
     const patch: any = { status };
     if (status === "acknowledged") { patch.acknowledged_at = new Date().toISOString(); }
     if (status === "resolved") { patch.resolved_at = new Date().toISOString(); }
-    const { error } = await supabase.from("asset_alerts" as any).update(patch).eq("id", id);
+    const { error } = await db.from("asset_alerts" as any).update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(tx("Updated", "আপডেট হয়েছে"));
     load();
@@ -92,9 +93,9 @@ export default function AssetAlerts() {
     setSavingSettings(true);
     try {
       const list = recipientsText.split(/[,\s\n]+/).map((s) => s.trim()).filter(Boolean);
-      const { data: cur } = await supabase.from("sms_settings").select("config").eq("id", 1).maybeSingle();
+      const { data: cur } = await db.from("sms_settings").select("config").eq("id", 1).maybeSingle();
       const config = { ...((cur?.config as any) ?? {}), asset_alert_recipients: list };
-      const { error } = await supabase.from("sms_settings").update({ config }).eq("id", 1);
+      const { error } = await db.from("sms_settings").update({ config }).eq("id", 1);
       if (error) throw error;
       toast.success(tx("Saved", "সংরক্ষিত"));
       setSettingsOpen(false);

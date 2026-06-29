@@ -1,10 +1,9 @@
 // Fiscal-year + report filename helpers
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export type DateRange = { from: string; to: string };
 
 export async function getFiscalStartMonth(): Promise<number> {
-  const { data } = await supabase
+  const { data } = await db
     .from("company_settings")
     .select("fiscal_year_start_month")
     .eq("id", 1)

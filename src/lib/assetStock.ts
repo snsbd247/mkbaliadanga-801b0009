@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { applyStockDelta } from "./assetMath";
 
 /**
@@ -15,7 +15,7 @@ export async function adjustAssetStock(params: {
 }) {
   const { asset_id, office_id, location_id, delta } = params;
   if (!location_id) throw new Error("location_id required");
-  const { data: existing, error: e1 } = await supabase
+  const { data: existing, error: e1 } = await db
     .from("asset_stocks" as any)
     .select("id, quantity")
     .eq("asset_id", asset_id)
@@ -24,14 +24,14 @@ export async function adjustAssetStock(params: {
   if (e1) throw e1;
   if (existing) {
     const next = applyStockDelta(Number((existing as any).quantity), delta);
-    const { error } = await supabase
+    const { error } = await db
       .from("asset_stocks" as any)
       .update({ quantity: next, updated_at: new Date().toISOString() })
       .eq("id", (existing as any).id);
     if (error) throw error;
     return next;
   } else if (delta > 0) {
-    const { error } = await supabase
+    const { error } = await db
       .from("asset_stocks" as any)
       .insert({ asset_id, office_id, location_id, quantity: delta });
     if (error) throw error;
@@ -70,7 +70,7 @@ export async function recordAssetMovement(params: {
     approved_at: requiresApproval ? null : new Date().toISOString(),
   };
 
-  const { data: row, error } = await supabase.from("asset_movements" as any)
+  const { data: row, error } = await db.from("asset_movements" as any)
     .insert(payload).select("id").maybeSingle();
   if (error) throw error;
 
@@ -83,7 +83,7 @@ export async function recordAssetMovement(params: {
 
 /** Approve a pending movement: apply stock and mark approved. Idempotent. */
 export async function approveAssetMovement(movementId: string, approverUserId: string | null) {
-  const { data: m, error: e1 } = await supabase.from("asset_movements" as any)
+  const { data: m, error: e1 } = await db.from("asset_movements" as any)
     .select("id, asset_id, office_id, from_location_id, to_location_id, quantity, approval_status, applied")
     .eq("id", movementId).maybeSingle();
   if (e1) throw e1;
@@ -96,7 +96,7 @@ export async function approveAssetMovement(movementId: string, approverUserId: s
     if (row.from_location_id) await adjustAssetStock({ asset_id: row.asset_id, office_id: row.office_id, location_id: row.from_location_id, delta: -Number(row.quantity) });
     if (row.to_location_id)   await adjustAssetStock({ asset_id: row.asset_id, office_id: row.office_id, location_id: row.to_location_id,   delta: +Number(row.quantity) });
   }
-  const { error } = await supabase.from("asset_movements" as any)
+  const { error } = await db.from("asset_movements" as any)
     .update({ approval_status: "approved", applied: true, approved_by: approverUserId, approved_at: new Date().toISOString() })
     .eq("id", movementId);
   if (error) throw error;
@@ -104,7 +104,7 @@ export async function approveAssetMovement(movementId: string, approverUserId: s
 
 /** Reject a pending movement with a reason. */
 export async function rejectAssetMovement(movementId: string, approverUserId: string | null, reason: string) {
-  const { error } = await supabase.from("asset_movements" as any)
+  const { error } = await db.from("asset_movements" as any)
     .update({ approval_status: "rejected", approved_by: approverUserId, approved_at: new Date().toISOString(), rejection_reason: reason })
     .eq("id", movementId).eq("approval_status", "pending");
   if (error) throw error;

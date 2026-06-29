@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Link } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -26,11 +26,11 @@ export default function LandTransferHistoryTab({ farmerId }: { farmerId: string 
       setLoading(true);
       // Transfers where this farmer is source OR is a recipient
       const [{ data: asSource }, { data: asRecipientLinks }] = await Promise.all([
-        supabase.from("land_transfers")
+        db.from("land_transfers")
           .select("*, source_land:lands!land_transfers_source_land_id_fkey(dag_no,mouza,land_size), source_farmer:farmers!land_transfers_source_farmer_id_fkey(name_en,name_bn,farmer_code), recipients:land_transfer_recipients(*, recipient_farmer:farmers!land_transfer_recipients_recipient_farmer_id_fkey(id,name_en,name_bn,farmer_code))")
           .eq("source_farmer_id", farmerId)
           .order("transferred_at", { ascending: false }),
-        supabase.from("land_transfer_recipients")
+        db.from("land_transfer_recipients")
           .select("transfer_id")
           .eq("recipient_farmer_id", farmerId),
       ]);
@@ -38,7 +38,7 @@ export default function LandTransferHistoryTab({ farmerId }: { farmerId: string 
       const recipientTransferIds = Array.from(new Set((asRecipientLinks ?? []).map((r: any) => r.transfer_id)));
       let asRecipient: any[] = [];
       if (recipientTransferIds.length) {
-        const { data } = await supabase.from("land_transfers")
+        const { data } = await db.from("land_transfers")
           .select("*, source_land:lands!land_transfers_source_land_id_fkey(dag_no,mouza,land_size), source_farmer:farmers!land_transfers_source_farmer_id_fkey(name_en,name_bn,farmer_code), recipients:land_transfer_recipients(*, recipient_farmer:farmers!land_transfer_recipients_recipient_farmer_id_fkey(id,name_en,name_bn,farmer_code))")
           .in("id", recipientTransferIds)
           .order("transferred_at", { ascending: false });

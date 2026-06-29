@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { validateNoOverlappingBorga } from "@/lib/irrigationBargaValidation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,19 +49,19 @@ export function LandRelations({ farmerId }: Props) {
 
   async function load() {
     const [rels, ld] = await Promise.all([
-      supabase.from("land_relations")
+      db.from("land_relations")
         .select("*, lands(dag_no,dag_numbers,mouza,land_size,mouza_id), owner:farmers!land_relations_owner_farmer_id_fkey(name_en,farmer_code,member_no), sc:farmers!land_relations_sharecropper_farmer_id_fkey(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
         .or(`owner_farmer_id.eq.${farmerId},sharecropper_farmer_id.eq.${farmerId}`)
         .order("valid_from", { ascending: false }),
-      supabase.from("lands").select("id,dag_no,mouza,land_size,farmer_id").is("deleted_at", null).order("created_at"),
+      db.from("lands").select("id,dag_no,mouza,land_size,farmer_id").is("deleted_at", null).order("created_at"),
     ]);
     const relsData = rels.data ?? [];
     // Hydrate location chain for involved lands
     const landIds = Array.from(new Set(relsData.map((r: any) => r.land_id).filter(Boolean)));
     let locByLand: Record<string, any> = {};
     if (landIds.length) {
-      const { data: locs } = await (supabase.from as any)("lands_with_location")
+      const { data: locs } = await (db.from as any)("lands_with_location")
         .select("id,division_name,district_name,upazila_name,union_name,ward_name,village_name,mouza_name")
         .in("id", landIds);
       (locs ?? []).forEach((l: any) => { locByLand[l.id] = l; });
@@ -101,7 +102,7 @@ export function LandRelations({ farmerId }: Props) {
     try {
       // Phase 4: block re-transferring a parcel back to a previous (ended) sharecropper
       if (form.sharecropper_farmer_id) {
-        const { data: prior } = await supabase.from("land_relations")
+        const { data: prior } = await db.from("land_relations")
           .select("id")
           .eq("land_id", form.land_id)
           .eq("sharecropper_farmer_id", form.sharecropper_farmer_id)
@@ -119,7 +120,7 @@ export function LandRelations({ farmerId }: Props) {
       }
       // ১.১: একই জমি একাধিক Active বর্গাদারের কাছে দেওয়া যাবে না
       if (form.sharecropper_farmer_id) {
-        const { data: activeSc } = await supabase.from("land_relations")
+        const { data: activeSc } = await db.from("land_relations")
           .select("id")
           .eq("land_id", form.land_id)
           .not("sharecropper_farmer_id", "is", null)
@@ -137,7 +138,7 @@ export function LandRelations({ farmerId }: Props) {
       }
       // ১.২: ব্যাকডেটেড valid_from যেন কোনো পুরোনো বর্গা সময়কালের সাথে ওভারল্যাপ না করে
       if (form.sharecropper_farmer_id) {
-        const { data: periods } = await supabase.from("land_relations")
+        const { data: periods } = await db.from("land_relations")
           .select("sharecropper_farmer_id,valid_from,valid_to")
           .eq("land_id", form.land_id)
           .not("sharecropper_farmer_id", "is", null)
@@ -152,7 +153,7 @@ export function LandRelations({ farmerId }: Props) {
           return;
         }
       }
-      const { error } = await supabase.from("land_relations").insert({
+      const { error } = await db.from("land_relations").insert({
         land_id: form.land_id,
         owner_farmer_id: form.owner_farmer_id,
         sharecropper_farmer_id: form.sharecropper_farmer_id || null,
@@ -171,7 +172,7 @@ export function LandRelations({ farmerId }: Props) {
   }
 
   async function endRelation(id: string) {
-    const { error } = await supabase.from("land_relations").update({ valid_to: new Date().toISOString().slice(0, 10) }).eq("id", id);
+    const { error } = await db.from("land_relations").update({ valid_to: new Date().toISOString().slice(0, 10) }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(t("saved"));
     load();

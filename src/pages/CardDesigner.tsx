@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -46,7 +46,7 @@ export default function CardDesigner() {
   useEffect(() => {
     document.title = t("cd_title" as any);
     (async () => {
-      const { data } = await supabase.from("card_settings").select("*").eq("id", 1).maybeSingle();
+      const { data } = await db.from("card_settings").select("*").eq("id", 1).maybeSingle();
       if (data) setS({ ...DEFAULT_CARD_SETTINGS, ...(data as any) });
       setLoading(false);
     })();
@@ -55,7 +55,7 @@ export default function CardDesigner() {
   async function save() {
     setSaving(true);
     try {
-      const { error } = await supabase.from("card_settings").update({
+      const { error } = await db.from("card_settings").update({
         template_id: s.template_id,
         accent_color: s.accent_color,
         header_text: s.header_text,

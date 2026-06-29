@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 function useOffices() {
   const [offices, setOffices] = useState<Office[]>([]);
   useEffect(() => {
-    supabase.from("offices").select("id,name").order("name").then((r) => {
+    db.from("offices").select("id,name").order("name").then((r) => {
       if (!r.error) setOffices((r.data as any) ?? []);
     });
   }, []);
@@ -41,17 +41,17 @@ async function postPurchaseJournal(opts: {
   asset: Asset; total: number; payment_method: string; reference: string; userId: string | null;
 }) {
   const cashCode = opts.payment_method === "bank" ? "1020" : "1010";
-  const { data: accs } = await supabase.from("accounts").select("id,code").in("code", ["1510", cashCode]);
+  const { data: accs } = await db.from("accounts").select("id,code").in("code", ["1510", cashCode]);
   const byCode = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
   if (!byCode["1510"] || !byCode[cashCode]) return null;
-  const { data: je, error } = await supabase.from("journal_entries").insert({
+  const { data: je, error } = await db.from("journal_entries").insert({
     entry_date: today(), reference: opts.reference,
     description: `Asset purchase ${opts.asset.asset_code}`,
     office_id: opts.asset.office_id, posted: true, posted_at: new Date().toISOString(),
     created_by: opts.userId,
   }).select("id").single();
   if (error || !je) return null;
-  await supabase.from("journal_entry_lines").insert([
+  await db.from("journal_entry_lines").insert([
     { journal_id: je.id, account_id: byCode["1510"], debit: opts.total, credit: 0, position: 0, description: "Asset Inventory" },
     { journal_id: je.id, account_id: byCode[cashCode], debit: 0, credit: opts.total, position: 1, description: opts.payment_method === "bank" ? "Bank" : "Cash" },
   ]);
@@ -62,10 +62,10 @@ async function postDisposalJournal(opts: {
   asset: Asset; sale_amount: number; book_value: number; gain_loss: number; reference: string; userId: string | null;
 }) {
   const codes = ["1010", "1500", "4090", "5050"];
-  const { data: accs } = await supabase.from("accounts").select("id,code").in("code", codes);
+  const { data: accs } = await db.from("accounts").select("id,code").in("code", codes);
   const byCode = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
   if (!byCode["1010"] || !byCode["1500"]) return null;
-  const { data: je, error } = await supabase.from("journal_entries").insert({
+  const { data: je, error } = await db.from("journal_entries").insert({
     entry_date: today(), reference: opts.reference,
     description: `Asset disposal ${opts.asset.asset_code}`,
     office_id: opts.asset.office_id, posted: true, posted_at: new Date().toISOString(),
@@ -78,23 +78,23 @@ async function postDisposalJournal(opts: {
   if (opts.gain_loss < 0 && byCode["5050"]) lines.push({ journal_id: je.id, account_id: byCode["5050"], debit: Math.abs(opts.gain_loss), credit: 0, position: pos++, description: "Disposal loss" });
   lines.push({ journal_id: je.id, account_id: byCode["1500"], debit: 0, credit: opts.book_value, position: pos++, description: "Asset book value" });
   if (opts.gain_loss > 0 && byCode["4090"]) lines.push({ journal_id: je.id, account_id: byCode["4090"], debit: 0, credit: opts.gain_loss, position: pos++, description: "Disposal gain" });
-  await supabase.from("journal_entry_lines").insert(lines);
+  await db.from("journal_entry_lines").insert(lines);
   return je.id;
 }
 
 async function setStatus(asset_id: string, status: string, extra: Record<string, any> = {}) {
-  await supabase.from("assets" as any).update({ current_status: status, ...extra }).eq("id", asset_id);
+  await db.from("assets" as any).update({ current_status: status, ...extra }).eq("id", asset_id);
 }
 
 async function adjustStock(asset_id: string, office_id: string | null, location_id: string | null, delta: number) {
   if (!location_id) return;
-  const { data: existing } = await supabase.from("asset_stocks" as any)
+  const { data: existing } = await db.from("asset_stocks" as any)
     .select("id,quantity").eq("asset_id", asset_id).eq("location_id", location_id).maybeSingle();
   if (existing) {
     const next = Number((existing as any).quantity) + delta;
-    await supabase.from("asset_stocks" as any).update({ quantity: Math.max(0, next), updated_at: new Date().toISOString() }).eq("id", (existing as any).id);
+    await db.from("asset_stocks" as any).update({ quantity: Math.max(0, next), updated_at: new Date().toISOString() }).eq("id", (existing as any).id);
   } else if (delta > 0) {
-    await supabase.from("asset_stocks" as any).insert({ asset_id, office_id, location_id, quantity: delta });
+    await db.from("asset_stocks" as any).insert({ asset_id, office_id, location_id, quantity: delta });
   }
 }
 
@@ -117,7 +117,7 @@ export function PurchaseDialog({ asset, onDone }: BaseProps) {
     if (!f.quantity || !f.unit_price) return toast.error(tx("Quantity and price required", "পরিমাণ ও মূল্য দরকার"));
     setSaving(true);
     try {
-      const { data: row, error } = await supabase.from("asset_purchases" as any).insert({
+      const { data: row, error } = await db.from("asset_purchases" as any).insert({
         office_id: asset.office_id, asset_id: asset.id,
         purchase_date: f.purchase_date, quantity: f.quantity, unit_price: f.unit_price, total_amount: total,
         supplier: f.supplier || null, invoice_no: f.invoice_no || null,
@@ -125,7 +125,7 @@ export function PurchaseDialog({ asset, onDone }: BaseProps) {
       }).select("id").single();
       if (error) throw error;
       const jeId = await postPurchaseJournal({ asset, total, payment_method: f.payment_method, reference: `ASSET-PUR-${(row as any).id.slice(0,8)}`, userId: user?.id ?? null });
-      if (jeId) await supabase.from("asset_purchases" as any).update({ journal_entry_id: jeId }).eq("id", (row as any).id);
+      if (jeId) await db.from("asset_purchases" as any).update({ journal_entry_id: jeId }).eq("id", (row as any).id);
       await adjustStock(asset.id, asset.office_id, f.location_id || null, Number(f.quantity));
       await setStatus(asset.id, "in_stock");
       await logAssetAudit({ office_id: asset.office_id, asset_id: asset.id, entity: "asset_purchase", entity_id: (row as any).id, action_type: "purchase", new_data: { ...f, total_amount: total, journal_entry_id: jeId } });
@@ -188,7 +188,7 @@ export function MovementDialog({ asset, onDone }: BaseProps) {
     if (!f.to_location_id || f.from_location_id === f.to_location_id) return toast.error(tx("Choose different destination", "ভিন্ন গন্তব্য বাছুন"));
     setSaving(true);
     try {
-      const { data: row, error } = await supabase.from("asset_movements" as any).insert({
+      const { data: row, error } = await db.from("asset_movements" as any).insert({
         office_id: asset.office_id, asset_id: asset.id, movement_date: f.movement_date,
         from_location_id: f.from_location_id || null, to_location_id: f.to_location_id,
         quantity: f.quantity, moved_by: user?.id ?? null, remarks: f.remarks || null,
@@ -248,7 +248,7 @@ export function InstallationDialog({ asset, onDone }: BaseProps) {
   async function save() {
     setSaving(true);
     try {
-      const { data: row, error } = await supabase.from("asset_installations" as any).insert({
+      const { data: row, error } = await db.from("asset_installations" as any).insert({
         office_id: asset.office_id, asset_id: asset.id, install_date: f.install_date,
         location_id: f.location_id || null, location_name: f.location_name || null,
         installed_by: user?.id ?? null, condition_status: f.condition_status, remarks: f.remarks || null,
@@ -309,7 +309,7 @@ export function MaintenanceDialog({ asset, onDone }: BaseProps) {
   async function save() {
     setSaving(true);
     try {
-      const { data: row, error } = await supabase.from("asset_maintenance_logs" as any).insert({
+      const { data: row, error } = await db.from("asset_maintenance_logs" as any).insert({
         office_id: asset.office_id, asset_id: asset.id, maintenance_date: f.maintenance_date,
         vendor: f.vendor || null, cost: f.cost, downtime_days: f.downtime_days,
         status: f.status, remarks: f.remarks || null, created_by: user?.id ?? null,
@@ -364,7 +364,7 @@ export function DamageDialog({ asset, onDone }: BaseProps) {
   async function save() {
     setSaving(true);
     try {
-      const { data: row, error } = await supabase.from("asset_damage_reports" as any).insert({
+      const { data: row, error } = await db.from("asset_damage_reports" as any).insert({
         office_id: asset.office_id, asset_id: asset.id, report_date: f.report_date,
         severity: f.severity, reported_by: user?.id ?? null, status: f.status, remarks: f.remarks || null,
       }).select("id").single();
@@ -431,14 +431,14 @@ export function DisposalDialog({ asset, onDone }: BaseProps) {
   async function save() {
     setSaving(true);
     try {
-      const { data: row, error } = await supabase.from("asset_disposals" as any).insert({
+      const { data: row, error } = await db.from("asset_disposals" as any).insert({
         office_id: asset.office_id, asset_id: asset.id, disposal_date: f.disposal_date,
         method: f.method, sale_amount: f.sale_amount, book_value: f.book_value, gain_loss,
         remarks: f.remarks || null, created_by: user?.id ?? null,
       }).select("id").single();
       if (error) throw error;
       const jeId = await postDisposalJournal({ asset, sale_amount: Number(f.sale_amount), book_value: Number(f.book_value), gain_loss, reference: `ASSET-DSP-${(row as any).id.slice(0,8)}`, userId: user?.id ?? null });
-      if (jeId) await supabase.from("asset_disposals" as any).update({ journal_entry_id: jeId }).eq("id", (row as any).id);
+      if (jeId) await db.from("asset_disposals" as any).update({ journal_entry_id: jeId }).eq("id", (row as any).id);
       await setStatus(asset.id, "disposed");
       await logAssetAudit({ office_id: asset.office_id, asset_id: asset.id, entity: "asset_disposal", entity_id: (row as any).id, action_type: "dispose", new_data: { ...f, gain_loss, journal_entry_id: jeId } });
       toast.success(tx("Disposal recorded", "নিষ্পত্তি রেকর্ড হয়েছে"));

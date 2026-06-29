@@ -3,6 +3,7 @@ import type { ReceiptLang, ReceiptOptions } from "@/lib/bnReceipts";
 import { useBranding } from "@/lib/branding";
 import { supabase } from "@/integrations/supabase/client";
 
+import { db } from "@/lib/db";
 const KEY = "receipt:options:v1";
 
 export type OrgBlockLayout = "one-line" | "two-line";
@@ -60,7 +61,7 @@ async function persistToProfile(v: ReceiptUserOptions) {
   try {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    await supabase.from("profiles").update({ receipt_options: v as any }).eq("id", u.user.id);
+    await db.from("profiles").update({ receipt_options: v as any }).eq("id", u.user.id);
   } catch { /* ignore network errors */ }
 }
 
@@ -69,7 +70,7 @@ export async function hydrateReceiptOptionsFromProfile() {
   try {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const { data } = await supabase.from("profiles").select("receipt_options").eq("id", u.user.id).maybeSingle();
+    const { data } = await db.from("profiles").select("receipt_options").eq("id", u.user.id).maybeSingle();
     const remote = (data as any)?.receipt_options;
     if (remote && typeof remote === "object") {
       const merged = { ...DEMO_DEFAULTS, ...read(), ...remote } as ReceiptUserOptions;

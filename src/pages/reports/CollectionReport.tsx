@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -75,7 +76,7 @@ export default function CollectionReport() {
 
   useEffect(() => {
     document.title = `${t("collectionReportTitle")} — ${t("appName")}`;
-    supabase
+    db
       .from("farmers")
       .select("id,name_en,farmer_code,member_no")
       .order("name_en")
@@ -117,7 +118,7 @@ export default function CollectionReport() {
       const out: CollectionRow[] = [];
 
       // 1) Irrigation collections (from irrigation_invoice_payments)
-      let irrQ: any = supabase
+      let irrQ: any = db
         .from("irrigation_invoice_payments")
         .select("id,created_at,collected_amount,delay_fee_collected,maintenance_collected,canal_collected,irrigation_collected,current_invoice_collected,previous_due_collected,created_by,invoice_id,payments(receipt_no),irrigation_invoices!inner(farmer_id,farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,member_no))")
         .gt("collected_amount", 0)
@@ -151,7 +152,7 @@ export default function CollectionReport() {
       }
 
       // 2) Loan repayments (loan_payments.collected_by)
-      let lpQ: any = supabase
+      let lpQ: any = db
         .from("loan_payments")
         .select("id,paid_on,amount,principal_amount,interest_amount,collected_by,loan_id,loans(farmer_id,farmers(name_en,farmer_code,member_no))")
         .order("paid_on", { ascending: false });
@@ -184,7 +185,7 @@ export default function CollectionReport() {
       }
 
       // 3) Savings deposits (savings_transactions.created_by)
-      let svQ: any = supabase
+      let svQ: any = db
         .from("savings_transactions")
         .select("id,txn_date,amount,type,status,farmer_id,created_by,receipt_no,category,farmers(name_en,farmer_code,member_no)")
         .is("deleted_at", null)
@@ -232,7 +233,7 @@ export default function CollectionReport() {
 
       // 4) Cancelled/voided receipts (payments.status = voided) — shown so the
       // collection report reflects "<receipt_no> বাতিল".
-      let vdQ: any = supabase
+      let vdQ: any = db
         .from("payments")
         .select("id,receipt_no,amount,voided_at,void_reason,collected_by,farmer_id,farmers(name_en,farmer_code,member_no)")
         .not("voided_at", "is", null)

@@ -2,7 +2,7 @@
 // i18n-ignore-file — public landing page
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 
-const sb = supabase as any;
+const sb = db as any;
 
 export default function PublicPay() {
   // Farmer portal session gate — prevents anonymous false submissions from outside.

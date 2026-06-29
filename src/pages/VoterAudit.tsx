@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ export default function VoterAudit() {
 
   useEffect(() => {
     document.title = t("auditLogs" as any);
-    supabase.from("offices").select("id,name").order("name").then(r => {
+    db.from("offices").select("id,name").order("name").then(r => {
       setOffices((r.data as any[]) ?? []);
       setOfficesMap(Object.fromEntries(((r.data as any[]) ?? []).map(o => [o.id, o])));
     });
@@ -42,7 +42,7 @@ export default function VoterAudit() {
 
   async function load() {
     setLoading(true);
-    let q = supabase.from("voter_audit_logs").select("*").order("created_at", { ascending: false }).limit(500);
+    let q = db.from("voter_audit_logs").select("*").order("created_at", { ascending: false }).limit(500);
     if (farmerId) q = q.eq("farmer_id", farmerId);
     if (officeId && officeId !== "all") q = q.eq("office_id", officeId);
     if (from) q = q.gte("created_at", from);
@@ -55,11 +55,11 @@ export default function VoterAudit() {
     const fids = Array.from(new Set(list.map(r => r.farmer_id).filter(Boolean)));
     const uids = Array.from(new Set(list.map(r => r.changed_by).filter(Boolean)));
     if (fids.length) {
-      const { data: fs } = await supabase.from("farmers").select("id,name_en,name_bn,account_number,farmer_code").in("id", fids);
+      const { data: fs } = await db.from("farmers").select("id,name_en,name_bn,account_number,farmer_code").in("id", fids);
       setFarmersMap(Object.fromEntries(((fs as any[]) ?? []).map(f => [f.id, f])));
     } else setFarmersMap({});
     if (uids.length) {
-      const { data: ps } = await supabase.from("profiles").select("id,full_name,email").in("id", uids);
+      const { data: ps } = await db.from("profiles").select("id,full_name,email").in("id", uids);
       setProfilesMap(Object.fromEntries(((ps as any[]) ?? []).map(p => [p.id, p])));
     } else setProfilesMap({});
     setLoading(false);

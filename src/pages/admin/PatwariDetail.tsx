@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ export default function PatwariDetail() {
 
   async function load() {
     setLoading(true);
-    const { data: p } = await supabase
+    const { data: p } = await db
       .from("patwaris")
       .select("*, mouzas(id,name,name_bn), offices(name)")
       .eq("id", id!)
@@ -32,7 +32,7 @@ export default function PatwariDetail() {
     document.title = `${tx("Patwari", "পাটুয়ারী")} — ${p?.name_bn || p?.name || ""}`;
 
     // New: lands directly assigned to this patwari (req #1, #4)
-    const { data: assignedLands } = await supabase
+    const { data: assignedLands } = await db
       .from("lands")
       .select("id,dag_no,land_size,farmer_id,farmers(name_en,name_bn,farmer_code,mobile)")
       .eq("patwari_id", id!)
@@ -46,7 +46,7 @@ export default function PatwariDetail() {
     setFarmers(Array.from(farmerMap.values()));
 
     // Legacy: irrigation_charges directly assigned (kept for historical audit only)
-    const { data: ovs } = await supabase
+    const { data: ovs } = await db
       .from("irrigation_charges")
       .select("id,entry_date,land_id,farmer_id,total,paid_amount,lands(dag_no),farmers(name_en,name_bn)")
       .eq("patwari_id", id!)

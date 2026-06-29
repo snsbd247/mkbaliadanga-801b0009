@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Users, UserCheck, Wallet, Coins, HandCoins, Droplets, CalendarClock, AlertTriangle, FileText, Trophy, Activity, UserPlus, TrendingUp, TrendingDown, Banknote } from "lucide-react";
@@ -37,7 +38,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!officeId) { setOfficeName(""); return; }
-    supabase.from("offices").select("name").eq("id", officeId).maybeSingle()
+    db.from("offices").select("name").eq("id", officeId).maybeSingle()
       .then(({ data }) => setOfficeName((data as any)?.name ?? ""));
   }, [officeId]);
 
@@ -47,21 +48,21 @@ export default function Dashboard() {
     const today = new Date().toISOString().slice(0, 10);
     let voterIds: string[] | null = null;
     if (votersOnly) {
-      const { data: vf } = await supabase.from("farmers").select("id").eq("is_voter", true).is("deleted_at", null);
+      const { data: vf } = await db.from("farmers").select("id").eq("is_voter", true).is("deleted_at", null);
       voterIds = (vf ?? []).map((r: any) => r.id);
       if (voterIds.length === 0) voterIds = ["00000000-0000-0000-0000-000000000000"];
     }
     const inV = (q: any) => voterIds ? q.in("farmer_id", voterIds) : q;
 
     const [farmers, savings, shares, loans, irrigations, payments, pendingW, pendingL] = await Promise.all([
-      supabase.from("farmers").select("id,status,is_voter").is("deleted_at", null),
-      inV(supabase.from("savings_transactions").select("type,amount,status,farmer_id").is("deleted_at", null)),
-      inV(supabase.from("shares").select("balance,farmer_id")),
-      inV(supabase.from("loans").select("principal,total_payable,status,farmer_id,loan_payments(amount)").is("deleted_at", null)),
-      inV(supabase.from("irrigation_invoices").select("payable_amount,paid_amount,due_amount,due_date,farmer_id").is("deleted_at", null).neq("invoice_status", "cancelled")),
-      inV(supabase.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8)),
-      inV(supabase.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw")),
-      inV(supabase.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending")),
+      db.from("farmers").select("id,status,is_voter").is("deleted_at", null),
+      inV(db.from("savings_transactions").select("type,amount,status,farmer_id").is("deleted_at", null)),
+      inV(db.from("shares").select("balance,farmer_id")),
+      inV(db.from("loans").select("principal,total_payable,status,farmer_id,loan_payments(amount)").is("deleted_at", null)),
+      inV(db.from("irrigation_invoices").select("payable_amount,paid_amount,due_amount,due_date,farmer_id").is("deleted_at", null).neq("invoice_status", "cancelled")),
+      inV(db.from("payments").select("amount,kind,created_at,farmer_id,receipt_url,status,farmers(name_en,farmer_code)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8)),
+      inV(db.from("savings_transactions").select("id,amount,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending").eq("type", "withdraw")),
+      inV(db.from("loans").select("id,principal,farmer_id,farmers(name_en,farmer_code)").is("deleted_at", null).eq("status", "pending")),
     ]);
 
     const farmersData = farmers.data ?? [];
@@ -85,9 +86,9 @@ export default function Dashboard() {
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
     const day30Start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29).toISOString().slice(0, 10);
     const [{ data: monthPayAll }, { data: prevMonthPay }, { data: pay30 }] = await Promise.all([
-      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart),
-      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", prevMonthStart).lt("created_at", monthStart),
-      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", day30Start),
+      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", monthStart),
+      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", prevMonthStart).lt("created_at", monthStart),
+      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", day30Start),
     ]);
     const monthCollect = sum(monthPayAll ?? [], "amount");
     const prevMonthCollect = sum(prevMonthPay ?? [], "amount");
@@ -95,18 +96,18 @@ export default function Dashboard() {
     const pendingCount = (pendingW.data?.length ?? 0) + (pendingL.data?.length ?? 0);
 
     // New members this month
-    const { count: newMembersCount } = await supabase
+    const { count: newMembersCount } = await db
       .from("farmers").select("id", { count: "exact", head: true })
       .is("deleted_at", null).gte("created_at", monthStart);
     const activeLoanCount = loansData.filter((l: any) => l.status === "approved").length;
 
     // Hand Cash — Irrigation (1011) & Savings (1012) running balance from ledger
-    const { data: cashAccts } = await supabase.from("accounts").select("id,code").in("code", ["1011", "1012"]);
+    const { data: cashAccts } = await db.from("accounts").select("id,code").in("code", ["1011", "1012"]);
     const irrAcctId = cashAccts?.find((a: any) => a.code === "1011")?.id;
     const savAcctId = cashAccts?.find((a: any) => a.code === "1012")?.id;
     const [irrLedger, savLedger] = await Promise.all([
-      irrAcctId ? supabase.from("ledger_entries").select("debit,credit").eq("account_id", irrAcctId) : Promise.resolve({ data: [] as any[] }),
-      savAcctId ? supabase.from("ledger_entries").select("debit,credit").eq("account_id", savAcctId) : Promise.resolve({ data: [] as any[] }),
+      irrAcctId ? db.from("ledger_entries").select("debit,credit").eq("account_id", irrAcctId) : Promise.resolve({ data: [] as any[] }),
+      savAcctId ? db.from("ledger_entries").select("debit,credit").eq("account_id", savAcctId) : Promise.resolve({ data: [] as any[] }),
     ]);
     const irrCashBal = (irrLedger.data ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
     const savCashBal = (savLedger.data ?? []).reduce((a: number, r: any) => a + Number(r.debit || 0) - Number(r.credit || 0), 0);
@@ -171,9 +172,9 @@ export default function Dashboard() {
     }
     const fromIso = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10);
     const [pAll, eAll, sAll] = await Promise.all([
-      supabase.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", fromIso),
-      supabase.from("expenses").select("amount,expense_date").is("deleted_at", null).gte("expense_date", fromIso),
-      supabase.from("savings_transactions").select("type,amount,txn_date,status").is("deleted_at", null).eq("status", "approved").gte("txn_date", fromIso),
+      db.from("payments").select("amount,created_at").is("deleted_at", null).gte("created_at", fromIso),
+      db.from("expenses").select("amount,expense_date").is("deleted_at", null).gte("expense_date", fromIso),
+      db.from("savings_transactions").select("type,amount,txn_date,status").is("deleted_at", null).eq("status", "approved").gte("txn_date", fromIso),
     ]);
     (pAll.data ?? []).forEach((p: any) => {
       const m = months.find(x => x.key === p.created_at.slice(0, 7)); if (m) m.income += Number(p.amount || 0);
@@ -196,7 +197,7 @@ export default function Dashboard() {
     ]);
 
     const dueMap = new Map<string, { name: string; code: string; due: number }>();
-    const { data: irrDue } = await supabase
+    const { data: irrDue } = await db
       .from("irrigation_invoices")
       .select("farmer_id,due_amount,farmers(name_en,farmer_code)")
       .is("deleted_at", null)
@@ -212,11 +213,11 @@ export default function Dashboard() {
     // Monthly Most Active Member — top depositor (sum) + top transactor (count)
     const monthIso = monthStart;
     const [{ data: mDeposits }, { data: mPays }] = await Promise.all([
-      supabase.from("savings_transactions")
+      db.from("savings_transactions")
         .select("amount,farmer_id,farmers(name_en,farmer_code)")
         .is("deleted_at", null).eq("status", "approved").eq("type", "deposit")
         .gte("txn_date", monthIso),
-      supabase.from("payments")
+      db.from("payments")
         .select("farmer_id,farmers(name_en,farmer_code)")
         .is("deleted_at", null).gte("created_at", monthIso),
     ]);

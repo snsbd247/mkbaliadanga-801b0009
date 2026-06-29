@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function AssetScanHistory() {
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase.from("asset_scan_logs" as any)
+    const { data } = await db.from("asset_scan_logs" as any)
       .select("*").order("scanned_at", { ascending: false }).limit(200);
     setRows((data as any) || []);
     setLoading(false);

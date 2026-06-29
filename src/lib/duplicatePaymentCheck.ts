@@ -9,8 +9,7 @@
  * accidental re-clicks that use a NEW idempotency key (e.g. after a page
  * reload) but represent the same intended payment.
  */
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export interface RecentDuplicate {
   id: string;
   receipt_no: string | null;
@@ -27,7 +26,7 @@ export async function findRecentDuplicatePayment(opts: {
   const win = opts.withinSeconds ?? 120;
   if (!opts.farmer_id || !(opts.amount > 0)) return null;
   const since = new Date(Date.now() - win * 1000).toISOString();
-  const { data } = await supabase
+  const { data } = await db
     .from("payments")
     .select("id,receipt_no,amount,created_at,status")
     .eq("farmer_id", opts.farmer_id)

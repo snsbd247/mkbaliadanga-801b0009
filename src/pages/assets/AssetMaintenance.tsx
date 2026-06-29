@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,13 +51,13 @@ export default function AssetMaintenance() {
 
   async function load() {
     const [r, a, o] = await Promise.all([
-      supabase.from("asset_maintenance_logs" as any).select("*")
+      db.from("asset_maintenance_logs" as any).select("*")
         .is("deleted_at", null)
         .gte("maintenance_date", from).lte("maintenance_date", to)
         .order("maintenance_date", { ascending: false }).order("created_at", { ascending: false })
         .limit(1000),
-      supabase.from("assets" as any).select("id,asset_code,name_en,name_bn,office_id").is("deleted_at", null),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("assets" as any).select("id,asset_code,name_en,name_bn,office_id").is("deleted_at", null),
+      db.from("offices").select("id,name").order("name"),
     ]);
     if (r.error) toast.error(r.error.message); else setRows((r.data as any) ?? []);
     if (!a.error) setAssets((a.data as any) ?? []);
@@ -82,14 +82,14 @@ export default function AssetMaintenance() {
     setSaving(true);
     try {
       const a = assetById.get(form.asset_id);
-      const { data: row, error } = await supabase.from("asset_maintenance_logs" as any).insert({
+      const { data: row, error } = await db.from("asset_maintenance_logs" as any).insert({
         office_id: a?.office_id ?? officeId, asset_id: form.asset_id,
         maintenance_date: form.maintenance_date, vendor: form.vendor || null,
         cost: form.cost, downtime_days: form.downtime_days, status: form.status,
         remarks: form.remarks || null, created_by: user?.id ?? null,
       }).select("id").single();
       if (error) throw error;
-      await supabase.from("assets" as any).update({
+      await db.from("assets" as any).update({
         current_status: form.status === "completed" ? "in_stock" : "maintenance",
       }).eq("id", form.asset_id);
       await logAssetAudit({

@@ -3,9 +3,8 @@
 //  - counting their rows (post-seed validation)
 //  - taking a JSON snapshot backup of just those tables before seeding
 // Kept side-effect-light so the count/flag logic can be unit-tested.
-import { supabase } from "@/integrations/supabase/client";
-
-const sb = supabase as any;
+import { db } from "@/lib/db";
+const sb = db as any;
 
 // Tables backing the cash reports for BOTH irrigation (সেচ) and society (সমিতি).
 export const CASH_REPORT_TABLES = [

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
   useEffect(() => {
     if (!value) { setSelected(null); return; }
     if (selected?.id === value) return;
-    supabase.from("farmers").select(SELECT_COLS).eq("id", value).maybeSingle()
+    db.from("farmers").select(SELECT_COLS).eq("id", value).maybeSingle()
       .then(({ data }) => setSelected((data as any) ?? null));
   }, [value]);
 
@@ -92,7 +92,7 @@ export function FarmerSearchSelect({ value, onChange, excludeIds = [], placehold
     debounceRef.current = setTimeout(async () => {
       const myReq = ++reqIdRef.current;
       if (!cached) setLoading(true);
-      let qy = supabase.from("farmers").select(SELECT_COLS).order("name_en").limit(20);
+      let qy = db.from("farmers").select(SELECT_COLS).order("name_en").limit(20);
       if (votersOnly) qy = qy.eq("is_voter", true);
       if (term) {
         const esc = term.replace(/[%,()]/g, " ");

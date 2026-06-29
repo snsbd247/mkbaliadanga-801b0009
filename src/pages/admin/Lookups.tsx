@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -36,7 +36,7 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const { data } = await supabase
+    const { data } = await db
       .from(table as any)
       .select("*")
       .is("deleted_at", null)
@@ -73,8 +73,8 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
         sort_order: Number(form.sort_order) || 0,
       };
       const { error } = form.id
-        ? await supabase.from(table as any).update(payload).eq("id", form.id)
-        : await supabase.from(table as any).insert(payload);
+        ? await db.from(table as any).update(payload).eq("id", form.id)
+        : await db.from(table as any).insert(payload);
       if (error) throw error;
       toast.success(tx("Saved", "সংরক্ষিত"));
       setOpen(false);
@@ -85,7 +85,7 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
   }
 
   async function softDelete(id: string) {
-    const { error } = await supabase.from(table as any).delete().eq("id", id);
+    const { error } = await db.from(table as any).delete().eq("id", id);
     if (error) {
       toast.error(error.message);
       return;

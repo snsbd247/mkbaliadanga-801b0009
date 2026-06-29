@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -33,7 +34,7 @@ export default function CultivationHistoryReport() {
 
   useEffect(() => {
     document.title = tx("Cultivation History", "চাষাবাদের তথ্য");
-    supabase.from("seasons").select("id,name,year,type,status").order("year", { ascending: false }).then(({ data }) => {
+    db.from("seasons").select("id,name,year,type,status").order("year", { ascending: false }).then(({ data }) => {
       const list = data ?? [];
       setSeasons(list);
       const active = list.find((s: any) => s.status === "active") || list[0];
@@ -47,8 +48,8 @@ export default function CultivationHistoryReport() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      supabase.from("farmers").select("id,name_en,name_bn,father_name,mobile,member_no,farmer_code,status").is("deleted_at", null).order("name_en"),
-      (supabase.from as any)("lands_with_location").select("id,farmer_id,owner_type,land_size,field_type,land_type_id,mouza_name,mouza,dag_no"),
+      db.from("farmers").select("id,name_en,name_bn,father_name,mobile,member_no,farmer_code,status").is("deleted_at", null).order("name_en"),
+      (db.from as any)("lands_with_location").select("id,farmer_id,owner_type,land_size,field_type,land_type_id,mouza_name,mouza,dag_no"),
     ]).then(([f, l]) => {
       setFarmers(f.data ?? []);
       setLands(l.data ?? []);

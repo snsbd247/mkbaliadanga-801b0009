@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { resolveFieldTypeLabel } from "@/lib/irrigationLandType";
 import { normalizeIrrigationRatePerAcre } from "@/lib/bnReceipts";
 
@@ -76,14 +76,14 @@ export async function buildIrrigationReceiptEnrichment(
   let invoiceRows: any[] = [];
 
   if (refIds && refIds.length) {
-    const { data: invs } = await supabase
+    const { data: invs } = await db
       .from("irrigation_invoices")
       .select(IRRIGATION_INVOICE_SELECT)
       .in("id", refIds);
     invoiceRows = invs ?? [];
     dbg("source=refIds", { refIds, found: invoiceRows.length });
   } else if (farmerId) {
-    const { data: invs } = await supabase
+    const { data: invs } = await db
       .from("irrigation_invoices")
       .select(IRRIGATION_INVOICE_SELECT)
       .eq("farmer_id", farmerId)
@@ -99,7 +99,7 @@ export async function buildIrrigationReceiptEnrichment(
 
   let totalOutstanding = 0;
   if (farmerId) {
-    const { data: allDues } = await supabase
+    const { data: allDues } = await db
       .from("irrigation_invoices")
       .select("due_amount")
       .eq("farmer_id", farmerId)

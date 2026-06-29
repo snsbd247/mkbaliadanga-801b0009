@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,21 +33,21 @@ export default function AssetItemDetail() {
 
   async function load() {
     if (!id) return;
-    const a = await supabase.from("assets" as any).select("*").eq("id", id).maybeSingle();
+    const a = await db.from("assets" as any).select("*").eq("id", id).maybeSingle();
     if (a.error) { toast.error(a.error.message); return; }
     setAsset(a.data);
     document.title = (a.data as any)?.name_en ? `${(a.data as any).name_en} — ${tx("Asset", "এসেট")}` : tx("Asset", "এসেট");
 
     const orderDesc = { ascending: false } as const;
     const [p, s, m, ins, mn, dm, ds, au] = await Promise.all([
-      supabase.from("asset_purchases" as any).select("*").eq("asset_id", id).order("purchase_date", orderDesc),
-      supabase.from("asset_stocks" as any).select("*").eq("asset_id", id),
-      supabase.from("asset_movements" as any).select("*").eq("asset_id", id).order("created_at", orderDesc),
-      supabase.from("asset_installations" as any).select("*").eq("asset_id", id).order("install_date", orderDesc),
-      supabase.from("asset_maintenance_logs" as any).select("*").eq("asset_id", id).order("maintenance_date", orderDesc),
-      supabase.from("asset_damage_reports" as any).select("*").eq("asset_id", id).order("report_date", orderDesc),
-      supabase.from("asset_disposals" as any).select("*").eq("asset_id", id).order("disposal_date", orderDesc),
-      supabase.from("asset_audit_logs" as any).select("*").eq("asset_id", id).order("created_at", orderDesc).limit(200),
+      db.from("asset_purchases" as any).select("*").eq("asset_id", id).order("purchase_date", orderDesc),
+      db.from("asset_stocks" as any).select("*").eq("asset_id", id),
+      db.from("asset_movements" as any).select("*").eq("asset_id", id).order("created_at", orderDesc),
+      db.from("asset_installations" as any).select("*").eq("asset_id", id).order("install_date", orderDesc),
+      db.from("asset_maintenance_logs" as any).select("*").eq("asset_id", id).order("maintenance_date", orderDesc),
+      db.from("asset_damage_reports" as any).select("*").eq("asset_id", id).order("report_date", orderDesc),
+      db.from("asset_disposals" as any).select("*").eq("asset_id", id).order("disposal_date", orderDesc),
+      db.from("asset_audit_logs" as any).select("*").eq("asset_id", id).order("created_at", orderDesc).limit(200),
     ]);
     setPurchases(p.data ?? []);
     setStocks(s.data ?? []);

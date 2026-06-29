@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,9 +50,9 @@ export default function AssetStock() {
 
   async function load() {
     const [s, a, o] = await Promise.all([
-      supabase.from("asset_stocks" as any).select("*").order("updated_at", { ascending: false }),
-      supabase.from("assets" as any).select("id,asset_code,name_en,name_bn,unit,asset_type").is("deleted_at", null),
-      supabase.from("offices").select("id,name").order("name"),
+      db.from("asset_stocks" as any).select("*").order("updated_at", { ascending: false }),
+      db.from("assets" as any).select("id,asset_code,name_en,name_bn,unit,asset_type").is("deleted_at", null),
+      db.from("offices").select("id,name").order("name"),
     ]);
     if (s.error) toast.error(s.error.message); else setStocks((s.data as any) ?? []);
     if (a.error) toast.error(a.error.message); else setAssets((a.data as any) ?? []);

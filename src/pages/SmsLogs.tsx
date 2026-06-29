@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { Navigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -91,15 +92,15 @@ export default function SmsLogs() {
   useEffect(() => {
     document.title = "SMS Logs";
     if (!allowed) return;
-    supabase.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data as any) ?? []));
-    supabase.from("profiles").select("id,full_name,email").order("full_name").then(({ data }) => setUsers((data as any) ?? []));
+    db.from("offices").select("id,name").order("name").then(({ data }) => setOffices((data as any) ?? []));
+    db.from("profiles").select("id,full_name,email").order("full_name").then(({ data }) => setUsers((data as any) ?? []));
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed, statusFilter, eventFilter, officeFilter, userFilter, fromDate, toDate]);
 
   async function load() {
     setLoading(true);
-    let q = supabase.from("sms_logs").select("*").order("created_at", { ascending: false }).limit(300);
+    let q = db.from("sms_logs").select("*").order("created_at", { ascending: false }).limit(300);
     if (statusFilter !== "all") q = q.eq("status", statusFilter);
     if (eventFilter !== "all") q = q.eq("event_type", eventFilter);
     if (officeFilter !== "all") q = q.eq("office_id", officeFilter);
@@ -120,13 +121,13 @@ export default function SmsLogs() {
     const userIds = Array.from(new Set(rows.map((r) => r.created_by).filter(Boolean)));
     const [farmersRes, officesRes, usersRes] = await Promise.all([
       farmerIds.length
-        ? supabase.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", farmerIds)
+        ? db.from("farmers").select("id,name_en,name_bn,farmer_code").in("id", farmerIds)
         : Promise.resolve({ data: [] as any[] }),
       officeIds.length
-        ? supabase.from("offices").select("id,name").in("id", officeIds)
+        ? db.from("offices").select("id,name").in("id", officeIds)
         : Promise.resolve({ data: [] as any[] }),
       userIds.length
-        ? supabase.from("profiles").select("id,full_name,email").in("id", userIds)
+        ? db.from("profiles").select("id,full_name,email").in("id", userIds)
         : Promise.resolve({ data: [] as any[] }),
     ]);
     const fmap = new Map<string, any>(((farmersRes as any).data ?? []).map((f: any) => [f.id, f]));
@@ -198,13 +199,13 @@ export default function SmsLogs() {
 
     try {
       const farmerPromise = l.farmer_id
-        ? supabase.from("farmers").select("id,name_en,name_bn,farmer_code,mobile,village").eq("id", l.farmer_id).maybeSingle()
+        ? db.from("farmers").select("id,name_en,name_bn,farmer_code,mobile,village").eq("id", l.farmer_id).maybeSingle()
         : Promise.resolve({ data: null } as any);
 
       if (kind === "loan") {
         const [loanRes, paySumRes, farmerRes] = await Promise.all([
-          supabase.from("loans").select("*").eq("id", l.reference_id).maybeSingle(),
-          supabase.from("loan_payments").select("amount,paid_on,status").eq("loan_id", l.reference_id).eq("status", "approved"),
+          db.from("loans").select("*").eq("id", l.reference_id).maybeSingle(),
+          db.from("loan_payments").select("amount,paid_on,status").eq("loan_id", l.reference_id).eq("status", "approved"),
           farmerPromise,
         ]);
         if (loanRes.error || !loanRes.data) {
@@ -217,12 +218,12 @@ export default function SmsLogs() {
       } else {
         // Try invoice first (new SoT), then legacy charge fallback
         const [invRes, farmerRes] = await Promise.all([
-          supabase.from("irrigation_invoices").select("*").eq("id", l.reference_id).maybeSingle(),
+          db.from("irrigation_invoices").select("*").eq("id", l.reference_id).maybeSingle(),
           farmerPromise,
         ]);
         let record: any = invRes.data ?? null;
         if (!record) {
-          const { data: chRow } = await supabase.from("irrigation_charges").select("*").eq("id", l.reference_id).maybeSingle();
+          const { data: chRow } = await db.from("irrigation_charges").select("*").eq("id", l.reference_id).maybeSingle();
           record = chRow ?? null;
         }
         if (!record) {

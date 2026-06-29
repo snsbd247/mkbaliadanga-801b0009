@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export interface DuplicateRow {
   receipt_no: string;
   kind: string;
@@ -24,7 +23,7 @@ export function useDuplicateReceiptAudit(enabled: boolean) {
       try {
         // Pull last 90 days of receipts; client-side group counts (small dataset).
         const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-        const { data } = await supabase
+        const { data } = await db
           .from("payments")
           .select("receipt_no, kind, created_at")
           .gte("created_at", since)

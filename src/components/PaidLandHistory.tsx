@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,7 @@ export function PaidLandHistory({ farmerId }: Props) {
   async function load() {
     setLoading(true);
     const [{ data }, { data: f }] = await Promise.all([
-      supabase
+      db
         .from("irrigation_invoice_payments")
         .select(
           "collected_amount, irrigation_collected, maintenance_collected, canal_collected, delay_fee_collected, current_invoice_collected, previous_due_collected, created_at, " +
@@ -79,7 +79,7 @@ export function PaidLandHistory({ farmerId }: Props) {
         )
         .eq("invoice.farmer_id", farmerId)
         .order("created_at", { ascending: false }),
-      supabase.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,mobile,village,office_id,union_id").eq("id", farmerId).maybeSingle(),
+      db.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,mobile,village,office_id,union_id").eq("id", farmerId).maybeSingle(),
     ]);
     const list: PaidRow[] = (data ?? []).map((r: any) => {
       const acreRate = normalizeIrrigationRatePerAcre(r.invoice?.season_rate, r.invoice?.irrigation_amount, r.invoice?.lands?.land_size);
@@ -117,11 +117,11 @@ export function PaidLandHistory({ farmerId }: Props) {
     setRows(list);
     setFarmer(f ?? null);
     if (f?.office_id) {
-      const { data: o } = await supabase.from("offices").select("name,name_bn").eq("id", f.office_id).maybeSingle();
+      const { data: o } = await db.from("offices").select("name,name_bn").eq("id", f.office_id).maybeSingle();
       setOffice(o ?? null);
     }
     if (f?.union_id) {
-      const { data: u } = await supabase.from("unions").select("name_bn,name").eq("id", f.union_id).maybeSingle();
+      const { data: u } = await db.from("unions").select("name_bn,name").eq("id", f.union_id).maybeSingle();
       setUnionName(u?.name_bn || u?.name || null);
     } else {
       setUnionName(null);

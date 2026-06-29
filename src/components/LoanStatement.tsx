@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,8 +17,8 @@ export function LoanStatement({ loanId }: { loanId: string }) {
     (async () => {
       setLoading(true);
       const [l, p] = await Promise.all([
-        supabase.from("loans").select("*, loan_plans(name,name_bn,duration_months,interest_rate,installment_type), farmers(name_en,name_bn,farmer_code,member_no)").eq("id", loanId).maybeSingle(),
-        supabase.from("loan_payments").select("*").eq("loan_id", loanId).order("paid_on", { ascending: true }),
+        db.from("loans").select("*, loan_plans(name,name_bn,duration_months,interest_rate,installment_type), farmers(name_en,name_bn,farmer_code,member_no)").eq("id", loanId).maybeSingle(),
+        db.from("loan_payments").select("*").eq("loan_id", loanId).order("paid_on", { ascending: true }),
       ]);
       if (!active) return;
       setLoan(l.data ?? null);

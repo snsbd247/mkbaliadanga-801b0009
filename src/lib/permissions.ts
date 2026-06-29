@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 
 export type ModuleKey =
@@ -46,14 +46,14 @@ export function usePermissions() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("user_permissions").select("*").eq("user_id", user.id).then(({ data }) => {
+    db.from("user_permissions").select("*").eq("user_id", user.id).then(({ data }) => {
       const m: Record<string, Perm> = {};
       (data ?? []).forEach((r: any) => {
         m[r.module] = { can_view: r.can_view, can_add: r.can_add, can_edit: r.can_edit, can_delete: r.can_delete };
       });
       setUserMap(m);
     });
-    supabase.from("role_permissions").select("*").then(({ data }) => {
+    db.from("role_permissions").select("*").then(({ data }) => {
       const rm: Record<string, Record<string, Perm>> = {};
       (data ?? []).forEach((r: any) => {
         (rm[r.role] ??= {})[r.module] = { can_view: r.can_view, can_add: r.can_add, can_edit: r.can_edit, can_delete: r.can_delete };

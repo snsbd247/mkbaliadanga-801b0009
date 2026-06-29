@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -60,7 +60,7 @@ export default function FarmerRejectionsReport() {
   async function load() {
     setLoading(true);
     try {
-      let q: any = supabase
+      let q: any = db
         .from("farmer_rejections" as any)
         .select("*")
         .order("created_at", { ascending: false })

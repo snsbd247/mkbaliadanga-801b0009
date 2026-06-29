@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { useLang } from "@/i18n/LanguageProvider";
 
 
-const sb = supabase as any;
+const sb = db as any;
 const TXN_TYPES = ["deposit", "withdraw", "charge", "interest"] as const;
 
 const STREAMS: Array<{ value: string; label: string }> = [
@@ -113,7 +113,7 @@ export default function BankAccounts() {
       const ref = tx.reference_no ? ` (Ref: ${tx.reference_no})` : "";
       const noteSuffix = tx.note ? ` · ${tx.note}` : "";
       if (tx.txn_type === "deposit") {
-        const { error: eErr } = await supabase.from("expenses").insert({
+        const { error: eErr } = await db.from("expenses").insert({
           head: "Bank Deposit", payee: bankLabel, amount: tx.amount, method: "bank",
           note: `Cash deposited to ${bankLabel}${ref}${noteSuffix}`,
           expense_date: tx.txn_date, created_by: user?.id, stream: cbStream, link_id: linkId,
@@ -122,7 +122,7 @@ export default function BankAccounts() {
       } else {
         // irrigation accounts feed irrigation cash ("irrigation" kind); others feed savings ("other").
         const wKind = cbStream === "irrigation" ? "irrigation" : "other";
-        const { error: rErr } = await supabase.from("receipts").insert({
+        const { error: rErr } = await db.from("receipts").insert({
           kind: wKind, amount: tx.amount, method: "bank",
           note: `Cash withdrawn from ${bankLabel}${ref}${noteSuffix}`,
           receipt_date: tx.txn_date, collected_by: user?.id, link_id: linkId,

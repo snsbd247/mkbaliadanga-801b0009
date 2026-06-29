@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { useLang } from "@/i18n/LanguageProvider";
 import { RefreshCw, HelpCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const sb = supabase as any;
+const sb = db as any;
 
 type LogRow = {
   id: string;

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronRight, RefreshCw, AlertTriangle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useLang } from "@/i18n/LanguageProvider";
 
 type DupKey = `${string}|${string}|${string}`; // kind|date|receipt_no
@@ -49,7 +49,7 @@ export default function DuplicateReceiptAudit() {
       setLoading(true);
       try {
         const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-        let q = supabase
+        let q = db
           .from("payments")
           .select("id, receipt_no, kind, amount, created_at, farmer_id, farmers(name_en, member_no)")
           .gte("created_at", since)

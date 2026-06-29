@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,11 +52,11 @@ export default function Seasons() {
 
   async function load() {
     const [{ data: s }, { data: st }] = await Promise.all([
-      supabase
+      db
         .from("seasons")
         .select("*, irrigation_season_types:season_type_id(id,code,name,name_bn)")
         .order("year", { ascending: false }),
-      supabase
+      db
         .from("irrigation_season_types" as any)
         .select("id,code,name,name_bn")
         .eq("is_active", true)
@@ -82,7 +82,7 @@ export default function Seasons() {
       due_date: form.due_date || null,
       status: form.status,
     };
-    const { error } = await supabase.from("seasons").insert(payload);
+    const { error } = await db.from("seasons").insert(payload);
     if (error) return toast.error(error.message);
     toast.success(t("saved"));
     setOpen(false);
@@ -91,7 +91,7 @@ export default function Seasons() {
   }
 
   async function del(id: string) {
-    const { error } = await supabase.from("seasons").delete().eq("id", id);
+    const { error } = await db.from("seasons").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
   }
@@ -258,8 +258,8 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
     if (!open || !season?.id) return;
     (async () => {
       const [{ data: lt }, { data: rs }] = await Promise.all([
-        supabase.from("land_types" as any).select("id,code,name,name_bn").eq("is_active", true).is("deleted_at", null).order("sort_order"),
-        supabase.from("irrigation_season_rates" as any).select("land_type_id,rate_per_shotok,calculation_basis").eq("irrigation_season_id", season.id).is("office_id", null),
+        db.from("land_types" as any).select("id,code,name,name_bn").eq("is_active", true).is("deleted_at", null).order("sort_order"),
+        db.from("irrigation_season_rates" as any).select("land_type_id,rate_per_shotok,calculation_basis").eq("irrigation_season_id", season.id).is("office_id", null),
       ]);
       setLandTypes((lt as any) ?? []);
       const m: Record<string, number> = {};
@@ -284,8 +284,8 @@ function SeasonRatesDialog({ open, onOpenChange, season }: { open: boolean; onOp
         calculation_basis: bases[lt.id] ?? "per_shotok",
         office_id: null,
       }));
-      await supabase.from("irrigation_season_rates" as any).delete().eq("irrigation_season_id", season.id).is("office_id", null);
-      const { error } = await supabase.from("irrigation_season_rates" as any).insert(rows);
+      await db.from("irrigation_season_rates" as any).delete().eq("irrigation_season_id", season.id).is("office_id", null);
+      const { error } = await db.from("irrigation_season_rates" as any).insert(rows);
       if (error) throw error;
       toast.success(tx("Rates saved — only new invoices will be affected.", "রেট সংরক্ষিত হয়েছে — শুধুমাত্র নতুন ইনভয়েসে প্রভাব পড়বে।"));
       onOpenChange(false);
@@ -358,7 +358,7 @@ function CarryForwardDialog({ open, onOpenChange, season }: { open: boolean; onO
     (async () => {
       setLoading(true);
       try {
-        const { data } = await supabase
+        const { data } = await db
           .from("irrigation_invoices")
           .select("farmer_id,due_amount,seasons(year),farmers(name_en,name_bn,farmer_code)")
           .neq("invoice_status", "cancelled")

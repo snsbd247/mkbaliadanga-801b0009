@@ -1,6 +1,7 @@
 // ধাপ ২ — পুরাতন (Historical) রশিদ এন্ট্রি পেজ
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ export default function HistoricalReceiptEntry() {
   const [dupChecking, setDupChecking] = useState(false);
 
   useEffect(() => {
-    supabase.from("seasons").select("id,name,year,type").order("year", { ascending: false })
+    db.from("seasons").select("id,name,year,type").order("year", { ascending: false })
       .then(({ data }) => {
         const list = (data ?? []) as SeasonRow[];
         setSeasons(list);
@@ -61,7 +62,7 @@ export default function HistoricalReceiptEntry() {
     let cancelled = false;
     setDupChecking(true);
     const t = setTimeout(async () => {
-      const { data } = await supabase
+      const { data } = await db
         .from("payments")
         .select("id")
         .eq("kind", "irrigation")

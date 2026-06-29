@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,9 +57,9 @@ export default function RateAuditLog() {
   useEffect(() => {
     document.title = tx("Rate change history", "রেট পরিবর্তন ইতিহাস");
     Promise.all([
-      supabase.from("irrigation_season_types" as any).select("id,name,name_bn,code").is("deleted_at", null),
-      supabase.from("land_types" as any).select("id,name,name_bn,code").is("deleted_at", null),
-      supabase.from("offices").select("id,name"),
+      db.from("irrigation_season_types" as any).select("id,name,name_bn,code").is("deleted_at", null),
+      db.from("land_types" as any).select("id,name,name_bn,code").is("deleted_at", null),
+      db.from("offices").select("id,name"),
     ]).then(([s, l, o]) => {
       setSeasons((s.data as any) ?? []);
       setLandTypes((l.data as any) ?? []);
@@ -69,7 +69,7 @@ export default function RateAuditLog() {
 
   async function load() {
     setLoading(true);
-    let q = supabase
+    let q = db
       .from("irrigation_rate_audit_logs" as any)
       .select("*")
       .order("changed_at", { ascending: false })

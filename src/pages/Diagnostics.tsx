@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -89,7 +90,7 @@ export default function Diagnostics() {
     setRunning(true);
     const out: Probe[] = [];
     for (const tbl of [...OPERATIONAL_TABLES, ...REFERENCE_TABLES]) {
-      const { data, error, count, status } = await supabase
+      const { data, error, count, status } = await db
         .from(tbl as any).select("*", { count: "exact", head: true });
       if (error) {
         out.push({ table: tbl, op: "count", ok: false, status, code: (error as any).code, message: error.message });
@@ -114,13 +115,13 @@ export default function Diagnostics() {
     ] as const;
     const result: Record<string, any> = { user_office: officeId, is_super: true, tables: {} };
     for (const t of tables) {
-      const { data, error } = await supabase.from(t as any).select("office_id");
+      const { data, error } = await db.from(t as any).select("office_id");
       if (error) { result.tables[t] = { error: error.message, code: (error as any).code }; continue; }
       const set = new Set((data ?? []).map((r: any) => r.office_id));
       result.tables[t] = { offices_visible: Array.from(set), rows: data?.length ?? 0 };
     }
     // 2. Offices list (super admin sees all)
-    const { data: offs } = await supabase.from("offices").select("id,name");
+    const { data: offs } = await db.from("offices").select("id,name");
     result.all_offices = offs ?? [];
     // 3. Verdict: super admin should see >=2 offices' data when present
     const visibleOfficeSets = Object.values(result.tables).map((v: any) => (v.offices_visible || []).length);

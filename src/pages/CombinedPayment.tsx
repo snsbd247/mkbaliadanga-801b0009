@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,8 +91,8 @@ export default function CombinedPayment() {
     if (!form.farmer_id) { setFarmer(null); setLoans([]); setDues(null); return; }
     (async () => {
       const [f, lq] = await Promise.all([
-        supabase.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive,status,father_name").eq("id", form.farmer_id).maybeSingle(),
-        supabase.from("loans").select("id,principal,total_payable,issued_on,interest_rate,loan_plans(interest_rate,duration_months),loan_payments(amount,paid_on)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
+        db.from("farmers").select("id,name_en,name_bn,farmer_code,member_no,mobile,village,is_voter,savings_inactive,status,father_name").eq("id", form.farmer_id).maybeSingle(),
+        db.from("loans").select("id,principal,total_payable,issued_on,interest_rate,loan_plans(interest_rate,duration_months),loan_payments(amount,paid_on)").eq("farmer_id", form.farmer_id).eq("status", "approved"),
       ]);
       setFarmer(f.data ?? null);
       const rows: LoanRow[] = (lq.data ?? []).map((l: any) => {
@@ -152,7 +152,7 @@ export default function CombinedPayment() {
       const manualNo = form.receipt_no.trim();
       if (manualNo) {
         // Voided/cancelled receipt numbers are released and may be reused.
-        const { data: dup } = await supabase.from("payments").select("id").eq("receipt_no", manualNo).is("deleted_at", null).neq("status", "voided" as any).limit(1);
+        const { data: dup } = await db.from("payments").select("id").eq("receipt_no", manualNo).is("deleted_at", null).neq("status", "voided" as any).limit(1);
         if (dup && dup.length) { setSaving(false); return toast.error(lang === "bn" ? "এই রসিদ নম্বর আগে থেকেই আছে" : "Receipt number already exists"); }
         receiptNo = manualNo;
       } else {
@@ -163,13 +163,13 @@ export default function CombinedPayment() {
 
       // 1) Savings deposit
       if (form.include.savings && Number(form.savings) > 0) {
-        const { error } = await supabase.from("savings_transactions").insert({
+        const { error } = await db.from("savings_transactions").insert({
           farmer_id: form.farmer_id, type: "deposit" as any, amount: Number(form.savings),
           note: form.note || "Combined payment", status: "approved" as any, created_by: user?.id,
           receipt_no: receiptNo,
         } as any);
         if (error) throw error;
-        const { data: sp } = await supabase.from("payments").insert({
+        const { data: sp } = await db.from("payments").insert({
           farmer_id: form.farmer_id, kind: "savings", amount: Number(form.savings),
           collected_by: user?.id, receipt_no: receiptNo, status: "approved",
         } as any).select("verify_token").single();
@@ -179,7 +179,7 @@ export default function CombinedPayment() {
 
       // 2) Share collection (recorded in savings_transactions as share_collection)
       if (form.include.share && Number(form.share) > 0) {
-        const { error } = await supabase.from("savings_transactions").insert({
+        const { error } = await db.from("savings_transactions").insert({
           farmer_id: form.farmer_id, type: "share_collection" as any, amount: Number(form.share),
           note: form.note || "Combined payment", status: "approved" as any, created_by: user?.id,
           receipt_no: receiptNo,
@@ -192,16 +192,16 @@ export default function CombinedPayment() {
       if (loanAmt > 0 && form.loan_id) {
         const principal = Number(form.loan_principal || 0);
         const interest = Number(form.loan_interest || 0);
-        const { data: pay, error: payErr } = await supabase.from("payments").insert({
+        const { data: pay, error: payErr } = await db.from("payments").insert({
           farmer_id: form.farmer_id, kind: "loan", amount: loanAmt,
           reference_id: form.loan_id, collected_by: user?.id, receipt_no: receiptNo, status: "approved",
         } as any).select("id,verify_token").single();
         if (payErr) throw payErr;
         if (pay?.verify_token && !verifyToken) verifyToken = pay.verify_token;
-        await supabase.from("payment_allocations").insert({
+        await db.from("payment_allocations").insert({
           payment_id: pay!.id, kind: "loan", reference_id: form.loan_id, amount: loanAmt,
         } as any);
-        await supabase.from("loan_payments").insert({
+        await db.from("loan_payments").insert({
           loan_id: form.loan_id, amount: loanAmt, principal_amount: principal, interest_amount: interest,
           paid_on: new Date().toISOString().slice(0, 10), collected_by: user?.id,
           receipt_no: receiptNo,

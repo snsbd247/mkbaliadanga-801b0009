@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -179,7 +180,7 @@ export default function ScanPayment() {
         office_id: resolved.farmer.office_id ?? null,
         idempotency_key: idemKey,
       };
-      const { data: ins, error } = await supabase.from("payments").insert(payload).select("id, verify_token").single();
+      const { data: ins, error } = await db.from("payments").insert(payload).select("id, verify_token").single();
       if (error) {
         if ((error as any).code === "23505" || /duplicate/i.test(error.message)) {
           setErrMsg(

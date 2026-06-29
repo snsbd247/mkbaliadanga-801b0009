@@ -1,6 +1,6 @@
 // i18n-ignore-file — admin-only page (English UI)
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -54,7 +54,7 @@ export default function ReceiptTemplatePage() {
   useEffect(() => {
     document.title = "Receipt Template";
     (async () => {
-      const { data } = await supabase.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
+      const { data } = await db.from("receipt_settings").select("*").eq("id", 1).maybeSingle();
       if (data) setTpl({ ...DEFAULT_TEMPLATE, ...(data as any) });
       setLoading(false);
     })();
@@ -83,7 +83,7 @@ export default function ReceiptTemplatePage() {
   async function save() {
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from("receipt_settings")
         .update({
           language: tpl.language,

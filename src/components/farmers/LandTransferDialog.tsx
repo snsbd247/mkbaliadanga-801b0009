@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,12 +74,12 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         const landId = (sourceLand as any)._land_id ?? sourceLand.id;
         const today = new Date().toISOString().slice(0, 10);
         if (relId) {
-          const { error: relErr } = await supabase.from("land_relations")
+          const { error: relErr } = await db.from("land_relations")
             .update({ deleted_at: new Date().toISOString(), valid_to: today } as any)
             .eq("id", relId);
           if (relErr) throw relErr;
         }
-        const { error: trErr } = await supabase.from("land_transfers").insert({
+        const { error: trErr } = await db.from("land_transfers").insert({
           source_land_id: landId,
           source_farmer_id: (sourceLand as any)._sharecropper_id ?? sourceFarmerId,
           transfer_type: "borga_return",
@@ -113,7 +113,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
     try {
       // Transfer-back restriction: a recipient cannot be a prior owner who already
       // transferred this same dag/mouza to the current owner (no reversing transfers).
-      const { data: priorTr } = await supabase
+      const { data: priorTr } = await db
         .from("land_transfers")
         .select("source_farmer_id, land_transfer_recipients(recipient_farmer_id)")
         .eq("source_dag_no", sourceLand.dag_no ?? "")
@@ -132,10 +132,10 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
       }
 
       // Snapshot source owner details so history survives later land changes
-      const { data: srcFarmer } = await supabase.from("farmers")
+      const { data: srcFarmer } = await db.from("farmers")
         .select("name_en,name_bn,farmer_code,member_no").eq("id", sourceFarmerId).maybeSingle();
 
-      const { data: tr, error: trErr } = await supabase.from("land_transfers").insert({
+      const { data: tr, error: trErr } = await db.from("land_transfers").insert({
         source_land_id: sourceLand.id,
         source_farmer_id: sourceFarmerId,
         transfer_type: transferType,
@@ -162,7 +162,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           // area as a land_relations row on the owner's land — this is the single
           // source of truth for both display (shown in BOTH profiles) and
           // irrigation splitting (owner pays remainder, sharecropper pays borga).
-          const { error: relErr } = await supabase.from("land_relations").insert({
+          const { error: relErr } = await db.from("land_relations").insert({
             land_id: sourceLand.id,
             owner_farmer_id: sourceFarmerId,
             sharecropper_farmer_id: r.farmer_id,
@@ -175,7 +175,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
           } as any);
           if (relErr) throw relErr;
 
-          const { error: rcErr } = await supabase.from("land_transfer_recipients").insert({
+          const { error: rcErr } = await db.from("land_transfer_recipients").insert({
             transfer_id: transferId,
             recipient_farmer_id: r.farmer_id,
             new_land_id: null,
@@ -206,7 +206,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
         const dagNo = (sourceLand.dag_no ?? "").trim();
         let landId: string;
         if (dagNo) {
-          const { data: existing } = await supabase.from("lands")
+          const { data: existing } = await db.from("lands")
             .select("id, land_size, deleted_at")
             .eq("farmer_id", r.farmer_id)
             .eq("dag_no", dagNo)
@@ -222,21 +222,21 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
               upd.owner_type = newLandPayload.owner_type;
               upd.owner_farmer_id = newLandPayload.owner_farmer_id;
             }
-            const { error: upErr } = await supabase.from("lands").update(upd).eq("id", existing.id);
+            const { error: upErr } = await db.from("lands").update(upd).eq("id", existing.id);
             if (upErr) throw upErr;
             landId = existing.id;
           } else {
-            const { data: nl, error: nlErr } = await supabase.from("lands").insert(newLandPayload).select("id").single();
+            const { data: nl, error: nlErr } = await db.from("lands").insert(newLandPayload).select("id").single();
             if (nlErr) throw nlErr;
             landId = nl!.id;
           }
         } else {
-          const { data: nl, error: nlErr } = await supabase.from("lands").insert(newLandPayload).select("id").single();
+          const { data: nl, error: nlErr } = await db.from("lands").insert(newLandPayload).select("id").single();
           if (nlErr) throw nlErr;
           landId = nl!.id;
         }
 
-        const { error: rcErr } = await supabase.from("land_transfer_recipients").insert({
+        const { error: rcErr } = await db.from("land_transfer_recipients").insert({
           transfer_id: transferId,
           recipient_farmer_id: r.farmer_id,
           new_land_id: landId,
@@ -248,7 +248,7 @@ export default function LandTransferDialog({ open, onOpenChange, sourceLand, sou
       // Borga keeps the owner's land row intact. Non-borga transfers move the
       // whole parcel out, so the source land row is archived (history preserved).
       if (!isBorgaGive) {
-        const { error: delErr } = await supabase.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
+        const { error: delErr } = await db.from("lands").update({ deleted_at: new Date().toISOString() } as any).eq("id", sourceLand.id);
         if (delErr) throw delErr;
       }
 

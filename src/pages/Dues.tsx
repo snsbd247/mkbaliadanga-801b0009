@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export default function Dues() {
     const today = Date.now();
     const out: Row[] = [];
 
-    const { data: irr } = await supabase
+    const { data: irr } = await db
       .from("irrigation_invoices")
       .select("farmer_id,due_amount,due_date,generated_at,invoice_no,seasons(name,year,status),farmers(name_en,father_name,farmer_code,mobile)")
       .is("deleted_at", null)
@@ -76,7 +76,7 @@ export default function Dues() {
       });
     });
 
-    const { data: loans } = await supabase
+    const { data: loans } = await db
       .from("loans")
       .select("id,farmer_id,total_payable,issued_on,farmers(name_en,father_name,farmer_code,mobile)")
       .is("deleted_at", null)
@@ -84,7 +84,7 @@ export default function Dues() {
     const loanIds = (loans ?? []).map((l: any) => l.id);
     let payByLoan = new Map<string, number>();
     if (loanIds.length) {
-      const { data: pays } = await supabase.from("loan_payments").select("loan_id,amount").in("loan_id", loanIds);
+      const { data: pays } = await db.from("loan_payments").select("loan_id,amount").in("loan_id", loanIds);
       (pays ?? []).forEach((p: any) => payByLoan.set(p.loan_id, (payByLoan.get(p.loan_id) ?? 0) + Number(p.amount)));
     }
     (loans ?? []).forEach((l: any) => {

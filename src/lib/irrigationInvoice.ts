@@ -18,6 +18,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
+import { db } from "@/lib/db";
 export type InvoiceStatus = "draft" | "generated" | "partial_paid" | "paid" | "overdue" | "cancelled";
 
 export interface ChargeSettings {
@@ -223,7 +224,7 @@ export async function resolveBillingSplits(
 
 export async function getChargeSettings(office_id: string | null): Promise<ChargeSettings> {
   if (!office_id) return DEFAULT_SETTINGS;
-  const { data } = await supabase
+  const { data } = await db
     .from("irrigation_charge_settings")
     .select("delay_fee_percent,maintenance_percent,canal_percent,grace_days,auto_apply_delay_fee")
     .eq("office_id", office_id)

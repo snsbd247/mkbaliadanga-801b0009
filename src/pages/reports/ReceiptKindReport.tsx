@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,7 +41,7 @@ export default function ReceiptKindReport() {
   async function load() {
     setLoading(true);
     try {
-      let q = supabase
+      let q = db
         .from("payments")
         .select("id,receipt_no,created_at,amount,status,kind,farmers(name_en,farmer_code)")
         .gte("created_at", `${from}T00:00:00`)

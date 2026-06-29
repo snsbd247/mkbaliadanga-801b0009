@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
+import { db } from "@/lib/db";
 export interface CompanyBranding {
   company_name: string;
   company_name_bn?: string | null;
@@ -34,7 +33,7 @@ const subs = new Set<(b: CompanyBranding) => void>();
 
 export async function loadBranding(force = false): Promise<CompanyBranding> {
   if (cached && !force) return cached;
-  const { data } = await supabase.from("company_settings").select("*").eq("id", 1).maybeSingle();
+  const { data } = await db.from("company_settings").select("*").eq("id", 1).maybeSingle();
   cached = (data as any) ?? DEFAULTS;
   subs.forEach((s) => s(cached!));
   return cached!;

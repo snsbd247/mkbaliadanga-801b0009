@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -43,7 +44,7 @@ export function LandNoteCell({
   useEffect(() => { setValue(note ?? ""); }, [note]);
 
   useEffect(() => {
-    supabase
+    db
       .from("land_note_attachments")
       .select("id,file_path,file_name,content_type")
       .eq("land_id", landId)
@@ -64,10 +65,10 @@ export function LandNoteCell({
     if (clean === (note ?? "").trim()) { setEditing(false); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from("lands").update({ notes: clean || null } as any).eq("id", landId);
+      const { error } = await db.from("lands").update({ notes: clean || null } as any).eq("id", landId);
       if (error) { toast.error(error.message); return; }
       const { data: u } = await supabase.auth.getUser();
-      await supabase.from("land_note_audit").insert({
+      await db.from("land_note_audit").insert({
         land_id: landId,
         office_id: officeId,
         old_note: note ?? null,
@@ -98,7 +99,7 @@ export function LandNoteCell({
         const path = `${landId}/${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
         if (upErr) { toast.error(upErr.message); continue; }
-        const { data, error } = await supabase.from("land_note_attachments").insert({
+        const { data, error } = await db.from("land_note_attachments").insert({
           land_id: landId,
           office_id: officeId,
           file_path: path,
@@ -123,7 +124,7 @@ export function LandNoteCell({
   }
 
   async function removeAttachment(a: Attachment) {
-    const { error } = await supabase.from("land_note_attachments").delete().eq("id", a.id);
+    const { error } = await db.from("land_note_attachments").delete().eq("id", a.id);
     if (error) { toast.error(error.message); return; }
     await supabase.storage.from(BUCKET).remove([a.file_path]);
     setAttachments((p) => p.filter((x) => x.id !== a.id));
@@ -131,7 +132,7 @@ export function LandNoteCell({
 
   async function loadHistory() {
     if (history) { setShowHistory((s) => !s); return; }
-    const { data } = await supabase
+    const { data } = await db
       .from("land_note_audit")
       .select("id,old_note,new_note,changed_by,created_at")
       .eq("land_id", landId)

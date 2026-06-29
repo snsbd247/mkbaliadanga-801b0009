@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import { db } from "@/lib/db";
 export interface AssetAuditInput {
   office_id?: string | null;
   asset_id?: string | null;
@@ -30,7 +31,7 @@ export async function logAssetAudit(input: AssetAuditInput): Promise<void> {
       new_data: input.new_data ?? null,
       remarks: input.remarks ?? null,
     };
-    const { error } = await supabase.from("asset_audit_logs" as any).insert([payload as any]);
+    const { error } = await db.from("asset_audit_logs" as any).insert([payload as any]);
     if (error) console.warn("[asset-audit] insert failed:", error.message);
   } catch (e) {
     console.warn("[asset-audit] unexpected error:", e);

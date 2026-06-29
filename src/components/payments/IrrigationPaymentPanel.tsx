@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 import { Card } from "@/components/ui/card";
@@ -98,7 +99,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data } = await db
         .from("irrigation_partial_payment_settings")
         .select("id,allowed_roles")
         .order("created_at", { ascending: true })
@@ -117,13 +118,13 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     setSavingSettings(true);
     try {
       if (settingsId) {
-        const { error } = await supabase
+        const { error } = await db
           .from("irrigation_partial_payment_settings")
           .update({ allowed_roles: next, updated_by: user?.id })
           .eq("id", settingsId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("irrigation_partial_payment_settings")
           .insert({ allowed_roles: next, updated_by: user?.id })
           .select("id")
@@ -146,8 +147,8 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
     setLoading(true);
     (async () => {
       const [{ data: act }, { data: invs }] = await Promise.all([
-        supabase.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("irrigation_invoices")
+        db.from("seasons").select("id").eq("status", "active").order("year", { ascending: false }).limit(1).maybeSingle(),
+        db.from("irrigation_invoices")
           .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no,field_type,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)")
           .eq("farmer_id", farmerId)
           .is("deleted_at", null)
@@ -284,7 +285,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       const officeId = (selectedCurrentInvoices[0]?.office_id ?? previousInvoices[0]?.office_id) ?? null;
 
       // 1) Insert payment row
-      const { data: ins, error: payErr } = await supabase.from("payments").insert({
+      const { data: ins, error: payErr } = await db.from("payments").insert({
         farmer_id: farmerId,
         kind: "irrigation",
         amount: grandTotal,
@@ -310,14 +311,14 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
         // delay-fee override audit
         if (newFee !== originalFee) {
-          await supabase.from("irrigation_delay_fee_audit").insert({
+          await db.from("irrigation_delay_fee_audit").insert({
             invoice_id: inv.id, payment_id: paymentId,
             original_amount: originalFee, modified_amount: newFee,
             reason: delayFeeReason[inv.id] || null,
             changed_by: user?.id, office_id: inv.office_id,
           });
           // also update the invoice's delay_fee snapshot
-          await supabase.from("irrigation_invoices")
+          await db.from("irrigation_invoices")
             .update({ delay_fee: newFee, payable_amount: Number(inv.payable_amount) + (newFee - originalFee), due_amount: Number(inv.due_amount) + (newFee - originalFee) })
             .eq("id", inv.id);
           // central audit log for delay-fee override
@@ -332,12 +333,12 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         }
 
         // update paid amount
-        await supabase.from("irrigation_invoices")
+        await db.from("irrigation_invoices")
           .update({ paid_amount: Number(inv.paid_amount) + take })
           .eq("id", inv.id);
 
         // split allocation row
-        await supabase.from("irrigation_invoice_payments").insert({
+        await db.from("irrigation_invoice_payments").insert({
           invoice_id: inv.id,
           payment_id: paymentId,
           office_id: inv.office_id,
@@ -359,10 +360,10 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         if (remainingPrev <= 0) break;
         const take = Math.min(remainingPrev, Number(inv.due_amount));
         if (take <= 0) continue;
-        await supabase.from("irrigation_invoices")
+        await db.from("irrigation_invoices")
           .update({ paid_amount: Number(inv.paid_amount) + take })
           .eq("id", inv.id);
-        await supabase.from("irrigation_invoice_payments").insert({
+        await db.from("irrigation_invoice_payments").insert({
           invoice_id: inv.id,
           payment_id: paymentId,
           office_id: inv.office_id,
@@ -377,7 +378,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       // 4) Promise record
       if (specialPermission) {
-        await supabase.from("irrigation_due_promises").insert({
+        await db.from("irrigation_due_promises").insert({
           office_id: officeId,
           farmer_id: farmerId,
           payment_id: paymentId,
@@ -431,11 +432,11 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
         const prevPart = +Number(previousCollected || 0).toFixed(2);
 
         const codes = ["1010", "IRR-INCOME", "IRR-PREV-DUE", "IRR-DELAY", "IRR-MAINT", "IRR-CANAL"];
-        const { data: accs } = await supabase.from("accounts").select("id,code").in("code", codes);
+        const { data: accs } = await db.from("accounts").select("id,code").in("code", codes);
         const byCode = Object.fromEntries((accs ?? []).map((a: any) => [a.code, a.id]));
 
         if (byCode["1010"]) {
-          const { data: je, error: jeErr } = await supabase.from("journal_entries").insert({
+          const { data: je, error: jeErr } = await db.from("journal_entries").insert({
             entry_date: new Date().toISOString().slice(0, 10),
             reference: `IRR-PAY-${paymentId.slice(0, 8)}`,
             description: `Irrigation payment ${paymentId.slice(0, 8)}`,
@@ -461,7 +462,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
                 lines.push({ journal_id: je.id, account_id: byCode[code], debit: 0, credit: amt, position: pos++, description: code });
               }
             }
-            await supabase.from("journal_entry_lines").insert(lines);
+            await db.from("journal_entry_lines").insert(lines);
           }
         }
       } catch (jErr) {
@@ -470,13 +471,13 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
 
       const receiptNo = await nextUnifiedReceiptNo(officeId, "IRR", paymentId).catch(() => autoReceiptNo("IRR", paymentId));
       const [{ data: farmer }, { data: company }] = await Promise.all([
-        supabase.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
-        supabase.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
+        db.from("farmers").select("name_bn,name_en,member_no,farmer_code,father_name,village,mobile,office_id,union_id").eq("id", farmerId).maybeSingle(),
+        db.from("company_settings").select("company_name,company_name_bn,address,mobile,email,registration_no,logo_url").eq("id", 1).maybeSingle(),
       ]);
       // ইউনিয়ন: farmers.union_id থেকে unions লুকআপ টেবিল হতে নাম স্বয়ংক্রিয়ভাবে আনা
       let unionName: string | null = null;
       if (farmer?.union_id) {
-        const { data: u } = await supabase.from("unions").select("name_bn,name").eq("id", farmer.union_id).maybeSingle();
+        const { data: u } = await db.from("unions").select("name_bn,name").eq("id", farmer.union_id).maybeSingle();
         unionName = (lang === "bn" ? u?.name_bn : u?.name) || u?.name_bn || u?.name || null;
       }
       const farmerName = (farmer?.name_bn || farmer?.name_en || "").trim();
@@ -621,7 +622,7 @@ export function IrrigationPaymentPanel({ initialFarmerId, onPaid }: { initialFar
       setNote("");
       onPaid?.();
       // re-trigger load
-      const { data: invs } = await supabase.from("irrigation_invoices")
+      const { data: invs } = await db.from("irrigation_invoices")
         .select("id,invoice_no,season_id,office_id,land_id,owner_farmer_id,is_borga,due_date,due_amount,paid_amount,payable_amount,irrigation_amount,delay_fee,maintenance_amount,canal_amount,other_charge,season_rate,land_type_name,irrigation_category_name,seasons(name,year,status),lands(mouza,land_size,dag_no,notes,patwaris(name,name_bn,mobile)),owner:farmers!irrigation_invoices_owner_farmer_id_fkey(name_bn,name_en,member_no,farmer_code)")
         .eq("farmer_id", farmerId).is("deleted_at", null).neq("invoice_status", "cancelled").gt("due_amount", 0)
         .order("due_date", { ascending: true });

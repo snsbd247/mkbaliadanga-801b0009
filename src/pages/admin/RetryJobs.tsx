@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -40,7 +40,7 @@ export default function RetryJobs() {
 
   async function load() {
     setLoading(true);
-    let q = supabase
+    let q = db
       .from("background_retry_jobs")
       .select("id,job_type,reference_id,status,retry_count,max_retry,next_retry_at,last_error,created_at")
       .order("created_at", { ascending: false })

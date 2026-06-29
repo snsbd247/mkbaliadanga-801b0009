@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import { db } from "@/lib/db";
 export type AuditModule =
   | "irrigation_payment"
   | "irrigation_invoice"
@@ -62,7 +63,7 @@ export async function logAudit(input: LogAuditInput): Promise<void> {
       user_agent: getUA(),
     };
 
-    const { error } = await supabase.from("system_audit_logs").insert([payload as any]);
+    const { error } = await db.from("system_audit_logs").insert([payload as any]);
     if (error) console.warn("[audit] insert failed:", error.message);
   } catch (e) {
     console.warn("[audit] unexpected error:", e);

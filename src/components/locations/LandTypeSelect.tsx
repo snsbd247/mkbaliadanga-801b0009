@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -36,7 +36,7 @@ export function useLandTypes() {
   const [loading, setLoading] = useState(!_cache);
   useEffect(() => {
     let cancelled = false;
-    supabase.from("land_types" as any)
+    db.from("land_types" as any)
       .select("id,code,name,name_bn")
       .eq("is_active", true)
       .is("deleted_at", null)
