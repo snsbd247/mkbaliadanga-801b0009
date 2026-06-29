@@ -290,7 +290,6 @@ function ReceiptLayoutCard() {
 
   async function downloadSampleExcel() {
     try {
-      const { exportInvoicesXLSX } = await import("@/lib/irrigationExports");
       exportInvoicesXLSX([{
         invoice_no: "PREVIEW-001",
         farmers: { name_bn: "Karim Mia", farmer_code: "00101", mobile: "017" },
