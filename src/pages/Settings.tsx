@@ -14,6 +14,8 @@ import { notifyBrandingChange, useBranding } from "@/lib/branding";
 import { getReceiptLayoutSettings, setReceiptLayoutSettings, resetReceiptLayoutSettings } from "@/lib/receiptLayoutSettings";
 import { buildReceiptCopyHtmlForTest } from "@/lib/bnReceipts";
 import BanglaFontSelector from "@/components/settings/BanglaFontSelector";
+import { downloadIrrigationInvoicePdf } from "@/lib/irrigationInvoicePdf";
+import { exportInvoicesXLSX } from "@/lib/irrigationExports";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default function Settings() {
