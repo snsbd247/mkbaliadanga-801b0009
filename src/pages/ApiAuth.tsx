@@ -28,9 +28,15 @@ function StaffLoginInner() {
       toast({ title: "Welcome", description: "Signed in successfully" });
       setTimeout(() => navigate("/api/dashboard"), 50);
     } catch (err: any) {
+      const isAccessDenied = err?.name === "AccessDeniedError";
       toast({
-        title: "Login failed",
-        description: err?.response?.data?.message || err.message,
+        title: isAccessDenied ? "Access denied" : "Login failed",
+        // Safe message only — never leak whether the username/password specifically was wrong.
+        description: isAccessDenied
+          ? err.message
+          : err?.response?.status === 401 || err?.response?.status === 422
+            ? "Invalid user ID or password."
+            : err?.response?.data?.message || "Unable to sign in. Please try again.",
         variant: "destructive",
       });
     } finally {

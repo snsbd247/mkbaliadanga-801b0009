@@ -4,6 +4,28 @@ import { getApiToken, setApiToken } from "@/lib/api/client";
 
 export type AppRole = "developer" | "super_admin" | "admin" | "committee" | "staff";
 
+const STAFF_ROLES: AppRole[] = ["developer", "super_admin", "admin", "committee", "staff"];
+
+/** Thrown after successful auth when the account is not authorised for the staff app. */
+export class AccessDeniedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AccessDeniedError";
+  }
+}
+
+/** Validate that an authenticated account may use the staff app. Returns a safe message or null. */
+export function validateStaffAccess(u: { roles?: string[] } | null | undefined): string | null {
+  const roles = (u?.roles ?? []) as string[];
+  if (roles.length === 0) {
+    return "Your account has no role assigned yet. Please contact an administrator.";
+  }
+  if (!roles.some((r) => (STAFF_ROLES as string[]).includes(r))) {
+    return "Your account is not authorised to access this app. Please contact an administrator.";
+  }
+  return null;
+}
+
 interface LaravelAuthCtx {
   user: ApiUser | null;
   loading: boolean;
@@ -49,6 +71,15 @@ export function LaravelAuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (identifier: string, password: string) => {
     const { user } = await apiLogin(identifier, password);
+    // Validate role/authorisation AFTER successful authentication.
+    const denied = validateStaffAccess(user);
+    if (denied) {
+      // Drop the freshly-issued session so an unauthorised token isn't kept.
+      try { await apiLogout(); } catch { /* ignore */ }
+      setUser(null);
+      setRolesLoaded(true);
+      throw new AccessDeniedError(denied);
+    }
     setUser(user);
     setRolesLoaded(true);
   }, []);
