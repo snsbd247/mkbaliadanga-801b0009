@@ -65,6 +65,37 @@ const REFERENCE_TABLES = [
 
 type Probe = { table: string; op: "select" | "count"; ok: boolean; status?: number; code?: string; message?: string; rows?: number };
 
+// Maps each functional page/module to the primary tables (API endpoints) it
+// reads. Scanning these tells us which page's Laravel API is broken.
+const PAGE_API_MAP: Record<string, string[]> = {
+  "Dashboard": ["farmers", "irrigation_invoices", "loans", "savings_transactions", "payments"],
+  "Farmers": ["farmers", "farmer_savings_plans", "farmer_notes"],
+  "Lands": ["lands", "land_relations", "land_history", "land_types"],
+  "Locations / Geo": ["divisions", "districts", "upazilas", "mouzas"],
+  "Irrigation Rates": ["irrigation_rates", "irrigation_rate_overrides", "irrigation_season_rates", "irrigation_category_rates"],
+  "Irrigation Invoices": ["irrigation_invoices", "irrigation_invoice_payments", "irrigation_charges"],
+  "Irrigation Categories": ["irrigation_categories", "irrigation_season_types", "irrigation_charge_settings"],
+  "Irrigation Dues / Reminders": ["irrigation_due_promises", "irrigation_sms_logs"],
+  "Savings": ["savings_transactions", "savings_plans", "farmer_savings_plans", "savings_yearly_opening"],
+  "Loans": ["loans", "loan_payments", "loan_plans", "loan_installments"],
+  "Shares": ["shares"],
+  "Payments": ["payments", "payment_allocations", "receipts", "receipt_sequences"],
+  "Expenses": ["expenses"],
+  "Accounting / Ledger": ["accounts", "journal_entries", "journal_entry_lines", "ledger_entries", "accounting_periods"],
+  "Bank": ["bank_accounts", "bank_transactions"],
+  "Assets": ["assets", "asset_categories", "asset_purchases", "asset_movements", "asset_stocks"],
+  "Asset Maintenance": ["asset_maintenance_logs", "asset_maintenance_schedules", "asset_damage_reports"],
+  "Asset Depreciation": ["asset_depreciation_schedule", "asset_depreciation_settings", "asset_disposals"],
+  "SMS": ["sms_logs", "sms_templates", "sms_settings", "sms_office_settings"],
+  "Voters": ["voter_audit_logs"],
+  "Users / Roles": ["user_roles", "user_permissions", "role_permissions", "profiles"],
+  "Offices": ["offices", "seasons", "company_settings"],
+  "Audit Logs": ["audit_logs", "system_audit_logs", "import_audit_logs"],
+  "Settings": ["card_settings", "receipt_settings", "qr_rotation_settings", "notifications"],
+};
+
+type PageApiResult = { page: string; ok: boolean; failed: { table: string; code?: string; message?: string }[]; total: number };
+
 export default function Diagnostics() {
   const { isSuper, user, officeId, rolesLoaded } = useAuth();
   const { t } = useLang();
