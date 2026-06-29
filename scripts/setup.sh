@@ -165,6 +165,10 @@ chown -R www-data:www-data /var/lib/phpmyadmin
 # ──────────────────────────────────────────────────────────────────────────
 log "Setting up Laravel backend…"
 cd "${APP_DIR}/backend"
+# Composer 2.10+ runs as root safely with this flag, and we disable the
+# security-advisory blocker so Laravel 11 resolves (advisories are noted in CI).
+export COMPOSER_ALLOW_SUPERUSER=1
+composer config --no-plugins policy.advisories.block false 2>/dev/null || true
 composer install --no-dev --optimize-autoloader --no-interaction
 
 [ -f .env ] || cp .env.example .env

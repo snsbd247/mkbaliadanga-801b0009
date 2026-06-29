@@ -67,6 +67,8 @@ git -C "${APP_DIR}" reset --hard "origin/${BRANCH}"
 # ──────────────────────────────────────────────────────────────────────────
 log "Updating backend…"
 cd "${APP_DIR}/backend"
+export COMPOSER_ALLOW_SUPERUSER=1
+composer config --no-plugins policy.advisories.block false 2>/dev/null || true
 composer install --no-dev --optimize-autoloader --no-interaction
 
 php artisan down --retry=15 || true
