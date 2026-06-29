@@ -389,7 +389,8 @@ cat <<DONE
  🌐  Site         : https://${DOMAIN}
  🗄️  phpMyAdmin   : https://${DOMAIN}/${PMA_PATH}
        user: pma_admin   pass: ${PMA_PASS}
- 👤  App login    : ismail162 / Admin@123
+ 👤  Developer    : ismail162 / Admin@123
+ 👤  Super Admin  : suparadmin / Admin@123
  📄  Credentials  : ${CRED_FILE}
 ────────────────────────────────────────────────
  ⚠️  Change passwords after first login.
