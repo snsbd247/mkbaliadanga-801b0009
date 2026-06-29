@@ -168,6 +168,12 @@ cd "${APP_DIR}/backend"
 # Composer 2.10+ runs as root safely with this flag, and we disable the
 # security-advisory blocker so Laravel 11 resolves (advisories are noted in CI).
 export COMPOSER_ALLOW_SUPERUSER=1
+# Laravel's bootstrap/cache and storage subdirs are gitignored, so they may be
+# missing on a fresh clone. Composer's post-autoload scripts require them.
+mkdir -p bootstrap/cache \
+  storage/framework/{cache/data,sessions,views} \
+  storage/logs storage/app/public
+chmod -R 775 bootstrap/cache storage
 composer config --no-plugins policy.advisories.block false 2>/dev/null || true
 # Retry install: GitHub codeload (dist zips) occasionally returns HTTP 400/429.
 composer_install() {
