@@ -6,8 +6,8 @@ import { AccessDenied } from "./AccessDenied";
  * Even super admins are blocked.
  */
 export function RequireDeveloper({ children }: { children: React.ReactNode }) {
-  const { rolesLoaded, isDeveloper } = useAuth();
+  const { rolesLoaded, isDeveloper, isSuperAdmin } = useAuth();
   if (!rolesLoaded) return <div className="p-6 text-muted-foreground">Loading…</div>;
-  if (!isDeveloper) return <AccessDenied detail="Developer only" />;
+  if (!isDeveloper && !isSuperAdmin) return <AccessDenied detail="Developer only" />;
   return <>{children}</>;
 }
