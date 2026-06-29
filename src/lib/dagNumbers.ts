@@ -56,8 +56,8 @@ export function validateDagNumbers(input: string): DagValidation {
     return { ok: false, error: "দাগ নাম্বার আবশ্যক", values };
   }
   for (const v of values) {
-    if (v.length > 32) {
-      return { ok: false, error: `"${v}" — দাগ নাম্বার ৩২ অক্ষরের বেশি হতে পারবে না`, values };
+    if (v.length > 200) {
+      return { ok: false, error: `"${v}" — দাগ নাম্বার ২০০ অক্ষরের বেশি হতে পারবে না`, values };
     }
     if (!DAG_NUMBER_PATTERN.test(v)) {
       return {
