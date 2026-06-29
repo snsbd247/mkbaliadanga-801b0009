@@ -78,6 +78,7 @@ import ReceiptTemplate from "./pages/ReceiptTemplate";
 import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import UserRoles from "./pages/admin/UserRoles";
+import AdminVerify from "./pages/admin/AdminVerify";
 import MyPermissions from "./pages/admin/MyPermissions";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import InvoiceReport from "./pages/reports/InvoiceReport";
