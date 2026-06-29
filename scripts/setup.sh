@@ -176,7 +176,7 @@ ensure_laravel_runtime_dirs() {
     storage/framework/views \
     storage/logs \
     storage/app/public; do
-    rm -f "${dir}"
+    [ -f "${dir}" ] && rm -f "${dir}"
     install -d -m 0777 "${dir}"
   done
   chmod -R 0777 bootstrap/cache storage
