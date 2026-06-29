@@ -110,6 +110,7 @@ export default function PromiseDueReport() {
       { header: "Remarks", accessor: r => r.remarks ?? "" },
       { header: "Created At", accessor: r => r.created_at },
     ]);
+    auditExport("promise_due_report", { rows: filtered.length });
   }
 
   const statusBadge = (s: string) => {
