@@ -12,6 +12,7 @@ import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
