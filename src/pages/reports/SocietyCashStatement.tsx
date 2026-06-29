@@ -10,6 +10,7 @@ import { Printer, FileSpreadsheet } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import { computeSocietyStatement, computeBankSummary, incomeDrillDownUrl, expenseDrillDownUrl, incomingDrillDownUrl, type Line } from "@/lib/societyCashStatement";
 import { Link } from "react-router-dom";
 import { useLang } from "@/i18n/LanguageProvider";
@@ -115,6 +116,7 @@ export default function SocietyCashStatement() {
       { header: tx("Description", "বিবরন"), accessor: (r) => r.desc },
       { header: tx("Amount", "টাকা"), accessor: (r) => Number(r.amount || 0).toFixed(2) },
     ]);
+    auditExport("society_cash_statement", { from, to });
   };
 
   return (

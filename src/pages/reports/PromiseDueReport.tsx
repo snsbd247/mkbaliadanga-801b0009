@@ -12,6 +12,7 @@ import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
 import { money, fmtDate } from "@/lib/format";
 import { exportTablePDF, exportExcel } from "@/lib/exports";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
 
@@ -110,6 +111,7 @@ export default function PromiseDueReport() {
       { header: "Remarks", accessor: r => r.remarks ?? "" },
       { header: "Created At", accessor: r => r.created_at },
     ]);
+    auditExport("promise_due_report", { rows: filtered.length });
   }
 
   const statusBadge = (s: string) => {

@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { money, fmtDate } from "@/lib/format";
 import { useAuth } from "@/auth/AuthProvider";
 import { useLang } from "@/i18n/LanguageProvider";
+import { logAudit } from "@/lib/audit";
 
 type Table = "savings_transactions" | "loan_payments" | "loans" | "payments";
 
@@ -136,6 +137,12 @@ export default function Approvals() {
       patch.approved_at = new Date().toISOString();
       const { error } = await supabase.from(decision.table).update(patch).eq("id", decision.id);
       if (error) throw error;
+      await logAudit({
+        module: "other",
+        action_type: decision.status === "approved" ? "approve" : "reject",
+        reference_id: decision.id,
+        new_data: { table: decision.table, status: decision.status, note: comment.trim() || null },
+      });
       const statusLabel = decision.status === "approved" ? t("approved") : t("rejected");
       toast.success(t("markedAs").replace("{status}", statusLabel));
       setDecision(null);
@@ -160,6 +167,11 @@ export default function Approvals() {
       }
       const { error } = await supabase.from(bulk.table).update(patch).in("id", bulk.ids);
       if (error) throw error;
+      await logAudit({
+        module: "other",
+        action_type: bulk.status === "approved" ? "approve" : "reject",
+        new_data: { table: bulk.table, status: bulk.status, ids: bulk.ids, count: bulk.ids.length, note: comment.trim() || null },
+      });
       toast.success(`${bulk.ids.length} ${bulk.status === "approved" ? t("approved") : t("rejected")}`);
       setBulk(null);
       reload();

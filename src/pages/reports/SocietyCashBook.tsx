@@ -10,6 +10,7 @@ import { Printer, FileSpreadsheet } from "lucide-react";
 import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import {
   buildJamaRows, buildKharchRows, sumJama, sumKharch,
   type JamaRow, type KharchRow,
@@ -134,6 +135,7 @@ export default function SocietyCashBook() {
       { header: tx("Miscellaneous", "বিবিধ"), accessor: (r) => r.misc || "" },
       { header: tx("Total", "মোট"), accessor: (r) => r.total },
     ]);
+    auditExport("society_cashbook", { from, to });
   };
 
   return (

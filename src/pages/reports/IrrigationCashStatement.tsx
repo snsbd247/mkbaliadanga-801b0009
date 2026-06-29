@@ -12,6 +12,7 @@ import { useBranding } from "@/lib/branding";
 import { toBnDigits } from "@/lib/bnNumber";
 import { computeStatement, incomeDrillDownUrl, expenseDrillDownUrl, type Line } from "@/lib/irrigationCashStatement";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import { useLang } from "@/i18n/LanguageProvider";
 
 const sb = supabase as any;
@@ -111,6 +112,7 @@ export default function IrrigationCashStatement() {
       { header: tx("Description", "বিবরন"), accessor: (r) => r.desc },
       { header: tx("Amount", "টাকা"), accessor: (r) => Number(r.amount || 0).toFixed(2) },
     ]);
+    auditExport("irrigation_cash_statement", { from, to });
   };
 
 

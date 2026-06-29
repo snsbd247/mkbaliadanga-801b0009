@@ -18,6 +18,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { downloadCsv } from "@/lib/csvExport";
+import { auditExport } from "@/lib/audit";
 import { useLang } from "@/i18n/LanguageProvider";
 import { toast } from "sonner";
 import {
@@ -142,6 +143,7 @@ export default function IrrigationCashBookLedgerPage() {
       { header: tx("Credit", "খরচ"), accessor: (r: CashBookRow) => r.credit },
       { header: tx("Balance", "ব্যালেন্স"), accessor: (r: CashBookRow) => r.balance },
     ] as any);
+    auditExport("irrigation_cashbook_ledger", { office_id: officeId, rows: rows.length }, officeId);
   }
 
   function exportPdf() {
