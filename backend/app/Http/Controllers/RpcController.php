@@ -247,14 +247,16 @@ class RpcController extends Controller
                 return null;
             }
             $user = $request->user();
-            DB::table('developer_update_logs')->insert(array_filter([
+            $meta = isset($p['_meta']) ? json_encode($p['_meta']) : null;
+            DB::table('developer_update_logs')->insert([
                 'id'         => (string) Str::uuid(),
+                'user_id'    => $user->id ?? '00000000-0000-0000-0000-000000000000',
                 'action'     => $p['_action'] ?? 'unknown',
-                'blocked'    => ! empty($p['_blocked']),
-                'meta'       => isset($p['_meta']) ? json_encode($p['_meta']) : null,
-                'user_id'    => $user->id ?? null,
+                'repo_url'   => 'app://developer-access',
+                'note'       => trim(($p['_action'] ?? '') . ($meta ? " {$meta}" : '')),
+                'status'     => ! empty($p['_blocked']) ? 'blocked' : 'ok',
                 'created_at' => now(),
-            ], fn ($v) => $v !== null));
+            ]);
         } catch (\Throwable $e) {
             // Audit failures must never break the caller.
         }
