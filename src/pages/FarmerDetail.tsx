@@ -943,6 +943,10 @@ export default function FarmerDetail() {
         canonicalDag = dv.values.join(", ");
         dagNumbers = dv.values;
       }
+      if (!editForm.land_type_id) {
+        toast.error(tx("Please select a Field Type (land type)", "জমির ধরন (Field Type) নির্বাচন করুন"));
+        return;
+      }
       const { data, error } = await supabase.from("lands").update({
         mouza: (editLoc as any).mouza_name ?? "",
         division_id: (editLoc as any).division_id ?? null,
