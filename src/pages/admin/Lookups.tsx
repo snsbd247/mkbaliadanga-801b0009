@@ -61,13 +61,19 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
   }
 
   async function save() {
-    if (!form.code.trim() || !form.name.trim()) return toast.error(tx("Enter code and name", "কোড ও নাম দিন"));
+    const code = form.code.trim().toLowerCase().replace(/\s+/g, "_");
+    const name = (form.name_en?.trim() || form.name?.trim() || form.name_bn?.trim() || "");
+    if (!code) return toast.error(tx("Code is required", "কোড আবশ্যক"));
+    if (!/^[a-z0-9_]+$/.test(code)) return toast.error(tx("Code may only contain lowercase letters, numbers and underscore", "কোডে শুধু ছোট হাতের অক্ষর, সংখ্যা ও আন্ডারস্কোর ব্যবহার করা যাবে"));
+    if (!name) return toast.error(tx("Enter an English or Bangla name", "ইংরেজি বা বাংলা নাম দিন"));
+    const dup = rows.find((r) => r.code?.toLowerCase() === code && r.id !== form.id);
+    if (dup) return toast.error(tx(`Code "${code}" already exists`, `"${code}" কোড আগে থেকেই আছে`));
     setBusy(true);
     try {
       const payload = {
-        code: form.code.trim().toLowerCase().replace(/\s+/g, "_"),
-        name: form.name.trim(),
-        name_en: form.name_en?.trim() || form.name.trim(),
+        code,
+        name,
+        name_en: form.name_en?.trim() || name,
         name_bn: form.name_bn?.trim() || null,
         is_active: form.is_active,
         sort_order: Number(form.sort_order) || 0,
@@ -80,7 +86,7 @@ function LookupTable({ table, title }: { table: "irrigation_season_types" | "lan
       setOpen(false);
       load();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(e?.message || tx("Save failed", "সংরক্ষণ ব্যর্থ হয়েছে"));
     } finally { setBusy(false); }
   }
 
