@@ -53,6 +53,10 @@ class GenericTableController extends Controller
             $col = $f['column'] ?? null;
             $op = $f['op'] ?? 'eq';
             $val = $f['value'] ?? null;
+            if ($op === 'or') {
+                $this->applyOrFilter($query, $table, (string) $val);
+                continue;
+            }
             if (! $col || ! preg_match('/^[a-z0-9_]+$/i', $col)) {
                 continue;
             }
@@ -65,20 +69,99 @@ class GenericTableController extends Controller
             switch ($op) {
                 case 'eq':    $query->where($col, $val); break;
                 case 'neq':   $query->where($col, '!=', $val); break;
+                case 'not.eq': $query->where($col, '!=', $val); break;
+                case 'not.neq': $query->where($col, '=', $val); break;
                 case 'gt':    $query->where($col, '>', $val); break;
                 case 'gte':   $query->where($col, '>=', $val); break;
                 case 'lt':    $query->where($col, '<', $val); break;
                 case 'lte':   $query->where($col, '<=', $val); break;
                 case 'like':  $query->where($col, 'like', $val); break;
                 case 'ilike': $query->where($col, 'like', $val); break;
+                case 'not.like':
+                case 'not.ilike': $query->where($col, 'not like', $val); break;
                 case 'in':    $query->whereIn($col, (array) $val); break;
+                case 'not.in': $query->whereNotIn($col, (array) $val); break;
                 case 'is':
                     if ($val === null || $val === 'null') $query->whereNull($col);
                     else $query->where($col, $val);
                     break;
+                case 'not.is':
+                    if ($val === null || $val === 'null') $query->whereNotNull($col);
+                    else $query->where($col, '!=', $val);
+                    break;
                 default:      $query->where($col, $val);
             }
         }
+    }
+
+    private function splitOrExpression(string $expr): array
+    {
+        $parts = [];
+        $depth = 0;
+        $buf = '';
+        foreach (str_split($expr) as $ch) {
+            if ($ch === '(') $depth++;
+            if ($ch === ')') $depth = max(0, $depth - 1);
+            if ($ch === ',' && $depth === 0) {
+                if (trim($buf) !== '') $parts[] = trim($buf);
+                $buf = '';
+                continue;
+            }
+            $buf .= $ch;
+        }
+        if (trim($buf) !== '') $parts[] = trim($buf);
+        return $parts;
+    }
+
+    private function applyOrFilter($query, string $table, string $expr): void
+    {
+        $clauses = $this->splitOrExpression($expr);
+        if (empty($clauses)) return;
+
+        $query->where(function ($or) use ($clauses, $table) {
+            $applied = false;
+            foreach ($clauses as $clause) {
+                $bits = explode('.', $clause, 3);
+                if (count($bits) < 3) continue;
+                [$col, $op, $raw] = $bits;
+                if ($op === 'not') {
+                    $more = explode('.', $raw, 2);
+                    if (count($more) < 2) continue;
+                    $op = 'not.'.$more[0];
+                    $raw = $more[1];
+                }
+                if (! preg_match('/^[a-z0-9_]+$/i', $col) || ! Schema::hasColumn($table, $col)) {
+                    continue;
+                }
+                $val = $raw === 'null' ? null : $raw;
+                $method = $applied ? 'orWhere' : 'where';
+                switch ($op) {
+                    case 'eq': $or->{$method}($col, $val); break;
+                    case 'neq':
+                    case 'not.eq': $or->{$method}($col, '!=', $val); break;
+                    case 'gt': $or->{$method}($col, '>', $val); break;
+                    case 'gte': $or->{$method}($col, '>=', $val); break;
+                    case 'lt': $or->{$method}($col, '<', $val); break;
+                    case 'lte': $or->{$method}($col, '<=', $val); break;
+                    case 'like':
+                    case 'ilike': $or->{$method}($col, 'like', $val); break;
+                    case 'in':
+                        $vals = preg_match('/^\((.*)\)$/', $raw, $m) ? explode(',', $m[1]) : explode(',', $raw);
+                        $applied ? $or->orWhereIn($col, $vals) : $or->whereIn($col, $vals);
+                        break;
+                    case 'is':
+                        if ($val === null) $applied ? $or->orWhereNull($col) : $or->whereNull($col);
+                        else $or->{$method}($col, $val);
+                        break;
+                    case 'not.is':
+                        if ($val === null) $applied ? $or->orWhereNotNull($col) : $or->whereNotNull($col);
+                        else $or->{$method}($col, '!=', $val);
+                        break;
+                    default: continue 2;
+                }
+                $applied = true;
+            }
+        });
     }
 
     private function scope(Request $request, $query, string $table): void
