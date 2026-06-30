@@ -306,6 +306,7 @@ const STR = {
     totalSav: "জমাকৃত পরিমাণ:",
     totalLoan: "প্রাপ্ত কিস্তি:",
     totalIrr: "মোট আদায়ের পরিমাণ:",
+    discount: "ছাড় (ডিসকাউন্ট):",
     remark: "রিমার্ক/নোট:",
     memberSig: "সদস্যের স্বাক্ষর",
     collectorSig: "আদায়কারীর স্বাক্ষর",
