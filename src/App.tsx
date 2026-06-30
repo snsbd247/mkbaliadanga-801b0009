@@ -310,6 +310,8 @@ const App = () => (
                 <Route path="/backup" element={<RequireDeveloper><Backup /></RequireDeveloper>} />
                 <Route path="/audit" element={<RequireDeveloper><AuditLogs /></RequireDeveloper>} />
                 <Route path="/diagnostics" element={<RequireDeveloper><Diagnostics /></RequireDeveloper>} />
+                <Route path="/dev/files" element={<RequireDeveloper><FileManager /></RequireDeveloper>} />
+                <Route path="/dev/update" element={<RequireDeveloper><SystemUpdate /></RequireDeveloper>} />
                 <Route path="/accounts" element={<RequirePerm module="accounting"><Accounts /></RequirePerm>} />
                 <Route path="/ledger" element={<RequirePerm module="accounting"><Ledger /></RequirePerm>} />
                 <Route path="/financial-reports" element={<RequirePerm module="accounting"><FinancialReports /></RequirePerm>} />
