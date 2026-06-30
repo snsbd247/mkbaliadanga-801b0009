@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => CheckPermission::class,
             'branch.scope' => BranchScope::class,
+            'developer' => \App\Http\Middleware\RequireDeveloper::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
