@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
-import { postIrrigationDiscount, takeLastImbalance, checkRequiredAccounts } from "@/lib/accountingPosting";
+import { postIrrigationDiscount, takeLastImbalance, checkRequiredAccounts, formatImbalance } from "@/lib/accountingPosting";
 import { resolveRowMouzaName } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
