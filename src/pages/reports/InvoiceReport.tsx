@@ -183,6 +183,8 @@ export default function InvoiceReport() {
                 <TableHead>{tx("Mouza/Dag", "মৌজা/দাগ")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead>{tx("Type", "ধরন")}</TableHead>
+                <TableHead className="text-right">{tx("Discount", "ডিসকাউন্ট")}</TableHead>
+                <TableHead>{tx("Discount reason", "ডিসকাউন্টের কারণ")}</TableHead>
                 <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
                 <TableHead className="text-right">{tx("Paid", "জমা")}</TableHead>
                 <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
