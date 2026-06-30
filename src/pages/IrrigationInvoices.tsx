@@ -1125,6 +1125,12 @@ function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: a
           <Row k={tx("Canal charge", "খাল/নালা চার্জ")} v={money(inv.canal_amount)} />
           <Row k={tx("Other", "অন্যান্য")} v={money(inv.other_charge)} />
           <Row k={tx("Late fee", "বিলম্ব ফি")} v={money(inv.delay_fee)} />
+          {Number(inv.discount_amount) > 0 && (
+            <Row k={tx("Discount", "ডিসকাউন্ট")} v={`- ${money(inv.discount_amount)}`} />
+          )}
+          {Number(inv.discount_amount) > 0 && inv.discount_reason && (
+            <Row k={tx("Discount reason", "ডিসকাউন্টের কারণ")} v={inv.discount_reason} />
+          )}
           <hr />
           <Row k={tx("Total payable", "মোট প্রদেয়")} v={money(inv.payable_amount)} bold />
           <Row k={tx("Paid", "পরিশোধিত")} v={money(inv.paid_amount)} />
@@ -1455,6 +1461,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             delay_fee: calc.delay_fee,
             other_charge: calc.other_charge,
             payable_amount: calc.payable_amount,
+            discount_amount: 0,
+            discount_reason: null,
             paid_amount: 0,
             due_date: dueDate,
             invoice_status: "generated",

@@ -992,6 +992,7 @@ export default function Payments() {
                                   penalty_amount: irrEnriched.penalty_amount,
                                   maintenance_charge: irrEnriched.maintenance_charge,
                                   canal_charge: irrEnriched.canal_charge,
+                                  discount_amount: irrEnriched.discount_amount,
                                   total_outstanding: irrEnriched.total_outstanding,
                                   collected_from_outstanding: irrEnriched.collected_from_outstanding,
                                   remark: irrEnriched.remark,
