@@ -144,6 +144,7 @@ export function buildExportTotalsRow(invoices: any[], lang: Lang = "bn") {
   const sum = (k: string) => r(invoices.reduce((acc, inv) => acc + (Number(inv[k]) || 0), 0));
   return {
     [L.invoiceNo]: lang === "en" ? `Grand total (${invoices.length})` : `সর্বমোট (${invoices.length})`,
+    [L.discount]: sum("discount_amount"),
     [L.payable]: sum("payable_amount"),
     [L.paid]: sum("paid_amount"),
     [L.due]: sum("due_amount"),
