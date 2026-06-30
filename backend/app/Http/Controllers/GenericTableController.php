@@ -225,10 +225,14 @@ class GenericTableController extends Controller
         $prepared = [];
         foreach ($rows as $row) {
             $row = (array) $row;
-            // Reject unknown / malformed column names to block SQL surprises.
+            // Drop columns that don't exist on this table (schema drift between
+            // the React app and MySQL) instead of failing the whole insert.
             foreach (array_keys($row) as $col) {
-                if (! preg_match('/^[a-z0-9_]+$/i', (string) $col) || ! Schema::hasColumn($table, $col)) {
+                if (! preg_match('/^[a-z0-9_]+$/i', (string) $col)) {
                     abort(422, "অবৈধ কলাম: $col");
+                }
+                if (! Schema::hasColumn($table, $col)) {
+                    unset($row[$col]);
                 }
             }
             if (Schema::hasColumn($table, 'id') && empty($row['id'])) {
