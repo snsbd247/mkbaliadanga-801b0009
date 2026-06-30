@@ -67,11 +67,12 @@ export function LoanStatement({ loanId }: { loanId: string }) {
                 <TableCell className="text-xs">{p.receipt_no || "—"}</TableCell>
                 <TableCell className="text-right font-mono">{money(p.principal_amount ?? p.amount)}</TableCell>
                 <TableCell className="text-right font-mono">{money(p.interest_amount ?? 0)}</TableCell>
+                <TableCell className="text-right font-mono">{money(p.discount_amount ?? 0)}</TableCell>
                 <TableCell className="text-right font-mono">{money(p.amount)}</TableCell>
                 <TableCell><Badge variant="secondary">{p.status || "approved"}</Badge></TableCell>
               </TableRow>
             ))}
-            {pays.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">{tx("No payments yet", "কোনো পরিশোধ নেই")}</TableCell></TableRow>}
+            {pays.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">{tx("No payments yet", "কোনো পরিশোধ নেই")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
