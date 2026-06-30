@@ -49,6 +49,12 @@ export function PermanentDeleteDialog({
     const { data, error } = await db.rpc("farmer_delete_precheck", { _farmer_id: farmerId });
     setLoading(false);
     if (error) {
+      setCheck({
+        ok: false,
+        can_delete: false,
+        items: undefined,
+        message: `প্রিচেক API ব্যর্থ হয়েছে: ${error.message}`,
+      });
       toast.error(error.message);
       return;
     }
@@ -98,7 +104,7 @@ export function PermanentDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>ফার্মার পারমানেন্ট ডিলিট?</AlertDialogTitle>
           <AlertDialogDescription>
-            এটি ফার্মারকে ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলবে। শুধুমাত্র কোনো লেনদেন না থাকলে সম্ভব। এটি ফিরিয়ে আনা যাবে না।
+            এটি ফার্মারকে ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলবে। লেনদেন থাকলে শুধুমাত্র ডেভেলপার রোল ক্যাসকেড ডিলিট করতে পারবেন। এটি ফিরিয়ে আনা যাবে না।
           </AlertDialogDescription>
         </AlertDialogHeader>
 
