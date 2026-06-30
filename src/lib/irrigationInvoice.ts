@@ -147,10 +147,13 @@ export function calcInvoice(input: InvoiceCalcInput): InvoiceCalcResult {
 
   let delay_fee = 0;
   if (is_overdue && input.settings.auto_apply_delay_fee) {
-    delay_fee = r2(((irrigation + maintenance + canal) * n(input.settings.delay_fee_percent)) / 100);
+    // Canal & maintenance excluded from delay-fee base (not billed to farmer).
+    delay_fee = r2((irrigation * n(input.settings.delay_fee_percent)) / 100);
   }
 
-  const payable = r2(irrigation + maintenance + canal + delay_fee + other);
+  // Canal & maintenance charges are NOT added to the payable amount —
+  // they previously inflated the total above the actual land (irrigation) charge.
+  const payable = r2(irrigation + delay_fee + other);
   const paid = Math.min(r2(n(input.paid_amount)), payable);
   const due = r2(payable - paid);
 
