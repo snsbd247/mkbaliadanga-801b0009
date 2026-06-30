@@ -41,10 +41,24 @@ class GenericTableController extends Controller
         if (in_array($table, self::DENY, true)) {
             abort(403, "এই টেবিল ($table) সরাসরি ব্যবহার করা যাবে না।");
         }
-        if (! Schema::hasTable($table)) {
+        if (! Schema::hasTable($table) && ! $this->viewExists($table)) {
             abort(404, "টেবিল পাওয়া যায়নি: $table");
         }
         return $table;
+    }
+
+    /** MySQL views are not always reported by Schema::hasTable(), so check information_schema directly. */
+    private function viewExists(string $table): bool
+    {
+        try {
+            $rows = DB::select(
+                'SELECT 1 FROM information_schema.views WHERE table_schema = DATABASE() AND table_name = ? LIMIT 1',
+                [$table]
+            );
+            return ! empty($rows);
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     private function applyFilters($query, string $table, array $filters): void
