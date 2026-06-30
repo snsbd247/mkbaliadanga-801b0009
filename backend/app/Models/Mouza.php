@@ -10,6 +10,6 @@ class Mouza extends Model
     use HasUuids;
     protected $keyType = 'string';
     public $incrementing = false;
-    protected $fillable = ['union_id', 'name', 'bn_name', 'jl_no', 'extra'];
+    protected $fillable = ['union_id', 'name', 'name_bn', 'jl_no', 'extra'];
     protected $casts = ['extra' => 'array'];
 }
