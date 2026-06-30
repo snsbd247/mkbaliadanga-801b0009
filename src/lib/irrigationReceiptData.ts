@@ -225,6 +225,7 @@ export async function buildIrrigationReceiptEnrichment(
       0,
     ),
     canal_charge: invoiceRows.reduce((s, inv) => s + Number(inv?.canal_amount || 0), 0),
+    discount_amount: invoiceRows.reduce((s, inv) => s + Number(inv?.discount_amount || 0), 0),
     total_outstanding: totalOutstanding,
     collected_from_outstanding: collectedFromOutstanding || Number(paymentAmount || 0),
     remark: paymentNote ?? primaryCharge?.invoice_no ?? null,
