@@ -42,7 +42,7 @@ export default function InvoiceReport() {
     setLoading(true);
     (async () => {
       let q = db.from("irrigation_invoices").select(
-        "id,invoice_no,is_borga,payable_amount,paid_amount,due_amount,delay_fee,irrigation_amount,maintenance_amount,canal_amount,due_date,invoice_status,office_id,season_id,generated_at,cancelled_at,cancel_reason," +
+        "id,invoice_no,is_borga,payable_amount,paid_amount,due_amount,delay_fee,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,due_date,invoice_status,office_id,season_id,generated_at,cancelled_at,cancel_reason," +
         "farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,mobile)," +
         "lands(mouza,dag_no,land_size)," +
         "seasons(name,year,type)"
