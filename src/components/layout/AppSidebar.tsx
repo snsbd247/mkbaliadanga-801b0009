@@ -7,7 +7,7 @@ import {
   HandCoins, Droplets, Receipt, FileBarChart, ShieldCheck, ScrollText, Sprout,
   ScanLine, Settings as SettingsIcon, BookOpen, FileText, AlertTriangle, Database,
   BookText, Calculator, TrendingUp, ClipboardCheck, BookKey, ShieldAlert, Lock, PieChart, MessageSquare, MessagesSquare, MapPin,
-  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload, Package, HelpCircle, History,
+  ChevronRight, Briefcase, Banknote, BarChart3, Shield, RefreshCw, IdCard, Upload, Package, HelpCircle, History, FolderTree, GitBranch,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -224,6 +224,8 @@ export function AppSidebar() {
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
         { url: "/diagnostics", icon: ShieldAlert, label: t("diagnostics" as any), developerOnly: true },
+        { url: "/dev/files", icon: FolderTree, label: "ফাইল ম্যানাজার", developerOnly: true },
+        { url: "/dev/update", icon: GitBranch, label: "সফটওয়্যার আপডেট", developerOnly: true },
       ],
     },
 

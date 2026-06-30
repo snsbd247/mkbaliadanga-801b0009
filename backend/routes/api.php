@@ -26,6 +26,7 @@ use App\Http\Controllers\GenericTableController;
 use App\Http\Controllers\RpcController;
 use App\Http\Controllers\FunctionController;
 use App\Http\Controllers\StorageController;
+use App\Http\Controllers\DeveloperToolsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -205,6 +206,17 @@ Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     // Storage gateway (Supabase Storage replacement)
     Route::post('/storage/upload', [StorageController::class, 'upload']);
     Route::post('/storage/remove', [StorageController::class, 'remove']);
+});
+
+// ── Developer-only tools: file manager + GitHub self-update ───────────
+Route::middleware(['auth:sanctum', 'developer'])->prefix('dev')->group(function () {
+    Route::get('/files', [DeveloperToolsController::class, 'list']);
+    Route::post('/files/read', [DeveloperToolsController::class, 'read']);
+    Route::post('/files/write', [DeveloperToolsController::class, 'write']);
+
+    Route::get('/git/status', [DeveloperToolsController::class, 'gitStatus']);
+    Route::post('/git/remote', [DeveloperToolsController::class, 'setRemote']);
+    Route::post('/git/pull', [DeveloperToolsController::class, 'pull']);
 });
 
 // ── Farmer portal (self-service: code login or phone + OTP) ───────────
