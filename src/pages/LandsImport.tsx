@@ -349,7 +349,7 @@ export default function LandsImport() {
 
   return (
     <>
-      <PageHeader title="জমি ইমপোর্ট" subtitle="নিজের চাষ ও বর্গা জমি একসাথে আপলোড করুন" />
+      <PageHeader title="জমি ইমপোর্ট" description="নিজের চাষ ও বর্গা জমি একসাথে আপলোড করুন" />
 
       <Card className="p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-2">
