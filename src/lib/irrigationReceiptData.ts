@@ -52,6 +52,7 @@ export interface IrrigationEnriched {
   penalty_amount: number;
   maintenance_charge: number;
   canal_charge: number;
+  discount_amount: number;
   total_outstanding: number;
   collected_from_outstanding: number;
   remark: string | null;
