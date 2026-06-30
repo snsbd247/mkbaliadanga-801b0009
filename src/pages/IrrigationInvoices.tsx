@@ -866,6 +866,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const [dueDate, setDueDate] = useState("");
   const [otherCharge, setOtherCharge] = useState("0");
   const [delayFee, setDelayFee] = useState("0");
+  const [discount, setDiscount] = useState("0");
+  const [discountReason, setDiscountReason] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -874,6 +876,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     setDueDate(inv.due_date ?? "");
     setOtherCharge(String(inv.other_charge ?? 0));
     setDelayFee(String(inv.delay_fee ?? 0));
+    setDiscount(String(inv.discount_amount ?? 0));
+    setDiscountReason(inv.discount_reason ?? "");
     setNote(inv.note ?? "");
   }, [inv?.id]);
 
@@ -882,10 +886,15 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   async function save() {
     const oc = Number(otherCharge) || 0;
     const df = Number(delayFee) || 0;
-    if (oc < 0 || df < 0) return toast.error(tx("Negative values not allowed", "ঋণাত্মক মান দেওয়া যাবে না"));
+    const disc = Number(discount) || 0;
+    if (oc < 0 || df < 0 || disc < 0) return toast.error(tx("Negative values not allowed", "ঋণাত্মক মান দেওয়া যাবে না"));
     if (!dueDate) return toast.error(tx("Enter due date", "মেয়াদ তারিখ দিন"));
+    const gross = Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + oc + df;
+    if (disc > gross) return toast.error(tx("Discount cannot exceed invoice amount", "ডিসকাউন্ট ইনভয়েসের পরিমাণের বেশি হতে পারে না"));
+    const originalDisc = Number(inv.discount_amount ?? 0);
+    if (disc !== originalDisc && !discountReason.trim()) return toast.error(tx("Enter a discount reason", "ডিসকাউন্টের কারণ লিখুন"));
     setBusy(true);
-    const payable = Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + oc + df;
+    const payable = Math.max(0, gross - disc);
     const due = Math.max(0, payable - Number(inv.paid_amount ?? 0));
     const newStatus =
       inv.invoice_status === "cancelled" ? inv.invoice_status :
@@ -898,6 +907,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         due_date: dueDate,
         other_charge: oc,
         delay_fee: df,
+        discount_amount: disc,
+        discount_reason: discountReason.trim() || null,
         note: note || null,
         payable_amount: payable,
         due_amount: due,
@@ -923,6 +934,16 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         new_data: { delay_fee: df, source: "invoice_edit", reason: note || null },
       });
     }
+    if (disc !== originalDisc) {
+      logAudit({
+        module: "irrigation_invoice_discount",
+        action_type: "discount",
+        office_id: inv.office_id ?? null,
+        reference_id: inv.id,
+        old_data: { discount_amount: originalDisc, payable_amount: inv.payable_amount },
+        new_data: { discount_amount: disc, payable_amount: payable, reason: discountReason.trim() || null },
+      });
+    }
     toast.success(tx("Invoice updated", "ইনভয়েস হালনাগাদ হয়েছে"));
     onSaved?.(); onClose();
   }
@@ -946,6 +967,19 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
               <Input type="number" min="0" step="0.01" value={delayFee} onChange={(e) => setDelayFee(e.target.value)} />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{tx("Discount", "ডিসকাউন্ট")}</Label>
+              <Input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} />
+            </div>
+            <div>
+              <Label>{tx("Discount reason", "ডিসকাউন্টের কারণ")}</Label>
+              <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder={tx("Required when discounting", "ডিসকাউন্ট দিলে আবশ্যক")} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {tx("Payable after discount", "ডিসকাউন্টের পর প্রদেয়")}: <span className="font-medium text-foreground">{money(Math.max(0, Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + (Number(otherCharge) || 0) + (Number(delayFee) || 0) - (Number(discount) || 0)))}</span>
+          </p>
           <div>
             <Label>{tx("Note", "মন্তব্য")}</Label>
             <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
