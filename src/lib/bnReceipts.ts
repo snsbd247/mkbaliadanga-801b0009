@@ -103,6 +103,7 @@ export interface BnReceiptData {
   canal_charge?: number | null;                // নালা চার্জ
   total_outstanding?: number | null;           // বকেয়া (whole ledger)
   collected_from_outstanding?: number | null;  // বকেয়া থেকে সংগৃহীত
+  discount_amount?: number | null;             // ছাড়/ডিসকাউন্ট (হাল চার্জ থেকে)
   remark?: string | null;                      // রিমার্ক/নোট
 
   /** Irrigation receipt — extra layout fields matching the official রশিদ design */
