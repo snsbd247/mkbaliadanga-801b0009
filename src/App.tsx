@@ -79,6 +79,7 @@ import CardDesigner from "./pages/CardDesigner";
 import RoleMatrix from "./pages/admin/RoleMatrix";
 import UserRoles from "./pages/admin/UserRoles";
 import AdminVerify from "./pages/admin/AdminVerify";
+import DeletedFarmers from "./pages/admin/DeletedFarmers";
 import MyPermissions from "./pages/admin/MyPermissions";
 import IrrigationDueReport from "./pages/reports/IrrigationDueReport";
 import InvoiceReport from "./pages/reports/InvoiceReport";
@@ -236,6 +237,7 @@ const App = () => (
                 <Route path="/offices" element={<RequirePerm module="offices"><Offices /></RequirePerm>} />
                 <Route path="/farmers" element={<RequirePerm module="farmers"><Farmers /></RequirePerm>} />
                 <Route path="/admin/farmer-merge" element={<RequireRole roles={["admin","super_admin"]}><FarmerMerge /></RequireRole>} />
+                <Route path="/admin/deleted-farmers" element={<RequireRole roles={["super_admin"]}><DeletedFarmers /></RequireRole>} />
                 <Route path="/voters" element={<RequirePerm module="farmers"><VoterList /></RequirePerm>} />
                 <Route path="/farmers/:id" element={<RequirePerm module="farmers"><FarmerDetail /></RequirePerm>} />
                 <Route path="/farmers/:id/report" element={<RequirePerm module="farmers"><FarmerProfileReport /></RequirePerm>} />

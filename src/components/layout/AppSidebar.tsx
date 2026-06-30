@@ -58,6 +58,7 @@ export function AppSidebar() {
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
         { url: "/admin/farmer-merge", icon: Users, label: t("farmerMerge" as any) || "Farmer Merge", adminOnly: true },
+        { url: "/admin/deleted-farmers", icon: FileBarChart, label: "ডিলিট রিপোর্ট", superOnly: true },
         { url: "/admin/patwaris", icon: Users, label: t("patwaris"), adminOnly: true },
         { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
         { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
