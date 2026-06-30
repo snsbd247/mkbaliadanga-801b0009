@@ -40,6 +40,8 @@ export function PermanentDeleteDialog({
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [check, setCheck] = useState<Precheck | null>(null);
+  const [cascade, setCascade] = useState(false);
+  const { isDeveloper } = useAuth();
 
   async function runPrecheck() {
     setLoading(true);
