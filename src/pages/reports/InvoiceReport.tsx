@@ -42,7 +42,7 @@ export default function InvoiceReport() {
     setLoading(true);
     (async () => {
       let q = db.from("irrigation_invoices").select(
-        "id,invoice_no,is_borga,payable_amount,paid_amount,due_amount,delay_fee,irrigation_amount,maintenance_amount,canal_amount,due_date,invoice_status,office_id,season_id,generated_at,cancelled_at,cancel_reason," +
+        "id,invoice_no,is_borga,payable_amount,paid_amount,due_amount,delay_fee,discount_amount,discount_reason,irrigation_amount,maintenance_amount,canal_amount,due_date,invoice_status,office_id,season_id,generated_at,cancelled_at,cancel_reason," +
         "farmers!irrigation_invoices_farmer_id_fkey(name_en,farmer_code,mobile)," +
         "lands(mouza,dag_no,land_size)," +
         "seasons(name,year,type)"
@@ -79,13 +79,15 @@ export default function InvoiceReport() {
       paid: a.paid + Number(r.paid_amount || 0),
       due: a.due + Number(r.due_amount || 0),
       delay: a.delay + Number(r.delay_fee || 0),
+      discount: a.discount + Number(r.discount_amount || 0),
     }),
-    { payable: 0, paid: 0, due: 0, delay: 0 },
+    { payable: 0, paid: 0, due: 0, delay: 0, discount: 0 },
   ), [filtered]);
 
   const head = [
     tx("Invoice", "ইনভয়েস"), tx("Farmer", "কৃষক"), tx("Mouza/Dag", "মৌজা/দাগ"),
     tx("Season", "সিজন"), tx("Type", "ধরন"),
+    tx("Discount", "ডিসকাউন্ট"), tx("Discount reason", "ডিসকাউন্টের কারণ"),
     tx("Payable", "প্রদেয়"), tx("Paid", "জমা"), tx("Due", "বকেয়া"),
     tx("Late fee", "বিলম্ব ফি"), tx("Status", "অবস্থা"),
   ];
@@ -95,6 +97,7 @@ export default function InvoiceReport() {
     `${r.lands?.mouza ?? ""}/${formatDagNumbers(r.lands?.dag_no)}`,
     r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—",
     r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ"),
+    money(r.discount_amount), r.discount_reason ?? "",
     money(r.payable_amount), money(r.paid_amount), money(r.due_amount), money(r.delay_fee),
     r.invoice_status,
   ]);
@@ -163,6 +166,7 @@ export default function InvoiceReport() {
                   Mouza: r.lands?.mouza, Dag: formatDagNumbers(r.lands?.dag_no),
                   Season: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "",
                   Type: r.is_borga ? "Borga" : "Own",
+                  Discount: r.discount_amount ?? 0, DiscountReason: r.discount_reason ?? "",
                   Payable: r.payable_amount, Paid: r.paid_amount, Due: r.due_amount,
                   DelayFee: r.delay_fee, Status: r.invoice_status, DueDate: r.due_date,
                 })),
@@ -179,6 +183,8 @@ export default function InvoiceReport() {
                 <TableHead>{tx("Mouza/Dag", "মৌজা/দাগ")}</TableHead>
                 <TableHead>{tx("Season", "সিজন")}</TableHead>
                 <TableHead>{tx("Type", "ধরন")}</TableHead>
+                <TableHead className="text-right">{tx("Discount", "ডিসকাউন্ট")}</TableHead>
+                <TableHead>{tx("Discount reason", "ডিসকাউন্টের কারণ")}</TableHead>
                 <TableHead className="text-right">{tx("Payable", "প্রদেয়")}</TableHead>
                 <TableHead className="text-right">{tx("Paid", "জমা")}</TableHead>
                 <TableHead className="text-right">{tx("Due", "বকেয়া")}</TableHead>
@@ -194,6 +200,8 @@ export default function InvoiceReport() {
                   <TableCell className="text-xs">{r.lands?.mouza}/{formatDagNumbers(r.lands?.dag_no)}</TableCell>
                   <TableCell className="text-xs">{r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—"}</TableCell>
                   <TableCell><Badge variant={r.is_borga ? "secondary" : "outline"}>{r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ")}</Badge></TableCell>
+                  <TableCell className="text-right">{money(r.discount_amount)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate" title={r.discount_reason ?? ""}>{r.discount_reason ?? "—"}</TableCell>
                   <TableCell className="text-right">{money(r.payable_amount)}</TableCell>
                   <TableCell className="text-right text-success">{money(r.paid_amount)}</TableCell>
                   <TableCell className="text-right text-destructive font-semibold">{money(r.due_amount)}</TableCell>
@@ -202,12 +210,13 @@ export default function InvoiceReport() {
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{tx("No data", "কোন তথ্য নেই")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{tx("No data", "কোন তথ্য নেই")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
           {filtered.length > 0 && (
             <div className="mt-3 flex flex-wrap justify-end gap-6 text-sm">
+              <div>{tx("Discount", "ডিসকাউন্ট")}: <span className="font-semibold">{money(totals.discount)}</span></div>
               <div>{tx("Payable", "প্রদেয়")}: <span className="font-semibold">{money(totals.payable)}</span></div>
               <div>{tx("Paid", "জমা")}: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
               <div>{tx("Due", "বকেয়া")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
