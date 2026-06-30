@@ -216,6 +216,7 @@ export default function InvoiceReport() {
           </Table>
           {filtered.length > 0 && (
             <div className="mt-3 flex flex-wrap justify-end gap-6 text-sm">
+              <div>{tx("Discount", "ডিসকাউন্ট")}: <span className="font-semibold">{money(totals.discount)}</span></div>
               <div>{tx("Payable", "প্রদেয়")}: <span className="font-semibold">{money(totals.payable)}</span></div>
               <div>{tx("Paid", "জমা")}: <span className="font-semibold text-success">{money(totals.paid)}</span></div>
               <div>{tx("Due", "বকেয়া")}: <span className="font-semibold text-destructive">{money(totals.due)}</span></div>
