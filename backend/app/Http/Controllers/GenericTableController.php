@@ -96,6 +96,56 @@ class GenericTableController extends Controller
         }
     }
 
+    /**
+     * Bridge frontend/Supabase column names to legacy Laravel/MySQL aliases.
+     *
+     * This is intentionally additive: when the new column exists we keep it,
+     * and when the old required alias exists we mirror the value into it. That
+     * prevents NOT NULL failures on older VPS schemas while preserving all new
+     * data for migrated schemas.
+     */
+    private function normalizeWriteRow(string $table, array $row): array
+    {
+        if ($table !== 'farmers') {
+            return $row;
+        }
+
+        $copy = function (array &$row, string $from, string $to): void {
+            if (! array_key_exists($from, $row) || array_key_exists($to, $row)) {
+                return;
+            }
+            if (Schema::hasColumn('farmers', $to)) {
+                $row[$to] = $row[$from];
+            }
+        };
+
+        $copy($row, 'name_en', 'name');
+        $copy($row, 'name', 'name_en');
+        $copy($row, 'mobile', 'phone');
+        $copy($row, 'phone', 'mobile');
+
+        // Farmer ID is called member_no/farmer_code in the frontend and code in
+        // the original Laravel table. Keep all aliases in sync on writes.
+        foreach (['member_no', 'farmer_code', 'code'] as $source) {
+            if (! array_key_exists($source, $row) || $row[$source] === null || $row[$source] === '') {
+                continue;
+            }
+            foreach (['member_no', 'farmer_code', 'code'] as $target) {
+                if ($target !== $source && ! array_key_exists($target, $row) && Schema::hasColumn('farmers', $target)) {
+                    $row[$target] = $row[$source];
+                }
+            }
+            break;
+        }
+
+        // Last-resort protection for older databases where `name` is NOT NULL.
+        if (Schema::hasColumn('farmers', 'name') && (! array_key_exists('name', $row) || $row['name'] === null || $row['name'] === '')) {
+            $row['name'] = $row['name_en'] ?? $row['name_bn'] ?? 'Unnamed Farmer';
+        }
+
+        return $row;
+    }
+
     /** Parse a supabase-style select string, returning [columns, embeds]. */
     private function parseSelect(?string $select): array
     {
@@ -224,7 +274,7 @@ class GenericTableController extends Controller
 
         $prepared = [];
         foreach ($rows as $row) {
-            $row = (array) $row;
+            $row = $this->normalizeWriteRow($table, (array) $row);
             // Drop columns that don't exist on this table (schema drift between
             // the React app and MySQL) instead of failing the whole insert.
             foreach (array_keys($row) as $col) {
@@ -263,7 +313,7 @@ class GenericTableController extends Controller
     public function update(Request $request, string $table): JsonResponse
     {
         $table = $this->table($table);
-        $values = (array) $request->input('values', []);
+        $values = $this->normalizeWriteRow($table, (array) $request->input('values', []));
         $filters = $request->input('filters', []);
 
         // Safety: never allow an unfiltered mass-update (would rewrite the
