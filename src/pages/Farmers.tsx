@@ -23,6 +23,7 @@ import { normalizeFarmerCode } from "@/lib/farmerCode";
 import { parseDagSearchTokens } from "@/lib/dagNumbers";
 import { formatId5 } from "@/lib/idFormat";
 import { useUnsavedFormGuard } from "@/hooks/useUnsavedFormGuard";
+import { PermanentDeleteDialog } from "@/components/farmers/PermanentDeleteDialog";
 
 const FARMER_TEMPLATE_HEADERS = [
   "name_en", "name_bn", "father_name", "mother_name", "nid", "mobile",
