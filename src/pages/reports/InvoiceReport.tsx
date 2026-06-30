@@ -166,6 +166,7 @@ export default function InvoiceReport() {
                   Mouza: r.lands?.mouza, Dag: formatDagNumbers(r.lands?.dag_no),
                   Season: r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "",
                   Type: r.is_borga ? "Borga" : "Own",
+                  Discount: r.discount_amount ?? 0, DiscountReason: r.discount_reason ?? "",
                   Payable: r.payable_amount, Paid: r.paid_amount, Due: r.due_amount,
                   DelayFee: r.delay_fee, Status: r.invoice_status, DueDate: r.due_date,
                 })),
