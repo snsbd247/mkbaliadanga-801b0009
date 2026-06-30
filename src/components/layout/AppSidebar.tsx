@@ -58,7 +58,7 @@ export function AppSidebar() {
         { url: "/admin/bulk-cards", icon: IdCard, label: t("bulkCards"), permKey: "farmers" },
         { url: "/admin/id-review", icon: IdCard, label: t("idReview"), permKey: "farmers" },
         { url: "/admin/farmer-merge", icon: Users, label: t("farmerMerge" as any) || "Farmer Merge", adminOnly: true },
-        { url: "/admin/deleted-farmers", icon: FileBarChart, label: "ডিলিট রিপোর্ট", superOnly: true },
+        { url: "/admin/deleted-farmers", icon: FileBarChart, label: lang === "bn" ? "ডিলিট রিপোর্ট" : "Delete Report", superOnly: true },
         { url: "/admin/patwaris", icon: Users, label: t("patwaris"), adminOnly: true },
         { url: "/voters", icon: Users, label: t("voterList"), permKey: "farmers" },
         { url: "/voters/history", icon: FileBarChart, label: t("voterHistory"), permKey: "farmers" },
@@ -178,7 +178,7 @@ export function AppSidebar() {
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
-        { url: "/reports/bank", icon: FileBarChart, label: "ব্যাংক রিপোর্ট", permKey: "reports" },
+        { url: "/reports/bank", icon: FileBarChart, label: lang === "bn" ? "ব্যাংক রিপোর্ট" : "Bank Report", permKey: "reports" },
         { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
         { url: "/reports/receipt-register", icon: FileBarChart, label: t("monthlyReceiptRegister" as any) || "Monthly Receipt Register", permKey: "reports" },
         { url: "/reports/officer-summary", icon: FileBarChart, label: t("officerSummary" as any) || "Officer Summary", permKey: "reports" },
@@ -224,8 +224,8 @@ export function AppSidebar() {
         { url: "/admin/farmer-login-audit", icon: ScrollText, label: t("farmerLoginAudit" as any) || "Farmer Login Audit", developerOnly: true },
         { url: "/admin/id-reconcile", icon: ShieldAlert, label: t("idReconcile"), developerOnly: true },
         { url: "/diagnostics", icon: ShieldAlert, label: t("diagnostics" as any), developerOnly: true },
-        { url: "/dev/files", icon: FolderTree, label: "ফাইল ম্যানাজার", developerOnly: true },
-        { url: "/dev/update", icon: GitBranch, label: "সফটওয়্যার আপডেট", developerOnly: true },
+        { url: "/dev/files", icon: FolderTree, label: lang === "bn" ? "ফাইল ম্যানাজার" : "File Manager", developerOnly: true },
+        { url: "/dev/update", icon: GitBranch, label: lang === "bn" ? "সফটওয়্যার আপডেট" : "Software Update", developerOnly: true },
       ],
     },
 
