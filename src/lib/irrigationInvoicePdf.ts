@@ -232,6 +232,9 @@ function copyHtml(d: IrrigationInvoiceData, brand: CompanyBranding, copyLabel: s
   if (Number(d.previous_due_amount) > 0) {
     chargeRows.push(["পূর্বের বকেয়া (পূর্ববর্তী সিজন)", d.previous_due_amount]);
   }
+  if (Number(d.discount_amount) > 0) {
+    chargeRows.push([`ডিসকাউন্ট (Discount)${d.discount_reason ? " — " + d.discount_reason : ""}`, -Number(d.discount_amount)]);
+  }
 
   const farmerSig = `
     <div style="text-align:center;min-width:160px;">
