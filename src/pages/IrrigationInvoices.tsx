@@ -986,6 +986,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
       });
       notifyAdmins({ old: originalDisc, next: disc, payable, reason: discountReason.trim() });
       // Chart of accounts: Dr Discount Expense / Cr Irrigation Income for the increase.
+      const acc = await checkRequiredAccounts();
+      if (!acc.ok) toast.error(acc.message!);
       await postIrrigationDiscount({
         discountDelta: disc - originalDisc,
         invoiceNo: (inv as any).invoice_no ?? null,
