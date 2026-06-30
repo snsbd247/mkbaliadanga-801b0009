@@ -124,6 +124,8 @@ class DeveloperToolsController extends Controller
         }
         $isBinary = $content !== '' && str_contains(substr($content, 0, 8000), "\0");
 
+        $this->logDev($request, 'file.read', $this->relative($abs));
+
         return response()->json([
             'path' => $this->relative($abs),
             'binary' => $isBinary,
