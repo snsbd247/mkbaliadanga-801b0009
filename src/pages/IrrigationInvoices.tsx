@@ -32,6 +32,7 @@ import { Sparkles, Plus, Eye, Ban, RefreshCw, ShieldCheck, AlertTriangle, FileSp
 import { exportInvoicesXLSX, exportInvoicesCSV } from "@/lib/irrigationExports";
 import { exportTablePDF } from "@/lib/exports";
 import { logAudit } from "@/lib/audit";
+import { validateDiscount, computeInvoiceTotals, grossAmount, canEditInvoice } from "@/lib/invoiceDiscount";
 import {
   downloadIrrigationInvoicePdf, previewIrrigationInvoicePdf,
   downloadIrrigationInvoicesBulkPdf, previewIrrigationInvoicesBulkPdf,
@@ -862,7 +863,7 @@ function InvoiceListTab({ seasons, offices, isSuper }: any) {
 
 function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const { tx } = useLang();
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const [dueDate, setDueDate] = useState("");
   const [otherCharge, setOtherCharge] = useState("0");
   const [delayFee, setDelayFee] = useState("0");
@@ -870,6 +871,9 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const [discountReason, setDiscountReason] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+
+  const perm = inv ? canEditInvoice(roles, inv) : { ok: false as boolean, reason: "no_permission" };
 
   useEffect(() => {
     if (!inv) return;
@@ -879,28 +883,64 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     setDiscount(String(inv.discount_amount ?? 0));
     setDiscountReason(inv.discount_reason ?? "");
     setNote(inv.note ?? "");
+    // Load discount change history (audit log) for this invoice.
+    db.from("audit_logs")
+      .select("id, user_id, old_data, new_data, created_at")
+      .eq("module", "irrigation_invoice_discount")
+      .eq("reference_id", inv.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }: any) => setHistory(data ?? []), () => setHistory([]));
   }, [inv?.id]);
 
   if (!inv) return null;
 
+  async function notifyAdmins(payload: { old: number; next: number; payable: number; reason: string }) {
+    try {
+      const { data: admins } = await db
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "super_admin", "developer"]);
+      const ids = Array.from(new Set((admins ?? []).map((r: any) => r.user_id).filter(Boolean)));
+      if (!ids.length) return;
+      const rows = ids.map((uid: string) => ({
+        user_id: uid,
+        kind: "invoice_discount",
+        title: tx("Invoice discount changed", "ইনভয়েস ডিসকাউন্ট পরিবর্তিত"),
+        body: `${inv.invoice_no}: ${payload.old} → ${payload.next} (${tx("payable", "প্রদেয়")} ${payload.payable})${payload.reason ? " — " + payload.reason : ""}`,
+        link: "/irrigation/invoices",
+      }));
+      await db.from("notifications").insert(rows as any).then(() => {}, () => {});
+    } catch { /* non-blocking */ }
+  }
+
   async function save() {
+    if (!perm.ok) {
+      return toast.error(
+        perm.reason === "staff_approved_locked"
+          ? tx("Staff cannot edit approved invoices", "স্টাফ অনুমোদিত ইনভয়েস এডিট করতে পারবে না")
+          : tx("You do not have permission to edit invoices", "ইনভয়েস এডিট করার অনুমতি নেই")
+      );
+    }
     const oc = Number(otherCharge) || 0;
     const df = Number(delayFee) || 0;
     const disc = Number(discount) || 0;
-    if (oc < 0 || df < 0 || disc < 0) return toast.error(tx("Negative values not allowed", "ঋণাত্মক মান দেওয়া যাবে না"));
     if (!dueDate) return toast.error(tx("Enter due date", "মেয়াদ তারিখ দিন"));
-    const gross = Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + oc + df;
-    if (disc > gross) return toast.error(tx("Discount cannot exceed invoice amount", "ডিসকাউন্ট ইনভয়েসের পরিমাণের বেশি হতে পারে না"));
+    const gross = grossAmount(inv, oc, df);
     const originalDisc = Number(inv.discount_amount ?? 0);
-    if (disc !== originalDisc && !discountReason.trim()) return toast.error(tx("Enter a discount reason", "ডিসকাউন্টের কারণ লিখুন"));
+    const v = validateDiscount(gross, disc, discountReason, originalDisc);
+    if (!v.ok) {
+      const msg =
+        v.code === "negative" ? tx("Negative values not allowed", "ঋণাত্মক মান দেওয়া যাবে না") :
+        v.code === "exceeds_invoice" ? tx("Discount cannot exceed invoice amount", "ডিসকাউন্ট ইনভয়েসের পরিমাণের বেশি হতে পারে না") :
+        tx("Enter a discount reason", "ডিসকাউন্টের কারণ লিখুন");
+      return toast.error(msg);
+    }
+    if (oc < 0 || df < 0) return toast.error(tx("Negative values not allowed", "ঋণাত্মক মান দেওয়া যাবে না"));
     setBusy(true);
-    const payable = Math.max(0, gross - disc);
-    const due = Math.max(0, payable - Number(inv.paid_amount ?? 0));
-    const newStatus =
-      inv.invoice_status === "cancelled" ? inv.invoice_status :
-      due === 0 ? "paid" :
-      Number(inv.paid_amount ?? 0) > 0 ? "partial_paid" :
-      new Date(dueDate) < new Date() ? "overdue" : "generated";
+    const totals = computeInvoiceTotals(inv, disc, dueDate, oc, df);
+    const payable = totals.payable;
+    const due = totals.due;
+    const newStatus = totals.status;
     const { error } = await db
       .from("irrigation_invoices" as any)
       .update({
@@ -943,59 +983,87 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         old_data: { discount_amount: originalDisc, payable_amount: inv.payable_amount },
         new_data: { discount_amount: disc, payable_amount: payable, reason: discountReason.trim() || null },
       });
+      notifyAdmins({ old: originalDisc, next: disc, payable, reason: discountReason.trim() });
     }
     toast.success(tx("Invoice updated", "ইনভয়েস হালনাগাদ হয়েছে"));
     onSaved?.(); onClose();
   }
 
+  const previewPayable = computeInvoiceTotals(inv, Number(discount) || 0, dueDate, Number(otherCharge) || 0, Number(delayFee) || 0).payable;
+
   return (
     <Dialog open={!!inv} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader><DialogTitle>{tx("Edit invoice", "ইনভয়েস এডিট")} — {inv.invoice_no}</DialogTitle></DialogHeader>
+        {!perm.ok && (
+          <p className="text-xs text-destructive">
+            {perm.reason === "staff_approved_locked"
+              ? tx("This invoice is already approved/paid; staff cannot edit it.", "এই ইনভয়েস অনুমোদিত/পরিশোধিত; স্টাফ এডিট করতে পারবে না।")
+              : tx("You do not have permission to edit invoices.", "ইনভয়েস এডিট করার অনুমতি নেই।")}
+          </p>
+        )}
         <div className="space-y-3">
           <div>
             <Label>{tx("Due date", "মেয়াদ তারিখ")}</Label>
-            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={!perm.ok} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{tx("Other charge", "অন্যান্য চার্জ")}</Label>
-              <Input type="number" min="0" step="0.01" value={otherCharge} onChange={(e) => setOtherCharge(e.target.value)} />
+              <Input type="number" min="0" step="0.01" value={otherCharge} onChange={(e) => setOtherCharge(e.target.value)} disabled={!perm.ok} />
             </div>
             <div>
               <Label>{tx("Late fee", "বিলম্ব ফি")}</Label>
-              <Input type="number" min="0" step="0.01" value={delayFee} onChange={(e) => setDelayFee(e.target.value)} />
+              <Input type="number" min="0" step="0.01" value={delayFee} onChange={(e) => setDelayFee(e.target.value)} disabled={!perm.ok} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{tx("Discount", "ডিসকাউন্ট")}</Label>
-              <Input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} />
+              <Input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} disabled={!perm.ok} />
             </div>
             <div>
               <Label>{tx("Discount reason", "ডিসকাউন্টের কারণ")}</Label>
-              <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder={tx("Required when discounting", "ডিসকাউন্ট দিলে আবশ্যক")} />
+              <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder={tx("Required when discounting", "ডিসকাউন্ট দিলে আবশ্যক")} disabled={!perm.ok} />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {tx("Payable after discount", "ডিসকাউন্টের পর প্রদেয়")}: <span className="font-medium text-foreground">{money(Math.max(0, Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + (Number(otherCharge) || 0) + (Number(delayFee) || 0) - (Number(discount) || 0)))}</span>
+            {tx("Payable after discount", "ডিসকাউন্টের পর প্রদেয়")}: <span className="font-medium text-foreground">{money(previewPayable)}</span>
           </p>
           <div>
             <Label>{tx("Note", "মন্তব্য")}</Label>
-            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} disabled={!perm.ok} />
           </div>
+          {history.length > 0 && (
+            <div className="rounded-md border p-2">
+              <p className="text-xs font-medium mb-1">{tx("Discount history", "ডিসকাউন্ট ইতিহাস")}</p>
+              <div className="max-h-40 overflow-auto space-y-1">
+                {history.map((h) => (
+                  <div key={h.id} className="text-[11px] text-muted-foreground border-b pb-1 last:border-0">
+                    <span className="text-foreground">
+                      {money(Number(h.old_data?.discount_amount ?? 0))} → {money(Number(h.new_data?.discount_amount ?? 0))}
+                    </span>
+                    {" · "}{tx("payable", "প্রদেয়")} {money(Number(h.new_data?.payable_amount ?? 0))}
+                    {h.new_data?.reason ? ` · ${h.new_data.reason}` : ""}
+                    {" · "}{h.created_at ? new Date(h.created_at).toLocaleString() : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             {tx("Use \"Recalculate\" to change irrigation/maintenance/canal amounts.", "সেচ/রক্ষণাবেক্ষণ/খাল চার্জ পরিবর্তনের জন্য “পুনঃগণনা” ব্যবহার করুন।")}
           </p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>{tx("Close", "বন্ধ")}</Button>
-          <Button onClick={save} disabled={busy}>{busy ? tx("Saving…", "সংরক্ষণ…") : tx("Save", "সংরক্ষণ করুন")}</Button>
+          <Button onClick={save} disabled={busy || !perm.ok}>{busy ? tx("Saving…", "সংরক্ষণ…") : tx("Save", "সংরক্ষণ করুন")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
 
 function InvoicePreviewDialog({ invoiceId, onClose, allRows, onRecalculated }: any) {
   const { tx } = useLang();
