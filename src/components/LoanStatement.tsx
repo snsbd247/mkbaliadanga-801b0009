@@ -56,6 +56,7 @@ export function LoanStatement({ loanId }: { loanId: string }) {
             <TableHead>{tx("Receipt", "রশিদ")}</TableHead>
             <TableHead className="text-right">{tx("Principal", "আসল")}</TableHead>
             <TableHead className="text-right">{tx("Interest", "লাভ")}</TableHead>
+            <TableHead className="text-right">{tx("Discount", "ডিসকাউন্ট")}</TableHead>
             <TableHead className="text-right">{tx("Total", "মোট")}</TableHead>
             <TableHead>{tx("Status", "অবস্থা")}</TableHead>
           </TableRow></TableHeader>
