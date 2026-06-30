@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
+import { postIrrigationDiscount } from "@/lib/accountingPosting";
 import { resolveRowMouzaName } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -984,6 +985,14 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         new_data: { discount_amount: disc, payable_amount: payable, reason: discountReason.trim() || null },
       });
       notifyAdmins({ old: originalDisc, next: disc, payable, reason: discountReason.trim() });
+      // Chart of accounts: Dr Discount Expense / Cr Irrigation Income for the increase.
+      await postIrrigationDiscount({
+        discountDelta: disc - originalDisc,
+        invoiceNo: (inv as any).invoice_no ?? null,
+        reason: discountReason.trim() || null,
+        officeId: inv.office_id ?? null,
+        createdBy: user?.id ?? null,
+      });
     }
     toast.success(tx("Invoice updated", "ইনভয়েস হালনাগাদ হয়েছে"));
     onSaved?.(); onClose();

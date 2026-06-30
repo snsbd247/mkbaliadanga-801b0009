@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
+import { postIrrigationCollection } from "@/lib/accountingPosting";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -534,6 +535,13 @@ export default function Payments() {
             collected_amount: Number(a.amount),
             irrigation_collected: Number(a.amount),
             created_by: user?.id,
+          });
+          // Chart of accounts: Dr Cash / Cr Irrigation Income for the collected amount.
+          await postIrrigationCollection({
+            amount: Number(a.amount),
+            receiptNo: receiptNo ?? null,
+            officeId: (inv as any).office_id ?? null,
+            createdBy: user?.id ?? null,
           });
         }
       } else if (a.kind === "savings") {
