@@ -967,6 +967,19 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
               <Input type="number" min="0" step="0.01" value={delayFee} onChange={(e) => setDelayFee(e.target.value)} />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{tx("Discount", "ডিসকাউন্ট")}</Label>
+              <Input type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(e.target.value)} />
+            </div>
+            <div>
+              <Label>{tx("Discount reason", "ডিসকাউন্টের কারণ")}</Label>
+              <Input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} placeholder={tx("Required when discounting", "ডিসকাউন্ট দিলে আবশ্যক")} />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {tx("Payable after discount", "ডিসকাউন্টের পর প্রদেয়")}: <span className="font-medium text-foreground">{money(Math.max(0, Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + (Number(otherCharge) || 0) + (Number(delayFee) || 0) - (Number(discount) || 0)))}</span>
+          </p>
           <div>
             <Label>{tx("Note", "মন্তব্য")}</Label>
             <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
