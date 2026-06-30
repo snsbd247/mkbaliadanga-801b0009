@@ -390,6 +390,7 @@ export default function FarmersImport() {
             <Badge variant="default">Total: {rows.length}</Badge>
             <Badge variant="secondary">Valid: {validRows.length}</Badge>
             <Badge variant="destructive">Invalid: {invalidRows.length}</Badge>
+            {warnRows.length > 0 && <Badge className="bg-amber-500 text-white hover:bg-amber-500">নমিনি সতর্কতা: {warnRows.length}</Badge>}
             {savedCount > 0 && <Badge>Saved: {savedCount}</Badge>}
           </div>
         </Card>
