@@ -22,6 +22,7 @@ type BlockingItem = { table: string; label: string; count: number };
 type Precheck = {
   ok: boolean;
   can_delete?: boolean;
+  can_cascade?: boolean;
   items?: BlockingItem[];
   total?: number;
   message?: string;
@@ -49,6 +50,12 @@ export function PermanentDeleteDialog({
     const { data, error } = await db.rpc("farmer_delete_precheck", { _farmer_id: farmerId });
     setLoading(false);
     if (error) {
+      setCheck({
+        ok: false,
+        can_delete: false,
+        items: undefined,
+        message: `প্রিচেক API ব্যর্থ হয়েছে: ${error.message}`,
+      });
       toast.error(error.message);
       return;
     }
@@ -76,7 +83,8 @@ export function PermanentDeleteDialog({
   }
 
   // Developer may force-delete (cascade) even when blocking records exist.
-  const canDelete = check?.can_delete === true || (isDeveloper && cascade);
+  const canCascade = isDeveloper || check?.can_cascade === true;
+  const canDelete = check?.can_delete === true || (canCascade && cascade);
 
 
   return (
@@ -98,7 +106,7 @@ export function PermanentDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>ফার্মার পারমানেন্ট ডিলিট?</AlertDialogTitle>
           <AlertDialogDescription>
-            এটি ফার্মারকে ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলবে। শুধুমাত্র কোনো লেনদেন না থাকলে সম্ভব। এটি ফিরিয়ে আনা যাবে না।
+            এটি ফার্মারকে ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলবে। লেনদেন থাকলে শুধুমাত্র ডেভেলপার রোল ক্যাসকেড ডিলিট করতে পারবেন। এটি ফিরিয়ে আনা যাবে না।
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -106,6 +114,13 @@ export function PermanentDeleteDialog({
           {loading ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> ট্রানজেকশন চেক করা হচ্ছে…
+            </div>
+          ) : check?.ok === false ? (
+            <div className="space-y-2 text-destructive">
+              <div className="flex items-center gap-2 font-medium">
+                <AlertTriangle className="h-4 w-4" /> প্রিচেক ব্যর্থ হয়েছে
+              </div>
+              <p>{check.message}</p>
             </div>
           ) : check?.can_delete === true ? (
             <div className="flex items-center gap-2 text-green-600">
@@ -127,7 +142,7 @@ export function PermanentDeleteDialog({
               ) : (
                 <p className="text-muted-foreground">{check.message}</p>
               )}
-              {isDeveloper && (
+              {canCascade && (
                 <label className="mt-2 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-destructive">
                   <Checkbox
                     checked={cascade}

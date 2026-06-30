@@ -130,42 +130,355 @@ class RpcController extends Controller
 
     /** Tables that represent real activity/transactions for a farmer. */
     private const FARMER_TXN_TABLES = [
-        'irrigation_invoices', 'irrigation_charges', 'irrigation_invoice_payments',
-        'savings_transactions', 'loans', 'loan_payments', 'payments',
-        'shares', 'office_incomes', 'lands', 'land_relations',
-        'land_transfers', 'land_history', 'receipts',
+        'irrigation_invoice_payments', 'irrigation_invoice_audit', 'irrigation_delay_fee_audit',
+        'irrigation_rate_overrides', 'irrigation_sms_logs', 'irrigation_due_promises',
+        'irrigation_charges', 'irrigation_invoices',
+        'savings_transactions', 'savings_accounts', 'savings_yearly_opening',
+        'loan_installment_delay_audit', 'loan_discount_audit', 'loan_installments',
+        'loan_payments', 'loan_repayments', 'loan_guarantors', 'loans',
+        'payment_allocations', 'payments', 'receipts', 'public_payment_intents',
+        'shares', 'office_incomes',
+        'land_note_attachments', 'land_note_audit', 'land_change_log',
+        'land_relations', 'land_transfer_recipients', 'land_transfers', 'land_history', 'lands',
+        'ledger_entries', 'journal_entry_lines', 'journal_lines', 'journal_entries', 'vouchers',
+        'member_block_audit', 'voter_audit_logs',
     ];
 
     private const FARMER_TXN_LABELS = [
         'irrigation_invoices' => 'সেচ ইনভয়েস',
         'irrigation_charges' => 'সেচ চার্জ',
         'irrigation_invoice_payments' => 'সেচ পেমেন্ট',
+        'irrigation_invoice_audit' => 'সেচ ইনভয়েস অডিট',
+        'irrigation_delay_fee_audit' => 'সেচ জরিমানা অডিট',
+        'irrigation_rate_overrides' => 'সেচ রেট পরিবর্তন',
+        'irrigation_sms_logs' => 'সেচ এসএমএস লগ',
+        'irrigation_due_promises' => 'সেচ বকেয়া প্রতিশ্রুতি',
         'savings_transactions' => 'সঞ্চয় লেনদেন',
+        'savings_accounts' => 'সঞ্চয় হিসাব',
+        'savings_yearly_opening' => 'সঞ্চয় ওপেনিং ব্যালেন্স',
         'loans' => 'ঋণ',
+        'loan_installment_delay_audit' => 'ঋণ কিস্তি জরিমানা অডিট',
+        'loan_discount_audit' => 'ঋণ ডিসকাউন্ট অডিট',
+        'loan_installments' => 'ঋণ কিস্তি',
         'loan_payments' => 'ঋণ পরিশোধ',
+        'loan_repayments' => 'ঋণ পরিশোধ',
+        'loan_guarantors' => 'ঋণ জামিনদার',
+        'payment_allocations' => 'পেমেন্ট বরাদ্দ',
         'payments' => 'পেমেন্ট',
         'shares' => 'শেয়ার',
         'office_incomes' => 'বিবিধ আদায়',
         'lands' => 'জমি',
+        'land_note_attachments' => 'জমির নোট সংযুক্তি',
+        'land_note_audit' => 'জমির নোট অডিট',
+        'land_change_log' => 'জমি পরিবর্তন লগ',
         'land_relations' => 'জমির সম্পর্ক',
+        'land_transfer_recipients' => 'জমি হস্তান্তর গ্রহীতা',
         'land_transfers' => 'জমি হস্তান্তর',
         'land_history' => 'জমির ইতিহাস',
         'receipts' => 'রশিদ',
+        'public_payment_intents' => 'পাবলিক পেমেন্ট অনুরোধ',
+        'ledger_entries' => 'লেজার এন্ট্রি',
+        'journal_entry_lines' => 'জার্নাল লাইন',
+        'journal_lines' => 'জার্নাল লাইন',
+        'journal_entries' => 'জার্নাল এন্ট্রি',
+        'vouchers' => 'ভাউচার',
+        'member_block_audit' => 'মেম্বার ব্লক অডিট',
+        'voter_audit_logs' => 'ভোটার অডিট লগ',
     ];
+
+    /** Normalize an array of scalar values for whereIn queries. */
+    private function values(array $values): array
+    {
+        return array_values(array_unique(array_filter($values, fn ($v) => $v !== null && $v !== '')));
+    }
+
+    private function addCtx(array &$ctx, string $key, array $values): void
+    {
+        $ctx[$key] = $this->values(array_merge($ctx[$key] ?? [], $values));
+    }
+
+    private function queryMatching(string $table, array $criteria): ?\Illuminate\Database\Query\Builder
+    {
+        if (! Schema::hasTable($table)) {
+            return null;
+        }
+
+        $valid = [];
+        foreach ($criteria as $column => $values) {
+            $values = $this->values(is_array($values) ? $values : [$values]);
+            if (! empty($values) && Schema::hasColumn($table, $column)) {
+                $valid[$column] = $values;
+            }
+        }
+
+        if (empty($valid)) {
+            return null;
+        }
+
+        return DB::table($table)->where(function ($q) use ($valid) {
+            foreach ($valid as $column => $values) {
+                $q->orWhereIn($column, $values);
+            }
+        });
+    }
+
+    private function countMatching(string $table, array $criteria): int
+    {
+        $q = $this->queryMatching($table, $criteria);
+        return $q ? $q->count() : 0;
+    }
+
+    private function deleteMatching(string $table, array $criteria): int
+    {
+        $q = $this->queryMatching($table, $criteria);
+        return $q ? $q->delete() : 0;
+    }
+
+    private function pluckIdsMatching(string $table, array $criteria): array
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'id')) {
+            return [];
+        }
+        $q = $this->queryMatching($table, $criteria);
+        return $q ? $this->values($q->pluck('id')->all()) : [];
+    }
+
+    private function pluckColumnMatching(string $table, string $column, array $criteria): array
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+            return [];
+        }
+        $q = $this->queryMatching($table, $criteria);
+        return $q ? $this->values($q->pluck($column)->all()) : [];
+    }
+
+    private function farmerIdentityValues(?object $farmer): array
+    {
+        if (! $farmer) {
+            return [];
+        }
+
+        return $this->values([
+            $farmer->farmer_code ?? null,
+            $farmer->member_no ?? null,
+            $farmer->account_number ?? null,
+            $farmer->voter_number ?? null,
+            $farmer->code ?? null,
+            $farmer->phone ?? null,
+            $farmer->mobile ?? null,
+        ]);
+    }
+
+    /** Collect every known direct/indirect record id related to a farmer. */
+    private function farmerCascadeContext(string $farmerId, ?object $farmer = null): array
+    {
+        $farmer ??= Schema::hasTable('farmers') ? DB::table('farmers')->where('id', $farmerId)->first() : null;
+        $ctx = ['farmers' => [$farmerId]];
+        $identityValues = $this->farmerIdentityValues($farmer);
+
+        foreach ([
+            'loans', 'savings_accounts', 'irrigation_invoices', 'payments', 'receipts',
+            'lands', 'shares', 'savings_yearly_opening', 'office_incomes',
+            'irrigation_charges', 'irrigation_due_promises', 'irrigation_sms_logs',
+            'member_block_audit', 'voter_audit_logs',
+        ] as $table) {
+            $this->addCtx($ctx, $table, $this->pluckIdsMatching($table, ['farmer_id' => [$farmerId]]));
+        }
+
+        $this->addCtx($ctx, 'land_relations', $this->pluckIdsMatching('land_relations', [
+            'owner_farmer_id' => [$farmerId],
+            'sharecropper_farmer_id' => [$farmerId],
+            'land_id' => $ctx['lands'] ?? [],
+        ]));
+        $this->addCtx($ctx, 'land_transfers', $this->pluckIdsMatching('land_transfers', [
+            'source_farmer_id' => [$farmerId],
+            'source_land_id' => $ctx['lands'] ?? [],
+        ]));
+        $this->addCtx($ctx, 'land_transfer_recipients', $this->pluckIdsMatching('land_transfer_recipients', [
+            'recipient_farmer_id' => [$farmerId],
+            'new_land_id' => $ctx['lands'] ?? [],
+            'transfer_id' => $ctx['land_transfers'] ?? [],
+        ]));
+
+        foreach (['land_history', 'land_change_log', 'land_note_attachments', 'land_note_audit'] as $table) {
+            $this->addCtx($ctx, $table, $this->pluckIdsMatching($table, [
+                'farmer_id' => [$farmerId],
+                'cultivator_farmer_id' => [$farmerId],
+                'land_id' => $ctx['lands'] ?? [],
+            ]));
+        }
+
+        foreach (['loan_payments', 'loan_repayments', 'loan_installments', 'loan_guarantors', 'loan_discount_audit'] as $table) {
+            $this->addCtx($ctx, $table, $this->pluckIdsMatching($table, [
+                'farmer_id' => [$farmerId],
+                'loan_id' => $ctx['loans'] ?? [],
+            ]));
+        }
+        $this->addCtx($ctx, 'loan_installment_delay_audit', $this->pluckIdsMatching('loan_installment_delay_audit', [
+            'loan_id' => $ctx['loans'] ?? [],
+            'installment_id' => $ctx['loan_installments'] ?? [],
+        ]));
+
+        $this->addCtx($ctx, 'savings_transactions', $this->pluckIdsMatching('savings_transactions', [
+            'farmer_id' => [$farmerId],
+            'account_id' => $ctx['savings_accounts'] ?? [],
+        ]));
+
+        foreach (['irrigation_invoice_payments', 'irrigation_invoice_audit', 'irrigation_delay_fee_audit', 'irrigation_rate_overrides'] as $table) {
+            $this->addCtx($ctx, $table, $this->pluckIdsMatching($table, [
+                'farmer_id' => [$farmerId],
+                'invoice_id' => $ctx['irrigation_invoices'] ?? [],
+                'irrigation_invoice_id' => $ctx['irrigation_invoices'] ?? [],
+            ]));
+        }
+
+        $this->addCtx($ctx, 'payments', $this->pluckColumnMatching('payment_allocations', 'payment_id', [
+            'target_id' => $this->relatedEntityIds($ctx),
+        ]));
+        $this->addCtx($ctx, 'payments', $this->pluckColumnMatching('irrigation_invoice_payments', 'payment_id', [
+            'invoice_id' => $ctx['irrigation_invoices'] ?? [],
+        ]));
+        $this->addCtx($ctx, 'payments', $this->pluckColumnMatching('loan_payments', 'payment_id', [
+            'loan_id' => $ctx['loans'] ?? [],
+        ]));
+
+        foreach (['payment_allocations', 'irrigation_delay_fee_audit', 'irrigation_due_promises', 'loan_installment_delay_audit', 'loan_discount_audit'] as $table) {
+            $this->addCtx($ctx, $table, $this->pluckIdsMatching($table, [
+                'payment_id' => $ctx['payments'] ?? [],
+                'target_id' => $this->relatedEntityIds($ctx),
+            ]));
+        }
+
+        $relatedIds = $this->relatedEntityIds($ctx);
+        $this->addCtx($ctx, 'receipts', $this->pluckIdsMatching('receipts', [
+            'farmer_id' => [$farmerId],
+            'reference_id' => $relatedIds,
+            'link_id' => $relatedIds,
+        ]));
+        $this->addCtx($ctx, 'public_payment_intents', $this->pluckIdsMatching('public_payment_intents', [
+            'payment_id' => $ctx['payments'] ?? [],
+            'farmer_id' => [$farmerId],
+            'farmer_code' => $identityValues,
+        ]));
+
+        $relatedIds = $this->relatedEntityIds($ctx);
+        foreach (['ledger_entries', 'vouchers'] as $table) {
+            $this->addCtx($ctx, $table, $this->pluckIdsMatching($table, [
+                'reference_id' => $relatedIds,
+                'source_id' => $relatedIds,
+            ]));
+        }
+        $this->addCtx($ctx, 'journal_entries', $this->pluckIdsMatching('journal_entries', [
+            'source_id' => $relatedIds,
+        ]));
+        foreach (['journal_lines', 'journal_entry_lines'] as $table) {
+            $this->addCtx($ctx, $table, $this->pluckIdsMatching($table, [
+                'entry_id' => $ctx['journal_entries'] ?? [],
+                'journal_id' => $ctx['journal_entries'] ?? [],
+            ]));
+        }
+
+        return $ctx;
+    }
+
+    private function relatedEntityIds(array $ctx): array
+    {
+        $ids = [];
+        foreach ($ctx as $table => $tableIds) {
+            if ($table === 'farmers') {
+                continue;
+            }
+            $ids = array_merge($ids, $tableIds);
+        }
+        return $this->values($ids);
+    }
+
+    /** Child-first delete/count plan. All criteria are OR-ed and missing columns are ignored. */
+    private function farmerCascadePlan(string $farmerId, array $ctx, ?object $farmer = null): array
+    {
+        $relatedIds = $this->relatedEntityIds($ctx);
+        $identityValues = $this->farmerIdentityValues($farmer);
+
+        return [
+            'journal_lines' => ['id' => $ctx['journal_lines'] ?? [], 'entry_id' => $ctx['journal_entries'] ?? []],
+            'journal_entry_lines' => ['id' => $ctx['journal_entry_lines'] ?? [], 'journal_id' => $ctx['journal_entries'] ?? []],
+            'payment_allocations' => ['id' => $ctx['payment_allocations'] ?? [], 'payment_id' => $ctx['payments'] ?? [], 'target_id' => $relatedIds],
+            'land_transfer_recipients' => ['id' => $ctx['land_transfer_recipients'] ?? [], 'recipient_farmer_id' => [$farmerId], 'new_land_id' => $ctx['lands'] ?? [], 'transfer_id' => $ctx['land_transfers'] ?? []],
+            'land_note_attachments' => ['id' => $ctx['land_note_attachments'] ?? [], 'land_id' => $ctx['lands'] ?? []],
+            'land_note_audit' => ['id' => $ctx['land_note_audit'] ?? [], 'land_id' => $ctx['lands'] ?? []],
+            'land_change_log' => ['id' => $ctx['land_change_log'] ?? [], 'farmer_id' => [$farmerId], 'land_id' => $ctx['lands'] ?? []],
+            'irrigation_invoice_payments' => ['id' => $ctx['irrigation_invoice_payments'] ?? [], 'invoice_id' => $ctx['irrigation_invoices'] ?? [], 'payment_id' => $ctx['payments'] ?? []],
+            'irrigation_invoice_audit' => ['id' => $ctx['irrigation_invoice_audit'] ?? [], 'invoice_id' => $ctx['irrigation_invoices'] ?? []],
+            'irrigation_delay_fee_audit' => ['id' => $ctx['irrigation_delay_fee_audit'] ?? [], 'invoice_id' => $ctx['irrigation_invoices'] ?? [], 'payment_id' => $ctx['payments'] ?? []],
+            'irrigation_rate_overrides' => ['id' => $ctx['irrigation_rate_overrides'] ?? [], 'irrigation_invoice_id' => $ctx['irrigation_invoices'] ?? []],
+            'irrigation_sms_logs' => ['id' => $ctx['irrigation_sms_logs'] ?? [], 'farmer_id' => [$farmerId], 'irrigation_invoice_id' => $ctx['irrigation_invoices'] ?? []],
+            'irrigation_due_promises' => ['id' => $ctx['irrigation_due_promises'] ?? [], 'farmer_id' => [$farmerId], 'payment_id' => $ctx['payments'] ?? []],
+            'loan_installment_delay_audit' => ['id' => $ctx['loan_installment_delay_audit'] ?? [], 'installment_id' => $ctx['loan_installments'] ?? [], 'loan_id' => $ctx['loans'] ?? [], 'payment_id' => $ctx['payments'] ?? []],
+            'loan_discount_audit' => ['id' => $ctx['loan_discount_audit'] ?? [], 'loan_id' => $ctx['loans'] ?? [], 'payment_id' => $ctx['payments'] ?? []],
+            'loan_installments' => ['id' => $ctx['loan_installments'] ?? [], 'loan_id' => $ctx['loans'] ?? []],
+            'loan_payments' => ['id' => $ctx['loan_payments'] ?? [], 'loan_id' => $ctx['loans'] ?? [], 'payment_id' => $ctx['payments'] ?? []],
+            'loan_repayments' => ['id' => $ctx['loan_repayments'] ?? [], 'loan_id' => $ctx['loans'] ?? [], 'payment_id' => $ctx['payments'] ?? []],
+            'loan_guarantors' => ['id' => $ctx['loan_guarantors'] ?? [], 'loan_id' => $ctx['loans'] ?? [], 'farmer_id' => [$farmerId]],
+            'savings_transactions' => ['id' => $ctx['savings_transactions'] ?? [], 'account_id' => $ctx['savings_accounts'] ?? [], 'farmer_id' => [$farmerId]],
+            'ledger_entries' => ['id' => $ctx['ledger_entries'] ?? [], 'reference_id' => $relatedIds],
+            'journal_entries' => ['id' => $ctx['journal_entries'] ?? [], 'source_id' => $relatedIds],
+            'vouchers' => ['id' => $ctx['vouchers'] ?? [], 'reference_id' => $relatedIds],
+            'receipts' => ['id' => $ctx['receipts'] ?? [], 'farmer_id' => [$farmerId], 'reference_id' => $relatedIds, 'link_id' => $relatedIds],
+            'public_payment_intents' => ['id' => $ctx['public_payment_intents'] ?? [], 'payment_id' => $ctx['payments'] ?? [], 'farmer_id' => [$farmerId], 'farmer_code' => $identityValues],
+            'member_block_audit' => ['id' => $ctx['member_block_audit'] ?? [], 'farmer_id' => [$farmerId]],
+            'voter_audit_logs' => ['id' => $ctx['voter_audit_logs'] ?? [], 'farmer_id' => [$farmerId]],
+            'irrigation_charges' => ['id' => $ctx['irrigation_charges'] ?? [], 'farmer_id' => [$farmerId], 'land_id' => $ctx['lands'] ?? []],
+            'irrigation_invoices' => ['id' => $ctx['irrigation_invoices'] ?? [], 'farmer_id' => [$farmerId], 'land_id' => $ctx['lands'] ?? []],
+            'savings_yearly_opening' => ['id' => $ctx['savings_yearly_opening'] ?? [], 'farmer_id' => [$farmerId]],
+            'savings_accounts' => ['id' => $ctx['savings_accounts'] ?? [], 'farmer_id' => [$farmerId]],
+            'loans' => ['id' => $ctx['loans'] ?? [], 'farmer_id' => [$farmerId]],
+            'shares' => ['id' => $ctx['shares'] ?? [], 'farmer_id' => [$farmerId]],
+            'payments' => ['id' => $ctx['payments'] ?? [], 'farmer_id' => [$farmerId]],
+            'office_incomes' => ['id' => $ctx['office_incomes'] ?? [], 'farmer_id' => [$farmerId]],
+            'land_history' => ['id' => $ctx['land_history'] ?? [], 'farmer_id' => [$farmerId], 'cultivator_farmer_id' => [$farmerId], 'land_id' => $ctx['lands'] ?? []],
+            'land_relations' => ['id' => $ctx['land_relations'] ?? [], 'land_id' => $ctx['lands'] ?? [], 'owner_farmer_id' => [$farmerId], 'sharecropper_farmer_id' => [$farmerId]],
+            'land_transfers' => ['id' => $ctx['land_transfers'] ?? [], 'source_farmer_id' => [$farmerId], 'source_land_id' => $ctx['lands'] ?? []],
+            'lands' => ['id' => $ctx['lands'] ?? [], 'farmer_id' => [$farmerId]],
+        ];
+    }
+
+    private function isDeveloperUser($user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        try {
+            if (method_exists($user, 'hasRole') && $user->hasRole('developer')) {
+                return true;
+            }
+            if (isset($user->id) && Schema::hasTable('roles') && Schema::hasTable('user_roles')) {
+                $hasRole = DB::table('roles')
+                    ->join('user_roles', 'user_roles.role_id', '=', 'roles.id')
+                    ->where('user_roles.user_id', $user->id)
+                    ->where('roles.name', 'developer')
+                    ->exists();
+                if ($hasRole) {
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fall through to the canonical username guard below.
+        }
+
+        // Canonical VPS developer account. This keeps the destructive tool usable
+        // even if a stale deployment briefly fails to hydrate the role relation.
+        return strtolower((string) ($user->username ?? '')) === 'ismail162';
+    }
 
     /** Count blocking transactional records for a farmer, keyed by table. */
     private function farmerBlockingCounts(string $farmerId): array
     {
         $blocking = [];
-        foreach (self::FARMER_TXN_TABLES as $tbl) {
-            if (! Schema::hasTable($tbl) || ! Schema::hasColumn($tbl, 'farmer_id')) {
-                continue;
-            }
-            $q = DB::table($tbl)->where('farmer_id', $farmerId);
-            if (Schema::hasColumn($tbl, 'deleted_at')) {
-                $q->whereNull('deleted_at');
-            }
-            $count = $q->count();
+        $farmer = Schema::hasTable('farmers') ? DB::table('farmers')->where('id', $farmerId)->first() : null;
+        $ctx = $this->farmerCascadeContext($farmerId, $farmer);
+        foreach ($this->farmerCascadePlan($farmerId, $ctx, $farmer) as $tbl => $criteria) {
+            $count = $this->countMatching($tbl, $criteria);
             if ($count > 0) {
                 $blocking[$tbl] = $count;
             }
@@ -215,7 +528,7 @@ class RpcController extends Controller
      * Dry-run precheck: count blocking transactional records for a farmer
      * WITHOUT deleting anything. Used by the UI before showing the delete action.
      */
-    protected function rpc_farmer_delete_precheck(array $p): array
+    protected function rpc_farmer_delete_precheck(array $p, Request $request): array
     {
         $farmerId = $p['_farmer_id'] ?? $p['farmer_id'] ?? null;
         if (! $farmerId) {
@@ -225,17 +538,19 @@ class RpcController extends Controller
         $blocking = $this->farmerBlockingCounts($farmerId);
         [$items, $summary] = $this->farmerBlockingDetails($blocking);
         $total = array_sum($blocking);
+        $isDeveloper = $this->isDeveloperUser($request->user());
 
         return [
             'ok'           => true,
             'farmer_id'    => $farmerId,
             'can_delete'   => empty($blocking),
+            'can_cascade'  => $isDeveloper,
             'blocking'     => $blocking,
             'items'        => $items,
             'total'        => $total,
             'message'      => empty($blocking)
                 ? 'কোনো ট্রানজেকশন নেই — পারমানেন্ট ডিলিট করা যাবে।'
-                : "ব্লকিং রেকর্ড পাওয়া গেছে: $summary।",
+                : 'ব্লকিং রেকর্ড পাওয়া গেছে: ' . $summary . '।',
         ];
     }
 
@@ -252,10 +567,13 @@ class RpcController extends Controller
         }
 
         $farmer = DB::table('farmers')->where('id', $farmerId)->first();
+        if (! $farmer) {
+            return ['ok' => false, 'reason' => 'not_found', 'message' => 'ফার্মারটি ডাটাবেজে পাওয়া যায়নি।'];
+        }
 
         $cascade = (bool) ($p['_cascade'] ?? $p['cascade'] ?? false);
         $user = $request->user();
-        $isDeveloper = $user && method_exists($user, 'hasRole') ? $user->hasRole('developer') : false;
+        $isDeveloper = $this->isDeveloperUser($user);
 
         $blocking = $this->farmerBlockingCounts($farmerId);
 
@@ -268,18 +586,31 @@ class RpcController extends Controller
                 return ['ok' => false, 'reason' => 'forbidden', 'message' => $message];
             }
 
-            DB::transaction(function () use ($farmerId) {
-                foreach (self::FARMER_TXN_TABLES as $tbl) {
-                    if (! Schema::hasTable($tbl) || ! Schema::hasColumn($tbl, 'farmer_id')) {
-                        continue;
+            try {
+                $deletedCounts = [];
+                DB::transaction(function () use ($farmerId, $farmer, &$deletedCounts) {
+                    $ctx = $this->farmerCascadeContext($farmerId, $farmer);
+                    foreach ($this->farmerCascadePlan($farmerId, $ctx, $farmer) as $tbl => $criteria) {
+                        $deleted = $this->deleteMatching($tbl, $criteria);
+                        if ($deleted > 0) {
+                            $deletedCounts[$tbl] = $deleted;
+                        }
                     }
-                    DB::table($tbl)->where('farmer_id', $farmerId)->delete();
-                }
-                DB::table('farmers')->where('id', $farmerId)->delete();
-            });
+                    DB::table('farmers')->where('id', $farmerId)->delete();
+                });
+            } catch (\Throwable $e) {
+                $message = 'ক্যাসকেড ডিলিট ব্যর্থ হয়েছে: ' . $e->getMessage();
+                $this->logFarmerDeletion($request, $farmerId, 'blocked', $blocking, $message, $farmer);
+                return ['ok' => false, 'reason' => 'cascade_failed', 'message' => $message];
+            }
 
-            $this->logFarmerDeletion($request, $farmerId, 'deleted', $blocking, 'cascade', $farmer);
-            return ['ok' => true, 'cascade' => true, 'message' => 'ফার্মার এবং তার সকল ট্রানজেকশন পারমানেন্টভাবে ডিলিট করা হয়েছে।'];
+            $this->logFarmerDeletion($request, $farmerId, 'deleted', $deletedCounts ?: $blocking, 'cascade', $farmer);
+            return [
+                'ok' => true,
+                'cascade' => true,
+                'deleted' => $deletedCounts,
+                'message' => 'ফার্মার এবং তার সকল ট্রানজেকশন পারমানেন্টভাবে ডিলিট করা হয়েছে।',
+            ];
         }
 
         if (! empty($blocking)) {
