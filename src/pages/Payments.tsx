@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
-import { postIrrigationCollection, takeLastImbalance } from "@/lib/accountingPosting";
+import { postIrrigationCollection, takeLastImbalance, checkRequiredAccounts } from "@/lib/accountingPosting";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -537,6 +537,8 @@ export default function Payments() {
             created_by: user?.id,
           });
           // Chart of accounts: Dr Cash / Cr Irrigation Income for the collected amount.
+          const acc = await checkRequiredAccounts();
+          if (!acc.ok) toast.error(acc.message!);
           await postIrrigationCollection({
             amount: Number(a.amount),
             receiptNo: receiptNo ?? null,

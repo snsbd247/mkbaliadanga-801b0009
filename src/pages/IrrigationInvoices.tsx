@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
-import { postIrrigationDiscount, takeLastImbalance } from "@/lib/accountingPosting";
+import { postIrrigationDiscount, takeLastImbalance, checkRequiredAccounts } from "@/lib/accountingPosting";
 import { resolveRowMouzaName } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -986,6 +986,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
       });
       notifyAdmins({ old: originalDisc, next: disc, payable, reason: discountReason.trim() });
       // Chart of accounts: Dr Discount Expense / Cr Irrigation Income for the increase.
+      const acc = await checkRequiredAccounts();
+      if (!acc.ok) toast.error(acc.message!);
       await postIrrigationDiscount({
         discountDelta: disc - originalDisc,
         invoiceNo: (inv as any).invoice_no ?? null,
