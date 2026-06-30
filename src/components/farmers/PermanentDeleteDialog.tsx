@@ -85,7 +85,10 @@ export function PermanentDeleteDialog({
       onOpenChange={(o) => {
         setOpen(o);
         if (o) runPrecheck();
-        else setCheck(null);
+        else {
+          setCheck(null);
+          setCascade(false);
+        }
       }}
     >
       <AlertDialogTrigger asChild>
