@@ -100,7 +100,7 @@ export default function DeletedFarmers() {
                   </TableCell>
                   <TableCell className="max-w-[320px] text-sm text-muted-foreground">
                     {r.blocking
-                      ? Object.entries(r.blocking).map(([k, v]) => `${k} (${v})`).join(", ")
+                      ? Object.entries(r.blocking).map(([k, v]) => `${tableLabel(k)} (${v})`).join(", ")
                       : r.reason || "—"}
                   </TableCell>
                   <TableCell>{r.user_name || "—"}</TableCell>
