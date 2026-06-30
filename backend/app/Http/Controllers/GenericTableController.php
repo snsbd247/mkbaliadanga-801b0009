@@ -203,9 +203,23 @@ class GenericTableController extends Controller
      */
     private function normalizeWriteRow(string $table, array $row): array
     {
+        // Convert ISO-8601 datetime strings (e.g. 2026-06-30T06:12:39.091Z)
+        // into MySQL-compatible "Y-m-d H:i:s" so writes don't fail with
+        // SQLSTATE[22007] Invalid datetime format on columns like deleted_at.
+        foreach ($row as $key => $val) {
+            if (is_string($val) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $val)) {
+                try {
+                    $row[$key] = (new \DateTime($val))->format('Y-m-d H:i:s');
+                } catch (\Throwable $e) {
+                    // leave value untouched if it cannot be parsed
+                }
+            }
+        }
+
         if ($table !== 'farmers') {
             return $row;
         }
+
 
         $copy = function (array &$row, string $from, string $to): void {
             if (! array_key_exists($from, $row) || array_key_exists($to, $row)) {
