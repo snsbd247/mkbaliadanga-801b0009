@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { db } from "@/lib/db";
 import { toast } from "sonner";
+import { useAuth } from "@/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
@@ -14,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 
 type BlockingItem = { table: string; label: string; count: number };
 type Precheck = {
