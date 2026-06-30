@@ -178,7 +178,7 @@ export function AppSidebar() {
       children: [
         { url: "/reports", icon: FileBarChart, label: t("reports"), permKey: "reports" },
         { url: "/reports/collections", icon: FileBarChart, label: t("collectionReport"), permKey: "reports" },
-        { url: "/reports/bank", icon: FileBarChart, label: "ব্যাংক রিপোর্ট", permKey: "reports" },
+        { url: "/reports/bank", icon: FileBarChart, label: lang === "bn" ? "ব্যাংক রিপোর্ট" : "Bank Report", permKey: "reports" },
         { url: "/reports/receipts", icon: FileBarChart, label: t("receiptReportIrrPay" as any), permKey: "reports" },
         { url: "/reports/receipt-register", icon: FileBarChart, label: t("monthlyReceiptRegister" as any) || "Monthly Receipt Register", permKey: "reports" },
         { url: "/reports/officer-summary", icon: FileBarChart, label: t("officerSummary" as any) || "Officer Summary", permKey: "reports" },
