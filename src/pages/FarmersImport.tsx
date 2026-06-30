@@ -41,8 +41,31 @@ type RowState = {
   raw: RowMap;
   status: "pending" | "valid" | "invalid" | "saving" | "saved" | "error";
   errorMsg: string | null;
+  warnMsg: string | null;
   action: "insert" | "update" | null;
 };
+
+// Nominee field validation — returns non-blocking warnings with clear Bengali messages.
+function validateNominee(raw: RowMap): string[] {
+  const warnings: string[] = [];
+  const val = (k: string) => String(raw[k] ?? "").trim();
+  const name = val("nominee_name");
+  const mobile = val("nominee_mobile");
+  const nid = val("nominee_nid");
+  const relation = val("nominee_relation");
+  const address = val("nominee_address");
+  const anyNominee = name || mobile || nid || relation || address;
+  if (!anyNominee) return warnings; // nominee optional — nothing filled, no warning
+
+  if (!name) warnings.push("নমিনির তথ্য আছে কিন্তু নমিনির নাম খালি");
+  if (mobile && !/^01[3-9]\d{8}$/.test(mobile))
+    warnings.push(`নমিনির মোবাইল সঠিক নয় (১১-ডিজিট 01XXXXXXXXX হতে হবে): ${mobile}`);
+  if (nid && !/^\d{10,17}$/.test(nid.replace(/\s/g, "")))
+    warnings.push(`নমিনির NID সঠিক নয় (১০-১৭ ডিজিট): ${nid}`);
+  if (name && !relation)
+    warnings.push("নমিনির সম্পর্ক (relation) খালি");
+  return warnings;
+}
 
 const COLUMNS = [
   "farmer_id", "account_number", "is_voter", "voter_number", "name_en", "name_bn",
