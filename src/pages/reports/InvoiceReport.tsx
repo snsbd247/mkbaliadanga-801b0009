@@ -200,6 +200,8 @@ export default function InvoiceReport() {
                   <TableCell className="text-xs">{r.lands?.mouza}/{formatDagNumbers(r.lands?.dag_no)}</TableCell>
                   <TableCell className="text-xs">{r.seasons ? `${r.seasons.name ?? r.seasons.type} ${r.seasons.year}` : "—"}</TableCell>
                   <TableCell><Badge variant={r.is_borga ? "secondary" : "outline"}>{r.is_borga ? tx("Sharecropper", "বর্গা") : tx("Owner", "নিজ")}</Badge></TableCell>
+                  <TableCell className="text-right">{money(r.discount_amount)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate" title={r.discount_reason ?? ""}>{r.discount_reason ?? "—"}</TableCell>
                   <TableCell className="text-right">{money(r.payable_amount)}</TableCell>
                   <TableCell className="text-right text-success">{money(r.paid_amount)}</TableCell>
                   <TableCell className="text-right text-destructive font-semibold">{money(r.due_amount)}</TableCell>
@@ -208,7 +210,7 @@ export default function InvoiceReport() {
                 </TableRow>
               ))}
               {!filtered.length && (
-                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">{tx("No data", "কোন তথ্য নেই")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">{tx("No data", "কোন তথ্য নেই")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
