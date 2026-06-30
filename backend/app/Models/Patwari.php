@@ -10,6 +10,9 @@ class Patwari extends Model
     use HasUuids;
     protected $keyType = 'string';
     public $incrementing = false;
-    protected $fillable = ['office_id', 'name', 'phone', 'extra'];
+    protected $fillable = [
+        'office_id', 'created_by', 'name', 'name_bn', 'phone', 'mobile',
+        'nid', 'address', 'mouza_id', 'is_active', 'note', 'extra',
+    ];
     protected $casts = ['extra' => 'array'];
 }
