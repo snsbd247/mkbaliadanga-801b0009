@@ -535,6 +535,13 @@ export default function Payments() {
             irrigation_collected: Number(a.amount),
             created_by: user?.id,
           });
+          // Chart of accounts: Dr Cash / Cr Irrigation Income for the collected amount.
+          await postIrrigationCollection({
+            amount: Number(a.amount),
+            receiptNo: receiptNo ?? null,
+            officeId: (inv as any).office_id ?? null,
+            createdBy: user?.id ?? null,
+          });
         }
       } else if (a.kind === "savings") {
         await db.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id, note: noteText });
