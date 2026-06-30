@@ -14,5 +14,5 @@ class Patwari extends Model
         'office_id', 'created_by', 'name', 'name_bn', 'phone', 'mobile',
         'nid', 'address', 'mouza_id', 'is_active', 'note', 'extra',
     ];
-    protected $casts = ['extra' => 'array'];
+    protected $casts = ['extra' => 'array', 'is_active' => 'boolean'];
 }
