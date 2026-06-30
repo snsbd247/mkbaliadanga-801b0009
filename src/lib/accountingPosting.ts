@@ -18,6 +18,38 @@ const ACC = {
 
 const cache = new Map<string, string>();
 
+export interface RequiredAccountsCheck {
+  ok: boolean;
+  /** Account codes that could not be found. */
+  missing: string[];
+  /** Localized (Bengali) message describing the problem, or null when ok. */
+  message: string | null;
+}
+
+/**
+ * Pre-posting validation: confirms the chart-of-accounts entries the posting
+ * engine depends on (Cash 1010, Irrigation Income 4010, Discount Expense 5050)
+ * exist before any journal is written. Returns a clear error when missing.
+ */
+export async function checkRequiredAccounts(): Promise<RequiredAccountsCheck> {
+  const required = [ACC.cash, ACC.irrigationIncome, ACC.discountExpense];
+  const missing: string[] = [];
+  for (const meta of required) {
+    try {
+      const { data } = await db.from("accounts").select("id").eq("code", meta.code).maybeSingle();
+      if (!(data as any)?.id) missing.push(`${meta.code} (${meta.name_bn})`);
+    } catch {
+      missing.push(`${meta.code} (${meta.name_bn})`);
+    }
+  }
+  if (missing.length === 0) return { ok: true, missing: [], message: null };
+  return {
+    ok: false,
+    missing,
+    message: `চার্ট অফ একাউন্টসে আবশ্যক হিসাব নেই: ${missing.join(", ")}। অনুগ্রহ করে 'accounts:seed' চালান বা চার্ট অফ একাউন্টস থেকে হিসাবগুলো যোগ করুন।`,
+  };
+}
+
 /** Resolve an account id by code; create it (best-effort) if it does not exist. */
 async function accountId(meta: { code: string; name: string; name_bn: string; type: string }): Promise<string | null> {
   if (cache.has(meta.code)) return cache.get(meta.code)!;
