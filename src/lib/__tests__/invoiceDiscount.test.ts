@@ -33,6 +33,9 @@ describe("validateDiscount", () => {
   it("requires a reason when discount changes", () => {
     expect(validateDiscount(1150, 200, "", 0).code).toBe("reason_required");
   });
+  it("requires a reason for any non-zero discount, even if unchanged", () => {
+    expect(validateDiscount(1150, 200, "", 200).code).toBe("reason_required");
+  });
   it("accepts a valid discount", () => {
     expect(validateDiscount(1150, 200, "promo", 0)).toEqual({ ok: true, code: "ok" });
   });

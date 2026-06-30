@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
-import { postIrrigationDiscount } from "@/lib/accountingPosting";
+import { postIrrigationDiscount, takeLastImbalance } from "@/lib/accountingPosting";
 import { resolveRowMouzaName } from "@/lib/mouzaQuery";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -993,6 +993,15 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         officeId: inv.office_id ?? null,
         createdBy: user?.id ?? null,
       });
+      const imb = takeLastImbalance();
+      if (imb) {
+        toast.warning(
+          tx(
+            `Journal not balanced (Dr ${imb.totalDebit} ≠ Cr ${imb.totalCredit})`,
+            `জার্নাল সমান হয়নি (ডেবিট ${imb.totalDebit} ≠ ক্রেডিট ${imb.totalCredit})`,
+          ),
+        );
+      }
     }
     toast.success(tx("Invoice updated", "ইনভয়েস হালনাগাদ হয়েছে"));
     onSaved?.(); onClose();

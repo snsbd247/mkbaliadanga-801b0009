@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
-import { postIrrigationCollection } from "@/lib/accountingPosting";
+import { postIrrigationCollection, takeLastImbalance } from "@/lib/accountingPosting";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -543,6 +543,10 @@ export default function Payments() {
             officeId: (inv as any).office_id ?? null,
             createdBy: user?.id ?? null,
           });
+          const imb = takeLastImbalance();
+          if (imb) {
+            toast.warning(`জার্নাল সমান হয়নি (ডেবিট ${imb.totalDebit} ≠ ক্রেডিট ${imb.totalCredit})`);
+          }
         }
       } else if (a.kind === "savings") {
         await db.from("savings_transactions").insert({ farmer_id: fId, type: "deposit", amount: Number(a.amount), status: "approved", created_by: user?.id, note: noteText });

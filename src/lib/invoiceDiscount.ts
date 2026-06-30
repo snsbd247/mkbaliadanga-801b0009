@@ -43,7 +43,10 @@ export function validateDiscount(
 ): DiscountValidation {
   if (discount < 0) return { ok: false, code: "negative" };
   if (discount > gross) return { ok: false, code: "exceeds_invoice" };
-  if (discount !== originalDiscount && !reason.trim()) return { ok: false, code: "reason_required" };
+  // A reason is required whenever a non-zero discount is entered, or when the
+  // discount value changes from its original (even back to zero).
+  if ((discount > 0 || discount !== originalDiscount) && !reason.trim())
+    return { ok: false, code: "reason_required" };
   return { ok: true, code: "ok" };
 }
 
