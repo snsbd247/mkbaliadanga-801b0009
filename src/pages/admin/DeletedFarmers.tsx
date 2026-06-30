@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RefreshCw } from "lucide-react";
+import { useLang } from "@/i18n/LanguageProvider";
+import { tableLabel } from "@/lib/tableLabels";
 
 type DeletionLog = {
   id: string;
