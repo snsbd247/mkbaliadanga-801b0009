@@ -22,6 +22,7 @@ type BlockingItem = { table: string; label: string; count: number };
 type Precheck = {
   ok: boolean;
   can_delete?: boolean;
+  can_cascade?: boolean;
   items?: BlockingItem[];
   total?: number;
   message?: string;
@@ -82,7 +83,8 @@ export function PermanentDeleteDialog({
   }
 
   // Developer may force-delete (cascade) even when blocking records exist.
-  const canDelete = check?.can_delete === true || (isDeveloper && cascade);
+  const canCascade = isDeveloper || check?.can_cascade === true;
+  const canDelete = check?.can_delete === true || (canCascade && cascade);
 
 
   return (
@@ -133,7 +135,7 @@ export function PermanentDeleteDialog({
               ) : (
                 <p className="text-muted-foreground">{check.message}</p>
               )}
-              {isDeveloper && (
+              {canCascade && (
                 <label className="mt-2 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-destructive">
                   <Checkbox
                     checked={cascade}
