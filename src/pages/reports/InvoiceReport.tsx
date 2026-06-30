@@ -79,8 +79,9 @@ export default function InvoiceReport() {
       paid: a.paid + Number(r.paid_amount || 0),
       due: a.due + Number(r.due_amount || 0),
       delay: a.delay + Number(r.delay_fee || 0),
+      discount: a.discount + Number(r.discount_amount || 0),
     }),
-    { payable: 0, paid: 0, due: 0, delay: 0 },
+    { payable: 0, paid: 0, due: 0, delay: 0, discount: 0 },
   ), [filtered]);
 
   const head = [
