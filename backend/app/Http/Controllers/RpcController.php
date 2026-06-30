@@ -164,11 +164,32 @@ class RpcController extends Controller
         }
 
         if (! empty($blocking)) {
+            $labels = [
+                'irrigation_invoices' => 'সেচ ইনভয়েস',
+                'irrigation_charges' => 'সেচ চার্জ',
+                'irrigation_invoice_payments' => 'সেচ পেমেন্ট',
+                'savings_transactions' => 'সঞ্চয় লেনদেন',
+                'loans' => 'ঋণ',
+                'loan_payments' => 'ঋণ পরিশোধ',
+                'payments' => 'পেমেন্ট',
+                'shares' => 'শেয়ার',
+                'office_incomes' => 'বিবিধ আদায়',
+                'lands' => 'জমি',
+                'land_relations' => 'জমির সম্পর্ক',
+                'land_transfers' => 'জমি হস্তান্তর',
+                'land_history' => 'জমির ইতিহাস',
+                'receipts' => 'রশিদ',
+            ];
+            $parts = [];
+            foreach ($blocking as $tbl => $count) {
+                $name = $labels[$tbl] ?? $tbl;
+                $parts[] = "$name ($count)";
+            }
             return [
                 'ok' => false,
                 'reason' => 'has_transactions',
                 'blocking' => $blocking,
-                'message' => 'এই ফার্মারের লেনদেন/রেকর্ড থাকায় পারমানেন্ট ডিলিট করা যাবে না।',
+                'message' => 'এই ফার্মারের নিম্নলিখিত রেকর্ড থাকায় পারমানেন্ট ডিলিট করা যাবে না: ' . implode(', ', $parts) . '।',
             ];
         }
 
