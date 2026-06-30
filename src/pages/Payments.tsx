@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { fetchReceiptAuditLogs } from "@/lib/receiptAudit";
-import { postIrrigationCollection, takeLastImbalance, checkRequiredAccounts } from "@/lib/accountingPosting";
+import { postIrrigationCollection, takeLastImbalance, checkRequiredAccounts, formatImbalance } from "@/lib/accountingPosting";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -547,7 +547,7 @@ export default function Payments() {
           });
           const imb = takeLastImbalance();
           if (imb) {
-            toast.warning(`জার্নাল সমান হয়নি (ডেবিট ${imb.totalDebit} ≠ ক্রেডিট ${imb.totalCredit})`);
+            toast.warning(formatImbalance(imb, tx("en", "bn") as "en" | "bn"));
           }
         }
       } else if (a.kind === "savings") {

@@ -78,6 +78,19 @@ export interface BalanceResult {
   totalDebit: number;
   totalCredit: number;
   difference: number;
+  /** Journal reference (e.g. receipt/invoice no) so warnings can identify the entry. */
+  reference?: string | null;
+  /** Human-readable description of the attempted journal. */
+  description?: string | null;
+}
+
+/** Bilingual one-line warning describing an unbalanced journal with amounts and exact difference. */
+export function formatImbalance(imb: BalanceResult, lang: "en" | "bn" = "bn"): string {
+  const ref = imb.reference ? (lang === "en" ? ` [ref: ${imb.reference}]` : ` [রেফ: ${imb.reference}]`) : "";
+  const diff = Math.abs(imb.difference);
+  return lang === "en"
+    ? `Journal not balanced${ref}: Dr ${imb.totalDebit} ≠ Cr ${imb.totalCredit} (difference ${diff})`
+    : `জার্নাল সমান হয়নি${ref}: ডেবিট ${imb.totalDebit} ≠ ক্রেডিট ${imb.totalCredit} (পার্থক্য ${diff})`;
 }
 
 /** Pure double-entry balance check usable by callers to warn the user. */
@@ -106,7 +119,7 @@ async function createJournal(opts: {
   // Guard: lines must balance and be non-trivial.
   const bal = checkBalanced(opts.lines);
   if (!bal.balanced) {
-    lastImbalance = bal;
+    lastImbalance = { ...bal, reference: opts.reference ?? null, description: opts.description ?? null };
     return;
   }
   try {
