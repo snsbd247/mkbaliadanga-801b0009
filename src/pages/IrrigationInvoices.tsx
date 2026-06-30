@@ -886,10 +886,15 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   async function save() {
     const oc = Number(otherCharge) || 0;
     const df = Number(delayFee) || 0;
-    if (oc < 0 || df < 0) return toast.error(tx("Negative values not allowed", "ঋণাত্মক মান দেওয়া যাবে না"));
+    const disc = Number(discount) || 0;
+    if (oc < 0 || df < 0 || disc < 0) return toast.error(tx("Negative values not allowed", "ঋণাত্মক মান দেওয়া যাবে না"));
     if (!dueDate) return toast.error(tx("Enter due date", "মেয়াদ তারিখ দিন"));
+    const gross = Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + oc + df;
+    if (disc > gross) return toast.error(tx("Discount cannot exceed invoice amount", "ডিসকাউন্ট ইনভয়েসের পরিমাণের বেশি হতে পারে না"));
+    const originalDisc = Number(inv.discount_amount ?? 0);
+    if (disc !== originalDisc && !discountReason.trim()) return toast.error(tx("Enter a discount reason", "ডিসকাউন্টের কারণ লিখুন"));
     setBusy(true);
-    const payable = Number(inv.irrigation_amount) + Number(inv.maintenance_amount) + Number(inv.canal_amount) + oc + df;
+    const payable = Math.max(0, gross - disc);
     const due = Math.max(0, payable - Number(inv.paid_amount ?? 0));
     const newStatus =
       inv.invoice_status === "cancelled" ? inv.invoice_status :
@@ -902,6 +907,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         due_date: dueDate,
         other_charge: oc,
         delay_fee: df,
+        discount_amount: disc,
+        discount_reason: discountReason.trim() || null,
         note: note || null,
         payable_amount: payable,
         due_amount: due,
@@ -925,6 +932,16 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
         reference_id: inv.id,
         old_data: { delay_fee: originalFee },
         new_data: { delay_fee: df, source: "invoice_edit", reason: note || null },
+      });
+    }
+    if (disc !== originalDisc) {
+      logAudit({
+        module: "irrigation_invoice_discount",
+        action_type: "discount",
+        office_id: inv.office_id ?? null,
+        reference_id: inv.id,
+        old_data: { discount_amount: originalDisc, payable_amount: inv.payable_amount },
+        new_data: { discount_amount: disc, payable_amount: payable, reason: discountReason.trim() || null },
       });
     }
     toast.success(tx("Invoice updated", "ইনভয়েস হালনাগাদ হয়েছে"));
