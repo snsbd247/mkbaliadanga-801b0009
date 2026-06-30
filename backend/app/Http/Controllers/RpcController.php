@@ -128,28 +128,36 @@ class RpcController extends Controller
         return $q->count();
     }
 
-    /**
-     * Permanently delete a farmer from the database, but ONLY when the farmer
-     * has no transactional records. Returns a status payload the frontend can
-     * use to show a clear message.
-     */
-    protected function rpc_farmer_permanent_delete(array $p, Request $request): array
+    /** Tables that represent real activity/transactions for a farmer. */
+    private const FARMER_TXN_TABLES = [
+        'irrigation_invoices', 'irrigation_charges', 'irrigation_invoice_payments',
+        'savings_transactions', 'loans', 'loan_payments', 'payments',
+        'shares', 'office_incomes', 'lands', 'land_relations',
+        'land_transfers', 'land_history', 'receipts',
+    ];
+
+    private const FARMER_TXN_LABELS = [
+        'irrigation_invoices' => 'সেচ ইনভয়েস',
+        'irrigation_charges' => 'সেচ চার্জ',
+        'irrigation_invoice_payments' => 'সেচ পেমেন্ট',
+        'savings_transactions' => 'সঞ্চয় লেনদেন',
+        'loans' => 'ঋণ',
+        'loan_payments' => 'ঋণ পরিশোধ',
+        'payments' => 'পেমেন্ট',
+        'shares' => 'শেয়ার',
+        'office_incomes' => 'বিবিধ আদায়',
+        'lands' => 'জমি',
+        'land_relations' => 'জমির সম্পর্ক',
+        'land_transfers' => 'জমি হস্তান্তর',
+        'land_history' => 'জমির ইতিহাস',
+        'receipts' => 'রশিদ',
+    ];
+
+    /** Count blocking transactional records for a farmer, keyed by table. */
+    private function farmerBlockingCounts(string $farmerId): array
     {
-        $farmerId = $p['_farmer_id'] ?? $p['farmer_id'] ?? null;
-        if (! $farmerId) {
-            return ['ok' => false, 'reason' => 'missing_id', 'message' => 'ফার্মার আইডি পাওয়া যায়নি।'];
-        }
-
-        // Tables that represent real activity/transactions for a farmer.
-        $txnTables = [
-            'irrigation_invoices', 'irrigation_charges', 'irrigation_invoice_payments',
-            'savings_transactions', 'loans', 'loan_payments', 'payments',
-            'shares', 'office_incomes', 'lands', 'land_relations',
-            'land_transfers', 'land_history', 'receipts',
-        ];
-
         $blocking = [];
-        foreach ($txnTables as $tbl) {
+        foreach (self::FARMER_TXN_TABLES as $tbl) {
             if (! Schema::hasTable($tbl) || ! Schema::hasColumn($tbl, 'farmer_id')) {
                 continue;
             }
@@ -162,41 +170,128 @@ class RpcController extends Controller
                 $blocking[$tbl] = $count;
             }
         }
+        return $blocking;
+    }
+
+    /** Build a Bengali summary list and message from a blocking map. */
+    private function farmerBlockingDetails(array $blocking): array
+    {
+        $items = [];
+        $parts = [];
+        foreach ($blocking as $tbl => $count) {
+            $name = self::FARMER_TXN_LABELS[$tbl] ?? $tbl;
+            $items[] = ['table' => $tbl, 'label' => $name, 'count' => $count];
+            $parts[] = "$name ($count)";
+        }
+        return [$items, implode(', ', $parts)];
+    }
+
+    private function logFarmerDeletion(Request $request, ?string $farmerId, string $status, array $blocking, ?string $reason, ?object $farmer = null): void
+    {
+        try {
+            if (! Schema::hasTable('farmer_deletion_logs')) {
+                return;
+            }
+            $user = $request->user();
+            DB::table('farmer_deletion_logs')->insert([
+                'id'          => (string) Str::uuid(),
+                'farmer_id'   => $farmerId,
+                'farmer_name' => $farmer->name ?? $farmer->name_bn ?? $farmer->name_en ?? null,
+                'farmer_code' => $farmer->farmer_code ?? $farmer->member_no ?? $farmer->code ?? null,
+                'office_id'   => $farmer->office_id ?? null,
+                'user_id'     => $user->id ?? null,
+                'user_name'   => $user->full_name ?? $user->name ?? $user->email ?? null,
+                'status'      => $status,
+                'blocking'    => empty($blocking) ? null : json_encode($blocking),
+                'reason'      => $reason,
+                'created_at'  => now(),
+            ]);
+        } catch (\Throwable $e) {
+            // Audit failures must never break the caller.
+        }
+    }
+
+    /**
+     * Dry-run precheck: count blocking transactional records for a farmer
+     * WITHOUT deleting anything. Used by the UI before showing the delete action.
+     */
+    protected function rpc_farmer_delete_precheck(array $p): array
+    {
+        $farmerId = $p['_farmer_id'] ?? $p['farmer_id'] ?? null;
+        if (! $farmerId) {
+            return ['ok' => false, 'reason' => 'missing_id', 'message' => 'ফার্মার আইডি পাওয়া যায়নি।'];
+        }
+
+        $blocking = $this->farmerBlockingCounts($farmerId);
+        [$items, $summary] = $this->farmerBlockingDetails($blocking);
+        $total = array_sum($blocking);
+
+        return [
+            'ok'           => true,
+            'farmer_id'    => $farmerId,
+            'can_delete'   => empty($blocking),
+            'blocking'     => $blocking,
+            'items'        => $items,
+            'total'        => $total,
+            'message'      => empty($blocking)
+                ? 'কোনো ট্রানজেকশন নেই — পারমানেন্ট ডিলিট করা যাবে।'
+                : "ব্লকিং রেকর্ড পাওয়া গেছে: $summary।",
+        ];
+    }
+
+    /**
+     * Permanently delete a farmer from the database, but ONLY when the farmer
+     * has no transactional records. Returns a status payload the frontend can
+     * use to show a clear message. Logs every attempt (success or blocked).
+     */
+    protected function rpc_farmer_permanent_delete(array $p, Request $request): array
+    {
+        $farmerId = $p['_farmer_id'] ?? $p['farmer_id'] ?? null;
+        if (! $farmerId) {
+            return ['ok' => false, 'reason' => 'missing_id', 'message' => 'ফার্মার আইডি পাওয়া যায়নি।'];
+        }
+
+        $farmer = DB::table('farmers')->where('id', $farmerId)->first();
+
+        $blocking = $this->farmerBlockingCounts($farmerId);
 
         if (! empty($blocking)) {
-            $labels = [
-                'irrigation_invoices' => 'সেচ ইনভয়েস',
-                'irrigation_charges' => 'সেচ চার্জ',
-                'irrigation_invoice_payments' => 'সেচ পেমেন্ট',
-                'savings_transactions' => 'সঞ্চয় লেনদেন',
-                'loans' => 'ঋণ',
-                'loan_payments' => 'ঋণ পরিশোধ',
-                'payments' => 'পেমেন্ট',
-                'shares' => 'শেয়ার',
-                'office_incomes' => 'বিবিধ আদায়',
-                'lands' => 'জমি',
-                'land_relations' => 'জমির সম্পর্ক',
-                'land_transfers' => 'জমি হস্তান্তর',
-                'land_history' => 'জমির ইতিহাস',
-                'receipts' => 'রশিদ',
-            ];
-            $parts = [];
-            foreach ($blocking as $tbl => $count) {
-                $name = $labels[$tbl] ?? $tbl;
-                $parts[] = "$name ($count)";
-            }
+            [, $summary] = $this->farmerBlockingDetails($blocking);
+            $message = 'এই ফার্মারের নিম্নলিখিত রেকর্ড থাকায় পারমানেন্ট ডিলিট করা যাবে না: ' . $summary . '।';
+            $this->logFarmerDeletion($request, $farmerId, 'blocked', $blocking, $message, $farmer);
             return [
                 'ok' => false,
                 'reason' => 'has_transactions',
                 'blocking' => $blocking,
-                'message' => 'এই ফার্মারের নিম্নলিখিত রেকর্ড থাকায় পারমানেন্ট ডিলিট করা যাবে না: ' . implode(', ', $parts) . '।',
+                'message' => $message,
             ];
         }
 
         DB::table('farmers')->where('id', $farmerId)->delete();
+        $this->logFarmerDeletion($request, $farmerId, 'deleted', [], null, $farmer);
 
         return ['ok' => true, 'message' => 'ফার্মার পারমানেন্টভাবে ডিলিট করা হয়েছে।'];
     }
+
+    /** Admin report: list of permanently-deleted farmers (and blocked attempts). */
+    protected function rpc_deleted_farmers_list(array $p): array
+    {
+        if (! Schema::hasTable('farmer_deletion_logs')) {
+            return [];
+        }
+        $q = DB::table('farmer_deletion_logs')->orderByDesc('created_at');
+        $status = $p['_status'] ?? null;
+        if ($status) {
+            $q->where('status', $status);
+        }
+        $limit = min((int) ($p['_limit'] ?? 200), 1000);
+        return $q->limit($limit)->get()->map(function ($r) {
+            $r->blocking = $r->blocking ? json_decode($r->blocking, true) : null;
+            return (array) $r;
+        })->toArray();
+    }
+
+
 
 
     protected function rpc_farmer_dues_summary(array $p, Request $request): array
