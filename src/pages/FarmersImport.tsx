@@ -419,6 +419,11 @@ export default function FarmersImport() {
                 <TableHead>{t("fatherName")}</TableHead>
                 <TableHead>{t("mobile")}</TableHead>
                 <TableHead>{t("village")}</TableHead>
+                <TableHead>নমিনি নাম</TableHead>
+                <TableHead>নমিনি মোবাইল</TableHead>
+                <TableHead>নমিনি সম্পর্ক</TableHead>
+                <TableHead>নমিনি NID</TableHead>
+                <TableHead>নমিনি ঠিকানা</TableHead>
                 <TableHead>{t("issueCol")}</TableHead>
               </TableRow>
             </TableHeader>
