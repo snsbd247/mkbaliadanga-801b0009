@@ -48,15 +48,22 @@ class RpcController extends Controller
     private function identifierExists(?string $candidate, ?string $excludeId): bool
     {
         if ($candidate === null) return false;
+
+        $cols = array_values(array_filter(
+            ['farmer_code', 'member_no', 'account_number', 'voter_number'],
+            fn ($c) => Schema::hasColumn('farmers', $c)
+        ));
+        if (empty($cols)) return false;
+
         return DB::table('farmers')
             ->when($excludeId, fn ($q) => $q->where('id', '<>', $excludeId))
-            ->where(function ($q) use ($candidate) {
-                $q->where('farmer_code', $candidate)
-                  ->orWhere('member_no', $candidate)
-                  ->orWhere('account_number', $candidate)
-                  ->orWhere('voter_number', $candidate);
+            ->where(function ($q) use ($candidate, $cols) {
+                foreach ($cols as $i => $col) {
+                    $i === 0 ? $q->where($col, $candidate) : $q->orWhere($col, $candidate);
+                }
             })->exists();
     }
+
 
     private function generateFarmerAccountNumber(): string
     {
