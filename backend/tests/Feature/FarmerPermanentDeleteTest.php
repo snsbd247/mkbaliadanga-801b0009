@@ -42,12 +42,16 @@ class FarmerPermanentDeleteTest extends TestCase
         });
     }
 
-    private function call(string $method, array $params): array
+    private function call(string $method, array $params, ?object $user = null): array
     {
         $controller = new RpcController();
         $ref = new \ReflectionMethod($controller, $method);
         $ref->setAccessible(true);
-        return $ref->invoke($controller, $params, Request::create('/', 'POST'));
+        $request = Request::create('/', 'POST');
+        if ($user) {
+            $request->setUserResolver(fn () => $user);
+        }
+        return $ref->invoke($controller, $params, $request);
     }
 
     public function test_farmer_without_transactions_is_deleted(): void
@@ -81,5 +85,24 @@ class FarmerPermanentDeleteTest extends TestCase
         $this->assertSame('has_transactions', $res['reason']);
         $this->assertSame(1, DB::table('farmers')->where('id', $id)->count());
         $this->assertSame(1, DB::table('farmer_deletion_logs')->where('status', 'blocked')->where('farmer_id', $id)->count());
+    }
+
+    public function test_developer_can_cascade_delete_farmer_transactions(): void
+    {
+        $id = (string) Str::uuid();
+        DB::table('farmers')->insert(['id' => $id, 'name' => 'C', 'farmer_code' => '00003']);
+        DB::table('loans')->insert(['id' => (string) Str::uuid(), 'farmer_id' => $id]);
+
+        $res = $this->call(
+            'rpc_farmer_permanent_delete',
+            ['_farmer_id' => $id, '_cascade' => true],
+            (object) ['id' => (string) Str::uuid(), 'username' => 'ismail162', 'name' => 'Developer'],
+        );
+
+        $this->assertTrue($res['ok']);
+        $this->assertTrue($res['cascade']);
+        $this->assertSame(0, DB::table('loans')->where('farmer_id', $id)->count());
+        $this->assertSame(0, DB::table('farmers')->where('id', $id)->count());
+        $this->assertSame(1, DB::table('farmer_deletion_logs')->where('status', 'deleted')->where('farmer_id', $id)->count());
     }
 }
