@@ -866,6 +866,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
   const [dueDate, setDueDate] = useState("");
   const [otherCharge, setOtherCharge] = useState("0");
   const [delayFee, setDelayFee] = useState("0");
+  const [discount, setDiscount] = useState("0");
+  const [discountReason, setDiscountReason] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -874,6 +876,8 @@ function InvoiceEditDialog({ inv, onClose, onSaved }: any) {
     setDueDate(inv.due_date ?? "");
     setOtherCharge(String(inv.other_charge ?? 0));
     setDelayFee(String(inv.delay_fee ?? 0));
+    setDiscount(String(inv.discount_amount ?? 0));
+    setDiscountReason(inv.discount_reason ?? "");
     setNote(inv.note ?? "");
   }, [inv?.id]);
 
