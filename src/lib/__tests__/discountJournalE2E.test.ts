@@ -14,8 +14,7 @@ import { checkBalanced, formatImbalance } from "@/lib/accountingPosting";
  */
 describe("discount + payment journal vs export totals", () => {
   const inv = {
-    payable_amount: 0,
-    base_amount: 1000,
+    irrigation_amount: 1000,
     paid_amount: 0,
     invoice_status: "generated" as const,
   };
