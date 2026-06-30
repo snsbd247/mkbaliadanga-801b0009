@@ -468,8 +468,11 @@ function copyHtml(d: BnReceiptData, copyLabel: string, signatureUrl: string | nu
     const dueCharge = Number(d.total_outstanding ?? d.previous_due ?? 0);
     const duePenalty = Number(d.due_penalty ?? 0);
     rows.push([t.due, `${moneyInt(dueCharge, lang, "৳")}/${moneyInt(duePenalty, lang, "৳")}`]);
-    // 11. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা)
-    const totalDue = halCharge + halPenalty + dueCharge + duePenalty;
+    // 11. ছাড় (ডিসকাউন্ট) — থাকলেই দেখাবে এবং মোট থেকে বাদ যাবে
+    const discount = Math.max(0, Number(d.discount_amount ?? 0));
+    if (discount > 0) rows.push([t.discount, `-${moneyInt(discount, lang, "৳")}`]);
+    // 12. মোট আদায়ের পরিমাণ (হাল + হাল জরিমানা + বকেয়া + বকেয়া জরিমানা − ছাড়)
+    const totalDue = Math.max(0, halCharge + halPenalty + dueCharge + duePenalty - discount);
     const totalIrr = Number(d.collected_amount ?? 0) > 0 ? Number(d.collected_amount ?? 0) : totalDue;
     rows.push([t.totalIrr, moneyInt(totalIrr, lang, "৳")]);
     // 12. কথায়
