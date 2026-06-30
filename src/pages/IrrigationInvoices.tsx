@@ -1461,6 +1461,8 @@ function GenerateTab({ seasons, offices, userId, isSuper }: any) {
             delay_fee: calc.delay_fee,
             other_charge: calc.other_charge,
             payable_amount: calc.payable_amount,
+            discount_amount: 0,
+            discount_reason: null,
             paid_amount: 0,
             due_date: dueDate,
             invoice_status: "generated",
